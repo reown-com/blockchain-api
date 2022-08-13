@@ -1,0 +1,25 @@
+[package]
+name = "rpc-proxy"
+version = "0.1.0"
+edition = "2021"
+authors = [
+    "Derek <derek@walletconnect.com>"
+]
+build = "build.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+warp = "0.3"
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+dotenv = "0.15.0"
+envy = "0.4"
+
+tracing = "0.1"
+
+build-info = "0.0.27"
+
+[build-dependencies]
+build-info-build = "0.0.27"
