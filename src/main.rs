@@ -6,10 +6,10 @@ mod state;
 use crate::env::Config;
 use build_info::BuildInfo;
 use dotenv::dotenv;
-use tracing::info;
 use std::sync::Arc;
+use tracing::info;
 
-use crate::state::{State};
+use crate::state::State;
 
 use warp::Filter;
 
@@ -32,10 +32,27 @@ async fn main() -> error::Result<()> {
         .and(state_filter.clone())
         .and_then(handlers::health::handler);
 
-    let routes = warp::any()
+    let forward_proxy_client = hyper::Client::new();
+    let proxy_client_filter = warp::any().map(move || forward_proxy_client.clone());
+
+    let proxy = warp::get()
+        .and(warp::path!("v1"))
+        .and(state_filter.clone())
+        .and(proxy_client_filter)
+        .and(warp::method())
+        .and(warp::path::full())
         .and(
-            health,
+            warp::filters::query::raw()
+                .or(warp::any().map(|| String::default()))
+                .unify(),
         )
+        .and(warp::header::headers_cloned())
+        .and(warp::body::bytes())
+        .and_then(handlers::proxy::handler);
+
+    let routes = warp::any()
+        .and(health)
+        .or(proxy)
         .with(warp::trace::request());
 
     info!("v{}", build_version);

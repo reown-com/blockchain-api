@@ -9,9 +9,6 @@ pub struct Config {
     pub log_level: String,
 }
 
-impl Config {
-}
-
 fn default_port() -> u16 {
     3000
 }
