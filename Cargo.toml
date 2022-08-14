@@ -11,6 +11,7 @@ build = "build.rs"
 tokio = { version = "1", features = ["full"] }
 warp = "0.3"
 hyper = "0.14.4"
+hyper-tls = "0.5.0"
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

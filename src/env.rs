@@ -7,6 +7,7 @@ pub struct Config {
     pub port: u16,
     #[serde(default = "default_log_level")]
     pub log_level: String,
+    pub infura_project_id: String,
 }
 
 fn default_port() -> u16 {
