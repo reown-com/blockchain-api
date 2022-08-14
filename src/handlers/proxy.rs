@@ -1,6 +1,6 @@
 use crate::State;
-use hyper::{client::HttpConnector, Client};
 use std::sync::Arc;
+use hyper::{client::HttpConnector, Client};
 
 pub async fn handler(
     _state: Arc<State>,
@@ -9,7 +9,7 @@ pub async fn handler(
     path: warp::path::FullPath,
     query_params: String,
     headers: hyper::http::HeaderMap,
-    body: hyper::body::Bytes,
+    body: hyper::body::Bytes
 ) -> Result<impl warp::Reply, warp::Rejection> {
     // TODO: do some validation
     let mut req = {
@@ -30,13 +30,10 @@ pub async fn handler(
 
     // TODO: use RPC provider strategy
     *req.uri_mut() = "http://httpbin.org/ip"
-        .parse()
-        .expect("Failed to parse the uri");
+    .parse()
+    .expect("Failed to parse the uri");
 
-    // TODO: map the response error codes properly
+    // TODO: map the response error codes properly 
     // e.g. HTTP401 from target should map to HTTP500
-    client
-        .request(req)
-        .await
-        .map_err(|_e| warp::reject::reject())
+    client.request(req).await.map_err(|_e| warp::reject::reject())
 }
