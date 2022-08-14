@@ -13,8 +13,8 @@ use crate::state::State;
 
 use warp::Filter;
 
-use hyper_tls::HttpsConnector;
 use hyper::Client;
+use hyper_tls::HttpsConnector;
 
 #[tokio::main]
 async fn main() -> error::Result<()> {
