@@ -33,11 +33,12 @@ async fn main() -> error::Result<()> {
         .and_then(handlers::health::handler);
 
     let forward_proxy_client = hyper::Client::new();
+    let proxy_client_filter = warp::any().map(move || forward_proxy_client.clone());
 
     let proxy = warp::get()
         .and(warp::path!("v1"))
         .and(state_filter.clone())
-        .and(warp::any().map(move || forward_proxy_client.clone()))
+        .and(proxy_client_filter)
         .and(warp::method())
         .and(warp::path::full())
         .and(
