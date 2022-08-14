@@ -1,10 +1,11 @@
 use crate::State;
 use hyper::{client::HttpConnector, Client};
+use hyper_tls::HttpsConnector;
 use std::sync::Arc;
 
 pub async fn handler(
-    _state: Arc<State>,
-    client: Client<HttpConnector>,
+    state: Arc<State>,
+    client: Client<HttpsConnector<HttpConnector>>,
     method: hyper::http::Method,
     path: warp::path::FullPath,
     query_params: String,
@@ -29,14 +30,16 @@ pub async fn handler(
     };
 
     // TODO: use RPC provider strategy
-    *req.uri_mut() = "http://httpbin.org/ip"
-        .parse()
-        .expect("Failed to parse the uri");
+    *req.uri_mut() = format!(
+        "https://mainnet.infura.io/v3/{}",
+        state.config.infura_project_id
+    )
+    .parse()
+    .expect("Failed to parse the uri");
 
     // TODO: map the response error codes properly
     // e.g. HTTP401 from target should map to HTTP500
-    client
-        .request(req)
-        .await
-        .map_err(|_e| warp::reject::reject())
+    let resp = client.request(req).await;
+
+    resp.map_err(|_e| warp::reject::reject())
 }

@@ -13,6 +13,9 @@ use crate::state::State;
 
 use warp::Filter;
 
+use hyper::Client;
+use hyper_tls::HttpsConnector;
+
 #[tokio::main]
 async fn main() -> error::Result<()> {
     dotenv().ok();
@@ -32,10 +35,10 @@ async fn main() -> error::Result<()> {
         .and(state_filter.clone())
         .and_then(handlers::health::handler);
 
-    let forward_proxy_client = hyper::Client::new();
+    let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
     let proxy_client_filter = warp::any().map(move || forward_proxy_client.clone());
 
-    let proxy = warp::get()
+    let proxy = warp::any()
         .and(warp::path!("v1"))
         .and(state_filter.clone())
         .and(proxy_client_filter)
