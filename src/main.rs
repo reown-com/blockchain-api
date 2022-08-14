@@ -32,10 +32,26 @@ async fn main() -> error::Result<()> {
         .and(state_filter.clone())
         .and_then(handlers::health::handler);
 
-    let routes = warp::any()
+    let forward_proxy_client = hyper::Client::new();
+    
+    let proxy = warp::get()
+        .and(warp::path!("v1"))
+        .and(state_filter.clone())
+        .and(warp::any().map(move || forward_proxy_client.clone()))
+        .and(warp::method())
+        .and(warp::path::full())
         .and(
-            health,
+            warp::filters::query::raw()
+                .or(warp::any().map(|| String::default()))
+                .unify(),
         )
+        .and(warp::header::headers_cloned())
+        .and(warp::body::bytes())
+        .and_then(handlers::proxy::handler);
+
+    let routes = warp::any()
+        .and(health,)
+        .or(proxy,)
         .with(warp::trace::request());
 
     info!("v{}", build_version);

@@ -1,4 +1,5 @@
 pub mod health;
+pub mod proxy;
 
 #[derive(serde::Serialize)]
 pub struct ErrorReason {
