@@ -1,6 +1,7 @@
 mod env;
 mod error;
 mod handlers;
+mod providers;
 mod state;
 
 use crate::env::Config;
@@ -9,6 +10,8 @@ use dotenv::dotenv;
 use std::sync::Arc;
 use tracing::info;
 
+use crate::providers::InfuraProvider;
+use crate::providers::ProviderRepository;
 use crate::state::State;
 
 use warp::Filter;
@@ -28,6 +31,7 @@ async fn main() -> error::Result<()> {
     let build_version = state.build_info.crate_info.version.clone();
 
     let state_arc = Arc::new(state);
+    let infura_project_id = state_arc.config.infura_project_id.clone();
     let state_filter = warp::any().map(move || state_arc.clone());
 
     let health = warp::get()
@@ -35,13 +39,18 @@ async fn main() -> error::Result<()> {
         .and(state_filter.clone())
         .and_then(handlers::health::handler);
 
+    let mut providers = ProviderRepository::default();
     let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
-    let proxy_client_filter = warp::any().map(move || forward_proxy_client.clone());
+    let infura_provider = InfuraProvider {
+        client: forward_proxy_client,
+        infura_project_id: infura_project_id,
+    };
+    providers.add_provider("eth".into(), Arc::new(infura_provider));
+    let provider_filter = warp::any().map(move || providers.clone());
 
     let proxy = warp::any()
         .and(warp::path!("v1"))
-        .and(state_filter.clone())
-        .and(proxy_client_filter)
+        .and(provider_filter.clone())
         .and(warp::method())
         .and(warp::path::full())
         .and(warp::filters::query::query())

@@ -1,7 +1,16 @@
 use hyper::{Body, Response, StatusCode};
+use serde::Deserialize;
 
 pub mod health;
 pub mod proxy;
+
+#[derive(Deserialize)]
+pub struct RPCQueryParams {
+    #[serde(rename = "chainId")]
+    chain_id: String,
+    #[serde(rename = "projectId")]
+    project_id: String,
+}
 
 #[derive(serde::Serialize)]
 pub struct ErrorReason {
