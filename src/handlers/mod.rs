@@ -1,4 +1,4 @@
-use hyper::{Response, StatusCode, Body};
+use hyper::{Body, Response, StatusCode};
 
 pub mod health;
 pub mod proxy;
@@ -13,6 +13,7 @@ pub struct ErrorReason {
 pub struct ErrorResponse {
     pub status: String,
     pub reasons: Vec<ErrorReason>,
+    #[serde(skip_serializing)]
     pub code: StatusCode,
 }
 
@@ -20,7 +21,7 @@ pub fn new_error_response(reasons: Vec<ErrorReason>, code: StatusCode) -> ErrorR
     ErrorResponse {
         status: "FAILED".to_string(),
         reasons,
-        code
+        code,
     }
 }
 

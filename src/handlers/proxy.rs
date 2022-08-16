@@ -1,11 +1,11 @@
 use crate::handlers::{new_error_response, ErrorReason};
 use crate::State;
-use hyper::{Response, StatusCode};
+use hyper::StatusCode;
 use hyper::{client::HttpConnector, Client};
 use hyper_tls::HttpsConnector;
-use warp::Reply;
-use std::sync::Arc;
 use serde::Deserialize;
+use std::sync::Arc;
+use warp::Reply;
 
 #[derive(Deserialize)]
 pub struct RPCQueryParams {
@@ -25,17 +25,25 @@ pub async fn handler(
     body: hyper::body::Bytes,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     if query_params.chain_id != "eth:1" {
-        return Ok(new_error_response(vec![ErrorReason {
-            field: "chainId".to_string(),
-            description: "We currently only support `eth:1`".to_string(),
-        }], StatusCode::BAD_REQUEST).into_response());
+        return Ok(new_error_response(
+            vec![ErrorReason {
+                field: "chainId".to_string(),
+                description: "We currently only support `eth:1`".to_string(),
+            }],
+            StatusCode::BAD_REQUEST,
+        )
+        .into_response());
     }
 
     if query_params.project_id.is_empty() {
-        return Ok(new_error_response(vec![ErrorReason {
-            field: "projectId".to_string(),
-            description: "No project id required".to_string(),
-        }], StatusCode::BAD_REQUEST).into_response());
+        return Ok(new_error_response(
+            vec![ErrorReason {
+                field: "projectId".to_string(),
+                description: "No project id required".to_string(),
+            }],
+            StatusCode::BAD_REQUEST,
+        )
+        .into_response());
     }
 
     let mut req = {
