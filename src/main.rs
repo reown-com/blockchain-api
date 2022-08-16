@@ -44,11 +44,7 @@ async fn main() -> error::Result<()> {
         .and(proxy_client_filter)
         .and(warp::method())
         .and(warp::path::full())
-        .and(
-            warp::filters::query::raw()
-                .or(warp::any().map(|| String::default()))
-                .unify(),
-        )
+        .and(warp::filters::query::query())
         .and(warp::header::headers_cloned())
         .and(warp::body::bytes())
         .and_then(handlers::proxy::handler);

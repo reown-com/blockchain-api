@@ -1,31 +1,59 @@
+use crate::handlers::{new_error_response, ErrorReason};
 use crate::State;
+use hyper::StatusCode;
 use hyper::{client::HttpConnector, Client};
 use hyper_tls::HttpsConnector;
+use serde::Deserialize;
 use std::sync::Arc;
+use warp::Reply;
+
+#[derive(Deserialize)]
+pub struct RPCQueryParams {
+    #[serde(rename = "chainId")]
+    chain_id: String,
+    #[serde(rename = "projectId")]
+    project_id: String,
+}
 
 pub async fn handler(
     state: Arc<State>,
     client: Client<HttpsConnector<HttpConnector>>,
     method: hyper::http::Method,
     path: warp::path::FullPath,
-    query_params: String,
+    query_params: RPCQueryParams,
     headers: hyper::http::HeaderMap,
     body: hyper::body::Bytes,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    // TODO: do some validation
+    if query_params.chain_id != "eth:1" {
+        return Ok(new_error_response(
+            vec![ErrorReason {
+                field: "chainId".to_string(),
+                description: "We currently only support `eth:1`".to_string(),
+            }],
+            StatusCode::BAD_REQUEST,
+        )
+        .into_response());
+    }
+
+    if query_params.project_id.is_empty() {
+        return Ok(new_error_response(
+            vec![ErrorReason {
+                field: "projectId".to_string(),
+                description: "No project id required".to_string(),
+            }],
+            StatusCode::BAD_REQUEST,
+        )
+        .into_response());
+    }
+
     let mut req = {
-        let mut full_path = path.as_str().to_string();
-        if query_params != "" {
-            full_path = format!("{}?{}", full_path, query_params);
-        }
-        let mut hyper_request = hyper::http::Request::builder()
+        let full_path = path.as_str().to_string();
+        let hyper_request = hyper::http::Request::builder()
             .method(method)
             .uri(full_path)
+            .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))
             .expect("Request::builder() failed");
-        {
-            *hyper_request.headers_mut() = headers;
-        }
         hyper_request
     };
 
