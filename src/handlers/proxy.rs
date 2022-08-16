@@ -48,14 +48,12 @@ pub async fn handler(
 
     let mut req = {
         let full_path = path.as_str().to_string();
-        let mut hyper_request = hyper::http::Request::builder()
+        let hyper_request = hyper::http::Request::builder()
             .method(method)
             .uri(full_path)
+            .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))
             .expect("Request::builder() failed");
-        {
-            *hyper_request.headers_mut() = headers;
-        }
         hyper_request
     };
 
@@ -69,7 +67,7 @@ pub async fn handler(
 
     // TODO: map the response error codes properly
     // e.g. HTTP401 from target should map to HTTP500
-    // TODO: stream not `await` this
     let resp = client.request(req).await;
+
     resp.map_err(|_e| warp::reject::reject())
 }
