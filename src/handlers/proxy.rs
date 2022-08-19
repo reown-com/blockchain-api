@@ -1,23 +1,11 @@
-use crate::handlers::{new_error_response, ErrorReason};
-use crate::State;
+use crate::handlers::{new_error_response, ErrorReason, RPCQueryParams};
 use hyper::StatusCode;
-use hyper::{client::HttpConnector, Client};
-use hyper_tls::HttpsConnector;
-use serde::Deserialize;
-use std::sync::Arc;
 use warp::Reply;
 
-#[derive(Deserialize)]
-pub struct RPCQueryParams {
-    #[serde(rename = "chainId")]
-    chain_id: String,
-    #[serde(rename = "projectId")]
-    project_id: String,
-}
+use crate::providers::ProviderRepository;
 
 pub async fn handler(
-    state: Arc<State>,
-    client: Client<HttpsConnector<HttpConnector>>,
+    provider_repo: ProviderRepository,
     method: hyper::http::Method,
     path: warp::path::FullPath,
     query_params: RPCQueryParams,
@@ -46,28 +34,12 @@ pub async fn handler(
         .into_response());
     }
 
-    let mut req = {
-        let full_path = path.as_str().to_string();
-        let hyper_request = hyper::http::Request::builder()
-            .method(method)
-            .uri(full_path)
-            .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(body))
-            .expect("Request::builder() failed");
-        hyper_request
-    };
-
-    // TODO: use RPC provider strategy
-    *req.uri_mut() = format!(
-        "https://mainnet.infura.io/v3/{}",
-        state.config.infura_project_id
-    )
-    .parse()
-    .expect("Failed to parse the uri");
-
+    let provider = provider_repo.get_provider("eth").unwrap();
     // TODO: map the response error codes properly
     // e.g. HTTP401 from target should map to HTTP500
-    let resp = client.request(req).await;
+    let resp = provider
+        .proxy(method, path, query_params, headers, body)
+        .await;
 
     resp.map_err(|_e| warp::reject::reject())
 }
