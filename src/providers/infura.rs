@@ -20,23 +20,21 @@ impl RPCProvider for InfuraProvider {
         _headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
     ) -> Result<Response<Body>, Error> {
-        let mut req = {
-            let full_path = path.as_str().to_string();
-            let hyper_request = hyper::http::Request::builder()
-                .method(method)
-                .uri(full_path)
-                .header("Content-Type", "application/json")
-                .body(hyper::body::Body::from(body))
-                .expect("Request::builder() failed");
-            hyper_request
-        };
+        let full_path = path.as_str().to_string();
+        let mut hyper_request = hyper::http::Request::builder()
+            .method(method)
+            .uri(full_path)
+            .header("Content-Type", "application/json")
+            .body(hyper::body::Body::from(body))
+            .expect("Request::builder() failed");
 
-        *req.uri_mut() = format!("https://mainnet.infura.io/v3/{}", self.infura_project_id)
-            .parse()
-            .expect("Failed to parse the uri");
+        *hyper_request.uri_mut() =
+            format!("https://mainnet.infura.io/v3/{}", self.infura_project_id)
+                .parse()
+                .expect("Failed to parse the uri");
 
         // TODO: map the response error codes properly
         // e.g. HTTP401 from target should map to HTTP500
-        self.client.request(req).await
+        self.client.request(hyper_request).await
     }
 }

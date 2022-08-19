@@ -7,6 +7,7 @@ mod state;
 use crate::env::Config;
 use build_info::BuildInfo;
 use dotenv::dotenv;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::info;
 
@@ -28,6 +29,7 @@ async fn main() -> error::Result<()> {
     let state = state::new_state(config);
 
     let port = state.config.port;
+    let host = state.config.host.clone();
     let build_version = state.build_info.crate_info.version.clone();
 
     let state_arc = Arc::new(state);
@@ -43,7 +45,7 @@ async fn main() -> error::Result<()> {
     let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
     let infura_provider = InfuraProvider {
         client: forward_proxy_client,
-        infura_project_id: infura_project_id,
+        infura_project_id,
     };
     providers.add_provider("eth".into(), Arc::new(infura_provider));
     let provider_filter = warp::any().map(move || providers.clone());
@@ -64,7 +66,10 @@ async fn main() -> error::Result<()> {
         .with(warp::trace::request());
 
     info!("v{}", build_version);
-    warp::serve(routes).run(([127, 0, 0, 1], port)).await;
+    let addr: SocketAddr = format!("{}:{}", host, port)
+        .parse()
+        .expect("Invalid socket address");
+    warp::serve(routes).run(addr).await;
 
     Ok(())
 }
