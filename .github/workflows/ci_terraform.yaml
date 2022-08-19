@@ -1,0 +1,74 @@
+name: ci_terraform
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'terraform/**'
+  pull_request:
+    paths:
+      - 'terraform/**'
+
+concurrency:
+  # Support push/pr as event types with different behaviors each:
+  # 1. push: queue up builds
+  # 2. pr: only allow one run per PR
+  group: ${{ github.workflow }}-${{ github.event.type }}${{ github.event.pull_request.number }}
+  # If there is already a workflow running for the same pull request, cancel it
+  cancel-in-progress: ${{ github.event.type == 'PullRequest' }}
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - id: fmt
+        uses: WalletConnect/actions/actions/fmt-check-terraform/@master
+
+  plan:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Run Terraform Plan
+        id: plan
+        uses: WalletConnect/actions/actions/plan-terraform/@master
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+          environment: staging
+          app-name: ${{ github.event.repository.name }}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: plan.tfplan
+          path: ${{ steps.plan.outputs.plan-file }}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: plan.txt
+          path: ${{ steps.plan.outputs.output-file }}
+      - name: Add Plan to PR
+        uses: actions/github-script@v6
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.plan }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `<details><summary>Show Plan</summary>
+
+            \`\`\`\n
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>
+
+            *Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
