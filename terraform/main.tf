@@ -22,9 +22,9 @@ data "aws_ecr_repository" "repository" {
 module "ecs" {
   source = "./ecs"
 
-  ecr_repository_url  = data.aws_ecr_repository.repository.repository_url
-  app_name            = "${terraform.workspace}_${local.app_name}"
-  region              = var.region
-  vpc_name            = "ops-${terraform.workspace}-vpc"
-  port                = 3000
+  ecr_repository_url = data.aws_ecr_repository.repository.repository_url
+  app_name           = "${terraform.workspace}_${local.app_name}"
+  region             = var.region
+  vpc_name           = "ops-${terraform.workspace}-vpc"
+  port               = 3000
 }
