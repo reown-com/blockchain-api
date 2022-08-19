@@ -72,12 +72,3 @@ jobs:
               repo: context.repo.repo,
               body: output
             })
-
-  kick-off-cd:
-    needs: [fmt]
-    if: github.event_name != 'pull_request'
-    uses: ./.github/workflows/cd.yaml
-    with:
-      deploy_app: false
-      deploy_infra: true
-    secrets: inherit
