@@ -42,7 +42,7 @@ jobs:
         cargo:
           - name: "Clippy"
             cmd: clippy
-            args: -- -D clippy::all
+            args: -- -D warnings
             cache: {}
           - name: "Formatting"
             cmd: fmt
