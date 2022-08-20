@@ -17,3 +17,15 @@ variable "vpc_name" {
 variable "port" {
   type = number
 }
+
+variable "acm_certificate_arn" {
+  type = string
+}
+
+variable "fqdn" {
+  type = string
+}
+
+variable "route53_zone_id" {
+  type = string
+}
