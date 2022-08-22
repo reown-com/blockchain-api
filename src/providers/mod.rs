@@ -33,4 +33,6 @@ pub trait RPCProvider: Send + Sync {
         headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
     ) -> Result<Response<Body>, Error>;
+
+    fn supports_caip_chainid(&self, chain_id: &str) -> bool;
 }
