@@ -1,7 +1,4 @@
 variable "region" {
-  type = string
-}
-
-variable "grafana_endpoint" {
-  type = string
+  type    = string
+  default = "eu-central-1"
 }

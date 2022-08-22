@@ -168,7 +168,7 @@ resource "aws_alb" "network_load_balancer" {
 
 resource "aws_lb_target_group" "target_group" {
   name        = replace("${var.app_name}-${substr(uuid(), 0, 3)}", "_", "-")
-  port        = 80
+  port        = var.port
   protocol    = "TCP"
   target_type = "ip"
   vpc_id      = data.aws_vpc.vpc.id
@@ -192,8 +192,10 @@ resource "aws_lb_target_group" "target_group" {
 
 resource "aws_lb_listener" "listener" {
   load_balancer_arn = aws_alb.network_load_balancer.arn
-  port              = "80"
-  protocol          = "TCP"
+  port              = "443"
+  protocol          = "TLS"
+  certificate_arn   = var.acm_certificate_arn
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.target_group.arn
@@ -210,8 +212,8 @@ resource "aws_security_group" "tls_ingess" {
   description = "Allow tls ingress from everywhere"
   vpc_id      = data.aws_vpc.vpc.id
   ingress {
-    from_port   = 80
-    to_port     = 80
+    from_port   = 443
+    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"] # Allowing traffic in from all sources
   }
@@ -241,5 +243,18 @@ resource "aws_security_group" "vpc_app_ingress" {
     to_port     = 0             # Allowing any outgoing port
     protocol    = "-1"          # Allowing any outgoing protocol
     cidr_blocks = ["0.0.0.0/0"] # Allowing traffic out to all IP addresses
+  }
+}
+
+# DNS Records
+resource "aws_route53_record" "dns_load_balancer" {
+  zone_id = var.route53_zone_id
+  name    = var.fqdn
+  type    = "A"
+
+  alias {
+    name                   = aws_alb.network_load_balancer.dns_name
+    zone_id                = aws_alb.network_load_balancer.zone_id
+    evaluate_target_health = true
   }
 }
