@@ -181,3 +181,11 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+  kick-off-cd:
+    needs: [publish]
+    uses: ./.github/workflows/cd.yml
+    with:
+      deploy_app: true
+      deploy_infra: false
+    secrets: inherit
