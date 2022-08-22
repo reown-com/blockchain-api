@@ -1,0 +1,137 @@
+name: cd
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_infra:
+        description: 'Whether to deploy infrastructure'
+        default: true
+        required: true
+        type: boolean
+      deploy_app:
+        description: 'Whether to deploy app'
+        default: true
+        required: true
+        type: boolean
+  workflow_call:
+    inputs:
+      deploy_infra:
+        required: true
+        type: boolean
+      deploy_app:
+        required: true
+        type: boolean
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+
+concurrency: cd
+
+jobs:
+  deploy-infra-staging:
+    if: ${{ inputs.deploy_infra }}
+    runs-on: ubuntu-latest
+    environment:
+      name: infra/staging
+      url: https://staging.rpc.walletconnect.com/health
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - id: deploy-staging
+        uses: WalletConnect/actions/actions/deploy-terraform/@master
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+          environment: staging
+          app-name: ${{ github.event.repository.name }}
+
+  deploy-app-staging:
+    if: ${{ inputs.deploy_app }}
+    runs-on: ubuntu-latest
+    environment:
+      name: app/staging
+      url: https://staging.rpc.walletconnect.com/hello
+    steps:
+      - id: deploy
+        uses: WalletConnect/actions/actions/deploy-ecs/@master
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+          cluster-name: staging_rpc-proxy_cluster
+          service-name: staging_rpc-proxy-service
+          task-definition-name: prod_rpc-proxy
+
+  validate:
+    if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
+    needs: [deploy-app-staging, deploy-infra-staging]
+    runs-on: ubuntu-latest
+    steps:
+      - name: validate
+        run: |
+          curl "https://dev.rpc.walletconnect.com/health"
+
+  deployment_windows:
+    needs: [validate]
+    outputs:
+      result: ${{ steps.decide.outputs.deploy_or_not }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: decide
+        uses: cobot/deploy-window-action@v1
+        with:
+          earliest-hour: "9"
+          latest-hour: "17"
+          latest-weekday: "5"
+          time-zone: UTC
+          force-deploy-phrase: force deploy
+
+  deploy-infra-prod:
+    # Only deploy if tests passed and deployment windows are open
+    # Ignore deployment windows if workflow was started manually
+    if: ${{ always() && inputs.deploy_infra && needs.validate.result == 'success' && (needs.deployment_windows.outputs.result == 'yes' || github.event_name == 'workflow_dispatch') }}
+    needs: [validate, deployment_windows]
+    runs-on: ubuntu-latest
+    environment: 
+      name: infra/prod
+      url: https://rpc.walletconnect.com/health
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+      - id: deploy-prod
+        uses: WalletConnect/actions/actions/deploy-terraform/@master
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+          environment: prod
+          app-name: ${{ github.event.repository.name }}
+
+  deploy-app-prod:
+    # Only deploy if tests passed and deployment windows are open
+    # Ignore deployment windows if workflow was started manually
+    if: ${{ always() && inputs.deploy_app && needs.validate.result == 'success' && (needs.deployment_windows.outputs.result == 'yes' || github.event_name == 'workflow_dispatch') }}
+    needs: [validate, deployment_windows]
+    runs-on: ubuntu-latest
+    environment: 
+      name: app/prod
+      url: https://rpc.walletconnect.com/health
+    steps:
+      - id: deploy
+        uses: WalletConnect/actions/actions/deploy-ecs/@master
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+          cluster-name: prod_rpc-proxy_cluster
+          service-name: prod_rpc-proxy-service
+          task-definition-name: prod_rpc-proxy
