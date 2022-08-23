@@ -34,6 +34,7 @@ async fn main() -> error::Result<()> {
 
     let state_arc = Arc::new(state);
     let infura_project_id = state_arc.config.infura_project_id.clone();
+    let infura_supported_chains = state_arc.config.infura_supported_chains.clone();
     let state_filter = warp::any().map(move || state_arc.clone());
 
     let health = warp::get()
@@ -46,6 +47,7 @@ async fn main() -> error::Result<()> {
     let infura_provider = InfuraProvider {
         client: forward_proxy_client,
         infura_project_id,
+        infura_supported_chains,
     };
     providers.add_provider("eth".into(), Arc::new(infura_provider));
     let provider_filter = warp::any().map(move || providers.clone());
