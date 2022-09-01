@@ -63,7 +63,7 @@ jobs:
           aws-region: eu-central-1
           cluster-name: staging_rpc-proxy_cluster
           service-name: staging_rpc-proxy-service
-          task-definition-name: prod_rpc-proxy
+          task-definition-name: staging_rpc-proxy
           image-name: "rpc-proxy:latest"
 
   validate:
