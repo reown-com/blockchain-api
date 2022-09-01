@@ -29,6 +29,9 @@ on:
 
 concurrency: cd
 
+env:
+  IMAGE_NAME: 'rpc-proxy'
+
 jobs:
   deploy-infra-staging:
     if: ${{ inputs.deploy_infra }}
@@ -55,16 +58,26 @@ jobs:
       name: app/staging
       url: https://staging.rpc.walletconnect.com/hello
     steps:
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+      - uses: aws-actions/amazon-ecr-login@v1      
+        id: login-ecr
       - id: deploy
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ENVIRONMENT: staging
         uses: WalletConnect/actions/actions/deploy-ecs/@master
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-central-1
-          cluster-name: staging_rpc-proxy_cluster
-          service-name: staging_rpc-proxy-service
-          task-definition-name: staging_rpc-proxy
-          image-name: "rpc-proxy:latest"
+          cluster-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}_cluster
+          service-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}-service
+          task-definition-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}
+          image-name: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
   validate:
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
@@ -127,13 +140,23 @@ jobs:
       name: app/prod
       url: https://rpc.walletconnect.com/health
     steps:
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+      - uses: aws-actions/amazon-ecr-login@v1      
+        id: login-ecr
       - id: deploy
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ENVIRONMENT: prod
         uses: WalletConnect/actions/actions/deploy-ecs/@master
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-central-1
-          cluster-name: prod_rpc-proxy_cluster
-          service-name: prod_rpc-proxy-service
-          task-definition-name: prod_rpc-proxy
-          image-name: "rpc-proxy:latest"
+          cluster-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}_cluster
+          service-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}-service
+          task-definition-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}
+          image-name: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
