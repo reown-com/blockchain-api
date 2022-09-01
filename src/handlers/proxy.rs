@@ -16,7 +16,7 @@ pub async fn handler(
         return Ok(new_error_response(
             vec![ErrorReason {
                 field: "projectId".to_string(),
-                description: "No project id required".to_string(),
+                description: "No project id provided".to_string(),
             }],
             StatusCode::BAD_REQUEST,
         )

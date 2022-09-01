@@ -26,11 +26,14 @@ on:
         required: true
       AWS_SECRET_ACCESS_KEY:
         required: true
+      INFURA_PROJECT_ID:
+        required: true
 
 concurrency: cd
 
 env:
   IMAGE_NAME: 'rpc-proxy'
+  TF_VAR_infura_project_id: ${{ secrets.INFURA_PROJECT_ID }}
 
 jobs:
   deploy-infra-staging:
