@@ -184,7 +184,7 @@ jobs:
 
   kick-off-cd:
     needs: [publish]
-    uses: ./.github/workflows/cd.yml
+    uses: ./.github/workflows/cd.yaml
     with:
       deploy_app: true
       deploy_infra: false
