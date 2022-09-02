@@ -40,10 +40,9 @@ pub async fn handler(
     }
 
     if let Some(metrics) = &state.metrics {
-        let abc: String = query_params.chain_id.to_lowercase();
         metrics
             .rpc_call_counter
-            .add(1, &[opentelemetry::KeyValue::new("chain.id", abc)]);
+            .add(1, &[opentelemetry::KeyValue::new("chain.id", query_params.chain_id.to_lowercase())]);
     }
 
     // TODO: map the response error codes properly
