@@ -2,6 +2,7 @@ use hyper::{Body, Response, StatusCode};
 use serde::Deserialize;
 
 pub mod health;
+pub mod metrics;
 pub mod proxy;
 
 #[derive(Deserialize)]

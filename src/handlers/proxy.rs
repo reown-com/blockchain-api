@@ -1,10 +1,13 @@
 use crate::handlers::{new_error_response, ErrorReason, RPCQueryParams};
+use crate::State;
 use hyper::StatusCode;
+use std::sync::Arc;
 use warp::Reply;
 
 use crate::providers::ProviderRepository;
 
 pub async fn handler(
+    state: Arc<State>,
     provider_repo: ProviderRepository,
     method: hyper::http::Method,
     path: warp::path::FullPath,
@@ -34,6 +37,13 @@ pub async fn handler(
             StatusCode::BAD_REQUEST,
         )
         .into_response());
+    }
+
+    if let Some(metrics) = &state.metrics {
+        let abc: String = query_params.chain_id.to_lowercase();
+        metrics
+            .rpc_call_counter
+            .add(1, &[opentelemetry::KeyValue::new("chain.id", abc)]);
     }
 
     // TODO: map the response error codes properly
