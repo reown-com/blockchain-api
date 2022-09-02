@@ -21,8 +21,7 @@ pub async fn handler(state: Arc<State>) -> Result<impl warp::Reply, warp::Reject
             let data = exporter.registry().gather();
             match TextEncoder::new().encode_to_string(&data) {
                 Ok(content) => {
-                    let response =
-                        warp::reply::with_status(content, http::StatusCode::OK);
+                    let response = warp::reply::with_status(content, http::StatusCode::OK);
 
                     Ok(response)
                 }
