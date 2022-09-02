@@ -31,8 +31,6 @@ async fn main() -> error::Result<()> {
     let config =
         env::get_config().expect("Failed to load config, please ensure all env vars are defined.");
 
-    let mut state = state::new_state(config);
-
     let prometheus_exporter = opentelemetry_prometheus::exporter().init();
     let meter = prometheus_exporter
         .provider()
@@ -44,7 +42,8 @@ async fn main() -> error::Result<()> {
         .with_description("The number of rpc calls served")
         .init();
 
-    state.set_metrics(
+    let state = state::new_state(
+        config,
         prometheus_exporter,
         Metrics {
             rpc_call_counter: rpc_call_counter,

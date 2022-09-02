@@ -39,15 +39,13 @@ pub async fn handler(
         .into_response());
     }
 
-    if let Some(metrics) = &state.metrics {
-        metrics.rpc_call_counter.add(
-            1,
-            &[opentelemetry::KeyValue::new(
-                "chain.id",
-                query_params.chain_id.to_lowercase(),
-            )],
-        );
-    }
+    state.metrics.rpc_call_counter.add(
+        1,
+        &[opentelemetry::KeyValue::new(
+            "chain.id",
+            query_params.chain_id.to_lowercase(),
+        )],
+    );
 
     // TODO: map the response error codes properly
     // e.g. HTTP401 from target should map to HTTP500
