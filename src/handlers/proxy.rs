@@ -1,10 +1,13 @@
 use crate::handlers::{new_error_response, ErrorReason, RPCQueryParams};
+use crate::State;
 use hyper::StatusCode;
+use std::sync::Arc;
 use warp::Reply;
 
 use crate::providers::ProviderRepository;
 
 pub async fn handler(
+    state: Arc<State>,
     provider_repo: ProviderRepository,
     method: hyper::http::Method,
     path: warp::path::FullPath,
@@ -35,6 +38,14 @@ pub async fn handler(
         )
         .into_response());
     }
+
+    state.metrics.rpc_call_counter.add(
+        1,
+        &[opentelemetry::KeyValue::new(
+            "chain.id",
+            query_params.chain_id.to_lowercase(),
+        )],
+    );
 
     // TODO: map the response error codes properly
     // e.g. HTTP401 from target should map to HTTP500

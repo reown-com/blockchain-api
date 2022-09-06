@@ -5,8 +5,10 @@ mod providers;
 mod state;
 
 use crate::env::Config;
+use crate::state::Metrics;
 use build_info::BuildInfo;
 use dotenv::dotenv;
+use opentelemetry::metrics::MeterProvider;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::info;
@@ -26,7 +28,18 @@ async fn main() -> error::Result<()> {
     let config =
         env::get_config().expect("Failed to load config, please ensure all env vars are defined.");
 
-    let state = state::new_state(config);
+    let prometheus_exporter = opentelemetry_prometheus::exporter().init();
+    let meter = prometheus_exporter
+        .provider()
+        .unwrap()
+        .meter("rpc-proxy", None);
+
+    let rpc_call_counter = meter
+        .u64_counter("rpc_call_counter")
+        .with_description("The number of rpc calls served")
+        .init();
+
+    let state = state::new_state(config, prometheus_exporter, Metrics { rpc_call_counter });
 
     let port = state.config.port;
     let host = state.config.host.clone();
@@ -42,6 +55,11 @@ async fn main() -> error::Result<()> {
         .and(state_filter.clone())
         .and_then(handlers::health::handler);
 
+    let metrics = warp::any()
+        .and(warp::path!("metrics"))
+        .and(state_filter.clone())
+        .and_then(handlers::metrics::handler);
+
     let mut providers = ProviderRepository::default();
     let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
     let infura_provider = InfuraProvider {
@@ -54,6 +72,7 @@ async fn main() -> error::Result<()> {
 
     let proxy = warp::any()
         .and(warp::path!("v1"))
+        .and(state_filter.clone())
         .and(provider_filter.clone())
         .and(warp::method())
         .and(warp::path::full())
@@ -65,6 +84,7 @@ async fn main() -> error::Result<()> {
     let routes = warp::any()
         .and(health)
         .or(proxy)
+        .or(metrics)
         .with(warp::trace::request());
 
     info!("v{}", build_version);
