@@ -22,9 +22,6 @@ use warp::Filter;
 use hyper::Client;
 use hyper_tls::HttpsConnector;
 
-// Re-export opentelemetry API.
-pub use opentelemetry::*;
-
 #[tokio::main]
 async fn main() -> error::Result<()> {
     dotenv().ok();
@@ -42,13 +39,7 @@ async fn main() -> error::Result<()> {
         .with_description("The number of rpc calls served")
         .init();
 
-    let state = state::new_state(
-        config,
-        prometheus_exporter,
-        Metrics {
-            rpc_call_counter: rpc_call_counter,
-        },
-    );
+    let state = state::new_state(config, prometheus_exporter, Metrics { rpc_call_counter });
 
     let port = state.config.port;
     let host = state.config.host.clone();
