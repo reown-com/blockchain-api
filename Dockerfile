@@ -3,7 +3,7 @@
 # Build args
 #
 ################################################################################
-ARG                 base="rust"
+ARG                 base="rust:buster"
 ARG                 runtime="debian:buster-slim"
 ARG                 bin="rpc-proxy"
 ARG                 version="unknown"
