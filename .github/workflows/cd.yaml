@@ -92,6 +92,7 @@ jobs:
           curl "https://staging.rpc.walletconnect.com/health"
 
   deployment_windows:
+    if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
     needs: [validate]
     outputs:
       result: ${{ steps.decide.outputs.deploy_or_not }}
