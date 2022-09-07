@@ -60,7 +60,13 @@ async fn main() -> error::Result<()> {
         .and(warp::filters::query::query())
         .and(warp::header::headers_cloned())
         .and(warp::body::bytes())
-        .and_then(handlers::proxy::handler);
+        .and_then(handlers::proxy::handler)
+        // TODO #15: Whitelist domains per project ID
+        .with(
+            warp::cors()
+                .allow_any_origin()
+                .allow_methods(vec!["GET", "POST"]),
+        );
 
     let routes = warp::any()
         .and(health)
