@@ -89,7 +89,7 @@ jobs:
     steps:
       - name: validate
         run: |
-          curl "https://dev.rpc.walletconnect.com/health"
+          curl "https://staging.rpc.walletconnect.com/health"
 
   deployment_windows:
     needs: [validate]
