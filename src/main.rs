@@ -70,6 +70,18 @@ async fn main() -> error::Result<()> {
     providers.add_provider("eth".into(), Arc::new(infura_provider));
     let provider_filter = warp::any().map(move || providers.clone());
 
+    let cors = warp::cors()
+        .allow_any_origin()
+        .allow_headers(vec![
+            "User-Agent",
+            "Content-Type",
+            "Sec-Fetch-Mode",
+            "Referer",
+            "Origin",
+            "Access-Control-Request-Method",
+            "Access-Control-Request-Headers",
+        ])
+        .allow_methods(vec!["GET", "POST"]);
     let proxy = warp::any()
         .and(warp::path!("v1"))
         .and(state_filter.clone())
@@ -80,12 +92,7 @@ async fn main() -> error::Result<()> {
         .and(warp::header::headers_cloned())
         .and(warp::body::bytes())
         .and_then(handlers::proxy::handler)
-        // TODO #15: Whitelist domains per project ID
-        .with(
-            warp::cors()
-                .allow_any_origin()
-                .allow_methods(vec!["GET", "POST"]),
-        );
+        .with(cors);
 
     let routes = warp::any()
         .and(health)
