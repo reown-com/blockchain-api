@@ -55,6 +55,31 @@ resource "aws_ecs_task_definition" "app_task" {
           "awslogs-region": "${var.region}",
           "awslogs-stream-prefix": "ecs"
         }
+      },
+      "dependsOn": [{
+        "containerName": "aws-otel-collector",
+        "condition": "START"
+      }]
+    },
+    {
+      "name": "aws-otel-collector",
+      "image": "public.ecr.aws/aws-observability/aws-otel-collector:latest",
+      "environment" : [
+          { "name" : "AWS_PROMETHEUS_SCRAPING_ENDPOINT", "value" : "0.0.0.0:${var.port}" },
+          { "name" : "AWS_PROMETHEUS_ENDPOINT", "value" : "${var.prometheus_endpoint}api/v1/remote_write" }
+      ],
+      "essential": true,
+      "command": [
+        "--config=/etc/ecs/ecs-amp-prometheus.yaml"
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-create-group": "True",
+          "awslogs-group": "/ecs/${var.app_name}-ecs-aws-otel-sidecar-collector",
+          "awslogs-region": "${var.region}",
+          "awslogs-stream-prefix": "ecs"
+        }
       }
     }
   ]
@@ -94,6 +119,11 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
 resource "aws_iam_role_policy_attachment" "cloudwatch_write_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "prometheus_write_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonPrometheusRemoteWriteAccess"
 }
 
 # ECS Service
