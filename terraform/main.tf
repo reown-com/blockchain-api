@@ -39,4 +39,5 @@ module "ecs" {
   acm_certificate_arn = module.dns.certificate_arn
   fqdn                = local.fqdn
   route53_zone_id     = module.dns.zone_id
+  infura_project_id   = var.infura_project_id
 }

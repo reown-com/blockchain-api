@@ -36,7 +36,7 @@ resource "aws_ecs_task_definition" "app_task" {
     {
       "name": "${var.app_name}",
       "environment" : [
-          { "name" : "INFURA_PROJECT_ID", "value" : "7b9b3694f35d439b88dd355b8febf130" }
+          { "name" : "INFURA_PROJECT_ID", "value" : "${var.infura_project_id}" }
       ],
       "image": "${var.ecr_repository_url}",
       "essential": true,
