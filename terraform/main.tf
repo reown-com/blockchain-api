@@ -40,4 +40,9 @@ module "ecs" {
   fqdn                = local.fqdn
   route53_zone_id     = module.dns.zone_id
   infura_project_id   = var.infura_project_id
+  prometheus_endpoint = aws_prometheus_workspace.prometheus.prometheus_endpoint
+}
+
+resource "aws_prometheus_workspace" "prometheus" {
+  alias = "prometheus-${terraform.workspace}-${local.app_name}"
 }
