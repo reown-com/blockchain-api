@@ -6,3 +6,7 @@ variable "region" {
 variable "infura_project_id" {
   type = string
 }
+
+variable "grafana_endpoint" {
+  type = string
+}
