@@ -89,6 +89,7 @@ resource "aws_ecs_task_definition" "app_task" {
   memory                   = 512         # Specifying the memory our container requires
   cpu                      = 256         # Specifying the CPU our container requires
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_execution_role.arn
 
   runtime_platform {
     operating_system_family = "LINUX"
@@ -132,7 +133,10 @@ resource "aws_ecs_service" "app_service" {
   cluster         = aws_ecs_cluster.app_cluster.id
   task_definition = aws_ecs_task_definition.app_task.arn
   launch_type     = "FARGATE"
-  desired_count   = 3 # Setting the number of containers we want deployed to 3
+  desired_count   = 2 # Setting the number of containers we want deployed to 3
+
+  # Wait for the service deployment to succeed
+  wait_for_steady_state = true
 
   network_configuration {
     subnets          = data.aws_subnets.private_subnets.ids

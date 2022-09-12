@@ -43,6 +43,13 @@ module "ecs" {
   prometheus_endpoint = aws_prometheus_workspace.prometheus.prometheus_endpoint
 }
 
+module "o11y" {
+  source = "./monitoring"
+
+  prometheus_workspace_id = aws_prometheus_workspace.prometheus.id
+  environment             = terraform.workspace
+}
+
 resource "aws_prometheus_workspace" "prometheus" {
   alias = "prometheus-${terraform.workspace}-${local.app_name}"
 }

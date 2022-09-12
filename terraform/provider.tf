@@ -12,3 +12,8 @@ provider "aws" {
     tags = module.tags.tags
   }
 }
+
+# Expects GRAFANA_AUTH env variable to be set
+provider "grafana" {
+  url = "https://${var.grafana_endpoint}"
+}
