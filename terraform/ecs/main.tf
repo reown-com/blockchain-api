@@ -131,7 +131,7 @@ resource "aws_iam_role_policy_attachment" "prometheus_write_policy" {
 resource "aws_ecs_service" "app_service" {
   name            = "${var.app_name}-service"
   cluster         = aws_ecs_cluster.app_cluster.id
-  task_definition = aws_ecs_task_definition.app_task.arn
+  task_definition = join(":", slice(split(":", aws_ecs_task_definition.app_task.arn), 0, 6))
   launch_type     = "FARGATE"
   desired_count   = 2 # Setting the number of containers we want deployed to 3
 
