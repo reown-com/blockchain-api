@@ -175,7 +175,7 @@ resource "grafana_dashboard" "at_a_glance" {
   },
   "timepicker": {},
   "timezone": "",
-  "title": "dev_rpc-proxy",
+  "title": "${var.environment}_rpc-proxy",
   "uid": "fczCCQM4k",
   "version": 1,
   "weekStart": ""
