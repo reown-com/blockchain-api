@@ -34,6 +34,7 @@ concurrency: cd
 env:
   IMAGE_NAME: 'rpc-proxy'
   TF_VAR_infura_project_id: ${{ secrets.INFURA_PROJECT_ID }}
+  TF_VAR_pokt_project_id: ${{ secrets.POKT_PROJECT_ID }}
 
 jobs:
   deploy-infra-staging:

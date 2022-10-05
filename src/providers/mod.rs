@@ -1,4 +1,5 @@
 mod infura;
+mod pokt;
 
 use crate::handlers::RPCQueryParams;
 use async_trait::async_trait;
@@ -6,6 +7,7 @@ use hyper::Body;
 use hyper::Error;
 use hyper::Response;
 pub use infura::InfuraProvider;
+pub use pokt::PoktProvider;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -15,8 +17,9 @@ pub struct ProviderRepository {
 }
 
 impl ProviderRepository {
-    pub fn get_provider(&self, chain: &str) -> Option<&Arc<dyn RPCProvider>> {
-        self.map.get(chain)
+    pub fn get_provider_for_chain_id(&self, chain: &str) -> Option<&Arc<dyn RPCProvider>> {
+        self.map.values().into_iter()
+            .find(|provider| provider.supports_caip_chainid(chain))
     }
     pub fn add_provider(&mut self, chain: String, provider: Arc<dyn RPCProvider>) {
         self.map.insert(chain, provider);
