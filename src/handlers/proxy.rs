@@ -30,16 +30,14 @@ pub async fn handler(
     let provider = provider_repo.get_provider_for_chain_id(&query_params.chain_id.to_lowercase());
 
     match provider {
-        None => {
-            Ok(new_error_response(
-                vec![ErrorReason {
-                    field: "chainId".to_string(),
-                    description: format!("We don't support the chainId you provided: {}", chain_id),
-                }],
-                StatusCode::BAD_REQUEST,
-            )
-            .into_response())
-        }
+        None => Ok(new_error_response(
+            vec![ErrorReason {
+                field: "chainId".to_string(),
+                description: format!("We don't support the chainId you provided: {}", chain_id),
+            }],
+            StatusCode::BAD_REQUEST,
+        )
+        .into_response()),
         Some(provider) => {
             state.metrics.rpc_call_counter.add(
                 1,
@@ -48,13 +46,13 @@ pub async fn handler(
                     query_params.chain_id.to_lowercase(),
                 )],
             );
-        
+
             // TODO: map the response error codes properly
             // e.g. HTTP401 from target should map to HTTP500
             let resp = provider
                 .proxy(method, path, query_params, headers, body)
                 .await;
-        
+
             resp.map_err(|_| warp::reject::reject())
         }
     }

@@ -21,9 +21,12 @@ impl ProviderRepository {
         self.map.get(chain_id)
     }
     pub fn add_provider(&mut self, _provider_name: String, provider: Arc<dyn RPCProvider>) {
-        provider.supported_caip_chainids().into_iter().for_each(|chain| {
-            self.map.insert(chain, provider.clone());
-        });
+        provider
+            .supported_caip_chainids()
+            .into_iter()
+            .for_each(|chain| {
+                self.map.insert(chain, provider.clone());
+            });
     }
 }
 

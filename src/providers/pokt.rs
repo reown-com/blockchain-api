@@ -33,10 +33,12 @@ impl RPCProvider for PoktProvider {
             .get(&query_params.chain_id.to_lowercase())
             .expect("Chain not found despite previous validation");
 
-        *hyper_request.uri_mut() =
-            format!("https://{}.gateway.pokt.network/v1/lb/{}", chain, self.project_id)
-                .parse()
-                .expect("Failed to parse the uri");
+        *hyper_request.uri_mut() = format!(
+            "https://{}.gateway.pokt.network/v1/lb/{}",
+            chain, self.project_id
+        )
+        .parse()
+        .expect("Failed to parse the uri");
 
         // TODO: map the response error codes properly
         // e.g. HTTP401 from target should map to HTTP500

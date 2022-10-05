@@ -13,8 +13,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::info;
 
-use crate::providers::{InfuraProvider, PoktProvider};
 use crate::providers::ProviderRepository;
+use crate::providers::{InfuraProvider, PoktProvider};
 use crate::state::State;
 
 use warp::Filter;

@@ -55,7 +55,10 @@ fn default_infura_supported_chains() -> HashMap<String, String> {
 fn default_pokt_supported_chains() -> HashMap<String, String> {
     HashMap::from([
         // Solana Mainnet
-        ("solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz".into(), "solana-mainnet".into()),
+        (
+            "solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz".into(),
+            "solana-mainnet".into(),
+        ),
         // Avax C-Chain
         ("eip155:43114".into(), "avax-mainnet".into()),
     ])
