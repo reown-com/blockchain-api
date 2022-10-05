@@ -66,8 +66,8 @@ async fn main() -> error::Result<()> {
     let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
     let infura_provider = InfuraProvider {
         client: forward_proxy_client.clone(),
-        infura_project_id,
-        infura_supported_chains,
+        project_id: infura_project_id,
+        supported_chains: infura_supported_chains,
     };
     providers.add_provider("infura".into(), Arc::new(infura_provider));
     let pokt_provider = PoktProvider {

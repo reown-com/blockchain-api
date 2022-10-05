@@ -55,7 +55,7 @@ pub async fn handler(
                 .proxy(method, path, query_params, headers, body)
                 .await;
         
-            resp.map_err(|_e| warp::reject::reject())
+            resp.map_err(|_| warp::reject::reject())
         }
     }
 }

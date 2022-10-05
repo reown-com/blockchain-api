@@ -17,15 +17,13 @@ impl RPCProvider for PoktProvider {
     async fn proxy(
         &self,
         method: hyper::http::Method,
-        path: warp::path::FullPath,
+        _path: warp::path::FullPath,
         query_params: RPCQueryParams,
         _headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
     ) -> Result<Response<Body>, Error> {
-        let full_path = path.as_str().to_string();
         let mut hyper_request = hyper::http::Request::builder()
             .method(method)
-            .uri(full_path)
             .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))
             .expect("Request::builder() failed");
@@ -47,5 +45,9 @@ impl RPCProvider for PoktProvider {
 
     fn supports_caip_chainid(&self, chain_id: &str) -> bool {
         self.supported_chains.contains_key(chain_id)
+    }
+
+    fn supported_caip_chainids(&self) -> Vec<String> {
+        self.supported_chains.keys().cloned().collect()
     }
 }
