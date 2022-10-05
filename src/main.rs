@@ -13,8 +13,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::info;
 
-use crate::providers::InfuraProvider;
 use crate::providers::ProviderRepository;
+use crate::providers::{InfuraProvider, PoktProvider};
 use crate::state::State;
 
 use warp::Filter;
@@ -48,6 +48,8 @@ async fn main() -> error::Result<()> {
     let state_arc = Arc::new(state);
     let infura_project_id = state_arc.config.infura_project_id.clone();
     let infura_supported_chains = state_arc.config.infura_supported_chains.clone();
+    let pokt_project_id = state_arc.config.pokt_project_id.clone();
+    let pokt_supported_chains = state_arc.config.pokt_supported_chains.clone();
     let state_filter = warp::any().map(move || state_arc.clone());
 
     let health = warp::get()
@@ -63,11 +65,17 @@ async fn main() -> error::Result<()> {
     let mut providers = ProviderRepository::default();
     let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
     let infura_provider = InfuraProvider {
-        client: forward_proxy_client,
-        infura_project_id,
-        infura_supported_chains,
+        client: forward_proxy_client.clone(),
+        project_id: infura_project_id,
+        supported_chains: infura_supported_chains,
     };
-    providers.add_provider("eth".into(), Arc::new(infura_provider));
+    providers.add_provider("infura".into(), Arc::new(infura_provider));
+    let pokt_provider = PoktProvider {
+        client: forward_proxy_client,
+        project_id: pokt_project_id,
+        supported_chains: pokt_supported_chains,
+    };
+    providers.add_provider("pokt".into(), Arc::new(pokt_provider));
     let provider_filter = warp::any().map(move || providers.clone());
 
     let cors = warp::cors()
@@ -80,6 +88,7 @@ async fn main() -> error::Result<()> {
             "Origin",
             "Access-Control-Request-Method",
             "Access-Control-Request-Headers",
+            "solana-client",
         ])
         .allow_methods(vec!["GET", "POST"]);
     let proxy = warp::any()

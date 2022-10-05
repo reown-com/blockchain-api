@@ -17,6 +17,10 @@ concurrency:
   # If there is already a workflow running for the same pull request, cancel it
   cancel-in-progress: ${{ github.event.type == 'PullRequest' }}
 
+env:
+  TF_VAR_infura_project_id: ${{ secrets.INFURA_PROJECT_ID }}
+  TF_VAR_pokt_project_id: ${{ secrets.POKT_PROJECT_ID }}
+
 jobs:
   fmt:
     runs-on: ubuntu-latest

@@ -34,6 +34,10 @@ variable "infura_project_id" {
   type = string
 }
 
+variable "pokt_project_id" {
+  type = string
+}
+
 variable "prometheus_endpoint" {
   type = string
 }

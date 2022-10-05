@@ -6,14 +6,14 @@ use hyper_tls::HttpsConnector;
 use std::collections::HashMap;
 
 #[derive(Clone)]
-pub struct InfuraProvider {
+pub struct PoktProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
     pub project_id: String,
     pub supported_chains: HashMap<String, String>,
 }
 
 #[async_trait]
-impl RPCProvider for InfuraProvider {
+impl RPCProvider for PoktProvider {
     async fn proxy(
         &self,
         method: hyper::http::Method,
@@ -33,9 +33,12 @@ impl RPCProvider for InfuraProvider {
             .get(&query_params.chain_id.to_lowercase())
             .expect("Chain not found despite previous validation");
 
-        *hyper_request.uri_mut() = format!("https://{}.infura.io/v3/{}", chain, self.project_id)
-            .parse()
-            .expect("Failed to parse the uri");
+        *hyper_request.uri_mut() = format!(
+            "https://{}.gateway.pokt.network/v1/lb/{}",
+            chain, self.project_id
+        )
+        .parse()
+        .expect("Failed to parse the uri");
 
         // TODO: map the response error codes properly
         // e.g. HTTP401 from target should map to HTTP500

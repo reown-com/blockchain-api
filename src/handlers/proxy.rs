@@ -26,32 +26,34 @@ pub async fn handler(
         .into_response());
     }
 
-    let provider = provider_repo.get_provider("eth").unwrap();
+    let chain_id = &query_params.chain_id.to_lowercase();
+    let provider = provider_repo.get_provider_for_chain_id(&query_params.chain_id.to_lowercase());
 
-    if !provider.supports_caip_chainid(&query_params.chain_id.to_lowercase()) {
-        return Ok(new_error_response(
+    match provider {
+        None => Ok(new_error_response(
             vec![ErrorReason {
                 field: "chainId".to_string(),
-                description: "We don't support the chainId you provided".to_string(),
+                description: format!("We don't support the chainId you provided: {}", chain_id),
             }],
             StatusCode::BAD_REQUEST,
         )
-        .into_response());
+        .into_response()),
+        Some(provider) => {
+            state.metrics.rpc_call_counter.add(
+                1,
+                &[opentelemetry::KeyValue::new(
+                    "chain.id",
+                    query_params.chain_id.to_lowercase(),
+                )],
+            );
+
+            // TODO: map the response error codes properly
+            // e.g. HTTP401 from target should map to HTTP500
+            let resp = provider
+                .proxy(method, path, query_params, headers, body)
+                .await;
+
+            resp.map_err(|_| warp::reject::reject())
+        }
     }
-
-    state.metrics.rpc_call_counter.add(
-        1,
-        &[opentelemetry::KeyValue::new(
-            "chain.id",
-            query_params.chain_id.to_lowercase(),
-        )],
-    );
-
-    // TODO: map the response error codes properly
-    // e.g. HTTP401 from target should map to HTTP500
-    let resp = provider
-        .proxy(method, path, query_params, headers, body)
-        .await;
-
-    resp.map_err(|_e| warp::reject::reject())
 }
