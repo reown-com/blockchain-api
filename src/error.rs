@@ -1,24 +1,16 @@
-use std::fmt::{Debug, Display, Formatter};
+pub type RpcResult<T> = Result<T, RpcError>;
 
-pub type Result<T> = std::result::Result<T, Error>;
+#[derive(Debug, thiserror::Error)]
+pub enum RpcError {
+    #[error(transparent)]
+    EnvyError(#[from] envy::Error),
 
-#[derive(Debug)]
-pub enum Error {
-    EnvyError(envy::Error),
+    #[error("Chain not found despite previous validation")]
+    ChainNotFound,
+
+    #[error("Transport error: {0}")]
+    TransportError(#[from] hyper::Error),
+
+    #[error("Request::builder() failed: {0}")]
+    RequestBuilderError(#[from] hyper::http::Error),
 }
-
-impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::EnvyError(err) => write!(f, "{}", err),
-        }
-    }
-}
-
-impl From<envy::Error> for Error {
-    fn from(err: envy::Error) -> Self {
-        Error::EnvyError(err)
-    }
-}
-
-impl std::error::Error for Error {}

@@ -1,15 +1,15 @@
 use hyper::{Body, Response, StatusCode};
 use serde::Deserialize;
+use warp::Reply;
 
 pub mod health;
 pub mod metrics;
 pub mod proxy;
 
 #[derive(Deserialize)]
-pub struct RPCQueryParams {
-    #[serde(rename = "chainId")]
+#[serde(rename_all = "camelCase")]
+pub struct RpcQueryParams {
     pub chain_id: String,
-    #[serde(rename = "projectId")]
     pub project_id: String,
 }
 
@@ -35,14 +35,28 @@ pub fn new_error_response(reasons: Vec<ErrorReason>, code: StatusCode) -> ErrorR
     }
 }
 
+pub fn field_validation_error(
+    field: impl Into<String>,
+    description: impl Into<String>,
+) -> Response<Body> {
+    new_error_response(
+        vec![ErrorReason {
+            field: field.into(),
+            description: description.into(),
+        }],
+        StatusCode::BAD_REQUEST,
+    )
+    .into_response()
+}
+
 #[derive(serde::Serialize)]
 pub struct SuccessResponse {
     status: String,
 }
 
-impl warp::Reply for ErrorResponse {
+impl Reply for ErrorResponse {
     fn into_response(self) -> Response<Body> {
-        let error = serde_json::to_string(&self).unwrap();
+        let error = serde_json::to_string(&self).unwrap_or_default();
         Response::builder()
             .status(self.code)
             .header("Content-Type", "application/json")

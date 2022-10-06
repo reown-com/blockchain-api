@@ -1,10 +1,9 @@
 mod infura;
 mod pokt;
 
-use crate::handlers::RPCQueryParams;
+use crate::{error::RpcResult, handlers::RpcQueryParams};
 use async_trait::async_trait;
 use hyper::Body;
-use hyper::Error;
 use hyper::Response;
 pub use infura::InfuraProvider;
 pub use pokt::PoktProvider;
@@ -13,14 +12,14 @@ use std::sync::Arc;
 
 #[derive(Default, Clone)]
 pub struct ProviderRepository {
-    map: HashMap<String, Arc<dyn RPCProvider>>,
+    map: HashMap<String, Arc<dyn RpcProvider>>,
 }
 
 impl ProviderRepository {
-    pub fn get_provider_for_chain_id(&self, chain_id: &str) -> Option<&Arc<dyn RPCProvider>> {
+    pub fn get_provider_for_chain_id(&self, chain_id: &str) -> Option<&Arc<dyn RpcProvider>> {
         self.map.get(chain_id)
     }
-    pub fn add_provider(&mut self, _provider_name: String, provider: Arc<dyn RPCProvider>) {
+    pub fn add_provider(&mut self, _provider_name: String, provider: Arc<dyn RpcProvider>) {
         provider
             .supported_caip_chainids()
             .into_iter()
@@ -31,15 +30,15 @@ impl ProviderRepository {
 }
 
 #[async_trait]
-pub trait RPCProvider: Send + Sync {
+pub trait RpcProvider: Send + Sync {
     async fn proxy(
         &self,
         method: hyper::http::Method,
         xpath: warp::path::FullPath,
-        query_params: RPCQueryParams,
+        query_params: RpcQueryParams,
         headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
-    ) -> Result<Response<Body>, Error>;
+    ) -> RpcResult<Response<Body>>;
 
     fn supports_caip_chainid(&self, chain_id: &str) -> bool;
 

@@ -27,6 +27,7 @@ prometheus-core = { package = "prometheus", version = "0.13" }
 opentelemetry = { version = "0.17.0", features = ["trace", "metrics", "rt-tokio"] }
 opentelemetry-prometheus = "0.10.0"
 tracing = "0.1"
+thiserror = "1.0"
 
 [build-dependencies]
 build-info-build = "0.0.27"
