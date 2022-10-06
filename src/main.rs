@@ -23,7 +23,7 @@ use hyper::Client;
 use hyper_tls::HttpsConnector;
 
 #[tokio::main]
-async fn main() -> error::Result<()> {
+async fn main() -> error::RpcResult<()> {
     dotenv().ok();
     let config =
         env::get_config().expect("Failed to load config, please ensure all env vars are defined.");

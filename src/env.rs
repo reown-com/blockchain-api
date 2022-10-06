@@ -64,7 +64,7 @@ fn default_pokt_supported_chains() -> HashMap<String, String> {
     ])
 }
 
-pub fn get_config() -> error::Result<Config> {
+pub fn get_config() -> error::RpcResult<Config> {
     let config = envy::from_env::<Config>()?;
     Ok(config)
 }
