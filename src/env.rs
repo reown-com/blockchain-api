@@ -61,6 +61,8 @@ fn default_pokt_supported_chains() -> HashMap<String, String> {
         ),
         // Avax C-Chain
         ("eip155:43114".into(), "avax-mainnet".into()),
+        // Gnosis
+        ("eip155:100".into(), "poa-xdai".into()),
     ])
 }
 
