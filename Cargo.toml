@@ -31,8 +31,8 @@ prometheus-core = { package = "prometheus", version = "0.13" }
 thiserror = "1.0"
 tracing = "0.1"
 
-common = { git = "ssh://git@github.com/WalletConnect/rs-common.git", tag = "v0.1.1" }
-cerberus = { git = "ssh://git@github.com/WalletConnect/cerberus.git", tag = "v0.1.2" }
+common = { git = "https://github.com/WalletConnect/rs-common.git", tag = "v0.1.1" }
+cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.1.2" }
 
 [build-dependencies]
 build-info-build = "0.0.27"

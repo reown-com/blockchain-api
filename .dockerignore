@@ -1,0 +1,8 @@
+*
+!crate
+!src
+!build.rs
+!xtask
+!Cargo.*
+!.git
+!bin

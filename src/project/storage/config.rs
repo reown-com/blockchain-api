@@ -20,10 +20,13 @@ impl Default for Config {
 }
 
 impl Config {
-    pub fn project_data_redis_addr(&self) -> RedisAddr {
-        RedisAddr::from((
+    pub fn project_data_redis_addr(&self) -> Option<RedisAddr> {
+        match (
             &self.project_data_redis_addr_read,
             &self.project_data_redis_addr_write,
-        ))
+        ) {
+            (None, None) => None,
+            (addr_read, addr_write) => Some(RedisAddr::from((addr_read, addr_write))),
+        }
     }
 }

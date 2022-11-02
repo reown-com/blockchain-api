@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use cerberus::registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult};
 use common::metrics::AppMetrics;
-use common::storage::{redis, StorageError, StorageResult};
+use common::storage::{redis, StorageError};
 
 pub use config::*;
 pub use error::*;
@@ -23,7 +23,7 @@ pub mod storage;
 #[derive(Debug, Clone)]
 pub struct Registry {
     client: RegistryHttpClient,
-    cache: ProjectStorage,
+    cache: Option<ProjectStorage>,
     metrics: ProjectDataMetrics,
 }
 
@@ -48,15 +48,19 @@ impl Registry {
 
         let metrics = ProjectDataMetrics::new(&AppMetrics::new(crate::PROXY_METRICS_NAME));
 
-        let cache = open_redis(
-            &cfg_storage.project_data_redis_addr(),
-            cfg_storage.redis_max_connections,
-        )?;
-        let cache = ProjectStorage::new(
-            cache,
-            cfg_registry.project_data_cache_ttl(),
-            metrics.clone(),
-        );
+        let cache_addr = cfg_storage.project_data_redis_addr();
+        let cache = match cache_addr {
+            None => None,
+            Some(cache_addr) => {
+                let cache = open_redis(&cache_addr, cfg_storage.redis_max_connections)?;
+
+                Some(ProjectStorage::new(
+                    cache,
+                    cfg_registry.project_data_cache_ttl(),
+                    metrics.clone(),
+                ))
+            }
+        };
 
         Ok(Self {
             client,
@@ -76,10 +80,14 @@ impl Registry {
         &self,
         id: &str,
     ) -> RpcResult<(ResponseSource, ProjectDataResult)> {
-        let data = self.fetch_cache(id).await?;
+        if let Some(cache) = &self.cache {
+            let time = Instant::now();
+            let data = cache.fetch(id).await?;
+            self.metrics.fetch_cache_time(time.elapsed());
 
-        if let Some(data) = data {
-            return Ok((ResponseSource::Cache, data));
+            if let Some(data) = data {
+                return Ok((ResponseSource::Cache, data));
+            }
         }
 
         let data = self.fetch_registry(id).await;
@@ -94,17 +102,11 @@ impl Registry {
             Err(err) => return Err(err.into()),
         };
 
-        self.cache.set(id, &data).await;
+        if let Some(cache) = &self.cache {
+            cache.set(id, &data).await;
+        }
 
         Ok((ResponseSource::Registry, data))
-    }
-
-    async fn fetch_cache(&self, id: &str) -> StorageResult<Option<ProjectDataResult>> {
-        let time = Instant::now();
-        let data = self.cache.fetch(id).await;
-        self.metrics.fetch_cache_time(time.elapsed());
-
-        data
     }
 
     async fn fetch_registry(&self, id: &str) -> RegistryResult<Option<ProjectData>> {

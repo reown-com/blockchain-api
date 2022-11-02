@@ -229,7 +229,7 @@ dependencies = [
 [[package]]
 name = "cerberus"
 version = "0.2.0"
-source = "git+ssh://git@github.com/WalletConnect/cerberus.git?tag=v0.1.2#835a7178d7d7a7ea5e3b521163586fb072cd7e1d"
+source = "git+https://github.com/WalletConnect/cerberus.git?tag=v0.1.2#835a7178d7d7a7ea5e3b521163586fb072cd7e1d"
 dependencies = [
  "async-trait",
  "once_cell",
@@ -278,7 +278,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.1"
-source = "git+ssh://git@github.com/WalletConnect/rs-common.git?tag=v0.1.1#db6abda5584509897e47b2c08932b4c9e8bc4b03"
+source = "git+https://github.com/WalletConnect/rs-common.git?tag=v0.1.1#db6abda5584509897e47b2c08932b4c9e8bc4b03"
 dependencies = [
  "anyhow",
  "async-trait",
