@@ -41,3 +41,24 @@ variable "pokt_project_id" {
 variable "prometheus_endpoint" {
   type = string
 }
+
+variable "registry_api_endpoint" {
+  type = string
+}
+
+variable "registry_api_auth_token" {
+  type      = string
+  sensitive = true
+}
+
+variable "project_data_cache_ttl" {
+  type = number
+}
+
+variable "project_data_redis_endpoint_read" {
+  type = string
+}
+
+variable "project_data_redis_endpoint_write" {
+  type = string
+}
