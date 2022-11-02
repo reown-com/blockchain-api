@@ -49,6 +49,17 @@ pub fn field_validation_error(
     .into_response()
 }
 
+pub fn handshake_error(field: impl Into<String>, description: impl Into<String>) -> Response<Body> {
+    new_error_response(
+        vec![ErrorReason {
+            field: field.into(),
+            description: description.into(),
+        }],
+        StatusCode::FORBIDDEN,
+    )
+    .into_response()
+}
+
 #[derive(serde::Serialize)]
 pub struct SuccessResponse {
     status: String,

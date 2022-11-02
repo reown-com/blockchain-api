@@ -4,6 +4,11 @@
 
 ### Docker
 
-`docker build . --tag rpc-proxy:`
-
-`docker run -p 3000:3000 -e INFURA_PROJECT_ID=<some id> --name rpc -it rpc-proxy`
+```console
+$ docker build . --tag rpc-proxy:
+$ docker run -p 3000:3000 \
+    -e INFURA_PROJECT_ID=<some_id> \
+    -e REGISTRY_API_URL=<registry_url> \
+    -e REGISTRY_API_AUTH_TOKEN=<token> \
+    --name rpc -it rpc-proxy
+```

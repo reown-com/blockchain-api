@@ -17,17 +17,22 @@ tap = "1.0"
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde_piecewise_default = "0.2"
 
 dotenv = "0.15.0"
 envy = "0.4"
 
 build-info = "0.0.27"
 
-prometheus-core = { package = "prometheus", version = "0.13" }
+anyhow = "1"
 opentelemetry = { version = "0.17.0", features = ["trace", "metrics", "rt-tokio"] }
 opentelemetry-prometheus = "0.10.0"
-tracing = "0.1"
+prometheus-core = { package = "prometheus", version = "0.13" }
 thiserror = "1.0"
+tracing = "0.1"
+
+common = { git = "ssh://git@github.com/WalletConnect/rs-common.git", tag = "v0.1.1" }
+cerberus = { git = "ssh://git@github.com/WalletConnect/cerberus.git", tag = "v0.1.2" }
 
 [build-dependencies]
 build-info-build = "0.0.27"

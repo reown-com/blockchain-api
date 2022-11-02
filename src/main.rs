@@ -1,32 +1,34 @@
+use std::{net::SocketAddr, sync::Arc};
+
+use build_info::BuildInfo;
+use dotenv::dotenv;
+use hyper::Client;
+use hyper_tls::HttpsConnector;
+use opentelemetry::metrics::MeterProvider;
+use tracing::info;
+use warp::Filter;
+
+use crate::env::Config;
+use crate::project::Registry;
+use crate::providers::ProviderRepository;
+use crate::providers::{InfuraProvider, PoktProvider};
+use crate::state::Metrics;
+use crate::state::State;
+
 mod env;
 mod error;
 mod handlers;
+mod project;
 mod providers;
 mod state;
 
-use crate::env::Config;
-use crate::state::Metrics;
-use build_info::BuildInfo;
-use dotenv::dotenv;
-use opentelemetry::metrics::MeterProvider;
-use std::net::SocketAddr;
-use std::sync::Arc;
-use tracing::info;
-
-use crate::providers::ProviderRepository;
-use crate::providers::{InfuraProvider, PoktProvider};
-use crate::state::State;
-
-use warp::Filter;
-
-use hyper::Client;
-use hyper_tls::HttpsConnector;
+const PROXY_METRICS_NAME: &str = "rpc_proxy";
 
 #[tokio::main]
 async fn main() -> error::RpcResult<()> {
     dotenv().ok();
     let config =
-        env::get_config().expect("Failed to load config, please ensure all env vars are defined.");
+        Config::from_env().expect("Failed to load config, please ensure all env vars are defined.");
 
     let prometheus_exporter = opentelemetry_prometheus::exporter().init();
     let meter = prometheus_exporter
@@ -61,15 +63,20 @@ async fn main() -> error::RpcResult<()> {
         },
     );
 
-    let port = state.config.port;
-    let host = state.config.host.clone();
+    let port = state.config.server.port;
+    let host = state.config.server.host.clone();
     let build_version = state.build_info.crate_info.version.clone();
 
     let state_arc = Arc::new(state);
-    let infura_project_id = state_arc.config.infura_project_id.clone();
-    let infura_supported_chains = state_arc.config.infura_supported_chains.clone();
-    let pokt_project_id = state_arc.config.pokt_project_id.clone();
-    let pokt_supported_chains = state_arc.config.pokt_supported_chains.clone();
+    let infura_project_id = state_arc.config.infura.project_id.clone();
+    let infura_supported_chains = state_arc.config.infura.supported_chains.clone();
+    let pokt_project_id = state_arc.config.pokt.project_id.clone();
+    let pokt_supported_chains = state_arc.config.pokt.supported_chains.clone();
+
+    let registry = Registry::new(&state_arc.config.registry, &state_arc.config.storage)?;
+    let registry = Arc::new(registry);
+    let registry_filter = warp::any().map(move || registry.clone());
+
     let state_filter = warp::any().map(move || state_arc.clone());
 
     let health = warp::get()
@@ -111,10 +118,12 @@ async fn main() -> error::RpcResult<()> {
             "solana-client",
         ])
         .allow_methods(vec!["GET", "POST"]);
+
     let proxy = warp::any()
         .and(warp::path!("v1"))
         .and(state_filter.clone())
         .and(provider_filter.clone())
+        .and(registry_filter)
         .and(warp::method())
         .and(warp::path::full())
         .and(warp::filters::query::query())

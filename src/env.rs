@@ -1,21 +1,67 @@
-use crate::error;
-use serde::Deserialize;
 use std::collections::HashMap;
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct Config {
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
+
+use crate::error;
+use crate::project::storage::Config as StorageConfig;
+use crate::project::Config as RegistryConfig;
+
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct ServerConfig {
     #[serde(default = "default_host")]
     pub host: String,
     #[serde(default = "default_port")]
     pub port: u16,
     #[serde(default = "default_log_level")]
     pub log_level: String,
-    pub infura_project_id: String,
-    pub pokt_project_id: String,
+}
+
+// #############################################################################
+
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct InfuraConfig {
+    pub project_id: String,
+
     #[serde(default = "default_infura_supported_chains")]
-    pub infura_supported_chains: HashMap<String, String>,
+    pub supported_chains: HashMap<String, String>,
+}
+
+// #############################################################################
+
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct PoktConfig {
+    pub project_id: String,
+
     #[serde(default = "default_pokt_supported_chains")]
-    pub pokt_supported_chains: HashMap<String, String>,
+    pub supported_chains: HashMap<String, String>,
+}
+
+// #############################################################################
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Config {
+    pub server: ServerConfig,
+    pub infura: InfuraConfig,
+    pub pokt: PoktConfig,
+    pub registry: RegistryConfig,
+    pub storage: StorageConfig,
+}
+
+impl Config {
+    pub fn from_env() -> error::RpcResult<Config> {
+        Ok(Self {
+            server: from_env("")?,
+            infura: from_env("INFURA_")?,
+            pokt: from_env("POKT_")?,
+            registry: from_env("REGISTRY_")?,
+            storage: from_env("STORAGE_")?,
+        })
+    }
+}
+
+fn from_env<T: DeserializeOwned>(prefix: &str) -> Result<T, envy::Error> {
+    envy::prefixed(prefix).from_env()
 }
 
 fn default_port() -> u16 {
@@ -64,9 +110,4 @@ fn default_pokt_supported_chains() -> HashMap<String, String> {
         // Gnosis
         ("eip155:100".into(), "poa-xdai".into()),
     ])
-}
-
-pub fn get_config() -> error::RpcResult<Config> {
-    let config = envy::from_env::<Config>()?;
-    Ok(config)
 }
