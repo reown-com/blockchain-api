@@ -45,7 +45,14 @@ async fn main() -> error::RpcResult<()> {
         .init();
     let http_call_counter_arc = Arc::new(http_call_counter.clone());
 
-    let state = state::new_state(config, prometheus_exporter, Metrics { rpc_call_counter, http_call_counter });
+    let state = state::new_state(
+        config,
+        prometheus_exporter,
+        Metrics {
+            rpc_call_counter,
+            http_call_counter,
+        },
+    );
 
     let port = state.config.port;
     let host = state.config.host.clone();
@@ -111,11 +118,14 @@ async fn main() -> error::RpcResult<()> {
         .with(warp::log::custom(move |info| {
             let status = info.status().as_u16();
             let latency = info.elapsed().as_secs_f64();
-            http_call_counter_arc.add(1, &[
-                opentelemetry::KeyValue::new("code", i64::from(status)),
-                opentelemetry::KeyValue::new("latency", latency),
-                opentelemetry::KeyValue::new("route", "proxy"),
-            ])
+            http_call_counter_arc.add(
+                1,
+                &[
+                    opentelemetry::KeyValue::new("code", i64::from(status)),
+                    opentelemetry::KeyValue::new("latency", latency),
+                    opentelemetry::KeyValue::new("route", "proxy"),
+                ],
+            )
         }));
 
     let routes = warp::any()
