@@ -11,6 +11,7 @@ pub struct State {
 
 pub struct Metrics {
     pub rpc_call_counter: Counter<u64>,
+    pub http_call_counter: Counter<u64>,
 }
 
 build_info::build_info!(fn build_info);
