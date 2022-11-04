@@ -132,7 +132,13 @@ async fn main() -> error::RpcResult<()> {
                     opentelemetry::KeyValue::new("route", "proxy"),
                 ],
             );
-            http_latency_tracker_arc.add(latency, &[opentelemetry::KeyValue::new("route", "proxy")])
+            http_latency_tracker_arc.add(
+                latency,
+                &[
+                    opentelemetry::KeyValue::new("code", i64::from(status)),
+                    opentelemetry::KeyValue::new("route", "proxy"),
+                ],
+            )
         }));
 
     let routes = warp::any()
