@@ -43,7 +43,14 @@ async fn main() -> error::RpcResult<()> {
         .u64_counter("http_call_counter")
         .with_description("The number of http calls served")
         .init();
+
+    let http_latency_tracker = meter
+        .f64_counter("http_latency_tracker")
+        .with_description("The http call latency")
+        .init();
+
     let http_call_counter_arc = Arc::new(http_call_counter.clone());
+    let http_latency_tracker_arc = Arc::new(http_latency_tracker.clone());
 
     let state = state::new_state(
         config,
@@ -122,10 +129,10 @@ async fn main() -> error::RpcResult<()> {
                 1,
                 &[
                     opentelemetry::KeyValue::new("code", i64::from(status)),
-                    opentelemetry::KeyValue::new("latency", latency),
                     opentelemetry::KeyValue::new("route", "proxy"),
                 ],
-            )
+            );
+            http_latency_tracker_arc.add(latency, &[opentelemetry::KeyValue::new("route", "proxy")])
         }));
 
     let routes = warp::any()
