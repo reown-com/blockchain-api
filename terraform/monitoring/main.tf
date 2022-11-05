@@ -469,6 +469,8 @@ resource "grafana_dashboard" "at_a_glance" {
             }
           },
           "mappings": [],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -511,7 +513,7 @@ resource "grafana_dashboard" "at_a_glance" {
             "uid": "${grafana_data_source.prometheus.uid}"
           },
           "exemplar": false,
-          "expr": "sum(rate(http_call_counter{aws_ecs_task_family=\"${var.environment}_rpc-proxy\",code=~\"2.+\"}[15m]))",
+          "expr": "sum(rate(http_call_counter{aws_ecs_task_family=\"${var.environment}_rpc-proxy\",code=~\"5.+\"}[5m])) or vector(0)",
           "hide": true,
           "interval": "",
           "legendFormat": "",
@@ -523,7 +525,7 @@ resource "grafana_dashboard" "at_a_glance" {
             "uid": "${grafana_data_source.prometheus.uid}"
           },
           "exemplar": true,
-          "expr": "sum(rate(http_call_counter{aws_ecs_task_family=\"${var.environment}_rpc-proxy\"}[15m]))",
+          "expr": "sum(rate(http_call_counter{aws_ecs_task_family=\"${var.environment}_rpc-proxy\"}[5m]))",
           "hide": true,
           "interval": "",
           "legendFormat": "",
@@ -534,12 +536,25 @@ resource "grafana_dashboard" "at_a_glance" {
             "type": "__expr__",
             "uid": "__expr__"
           },
-          "expression": "($A/$B)*100",
+          "expression": "(1-(($A+$C)/$B))*100",
           "hide": false,
-          "refId": "C",
+          "refId": "Availability",
           "type": "math"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${grafana_data_source.prometheus.uid}"
+          },
+          "exemplar": true,
+          "expr": "sum(rate(http_call_counter{aws_ecs_task_family=\"${var.environment}_rpc-proxy\",code=\"429\"}[5m])) or vector(0)",
+          "hide": true,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "C"
         }
       ],
+      "thresholds": [],
       "title": "Availability",
       "type": "timeseries"
     }
