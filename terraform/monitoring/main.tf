@@ -548,9 +548,121 @@ resource "grafana_dashboard" "at_a_glance" {
       "thresholds": [],
       "title": "Availability",
       "type": "timeseries"
+    },
+
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${grafana_data_source.prometheus.uid}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 9,
+        "x": 0,
+        "y": 0
+      },
+      "id": 50,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${grafana_data_source.prometheus.uid}"
+          },
+          "exemplar": true,
+          "expr": "sum by (status_code)(rate(http_requests_total{aws_ecs_task_family=\"${var.environment}_eu-central-1_rpc_proxy\",route_name=\"unicast\"}[5m]))",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${grafana_data_source.prometheus.uid}"
+          },
+          "exemplar": true,
+          "expr": "sum by (status_code)(rate(http_requests_total{aws_ecs_task_family=\"${var.environment}_us-east-1_rpc_proxy\",route_name=\"unicast\"}[5m]))",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${grafana_data_source.prometheus.uid}"
+          },
+          "exemplar": true,
+          "expr": "sum by (status_code)(rate(http_requests_total{aws_ecs_task_family=\"${var.environment}_ap-southeast-1_rpc_proxy\",route_name=\"unicast\"}[5m]))",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "C"
+        }
+      ],
+      "title": "Registry Requests by Status Code",
+      "type": "timeseries"
     }
   ],
-  "schemaVersion": 35,
+  "schemaVersion": 36,
   "style": "dark",
   "tags": [],
   "templating": {
