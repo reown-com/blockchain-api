@@ -51,11 +51,11 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> error::RpcResult<Config> {
         Ok(Self {
-            server: from_env("")?,
-            infura: from_env("INFURA_")?,
-            pokt: from_env("POKT_")?,
-            registry: from_env("REGISTRY_")?,
-            storage: from_env("STORAGE_")?,
+            server: from_env("RPC_PROXY_")?,
+            infura: from_env("RPC_PROXY_INFURA_")?,
+            pokt: from_env("RPC_PROXY_POKT_")?,
+            registry: from_env("RPC_PROXY_REGISTRY_")?,
+            storage: from_env("RPC_PROXY_STORAGE_")?,
         })
     }
 }
