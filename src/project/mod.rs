@@ -38,13 +38,13 @@ impl Registry {
         let api_url = &cfg_registry.api_url;
         let api_auth_token = &cfg_registry.api_auth_token;
 
-        let client = if let (Some(api_url), Some(api_auth_token)) = (api_url, api_auth_token) {
-            RegistryHttpClient::new(api_url, api_auth_token)?
-        } else {
+        let (Some(api_url), Some(api_auth_token)) = (api_url, api_auth_token) else {
             return Err(RpcError::InvalidConfiguration(
                 "missing registry api parameters".to_string(),
             ));
         };
+
+        let client = RegistryHttpClient::new(api_url, api_auth_token)?;
 
         let metrics = ProjectDataMetrics::new(&AppMetrics::new(crate::PROXY_METRICS_NAME));
 
