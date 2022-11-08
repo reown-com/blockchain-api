@@ -54,6 +54,8 @@ async fn main() -> error::RpcResult<()> {
     let http_call_counter_arc = Arc::new(http_call_counter.clone());
     let http_latency_tracker_arc = Arc::new(http_latency_tracker.clone());
 
+    let registry = Registry::new(&config.registry, &config.storage)?;
+
     let state = state::new_state(
         config,
         prometheus_exporter,
@@ -61,6 +63,7 @@ async fn main() -> error::RpcResult<()> {
             rpc_call_counter,
             http_call_counter,
         },
+        registry,
     );
 
     let port = state.config.server.port;
@@ -72,10 +75,6 @@ async fn main() -> error::RpcResult<()> {
     let infura_supported_chains = state_arc.config.infura.supported_chains.clone();
     let pokt_project_id = state_arc.config.pokt.project_id.clone();
     let pokt_supported_chains = state_arc.config.pokt.supported_chains.clone();
-
-    let registry = Registry::new(&state_arc.config.registry, &state_arc.config.storage)?;
-    let registry = Arc::new(registry);
-    let registry_filter = warp::any().map(move || registry.clone());
 
     let state_filter = warp::any().map(move || state_arc.clone());
 
@@ -123,7 +122,6 @@ async fn main() -> error::RpcResult<()> {
         .and(warp::path!("v1"))
         .and(state_filter.clone())
         .and(provider_filter.clone())
-        .and(registry_filter)
         .and(warp::method())
         .and(warp::path::full())
         .and(warp::filters::query::query())

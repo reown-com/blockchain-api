@@ -4,17 +4,14 @@ use tap::TapFallible;
 use tracing::warn;
 
 use crate::handlers::{handshake_error, RpcQueryParams};
-use crate::project::Registry;
 use crate::providers::ProviderRepository;
 use crate::State;
 
 use super::field_validation_error;
 
-#[allow(clippy::too_many_arguments)]
 pub async fn handler(
     state: Arc<State>,
     provider_repo: ProviderRepository,
-    registry: Arc<Registry>,
     method: hyper::http::Method,
     path: warp::path::FullPath,
     query_params: RpcQueryParams,
@@ -28,7 +25,7 @@ pub async fn handler(
         ));
     }
 
-    match registry.project_data(&query_params.project_id).await {
+    match state.registry.project_data(&query_params.project_id).await {
         Ok(project) => {
             if let Err(access_err) = project.validate_access(&query_params.project_id, None) {
                 return Ok(handshake_error("projectId", format!("{access_err}")));
