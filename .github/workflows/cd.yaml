@@ -35,6 +35,7 @@ env:
   IMAGE_NAME: 'rpc-proxy'
   TF_VAR_infura_project_id: ${{ secrets.INFURA_PROJECT_ID }}
   TF_VAR_pokt_project_id: ${{ secrets.POKT_PROJECT_ID }}
+  TF_VAR_registry_api_auth_token: ${{ secrets.REGISTRY_API_AUTH_TOKEN }}
 
 jobs:
   deploy-infra-staging:
@@ -73,7 +74,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-central-1
-      - uses: aws-actions/amazon-ecr-login@v1      
+      - uses: aws-actions/amazon-ecr-login@v1
         id: login-ecr
       - id: deploy
         env:
@@ -120,7 +121,7 @@ jobs:
     if: ${{ always() && inputs.deploy_infra && needs.validate.result == 'success' && (needs.deployment_windows.outputs.result == 'yes' || github.event_name == 'workflow_dispatch') }}
     needs: [validate, deployment_windows]
     runs-on: ubuntu-latest
-    environment: 
+    environment:
       name: infra/prod
       url: https://rpc.walletconnect.com/health
     steps:
@@ -147,7 +148,7 @@ jobs:
     if: ${{ always() && inputs.deploy_app && needs.validate.result == 'success' && (needs.deployment_windows.outputs.result == 'yes' || github.event_name == 'workflow_dispatch') }}
     needs: [validate, deployment_windows]
     runs-on: ubuntu-latest
-    environment: 
+    environment:
       name: app/prod
       url: https://rpc.walletconnect.com/health
     steps:
@@ -156,7 +157,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-central-1
-      - uses: aws-actions/amazon-ecr-login@v1      
+      - uses: aws-actions/amazon-ecr-login@v1
         id: login-ecr
       - id: deploy
         env:
