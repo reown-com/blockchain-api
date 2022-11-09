@@ -273,20 +273,18 @@ resource "aws_security_group" "tls_ingess" {
   description = "Allow tls ingress from everywhere"
   vpc_id      = data.aws_vpc.vpc.id
 
-  ingress {
-    description = "${var.app_name} - TLS from everywhere"
+  ingress { #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    #tfsec:ignore:aws-vpc-no-public-ingress-sgr
+    #tfsec:ignore:aws-ec2-no-public-ingress-sgr
     cidr_blocks = ["0.0.0.0/0"] # Allowing traffic in from all sources
   }
 
-  egress {
-    description = "${var.app_name} - Allow all egress"
-    from_port   = 0    # Allowing any incoming port
-    to_port     = 0    # Allowing any outgoing port
-    protocol    = "-1" # Allowing any outgoing protocol
+  egress { #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
+    from_port   = 0             # Allowing any incoming port
+    to_port     = 0             # Allowing any outgoing port
+    protocol    = "-1"          # Allowing any outgoing protocol
     #tfsec:ignore:aws-ec2-no-public-egress-sgr
     cidr_blocks = ["0.0.0.0/0"] # Allowing traffic out to all IP addresses
   }
@@ -297,23 +295,22 @@ resource "aws_security_group" "vpc_app_ingress" {
   description = "Allow app port ingress from vpc"
   vpc_id      = data.aws_vpc.vpc.id
 
-  ingress {
-    description = "${var.app_name} - App from VPC"
+  ingress { #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
     from_port   = var.port
     to_port     = var.port
     protocol    = "tcp"
     cidr_blocks = [data.aws_vpc.vpc.cidr_block]
   }
 
-  egress {
-    description = "${var.app_name} - App to VPC"
-    from_port   = 0    # Allowing any incoming port
-    to_port     = 0    # Allowing any outgoing port
-    protocol    = "-1" # Allowing any outgoing protocol
+  egress { #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
+    from_port   = 0             # Allowing any incoming port
+    to_port     = 0             # Allowing any outgoing port
+    protocol    = "-1"          # Allowing any outgoing protocol
     #tfsec:ignore:aws-ec2-no-public-egress-sgr
     cidr_blocks = ["0.0.0.0/0"] # Allowing traffic out to all IP addresses
   }
 }
+
 
 # DNS Records
 resource "aws_route53_record" "dns_load_balancer" {
