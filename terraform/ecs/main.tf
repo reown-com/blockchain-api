@@ -48,68 +48,67 @@ resource "aws_ecs_cluster" "app_cluster" {
 
 # ECS Task definition
 resource "aws_ecs_task_definition" "app_task" {
-  family                   = var.app_name
-  container_definitions    = <<DEFINITION
-  [
+  family = var.app_name
+  container_definitions = jsonencode([
     {
-      "name": "${var.app_name}",
-      "environment" : [
-          { "name" : "INFURA_PROJECT_ID", "value" : "${var.infura_project_id}" },
-          { "name" : "POKT_PROJECT_ID", "value" : "${var.pokt_project_id}" }
+      name : var.app_name,
+      environment : [
+        { name : "INFURA_PROJECT_ID", value : tostring(var.infura_project_id) },
+        { name : "POKT_PROJECT_ID", value : tostring(var.pokt_project_id) },
 
-          { "name" : "REGISTRY_API_URL", "value" : "${var.registry_api_endpoint}" },
-          { "name" : "REGISTRY_API_AUTH_TOKEN", "value" : "${var.registry_api_auth_token}" },
-          { "name" : "REGISTRY_PROJECT_DATA_CACHE_TTL", "value" : "${var.project_data_cache_ttl}" },
-          { "name" : "STORAGE_REDIS_MAX_CONNECTIONS", "value" : "${local.REDIS_MAX_CONNECTIONS}" },
-          { "name" : "STORAGE_PROJECT_DATA_REDIS_ADDR_READ", "value" : "redis://${var.project_data_redis_endpoint_read}/0" },
-          { "name" : "STORAGE_PROJECT_DATA_REDIS_ADDR_WRITE", "value" : "redis://${var.project_data_redis_endpoint_write}/0" },
+        { name : "REGISTRY_API_URL", value : var.registry_api_endpoint },
+        { name : "REGISTRY_API_AUTH_TOKEN", value : var.registry_api_auth_token },
+        { name : "REGISTRY_PROJECT_DATA_CACHE_TTL", value : tostring(var.project_data_cache_ttl) },
+        { name : "STORAGE_REDIS_MAX_CONNECTIONS", value : tostring(local.REDIS_MAX_CONNECTIONS) },
+        { name : "STORAGE_PROJECT_DATA_REDIS_ADDR_READ", value : "redis://${var.project_data_redis_endpoint_read}/0" },
+        { name : "STORAGE_PROJECT_DATA_REDIS_ADDR_WRITE", value : "redis://${var.project_data_redis_endpoint_write}/0" }
       ],
-      "image": "${var.ecr_repository_url}",
-      "essential": true,
-      "portMappings": [
+      image : var.ecr_repository_url,
+      essential : true,
+      portMappings : [
         {
-          "containerPort": ${var.port},
-          "hostPort": ${var.port}
+          containerPort : var.port,
+          hostPort : var.port
         }
       ],
-      "memory": 512,
-      "cpu": 256,
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "${aws_cloudwatch_log_group.cluster_logs.name}",
-          "awslogs-region": "${var.region}",
-          "awslogs-stream-prefix": "ecs"
+      memory : 512,
+      cpu : 256,
+      logConfiguration : {
+        logDriver : "awslogs",
+        options : {
+          "awslogs-group" : aws_cloudwatch_log_group.cluster_logs.name,
+          "awslogs-region" : var.region,
+          "awslogs-stream-prefix" : "ecs"
         }
       },
-      "dependsOn": [{
-        "containerName": "aws-otel-collector",
-        "condition": "START"
+      dependsOn : [{
+        containerName : "aws-otel-collector",
+        condition : "START"
       }]
     },
     {
-      "name": "aws-otel-collector",
-      "image": "public.ecr.aws/aws-observability/aws-otel-collector:latest",
-      "environment" : [
-          { "name" : "AWS_PROMETHEUS_SCRAPING_ENDPOINT", "value" : "0.0.0.0:${var.port}" },
-          { "name" : "AWS_PROMETHEUS_ENDPOINT", "value" : "${var.prometheus_endpoint}api/v1/remote_write" }
+      name : "aws-otel-collector",
+      image : "public.ecr.aws/aws-observability/aws-otel-collector:latest",
+      environment : [
+        { name : "AWS_PROMETHEUS_SCRAPING_ENDPOINT", value : "0.0.0.0:${var.port}" },
+        { name : "AWS_PROMETHEUS_ENDPOINT", value : "${var.prometheus_endpoint}api/v1/remote_write" }
       ],
-      "essential": true,
-      "command": [
+      essential : true,
+      command : [
         "--config=/etc/ecs/ecs-amp-prometheus.yaml"
       ],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-create-group": "True",
-          "awslogs-group": "/ecs/${var.app_name}-ecs-aws-otel-sidecar-collector",
-          "awslogs-region": "${var.region}",
-          "awslogs-stream-prefix": "ecs"
+      logConfiguration : {
+        logDriver : "awslogs",
+        options : {
+          "awslogs-create-group" : "True",
+          "awslogs-group" : "/ecs/${var.app_name}-ecs-aws-otel-sidecar-collector",
+          "awslogs-region" : var.region,
+          "awslogs-stream-prefix" : "ecs"
         }
       }
     }
-  ]
-  DEFINITION
+  ])
+
   requires_compatibilities = ["FARGATE"] # Stating that we are using ECS Fargate
   network_mode             = "awsvpc"    # Using awsvpc as our network mode as this is required for Fargate
   memory                   = 512         # Specifying the memory our container requires
@@ -274,17 +273,17 @@ resource "aws_security_group" "tls_ingess" {
   vpc_id      = data.aws_vpc.vpc.id
 
   ingress { #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
+    from_port = 443
+    to_port   = 443
+    protocol  = "tcp"
     #tfsec:ignore:aws-ec2-no-public-ingress-sgr
     cidr_blocks = ["0.0.0.0/0"] # Allowing traffic in from all sources
   }
 
-  egress { #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
-    from_port   = 0             # Allowing any incoming port
-    to_port     = 0             # Allowing any outgoing port
-    protocol    = "-1"          # Allowing any outgoing protocol
+  egress {           #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
+    from_port = 0    # Allowing any incoming port
+    to_port   = 0    # Allowing any outgoing port
+    protocol  = "-1" # Allowing any outgoing protocol
     #tfsec:ignore:aws-ec2-no-public-egress-sgr
     cidr_blocks = ["0.0.0.0/0"] # Allowing traffic out to all IP addresses
   }
@@ -302,10 +301,10 @@ resource "aws_security_group" "vpc_app_ingress" {
     cidr_blocks = [data.aws_vpc.vpc.cidr_block]
   }
 
-  egress { #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
-    from_port   = 0             # Allowing any incoming port
-    to_port     = 0             # Allowing any outgoing port
-    protocol    = "-1"          # Allowing any outgoing protocol
+  egress {           #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
+    from_port = 0    # Allowing any incoming port
+    to_port   = 0    # Allowing any outgoing port
+    protocol  = "-1" # Allowing any outgoing protocol
     #tfsec:ignore:aws-ec2-no-public-egress-sgr
     cidr_blocks = ["0.0.0.0/0"] # Allowing traffic out to all IP addresses
   }
