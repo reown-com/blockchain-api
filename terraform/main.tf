@@ -62,7 +62,7 @@ module "private_hosted_zone" {
 }
 
 locals {
-  zone_id = terraform.workspace == "prod" ? module.private_hosted_zone.zone_id[0] : null
+  zone_id = terraform.workspace == "prod" ? module.private_hosted_zone[0].zone_id : null
 }
 
 module "redis" {
