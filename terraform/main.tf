@@ -75,6 +75,8 @@ module "redis" {
   vpc_name   = "ops-${terraform.workspace}-vpc"
   zone_id    = local.zone_id
   zone_name  = local.private_zone_name
+
+  depends_on = [module.private_hosted_zone]
 }
 
 module "o11y" {
