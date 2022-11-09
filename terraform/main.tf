@@ -1,7 +1,8 @@
 locals {
-  app_name         = "rpc-proxy"
-  hosted_zone_name = "rpc.walletconnect.com"
-  fqdn             = terraform.workspace == "prod" ? local.hosted_zone_name : "${terraform.workspace}.${local.hosted_zone_name}"
+  app_name          = "rpc-proxy"
+  hosted_zone_name  = "rpc.walletconnect.com"
+  private_zone_name = "rpc.repl.internal"
+  fqdn              = terraform.workspace == "prod" ? local.hosted_zone_name : "${terraform.workspace}.${local.hosted_zone_name}"
 }
 
 # tflint-ignore: terraform_unused_declarations
@@ -57,7 +58,7 @@ module "private_hosted_zone" {
   count  = terraform.workspace == "prod" ? 1 : 0
   source = "./private_zone"
 
-  name     = "rpc.repl.internal"
+  name     = local.private_zone_name
   vpc_name = "ops-${terraform.workspace}-vpc"
 }
 
@@ -73,6 +74,7 @@ module "redis" {
   node_type  = "cache.m6g.large"
   vpc_name   = "ops-${terraform.workspace}-vpc"
   zone_id    = local.zone_id
+  zone_name  = local.private_zone_name
 }
 
 module "o11y" {
