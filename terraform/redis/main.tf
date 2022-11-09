@@ -16,11 +16,6 @@ data "aws_vpc" "vpc" {
   }
 }
 
-data "aws_route53_zone" "zone" {
-  count   = var.zone_id == null ? 0 : 1
-  zone_id = var.zone_id
-}
-
 # Providing a reference to our default subnets
 data "aws_subnets" "private_subnets" {
   filter {
@@ -35,7 +30,7 @@ data "aws_subnets" "private_subnets" {
 }
 
 locals {
-  zone_name = var.zone_id == null ? "local" : data.aws_route53_zone.zone[0].name
+  zone_name = var.zone_name == null ? "local" : var.zone_name
 }
 
 resource "aws_elasticache_cluster" "cache" {
