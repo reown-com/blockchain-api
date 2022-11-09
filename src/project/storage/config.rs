@@ -1,4 +1,4 @@
-use common::storage::redis::Addr as RedisAddr;
+use crate::storage::redis::Addr as RedisAddr;
 use serde::Deserialize;
 use serde_piecewise_default::DeserializePiecewiseDefault;
 

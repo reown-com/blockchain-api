@@ -1,5 +1,8 @@
-use {common::metrics::AppMetrics, opentelemetry::metrics::ValueRecorder, std::time::Duration};
-use {opentelemetry::metrics::Counter, opentelemetry::KeyValue};
+use opentelemetry::metrics::Counter;
+use opentelemetry::metrics::Meter;
+use opentelemetry::metrics::ValueRecorder;
+use opentelemetry::KeyValue;
+use std::time::Duration;
 
 use crate::project::error::ProjectDataError;
 use crate::project::storage::ProjectDataResult;
@@ -16,27 +19,23 @@ pub struct ProjectDataMetrics {
 }
 
 impl ProjectDataMetrics {
-    pub fn new(app_metrics: &AppMetrics) -> Self {
-        let requests_total = app_metrics
-            .meter()
+    pub fn new(meter: &Meter) -> Self {
+        let requests_total = meter
             .u64_counter(create_counter_name("requests_total"))
             .with_description("Total number of project data requests")
             .init();
 
-        let registry_api_time = app_metrics
-            .meter()
+        let registry_api_time = meter
             .f64_value_recorder(create_counter_name("registry_api_time"))
             .with_description("Average latency of the registry API fetching")
             .init();
 
-        let local_cache_time = app_metrics
-            .meter()
+        let local_cache_time = meter
             .f64_value_recorder(create_counter_name("local_cache_time"))
             .with_description("Average latency of the local cache fetching")
             .init();
 
-        let total_time = app_metrics
-            .meter()
+        let total_time = meter
             .f64_value_recorder(create_counter_name("total_time"))
             .with_description("Average total latency for project data fetching")
             .init();

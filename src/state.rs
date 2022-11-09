@@ -1,5 +1,6 @@
 use crate::project::Registry;
-use crate::{BuildInfo, Config};
+use crate::BuildInfo;
+use crate::Config;
 use opentelemetry::metrics::Counter;
 use opentelemetry_prometheus::PrometheusExporter;
 

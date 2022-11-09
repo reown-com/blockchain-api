@@ -1,10 +1,9 @@
 use cerberus::project::ProjectData;
+use opentelemetry::metrics::Meter;
 use std::sync::Arc;
 use std::time::Instant;
 
 use cerberus::registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult};
-use common::metrics::AppMetrics;
-use common::storage::{redis, StorageError};
 
 pub use config::*;
 pub use error::*;
@@ -13,6 +12,8 @@ use crate::error::{RpcError, RpcResult};
 use crate::project::metrics::ProjectDataMetrics;
 use crate::project::storage::ProjectStorage;
 use crate::project::storage::{Config as StorageConfig, ProjectDataResult};
+use crate::storage::error::StorageError;
+use crate::storage::redis;
 
 mod config;
 mod error;
@@ -34,7 +35,11 @@ pub enum ResponseSource {
 }
 
 impl Registry {
-    pub fn new(cfg_registry: &Config, cfg_storage: &StorageConfig) -> RpcResult<Self> {
+    pub fn new(
+        cfg_registry: &Config,
+        cfg_storage: &StorageConfig,
+        meter: &Meter,
+    ) -> RpcResult<Self> {
         let api_url = &cfg_registry.api_url;
         let api_auth_token = &cfg_registry.api_auth_token;
 
@@ -46,7 +51,7 @@ impl Registry {
 
         let client = RegistryHttpClient::new(api_url, api_auth_token)?;
 
-        let metrics = ProjectDataMetrics::new(&AppMetrics::new(crate::PROXY_METRICS_NAME));
+        let metrics = ProjectDataMetrics::new(meter);
 
         let cache_addr = cfg_storage.project_data_redis_addr();
         let cache = match cache_addr {

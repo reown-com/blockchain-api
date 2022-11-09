@@ -1,4 +1,5 @@
-use std::{net::SocketAddr, sync::Arc};
+use std::net::SocketAddr;
+use std::sync::Arc;
 
 use build_info::BuildInfo;
 use dotenv::dotenv;
@@ -21,8 +22,7 @@ mod handlers;
 mod project;
 mod providers;
 mod state;
-
-const PROXY_METRICS_NAME: &str = "rpc_proxy";
+mod storage;
 
 #[tokio::main]
 async fn main() -> error::RpcResult<()> {
@@ -54,7 +54,7 @@ async fn main() -> error::RpcResult<()> {
     let http_call_counter_arc = Arc::new(http_call_counter.clone());
     let http_latency_tracker_arc = Arc::new(http_latency_tracker.clone());
 
-    let registry = Registry::new(&config.registry, &config.storage)?;
+    let registry = Registry::new(&config.registry, &config.storage, &meter)?;
 
     let state = state::new_state(
         config,

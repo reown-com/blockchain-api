@@ -269,23 +269,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "common"
-version = "0.1.1"
-source = "git+https://github.com/WalletConnect/rs-common.git?tag=v0.1.1#db6abda5584509897e47b2c08932b4c9e8bc4b03"
-dependencies = [
- "anyhow",
- "async-trait",
- "deadpool-redis",
- "once_cell",
- "opentelemetry",
- "opentelemetry-prometheus",
- "prometheus",
- "rmp-serde",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "convert_case"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1460,7 +1443,7 @@ dependencies = [
  "build-info",
  "build-info-build",
  "cerberus",
- "common",
+ "deadpool-redis",
  "dotenv",
  "envy",
  "hyper",
@@ -1468,6 +1451,7 @@ dependencies = [
  "opentelemetry",
  "opentelemetry-prometheus",
  "prometheus",
+ "rmp-serde",
  "serde",
  "serde_json",
  "serde_piecewise_default",

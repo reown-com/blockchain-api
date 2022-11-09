@@ -1,5 +1,5 @@
+use crate::storage::error::StorageError;
 use cerberus::registry::RegistryError;
-use common::storage::StorageError;
 use serde::{Deserialize, Serialize};
 use thiserror::Error as ThisError;
 

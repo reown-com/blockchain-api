@@ -1,4 +1,5 @@
 use crate::project::ProjectDataError;
+use crate::storage::error::StorageError;
 use cerberus::registry::RegistryError;
 
 pub type RpcResult<T> = Result<T, RpcError>;
@@ -18,7 +19,7 @@ pub enum RpcError {
     RegistryError(#[from] RegistryError),
 
     #[error("Storage error")]
-    StorageError(#[from] common::storage::StorageError),
+    StorageError(#[from] StorageError),
 
     #[error("Chain not found despite previous validation")]
     ChainNotFound,

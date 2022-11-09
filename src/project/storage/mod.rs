@@ -2,14 +2,14 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use cerberus::project::ProjectData;
-use common::storage::{KeyValueStorage, StorageResult};
 use tap::TapFallible;
 use tracing::warn;
 
-pub use config::*;
-
 use crate::project::error::ProjectDataError;
 use crate::project::metrics::ProjectDataMetrics;
+
+use crate::storage::{KeyValueStorage, StorageResult};
+pub use config::*;
 
 mod config;
 
@@ -53,7 +53,7 @@ impl ProjectStorage {
     pub async fn set(&self, id: &str, data: &ProjectDataResult) {
         let cache_key = build_cache_key(id);
 
-        let serialized = common::storage::serialize(&data).unwrap(); //?;
+        let serialized = crate::storage::serialize(&data).unwrap(); //?;
         let cache = self.cache.clone();
         let cache_ttl = self.cache_ttl;
 

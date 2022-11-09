@@ -1,0 +1,236 @@
+use std::collections::HashSet;
+use std::fmt::Debug;
+use std::hash::Hash;
+use std::time::Duration;
+
+use async_trait::async_trait;
+use deadpool_redis::{
+    redis::{AsyncCommands, Value},
+    Config, Pool,
+};
+use serde::{de::DeserializeOwned, Serialize};
+
+use crate::storage::{
+    deserialize, serialize, Data, KeyValueStorage, SetStorage, StorageError, StorageResult,
+};
+
+const LOCAL_REDIS_ADDR: &str = "redis://localhost:6379/0";
+
+#[derive(Debug, Clone)]
+pub enum Addr<'a> {
+    Combined(&'a str),
+    Separate { read: &'a str, write: &'a str },
+}
+
+impl<'a> Default for Addr<'a> {
+    fn default() -> Self {
+        Self::Combined(LOCAL_REDIS_ADDR)
+    }
+}
+
+impl<'a> Addr<'a> {
+    pub fn read(&self) -> &str {
+        match self {
+            Self::Combined(addr) => addr,
+            Self::Separate { read, .. } => read,
+        }
+    }
+
+    pub fn write(&self) -> &str {
+        match self {
+            Self::Combined(addr) => addr,
+            Self::Separate { write, .. } => write,
+        }
+    }
+}
+
+impl<'a> From<(&'a Option<String>, &'a Option<String>)> for Addr<'a> {
+    fn from(val: (&'a Option<String>, &'a Option<String>)) -> Self {
+        match val {
+            (Some(read), Some(write)) => Self::Separate { read, write },
+            (Some(addr), None) => Self::Combined(addr),
+            (None, Some(addr)) => Self::Combined(addr),
+            _ => Default::default(),
+        }
+    }
+}
+
+/// A interface to interact with Redis cache.
+#[derive(Clone)]
+pub struct Redis {
+    read_pool: Pool,
+    write_pool: Pool,
+}
+
+impl Debug for Redis {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Redis").finish()
+    }
+}
+
+impl Redis {
+    /// Instantiate a new Redis.
+    pub fn new(addr: &Addr<'_>, pool_size: usize) -> StorageResult<Self> {
+        let get_pool = |cfg: Config| -> Result<_, StorageError> {
+            let pool = cfg
+                .builder()
+                .map_err(|e| StorageError::Other(e.into()))?
+                .max_size(pool_size)
+                .build()
+                .map_err(|e| StorageError::Other(e.into()))?;
+
+            Ok(pool)
+        };
+
+        let read_config = Config::from_url(addr.read());
+        let read_pool = get_pool(read_config)?;
+
+        let write_config = Config::from_url(addr.write());
+        let write_pool = get_pool(write_config)?;
+
+        Ok(Self {
+            read_pool,
+            write_pool,
+        })
+    }
+
+    /// Set a timeout on key.
+    /// After the timeout has expired, the key will automatically be deleted.
+    pub async fn set_ttl(&self, key: &str, ttl: Option<Duration>) -> StorageResult<()> {
+        if let Some(at) = ttl {
+            self.write_pool
+                .get()
+                .await
+                .map_err(|e| StorageError::Connection(e.into()))?
+                .expire::<_, usize>(key, at.as_millis() as usize)
+                .await
+                .map_err(|_| StorageError::SetExpiry)?;
+        }
+
+        Ok(())
+    }
+
+    async fn set_internal(
+        &self,
+        key: &str,
+        data: &[u8],
+        ttl: Option<Duration>,
+    ) -> StorageResult<()> {
+        let mut conn = self
+            .write_pool
+            .get()
+            .await
+            .map_err(|e| StorageError::Connection(e.into()))?;
+
+        let res_fut = if let Some(ttl) = ttl {
+            let ttl = ttl
+                .as_secs()
+                .try_into()
+                .map_err(|_| StorageError::SetExpiry)?;
+
+            conn.set_ex(key, data, ttl)
+        } else {
+            conn.set(key, data)
+        };
+
+        res_fut.await.map_err(|e| StorageError::Other(e.into()))?;
+
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl<T> SetStorage<T> for Redis
+where
+    T: Serialize + DeserializeOwned + Hash + PartialEq + Eq + Send + Sync + Clone + Debug,
+{
+    async fn sget(&self, key: &str) -> StorageResult<HashSet<T>> {
+        let entry: HashSet<Data> = self
+            .read_pool
+            .get()
+            .await
+            .map_err(|e| StorageError::Connection(e.into()))?
+            .smembers::<&str, HashSet<Data>>(key)
+            .await
+            .map_err(|e| StorageError::Other(e.into()))?;
+
+        entry
+            .into_iter()
+            .map(|data| deserialize(data.as_ref()))
+            .collect()
+    }
+
+    async fn sadd(&self, key: &str, values: &[&T], ttl: Option<Duration>) -> StorageResult<()> {
+        let values: Result<Vec<_>, _> = values.iter().map(serialize).collect();
+        let values = values?;
+
+        self.write_pool
+            .get()
+            .await
+            .map_err(|e| StorageError::Connection(e.into()))?
+            .sadd::<&str, Vec<Data>, ()>(key, values)
+            .await
+            .map_err(|e| StorageError::Other(e.into()))?;
+
+        self.set_ttl(key, ttl).await?;
+
+        Ok(())
+    }
+
+    async fn srem(&self, key: &str, value: &T) -> StorageResult<()> {
+        self.write_pool
+            .get()
+            .await
+            .map_err(|e| StorageError::Connection(e.into()))?
+            .srem::<&str, Data, usize>(key, serialize(value)?)
+            .await
+            .map_err(|e| StorageError::Other(e.into()))?;
+
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl<T> KeyValueStorage<T> for Redis
+where
+    T: Serialize + DeserializeOwned + Send + Sync,
+{
+    async fn get(&self, key: &str) -> StorageResult<Option<T>> {
+        self.read_pool
+            .get()
+            .await
+            .map_err(|e| StorageError::Connection(e.into()))?
+            .get::<_, Value>(key)
+            .await
+            .map_err(|e| StorageError::Other(e.into()))
+            .map(|data| match data {
+                Value::Nil => Ok(None),
+                Value::Data(data) => Ok(Some(deserialize(&data)?)),
+                _ => Err(StorageError::Deserialize),
+            })?
+    }
+
+    async fn set(&self, key: &str, value: &T, ttl: Option<Duration>) -> StorageResult<()> {
+        let data = serialize(value)?;
+        self.set_internal(key, &data, ttl).await
+    }
+
+    async fn set_serialized(
+        &self,
+        key: &str,
+        data: &[u8],
+        ttl: Option<Duration>,
+    ) -> StorageResult<()> {
+        self.set_internal(key, data, ttl).await
+    }
+
+    async fn del(&self, key: &str) -> StorageResult<()> {
+        self.write_pool
+            .get()
+            .await
+            .map_err(|e| StorageError::Connection(e.into()))?
+            .del(key)
+            .await
+            .map_err(|e| StorageError::Other(e.into()))
+    }
+}
