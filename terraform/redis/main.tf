@@ -77,7 +77,7 @@ resource "aws_security_group" "service_security_group" {
 
 # DNS
 resource "aws_route53_record" "dns" {
-  count   = var.zone_id == null ? 0 : 1
+  count   = terraform.workspace == "prod" ? 1 : 0
   zone_id = var.zone_id
   name    = "${replace("${var.redis_name}-redis", "_", "-")}.${local.zone_name}"
   type    = "CNAME"
