@@ -1,7 +1,7 @@
+use crate::metrics::Metrics;
 use crate::project::Registry;
 use crate::BuildInfo;
 use crate::Config;
-use opentelemetry::metrics::Counter;
 use opentelemetry_prometheus::PrometheusExporter;
 
 pub struct State {
@@ -10,11 +10,6 @@ pub struct State {
     pub metrics: Metrics,
     pub registry: Registry,
     pub build_info: BuildInfo,
-}
-
-pub struct Metrics {
-    pub rpc_call_counter: Counter<u64>,
-    pub http_call_counter: Counter<u64>,
 }
 
 build_info::build_info!(fn build_info);

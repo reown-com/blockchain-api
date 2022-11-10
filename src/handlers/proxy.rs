@@ -28,11 +28,13 @@ pub async fn handler(
     match state.registry.project_data(&query_params.project_id).await {
         Ok(project) => {
             if let Err(access_err) = project.validate_access(&query_params.project_id, None) {
+                state.metrics.add_rejected_project(&query_params.project_id);
                 return Ok(handshake_error("projectId", format!("{access_err}")));
             }
         }
 
         Err(err) => {
+            state.metrics.add_rejected_project(&query_params.project_id);
             return Ok(handshake_error("projectId", format!("{err}")));
         }
     }
@@ -49,10 +51,7 @@ pub async fn handler(
         }
     };
 
-    state
-        .metrics
-        .rpc_call_counter
-        .add(1, &[opentelemetry::KeyValue::new("chain.id", chain_id)]);
+    state.metrics.add_rpc_call(&chain_id);
 
     // TODO: map the response error codes properly
     // e.g. HTTP401 from target should map to HTTP500
