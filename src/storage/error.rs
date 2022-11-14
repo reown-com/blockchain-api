@@ -16,8 +16,8 @@ pub enum StorageError {
     Deserialize,
     /// Error on establishing a connection with the storage
     #[error("error on open connection")]
-    Connection(anyhow::Error),
+    Connection(String),
     /// An unexpected error occurred
     #[error("{0:?}")]
-    Other(#[from] anyhow::Error),
+    Other(String),
 }

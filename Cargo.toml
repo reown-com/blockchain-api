@@ -31,7 +31,6 @@ envy = "0.4"
 
 build-info = "0.0.27"
 
-anyhow = "1"
 opentelemetry = { version = "0.17.0", features = ["trace", "metrics", "rt-tokio"] }
 opentelemetry-prometheus = "0.10.0"
 prometheus-core = { package = "prometheus", version = "0.13" }

@@ -126,6 +126,6 @@ impl Registry {
 fn open_redis(
     addr: &redis::Addr<'_>,
     redis_max_connections: usize,
-) -> anyhow::Result<Arc<redis::Redis>, StorageError> {
+) -> Result<Arc<redis::Redis>, StorageError> {
     redis::Redis::new(addr, redis_max_connections).map(Arc::new)
 }
