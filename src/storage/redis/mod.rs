@@ -1,6 +1,4 @@
-use std::collections::HashSet;
 use std::fmt::Debug;
-use std::hash::Hash;
 use std::time::Duration;
 
 use async_trait::async_trait;
@@ -10,9 +8,7 @@ use deadpool_redis::{
 };
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::storage::{
-    deserialize, serialize, Data, KeyValueStorage, StorageError, StorageResult,
-};
+use crate::storage::{deserialize, serialize, KeyValueStorage, StorageError, StorageResult};
 
 const LOCAL_REDIS_ADDR: &str = "redis://localhost:6379/0";
 
@@ -92,22 +88,6 @@ impl Redis {
             read_pool,
             write_pool,
         })
-    }
-
-    /// Set a timeout on key.
-    /// After the timeout has expired, the key will automatically be deleted.
-    pub async fn set_ttl(&self, key: &str, ttl: Option<Duration>) -> StorageResult<()> {
-        if let Some(at) = ttl {
-            self.write_pool
-                .get()
-                .await
-                .map_err(|e| StorageError::Connection(e.into()))?
-                .expire::<_, usize>(key, at.as_millis() as usize)
-                .await
-                .map_err(|_| StorageError::SetExpiry)?;
-        }
-
-        Ok(())
     }
 
     async fn set_internal(

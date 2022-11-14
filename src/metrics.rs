@@ -70,10 +70,7 @@ impl Metrics {
         )
     }
 
-    pub fn add_rejected_project(&self, project_id: &str) {
-        self.rejected_project_counter.add(
-            1,
-            &[],
-        )
+    pub fn add_rejected_project(&self) {
+        self.rejected_project_counter.add(1, &[])
     }
 }

@@ -28,13 +28,13 @@ pub async fn handler(
     match state.registry.project_data(&query_params.project_id).await {
         Ok(project) => {
             if let Err(access_err) = project.validate_access(&query_params.project_id, None) {
-                state.metrics.add_rejected_project(&query_params.project_id);
+                state.metrics.add_rejected_project();
                 return Ok(handshake_error("projectId", format!("{access_err}")));
             }
         }
 
         Err(err) => {
-            state.metrics.add_rejected_project(&query_params.project_id);
+            state.metrics.add_rejected_project();
             return Ok(handshake_error("projectId", format!("{err}")));
         }
     }
