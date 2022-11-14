@@ -38,7 +38,7 @@ jobs:
         os:
           - ubuntu-latest
         rust:
-          - stable
+          - 1.65
         cargo:
           - name: "Clippy"
             cmd: clippy
@@ -82,7 +82,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
+          profile: default
           override: true
 
       # Rebuild cache
