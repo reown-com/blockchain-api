@@ -14,21 +14,6 @@ pub mod redis;
 pub type StorageResult<T> = Result<T, StorageError>;
 
 #[async_trait]
-pub trait SetStorage<T>: 'static + Send + Sync + Debug
-where
-    T: Serialize + DeserializeOwned + Hash + PartialEq + Eq + Send + Sync + Clone + Debug,
-{
-    /// Retrieve data related with the given key.
-    async fn sget(&self, key: &str) -> StorageResult<HashSet<T>>;
-
-    /// Add the value into the set for the given key.
-    async fn sadd(&self, key: &str, value: &[&T], ttl: Option<Duration>) -> StorageResult<()>;
-
-    /// Remove the value from the set of the given key.
-    async fn srem(&self, key: &str, value: &T) -> StorageResult<()>;
-}
-
-#[async_trait]
 pub trait KeyValueStorage<T>: 'static + Send + Sync + Debug
 where
     T: Serialize + DeserializeOwned + Send + Sync,

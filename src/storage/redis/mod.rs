@@ -11,7 +11,7 @@ use deadpool_redis::{
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::storage::{
-    deserialize, serialize, Data, KeyValueStorage, SetStorage, StorageError, StorageResult,
+    deserialize, serialize, Data, KeyValueStorage, StorageError, StorageResult,
 };
 
 const LOCAL_REDIS_ADDR: &str = "redis://localhost:6379/0";
@@ -134,57 +134,6 @@ impl Redis {
         };
 
         res_fut.await.map_err(|e| StorageError::Other(e.into()))?;
-
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl<T> SetStorage<T> for Redis
-where
-    T: Serialize + DeserializeOwned + Hash + PartialEq + Eq + Send + Sync + Clone + Debug,
-{
-    async fn sget(&self, key: &str) -> StorageResult<HashSet<T>> {
-        let entry: HashSet<Data> = self
-            .read_pool
-            .get()
-            .await
-            .map_err(|e| StorageError::Connection(e.into()))?
-            .smembers::<&str, HashSet<Data>>(key)
-            .await
-            .map_err(|e| StorageError::Other(e.into()))?;
-
-        entry
-            .into_iter()
-            .map(|data| deserialize(data.as_ref()))
-            .collect()
-    }
-
-    async fn sadd(&self, key: &str, values: &[&T], ttl: Option<Duration>) -> StorageResult<()> {
-        let values: Result<Vec<_>, _> = values.iter().map(serialize).collect();
-        let values = values?;
-
-        self.write_pool
-            .get()
-            .await
-            .map_err(|e| StorageError::Connection(e.into()))?
-            .sadd::<&str, Vec<Data>, ()>(key, values)
-            .await
-            .map_err(|e| StorageError::Other(e.into()))?;
-
-        self.set_ttl(key, ttl).await?;
-
-        Ok(())
-    }
-
-    async fn srem(&self, key: &str, value: &T) -> StorageResult<()> {
-        self.write_pool
-            .get()
-            .await
-            .map_err(|e| StorageError::Connection(e.into()))?
-            .srem::<&str, Data, usize>(key, serialize(value)?)
-            .await
-            .map_err(|e| StorageError::Other(e.into()))?;
 
         Ok(())
     }
