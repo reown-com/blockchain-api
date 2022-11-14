@@ -73,10 +73,7 @@ impl Metrics {
     pub fn add_rejected_project(&self, project_id: &str) {
         self.rejected_project_counter.add(
             1,
-            &[opentelemetry::KeyValue::new(
-                "project_id",
-                project_id.to_owned(),
-            )],
+            &[],
         )
     }
 }
