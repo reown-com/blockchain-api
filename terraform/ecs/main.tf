@@ -53,15 +53,15 @@ resource "aws_ecs_task_definition" "app_task" {
     {
       name : var.app_name,
       environment : [
-        { name : "INFURA_PROJECT_ID", value : tostring(var.infura_project_id) },
-        { name : "POKT_PROJECT_ID", value : tostring(var.pokt_project_id) },
+        { name : "RPC_PROXY_INFURA_PROJECT_ID", value : tostring(var.infura_project_id) },
+        { name : "RPC_PROXY_POKT_PROJECT_ID", value : tostring(var.pokt_project_id) },
 
-        { name : "REGISTRY_API_URL", value : var.registry_api_endpoint },
-        { name : "REGISTRY_API_AUTH_TOKEN", value : var.registry_api_auth_token },
-        { name : "REGISTRY_PROJECT_DATA_CACHE_TTL", value : tostring(var.project_data_cache_ttl) },
-        { name : "STORAGE_REDIS_MAX_CONNECTIONS", value : tostring(local.REDIS_MAX_CONNECTIONS) },
-        { name : "STORAGE_PROJECT_DATA_REDIS_ADDR_READ", value : "redis://${var.project_data_redis_endpoint_read}/0" },
-        { name : "STORAGE_PROJECT_DATA_REDIS_ADDR_WRITE", value : "redis://${var.project_data_redis_endpoint_write}/0" }
+        { name : "RPC_PROXY_REGISTRY_API_URL", value : var.registry_api_endpoint },
+        { name : "RPC_PROXY_REGISTRY_API_AUTH_TOKEN", value : var.registry_api_auth_token },
+        { name : "RPC_PROXY_REGISTRY_PROJECT_DATA_CACHE_TTL", value : tostring(var.project_data_cache_ttl) },
+        { name : "RPC_PROXY_STORAGE_REDIS_MAX_CONNECTIONS", value : tostring(local.REDIS_MAX_CONNECTIONS) },
+        { name : "RPC_PROXY_STORAGE_PROJECT_DATA_REDIS_ADDR_READ", value : "redis://${var.project_data_redis_endpoint_read}/0" },
+        { name : "RPC_PROXY_STORAGE_PROJECT_DATA_REDIS_ADDR_WRITE", value : "redis://${var.project_data_redis_endpoint_write}/0" }
       ],
       image : var.ecr_repository_url,
       essential : true,
