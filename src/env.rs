@@ -73,7 +73,7 @@ fn default_host() -> String {
 }
 
 fn default_log_level() -> String {
-    "WARN".to_string()
+    "INFO".to_string()
 }
 
 fn default_infura_supported_chains() -> HashMap<String, String> {
