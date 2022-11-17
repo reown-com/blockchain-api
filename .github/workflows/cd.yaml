@@ -28,7 +28,7 @@ on:
         required: true
       INFURA_PROJECT_ID:
         required: true
-      INFURA_POKT_PROJECT_ID:
+      POKT_PROJECT_ID:
         required: true
       REGISTRY_API_AUTH_TOKEN:
         required: true
