@@ -36,6 +36,7 @@ opentelemetry-prometheus = "0.10.0"
 prometheus-core = { package = "prometheus", version = "0.13" }
 thiserror = "1.0"
 tracing = "0.1"
+tracing-subscriber = "0.3"
 
 cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.1.2" }
 
