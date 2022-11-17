@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use tap::TapFallible;
-use tracing::warn;
+use tracing::{debug, warn};
 
 use crate::handlers::{handshake_error, RpcQueryParams};
 use crate::providers::ProviderRepository;
@@ -25,17 +25,21 @@ pub async fn handler(
         ));
     }
 
+    debug!("querying registry for project {}", query_params.project_id);
     match state.registry.project_data(&query_params.project_id).await {
         Ok(project) => {
             if let Err(access_err) = project.validate_access(&query_params.project_id, None) {
+                debug!("project {} is invalid ({:?})", query_params.project_id, access_err);
                 state.metrics.add_rejected_project();
-                return Ok(handshake_error("projectId", format!("{access_err}")));
+                return Ok(handshake_error("projectId", format!("{:?}", access_err)));
             }
+            debug!("project {} is valid", query_params.project_id);
         }
 
         Err(err) => {
+            debug!("received error from registry: {:?}", err);
             state.metrics.add_rejected_project();
-            return Ok(handshake_error("projectId", format!("{err}")));
+            return Ok(handshake_error("projectId", format!("{:?}", err)));
         }
     }
 
@@ -46,7 +50,7 @@ pub async fn handler(
         _ => {
             return Ok(field_validation_error(
                 "chainId",
-                format!("We don't support the chainId you provided: {chain_id}"),
+                format!("We don't support the chainId you provided: {}", chain_id),
             ))
         }
     };

@@ -4,6 +4,8 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use cerberus::registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult};
+use tracing::debug;
+use tracing::field::debug;
 
 pub use config::*;
 pub use error::*;
@@ -40,6 +42,7 @@ impl Registry {
         cfg_storage: &StorageConfig,
         meter: &Meter,
     ) -> RpcResult<Self> {
+        debug!("initializing registry client");
         let api_url = &cfg_registry.api_url;
         let api_auth_token = &cfg_registry.api_auth_token;
 
@@ -57,6 +60,7 @@ impl Registry {
         let cache = match cache_addr {
             None => None,
             Some(cache_addr) => {
+                debug!("found cache configuration, initializing registry cache");
                 let cache = open_redis(&cache_addr, cfg_storage.redis_max_connections)?;
 
                 Some(ProjectStorage::new(
@@ -86,15 +90,19 @@ impl Registry {
         id: &str,
     ) -> RpcResult<(ResponseSource, ProjectDataResult)> {
         if let Some(cache) = &self.cache {
+            debug!("checking cache for project {}", id);
             let time = Instant::now();
             let data = cache.fetch(id).await?;
             self.metrics.fetch_cache_time(time.elapsed());
 
             if let Some(data) = data {
+                debug!("project {} was found in cache", id);
                 return Ok((ResponseSource::Cache, data));
             }
+            debug!("project {} was not found in cache", id);
         }
 
+        debug!("fetching project {} from registry", id);
         let data = self.fetch_registry(id).await;
 
         // Cache all responses that we get, even errors.
@@ -106,8 +114,10 @@ impl Registry {
             // This is a retryable error, don't cache the result.
             Err(err) => return Err(err.into()),
         };
+        debug!("registry result: {:?}", data);
 
         if let Some(cache) = &self.cache {
+            debug!("storing project {} in cache", id);
             cache.set(id, &data).await;
         }
 

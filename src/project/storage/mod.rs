@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 
 use cerberus::project::ProjectData;
 use tap::TapFallible;
-use tracing::warn;
+use tracing::{debug, warn};
 
 use crate::project::error::ProjectDataError;
 use crate::project::metrics::ProjectDataMetrics;
@@ -39,6 +39,8 @@ impl ProjectStorage {
         let time = Instant::now();
 
         let cache_key = build_cache_key(id);
+        debug!("cache_key: {}", cache_key);
+
         let data = self
             .cache
             .get(&cache_key)
@@ -52,6 +54,7 @@ impl ProjectStorage {
 
     pub async fn set(&self, id: &str, data: &ProjectDataResult) {
         let cache_key = build_cache_key(id);
+        debug!("cache_key: {}", cache_key);
 
         let serialized = crate::storage::serialize(&data).unwrap(); //?;
         let cache = self.cache.clone();
