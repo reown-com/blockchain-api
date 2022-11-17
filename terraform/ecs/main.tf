@@ -160,8 +160,9 @@ resource "aws_ecs_service" "app_service" {
   launch_type     = "FARGATE"
   desired_count   = 2 # Setting the number of containers we want deployed to 3
 
+  # TODO: Reactivate wait_for_steady_state when we can have custom timeouts.
   # Wait for the service deployment to succeed
-  wait_for_steady_state = true
+  #  wait_for_steady_state = true
 
   network_configuration {
     subnets          = data.aws_subnets.private_subnets.ids
