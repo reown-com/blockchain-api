@@ -69,8 +69,7 @@ LABEL               version=${version}
 LABEL               sha=${sha}
 LABEL               maintainer=${maintainer}
 
-ENV                 HOST=0.0.0.0
-ENV                 PORT=3000
+ENV                 RPC_PROXY_HOST=0.0.0.0
 
 WORKDIR             /app
 COPY --from=build   /app/target/${binpath:-debug}/rpc-proxy /usr/local/bin/rpc-proxy
