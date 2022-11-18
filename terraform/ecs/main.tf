@@ -11,6 +11,16 @@ terraform {
 
 locals {
   REDIS_MAX_CONNECTIONS = "128"
+  // TODO: version the RPC image so we can pin it
+  # pinned_latest_tag     = sort(setsubtract(data.aws_ecr_image.service_image.image_tags, ["latest"]))[0]
+  // TODO: allow caller to pin version
+  image_tag = data.aws_ecr_image.service_image.image_tags[0] # TODO: var.ecr_app_version == "latest" ? local.pinned_latest_tag : var.ecr_app_version
+  image     = "${var.ecr_repository_url}:${local.image_tag}"
+}
+
+data "aws_ecr_image" "service_image" {
+  repository_name = "rpc-proxy"
+  image_tag       = "latest"
 }
 
 # Log Group for our App
@@ -63,7 +73,7 @@ resource "aws_ecs_task_definition" "app_task" {
         { name : "RPC_PROXY_STORAGE_PROJECT_DATA_REDIS_ADDR_READ", value : "redis://${var.project_data_redis_endpoint_read}/0" },
         { name : "RPC_PROXY_STORAGE_PROJECT_DATA_REDIS_ADDR_WRITE", value : "redis://${var.project_data_redis_endpoint_write}/0" }
       ],
-      image : var.ecr_repository_url,
+      image : local.image,
       essential : true,
       portMappings : [
         {
