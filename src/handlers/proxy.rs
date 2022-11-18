@@ -29,13 +29,13 @@ pub async fn handler(
         Ok(project) => {
             if let Err(access_err) = project.validate_access(&query_params.project_id, None) {
                 state.metrics.add_rejected_project();
-                return Ok(handshake_error("projectId", format!("{access_err}")));
+                return Ok(handshake_error("projectId", format!("{:?}", access_err)));
             }
         }
 
         Err(err) => {
             state.metrics.add_rejected_project();
-            return Ok(handshake_error("projectId", format!("{err}")));
+            return Ok(handshake_error("projectId", format!("{:?}", err)));
         }
     }
 
@@ -46,7 +46,7 @@ pub async fn handler(
         _ => {
             return Ok(field_validation_error(
                 "chainId",
-                format!("We don't support the chainId you provided: {chain_id}"),
+                format!("We don't support the chainId you provided: {}", chain_id),
             ))
         }
     };

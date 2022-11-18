@@ -1,0 +1,33 @@
+version: "3.9"
+services:
+  redis:
+    image: redis:7.0
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis:/data
+
+  proxy:
+    platform: linux/x86_64
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - RPC_PROXY_LOG_LEVEL=DEBUG
+      - RPC_PROXY_HOST=0.0.0.0
+      - RPC_PROXY_PORT=3000
+      - RPC_PROXY_INFURA_PROJECT_ID=${RPC_PROXY_INFURA_PROJECT_ID}
+      - RPC_PROXY_POKT_PROJECT_ID=${RPC_PROXY_POKT_PROJECT_ID}
+      - RPC_PROXY_REGISTRY_API_URL=https://registry-prod-cf.walletconnect.com
+      - RPC_PROXY_REGISTRY_API_AUTH_TOKEN=${RPC_PROXY_REGISTRY_API_AUTH_TOKEN}
+      - RPC_PROXY_STORAGE_PROJECT_DATA_REDIS_ADDR_READ=redis://redis:6379
+      - RPC_PROXY_STORAGE_PROJECT_DATA_REDIS_ADDR_WRITE=redis://redis:6379
+    cap_add:
+      - SYS_PTRACE    # Enabling GDB to attach to a running process
+    depends_on:
+      - redis
+
+volumes:
+  redis:

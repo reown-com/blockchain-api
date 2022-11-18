@@ -33,6 +33,13 @@ async fn main() -> error::RpcResult<()> {
     let config =
         Config::from_env().expect("Failed to load config, please ensure all env vars are defined.");
 
+    tracing_subscriber::fmt()
+        .with_max_level(
+            tracing::Level::from_str(config.server.log_level.as_str()).expect("Invalid log level"),
+        )
+        .with_span_events(FmtSpan::CLOSE)
+        .init();
+
     let prometheus_exporter = opentelemetry_prometheus::exporter().init();
     let meter = prometheus_exporter
         .provider()
@@ -50,14 +57,6 @@ async fn main() -> error::RpcResult<()> {
     let build_version = state.build_info.crate_info.version.clone();
 
     let state_arc = Arc::new(state);
-
-    tracing_subscriber::fmt()
-        .with_max_level(
-            tracing::Level::from_str(state_arc.clone().config.server.log_level.as_str())
-                .expect("Invalid log level"),
-        )
-        .with_span_events(FmtSpan::CLOSE)
-        .init();
 
     let state_filter = warp::any().map(move || state_arc.clone());
 

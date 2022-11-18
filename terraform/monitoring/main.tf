@@ -9,6 +9,15 @@ terraform {
   }
 }
 
+locals {
+  opsgenie_notification_channel = "l_iaPw6nk"
+  notifications = (
+    var.environment == "prod" ?
+    "[{\"uid\": \"${local.opsgenie_notification_channel}\"}]" :
+    "[]"
+  )
+}
+
 resource "grafana_data_source" "prometheus" {
   type = "prometheus"
   name = "${var.environment}-rpc-proxy-amp"
@@ -64,6 +73,9 @@ resource "grafana_dashboard" "at_a_glance" {
     liveNow : false,
     panels : [
       {
+        title : "Calls by Chain ID",
+        type : "timeseries"
+        id : 2,
         datasource : {
           type : "prometheus",
           uid : grafana_data_source.prometheus.uid
@@ -119,12 +131,9 @@ resource "grafana_dashboard" "at_a_glance" {
           overrides : []
         },
         gridPos : {
-          h : 9,
-          w : 12,
-          x : 0,
-          y : 0
+          x : 0, y : 0,
+          h : 9, w : 12,
         },
-        id : 2,
         options : {
           legend : {
             calcs : [],
@@ -149,10 +158,11 @@ resource "grafana_dashboard" "at_a_glance" {
             refId : "A"
           }
         ],
-        title : "Calls by Chain ID",
-        type : "timeseries"
       },
       {
+        title : "Calls by Chain ID",
+        type : "timeseries"
+        id : 3,
         datasource : {
           type : "prometheus",
           uid : grafana_data_source.prometheus.uid
@@ -208,12 +218,9 @@ resource "grafana_dashboard" "at_a_glance" {
           overrides : []
         },
         gridPos : {
-          h : 9,
-          w : 12,
-          x : 12,
-          y : 0
+          x : 12, y : 0,
+          h : 9, w : 12,
         },
-        id : 4,
         options : {
           legend : {
             calcs : [],
@@ -238,10 +245,11 @@ resource "grafana_dashboard" "at_a_glance" {
             refId : "A"
           }
         ],
-        title : "Calls by Chain ID",
-        type : "timeseries"
       },
       {
+        title : "Calls by Chain ID",
+        type : "timeseries"
+        id : 4,
         datasource : {
           type : "prometheus",
           uid : grafana_data_source.prometheus.uid
@@ -297,12 +305,9 @@ resource "grafana_dashboard" "at_a_glance" {
           overrides : []
         },
         gridPos : {
-          h : 9,
-          w : 12,
-          x : 0,
-          y : 9
+          x : 0, y : 9,
+          h : 9, w : 12,
         },
-        id : 5,
         options : {
           legend : {
             calcs : [],
@@ -327,10 +332,11 @@ resource "grafana_dashboard" "at_a_glance" {
             refId : "A"
           }
         ],
-        title : "Calls by Chain ID",
-        type : "timeseries"
       },
       {
+        title : "Latency",
+        type : "timeseries"
+        id : 5,
         datasource : {
           type : "prometheus",
           uid : grafana_data_source.prometheus.uid
@@ -387,12 +393,9 @@ resource "grafana_dashboard" "at_a_glance" {
           overrides : []
         },
         gridPos : {
-          h : 9,
-          w : 12,
-          x : 12,
-          y : 9
+          x : 12, y : 9,
+          h : 9, w : 12,
         },
-        id : 6,
         options : {
           legend : {
             calcs : [],
@@ -417,10 +420,11 @@ resource "grafana_dashboard" "at_a_glance" {
             refId : "A"
           }
         ],
-        title : "Latency",
-        type : "timeseries"
       },
       {
+        title : "Availability",
+        type : "timeseries"
+        id : 6,
         datasource : {
           type : "prometheus",
           uid : grafana_data_source.prometheus.uid
@@ -479,12 +483,9 @@ resource "grafana_dashboard" "at_a_glance" {
           overrides : []
         },
         gridPos : {
-          h : 9,
-          w : 12,
-          x : 12,
-          y : 9
+          x : 12, y : 9,
+          h : 9, w : 12,
         },
-        id : 6,
         options : {
           legend : {
             calcs : [],
@@ -545,11 +546,12 @@ resource "grafana_dashboard" "at_a_glance" {
           }
         ],
         thresholds : [],
-        title : "Availability",
-        type : "timeseries"
       },
 
       {
+        title : "Registry Requests by Status Code",
+        type : "timeseries"
+        id : 7,
         datasource : {
           type : "prometheus",
           uid : grafana_data_source.prometheus.uid
@@ -605,12 +607,9 @@ resource "grafana_dashboard" "at_a_glance" {
           overrides : []
         },
         gridPos : {
-          h : 8,
-          w : 9,
-          x : 0,
-          y : 0
+          x : 0, y : 0,
+          h : 9, w : 12,
         },
-        id : 50,
         options : {
           legend : {
             calcs : [],
@@ -636,10 +635,196 @@ resource "grafana_dashboard" "at_a_glance" {
             refId : "A"
           }
         ],
-        title : "Registry Requests by Status Code",
+      },
+
+      {
+        title : "Redis CPU/Memory",
         type : "timeseries"
+        id : 8,
+        alert : {
+          alertRuleTags : {
+            priority : "P2"
+          },
+          conditions : [
+            {
+              evaluator : {
+                params : [
+                  50
+                ],
+                type : "gt"
+              },
+              operator : {
+                type : "or"
+              },
+              query : {
+                params : [
+                  "B",
+                  "5m",
+                  "now"
+                ]
+              },
+              reducer : {
+                params : [],
+                type : "max"
+              },
+              type : "query"
+            },
+            {
+              evaluator : {
+                params : [
+                  50
+                ],
+                type : "gt"
+              },
+              operator : {
+                type : "or"
+              },
+              query : {
+                params : [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              reducer : {
+                params : [],
+                type : "max"
+              },
+              type : "query"
+            }
+          ],
+          executionErrorState : "alerting",
+          for : "5m",
+          frequency : "1m",
+          handler : 1,
+          message : "${var.environment} CPU/Memory alert",
+          name : "${var.environment} CPU/Memory alert",
+          noDataState : "alerting",
+          notifications : local.notifications
+        },
+        datasource : {
+          type : "cloudwatch",
+          uid : grafana_data_source.cloudwatch.uid
+        },
+        fieldConfig : {
+          defaults : {
+            color : {
+              mode : "palette-classic"
+            },
+            custom : {
+              axisLabel : "",
+              axisPlacement : "auto",
+              axisSoftMax : 100,
+              axisSoftMin : 0,
+              barAlignment : 0,
+              drawStyle : "line",
+              fillOpacity : 0,
+              gradientMode : "none",
+              hideFrom : {
+                legend : false,
+                tooltip : false,
+                viz : false
+              },
+              lineInterpolation : "linear",
+              lineWidth : 1,
+              pointSize : 5,
+              scaleDistribution : {
+                type : "linear"
+              },
+              showPoints : "auto",
+              spanNulls : false,
+              stacking : {
+                group : "A",
+                mode : "none"
+              },
+              thresholdsStyle : {
+                mode : "area"
+              }
+            },
+            mappings : [],
+            thresholds : {
+              mode : "absolute",
+              steps : [
+                {
+                  color : "green",
+                  value : null
+                },
+                {
+                  color : "red",
+                  value : 50
+                }
+              ]
+            }
+          },
+          overrides : []
+        },
+        gridPos : {
+          x : 12, y : 0,
+          h : 9, w : 12,
+        },
+        options : {
+          legend : {
+            calcs : [],
+            displayMode : "list",
+            placement : "bottom"
+          },
+          tooltip : {
+            mode : "single",
+            sort : "none"
+          }
+        },
+        targets : [
+          {
+            alias : "",
+            datasource : {
+              type : "cloudwatch",
+              uid : grafana_data_source.cloudwatch.uid
+            },
+            dimensions : {
+              CacheClusterId : var.redis_cluster_id
+            },
+            expression : "",
+            id : "",
+            matchExact : true,
+            metricEditorMode : 0,
+            metricName : "CPUUtilization",
+            metricQueryType : 0,
+            namespace : "AWS/ElastiCache",
+            period : "",
+            queryMode : "Metrics",
+            refId : "A",
+            region : "default",
+            sqlExpression : "",
+            statistic : "Maximum"
+          },
+          {
+            alias : "",
+            datasource : {
+              type : "cloudwatch",
+              uid : grafana_data_source.cloudwatch.uid
+            },
+            dimensions : {
+              CacheClusterId : var.redis_cluster_id
+            },
+            expression : "",
+            hide : false,
+            id : "",
+            matchExact : true,
+            metricEditorMode : 0,
+            metricName : "DatabaseMemoryUsagePercentage",
+            metricQueryType : 0,
+            namespace : "AWS/ElastiCache",
+            period : "",
+            queryMode : "Metrics",
+            refId : "B",
+            region : "default",
+            sqlExpression : "",
+            statistic : "Maximum"
+          }
+        ],
       }
     ],
+
     schemaVersion : 36,
     style : "dark",
     tags : [],

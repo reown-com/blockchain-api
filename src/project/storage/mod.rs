@@ -39,6 +39,7 @@ impl ProjectStorage {
         let time = Instant::now();
 
         let cache_key = build_cache_key(id);
+
         let data = self
             .cache
             .get(&cache_key)
@@ -62,7 +63,7 @@ impl ProjectStorage {
             cache
                 .set_serialized(&cache_key, &serialized, Some(cache_ttl))
                 .await
-                .tap_err(|err| warn!("failed to cache project data: {err:?}"))
+                .tap_err(|err| warn!("failed to cache project data: {:?}", err))
                 .ok();
         });
     }
@@ -70,5 +71,5 @@ impl ProjectStorage {
 
 #[inline]
 fn build_cache_key(id: &str) -> String {
-    format!("project-data/{id}")
+    format!("project-data/{}", id)
 }
