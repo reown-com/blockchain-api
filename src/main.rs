@@ -7,7 +7,7 @@ use hyper::Client;
 use hyper_tls::HttpsConnector;
 use opentelemetry::metrics::MeterProvider;
 use std::str::FromStr;
-use tracing::{debug, info};
+use tracing::info;
 use tracing_subscriber::fmt::format::FmtSpan;
 use warp::Filter;
 
@@ -35,13 +35,10 @@ async fn main() -> error::RpcResult<()> {
 
     tracing_subscriber::fmt()
         .with_max_level(
-            tracing::Level::from_str(config.server.log_level.as_str())
-                .expect("Invalid log level"),
+            tracing::Level::from_str(config.server.log_level.as_str()).expect("Invalid log level"),
         )
         .with_span_events(FmtSpan::CLOSE)
         .init();
-
-    debug!("{:#?}", config);
 
     let prometheus_exporter = opentelemetry_prometheus::exporter().init();
     let meter = prometheus_exporter
