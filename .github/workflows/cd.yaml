@@ -98,6 +98,9 @@ jobs:
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
     needs: [deploy-app-staging, deploy-infra-staging]
     runs-on: ubuntu-latest
+    environment:
+      name: app/staging
+      url: https://staging.rpc.walletconnect.com/hello
     steps:
       - name: validate
         run: |
@@ -109,6 +112,9 @@ jobs:
     outputs:
       result: ${{ steps.decide.outputs.deploy_or_not }}
     runs-on: ubuntu-latest
+    environment:
+      name: app/prod
+      url: https://rpc.walletconnect.com/health
     steps:
       - id: decide
         uses: cobot/deploy-window-action@v1
