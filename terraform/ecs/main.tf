@@ -14,7 +14,7 @@ locals {
   // TODO: version the RPC image so we can pin it
   # pinned_latest_tag     = sort(setsubtract(data.aws_ecr_image.service_image.image_tags, ["latest"]))[0]
   // TODO: allow caller to pin version
-  image_tag = "latest" # TODO: var.ecr_app_version == "latest" ? local.pinned_latest_tag : var.ecr_app_version
+  image_tag = data.aws_ecr_image.service_image.image_tags[0] # TODO: var.ecr_app_version == "latest" ? local.pinned_latest_tag : var.ecr_app_version
   image     = "${var.ecr_repository_url}:${local.image_tag}"
 }
 
