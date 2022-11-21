@@ -31,7 +31,8 @@ env:
 jobs:
   tasks:
     name: "[${{ matrix.os }}] ${{ matrix.cargo.name }}"
-    runs-on: "${{ matrix.os }}"
+    runs-on:
+      group: ubuntu-runners
     strategy:
       fail-fast: false
       matrix:
@@ -121,7 +122,8 @@ jobs:
   publish:
     if: github.event_name != 'pull_request'
     needs: [tasks]
-    runs-on: 'ubuntu-latest'
+    runs-on:
+      group: ubuntu-runners
     steps:
       # Checkout code
       - name: "Git checkout"
