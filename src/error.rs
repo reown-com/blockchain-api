@@ -29,4 +29,7 @@ pub enum RpcError {
 
     #[error("Request::builder() failed: {0}")]
     RequestBuilderError(#[from] hyper::http::Error),
+
+    #[error("{0:?}")]
+    Other(#[from] anyhow::Error),
 }

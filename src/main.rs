@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use anyhow::Context;
 use build_info::BuildInfo;
 use dotenv::dotenv;
 use hyper::Client;
@@ -18,14 +19,17 @@ use crate::providers::ProviderRepository;
 use crate::providers::{InfuraProvider, PoktProvider};
 use crate::state::State;
 
+mod analytics;
 mod env;
 mod error;
 mod handlers;
+mod json_rpc;
 mod metrics;
 mod project;
 mod providers;
 mod state;
 mod storage;
+mod utils;
 
 #[tokio::main]
 async fn main() -> error::RpcResult<()> {
@@ -50,7 +54,23 @@ async fn main() -> error::RpcResult<()> {
     let registry = Registry::new(&config.registry, &config.storage, &meter)?;
     let providers = init_providers(&config);
 
-    let state = state::new_state(config, prometheus_exporter, metrics.clone(), registry);
+    let external_ip = config
+        .server
+        .external_ip()
+        .context("failed to find external ip address")?;
+
+    let analytics = analytics::RPCAnalytics::new(&config.analytics, external_ip)
+        .await
+        .context("failed to init analytics")?;
+
+    let state = state::new_state(
+        config,
+        providers,
+        prometheus_exporter,
+        metrics.clone(),
+        registry,
+        analytics,
+    );
 
     let port = state.config.server.port;
     let host = state.config.server.host.clone();
@@ -70,8 +90,6 @@ async fn main() -> error::RpcResult<()> {
         .and(state_filter.clone())
         .and_then(handlers::metrics::handler);
 
-    let provider_filter = warp::any().map(move || providers.clone());
-
     let cors = warp::cors()
         .allow_any_origin()
         .allow_headers(vec![
@@ -89,7 +107,7 @@ async fn main() -> error::RpcResult<()> {
     let proxy = warp::any()
         .and(warp::path!("v1"))
         .and(state_filter.clone())
-        .and(provider_filter.clone())
+        .and(warp::filters::addr::remote())
         .and(warp::method())
         .and(warp::path::full())
         .and(warp::filters::query::query())
