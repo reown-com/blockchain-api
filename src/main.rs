@@ -1,8 +1,7 @@
-use std::net::SocketAddr;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 use anyhow::Context;
-use build_info::BuildInfo;
 use dotenv::dotenv;
 use hyper::Client;
 use hyper_tls::HttpsConnector;
@@ -57,7 +56,7 @@ async fn main() -> error::RpcResult<()> {
     let external_ip = config
         .server
         .external_ip()
-        .context("failed to find external ip address")?;
+        .unwrap_or_else(|_| IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
 
     let analytics = analytics::RPCAnalytics::new(&config.analytics, external_ip)
         .await
@@ -74,7 +73,7 @@ async fn main() -> error::RpcResult<()> {
 
     let port = state.config.server.port;
     let host = state.config.server.host.clone();
-    let build_version = state.build_info.crate_info.version.clone();
+    let build_version = state.compile_info.build().version();
 
     let state_arc = Arc::new(state);
 

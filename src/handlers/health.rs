@@ -4,7 +4,7 @@ use warp::http;
 
 pub async fn handler(state: Arc<State>) -> Result<impl warp::Reply, warp::Rejection> {
     let response = warp::reply::with_status(
-        format!("OK v{}", state.build_info.crate_info.version),
+        format!("OK v{}", state.compile_info.build().version()),
         http::StatusCode::OK,
     );
 

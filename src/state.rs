@@ -2,7 +2,7 @@ use crate::analytics::RPCAnalytics;
 use crate::metrics::Metrics;
 use crate::project::Registry;
 use crate::providers::ProviderRepository;
-use crate::BuildInfo;
+use crate::utils::build::CompileInfo;
 use crate::Config;
 use opentelemetry_prometheus::PrometheusExporter;
 
@@ -13,10 +13,8 @@ pub struct State {
     pub metrics: Metrics,
     pub registry: Registry,
     pub analytics: RPCAnalytics,
-    pub build_info: BuildInfo,
+    pub compile_info: CompileInfo,
 }
-
-build_info::build_info!(fn build_info);
 
 pub fn new_state(
     config: Config,
@@ -26,8 +24,6 @@ pub fn new_state(
     registry: Registry,
     analytics: RPCAnalytics,
 ) -> State {
-    let build_info: &BuildInfo = build_info();
-
     State {
         config,
         providers,
@@ -35,6 +31,6 @@ pub fn new_state(
         metrics,
         registry,
         analytics,
-        build_info: build_info.clone(),
+        compile_info: CompileInfo {}.clone(),
     }
 }

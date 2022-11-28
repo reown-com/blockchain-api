@@ -32,8 +32,6 @@ deadpool-redis = "0.10"
 dotenv = "0.15.0"
 envy = "0.4"
 
-build-info = "0.0.27"
-
 anyhow = "1"
 thiserror = "1.0"
 derive_more = "0.99"
@@ -56,4 +54,4 @@ parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "431abf
 parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "431abf5" }
 
 [build-dependencies]
-build-info-build = "0.0.27"
+vergen = { version = "6", default-features = false, features = ["build", "cargo", "git"] }
