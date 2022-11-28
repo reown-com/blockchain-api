@@ -4,7 +4,7 @@ terraform {
   required_providers {
     grafana = {
       source  = "grafana/grafana"
-      version = "~> 1.24"
+      version = "~> 1.31"
     }
   }
 }
@@ -23,21 +23,22 @@ resource "grafana_data_source" "prometheus" {
   name = "${var.environment}-rpc-proxy-amp"
   url  = "https://aps-workspaces.eu-central-1.amazonaws.com/workspaces/${var.prometheus_workspace_id}/"
 
-  json_data {
-    http_method     = "GET"
-    sigv4_auth      = true
-    sigv4_auth_type = "workspace-iam-role"
-    sigv4_region    = "eu-central-1"
-  }
+  json_data_encoded = jsonencode({
+    httpMethod    = "GET"
+    manageAlerts  = false
+    sigV4Auth     = true
+    sigV4AuthType = "workspace-iam-role"
+    sigV4Region   = "eu-central-1"
+  })
 }
 
 resource "grafana_data_source" "cloudwatch" {
   type = "cloudwatch"
   name = "${var.environment}-rpc-proxy-cloudwatch"
 
-  json_data {
-    default_region = "eu-central-1"
-  }
+  json_data_encoded = jsonencode({
+    defaultRegion = "eu-central-1"
+  })
 }
 
 # JSON Dashboard. When exporting from Grafana make sure that all
