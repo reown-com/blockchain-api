@@ -10,11 +10,11 @@ use std::sync::Arc;
 pub struct MessageInfo {
     timestamp: String,
 
-    project_id: Arc<str>,
-    chain_id: Arc<str>,
+    project_id: String,
+    chain_id: String,
     method: Arc<str>,
 
-    sender: Option<Arc<str>>,
+    sender: Option<String>,
 
     country: Option<Arc<str>>,
     continent: Option<Arc<str>>,
@@ -29,13 +29,13 @@ impl MessageInfo {
         continent: Option<Arc<str>>,
     ) -> Self {
         Self {
-            timestamp: super::create_timestamp(),
+            timestamp: gorgon::create_timestamp(),
 
-            project_id: Arc::from(query_params.project_id.to_owned()),
-            chain_id: Arc::from(query_params.chain_id.to_lowercase()),
+            project_id: query_params.project_id.to_owned(),
+            chain_id: query_params.chain_id.to_lowercase(),
             method: request.method.clone(),
 
-            sender: sender.map(|s| Arc::from(s.to_string())),
+            sender: sender.map(|s| s.to_string()),
 
             country,
             continent,

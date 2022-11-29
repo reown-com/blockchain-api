@@ -91,7 +91,3 @@ impl RPCAnalytics {
         self.geoip.lookup_geo_data(addr)
     }
 }
-
-fn create_timestamp() -> String {
-    chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string()
-}
