@@ -31,6 +31,6 @@ pub fn new_state(
         metrics,
         registry,
         analytics,
-        compile_info: CompileInfo {}.clone(),
+        compile_info: CompileInfo {},
     }
 }

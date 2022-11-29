@@ -51,7 +51,7 @@ resource "aws_iam_policy" "analytics_bucket_access" {
       {
         "Sid" : "AllObjectActionsInAnalyticsBucket",
         "Effect" : "Allow",
-        "Action" : "s3:*Object",
+        "Action" : ["s3:CopyObject", "s3:DeleteObject", "s3:GetObject", "s3:HeadObject", "s3:PutObject", "s3:RestoreObject"],
         "Resource" : ["arn:aws:s3:::${var.analytics_bucket_name}/*"]
       },
       {
@@ -63,7 +63,7 @@ resource "aws_iam_policy" "analytics_bucket_access" {
       {
         "Sid" : "AllObjectActionsInGeoipBucket",
         "Effect" : "Allow",
-        "Action" : "s3:*Object",
+        "Action" : ["s3:CopyObject", "s3:GetObject", "s3:HeadObject"],
         "Resource" : ["arn:aws:s3:::${var.analytics_geoip_db_bucket_name}/*"]
       }
     ]
