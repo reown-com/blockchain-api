@@ -1,17 +1,18 @@
+use std::net::SocketAddr;
 use std::sync::Arc;
 
+use crate::analytics::MessageInfo;
 use tap::TapFallible;
 use tracing::warn;
 
 use crate::handlers::{handshake_error, RpcQueryParams};
-use crate::providers::ProviderRepository;
 use crate::State;
 
 use super::field_validation_error;
 
 pub async fn handler(
     state: Arc<State>,
-    provider_repo: ProviderRepository,
+    sender: Option<SocketAddr>,
     method: hyper::http::Method,
     path: warp::path::FullPath,
     query_params: RpcQueryParams,
@@ -40,7 +41,7 @@ pub async fn handler(
     }
 
     let chain_id = query_params.chain_id.to_lowercase();
-    let provider = provider_repo.get_provider_for_chain_id(&chain_id);
+    let provider = state.providers.get_provider_for_chain_id(&chain_id);
     let provider = match provider {
         Some(provider) => provider,
         _ => {
@@ -52,6 +53,20 @@ pub async fn handler(
     };
 
     state.metrics.add_rpc_call(&chain_id);
+
+    if let Ok(rpc_request) = serde_json::from_slice(&body) {
+        let (country, continent) = sender
+            .and_then(|addr| state.analytics.lookup_geo_data(addr.ip()))
+            .map(|geo| (geo.country, geo.continent))
+            .unwrap_or((None, None));
+        state.analytics.message(MessageInfo::new(
+            &query_params,
+            &rpc_request,
+            sender,
+            country,
+            continent,
+        ))
+    }
 
     // TODO: map the response error codes properly
     // e.g. HTTP401 from target should map to HTTP500

@@ -1,7 +1,7 @@
-use std::net::SocketAddr;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
-use build_info::BuildInfo;
+use anyhow::Context;
 use dotenv::dotenv;
 use hyper::Client;
 use hyper_tls::HttpsConnector;
@@ -18,14 +18,17 @@ use crate::providers::ProviderRepository;
 use crate::providers::{InfuraProvider, PoktProvider};
 use crate::state::State;
 
+mod analytics;
 mod env;
 mod error;
 mod handlers;
+mod json_rpc;
 mod metrics;
 mod project;
 mod providers;
 mod state;
 mod storage;
+mod utils;
 
 #[tokio::main]
 async fn main() -> error::RpcResult<()> {
@@ -50,11 +53,27 @@ async fn main() -> error::RpcResult<()> {
     let registry = Registry::new(&config.registry, &config.storage, &meter)?;
     let providers = init_providers(&config);
 
-    let state = state::new_state(config, prometheus_exporter, metrics.clone(), registry);
+    let external_ip = config
+        .server
+        .external_ip()
+        .unwrap_or_else(|_| IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
+
+    let analytics = analytics::RPCAnalytics::new(&config.analytics, external_ip)
+        .await
+        .context("failed to init analytics")?;
+
+    let state = state::new_state(
+        config,
+        providers,
+        prometheus_exporter,
+        metrics.clone(),
+        registry,
+        analytics,
+    );
 
     let port = state.config.server.port;
     let host = state.config.server.host.clone();
-    let build_version = state.build_info.crate_info.version.clone();
+    let build_version = state.compile_info.build().version();
 
     let state_arc = Arc::new(state);
 
@@ -69,8 +88,6 @@ async fn main() -> error::RpcResult<()> {
         .and(warp::path!("metrics"))
         .and(state_filter.clone())
         .and_then(handlers::metrics::handler);
-
-    let provider_filter = warp::any().map(move || providers.clone());
 
     let cors = warp::cors()
         .allow_any_origin()
@@ -89,7 +106,7 @@ async fn main() -> error::RpcResult<()> {
     let proxy = warp::any()
         .and(warp::path!("v1"))
         .and(state_filter.clone())
-        .and(provider_filter.clone())
+        .and(warp::filters::addr::remote())
         .and(warp::method())
         .and(warp::path::full())
         .and(warp::filters::query::query())

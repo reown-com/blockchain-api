@@ -3,6 +3,8 @@ locals {
   hosted_zone_name  = "rpc.walletconnect.com"
   private_zone_name = "rpc.repl.internal"
   fqdn              = terraform.workspace == "prod" ? local.hosted_zone_name : "${terraform.workspace}.${local.hosted_zone_name}"
+
+  analytics_geoip_db_bucket_name = "${terraform.workspace}.relay.geo.ip.database.private.${terraform.workspace}.walletconnect"
 }
 
 # tflint-ignore: terraform_unused_declarations
@@ -52,6 +54,10 @@ module "ecs" {
   project_data_cache_ttl            = var.project_data_cache_ttl
   project_data_redis_endpoint_read  = module.redis.endpoint
   project_data_redis_endpoint_write = module.redis.endpoint
+
+  analytics_bucket_name          = aws_s3_bucket.analytics_bucket.bucket
+  analytics_geoip_db_bucket_name = local.analytics_geoip_db_bucket_name
+  analytics_geoip_db_key         = var.analytics_geoip_db_key
 }
 
 module "private_hosted_zone" {

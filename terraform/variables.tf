@@ -27,3 +27,8 @@ variable "registry_api_auth_token" {
 variable "project_data_cache_ttl" {
   type = number
 }
+
+variable "analytics_geoip_db_key" {
+  type    = string
+  default = "GeoLite2-Country.mmdb"
+}

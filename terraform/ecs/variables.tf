@@ -62,3 +62,15 @@ variable "project_data_redis_endpoint_read" {
 variable "project_data_redis_endpoint_write" {
   type = string
 }
+
+variable "analytics_bucket_name" {
+  type = string
+}
+
+variable "analytics_geoip_db_key" {
+  type = string
+}
+
+variable "analytics_geoip_db_bucket_name" {
+  type = string
+}
