@@ -3,7 +3,7 @@ use crate::error::{RpcError, RpcResult};
 use async_trait::async_trait;
 use hyper::{client::HttpConnector, Body, Client, Response};
 use hyper_tls::HttpsConnector;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Clone)]
 pub struct InfuraProvider {
@@ -46,5 +46,11 @@ impl RpcProvider for InfuraProvider {
 
     fn supported_caip_chainids(&self) -> Vec<String> {
         self.supported_chains.keys().cloned().collect()
+    }
+}
+
+impl Display for InfuraProvider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "InfuraProvider: {}", self.project_id)
     }
 }

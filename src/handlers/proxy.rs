@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use crate::analytics::MessageInfo;
+use hyper::http;
 use tap::TapFallible;
 use tracing::warn;
 
@@ -74,5 +75,10 @@ pub async fn handler(
         .proxy(method, path, query_params, headers, body)
         .await
         .tap_err(|error| warn!(%error, "request failed"))
+        .tap_ok(|response| {
+            if response.status() == http::StatusCode::TOO_MANY_REQUESTS {
+                state.metrics.add_rate_limited_call(&provider.to_string())
+            }
+        })
         .map_err(|_| warp::reject::reject())
 }

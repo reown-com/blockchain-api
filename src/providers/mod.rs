@@ -8,6 +8,7 @@ use hyper::Response;
 pub use infura::InfuraProvider;
 pub use pokt::PoktProvider;
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::sync::Arc;
 
 #[derive(Default, Clone)]
@@ -30,7 +31,7 @@ impl ProviderRepository {
 }
 
 #[async_trait]
-pub trait RpcProvider: Send + Sync {
+pub trait RpcProvider: Send + Sync + Display {
     async fn proxy(
         &self,
         method: hyper::http::Method,

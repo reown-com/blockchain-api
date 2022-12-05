@@ -3,7 +3,7 @@ use crate::error::{RpcError, RpcResult};
 use async_trait::async_trait;
 use hyper::{client::HttpConnector, Body, Client, Response};
 use hyper_tls::HttpsConnector;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Clone)]
 pub struct PoktProvider {
@@ -49,5 +49,11 @@ impl RpcProvider for PoktProvider {
 
     fn supported_caip_chainids(&self) -> Vec<String> {
         self.supported_chains.keys().cloned().collect()
+    }
+}
+
+impl Display for PoktProvider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Pokt Provider: {}", self.project_id)
     }
 }

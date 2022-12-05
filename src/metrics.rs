@@ -6,6 +6,7 @@ pub struct Metrics {
     pub http_call_counter: Counter<u64>,
     pub http_latency_tracker: Counter<f64>,
     pub rejected_project_counter: Counter<u64>,
+    pub rate_limited_call_counter: Counter<u64>,
 }
 
 impl Metrics {
@@ -30,7 +31,7 @@ impl Metrics {
             .with_description("The number of calls for invalid project ids")
             .init();
 
-        let rate_limited_counter = meter
+        let rate_limited_call_counter = meter
             .u64_counter("rate_limited_counter")
             .with_description("The number of calls that got rate limited")
             .init();
@@ -40,6 +41,7 @@ impl Metrics {
             http_call_counter,
             http_latency_tracker,
             rejected_project_counter,
+            rate_limited_call_counter,
         }
     }
 }
@@ -77,5 +79,15 @@ impl Metrics {
 
     pub fn add_rejected_project(&self) {
         self.rejected_project_counter.add(1, &[])
+    }
+
+    pub fn add_rate_limited_call(&self, provider: &str) {
+        self.rate_limited_call_counter.add(
+            1,
+            &[opentelemetry::KeyValue::new(
+                "provider",
+                provider.to_owned(),
+            )],
+        )
     }
 }
