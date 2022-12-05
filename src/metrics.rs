@@ -30,6 +30,11 @@ impl Metrics {
             .with_description("The number of calls for invalid project ids")
             .init();
 
+        let rate_limited_counter = meter
+            .u64_counter("rate_limited_counter")
+            .with_description("The number of calls that got rate limited")
+            .init();
+
         Metrics {
             rpc_call_counter,
             http_call_counter,
