@@ -1,9 +1,9 @@
-use super::{RpcProvider, RpcQueryParams};
+use super::{ProviderKind, RpcProvider, RpcQueryParams};
 use crate::error::{RpcError, RpcResult};
 use async_trait::async_trait;
-use hyper::{client::HttpConnector, Body, Client, Response};
+use hyper::{client::HttpConnector, http, Body, Client, Response};
 use hyper_tls::HttpsConnector;
-use std::{collections::HashMap, fmt::Display};
+use std::collections::HashMap;
 
 #[derive(Clone)]
 pub struct PoktProvider {
@@ -50,10 +50,16 @@ impl RpcProvider for PoktProvider {
     fn supported_caip_chainids(&self) -> Vec<String> {
         self.supported_chains.keys().cloned().collect()
     }
-}
 
-impl Display for PoktProvider {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Pokt Provider: {}", self.project_id)
+    fn provider_kind(&self) -> ProviderKind {
+        ProviderKind::Pokt
+    }
+
+    fn project_id(&self) -> String {
+        self.project_id.clone()
+    }
+
+    fn is_rate_limited(&self, response: &Response<Body>) -> bool {
+        response.status() == http::StatusCode::TOO_MANY_REQUESTS
     }
 }

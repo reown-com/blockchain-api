@@ -30,8 +30,26 @@ impl ProviderRepository {
     }
 }
 
+pub enum ProviderKind {
+    Infura,
+    Pokt,
+}
+
+impl Display for ProviderKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                ProviderKind::Infura => "Infura",
+                ProviderKind::Pokt => "Pokt",
+            }
+        )
+    }
+}
+
 #[async_trait]
-pub trait RpcProvider: Send + Sync + Display {
+pub trait RpcProvider: Send + Sync {
     async fn proxy(
         &self,
         method: hyper::http::Method,
@@ -44,4 +62,10 @@ pub trait RpcProvider: Send + Sync + Display {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool;
 
     fn supported_caip_chainids(&self) -> Vec<String>;
+
+    fn provider_kind(&self) -> ProviderKind;
+
+    fn project_id(&self) -> String;
+
+    fn is_rate_limited(&self, respose: &Response<Body>) -> bool;
 }

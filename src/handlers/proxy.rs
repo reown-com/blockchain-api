@@ -1,8 +1,8 @@
+use std::borrow::Borrow;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use crate::analytics::MessageInfo;
-use hyper::http;
 use tap::TapFallible;
 use tracing::warn;
 
@@ -69,6 +69,8 @@ pub async fn handler(
         ))
     }
 
+    let project_id = query_params.project_id.clone();
+
     // TODO: map the response error codes properly
     // e.g. HTTP401 from target should map to HTTP500
     provider
@@ -76,8 +78,10 @@ pub async fn handler(
         .await
         .tap_err(|error| warn!(%error, "request failed"))
         .tap_ok(|response| {
-            if response.status() == http::StatusCode::TOO_MANY_REQUESTS {
-                state.metrics.add_rate_limited_call(&provider.to_string())
+            if provider.is_rate_limited(response) {
+                state
+                    .metrics
+                    .add_rate_limited_call(provider.borrow(), project_id)
             }
         })
         .map_err(|_| warp::reject::reject())

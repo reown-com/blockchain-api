@@ -1,5 +1,7 @@
 use opentelemetry::metrics::{Counter, Meter};
 
+use crate::providers::RpcProvider;
+
 #[derive(Clone, Debug)]
 pub struct Metrics {
     pub rpc_call_counter: Counter<u64>,
@@ -81,13 +83,13 @@ impl Metrics {
         self.rejected_project_counter.add(1, &[])
     }
 
-    pub fn add_rate_limited_call(&self, provider: &str) {
+    pub fn add_rate_limited_call(&self, provider: &dyn RpcProvider, project_id: String) {
         self.rate_limited_call_counter.add(
             1,
-            &[opentelemetry::KeyValue::new(
-                "provider",
-                provider.to_owned(),
-            )],
+            &[
+                opentelemetry::KeyValue::new("provider_kind", provider.provider_kind().to_string()),
+                opentelemetry::KeyValue::new("project_id", project_id),
+            ],
         )
     }
 }
