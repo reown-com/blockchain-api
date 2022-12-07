@@ -1,7 +1,11 @@
 use super::{ProviderKind, RpcProvider, RpcQueryParams};
 use crate::error::{RpcError, RpcResult};
 use async_trait::async_trait;
-use hyper::{body::Bytes, client::HttpConnector, Body, Client, Response};
+use hyper::{
+    body::{self, Bytes},
+    client::HttpConnector,
+    Body, Client, Response,
+};
 use hyper_tls::HttpsConnector;
 use std::collections::HashMap;
 
@@ -40,7 +44,15 @@ impl RpcProvider for PoktProvider {
 
         // TODO: map the response error codes properly
         // e.g. HTTP401 from target should map to HTTP500
-        Ok(self.client.request(hyper_request).await?)
+        let response = self.client.request(hyper_request).await?;
+
+        let (body_bytes, response) = copy_body_bytes(response).await.unwrap();
+
+        if is_rate_limited(body_bytes) {
+            return Err(RpcError::Throttled);
+        }
+
+        Ok(response)
     }
 
     fn supports_caip_chainid(&self, chain_id: &str) -> bool {
@@ -55,24 +67,34 @@ impl RpcProvider for PoktProvider {
         ProviderKind::Pokt
     }
 
-    fn project_id(&self) -> String {
-        self.project_id.clone()
+    fn project_id(&self) -> &str {
+        &self.project_id
+    }
+}
+
+fn is_rate_limited(body_bytes: Bytes) -> bool {
+    let jsonrpc_response = serde_json::from_slice::<jsonrpc::Response>(&body_bytes);
+
+    if jsonrpc_response.is_err() {
+        return false;
     }
 
-    fn is_rate_limited(&self, _: &Response<Body>, body_bytes: Bytes) -> bool {
-        let jsonrpc_response = serde_json::from_slice::<jsonrpc::Response>(&body_bytes);
-
-        if jsonrpc_response.is_err() {
-            return false;
+    if let Some(err) = jsonrpc_response.unwrap().error {
+        // Code used by Pokt to indicate rate limited request
+        // https://github.com/pokt-foundation/portal-api/blob/e06d1e50abfee8533c58768bb9b638c351b87a48/src/controllers/v1.controller.ts
+        if err.code == -32068 {
+            return true;
         }
-
-        if let Some(err) = jsonrpc_response.unwrap().error {
-            // Code used by Pokt to indicate rate limited request
-            // https://github.com/pokt-foundation/portal-api/blob/e06d1e50abfee8533c58768bb9b638c351b87a48/src/controllers/v1.controller.ts
-            if err.code == -32068 {
-                return true;
-            }
-        }
-        false
     }
+    false
+}
+
+async fn copy_body_bytes(
+    response: Response<Body>,
+) -> Result<(Bytes, Response<Body>), hyper::Error> {
+    let (parts, body) = response.into_parts();
+    let bytes = body::to_bytes(body).await?;
+
+    let body = Body::from(bytes.clone());
+    Ok((bytes, Response::from_parts(parts, body)))
 }

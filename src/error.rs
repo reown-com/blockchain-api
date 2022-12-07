@@ -30,6 +30,9 @@ pub enum RpcError {
     #[error("Request::builder() failed: {0}")]
     RequestBuilderError(#[from] hyper::http::Error),
 
+    #[error("Provider is throttling the requests")]
+    Throttled,
+
     #[error("{0:?}")]
     Other(#[from] anyhow::Error),
 }

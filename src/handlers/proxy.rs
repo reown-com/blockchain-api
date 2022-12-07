@@ -3,8 +3,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use crate::analytics::MessageInfo;
-use hyper::body::Bytes;
-use hyper::{body, Body, Response};
+use crate::error::RpcError;
 use tracing::warn;
 
 use crate::handlers::{handshake_error, RpcQueryParams};
@@ -74,38 +73,16 @@ pub async fn handler(
 
     // TODO: map the response error codes properly
     // e.g. HTTP401 from target should map to HTTP500
-    let response = provider
+    provider
         .proxy(method, path, query_params, headers, body)
-        .await;
-
-    match response {
-        Err(err) => {
-            warn!(%err, "request failed");
-            Err(warp::reject::reject())
-        }
-        Ok(response) => match copy_body_bytes(response).await {
-            Ok((body_bytes, response)) => {
-                if provider.is_rate_limited(&response, body_bytes) {
-                    state
-                        .metrics
-                        .add_rate_limited_call(provider.borrow(), project_id)
-                };
-                Ok(response)
+        .await
+        .map_err(|error| {
+            warn!(%error, "request failed");
+            if let RpcError::Throttled = error {
+                state
+                    .metrics
+                    .add_rate_limited_call(provider.borrow(), project_id)
             }
-            Err(err) => {
-                warn!(%err, "failed converting body to bytes");
-                Err(warp::reject::reject())
-            }
-        },
-    }
-}
-
-async fn copy_body_bytes(
-    response: Response<Body>,
-) -> Result<(Bytes, Response<Body>), hyper::Error> {
-    let (parts, body) = response.into_parts();
-    let bytes = body::to_bytes(body).await?;
-
-    let body = Body::from(bytes.clone());
-    Ok((bytes, Response::from_parts(parts, body)))
+            warp::reject::reject()
+        })
 }

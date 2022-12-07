@@ -3,7 +3,6 @@ mod pokt;
 
 use crate::{error::RpcResult, handlers::RpcQueryParams};
 use async_trait::async_trait;
-use hyper::body::Bytes;
 use hyper::Body;
 use hyper::Response;
 pub use infura::InfuraProvider;
@@ -66,7 +65,5 @@ pub trait RpcProvider: Send + Sync {
 
     fn provider_kind(&self) -> ProviderKind;
 
-    fn project_id(&self) -> String;
-
-    fn is_rate_limited(&self, respose: &Response<Body>, body_bytes: Bytes) -> bool;
+    fn project_id(&self) -> &str;
 }
