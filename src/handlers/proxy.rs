@@ -83,22 +83,29 @@ pub async fn handler(
             warn!(%err, "request failed");
             Err(warp::reject::reject())
         }
-        Ok(response) => {
-            let (body_bytes, response) = copy_body_bytes(response).await;
-            if provider.is_rate_limited(&response, body_bytes) {
-                state
-                    .metrics
-                    .add_rate_limited_call(provider.borrow(), project_id)
-            };
-            Ok(response)
-        }
+        Ok(response) => match copy_body_bytes(response).await {
+            Ok((body_bytes, response)) => {
+                if provider.is_rate_limited(&response, body_bytes) {
+                    state
+                        .metrics
+                        .add_rate_limited_call(provider.borrow(), project_id)
+                };
+                Ok(response)
+            }
+            Err(err) => {
+                warn!(%err, "failed converting body to bytes");
+                Err(warp::reject::reject())
+            }
+        },
     }
 }
 
-async fn copy_body_bytes(response: Response<Body>) -> (Bytes, Response<Body>) {
+async fn copy_body_bytes(
+    response: Response<Body>,
+) -> Result<(Bytes, Response<Body>), hyper::Error> {
     let (parts, body) = response.into_parts();
-    let bytes = body::to_bytes(body).await.unwrap();
+    let bytes = body::to_bytes(body).await?;
 
     let body = Body::from(bytes.clone());
-    (bytes, Response::from_parts(parts, body))
+    Ok((bytes, Response::from_parts(parts, body)))
 }
