@@ -12,10 +12,12 @@ build = "build.rs"
 async-trait = "0.1.57"
 tokio = { version = "1", features = ["full"] }
 
+# Web
 hyper = "0.14.4"
 hyper-tls = "0.5.0"
 tap = "1.0"
 warp = "0.3"
+jsonrpc = "0.14.0"
 
 # Serialization
 rmp-serde = "1.1"

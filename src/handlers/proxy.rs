@@ -3,7 +3,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use crate::analytics::MessageInfo;
-use tap::TapFallible;
+use hyper::body::Bytes;
+use hyper::{body, Body, Response};
 use tracing::warn;
 
 use crate::handlers::{handshake_error, RpcQueryParams};
@@ -73,16 +74,31 @@ pub async fn handler(
 
     // TODO: map the response error codes properly
     // e.g. HTTP401 from target should map to HTTP500
-    provider
+    let response = provider
         .proxy(method, path, query_params, headers, body)
-        .await
-        .tap_err(|error| warn!(%error, "request failed"))
-        .tap_ok(|response| {
-            if provider.is_rate_limited(response) {
+        .await;
+
+    match response {
+        Err(err) => {
+            warn!(%err, "request failed");
+            Err(warp::reject::reject())
+        }
+        Ok(response) => {
+            let (body_bytes, response) = copy_body_bytes(response).await;
+            if provider.is_rate_limited(&response, body_bytes) {
                 state
                     .metrics
                     .add_rate_limited_call(provider.borrow(), project_id)
-            }
-        })
-        .map_err(|_| warp::reject::reject())
+            };
+            Ok(response)
+        }
+    }
+}
+
+async fn copy_body_bytes(response: Response<Body>) -> (Bytes, Response<Body>) {
+    let (parts, body) = response.into_parts();
+    let bytes = body::to_bytes(body).await.unwrap();
+
+    let body = Body::from(bytes.clone());
+    (bytes, Response::from_parts(parts, body))
 }

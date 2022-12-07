@@ -1,7 +1,7 @@
 use super::{ProviderKind, RpcProvider, RpcQueryParams};
 use crate::error::{RpcError, RpcResult};
 use async_trait::async_trait;
-use hyper::{client::HttpConnector, http, Body, Client, Response};
+use hyper::{body::Bytes, client::HttpConnector, Body, Client, Response};
 use hyper_tls::HttpsConnector;
 use std::collections::HashMap;
 
@@ -59,7 +59,20 @@ impl RpcProvider for PoktProvider {
         self.project_id.clone()
     }
 
-    fn is_rate_limited(&self, response: &Response<Body>) -> bool {
-        response.status() == http::StatusCode::TOO_MANY_REQUESTS
+    fn is_rate_limited(&self, _: &Response<Body>, body_bytes: Bytes) -> bool {
+        let jsonrpc_response = serde_json::from_slice::<jsonrpc::Response>(&body_bytes);
+
+        if jsonrpc_response.is_err() {
+            return false;
+        }
+
+        if let Some(err) = jsonrpc_response.unwrap().error {
+            // Code used by Pokt to indicate rate limited request
+            // https://github.com/pokt-foundation/portal-api/blob/e06d1e50abfee8533c58768bb9b638c351b87a48/src/controllers/v1.controller.ts
+            if err.code == -32068 {
+                return true;
+            }
+        }
+        false
     }
 }

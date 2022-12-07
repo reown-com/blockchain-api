@@ -1,7 +1,7 @@
 use super::{ProviderKind, RpcProvider, RpcQueryParams};
 use crate::error::{RpcError, RpcResult};
 use async_trait::async_trait;
-use hyper::{client::HttpConnector, http, Body, Client, Response};
+use hyper::{body::Bytes, client::HttpConnector, http, Body, Client, Response};
 use hyper_tls::HttpsConnector;
 use std::collections::HashMap;
 
@@ -56,7 +56,7 @@ impl RpcProvider for InfuraProvider {
         self.project_id.clone()
     }
 
-    fn is_rate_limited(&self, response: &Response<Body>) -> bool {
+    fn is_rate_limited(&self, response: &Response<Body>, _: Bytes) -> bool {
         response.status() == http::StatusCode::TOO_MANY_REQUESTS
     }
 }
