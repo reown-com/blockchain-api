@@ -56,6 +56,7 @@ module "ecs" {
   project_data_redis_endpoint_write = module.redis.endpoint
 
   analytics_bucket_name          = aws_s3_bucket.analytics_bucket.bucket
+  analytics_key_arn              = aws_kms_key.analytics_bucket.arn
   analytics_geoip_db_bucket_name = local.analytics_geoip_db_bucket_name
   analytics_geoip_db_key         = var.analytics_geoip_db_key
 }

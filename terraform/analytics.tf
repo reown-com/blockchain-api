@@ -19,7 +19,7 @@ resource "aws_s3_bucket_public_access_block" "analytics_bucket" {
 }
 
 resource "aws_kms_key" "analytics_bucket" {
-  description             = "key to encrypt analytics bucket objects"
+  description             = "${terraform.workspace} - analytics bucket encryption"
   enable_key_rotation     = true
   deletion_window_in_days = 10
 }
