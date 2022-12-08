@@ -18,12 +18,18 @@ resource "aws_s3_bucket_public_access_block" "analytics_bucket" {
   restrict_public_buckets = true
 }
 
+resource "aws_kms_key" "analytics_bucket" {
+  description             = "key to encrypt analytics bucket objects"
+  enable_key_rotation     = true
+  deletion_window_in_days = 10
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "analytics_bucket" {
   bucket = aws_s3_bucket.analytics_bucket.id
 
   rule {
     apply_server_side_encryption_by_default {
-      kms_master_key_id = "arn"
+      kms_master_key_id = aws_kms_key.analytics_bucket.arn
       sse_algorithm     = "aws:kms"
     }
   }
