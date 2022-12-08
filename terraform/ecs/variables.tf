@@ -74,3 +74,7 @@ variable "analytics_geoip_db_key" {
 variable "analytics_geoip_db_bucket_name" {
   type = string
 }
+
+variable "analytics_key_arn" {
+  type = string
+}
