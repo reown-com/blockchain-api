@@ -44,7 +44,7 @@ opentelemetry = { version = "0.17.0", features = ["trace", "metrics", "rt-tokio"
 opentelemetry-prometheus = "0.10.0"
 prometheus-core = { package = "prometheus", version = "0.13" }
 tracing = "0.1"
-tracing-subscriber = "0.3"
+tracing-subscriber = { version = "0.3", features = ["json"] }
 
 cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.1.2" }
 gorgon = { git = "https://github.com/WalletConnect/gorgon.git", tag = "v0.1.1" }
