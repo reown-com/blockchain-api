@@ -41,7 +41,7 @@ async fn main() -> error::RpcResult<()> {
             tracing::Level::from_str(config.server.log_level.as_str()).expect("Invalid log level"),
         )
         .with_span_events(FmtSpan::CLOSE)
-        .json()
+        .with_ansi(false)
         .init();
 
     let prometheus_exporter = opentelemetry_prometheus::exporter().init();
