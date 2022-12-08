@@ -67,7 +67,7 @@ resource "aws_iam_policy" "analytics_bucket_access" {
         "Resource" : ["arn:aws:s3:::${var.analytics_geoip_db_bucket_name}/*"]
       },
       {
-        "Sid" : "AllObjectActionsInGeoipBucket",
+        "Sid" : "AllGenerateDataKeyForAnalyticsBucket",
         "Effect" : "Allow",
         "Action" : ["kms:GenerateDataKey"],
         "Resource" : [var.analytics_key_arn]
