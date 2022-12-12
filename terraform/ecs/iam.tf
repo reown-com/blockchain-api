@@ -31,7 +31,7 @@ resource "aws_iam_role_policy_attachment" "prometheus_write_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonPrometheusRemoteWriteAccess"
 }
 
-# Analytics Bucket Access
+# Analytics Legacy Bucket Access
 resource "aws_iam_policy" "analytics_bucket_access" {
   name        = "${var.app_name}_analytics_bucket_access"
   path        = "/"
@@ -76,7 +76,57 @@ resource "aws_iam_policy" "analytics_bucket_access" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "bucket-policy-attach" {
+resource "aws_iam_role_policy_attachment" "analytics-bucket-policy-attach" {
   role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = aws_iam_policy.analytics_bucket_access.arn
+  policy_arn = aws_iam_policy.analytics-data-lake_bucket_access.arn
+}
+
+# Analytics Bucket Access
+resource "aws_iam_policy" "analytics-data-lake_bucket_access" {
+  name        = "${var.app_name}_analytics-data-lake_bucket_access"
+  path        = "/"
+  description = "Allows ${var.app_name} to read/write from ${var.analytics-data-lake_bucket_name}"
+
+  # Terraform's "jsonencode" function converts a
+  # Terraform expression result to valid JSON syntax.
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Sid" : "ListObjectsInAnalyticsBucket",
+        "Effect" : "Allow",
+        "Action" : ["s3:ListBucket"],
+        "Resource" : ["arn:aws:s3:::${var.analytics-data-lake_bucket_name}"]
+      },
+      {
+        "Sid" : "AllObjectActionsInAnalyticsBucket",
+        "Effect" : "Allow",
+        "Action" : ["s3:CopyObject", "s3:DeleteObject", "s3:GetObject", "s3:HeadObject", "s3:PutObject", "s3:RestoreObject"],
+        "Resource" : ["arn:aws:s3:::${var.analytics-data-lake_bucket_name}/*"]
+      },
+      {
+        "Sid" : "ListObjectsInGeoipBucket",
+        "Effect" : "Allow",
+        "Action" : ["s3:ListBucket"],
+        "Resource" : ["arn:aws:s3:::${var.analytics_geoip_db_bucket_name}"]
+      },
+      {
+        "Sid" : "AllObjectActionsInGeoipBucket",
+        "Effect" : "Allow",
+        "Action" : ["s3:CopyObject", "s3:GetObject", "s3:HeadObject"],
+        "Resource" : ["arn:aws:s3:::${var.analytics_geoip_db_bucket_name}/*"]
+      },
+      {
+        "Sid" : "AllGenerateDataKeyForAnalyticsBucket",
+        "Effect" : "Allow",
+        "Action" : ["kms:GenerateDataKey"],
+        "Resource" : [var.analytics_key_arn]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "analytics-data-lake-bucket-policy-attach" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = aws_iam_policy.analytics-data-lake_bucket_access.arn
 }
