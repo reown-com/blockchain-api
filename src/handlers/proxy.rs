@@ -59,6 +59,7 @@ pub async fn handler(
             .and_then(|addr| state.analytics.lookup_geo_data(addr.ip()))
             .map(|geo| (geo.country, geo.continent))
             .unwrap_or((None, None));
+
         state.analytics.message(MessageInfo::new(
             &query_params,
             &rpc_request,
