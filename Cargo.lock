@@ -1061,8 +1061,8 @@ dependencies = [
 
 [[package]]
 name = "gorgon"
-version = "0.1.1"
-source = "git+https://github.com/WalletConnect/gorgon.git?tag=v0.1.1#907458eae0f17039193adc27621cc4f571986fdd"
+version = "0.1.2"
+source = "git+https://github.com/WalletConnect/gorgon.git?tag=v0.1.2#2ffab966f30c500126bb99f183a7fb20529d2a09"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2236,6 +2236,7 @@ dependencies = [
  "aws-config",
  "aws-sdk-s3",
  "cerberus",
+ "chrono",
  "deadpool-redis",
  "derive_more",
  "dotenv",

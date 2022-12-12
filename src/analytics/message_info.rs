@@ -7,17 +7,69 @@ use std::sync::Arc;
 
 #[derive(Debug, Clone, Serialize, ParquetRecordWriter)]
 #[serde(rename_all = "camelCase")]
+pub struct LegacyMessageInfo {
+    pub timestamp: String,
+
+    pub project_id: String,
+    pub chain_id: String,
+    pub method: Arc<str>,
+
+    pub sender: Option<String>,
+
+    pub country: Option<Arc<str>>,
+    pub continent: Option<Arc<str>>,
+}
+
+impl LegacyMessageInfo {
+    pub fn new(
+        query_params: &RpcQueryParams,
+        request: &JsonRpcRequest,
+        sender: Option<SocketAddr>,
+        country: Option<Arc<str>>,
+        continent: Option<Arc<str>>,
+    ) -> Self {
+        Self {
+            timestamp: gorgon::time::format(&gorgon::time::now()),
+
+            project_id: query_params.project_id.to_owned(),
+            chain_id: query_params.chain_id.to_lowercase(),
+            method: request.method.clone(),
+
+            sender: sender.map(|s| s.to_string()),
+
+            country,
+            continent,
+        }
+    }
+}
+
+impl From<MessageInfo> for LegacyMessageInfo {
+    fn from(value: MessageInfo) -> Self {
+        Self {
+            timestamp: gorgon::time::format(&value.timestamp),
+            project_id: value.project_id,
+            chain_id: value.chain_id,
+            method: value.method,
+            sender: value.sender.clone(),
+            country: value.country.clone(),
+            continent: value.continent.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, ParquetRecordWriter)]
+#[serde(rename_all = "camelCase")]
 pub struct MessageInfo {
-    timestamp: String,
+    pub timestamp: chrono::NaiveDateTime,
 
-    project_id: String,
-    chain_id: String,
-    method: Arc<str>,
+    pub project_id: String,
+    pub chain_id: String,
+    pub method: Arc<str>,
 
-    sender: Option<String>,
+    pub sender: Option<String>,
 
-    country: Option<Arc<str>>,
-    continent: Option<Arc<str>>,
+    pub country: Option<Arc<str>>,
+    pub continent: Option<Arc<str>>,
 }
 
 impl MessageInfo {
@@ -29,7 +81,7 @@ impl MessageInfo {
         continent: Option<Arc<str>>,
     ) -> Self {
         Self {
-            timestamp: gorgon::create_timestamp(),
+            timestamp: gorgon::time::now(),
 
             project_id: query_params.project_id.to_owned(),
             chain_id: query_params.chain_id.to_lowercase(),
