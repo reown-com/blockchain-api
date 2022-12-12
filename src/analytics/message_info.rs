@@ -20,29 +20,6 @@ pub struct LegacyMessageInfo {
     pub continent: Option<Arc<str>>,
 }
 
-impl LegacyMessageInfo {
-    pub fn new(
-        query_params: &RpcQueryParams,
-        request: &JsonRpcRequest,
-        sender: Option<SocketAddr>,
-        country: Option<Arc<str>>,
-        continent: Option<Arc<str>>,
-    ) -> Self {
-        Self {
-            timestamp: gorgon::time::format(&gorgon::time::now()),
-
-            project_id: query_params.project_id.to_owned(),
-            chain_id: query_params.chain_id.to_lowercase(),
-            method: request.method.clone(),
-
-            sender: sender.map(|s| s.to_string()),
-
-            country,
-            continent,
-        }
-    }
-}
-
 impl From<MessageInfo> for LegacyMessageInfo {
     fn from(value: MessageInfo) -> Self {
         Self {
