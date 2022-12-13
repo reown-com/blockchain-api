@@ -1,3 +1,16 @@
+resource "aws_kms_key" "analytics_bucket" {
+  description             = "${terraform.workspace} - analytics bucket encryption"
+  enable_key_rotation     = true
+  deletion_window_in_days = 10
+}
+
+resource "aws_kms_alias" "analytics_bucket" {
+  target_key_id = aws_kms_key.analytics_bucket.id
+  name          = "alias/analytics/${local.app_name}/${terraform.workspace}"
+}
+
+################################################################################
+
 # Analytics S3 Bucket
 #tfsec:ignore:aws-s3-enable-bucket-logging
 resource "aws_s3_bucket" "analytics_bucket" {
@@ -18,17 +31,6 @@ resource "aws_s3_bucket_public_access_block" "analytics_bucket" {
   restrict_public_buckets = true
 }
 
-resource "aws_kms_key" "analytics_bucket" {
-  description             = "${terraform.workspace} - analytics bucket encryption"
-  enable_key_rotation     = true
-  deletion_window_in_days = 10
-}
-
-resource "aws_kms_alias" "analytics_bucket" {
-  target_key_id = aws_kms_key.analytics_bucket.id
-  name          = "alias/analytics/proxy/${terraform.workspace}"
-}
-
 resource "aws_s3_bucket_server_side_encryption_configuration" "analytics_bucket" {
   bucket = aws_s3_bucket.analytics_bucket.id
 
@@ -37,6 +39,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "analytics_bucket"
       kms_master_key_id = aws_kms_key.analytics_bucket.arn
       sse_algorithm     = "aws:kms"
     }
+    bucket_key_enabled = true
   }
 }
 
@@ -49,7 +52,6 @@ resource "aws_s3_bucket_versioning" "analytics_bucket" {
 }
 
 ################################################################################
-
 
 #tfsec:ignore:aws-s3-enable-bucket-logging
 resource "aws_s3_bucket" "analytics-data-lake_bucket" {
@@ -78,6 +80,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "analytics-data-la
       kms_master_key_id = aws_kms_key.analytics_bucket.arn
       sse_algorithm     = "aws:kms"
     }
+    bucket_key_enabled = true
   }
 }
 
