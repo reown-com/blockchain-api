@@ -64,7 +64,7 @@ jobs:
     steps:
       # Checkout code
       - name: "Git checkout"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # Install sccache
       - name: "Install sccache"
@@ -127,7 +127,7 @@ jobs:
     steps:
       # Checkout code
       - name: "Git checkout"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
