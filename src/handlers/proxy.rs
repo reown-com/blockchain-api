@@ -1,8 +1,9 @@
+use std::borrow::Borrow;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use crate::analytics::MessageInfo;
-use tap::TapFallible;
+use crate::error::RpcError;
 use tracing::warn;
 
 use crate::handlers::{handshake_error, RpcQueryParams};
@@ -69,11 +70,20 @@ pub async fn handler(
         ))
     }
 
+    let project_id = query_params.project_id.clone();
+
     // TODO: map the response error codes properly
     // e.g. HTTP401 from target should map to HTTP500
     provider
         .proxy(method, path, query_params, headers, body)
         .await
-        .tap_err(|error| warn!(%error, "request failed"))
-        .map_err(|_| warp::reject::reject())
+        .map_err(|error| {
+            warn!(%error, "request failed");
+            if let RpcError::Throttled = error {
+                state
+                    .metrics
+                    .add_rate_limited_call(provider.borrow(), project_id)
+            }
+            warp::reject::reject()
+        })
 }
