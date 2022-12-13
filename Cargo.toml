@@ -12,6 +12,8 @@ build = "build.rs"
 async-trait = "0.1.57"
 tokio = { version = "1", features = ["full"] }
 
+# Web
+jsonrpc = "0.14.0"
 hyper = "0.14.4"
 hyper-tls = "0.5.0"
 tap = "1.0"
@@ -50,6 +52,9 @@ cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.1.
 gorgon = { git = "https://github.com/WalletConnect/gorgon.git", tag = "v0.1.1" }
 parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "431abf5", default-features = false, features = ["flate2"]  }
 parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "431abf5" }
+
+[dev-dependencies]
+test-context = "0.1"
 
 [build-dependencies]
 vergen = { version = "6", default-features = false, features = ["build", "cargo", "git"] }
