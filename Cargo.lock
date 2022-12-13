@@ -1349,6 +1349,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonrpc"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "248ea3eab5d9a37ee324b1f576f19d274ff7e56cd5206ea4755a7ef918e94fa4"
+dependencies = [
+ "base64",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2245,6 +2256,7 @@ dependencies = [
  "hyper",
  "hyper-tls",
  "ipnet",
+ "jsonrpc",
  "once_cell",
  "opentelemetry",
  "opentelemetry-prometheus",

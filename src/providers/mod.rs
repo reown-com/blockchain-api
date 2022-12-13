@@ -8,6 +8,7 @@ use hyper::Response;
 pub use infura::InfuraProvider;
 pub use pokt::PoktProvider;
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::sync::Arc;
 
 #[derive(Default, Clone)]
@@ -29,6 +30,24 @@ impl ProviderRepository {
     }
 }
 
+pub enum ProviderKind {
+    Infura,
+    Pokt,
+}
+
+impl Display for ProviderKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                ProviderKind::Infura => "Infura",
+                ProviderKind::Pokt => "Pokt",
+            }
+        )
+    }
+}
+
 #[async_trait]
 pub trait RpcProvider: Send + Sync {
     async fn proxy(
@@ -43,4 +62,8 @@ pub trait RpcProvider: Send + Sync {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool;
 
     fn supported_caip_chainids(&self) -> Vec<String>;
+
+    fn provider_kind(&self) -> ProviderKind;
+
+    fn project_id(&self) -> &str;
 }

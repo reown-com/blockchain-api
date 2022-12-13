@@ -1,7 +1,7 @@
-use super::{RpcProvider, RpcQueryParams};
+use super::{ProviderKind, RpcProvider, RpcQueryParams};
 use crate::error::{RpcError, RpcResult};
 use async_trait::async_trait;
-use hyper::{client::HttpConnector, Body, Client, Response};
+use hyper::{client::HttpConnector, http, Body, Client, Response};
 use hyper_tls::HttpsConnector;
 use std::collections::HashMap;
 
@@ -37,7 +37,14 @@ impl RpcProvider for InfuraProvider {
 
         // TODO: map the response error codes properly
         // e.g. HTTP401 from target should map to HTTP500
-        Ok(self.client.request(hyper_request).await?)
+
+        let response = self.client.request(hyper_request).await?;
+
+        if is_rate_limited(&response) {
+            return Err(RpcError::Throttled);
+        }
+
+        Ok(response)
     }
 
     fn supports_caip_chainid(&self, chain_id: &str) -> bool {
@@ -47,4 +54,16 @@ impl RpcProvider for InfuraProvider {
     fn supported_caip_chainids(&self) -> Vec<String> {
         self.supported_chains.keys().cloned().collect()
     }
+
+    fn provider_kind(&self) -> ProviderKind {
+        ProviderKind::Infura
+    }
+
+    fn project_id(&self) -> &str {
+        &self.project_id
+    }
+}
+
+fn is_rate_limited(response: &Response<Body>) -> bool {
+    response.status() == http::StatusCode::TOO_MANY_REQUESTS
 }
