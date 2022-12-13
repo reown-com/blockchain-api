@@ -46,12 +46,14 @@ opentelemetry = { version = "0.17.0", features = ["trace", "metrics", "rt-tokio"
 opentelemetry-prometheus = "0.10.0"
 prometheus-core = { package = "prometheus", version = "0.13" }
 tracing = "0.1"
-tracing-subscriber = "0.3"
+tracing-subscriber = { version = "0.3", features = ["json", "ansi"] }
 
 cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.1.2" }
-gorgon = { git = "https://github.com/WalletConnect/gorgon.git", tag = "v0.1.1" }
+gorgon = { git = "https://github.com/WalletConnect/gorgon.git", tag = "v0.1.2" }
 parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "431abf5", default-features = false, features = ["flate2"]  }
 parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "431abf5" }
+chrono = { version = "0.4", features = ["serde"] }
+
 
 [build-dependencies]
 vergen = { version = "6", default-features = false, features = ["build", "cargo", "git"] }

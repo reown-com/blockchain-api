@@ -2,7 +2,7 @@
 
 Get yourself some AWS creds and then init your workspace:
 
-`terraform -chdir=terraform init -var-file="vars/dev.tfvars"`
+`terraform -chdir=terraform init`
 
 Use the dev workspace:
 
@@ -10,4 +10,4 @@ Use the dev workspace:
 
 Now you can apply the changes:
 
-`terraform -chdir=terraform apply  -var-file="vars/dev.tfvars"`
+`terraform -chdir=terraform apply -var-file="vars/$(terraform -chdir=terraform workspace show).tfvars"`
