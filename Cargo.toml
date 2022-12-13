@@ -55,5 +55,9 @@ parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = 
 chrono = { version = "0.4", features = ["serde"] }
 
 
+[dev-dependencies]
+jsonrpc = "0.14.0"
+test-context = "0.1"
+
 [build-dependencies]
 vergen = { version = "6", default-features = false, features = ["build", "cargo", "git"] }

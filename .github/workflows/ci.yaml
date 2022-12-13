@@ -61,6 +61,7 @@ jobs:
       RUSTC_WRAPPER: sccache
       SCCACHE_CACHE_SIZE: 1G
       SCCACHE_DIR: ${{ matrix.sccache-path }}
+      
     steps:
       # Checkout code
       - name: "Git checkout"
@@ -108,6 +109,12 @@ jobs:
           sccache --start-server
 
       - name: "Task ${{ matrix.cargo.name }}"
+        env:
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          RPC_PROXY_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }} 
+          RPC_PROXY_REGISTRY_API_URL: ${{ secrets.REGISTRY_URL }}
+          RPC_PROXY_REGISTRY_API_AUTH_TOKEN: ${{ secrets.RPC_PROXY_REGISTRY_API_AUTH_TOKEN }}
+          RPC_PROXY_POKT_PROJECT_ID: ${{ secrets.POKT_PROJECT_ID }} 
         uses: actions-rs/cargo@v1
         with:
           command: ${{ matrix.cargo.cmd }}

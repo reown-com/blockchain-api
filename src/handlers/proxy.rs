@@ -7,7 +7,7 @@ use crate::error::RpcError;
 use tracing::warn;
 
 use crate::handlers::{handshake_error, RpcQueryParams};
-use crate::State;
+use crate::state::State;
 
 use super::field_validation_error;
 

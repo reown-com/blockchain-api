@@ -1,9 +1,9 @@
 use crate::analytics::RPCAnalytics;
+use crate::env::Config;
 use crate::metrics::Metrics;
 use crate::project::Registry;
 use crate::providers::ProviderRepository;
 use crate::utils::build::CompileInfo;
-use crate::Config;
 use opentelemetry_prometheus::PrometheusExporter;
 
 pub struct State {
