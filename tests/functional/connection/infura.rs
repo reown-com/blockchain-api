@@ -2,7 +2,10 @@ use hyper::{http, Body, Client, Method, Request, StatusCode};
 use hyper_tls::HttpsConnector;
 use test_context::test_context;
 
-use crate::{context::ServerContext, utils::utils::send_jsonrpc_request, JSONRPC_VERSION};
+use crate::{
+    context::ServerContext, functional::connection::INFURA_CHAIN_DECOMISSIONED_ERROR_CODE,
+    utils::send_jsonrpc_request, JSONRPC_VERSION,
+};
 
 #[test_context(ServerContext)]
 #[tokio::test]
@@ -91,7 +94,10 @@ async fn eip155_3_ropsten_infura(ctx: &mut ServerContext) {
 
     // Verify the error code is for
     // "Network decommissioned, please use Goerli or Sepolia instead"
-    assert_eq!(rpc_response.error.unwrap().code, -32601);
+    assert_eq!(
+        rpc_response.error.unwrap().code,
+        INFURA_CHAIN_DECOMISSIONED_ERROR_CODE
+    );
 }
 
 #[test_context(ServerContext)]
@@ -117,7 +123,10 @@ async fn eip155_42_kovan_infura(ctx: &mut ServerContext) {
 
     // Verify the error code is for
     // "Network decommissioned, please use Goerli or Sepolia instead"
-    assert_eq!(rpc_response.error.unwrap().code, -32601);
+    assert_eq!(
+        rpc_response.error.unwrap().code,
+        INFURA_CHAIN_DECOMISSIONED_ERROR_CODE
+    );
 }
 
 #[test_context(ServerContext)]
@@ -143,7 +152,10 @@ async fn eip155_4_rinkeby_infura(ctx: &mut ServerContext) {
 
     // Verify the error code is for
     // "Network decommissioned, please use Goerli or Sepolia instead"
-    assert_eq!(rpc_response.error.unwrap().code, -32601);
+    assert_eq!(
+        rpc_response.error.unwrap().code,
+        INFURA_CHAIN_DECOMISSIONED_ERROR_CODE
+    );
 }
 
 #[test_context(ServerContext)]
@@ -281,7 +293,10 @@ async fn eip155_69_optimism_kovan_infura(ctx: &mut ServerContext) {
 
     // Verify the error code is for
     // "message":"Network decommissioned, please use Goerli",
-    assert_eq!(rpc_response.error.unwrap().code, -32601);
+    assert_eq!(
+        rpc_response.error.unwrap().code,
+        INFURA_CHAIN_DECOMISSIONED_ERROR_CODE
+    );
 }
 
 #[test_context(ServerContext)]
@@ -363,7 +378,10 @@ async fn eip155_421611_arbitrum_rinkeby_infura(ctx: &mut ServerContext) {
 
     // Verify the error code is for
     // "message":"Network decommissioned, please use Goerli",
-    assert_eq!(rpc_response.error.unwrap().code, -32601);
+    assert_eq!(
+        rpc_response.error.unwrap().code,
+        INFURA_CHAIN_DECOMISSIONED_ERROR_CODE
+    );
 }
 
 #[test_context(ServerContext)]
