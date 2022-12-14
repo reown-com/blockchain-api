@@ -63,10 +63,6 @@ variable "project_data_redis_endpoint_write" {
   type = string
 }
 
-variable "analytics_bucket_name" {
-  type = string
-}
-
 variable "analytics-data-lake_bucket_name" {
   type = string
 }

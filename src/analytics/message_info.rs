@@ -7,35 +7,6 @@ use std::sync::Arc;
 
 #[derive(Debug, Clone, Serialize, ParquetRecordWriter)]
 #[serde(rename_all = "camelCase")]
-pub struct LegacyMessageInfo {
-    pub timestamp: String,
-
-    pub project_id: String,
-    pub chain_id: String,
-    pub method: Arc<str>,
-
-    pub sender: Option<String>,
-
-    pub country: Option<Arc<str>>,
-    pub continent: Option<Arc<str>>,
-}
-
-impl From<MessageInfo> for LegacyMessageInfo {
-    fn from(value: MessageInfo) -> Self {
-        Self {
-            timestamp: gorgon::time::format(&value.timestamp),
-            project_id: value.project_id,
-            chain_id: value.chain_id,
-            method: value.method,
-            sender: value.sender.clone(),
-            country: value.country.clone(),
-            continent: value.continent.clone(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, ParquetRecordWriter)]
-#[serde(rename_all = "camelCase")]
 pub struct MessageInfo {
     pub timestamp: chrono::NaiveDateTime,
 
