@@ -11,7 +11,6 @@ resource "aws_kms_alias" "analytics_bucket" {
 
 ################################################################################
 
-#tfsec:ignore:aws-s3-enable-bucket-logging
 resource "aws_s3_bucket" "analytics-data-lake_bucket" {
   bucket = "walletconnect.${local.app_name}.${terraform.workspace}.analytics.data-lake"
 }
@@ -48,4 +47,11 @@ resource "aws_s3_bucket_versioning" "analytics-data-lake_bucket" {
   versioning_configuration {
     status = "Enabled"
   }
+}
+
+resource "aws_s3_bucket_logging" "analytics-data-lake_bucket" {
+  bucket = aws_s3_bucket.analytics-data-lake_bucket.id
+
+  target_bucket = module.logging.logging_bucket-id
+  target_prefix = "logs/analytics.data-lake/"
 }
