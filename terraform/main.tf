@@ -33,6 +33,11 @@ data "aws_ecr_repository" "repository" {
   name = local.app_name
 }
 
+module "logging" {
+  source   = "./logging"
+  app_name = local.app_name
+}
+
 # ECS Cluster, Task, Service, and Load Balancer for our app
 module "ecs" {
   source = "./ecs"
