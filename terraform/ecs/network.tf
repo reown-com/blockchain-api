@@ -44,11 +44,12 @@ resource "aws_alb" "network_load_balancer" {
 }
 
 resource "aws_lb_target_group" "target_group" {
-  name        = replace("${var.app_name}-${substr(uuid(), 0, 3)}", "_", "-")
-  port        = var.port
-  protocol    = "TCP"
-  target_type = "ip"
-  vpc_id      = data.aws_vpc.vpc.id
+  name               = replace("${var.app_name}-${substr(uuid(), 0, 3)}", "_", "-")
+  port               = var.port
+  protocol           = "TCP"
+  target_type        = "ip"
+  vpc_id             = data.aws_vpc.vpc.id
+  preserve_client_ip = true
 
   # Deregister quickly to allow for faster deployments
   deregistration_delay = 30 # Seconds
