@@ -84,17 +84,22 @@ resource "aws_lb_listener" "listener" {
   }
 }
 
+moved {
+  from = aws_security_group.tls_ingess
+  to   = aws_security_group.tls_ingress
+}
 
 # Security Groups
-resource "aws_security_group" "tls_ingess" {
+resource "aws_security_group" "tls_ingress" {
   name        = "${var.app_name}-tls-ingress"
   description = "Allow tls ingress from everywhere"
   vpc_id      = data.aws_vpc.vpc.id
 
-  ingress { #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
-    from_port = 443
-    to_port   = 443
-    protocol  = "tcp"
+  ingress {
+    description = "allow TLS traffic from open internet to the proxy"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     #tfsec:ignore:aws-ec2-no-public-ingress-sgr
     cidr_blocks = ["0.0.0.0/0"] # Allowing traffic in from all sources
   }
@@ -113,11 +118,13 @@ resource "aws_security_group" "vpc_app_ingress" {
   description = "Allow app port ingress from vpc"
   vpc_id      = data.aws_vpc.vpc.id
 
-  ingress { #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
+  ingress {
+    description = "allow traffic from open internet to the proxy (needed since lb has client ip forwarding)"
     from_port   = var.port
     to_port     = var.port
     protocol    = "tcp"
-    cidr_blocks = [data.aws_vpc.vpc.cidr_block]
+    #tfsec:ignore:aws-ec2-no-public-ingress-sgr
+    cidr_blocks = ["0.0.0.0/0"] # Allowing traffic in from all sources
   }
 
   egress {           #tfsec:ignore:aws-ec2-add-description-to-security-group-rule

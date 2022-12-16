@@ -149,8 +149,8 @@ resource "aws_ecs_service" "app_service" {
 
   network_configuration {
     subnets          = data.aws_subnets.private_subnets.ids
-    assign_public_ip = false                                                                     # We do public ingress through the LB
-    security_groups  = [aws_security_group.tls_ingess.id, aws_security_group.vpc_app_ingress.id] # Setting the security group
+    assign_public_ip = false                                                                      # We do public ingress through the LB
+    security_groups  = [aws_security_group.tls_ingress.id, aws_security_group.vpc_app_ingress.id] # Setting the security group
   }
 
   load_balancer {
