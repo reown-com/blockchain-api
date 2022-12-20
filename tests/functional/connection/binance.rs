@@ -1,4 +1,4 @@
-use hyper::{Client, StatusCode};
+use hyper::{Body, Client, Method, Request, StatusCode};
 use hyper_tls::HttpsConnector;
 use test_context::test_context;
 
