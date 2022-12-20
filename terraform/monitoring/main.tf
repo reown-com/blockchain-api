@@ -638,137 +638,137 @@ resource "grafana_dashboard" "at_a_glance" {
         ],
       },
       {
-        "alert": {
-          "alertRuleTags": {},
-          "conditions": [
+        "alert" : {
+          "alertRuleTags" : {},
+          "conditions" : [
             {
-              "evaluator": {
-                "params": [
+              "evaluator" : {
+                "params" : [
                   20
                 ],
-                "type": "gt"
+                "type" : "gt"
               },
-              "operator": {
-                "type": "and"
+              "operator" : {
+                "type" : "and"
               },
-              "query": {
-                "params": [
+              "query" : {
+                "params" : [
                   "A",
                   "5m",
                   "now"
                 ]
               },
-              "reducer": {
-                "params": [],
-                "type": "max"
+              "reducer" : {
+                "params" : [],
+                "type" : "max"
               },
-              "type": "query"
+              "type" : "query"
             }
           ],
-          "executionErrorState": "alerting",
-          "for": "5m",
-          "frequency": "1m",
-          "handler": 1,
-          "name": "${var.environment} RPC Proxy Errors alert",
-          "noDataState": "no_data",
-          "notifications": local.notifications
+          "executionErrorState" : "alerting",
+          "for" : "5m",
+          "frequency" : "1m",
+          "handler" : 1,
+          "name" : "${var.environment} RPC Proxy Errors alert",
+          "noDataState" : "no_data",
+          "notifications" : local.notifications
         },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${grafana_data_source.prometheus.uid}"
+        "datasource" : {
+          "type" : "prometheus",
+          "uid" : "${grafana_data_source.prometheus.uid}"
         },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
+        "fieldConfig" : {
+          "defaults" : {
+            "color" : {
+              "mode" : "palette-classic"
             },
-            "custom": {
-              "axisLabel": "",
-              "axisPlacement": "auto",
-              "barAlignment": 0,
-              "drawStyle": "line",
-              "fillOpacity": 0,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
+            "custom" : {
+              "axisLabel" : "",
+              "axisPlacement" : "auto",
+              "barAlignment" : 0,
+              "drawStyle" : "line",
+              "fillOpacity" : 0,
+              "gradientMode" : "none",
+              "hideFrom" : {
+                "legend" : false,
+                "tooltip" : false,
+                "viz" : false
               },
-              "lineInterpolation": "linear",
-              "lineWidth": 1,
-              "pointSize": 5,
-              "scaleDistribution": {
-                "type": "linear"
+              "lineInterpolation" : "linear",
+              "lineWidth" : 1,
+              "pointSize" : 5,
+              "scaleDistribution" : {
+                "type" : "linear"
               },
-              "showPoints": "auto",
-              "spanNulls": false,
-              "stacking": {
-                "group": "A",
-                "mode": "none"
+              "showPoints" : "auto",
+              "spanNulls" : false,
+              "stacking" : {
+                "group" : "A",
+                "mode" : "none"
               },
-              "thresholdsStyle": {
-                "mode": "off"
+              "thresholdsStyle" : {
+                "mode" : "off"
               }
             },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
+            "mappings" : [],
+            "thresholds" : {
+              "mode" : "absolute",
+              "steps" : [
                 {
-                  "color": "green",
-                  "value": null
+                  "color" : "green",
+                  "value" : null
                 },
                 {
-                  "color": "red",
-                  "value": 80
+                  "color" : "red",
+                  "value" : 80
                 }
               ]
             }
           },
-          "overrides": []
+          "overrides" : []
         },
-        "gridPos": {
-          "h": 9,
-          "w": 12,
-          "x": 0,
-          "y": 27
+        "gridPos" : {
+          "h" : 9,
+          "w" : 12,
+          "x" : 0,
+          "y" : 27
         },
-        "id": 9,
-        "options": {
-          "legend": {
-            "calcs": [],
-            "displayMode": "list",
-            "placement": "bottom"
+        "id" : 9,
+        "options" : {
+          "legend" : {
+            "calcs" : [],
+            "displayMode" : "list",
+            "placement" : "bottom"
           },
-          "tooltip": {
-            "mode": "single",
-            "sort": "none"
+          "tooltip" : {
+            "mode" : "single",
+            "sort" : "none"
           }
         },
-        "targets": [
+        "targets" : [
           {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "${grafana_data_source.prometheus.uid}"
+            "datasource" : {
+              "type" : "prometheus",
+              "uid" : "${grafana_data_source.prometheus.uid}"
             },
-            "exemplar": true,
-            "expr": "round(sum(increase(http_call_counter{code=~\"5.+\"}[5m])))",
-            "hide": false,
-            "interval": "",
-            "legendFormat": "",
-            "refId": "A"
+            "exemplar" : true,
+            "expr" : "round(sum(increase(http_call_counter{code=~\"5.+\"}[5m])))",
+            "hide" : false,
+            "interval" : "",
+            "legendFormat" : "",
+            "refId" : "A"
           }
         ],
-        "thresholds": [
+        "thresholds" : [
           {
-            "colorMode": "critical",
-            "op": "gt",
-            "value": 20,
-            "visible": true
+            "colorMode" : "critical",
+            "op" : "gt",
+            "value" : 20,
+            "visible" : true
           }
         ],
-        "title": "Errors",
-        "type": "timeseries"
+        "title" : "Errors",
+        "type" : "timeseries"
       },
       {
         title : "Redis CPU/Memory",
