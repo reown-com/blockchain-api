@@ -61,4 +61,18 @@ use crate::{context::ServerContext, utils::send_jsonrpc_request, JSONRPC_VERSION
 // }
 #[test_context(ServerContext)]
 #[tokio::test]
-async fn test(ctx: &ServerContext) {}
+async fn health_check_2(ctx: &mut ServerContext) {
+    let addr = format!("http://{}/health", ctx.server.public_addr);
+
+    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri(addr)
+        .body(Body::default())
+        .unwrap();
+
+    let response = client.request(request).await.unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK)
+}
