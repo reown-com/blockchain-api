@@ -1,8 +1,10 @@
+mod binance;
 mod infura;
 mod pokt;
 
 use crate::{error::RpcResult, handlers::RpcQueryParams};
 use async_trait::async_trait;
+pub use binance::BinanceProvider;
 use hyper::Body;
 use hyper::Response;
 pub use infura::InfuraProvider;
@@ -33,6 +35,7 @@ impl ProviderRepository {
 pub enum ProviderKind {
     Infura,
     Pokt,
+    Binance,
 }
 
 impl Display for ProviderKind {
@@ -43,6 +46,7 @@ impl Display for ProviderKind {
             match self {
                 ProviderKind::Infura => "Infura",
                 ProviderKind::Pokt => "Pokt",
+                ProviderKind::Binance => "Binance",
             }
         )
     }

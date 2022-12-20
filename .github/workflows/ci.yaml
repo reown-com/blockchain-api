@@ -49,9 +49,17 @@ jobs:
             cmd: fmt
             args: -- --check
             cache: {}
-          - name: "Unit Tests"
+          - name: "Integration Tests: Pokt"
             cmd: test
-            args: --all-features
+            args: --all-features -- functional::connection::pokt
+            cache: { sharedKey: "tests" }
+          - name: "Integration Tests: Infura" 
+            cmd: test
+            args: --all-features -- functional::connection::infura
+            cache: { sharedKey: "tests" }
+          - name: "Integration Tests: Binance"
+            cmd: test
+            args: --all-features -- functional::connection::binance
             cache: { sharedKey: "tests" }
         include:
           - os: ubuntu-latest

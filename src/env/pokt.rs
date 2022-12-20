@@ -21,5 +21,7 @@ fn default_pokt_supported_chains() -> HashMap<String, String> {
         ("eip155:43114".into(), "avax-mainnet".into()),
         // Gnosis
         ("eip155:100".into(), "poa-xdai".into()),
+        // Binance Smart Chain
+        // ("eip155:56".into(), "bsc-mainnet".into()),
     ])
 }

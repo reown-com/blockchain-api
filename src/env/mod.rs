@@ -6,10 +6,12 @@ use crate::error;
 use crate::project::storage::Config as StorageConfig;
 use crate::project::Config as RegistryConfig;
 
+mod binance;
 mod infura;
 mod pokt;
 mod server;
 
+pub use binance::*;
 pub use infura::*;
 pub use pokt::*;
 pub use server::*;
