@@ -675,7 +675,7 @@ resource "grafana_dashboard" "at_a_glance" {
         },
         "datasource" : {
           "type" : "prometheus",
-          "uid" : "${grafana_data_source.prometheus.uid}"
+          "uid" : grafana_data_source.prometheus.uid
         },
         "fieldConfig" : {
           "defaults" : {
@@ -749,7 +749,7 @@ resource "grafana_dashboard" "at_a_glance" {
           {
             "datasource" : {
               "type" : "prometheus",
-              "uid" : "${grafana_data_source.prometheus.uid}"
+              "uid" : grafana_data_source.prometheus.uid
             },
             "exemplar" : true,
             "expr" : "round(sum(increase(http_call_counter{code=~\"5.+\"}[5m])))",
