@@ -248,7 +248,7 @@ resource "grafana_dashboard" "at_a_glance" {
         ],
       },
       {
-        title : "Calls by Chain ID",
+        title : "HTTP Response Codes",
         type : "timeseries"
         id : 4,
         datasource : {
@@ -637,7 +637,139 @@ resource "grafana_dashboard" "at_a_glance" {
           }
         ],
       },
-
+      {
+        "alert" : {
+          "alertRuleTags" : {},
+          "conditions" : [
+            {
+              "evaluator" : {
+                "params" : [
+                  20
+                ],
+                "type" : "gt"
+              },
+              "operator" : {
+                "type" : "and"
+              },
+              "query" : {
+                "params" : [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              "reducer" : {
+                "params" : [],
+                "type" : "max"
+              },
+              "type" : "query"
+            }
+          ],
+          "executionErrorState" : "alerting",
+          "for" : "5m",
+          "frequency" : "1m",
+          "handler" : 1,
+          "name" : "${var.environment} RPC Proxy Errors alert",
+          "noDataState" : "no_data",
+          "notifications" : local.notifications
+        },
+        "datasource" : {
+          "type" : "prometheus",
+          "uid" : grafana_data_source.prometheus.uid
+        },
+        "fieldConfig" : {
+          "defaults" : {
+            "color" : {
+              "mode" : "palette-classic"
+            },
+            "custom" : {
+              "axisLabel" : "",
+              "axisPlacement" : "auto",
+              "barAlignment" : 0,
+              "drawStyle" : "line",
+              "fillOpacity" : 0,
+              "gradientMode" : "none",
+              "hideFrom" : {
+                "legend" : false,
+                "tooltip" : false,
+                "viz" : false
+              },
+              "lineInterpolation" : "linear",
+              "lineWidth" : 1,
+              "pointSize" : 5,
+              "scaleDistribution" : {
+                "type" : "linear"
+              },
+              "showPoints" : "auto",
+              "spanNulls" : false,
+              "stacking" : {
+                "group" : "A",
+                "mode" : "none"
+              },
+              "thresholdsStyle" : {
+                "mode" : "off"
+              }
+            },
+            "mappings" : [],
+            "thresholds" : {
+              "mode" : "absolute",
+              "steps" : [
+                {
+                  "color" : "green",
+                  "value" : null
+                },
+                {
+                  "color" : "red",
+                  "value" : 80
+                }
+              ]
+            }
+          },
+          "overrides" : []
+        },
+        "gridPos" : {
+          "h" : 9,
+          "w" : 12,
+          "x" : 0,
+          "y" : 27
+        },
+        "id" : 9,
+        "options" : {
+          "legend" : {
+            "calcs" : [],
+            "displayMode" : "list",
+            "placement" : "bottom"
+          },
+          "tooltip" : {
+            "mode" : "single",
+            "sort" : "none"
+          }
+        },
+        "targets" : [
+          {
+            "datasource" : {
+              "type" : "prometheus",
+              "uid" : grafana_data_source.prometheus.uid
+            },
+            "exemplar" : true,
+            "expr" : "round(sum(increase(http_call_counter{code=~\"5.+\"}[5m])))",
+            "hide" : false,
+            "interval" : "",
+            "legendFormat" : "",
+            "refId" : "A"
+          }
+        ],
+        "thresholds" : [
+          {
+            "colorMode" : "critical",
+            "op" : "gt",
+            "value" : 20,
+            "visible" : true
+          }
+        ],
+        "title" : "Errors",
+        "type" : "timeseries"
+      },
       {
         title : "Redis CPU/Memory",
         type : "timeseries"
