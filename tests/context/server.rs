@@ -89,7 +89,9 @@ fn get_random_port() -> u16 {
 }
 
 fn is_port_available(port: u16) -> bool {
-    TcpListener::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port)).is_ok()
+    let test = TcpListener::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port));
+    dbg!(&test);
+    test.is_ok()
 }
 
 async fn wait_for_server_to_shutdown(port: u16) -> TestResult<()> {
