@@ -27,7 +27,7 @@ resource "grafana_data_source" "prometheus" {
     httpMethod    = "GET"
     manageAlerts  = false
     sigV4Auth     = true
-    sigV4AuthType = "workspace-iam-role"
+    sigV4AuthType = "ec2_iam_role"
     sigV4Region   = "eu-central-1"
   })
 }
