@@ -22,6 +22,6 @@ fn default_pokt_supported_chains() -> HashMap<String, String> {
         // Gnosis
         ("eip155:100".into(), "poa-xdai".into()),
         // Binance Smart Chain
-        ("eip155:56".into(), "bsc-mainnet".into()),
+        // ("eip155:56".into(), "bsc-mainnet".into()),
     ])
 }

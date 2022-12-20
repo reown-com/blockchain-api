@@ -2,11 +2,12 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 use anyhow::Context;
+use env::BinanceConfig;
 use error::RpcResult;
 use hyper::Client;
 use hyper_tls::HttpsConnector;
 use opentelemetry::metrics::MeterProvider;
-use providers::{InfuraProvider, PoktProvider, ProviderRepository};
+use providers::{BinanceProvider, InfuraProvider, PoktProvider, ProviderRepository};
 use tokio::select;
 use tokio::sync::broadcast;
 use tracing::info;
@@ -142,11 +143,19 @@ fn init_providers(config: &Config) -> ProviderRepository {
     providers.add_provider("infura".into(), Arc::new(infura_provider));
 
     let pokt_provider = PoktProvider {
-        client: forward_proxy_client,
+        client: forward_proxy_client.clone(),
         project_id: pokt_project_id,
         supported_chains: pokt_supported_chains,
     };
     providers.add_provider("pokt".into(), Arc::new(pokt_provider));
+
+    let binance_config = BinanceConfig::default();
+    let binance_provider = BinanceProvider {
+        client: forward_proxy_client,
+        project_id: binance_config.project_id,
+        supported_chains: binance_config.supported_chains,
+    };
+    providers.add_provider("binance".into(), Arc::new(binance_provider));
 
     providers
 }

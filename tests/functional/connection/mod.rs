@@ -1,3 +1,4 @@
+pub(crate) mod binance;
 pub(crate) mod infura;
 pub(crate) mod pokt;
 
