@@ -64,7 +64,6 @@ pub async fn handler(
         state.analytics.message(MessageInfo::new(
             &query_params,
             &rpc_request,
-            sender,
             country,
             continent,
         ))
