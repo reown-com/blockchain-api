@@ -16,6 +16,9 @@ locals {
   // TODO: allow caller to pin version
   image_tag = data.aws_ecr_image.service_image.image_tags[0] # TODO: var.ecr_app_version == "latest" ? local.pinned_latest_tag : var.ecr_app_version
   image     = "${var.ecr_repository_url}:${local.image_tag}"
+
+  file_descriptor_soft_limit = pow(2, 18)
+  file_descriptor_hard_limit = local.file_descriptor_soft_limit * 2
 }
 
 data "aws_ecr_image" "service_image" {
@@ -88,6 +91,11 @@ resource "aws_ecs_task_definition" "app_task" {
       ],
       memory : 512,
       cpu : 256,
+      ulimits : [{
+        name : "nofile",
+        softLimit : local.file_descriptor_soft_limit,
+        hardLimit : local.file_descriptor_hard_limit,
+      }],
       logConfiguration : {
         logDriver : "awslogs",
         options : {

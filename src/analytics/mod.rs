@@ -87,6 +87,6 @@ impl RPCAnalytics {
     }
 
     pub fn lookup_geo_data(&self, addr: IpAddr) -> Option<AnalyticsGeoData> {
-        self.geoip.lookup_geo_data(addr)
+        self.geoip.lookup_geo_data_with_city(addr)
     }
 }

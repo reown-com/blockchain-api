@@ -30,5 +30,5 @@ variable "project_data_cache_ttl" {
 
 variable "analytics_geoip_db_key" {
   type    = string
-  default = "GeoLite2-Country.mmdb"
+  default = "GeoLite2-City.mmdb"
 }

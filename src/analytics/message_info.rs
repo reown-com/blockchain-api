@@ -2,7 +2,6 @@ use crate::handlers::RpcQueryParams;
 use crate::json_rpc::JsonRpcRequest;
 use parquet_derive::ParquetRecordWriter;
 use serde::Serialize;
-use std::net::SocketAddr;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Serialize, ParquetRecordWriter)]
@@ -14,8 +13,7 @@ pub struct MessageInfo {
     pub chain_id: String,
     pub method: Arc<str>,
 
-    pub sender: Option<String>,
-
+    pub region: Option<String>,
     pub country: Option<Arc<str>>,
     pub continent: Option<Arc<str>>,
 }
@@ -24,7 +22,7 @@ impl MessageInfo {
     pub fn new(
         query_params: &RpcQueryParams,
         request: &JsonRpcRequest,
-        sender: Option<SocketAddr>,
+        region: Option<Vec<String>>,
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
     ) -> Self {
@@ -35,8 +33,7 @@ impl MessageInfo {
             chain_id: query_params.chain_id.to_lowercase(),
             method: request.method.clone(),
 
-            sender: sender.map(|s| s.to_string()),
-
+            region: region.map(|r| r.join(", ")),
             country,
             continent,
         }
