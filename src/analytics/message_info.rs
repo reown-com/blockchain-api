@@ -13,6 +13,7 @@ pub struct MessageInfo {
     pub chain_id: String,
     pub method: Arc<str>,
 
+    pub region: Option<String>,
     pub country: Option<Arc<str>>,
     pub continent: Option<Arc<str>>,
 }
@@ -21,6 +22,7 @@ impl MessageInfo {
     pub fn new(
         query_params: &RpcQueryParams,
         request: &JsonRpcRequest,
+        region: Option<Vec<String>>,
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
     ) -> Self {
@@ -31,6 +33,7 @@ impl MessageInfo {
             chain_id: query_params.chain_id.to_lowercase(),
             method: request.method.clone(),
 
+            region: region.map(|r| r.join(", ")),
             country,
             continent,
         }

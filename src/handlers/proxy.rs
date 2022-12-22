@@ -56,14 +56,15 @@ pub async fn handler(
     state.metrics.add_rpc_call(&chain_id);
 
     if let Ok(rpc_request) = serde_json::from_slice(&body) {
-        let (country, continent) = sender
+        let (country, continent, region) = sender
             .and_then(|addr| state.analytics.lookup_geo_data(addr.ip()))
-            .map(|geo| (geo.country, geo.continent))
-            .unwrap_or((None, None));
+            .map(|geo| (geo.country, geo.continent, geo.region))
+            .unwrap_or((None, None, None));
 
         state.analytics.message(MessageInfo::new(
             &query_params,
             &rpc_request,
+            region,
             country,
             continent,
         ))
