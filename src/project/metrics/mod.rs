@@ -16,7 +16,6 @@ pub struct ProjectDataMetrics {
     registry_api_time: ValueRecorder<f64>,
     local_cache_time: ValueRecorder<f64>,
     total_time: ValueRecorder<f64>,
-    provider_time: ValueRecorder<f64>,
 }
 
 impl ProjectDataMetrics {
@@ -41,16 +40,10 @@ impl ProjectDataMetrics {
             .with_description("Average total latency for project data fetching")
             .init();
 
-        let provider_time = meter
-            .f64_value_recorder(create_counter_name("provider_time"))
-            .with_description("Average latency added by external provider")
-            .init();
-
         Self {
             requests_total,
             registry_api_time,
             local_cache_time,
-            provider_time,
             total_time,
         }
     }
