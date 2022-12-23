@@ -1,12 +1,13 @@
 use opentelemetry::metrics::{Counter, Meter};
 
-use crate::providers::RpcProvider;
+use crate::providers::{ProviderKind, RpcProvider};
 
 #[derive(Clone, Debug)]
 pub struct Metrics {
     pub rpc_call_counter: Counter<u64>,
     pub http_call_counter: Counter<u64>,
     pub http_latency_tracker: Counter<f64>,
+    pub http_external_latency_tracker: Counter<f64>,
     pub rejected_project_counter: Counter<u64>,
     pub rate_limited_call_counter: Counter<u64>,
 }
@@ -28,6 +29,11 @@ impl Metrics {
             .with_description("The http call latency")
             .init();
 
+        let http_external_latency_tracker = meter
+            .f64_counter("http_external_latency_tracker")
+            .with_description("The http call latency for external providers")
+            .init();
+
         let rejected_project_counter = meter
             .u64_counter("rejected_project_counter")
             .with_description("The number of calls for invalid project ids")
@@ -41,6 +47,7 @@ impl Metrics {
         Metrics {
             rpc_call_counter,
             http_call_counter,
+            http_external_latency_tracker,
             http_latency_tracker,
             rejected_project_counter,
             rate_limited_call_counter,
@@ -76,6 +83,16 @@ impl Metrics {
                 opentelemetry::KeyValue::new("code", i64::from(code)),
                 opentelemetry::KeyValue::new("route", route.to_owned()),
             ],
+        )
+    }
+
+    pub fn add_external_http_latency(&self, provider_kind: ProviderKind, latency: f64) {
+        self.http_external_latency_tracker.add(
+            latency,
+            &[opentelemetry::KeyValue::new(
+                "provider",
+                provider_kind.to_string(),
+            )],
         )
     }
 
