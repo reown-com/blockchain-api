@@ -1,4 +1,3 @@
-use deadpool_redis::redis::Value;
 use opentelemetry::metrics::{Counter, Meter, ValueRecorder};
 
 use crate::providers::{ProviderKind, RpcProvider};
