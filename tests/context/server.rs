@@ -1,6 +1,7 @@
 use std::env;
 
 use rpc_proxy::env::{Config, ServerConfig};
+use tap::TapFallible;
 
 use super::TestResult;
 
@@ -99,7 +100,11 @@ async fn wait_for_server_to_shutdown(port: u16) -> TestResult<()> {
         }
     };
 
-    Ok(tokio::time::timeout(Duration::from_secs(3), poll_fut).await?)
+    Ok(tokio::time::timeout(Duration::from_secs(3), poll_fut)
+        .await
+        .tap_err(|_| {
+            dbg!("Failed to start the server");
+        })?)
 }
 
 async fn wait_for_server_to_start(port: u16) -> TestResult<()> {
@@ -109,5 +114,9 @@ async fn wait_for_server_to_start(port: u16) -> TestResult<()> {
         }
     };
 
-    Ok(tokio::time::timeout(Duration::from_secs(5), poll_fut).await?)
+    Ok(tokio::time::timeout(Duration::from_secs(5), poll_fut)
+        .await
+        .tap_err(|_| {
+            dbg!("Failed shutting down");
+        })?)
 }
