@@ -3,11 +3,12 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use env::BinanceConfig;
+use env::ZKSyncConfig;
 use error::RpcResult;
 use hyper::Client;
 use hyper_tls::HttpsConnector;
 use opentelemetry::metrics::MeterProvider;
-use providers::{BinanceProvider, InfuraProvider, PoktProvider, ProviderRepository};
+use providers::{ZKSyncProvider, BinanceProvider, InfuraProvider, PoktProvider, ProviderRepository};
 use tokio::select;
 use tokio::sync::broadcast;
 use tracing::info;
@@ -151,11 +152,19 @@ fn init_providers(config: &Config) -> ProviderRepository {
 
     let binance_config = BinanceConfig::default();
     let binance_provider = BinanceProvider {
-        client: forward_proxy_client,
+        client: forward_proxy_client.clone(),
         project_id: binance_config.project_id,
         supported_chains: binance_config.supported_chains,
     };
     providers.add_provider("binance".into(), Arc::new(binance_provider));
+
+    let zksync_config = ZKSyncConfig::default();
+    let zksync_provider = ZKSyncProvider {
+        client: forward_proxy_client.clone(),
+        project_id: zksync_config.project_id,
+        supported_chains: zksync_config.supported_chains,
+    };
+    providers.add_provider("zksync".into(), Arc::new(zksync_provider));
 
     providers
 }

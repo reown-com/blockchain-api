@@ -1,4 +1,5 @@
 mod binance;
+mod zksync;
 mod infura;
 mod pokt;
 
@@ -9,6 +10,7 @@ use hyper::Body;
 use hyper::Response;
 pub use infura::InfuraProvider;
 pub use pokt::PoktProvider;
+pub use zksync::ZKSyncProvider;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::sync::Arc;
@@ -36,6 +38,7 @@ pub enum ProviderKind {
     Infura,
     Pokt,
     Binance,
+    ZKSync,
 }
 
 impl Display for ProviderKind {
@@ -47,6 +50,7 @@ impl Display for ProviderKind {
                 ProviderKind::Infura => "Infura",
                 ProviderKind::Pokt => "Pokt",
                 ProviderKind::Binance => "Binance",
+                ProviderKind::ZKSync => "zkSync",
             }
         )
     }

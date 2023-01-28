@@ -61,6 +61,10 @@ jobs:
             cmd: test
             args: --all-features -- functional::connection::binance
             cache: { sharedKey: "tests" }
+          - name: "Integration Tests: ZkSync"
+            cmd: test
+            args: --all-features -- functional::connection::zksync
+            cache: { sharedKey: "tests" }
         include:
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache

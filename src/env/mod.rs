@@ -7,11 +7,13 @@ use crate::project::storage::Config as StorageConfig;
 use crate::project::Config as RegistryConfig;
 
 mod binance;
+mod zksync;
 mod infura;
 mod pokt;
 mod server;
 
 pub use binance::*;
+pub use zksync::*;
 pub use infura::*;
 pub use pokt::*;
 pub use server::*;
@@ -21,6 +23,7 @@ pub struct Config {
     pub server: ServerConfig,
     pub infura: InfuraConfig,
     pub pokt: PoktConfig,
+    pub zksync: ZKSyncConfig,
     pub registry: RegistryConfig,
     pub storage: StorageConfig,
     pub analytics: AnalyticsConfig,
@@ -32,6 +35,7 @@ impl Config {
             server: from_env("RPC_PROXY_")?,
             infura: from_env("RPC_PROXY_INFURA_")?,
             pokt: from_env("RPC_PROXY_POKT_")?,
+            zksync: from_env("RPC_PROXY_ZKSYNC_")?,
             registry: from_env("RPC_PROXY_REGISTRY_")?,
             storage: from_env("RPC_PROXY_STORAGE_")?,
             analytics: from_env("RPC_PROXY_ANALYTICS_")?,
