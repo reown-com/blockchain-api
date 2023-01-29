@@ -7,16 +7,16 @@ use crate::project::storage::Config as StorageConfig;
 use crate::project::Config as RegistryConfig;
 
 mod binance;
-mod zksync;
 mod infura;
 mod pokt;
 mod server;
+mod zksync;
 
 pub use binance::*;
-pub use zksync::*;
 pub use infura::*;
 pub use pokt::*;
 pub use server::*;
+pub use zksync::*;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {

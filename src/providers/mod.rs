@@ -1,7 +1,7 @@
 mod binance;
-mod zksync;
 mod infura;
 mod pokt;
+mod zksync;
 
 use crate::{error::RpcResult, handlers::RpcQueryParams};
 use async_trait::async_trait;
@@ -10,10 +10,10 @@ use hyper::Body;
 use hyper::Response;
 pub use infura::InfuraProvider;
 pub use pokt::PoktProvider;
-pub use zksync::ZKSyncProvider;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::sync::Arc;
+pub use zksync::ZKSyncProvider;
 
 #[derive(Default, Clone)]
 pub struct ProviderRepository {

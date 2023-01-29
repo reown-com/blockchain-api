@@ -22,8 +22,14 @@ impl Default for ZKSyncConfig {
 fn default_zksync_supported_chains() -> HashMap<String, String> {
     HashMap::from([
         // zkSync Testnet
-        ("eip155:280".into(), "https://zksync2-testnet.zksync.dev".into()),
+        (
+            "eip155:280".into(),
+            "https://zksync2-testnet.zksync.dev".into(),
+        ),
         // zkSync Mainnet
-        ("eip155:324".into(), "https://zksync2-mainnet.zksync.io".into()),
+        (
+            "eip155:324".into(),
+            "https://zksync2-mainnet.zksync.io".into(),
+        ),
     ])
 }

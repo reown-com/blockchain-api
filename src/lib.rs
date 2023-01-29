@@ -8,7 +8,9 @@ use error::RpcResult;
 use hyper::Client;
 use hyper_tls::HttpsConnector;
 use opentelemetry::metrics::MeterProvider;
-use providers::{ZKSyncProvider, BinanceProvider, InfuraProvider, PoktProvider, ProviderRepository};
+use providers::{
+    BinanceProvider, InfuraProvider, PoktProvider, ProviderRepository, ZKSyncProvider,
+};
 use tokio::select;
 use tokio::sync::broadcast;
 use tracing::info;
