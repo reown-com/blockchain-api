@@ -160,7 +160,7 @@ fn init_providers(config: &Config) -> ProviderRepository {
 
     let zksync_config = ZKSyncConfig::default();
     let zksync_provider = ZKSyncProvider {
-        client: forward_proxy_client.clone(),
+        client: forward_proxy_client,
         project_id: zksync_config.project_id,
         supported_chains: zksync_config.supported_chains,
     };
