@@ -73,6 +73,7 @@ jobs:
       RUSTC_WRAPPER: sccache
       SCCACHE_CACHE_SIZE: 1G
       SCCACHE_DIR: ${{ matrix.sccache-path }}
+      PROJECT_ID: ${{ secrets.PROJECT_ID }}
       
     steps:
       # Checkout code
