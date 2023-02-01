@@ -32,7 +32,8 @@ impl RpcProxy {
 
         let (signal, shutdown) = broadcast::channel(1);
 
-        let project_id = env::var("PROJECT_ID").expect("PROJECT_ID must be set");
+        let project_id =
+            env::var("TEST_RPC_PROXY_PROJECT_ID").expect("TEST_RPC_PROXY_PROJECT_ID must be set");
 
         std::thread::spawn(move || {
             rt.block_on(async move {
