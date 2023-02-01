@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ZKSyncConfig {
+    #[serde(default)]
     pub project_id: String,
 
     #[serde(default = "default_zksync_supported_chains")]

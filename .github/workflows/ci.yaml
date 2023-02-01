@@ -123,7 +123,7 @@ jobs:
 
       - name: "Task ${{ matrix.cargo.name }}"
         env:
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          TEST_RPC_PROXY_PROJECT_ID: ${{ secrets.PROJECT_ID }}
           RPC_PROXY_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }} 
           RPC_PROXY_REGISTRY_API_URL: ${{ secrets.REGISTRY_URL }}
           RPC_PROXY_REGISTRY_API_AUTH_TOKEN: ${{ secrets.RPC_PROXY_REGISTRY_API_AUTH_TOKEN }}
