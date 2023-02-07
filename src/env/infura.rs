@@ -29,5 +29,7 @@ fn default_infura_supported_chains() -> HashMap<String, String> {
         ("eip155:42161".into(), "arbitrum-mainnet".into()),
         ("eip155:421611".into(), "arbitrum-rinkeby".into()),
         ("eip155:421613".into(), "arbitrum-goerli".into()),
+        // Celo
+        ("eip155:42220".into(), "celo-mainnet".into()),
     ])
 }
