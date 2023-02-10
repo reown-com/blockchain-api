@@ -1,8 +1,10 @@
 locals {
-  app_name          = "rpc-proxy"
-  hosted_zone_name  = "rpc.walletconnect.com"
-  private_zone_name = "rpc.repl.internal"
-  fqdn              = terraform.workspace == "prod" ? local.hosted_zone_name : "${terraform.workspace}.${local.hosted_zone_name}"
+  app_name                = "rpc-proxy"
+  hosted_zone_name        = "rpc.walletconnect.com"
+  backup_hosted_zone_name = "rpc.walletconnect.org"
+  private_zone_name       = "rpc.repl.internal"
+  fqdn                    = terraform.workspace == "prod" ? local.hosted_zone_name : "${terraform.workspace}.${local.hosted_zone_name}"
+  backup_fqdn             = terraform.workspace == "prod" ? local.backup_hosted_zone_name : "${terraform.workspace}.${local.backup_hosted_zone_name}"
 
   analytics_geoip_db_bucket_name = "${terraform.workspace}.relay.geo.ip.database.private.${terraform.workspace}.walletconnect"
 }
@@ -29,6 +31,14 @@ module "dns" {
   fqdn             = local.fqdn
 }
 
+module "backup_dns" {
+  # tflint-ignore: terraform_module_pinned_source
+  source = "github.com/WalletConnect/terraform-modules/modules/dns"
+
+  hosted_zone_name = local.backup_hosted_zone_name
+  fqdn             = local.backup_fqdn
+}
+
 data "aws_ecr_repository" "repository" {
   name = local.app_name
 }
@@ -42,17 +52,20 @@ module "logging" {
 module "ecs" {
   source = "./ecs"
 
-  ecr_repository_url  = data.aws_ecr_repository.repository.repository_url
-  app_name            = "${terraform.workspace}_${local.app_name}"
-  region              = var.region
-  vpc_name            = "ops-${terraform.workspace}-vpc"
-  port                = 3000
-  acm_certificate_arn = module.dns.certificate_arn
-  fqdn                = local.fqdn
-  route53_zone_id     = module.dns.zone_id
-  infura_project_id   = var.infura_project_id
-  pokt_project_id     = var.pokt_project_id
-  prometheus_endpoint = aws_prometheus_workspace.prometheus.prometheus_endpoint
+  ecr_repository_url         = data.aws_ecr_repository.repository.repository_url
+  app_name                   = "${terraform.workspace}_${local.app_name}"
+  region                     = var.region
+  vpc_name                   = "ops-${terraform.workspace}-vpc"
+  port                       = 3000
+  acm_certificate_arn        = module.dns.certificate_arn
+  fqdn                       = local.fqdn
+  route53_zone_id            = module.dns.zone_id
+  backup_acm_certificate_arn = module.backup_dns.certificate_arn
+  backup_fqdn                = local.backup_fqdn
+  backup_route53_zone_id     = module.backup_dns.zone_id
+  infura_project_id          = var.infura_project_id
+  pokt_project_id            = var.pokt_project_id
+  prometheus_endpoint        = aws_prometheus_workspace.prometheus.prometheus_endpoint
 
   registry_api_endpoint             = var.registry_api_endpoint
   registry_api_auth_token           = var.registry_api_auth_token
