@@ -30,6 +30,18 @@ variable "route53_zone_id" {
   type = string
 }
 
+variable "backup_acm_certificate_arn" {
+  type = string
+}
+
+variable "backup_fqdn" {
+  type = string
+}
+
+variable "backup_route53_zone_id" {
+  type = string
+}
+
 variable "infura_project_id" {
   type = string
 }

@@ -1,12 +1,13 @@
-use opentelemetry::metrics::{Counter, Meter};
+use opentelemetry::metrics::{Counter, Meter, ValueRecorder};
 
-use crate::providers::RpcProvider;
+use crate::providers::{ProviderKind, RpcProvider};
 
 #[derive(Clone, Debug)]
 pub struct Metrics {
     pub rpc_call_counter: Counter<u64>,
     pub http_call_counter: Counter<u64>,
-    pub http_latency_tracker: Counter<f64>,
+    pub http_latency_tracker: ValueRecorder<f64>,
+    pub http_external_latency_tracker: ValueRecorder<f64>,
     pub rejected_project_counter: Counter<u64>,
     pub rate_limited_call_counter: Counter<u64>,
 }
@@ -24,8 +25,13 @@ impl Metrics {
             .init();
 
         let http_latency_tracker = meter
-            .f64_counter("http_latency_tracker")
+            .f64_value_recorder("http_latency_tracker")
             .with_description("The http call latency")
+            .init();
+
+        let http_external_latency_tracker = meter
+            .f64_value_recorder("http_external_latency_tracker")
+            .with_description("The http call latency for external providers")
             .init();
 
         let rejected_project_counter = meter
@@ -41,6 +47,7 @@ impl Metrics {
         Metrics {
             rpc_call_counter,
             http_call_counter,
+            http_external_latency_tracker,
             http_latency_tracker,
             rejected_project_counter,
             rate_limited_call_counter,
@@ -70,12 +77,22 @@ impl Metrics {
     }
 
     pub fn add_http_latency(&self, code: u16, route: &str, latency: f64) {
-        self.http_latency_tracker.add(
+        self.http_latency_tracker.record(
             latency,
             &[
                 opentelemetry::KeyValue::new("code", i64::from(code)),
                 opentelemetry::KeyValue::new("route", route.to_owned()),
             ],
+        )
+    }
+
+    pub fn add_external_http_latency(&self, provider_kind: ProviderKind, latency: f64) {
+        self.http_external_latency_tracker.record(
+            latency,
+            &[opentelemetry::KeyValue::new(
+                "provider",
+                provider_kind.to_string(),
+            )],
         )
     }
 

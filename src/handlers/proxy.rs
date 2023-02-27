@@ -1,6 +1,7 @@
 use std::borrow::Borrow;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::{Duration, SystemTime};
 
 use crate::analytics::MessageInfo;
 use crate::error::RpcError;
@@ -72,9 +73,12 @@ pub async fn handler(
 
     let project_id = query_params.project_id.clone();
 
+    // Start timing external provider added time
+    let external_call_start = SystemTime::now();
+
     // TODO: map the response error codes properly
     // e.g. HTTP401 from target should map to HTTP500
-    provider
+    let response = provider
         .proxy(method, path, query_params, headers, body)
         .await
         .map_err(|error| {
@@ -85,5 +89,15 @@ pub async fn handler(
                     .add_rate_limited_call(provider.borrow(), project_id)
             }
             warp::reject::reject()
-        })
+        });
+
+    state.metrics.add_external_http_latency(
+        provider.provider_kind(),
+        external_call_start
+            .elapsed()
+            .unwrap_or(Duration::from_secs(0))
+            .as_secs_f64(),
+    );
+
+    response
 }

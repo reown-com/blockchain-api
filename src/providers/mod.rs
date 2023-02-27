@@ -1,6 +1,7 @@
 mod binance;
 mod infura;
 mod pokt;
+mod zksync;
 
 use crate::{error::RpcResult, handlers::RpcQueryParams};
 use async_trait::async_trait;
@@ -12,6 +13,7 @@ pub use pokt::PoktProvider;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::sync::Arc;
+pub use zksync::ZKSyncProvider;
 
 #[derive(Default, Clone)]
 pub struct ProviderRepository {
@@ -36,6 +38,7 @@ pub enum ProviderKind {
     Infura,
     Pokt,
     Binance,
+    ZKSync,
 }
 
 impl Display for ProviderKind {
@@ -47,6 +50,7 @@ impl Display for ProviderKind {
                 ProviderKind::Infura => "Infura",
                 ProviderKind::Pokt => "Pokt",
                 ProviderKind::Binance => "Binance",
+                ProviderKind::ZKSync => "zkSync",
             }
         )
     }

@@ -1,11 +1,11 @@
-use std::env;
+use std::{env, net::TcpStream};
 
 use rpc_proxy::env::{Config, ServerConfig};
 
 use super::TestResult;
 
 use {
-    std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener},
+    std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4},
     tokio::{
         runtime::Handle,
         sync::broadcast,
@@ -33,7 +33,8 @@ impl RpcProxy {
 
         let (signal, shutdown) = broadcast::channel(1);
 
-        let project_id = env::var("PROJECT_ID").expect("PROJECT_ID must be set");
+        let project_id =
+            env::var("TEST_RPC_PROXY_PROJECT_ID").expect("TEST_RPC_PROXY_PROJECT_ID must be set");
 
         std::thread::spawn(move || {
             rt.block_on(async move {
@@ -93,7 +94,7 @@ fn get_random_port() -> u16 {
 }
 
 fn is_port_available(port: u16) -> bool {
-    TcpListener::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port)).is_ok()
+    !TcpStream::connect(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port)).is_ok()
 }
 
 async fn wait_for_server_to_shutdown(port: u16) -> TestResult<()> {

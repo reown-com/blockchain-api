@@ -148,3 +148,20 @@ resource "aws_route53_record" "dns_load_balancer" {
     evaluate_target_health = true
   }
 }
+
+resource "aws_route53_record" "backup_dns_load_balancer" {
+  zone_id = var.backup_route53_zone_id
+  name    = var.backup_fqdn
+  type    = "A"
+
+  alias {
+    name                   = aws_alb.network_load_balancer.dns_name
+    zone_id                = aws_alb.network_load_balancer.zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_lb_listener_certificate" "backup_cert" {
+  listener_arn    = aws_lb_listener.listener.arn
+  certificate_arn = var.backup_acm_certificate_arn
+}

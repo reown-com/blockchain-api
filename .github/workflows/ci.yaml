@@ -61,6 +61,10 @@ jobs:
             cmd: test
             args: --features test-localhost -- functional::connection::binance
             cache: { sharedKey: "tests" }
+          - name: "Integration Tests: ZkSync"
+            cmd: test
+            args: --all-features -- functional::connection::zksync
+            cache: { sharedKey: "tests" }
         include:
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
@@ -69,6 +73,7 @@ jobs:
       RUSTC_WRAPPER: sccache
       SCCACHE_CACHE_SIZE: 1G
       SCCACHE_DIR: ${{ matrix.sccache-path }}
+      PROJECT_ID: ${{ secrets.PROJECT_ID }}
       
     steps:
       # Checkout code
@@ -118,7 +123,7 @@ jobs:
 
       - name: "Task ${{ matrix.cargo.name }}"
         env:
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          TEST_RPC_PROXY_PROJECT_ID: ${{ secrets.PROJECT_ID }}
           RPC_PROXY_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }} 
           RPC_PROXY_REGISTRY_API_URL: ${{ secrets.REGISTRY_URL }}
           RPC_PROXY_REGISTRY_API_AUTH_TOKEN: ${{ secrets.RPC_PROXY_REGISTRY_API_AUTH_TOKEN }}

@@ -10,17 +10,20 @@ mod binance;
 mod infura;
 mod pokt;
 mod server;
+mod zksync;
 
 pub use binance::*;
 pub use infura::*;
 pub use pokt::*;
 pub use server::*;
+pub use zksync::*;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {
     pub server: ServerConfig,
     pub infura: InfuraConfig,
     pub pokt: PoktConfig,
+    pub zksync: ZKSyncConfig,
     pub registry: RegistryConfig,
     pub storage: StorageConfig,
     pub analytics: AnalyticsConfig,
@@ -32,6 +35,7 @@ impl Config {
             server: from_env("RPC_PROXY_")?,
             infura: from_env("RPC_PROXY_INFURA_")?,
             pokt: from_env("RPC_PROXY_POKT_")?,
+            zksync: from_env("RPC_PROXY_ZKSYNC_")?,
             registry: from_env("RPC_PROXY_REGISTRY_")?,
             storage: from_env("RPC_PROXY_STORAGE_")?,
             analytics: from_env("RPC_PROXY_ANALYTICS_")?,
