@@ -7,10 +7,6 @@ authors = [
 ]
 build = "build.rs"
 
-
-[features]
-test-localhost = []
-
 [dependencies]
 # Async
 async-trait = "0.1.57"

@@ -49,17 +49,17 @@ jobs:
             cmd: fmt
             args: -- --check
             cache: {}
-          - name: "Integration Tests: Pokt - localhost"
+          - name: "Integration Tests: Pokt"
             cmd: test
-            args:  --features test-localhost -- functional::connection::pokt
+            args: --all-features -- functional::connection::pokt
             cache: { sharedKey: "tests" }
-          - name: "Integration Tests: Infura - localhost" 
+          - name: "Integration Tests: Infura" 
             cmd: test
-            args: --features test-localhost -- functional::connection::infura
+            args: --all-features -- functional::connection::infura
             cache: { sharedKey: "tests" }
-          - name: "Integration Tests: Binance - localhost"
+          - name: "Integration Tests: Binance"
             cmd: test
-            args: --features test-localhost -- functional::connection::binance
+            args: --all-features -- functional::connection::binance
             cache: { sharedKey: "tests" }
           - name: "Integration Tests: ZkSync"
             cmd: test

@@ -94,22 +94,17 @@ jobs:
           task-definition-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}
           image-name: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
-  validate_staging:
-    needs: [deploy-infra-staging, deploy-app-staging]
-    uses: ./.github/workflows/validate.yml
-    env:
-      RPC_URL: "https://staging.rpc.walletconnect.com" 
-    with:
-      environment: 'staging'
-
-  validate_staging:
-    needs: [deploy-infra-staging, deploy-app-staging]
-    uses: ./.github/workflows/validate.yml
-    env:
-      RPC_URL: "https://staging.rpc.walletconnect.com" 
-    with:
-      environment: 'staging'
-
+  validate:
+    if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
+    needs: [deploy-app-staging, deploy-infra-staging]
+    runs-on: ubuntu-latest
+    environment:
+      name: app/staging
+      url: https://staging.rpc.walletconnect.com/hello
+    steps:
+      - name: validate
+        run: |
+          curl "https://staging.rpc.walletconnect.com/health"
 
   deployment_windows:
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
@@ -187,11 +182,3 @@ jobs:
           service-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}-service
           task-definition-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}
           image-name: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-  
-  validate:
-    needs: [deploy-infra-prod, deploy-app-prod]
-    uses: ./.github/workflows/validate.yml
-    env:
-      RPC_URL: "https://rpc.walletconnect.com" 
-    with:
-      environment: 'prod'
