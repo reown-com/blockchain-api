@@ -62,6 +62,7 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
     );
 
     let port = state.config.server.port;
+    let metrics_port = state.config.server.metrics_port;
     let host = state.config.server.host.clone();
     let build_version = state.compile_info.build().version();
 
@@ -114,7 +115,6 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
     let routes = warp::any()
         .and(route_health)
         .or(proxy)
-        .or(route_metrics)
         .with(warp::trace::request());
 
     info!("v{}", build_version);
@@ -122,8 +122,13 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
         .parse()
         .expect("Invalid socket address");
 
+    let priv_addr: SocketAddr = format!("{}:{}", host, metrics_port)
+        .parse()
+        .expect("Invalid socket address");
+
     select! {
-    _ = warp::serve(routes).run(addr) => info!("Server starting"),
+    _ = warp::serve(route_metrics).run(priv_addr) => info!("Terminating metrics service"),
+    _ = warp::serve(routes).run(addr) => info!("Terminating server"),
     _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
         }
     Ok(())

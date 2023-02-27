@@ -15,6 +15,7 @@ use {
 
 pub struct RpcProxy {
     pub public_addr: SocketAddr,
+    pub private_addr: SocketAddr,
     pub project_id: String,
     shutdown_signal: tokio::sync::broadcast::Sender<()>,
     is_shutdown: bool,
@@ -28,7 +29,10 @@ impl RpcProxy {
         let public_port = get_random_port();
         let hostname = Ipv4Addr::UNSPECIFIED;
         let rt = Handle::current();
+        let metrics_port = get_random_port();
+
         let public_addr = SocketAddr::new(IpAddr::V4(hostname), public_port);
+        let private_addr = SocketAddr::new(IpAddr::V4(hostname), metrics_port);
 
         let (signal, shutdown) = broadcast::channel(1);
 
@@ -40,6 +44,7 @@ impl RpcProxy {
                 let mut config: Config = Config::from_env()?;
                 config.server = ServerConfig {
                     port: public_port,
+                    metrics_port,
                     host: hostname.to_string(),
                     log_level: "NONE".to_string(),
                     ..Default::default()
@@ -56,6 +61,7 @@ impl RpcProxy {
 
         Self {
             public_addr,
+            private_addr,
             project_id,
             shutdown_signal: signal,
             is_shutdown: false,
