@@ -1,0 +1,66 @@
+name: validate
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment_url:
+        description: "the environment to validate"
+        required: true
+        default: "https://staging.rpc.walletconnect.com"
+        type: string
+
+jobs:
+  validate_connections:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        rust:
+          - 1.65
+        cargo:
+          - name: "Clippy"
+            cmd: clippy
+            args: -- -D warnings
+            cache: {}
+          - name: "Formatting"
+            cmd: fmt
+            args: -- --check
+            cache: {}
+          - name: "Integration Tests: Pokt - localhost"
+            cmd: test
+            args: -- functional::connection::pokt
+            cache: { sharedKey: "tests" }
+          - name: "Integration Tests: Infura - localhost"
+            cmd: test
+            args: -- functional::connection::infura
+            cache: { sharedKey: "tests" }
+          - name: "Integration Tests: Binance - localhost"
+            cmd: test
+            args: -- functional::connection::binance
+            cache: { sharedKey: "tests" }
+    steps:
+      # Checkout code
+      - name: "Git checkout"
+        uses: actions/checkout@v3
+
+      # Install Rust toolchain
+      - name: "Install Rust ${{ matrix.rust }}"
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: default
+          override: true
+
+      - name: "Task ${{ matrix.cargo.name }}"
+        env:
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          RPC_PROXY_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
+          RPC_PROXY_REGISTRY_API_URL: ${{ secrets.REGISTRY_URL }}
+          RPC_PROXY_REGISTRY_API_AUTH_TOKEN: ${{ secrets.RPC_PROXY_REGISTRY_API_AUTH_TOKEN }}
+          RPC_PROXY_POKT_PROJECT_ID: ${{ secrets.POKT_PROJECT_ID }}
+          RPC_URL: ${{ inputs.environment_url }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: ${{ matrix.cargo.cmd }}
+          args: ${{ matrix.cargo.args }}
