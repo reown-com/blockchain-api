@@ -71,5 +71,5 @@ impl ProjectStorage {
 
 #[inline]
 fn build_cache_key(id: &str) -> String {
-    format!("project-data/{}", id)
+    format!("project-data/{id}")
 }
