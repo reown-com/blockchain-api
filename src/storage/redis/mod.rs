@@ -70,10 +70,10 @@ impl Redis {
         let get_pool = |cfg: Config| -> Result<_, StorageError> {
             let pool = cfg
                 .builder()
-                .map_err(|e| StorageError::Other(format!("{}", e)))?
+                .map_err(|e| StorageError::Other(format!("{e}")))?
                 .max_size(pool_size)
                 .build()
-                .map_err(|e| StorageError::Other(format!("{}", e)))?;
+                .map_err(|e| StorageError::Other(format!("{e}")))?;
 
             Ok(pool)
         };
@@ -100,7 +100,7 @@ impl Redis {
             .write_pool
             .get()
             .await
-            .map_err(|e| StorageError::Connection(format!("{}", e)))?;
+            .map_err(|e| StorageError::Connection(format!("{e}")))?;
 
         let res_fut = if let Some(ttl) = ttl {
             let ttl = ttl
@@ -115,7 +115,7 @@ impl Redis {
 
         res_fut
             .await
-            .map_err(|e| StorageError::Other(format!("{}", e)))?;
+            .map_err(|e| StorageError::Other(format!("{e}")))?;
 
         Ok(())
     }
@@ -130,10 +130,10 @@ where
         self.read_pool
             .get()
             .await
-            .map_err(|e| StorageError::Connection(format!("{}", e)))?
+            .map_err(|e| StorageError::Connection(format!("{e}")))?
             .get::<_, Value>(key)
             .await
-            .map_err(|e| StorageError::Other(format!("{}", e)))
+            .map_err(|e| StorageError::Other(format!("{e}")))
             .map(|data| match data {
                 Value::Nil => Ok(None),
                 Value::Data(data) => Ok(Some(deserialize(&data)?)),
@@ -159,9 +159,9 @@ where
         self.write_pool
             .get()
             .await
-            .map_err(|e| StorageError::Connection(format!("{}", e)))?
+            .map_err(|e| StorageError::Connection(format!("{e}")))?
             .del(key)
             .await
-            .map_err(|e| StorageError::Other(format!("{}", e)))
+            .map_err(|e| StorageError::Other(format!("{e}")))
     }
 }
