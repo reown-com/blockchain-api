@@ -56,7 +56,7 @@ impl RpcProxy {
         });
 
         if let Err(e) = wait_for_server_to_start(public_port).await {
-            panic!("Failed to start server with error: {:?}", e)
+            panic!("Failed to start server with error: {e:?}")
         }
 
         Self {
@@ -96,7 +96,7 @@ fn get_random_port() -> u16 {
 }
 
 fn is_port_available(port: u16) -> bool {
-    !TcpStream::connect(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port)).is_ok()
+    TcpStream::connect(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port)).is_err()
 }
 
 async fn wait_for_server_to_shutdown(port: u16) -> TestResult<()> {

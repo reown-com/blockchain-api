@@ -118,7 +118,7 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
         .with(warp::trace::request());
 
     info!("v{}", build_version);
-    let addr: SocketAddr = format!("{}:{}", host, port)
+    let addr: SocketAddr = format!("{host}:{port}")
         .parse()
         .expect("Invalid socket address");
 
