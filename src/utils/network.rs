@@ -1,5 +1,4 @@
-use ipnet::IpNet;
-use std::net::IpAddr;
+use {ipnet::IpNet, std::net::IpAddr};
 
 #[derive(thiserror::Error, Debug)]
 pub enum NetworkInterfaceError {

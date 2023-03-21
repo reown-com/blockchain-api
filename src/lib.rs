@@ -1,28 +1,38 @@
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::sync::Arc;
-
-use anyhow::Context;
-use env::BinanceConfig;
-use env::ZKSyncConfig;
-use error::RpcResult;
-use hyper::Client;
-use hyper_tls::HttpsConnector;
-use opentelemetry::metrics::MeterProvider;
-use providers::{
-    BinanceProvider, InfuraProvider, PoktProvider, ProviderRepository, ZKSyncProvider,
+use {
+    crate::{env::Config, metrics::Metrics, project::Registry},
+    anyhow::Context,
+    axum::{
+        http::{self, HeaderValue},
+        routing::{any, get},
+        Router,
+        ServiceExt,
+    },
+    env::{BinanceConfig, ZKSyncConfig},
+    error::RpcResult,
+    hyper::{header::HeaderName, Client, HeaderMap},
+    hyper_tls::HttpsConnector,
+    opentelemetry::metrics::MeterProvider,
+    providers::{
+        BinanceProvider,
+        InfuraProvider,
+        PoktProvider,
+        ProviderRepository,
+        ZKSyncProvider,
+    },
+    std::{
+        net::{IpAddr, Ipv4Addr, SocketAddr},
+        sync::Arc,
+    },
+    tokio::{select, sync::broadcast},
+    tower::ServiceBuilder,
+    tower_http::cors::{Any, CorsLayer},
+    tracing::info,
 };
-use tokio::select;
-use tokio::sync::broadcast;
-use tracing::info;
-use warp::Filter;
-
-use crate::env::Config;
-use crate::metrics::Metrics;
-use crate::project::Registry;
 
 mod analytics;
 pub mod env;
 pub mod error;
+mod extractors;
 mod handlers;
 mod json_rpc;
 mod metrics;
@@ -67,64 +77,94 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
 
     let state_arc = Arc::new(state);
 
-    let state_filter = warp::any().map(move || state_arc.clone());
+    // let state_filter = warp::any().map(move || state_arc.clone());
 
-    let route_health = warp::get()
-        .and(warp::path!("health"))
-        .and(state_filter.clone())
-        .and_then(handlers::health::handler);
+    // let route_health = warp::get()
+    //     .and(warp::path!("health"))
+    //     .and(state_filter.clone())
+    //     .and_then(handlers::health::handler);
 
-    let route_metrics = warp::any()
-        .and(warp::path!("metrics"))
-        .and(state_filter.clone())
-        .and_then(handlers::metrics::handler);
+    // let route_metrics = warp::any()
+    //     .and(warp::path!("metrics"))
+    //     .and(state_filter.clone())
+    //     .and_then(handlers::metrics::handler);
 
-    let cors = warp::cors()
-        .allow_any_origin()
-        .allow_headers(vec![
-            "User-Agent",
-            "Content-Type",
-            "Sec-Fetch-Mode",
-            "Referer",
-            "Origin",
-            "Access-Control-Request-Method",
-            "Access-Control-Request-Headers",
-            "solana-client",
-        ])
-        .allow_methods(vec!["GET", "POST"]);
+    // let cors = warp::cors()
+    //     .allow_any_origin()
+    //     .allow_headers(vec![
+    //         "User-Agent",
+    //         "Content-Type",
+    //         "Sec-Fetch-Mode",
+    //         "Referer",
+    //         "Origin",
+    //         "Access-Control-Request-Method",
+    //         "Access-Control-Request-Headers",
+    //         "solana-client",
+    //     ])
+    //     .allow_methods(vec!["GET", "POST"]);
 
-    let proxy = warp::any()
-        .and(warp::path!("v1"))
-        .and(state_filter.clone())
-        .and(warp::filters::addr::remote())
-        .and(warp::method())
-        .and(warp::path::full())
-        .and(warp::filters::query::query())
-        .and(warp::header::headers_cloned())
-        .and(warp::body::bytes())
-        .and_then(handlers::proxy::handler)
-        .with(cors)
-        .with(warp::log::custom(move |info| {
-            let status = info.status().as_u16();
-            let latency = info.elapsed().as_secs_f64();
-            metrics.add_http_call(status, "proxy");
-            metrics.add_http_latency(status, "proxy", latency);
-        }));
+    let cors = CorsLayer::new().allow_origin(Any).allow_headers([
+        http::header::CONTENT_TYPE,
+        http::header::USER_AGENT,
+        http::header::REFERER,
+        http::header::ORIGIN,
+        http::header::ACCESS_CONTROL_REQUEST_METHOD,
+        http::header::ACCESS_CONTROL_REQUEST_HEADERS,
+        HeaderName::from_static("solana-client"),
+        HeaderName::from_static("sec-fetch-mode"),
+    ]);
+    // let global_middleware = ServiceBuilder::new().layer(
+    //     TraceLayer::new_for_http()
+    //         .make_span_with(DefaultMakeSpan::new().include_headers(true))
+    //         .on_request(DefaultOnRequest::new().level(Level::INFO))
+    //         .on_response(
+    //             DefaultOnResponse::new()
+    //                 .level(Level::INFO)
+    //                 .include_headers(true),
+    //         ),
+    // );
 
-    let routes = warp::any()
-        .and(route_health)
-        .or(proxy)
-        .or(route_metrics)
-        .with(warp::trace::request());
+    let app = Router::new()
+        .route("/health", get(handlers::health::handler))
+        .route("/v1", any(handlers::proxy::handler))
+        .layer(cors)
+        .with_state(state_arc.clone());
+    // .with_layer(global_middleware)
+
+    // let proxy = warp::any()
+    //     .and(warp::path!("v1"))
+    //     .and(state_filter.clone())
+    //     .and(warp::filters::addr::remote())
+    //     .and(warp::method())
+    //     .and(warp::path::full())
+    //     .and(warp::filters::query::query())
+    //     .and(warp::header::headers_cloned())
+    //     .and(warp::body::bytes())
+    //     .and_then(handlers::proxy::handler)
+    //     .with(cors)
+    //     .with(warp::log::custom(move |info| {
+    //         let status = info.status().as_u16();
+    //         let latency = info.elapsed().as_secs_f64();
+    //         metrics.add_http_call(status, "proxy");
+    //         metrics.add_http_latency(status, "proxy", latency);
+    //     }));
+
+    // let routes = warp::any()
+    //     .and(route_health)
+    //     .or(proxy)
+    //     .or(route_metrics)
+    //     .with(warp::trace::request());
 
     info!("v{}", build_version);
+    info!("Running RPC Proxy on port {}", port);
     let addr: SocketAddr = format!("{host}:{port}")
         .parse()
         .expect("Invalid socket address");
 
     select! {
-    _ = warp::serve(routes).run(addr) => info!("Server starting"),
+    // _ = warp::serve(routes).run(addr) => info!("Server starting"),
     _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
+    _ = axum::Server::bind(&addr).serve(app.into_make_service_with_connect_info::<SocketAddr>()) => info!("Server terminating")
         }
     Ok(())
 }

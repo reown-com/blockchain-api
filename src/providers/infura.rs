@@ -1,9 +1,11 @@
-use super::{ProviderKind, RpcProvider, RpcQueryParams};
-use crate::error::{RpcError, RpcResult};
-use async_trait::async_trait;
-use hyper::{client::HttpConnector, http, Body, Client, Response};
-use hyper_tls::HttpsConnector;
-use std::collections::HashMap;
+use {
+    super::{ProviderKind, RpcProvider, RpcQueryParams},
+    crate::error::{RpcError, RpcResult},
+    async_trait::async_trait,
+    hyper::{client::HttpConnector, http, Body, Client, Response},
+    hyper_tls::HttpsConnector,
+    std::collections::HashMap,
+};
 
 #[derive(Clone)]
 pub struct InfuraProvider {
@@ -17,7 +19,7 @@ impl RpcProvider for InfuraProvider {
     async fn proxy(
         &self,
         method: hyper::http::Method,
-        _path: warp::path::FullPath,
+        _path: axum::extract::MatchedPath,
         query_params: RpcQueryParams,
         _headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,

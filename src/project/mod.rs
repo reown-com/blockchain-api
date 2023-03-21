@@ -1,19 +1,20 @@
-use cerberus::project::ProjectData;
-use opentelemetry::metrics::Meter;
-use std::sync::Arc;
-use std::time::Instant;
-
-use cerberus::registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult};
-
-pub use config::*;
-pub use error::*;
-
-use crate::error::{RpcError, RpcResult};
-use crate::project::metrics::ProjectDataMetrics;
-use crate::project::storage::ProjectStorage;
-use crate::project::storage::{Config as StorageConfig, ProjectDataResult};
-use crate::storage::error::StorageError;
-use crate::storage::redis;
+use {
+    crate::{
+        error::{RpcError, RpcResult},
+        project::{
+            metrics::ProjectDataMetrics,
+            storage::{Config as StorageConfig, ProjectDataResult, ProjectStorage},
+        },
+        storage::{error::StorageError, redis},
+    },
+    cerberus::{
+        project::ProjectData,
+        registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult},
+    },
+    opentelemetry::metrics::Meter,
+    std::{sync::Arc, time::Instant},
+};
+pub use {config::*, error::*};
 
 mod config;
 mod error;

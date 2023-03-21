@@ -1,9 +1,9 @@
-use std::net::IpAddr;
-
-use crate::utils;
-use crate::utils::network::NetworkInterfaceError;
-use serde::Deserialize;
-use serde_piecewise_default::DeserializePiecewiseDefault;
+use {
+    crate::{utils, utils::network::NetworkInterfaceError},
+    serde::Deserialize,
+    serde_piecewise_default::DeserializePiecewiseDefault,
+    std::net::IpAddr,
+};
 
 #[derive(DeserializePiecewiseDefault, Debug, Clone, PartialEq, Eq)]
 pub struct ServerConfig {

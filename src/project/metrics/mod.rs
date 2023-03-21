@@ -1,12 +1,11 @@
-use opentelemetry::metrics::Counter;
-use opentelemetry::metrics::Meter;
-use opentelemetry::metrics::ValueRecorder;
-use opentelemetry::KeyValue;
-use std::time::Duration;
-
-use crate::project::error::ProjectDataError;
-use crate::project::storage::ProjectDataResult;
-use crate::project::ResponseSource;
+use {
+    crate::project::{error::ProjectDataError, storage::ProjectDataResult, ResponseSource},
+    opentelemetry::{
+        metrics::{Counter, Meter, ValueRecorder},
+        KeyValue,
+    },
+    std::time::Duration,
+};
 
 const METRIC_NAMESPACE: &str = "project_data";
 

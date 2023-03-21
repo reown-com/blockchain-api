@@ -1,8 +1,9 @@
-use hyper::{Client, StatusCode};
-use hyper_tls::HttpsConnector;
-use test_context::test_context;
-
-use crate::{context::ServerContext, utils::send_jsonrpc_request, JSONRPC_VERSION};
+use {
+    crate::{context::ServerContext, utils::send_jsonrpc_request, JSONRPC_VERSION},
+    hyper::{Client, StatusCode},
+    hyper_tls::HttpsConnector,
+    test_context::test_context,
+};
 
 #[test_context(ServerContext)]
 #[tokio::test]

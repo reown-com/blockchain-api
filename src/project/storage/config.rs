@@ -1,6 +1,8 @@
-use crate::storage::redis::Addr as RedisAddr;
-use serde::Deserialize;
-use serde_piecewise_default::DeserializePiecewiseDefault;
+use {
+    crate::storage::redis::Addr as RedisAddr,
+    serde::Deserialize,
+    serde_piecewise_default::DeserializePiecewiseDefault,
+};
 
 #[derive(DeserializePiecewiseDefault, Debug, Clone, PartialEq, Eq)]
 pub struct Config {

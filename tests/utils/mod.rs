@@ -1,5 +1,7 @@
-use hyper::{body, client::HttpConnector, Body, Client, Method, Request, StatusCode};
-use hyper_tls::HttpsConnector;
+use {
+    hyper::{body, client::HttpConnector, Body, Client, Method, Request, StatusCode},
+    hyper_tls::HttpsConnector,
+};
 
 pub async fn send_jsonrpc_request(
     client: Client<HttpsConnector<HttpConnector>>,

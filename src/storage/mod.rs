@@ -1,9 +1,9 @@
-use std::fmt::Debug;
-use std::time::Duration;
-
-use crate::storage::error::StorageError;
-use async_trait::async_trait;
-use serde::{de::DeserializeOwned, Serialize};
+use {
+    crate::storage::error::StorageError,
+    async_trait::async_trait,
+    serde::{de::DeserializeOwned, Serialize},
+    std::{fmt::Debug, time::Duration},
+};
 
 pub mod error;
 pub mod redis;

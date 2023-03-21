@@ -1,6 +1,8 @@
-use hyper::{Body, Response, StatusCode};
-use serde::Deserialize;
-use warp::Reply;
+use {
+    axum::response::IntoResponse,
+    hyper::{Body, Response, StatusCode},
+    serde::Deserialize,
+};
 
 pub mod health;
 pub mod metrics;
@@ -23,55 +25,37 @@ pub struct ErrorReason {
 pub struct ErrorResponse {
     pub status: String,
     pub reasons: Vec<ErrorReason>,
-    #[serde(skip_serializing)]
-    pub code: StatusCode,
 }
 
-pub fn new_error_response(reasons: Vec<ErrorReason>, code: StatusCode) -> ErrorResponse {
+pub fn new_error_response(field: String, description: String) -> ErrorResponse {
     ErrorResponse {
         status: "FAILED".to_string(),
-        reasons,
-        code,
+        reasons: vec![ErrorReason { field, description }],
     }
 }
 
-pub fn field_validation_error(
-    field: impl Into<String>,
-    description: impl Into<String>,
-) -> Response<Body> {
-    new_error_response(
-        vec![ErrorReason {
-            field: field.into(),
-            description: description.into(),
-        }],
-        StatusCode::BAD_REQUEST,
-    )
-    .into_response()
-}
+// pub fn field_validation_error(
+//     field: impl Into<String>,
+//     description: impl Into<String>,
+// ) -> impl IntoResponse {
+//     new_error_response(vec![ErrorReason {
+//         field: field.into(),
+//         description: description.into(),
+//     }])
+// }
 
-pub fn handshake_error(field: impl Into<String>, description: impl Into<String>) -> Response<Body> {
-    new_error_response(
-        vec![ErrorReason {
-            field: field.into(),
-            description: description.into(),
-        }],
-        StatusCode::FORBIDDEN,
-    )
-    .into_response()
-}
+// pub fn handshake_error(field: impl Into<String>, description: impl
+// Into<String>) -> Response<Body> {     new_error_response(
+//         vec![ErrorReason {
+//             field: field.into(),
+//             description: description.into(),
+//         }],
+//         StatusCode::FORBIDDEN,
+//     )
+//     .into_response()
+// }
 
 #[derive(serde::Serialize)]
 pub struct SuccessResponse {
     status: String,
-}
-
-impl Reply for ErrorResponse {
-    fn into_response(self) -> Response<Body> {
-        let error = serde_json::to_string(&self).unwrap_or_default();
-        Response::builder()
-            .status(self.code)
-            .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(error))
-            .unwrap()
-    }
 }

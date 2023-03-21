@@ -1,8 +1,9 @@
-use crate::handlers::RpcQueryParams;
-use crate::json_rpc::JsonRpcRequest;
-use parquet_derive::ParquetRecordWriter;
-use serde::Serialize;
-use std::sync::Arc;
+use {
+    crate::{handlers::RpcQueryParams, json_rpc::JsonRpcRequest},
+    parquet_derive::ParquetRecordWriter,
+    serde::Serialize,
+    std::sync::Arc,
+};
 
 #[derive(Debug, Clone, Serialize, ParquetRecordWriter)]
 #[serde(rename_all = "camelCase")]

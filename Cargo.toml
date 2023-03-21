@@ -3,7 +3,8 @@ name = "rpc-proxy"
 version = "0.1.0"
 edition = "2021"
 authors = [
-    "Derek <derek@walletconnect.com>"
+    "Derek <derek@walletconnect.com>",
+    "Raku <maciejrak@walletconnect.com"
 ]
 build = "build.rs"
 
@@ -16,7 +17,9 @@ tokio = { version = "1", features = ["full"] }
 hyper = "0.14.4"
 hyper-tls = "0.5.0"
 tap = "1.0"
-warp = "0.3"
+axum = { version= "0.6", features = ["json", "tokio"]}
+tower = "0.4.11"
+tower-http = { version = "0.4.0", features = ["cors"] }
 jsonrpc = "0.14.0"
 
 # Serialization

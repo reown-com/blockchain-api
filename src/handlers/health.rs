@@ -1,13 +1,13 @@
-use std::sync::Arc;
-use warp::http;
+use {
+    crate::state::AppState,
+    axum::{extract::State, response::IntoResponse},
+    hyper::StatusCode,
+    std::sync::Arc,
+};
 
-use crate::state::State;
-
-pub async fn handler(state: Arc<State>) -> Result<impl warp::Reply, warp::Rejection> {
-    let response = warp::reply::with_status(
+pub async fn handler(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    (
+        StatusCode::OK,
         format!("OK v{}", state.compile_info.build().version()),
-        http::StatusCode::OK,
-    );
-
-    Ok(response)
+    )
 }

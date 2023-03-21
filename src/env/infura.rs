@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-
-use serde::Deserialize;
+use {serde::Deserialize, std::collections::HashMap};
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct InfuraConfig {

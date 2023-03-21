@@ -3,17 +3,18 @@ mod infura;
 mod pokt;
 mod zksync;
 
-use crate::{error::RpcResult, handlers::RpcQueryParams};
-use async_trait::async_trait;
-pub use binance::BinanceProvider;
-use hyper::Body;
-use hyper::Response;
-pub use infura::InfuraProvider;
-pub use pokt::PoktProvider;
-use std::collections::HashMap;
-use std::fmt::Display;
-use std::sync::Arc;
-pub use zksync::ZKSyncProvider;
+use {
+    crate::{error::RpcResult, handlers::RpcQueryParams},
+    async_trait::async_trait,
+    hyper::{Body, Response},
+    std::{collections::HashMap, fmt::Display, sync::Arc},
+};
+pub use {
+    binance::BinanceProvider,
+    infura::InfuraProvider,
+    pokt::PoktProvider,
+    zksync::ZKSyncProvider,
+};
 
 #[derive(Default, Clone)]
 pub struct ProviderRepository {
@@ -24,6 +25,7 @@ impl ProviderRepository {
     pub fn get_provider_for_chain_id(&self, chain_id: &str) -> Option<&Arc<dyn RpcProvider>> {
         self.map.get(chain_id)
     }
+
     pub fn add_provider(&mut self, _provider_name: String, provider: Arc<dyn RpcProvider>) {
         provider
             .supported_caip_chainids()
@@ -43,16 +45,12 @@ pub enum ProviderKind {
 
 impl Display for ProviderKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                ProviderKind::Infura => "Infura",
-                ProviderKind::Pokt => "Pokt",
-                ProviderKind::Binance => "Binance",
-                ProviderKind::ZKSync => "zkSync",
-            }
-        )
+        write!(f, "{}", match self {
+            ProviderKind::Infura => "Infura",
+            ProviderKind::Pokt => "Pokt",
+            ProviderKind::Binance => "Binance",
+            ProviderKind::ZKSync => "zkSync",
+        })
     }
 }
 
@@ -61,7 +59,7 @@ pub trait RpcProvider: Send + Sync {
     async fn proxy(
         &self,
         method: hyper::http::Method,
-        xpath: warp::path::FullPath,
+        xpath: axum::extract::MatchedPath,
         query_params: RpcQueryParams,
         headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
