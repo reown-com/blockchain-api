@@ -1,26 +1,24 @@
 use {
     crate::{
         analytics::MessageInfo,
-        error::{self, RpcError},
+        error::RpcError,
         extractors::method::Method,
         handlers::RpcQueryParams,
-        json_rpc::JsonRpcRequest,
         state::AppState,
     },
     axum::{
         body::Bytes,
-        extract::{ConnectInfo, MatchedPath, Path, Query, State},
+        extract::{ConnectInfo, MatchedPath, Query, State},
         response::{IntoResponse, Response},
-        Json,
     },
-    hyper::{HeaderMap, StatusCode},
+    hyper::HeaderMap,
     std::{
         borrow::Borrow,
         net::SocketAddr,
         sync::Arc,
         time::{Duration, SystemTime},
     },
-    tracing::{info, warn},
+    tracing::warn,
 };
 
 pub async fn handler(

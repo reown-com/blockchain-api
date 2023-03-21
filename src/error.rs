@@ -42,6 +42,9 @@ pub enum RpcError {
     #[error("Failed to reach the provider")]
     ProviderError,
 
+    #[error(transparent)]
+    Cerberus(#[from] cerberus::project::AccessError),
+
     #[error("{0:?}")]
     Other(#[from] anyhow::Error),
 }
