@@ -38,7 +38,7 @@ jobs:
         os:
           - ubuntu-latest
         rust:
-          - 1.65
+          - nightly
         cargo:
           - name: "Clippy"
             cmd: clippy
@@ -46,7 +46,7 @@ jobs:
             cache: {}
           - name: "Formatting"
             cmd: fmt
-            args: +nightly -- --check
+            args: -- --check
             cache: {}
           - name: "Integration Tests: Pokt"
             cmd: test
