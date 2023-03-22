@@ -80,7 +80,7 @@ pub async fn handler(
                     .metrics
                     .add_rate_limited_call(provider.borrow(), project_id)
             }
-            return RpcError::ProviderError;
+            RpcError::ProviderError
         })?;
 
     state.metrics.add_external_http_latency(
