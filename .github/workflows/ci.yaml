@@ -96,10 +96,10 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       # Install Rust toolchain
-      - name: "Install Rust ${{ matrix.rust }}"
+      - name: "Install Rust ${{ matrix.cargo.rust }}"
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{ matrix.rust }}
+          toolchain: ${{ matrix.cargo.rust }}
           profile: default
           override: true
 
