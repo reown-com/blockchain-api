@@ -3,6 +3,7 @@ use {
     anyhow::Context,
     axum::{
         http,
+        response::Response,
         routing::{any, get},
         Router,
     },
@@ -21,6 +22,7 @@ use {
     std::{
         net::{IpAddr, Ipv4Addr, SocketAddr},
         sync::Arc,
+        time::Duration,
     },
     tokio::{select, sync::broadcast},
     tower::ServiceBuilder,
@@ -28,7 +30,7 @@ use {
         cors::{Any, CorsLayer},
         trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
     },
-    tracing::{info, Level},
+    tracing::{info, Level, Span},
 };
 
 mod analytics;
@@ -101,9 +103,25 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
             ),
     );
 
+    let proxy_state = state_arc.clone();
+    let proxy_metrics = ServiceBuilder::new().layer(TraceLayer::new_for_http().on_response(
+        move |response: &Response, latency: Duration, _span: &Span| {
+            proxy_state
+                .metrics
+                .add_http_call(response.status().into(), "proxy");
+
+            proxy_state.metrics.add_http_latency(
+                response.status().into(),
+                "proxy",
+                latency.as_secs_f64(),
+            )
+        },
+    ));
+
     let app = Router::new()
-        .route("/health", get(handlers::health::handler))
         .route("/v1", any(handlers::proxy::handler))
+        .route_layer(proxy_metrics)
+        .route("/health", get(handlers::health::handler))
         .route("/metrics", get(handlers::metrics::handler))
         .layer(cors)
         .layer(global_middleware)

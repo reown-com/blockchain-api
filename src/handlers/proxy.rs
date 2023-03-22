@@ -18,6 +18,7 @@ use {
         sync::Arc,
         time::{Duration, SystemTime},
     },
+    tap::TapFallible,
     tracing::warn,
 };
 
@@ -33,9 +34,12 @@ pub async fn handler(
     let project = state
         .registry
         .project_data(&query_params.project_id)
-        .await?;
+        .await
+        .tap_err(|_| state.metrics.add_rejected_project())?;
 
-    project.validate_access(&query_params.project_id, None)?;
+    project
+        .validate_access(&query_params.project_id, None)
+        .tap_err(|_| state.metrics.add_rejected_project())?;
 
     let chain_id = query_params.chain_id.to_lowercase();
     let provider = state
