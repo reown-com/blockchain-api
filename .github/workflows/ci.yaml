@@ -46,9 +46,8 @@ jobs:
             cache: {}
           - name: "Formatting"
             cmd: fmt
-            args: -- --check
+            args: +nightly -- --check
             cache: {}
-            rustc: nightly
           - name: "Integration Tests: Pokt"
             cmd: test
             args: --all-features -- functional::connection::pokt
