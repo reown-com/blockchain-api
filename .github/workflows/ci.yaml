@@ -37,33 +37,37 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-        rust:
-          - 1.65
         cargo:
           - name: "Clippy"
             cmd: clippy
             args: --all-features --tests -- -D clippy::all -W clippy::style
             cache: {}
+            rust: stable
           - name: "Formatting"
             cmd: fmt
             args: -- --check
             cache: {}
+            rust: nightly
           - name: "Integration Tests: Pokt"
             cmd: test
             args: --all-features -- functional::connection::pokt
             cache: { sharedKey: "tests" }
+            rust: stable
           - name: "Integration Tests: Infura"
             cmd: test
             args: --all-features -- functional::connection::infura
             cache: { sharedKey: "tests" }
+            rust: stable
           - name: "Integration Tests: Binance"
             cmd: test
             args: --all-features -- functional::connection::binance
             cache: { sharedKey: "tests" }
+            rust: stable
           - name: "Integration Tests: ZkSync"
             cmd: test
             args: --all-features -- functional::connection::zksync
             cache: { sharedKey: "tests" }
+            rust: stable
         include:
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
