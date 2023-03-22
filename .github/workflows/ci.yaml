@@ -1,20 +1,19 @@
-
 name: ci
 
 on:
   pull_request:
     paths-ignore:
-      - '.github/**'
-      - 'terraform/**'
-      - 'docs/**'
-      - 'README.md'
+      - ".github/**"
+      - "terraform/**"
+      - "docs/**"
+      - "README.md"
 
   push:
-    branches: ['master']
+    branches: ["master"]
     paths-ignore:
-      - '.github/**'
-      - 'terraform/**'
-      - 'README.md'
+      - ".github/**"
+      - "terraform/**"
+      - "README.md"
 
 concurrency:
   # Support push/pr as event types with different behaviors each:
@@ -25,7 +24,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  IMAGE_NAME: 'rpc-proxy'
+  IMAGE_NAME: "rpc-proxy"
   AWS_REGION: "eu-central-1"
 
 jobs:
@@ -49,11 +48,12 @@ jobs:
             cmd: fmt
             args: -- --check
             cache: {}
+            rustc: nightly
           - name: "Integration Tests: Pokt"
             cmd: test
             args: --all-features -- functional::connection::pokt
             cache: { sharedKey: "tests" }
-          - name: "Integration Tests: Infura" 
+          - name: "Integration Tests: Infura"
             cmd: test
             args: --all-features -- functional::connection::infura
             cache: { sharedKey: "tests" }
@@ -74,7 +74,7 @@ jobs:
       SCCACHE_CACHE_SIZE: 1G
       SCCACHE_DIR: ${{ matrix.sccache-path }}
       PROJECT_ID: ${{ secrets.PROJECT_ID }}
-      
+
     steps:
       # Checkout code
       - name: "Git checkout"
@@ -124,10 +124,10 @@ jobs:
       - name: "Task ${{ matrix.cargo.name }}"
         env:
           TEST_RPC_PROXY_PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          RPC_PROXY_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }} 
+          RPC_PROXY_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
           RPC_PROXY_REGISTRY_API_URL: ${{ secrets.REGISTRY_URL }}
           RPC_PROXY_REGISTRY_API_AUTH_TOKEN: ${{ secrets.RPC_PROXY_REGISTRY_API_AUTH_TOKEN }}
-          RPC_PROXY_POKT_PROJECT_ID: ${{ secrets.POKT_PROJECT_ID }} 
+          RPC_PROXY_POKT_PROJECT_ID: ${{ secrets.POKT_PROJECT_ID }}
         uses: actions-rs/cargo@v1
         with:
           command: ${{ matrix.cargo.cmd }}
