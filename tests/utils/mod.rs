@@ -14,6 +14,8 @@ pub async fn send_jsonrpc_request(
     let json = serde_json::to_string(&rpc_request).unwrap();
     let body = Body::from(json);
 
+    dbg!(&addr);
+
     let request = Request::builder()
         .method(Method::POST)
         .uri(addr)
@@ -22,6 +24,7 @@ pub async fn send_jsonrpc_request(
         .unwrap();
 
     let response = client.request(request).await.unwrap();
+    dbg!(&response);
 
     let (parts, body) = response.into_parts();
     let body = body::to_bytes(body).await.unwrap();
