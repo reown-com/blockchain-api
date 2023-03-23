@@ -120,6 +120,7 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
 
     let app = Router::new()
         .route("/v1", any(handlers::proxy::handler))
+        .route("/v1/", any(handlers::proxy::handler))
         .route_layer(proxy_metrics)
         .route("/health", get(handlers::health::handler))
         .route("/metrics", get(handlers::metrics::handler))
