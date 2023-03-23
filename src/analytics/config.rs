@@ -1,5 +1,4 @@
-use serde::Deserialize;
-use serde_piecewise_default::DeserializePiecewiseDefault;
+use {serde::Deserialize, serde_piecewise_default::DeserializePiecewiseDefault};
 
 #[derive(DeserializePiecewiseDefault, Debug, Clone, Default, PartialEq, Eq)]
 pub struct Config {

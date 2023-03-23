@@ -1,7 +1,9 @@
-use crate::storage::error::StorageError;
-use cerberus::registry::RegistryError;
-use serde::{Deserialize, Serialize};
-use thiserror::Error as ThisError;
+use {
+    crate::storage::error::StorageError,
+    cerberus::registry::RegistryError,
+    serde::{Deserialize, Serialize},
+    thiserror::Error as ThisError,
+};
 
 #[derive(Debug, ThisError)]
 pub enum ProjectStorageError {

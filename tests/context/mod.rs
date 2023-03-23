@@ -1,7 +1,4 @@
-use async_trait::async_trait;
-use test_context::AsyncTestContext;
-
-use self::server::RpcProxy;
+use {self::server::RpcProxy, async_trait::async_trait, test_context::AsyncTestContext};
 
 mod server;
 

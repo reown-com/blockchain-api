@@ -1,10 +1,11 @@
-use serde::de::DeserializeOwned;
-use serde::Deserialize;
-
-use crate::analytics::Config as AnalyticsConfig;
-use crate::error;
-use crate::project::storage::Config as StorageConfig;
-use crate::project::Config as RegistryConfig;
+use {
+    crate::{
+        analytics::Config as AnalyticsConfig,
+        error,
+        project::{storage::Config as StorageConfig, Config as RegistryConfig},
+    },
+    serde::{de::DeserializeOwned, Deserialize},
+};
 
 mod binance;
 mod infura;
@@ -12,11 +13,7 @@ mod pokt;
 mod server;
 mod zksync;
 
-pub use binance::*;
-pub use infura::*;
-pub use pokt::*;
-pub use server::*;
-pub use zksync::*;
+pub use {binance::*, infura::*, pokt::*, server::*, zksync::*};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {

@@ -1,14 +1,14 @@
-use std::fmt::Debug;
-use std::time::Duration;
-
-use async_trait::async_trait;
-use deadpool_redis::{
-    redis::{AsyncCommands, Value},
-    Config, Pool,
+use {
+    crate::storage::{deserialize, serialize, KeyValueStorage, StorageError, StorageResult},
+    async_trait::async_trait,
+    deadpool_redis::{
+        redis::{AsyncCommands, Value},
+        Config,
+        Pool,
+    },
+    serde::{de::DeserializeOwned, Serialize},
+    std::{fmt::Debug, time::Duration},
 };
-use serde::{de::DeserializeOwned, Serialize};
-
-use crate::storage::{deserialize, serialize, KeyValueStorage, StorageError, StorageResult};
 
 const LOCAL_REDIS_ADDR: &str = "redis://localhost:6379/0";
 

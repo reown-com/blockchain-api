@@ -1,15 +1,17 @@
-use std::sync::Arc;
-use std::time::{Duration, Instant};
-
-use cerberus::project::ProjectData;
-use tap::TapFallible;
-use tracing::warn;
-
-use crate::project::error::ProjectDataError;
-use crate::project::metrics::ProjectDataMetrics;
-
-use crate::storage::{KeyValueStorage, StorageResult};
 pub use config::*;
+use {
+    crate::{
+        project::{error::ProjectDataError, metrics::ProjectDataMetrics},
+        storage::{KeyValueStorage, StorageResult},
+    },
+    cerberus::project::ProjectData,
+    std::{
+        sync::Arc,
+        time::{Duration, Instant},
+    },
+    tap::TapFallible,
+    tracing::warn,
+};
 
 mod config;
 

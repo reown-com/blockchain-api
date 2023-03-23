@@ -1,26 +1,23 @@
-use prometheus_core::TextEncoder;
-use std::sync::Arc;
-use tracing::error;
-use warp::http;
+use {
+    crate::state::AppState,
+    axum::{extract::State, response::IntoResponse},
+    hyper::StatusCode,
+    prometheus_core::TextEncoder,
+    std::sync::Arc,
+    tracing::error,
+};
 
-use crate::state::State;
-
-pub async fn handler(state: Arc<State>) -> Result<impl warp::Reply, warp::Rejection> {
+pub async fn handler(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let data = state.exporter.registry().gather();
     match TextEncoder::new().encode_to_string(&data) {
-        Ok(content) => {
-            let response = warp::reply::with_status(content, http::StatusCode::OK);
-
-            Ok(response)
-        }
+        Ok(content) => (StatusCode::OK, content),
         Err(e) => {
             error!(?e, "Failed to parse metrics");
-            let response = warp::reply::with_status(
-                "Failed to get metrics".into(),
-                http::StatusCode::INTERNAL_SERVER_ERROR,
-            );
 
-            Ok(response)
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to get metrics".to_string(),
+            )
         }
     }
 }

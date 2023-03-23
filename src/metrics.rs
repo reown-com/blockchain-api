@@ -1,6 +1,7 @@
-use opentelemetry::metrics::{Counter, Meter, ValueRecorder};
-
-use crate::providers::{ProviderKind, RpcProvider};
+use {
+    crate::providers::{ProviderKind, RpcProvider},
+    opentelemetry::metrics::{Counter, Meter, ValueRecorder},
+};
 
 #[derive(Clone, Debug)]
 pub struct Metrics {
@@ -57,43 +58,32 @@ impl Metrics {
 
 impl Metrics {
     pub fn add_rpc_call(&self, chain_id: &str) {
-        self.rpc_call_counter.add(
-            1,
-            &[opentelemetry::KeyValue::new(
-                "chain.id",
-                chain_id.to_owned(),
-            )],
-        );
+        self.rpc_call_counter.add(1, &[opentelemetry::KeyValue::new(
+            "chain.id",
+            chain_id.to_owned(),
+        )]);
     }
 
     pub fn add_http_call(&self, code: u16, route: &str) {
-        self.http_call_counter.add(
-            1,
-            &[
-                opentelemetry::KeyValue::new("code", i64::from(code)),
-                opentelemetry::KeyValue::new("route", route.to_owned()),
-            ],
-        );
+        self.http_call_counter.add(1, &[
+            opentelemetry::KeyValue::new("code", i64::from(code)),
+            opentelemetry::KeyValue::new("route", route.to_owned()),
+        ]);
     }
 
     pub fn add_http_latency(&self, code: u16, route: &str, latency: f64) {
-        self.http_latency_tracker.record(
-            latency,
-            &[
-                opentelemetry::KeyValue::new("code", i64::from(code)),
-                opentelemetry::KeyValue::new("route", route.to_owned()),
-            ],
-        )
+        self.http_latency_tracker.record(latency, &[
+            opentelemetry::KeyValue::new("code", i64::from(code)),
+            opentelemetry::KeyValue::new("route", route.to_owned()),
+        ])
     }
 
     pub fn add_external_http_latency(&self, provider_kind: ProviderKind, latency: f64) {
-        self.http_external_latency_tracker.record(
-            latency,
-            &[opentelemetry::KeyValue::new(
+        self.http_external_latency_tracker
+            .record(latency, &[opentelemetry::KeyValue::new(
                 "provider",
                 provider_kind.to_string(),
-            )],
-        )
+            )])
     }
 
     pub fn add_rejected_project(&self) {
@@ -101,12 +91,9 @@ impl Metrics {
     }
 
     pub fn add_rate_limited_call(&self, provider: &dyn RpcProvider, project_id: String) {
-        self.rate_limited_call_counter.add(
-            1,
-            &[
-                opentelemetry::KeyValue::new("provider_kind", provider.provider_kind().to_string()),
-                opentelemetry::KeyValue::new("project_id", project_id),
-            ],
-        )
+        self.rate_limited_call_counter.add(1, &[
+            opentelemetry::KeyValue::new("provider_kind", provider.provider_kind().to_string()),
+            opentelemetry::KeyValue::new("project_id", project_id),
+        ])
     }
 }

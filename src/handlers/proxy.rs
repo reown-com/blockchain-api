@@ -1,64 +1,58 @@
-use std::borrow::Borrow;
-use std::net::SocketAddr;
-use std::sync::Arc;
-use std::time::{Duration, SystemTime};
-
-use crate::analytics::MessageInfo;
-use crate::error::RpcError;
-use tracing::warn;
-
-use crate::handlers::{handshake_error, RpcQueryParams};
-use crate::state::State;
-
-use super::field_validation_error;
+use {
+    crate::{
+        analytics::MessageInfo,
+        error::RpcError,
+        extractors::method::Method,
+        handlers::RpcQueryParams,
+        state::AppState,
+    },
+    axum::{
+        body::Bytes,
+        extract::{ConnectInfo, MatchedPath, Query, State},
+        response::{IntoResponse, Response},
+    },
+    hyper::HeaderMap,
+    std::{
+        borrow::Borrow,
+        net::SocketAddr,
+        sync::Arc,
+        time::{Duration, SystemTime},
+    },
+    tap::TapFallible,
+    tracing::warn,
+};
 
 pub async fn handler(
-    state: Arc<State>,
-    sender: Option<SocketAddr>,
-    method: hyper::http::Method,
-    path: warp::path::FullPath,
-    query_params: RpcQueryParams,
-    headers: hyper::http::HeaderMap,
-    body: hyper::body::Bytes,
-) -> Result<impl warp::Reply, warp::Rejection> {
-    if query_params.project_id.is_empty() {
-        return Ok(field_validation_error(
-            "projectId",
-            "No project id provided",
-        ));
-    }
+    State(state): State<Arc<AppState>>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    Query(query_params): Query<RpcQueryParams>,
+    Method(method): Method,
+    path: MatchedPath,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Response, RpcError> {
+    let project = state
+        .registry
+        .project_data(&query_params.project_id)
+        .await
+        .tap_err(|_| state.metrics.add_rejected_project())?;
 
-    match state.registry.project_data(&query_params.project_id).await {
-        Ok(project) => {
-            if let Err(access_err) = project.validate_access(&query_params.project_id, None) {
-                state.metrics.add_rejected_project();
-                return Ok(handshake_error("projectId", format!("{access_err:?}")));
-            }
-        }
-
-        Err(err) => {
-            state.metrics.add_rejected_project();
-            return Ok(handshake_error("projectId", format!("{err:?}")));
-        }
-    }
+    project
+        .validate_access(&query_params.project_id, None)
+        .tap_err(|_| state.metrics.add_rejected_project())?;
 
     let chain_id = query_params.chain_id.to_lowercase();
-    let provider = state.providers.get_provider_for_chain_id(&chain_id);
-    let provider = match provider {
-        Some(provider) => provider,
-        _ => {
-            return Ok(field_validation_error(
-                "chainId",
-                format!("We don't support the chainId you provided: {chain_id}"),
-            ));
-        }
-    };
+    let provider = state
+        .providers
+        .get_provider_for_chain_id(&chain_id)
+        .ok_or(RpcError::UnsupportedChain(chain_id.clone()))?;
 
     state.metrics.add_rpc_call(&chain_id);
 
     if let Ok(rpc_request) = serde_json::from_slice(&body) {
-        let (country, continent, region) = sender
-            .and_then(|addr| state.analytics.lookup_geo_data(addr.ip()))
+        let (country, continent, region) = state
+            .analytics
+            .lookup_geo_data(addr.ip())
             .map(|geo| (geo.country, geo.continent, geo.region))
             .unwrap_or((None, None, None));
 
@@ -76,8 +70,6 @@ pub async fn handler(
     // Start timing external provider added time
     let external_call_start = SystemTime::now();
 
-    // TODO: map the response error codes properly
-    // e.g. HTTP401 from target should map to HTTP500
     let response = provider
         .proxy(method, path, query_params, headers, body)
         .await
@@ -88,8 +80,8 @@ pub async fn handler(
                     .metrics
                     .add_rate_limited_call(provider.borrow(), project_id)
             }
-            warp::reject::reject()
-        });
+            RpcError::ProviderError
+        })?;
 
     state.metrics.add_external_http_latency(
         provider.provider_kind(),
@@ -99,5 +91,5 @@ pub async fn handler(
             .as_secs_f64(),
     );
 
-    response
+    Ok(response.into_response())
 }

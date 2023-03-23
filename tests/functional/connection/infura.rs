@@ -1,10 +1,13 @@
-use hyper::{http, Body, Client, Method, Request, StatusCode};
-use hyper_tls::HttpsConnector;
-use test_context::test_context;
-
-use crate::{
-    context::ServerContext, functional::connection::INFURA_CHAIN_DECOMISSIONED_ERROR_CODE,
-    utils::send_jsonrpc_request, JSONRPC_VERSION,
+use {
+    crate::{
+        context::ServerContext,
+        functional::connection::INFURA_CHAIN_DECOMISSIONED_ERROR_CODE,
+        utils::send_jsonrpc_request,
+        JSONRPC_VERSION,
+    },
+    hyper::{http, Body, Client, Method, Request, StatusCode},
+    hyper_tls::HttpsConnector,
+    test_context::test_context,
 };
 
 #[test_context(ServerContext)]
@@ -89,6 +92,7 @@ async fn eip155_3_ropsten_infura(ctx: &mut ServerContext) {
 
     let (status, rpc_response) = send_jsonrpc_request(client, addr, "eip155:3", request).await;
 
+    dbg!(&rpc_response);
     // Verify that HTTP communication returns error
     assert_eq!(status, StatusCode::GONE);
 

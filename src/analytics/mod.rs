@@ -1,13 +1,16 @@
-use anyhow::Context;
-use aws_sdk_s3::Client as S3Client;
-pub use config::Config;
-use gorgon::batcher::{AwsExporter, AwsExporterOpts, BatchCollectorOpts};
-use gorgon::geoip::{AnalyticsGeoData, GeoIpReader};
-use gorgon::{Analytics, NoopCollector};
-pub use message_info::MessageInfo;
-use std::net::IpAddr;
-use std::sync::Arc;
-use tracing::info;
+use {
+    anyhow::Context,
+    aws_sdk_s3::Client as S3Client,
+    gorgon::{
+        batcher::{AwsExporter, AwsExporterOpts, BatchCollectorOpts},
+        geoip::{AnalyticsGeoData, GeoIpReader},
+        Analytics,
+        NoopCollector,
+    },
+    std::{net::IpAddr, sync::Arc},
+    tracing::info,
+};
+pub use {config::Config, message_info::MessageInfo};
 
 mod config;
 mod message_info;

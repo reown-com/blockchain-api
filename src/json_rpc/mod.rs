@@ -3,10 +3,12 @@
 //! The crate exports common types used when interacting with messages between
 //! clients.
 
-use derive_more::{Display, From, Into};
-use serde::{Deserialize, Serialize};
-use serde_aux::prelude::deserialize_number_from_string;
-use std::sync::Arc;
+use {
+    derive_more::{Display, From, Into},
+    serde::{Deserialize, Serialize},
+    serde_aux::prelude::deserialize_number_from_string,
+    std::sync::Arc,
+};
 
 #[cfg(test)]
 mod tests;

@@ -1,11 +1,10 @@
-use std::{env, net::TcpStream};
-
-use rpc_proxy::env::{Config, ServerConfig};
-
-use super::TestResult;
-
 use {
-    std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4},
+    super::TestResult,
+    rpc_proxy::env::{Config, ServerConfig},
+    std::{
+        env,
+        net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream},
+    },
     tokio::{
         runtime::Handle,
         sync::broadcast,

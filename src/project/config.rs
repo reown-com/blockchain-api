@@ -1,7 +1,8 @@
-use std::time::Duration;
-
-use serde::Deserialize;
-use serde_piecewise_default::DeserializePiecewiseDefault;
+use {
+    serde::Deserialize,
+    serde_piecewise_default::DeserializePiecewiseDefault,
+    std::time::Duration,
+};
 
 #[derive(DeserializePiecewiseDefault, Debug, Clone, PartialEq, Eq)]
 pub struct Config {

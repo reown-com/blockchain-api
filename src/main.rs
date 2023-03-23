@@ -1,9 +1,10 @@
-use std::str::FromStr;
-
-use dotenv::dotenv;
-use rpc_proxy::{env::Config, error};
-use tokio::sync::broadcast;
-use tracing_subscriber::fmt::format::FmtSpan;
+use {
+    dotenv::dotenv,
+    rpc_proxy::{env::Config, error},
+    std::str::FromStr,
+    tokio::sync::broadcast,
+    tracing_subscriber::fmt::format::FmtSpan,
+};
 
 #[tokio::main]
 async fn main() -> error::RpcResult<()> {

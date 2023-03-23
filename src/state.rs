@@ -1,12 +1,16 @@
-use crate::analytics::RPCAnalytics;
-use crate::env::Config;
-use crate::metrics::Metrics;
-use crate::project::Registry;
-use crate::providers::ProviderRepository;
-use crate::utils::build::CompileInfo;
-use opentelemetry_prometheus::PrometheusExporter;
+use {
+    crate::{
+        analytics::RPCAnalytics,
+        env::Config,
+        metrics::Metrics,
+        project::Registry,
+        providers::ProviderRepository,
+        utils::build::CompileInfo,
+    },
+    opentelemetry_prometheus::PrometheusExporter,
+};
 
-pub struct State {
+pub struct AppState {
     pub config: Config,
     pub providers: ProviderRepository,
     pub exporter: PrometheusExporter,
@@ -23,8 +27,8 @@ pub fn new_state(
     metrics: Metrics,
     registry: Registry,
     analytics: RPCAnalytics,
-) -> State {
-    State {
+) -> AppState {
+    AppState {
         config,
         providers,
         exporter,
