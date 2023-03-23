@@ -46,7 +46,6 @@ impl RpcProvider for PoktProvider {
             .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))?;
 
-        dbg!(&hyper_request);
         // TODO: map the response error codes properly
         // e.g. HTTP401 from target should map to HTTP500
         let response = self.client.request(hyper_request).await?;
