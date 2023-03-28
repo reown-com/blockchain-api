@@ -1,15 +1,13 @@
 use {
     super::TestResult,
+    std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream},
+    tokio::time::{sleep, Duration},
+};
+#[cfg(feature = "test-localhost")]
+use {
     rpc_proxy::env::{Config, ServerConfig},
-    std::{
-        env,
-        net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream},
-    },
-    tokio::{
-        runtime::Handle,
-        sync::broadcast,
-        time::{sleep, Duration},
-    },
+    std::{env, net::IpAddr},
+    tokio::{runtime::Handle, sync::broadcast},
 };
 
 pub struct RpcProxy {
@@ -25,9 +23,10 @@ pub struct RpcProxy {
 pub enum Error {}
 
 impl RpcProxy {
-    #[allow(unused)]
+    #[cfg(feature = "test-localhost")]
     pub async fn start() -> Self {
-        let (public_port, private_port) = get_random_ports();
+        let public_port = get_random_port();
+        let private_port = get_random_port();
         let hostname = Ipv4Addr::UNSPECIFIED;
         let rt = Handle::current();
         let public_addr = SocketAddr::new(IpAddr::V4(hostname), public_port);
@@ -68,7 +67,7 @@ impl RpcProxy {
         }
     }
 
-    #[allow(unused)]
+    #[cfg(feature = "test-localhost")]
     pub async fn shutdown(&mut self) {
         if self.is_shutdown {
             return;
@@ -83,7 +82,8 @@ impl RpcProxy {
 }
 
 // Finds a free port.
-fn get_random_ports() -> (u16, u16) {
+#[cfg(feature = "test-localhost")]
+fn get_random_port() -> u16 {
     use std::sync::atomic::{AtomicU16, Ordering};
 
     static NEXT_PORT: AtomicU16 = AtomicU16::new(9000);
@@ -92,13 +92,7 @@ fn get_random_ports() -> (u16, u16) {
         let port = NEXT_PORT.fetch_add(1, Ordering::SeqCst);
 
         if is_port_available(port) {
-            let pub_port = port;
-            loop {
-                let port = NEXT_PORT.fetch_add(1, Ordering::SeqCst);
-                if is_port_available(port) {
-                    return (pub_port, port);
-                }
-            }
+            return port;
         }
     }
 }
@@ -118,6 +112,7 @@ async fn wait_for_server_to_shutdown(port: u16) -> TestResult<()> {
     Ok(tokio::time::timeout(Duration::from_secs(3), poll_fut).await?)
 }
 
+#[cfg(feature = "test-localhost")]
 async fn wait_for_server_to_start(port: u16) -> TestResult<()> {
     let poll_fut = async {
         while is_port_available(port) {
