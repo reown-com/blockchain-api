@@ -9,8 +9,8 @@ use {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
+    pub private_port: u16,
     pub log_level: String,
-
     pub external_ip: Option<IpAddr>,
 }
 
@@ -19,6 +19,7 @@ impl Default for ServerConfig {
         ServerConfig {
             host: "127.0.0.1".to_string(),
             port: 3000,
+            private_port: 4000,
             log_level: "INFO".to_string(),
             external_ip: None,
         }
