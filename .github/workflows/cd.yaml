@@ -97,7 +97,7 @@ jobs:
   validate_staging:
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
     needs: [deploy-app-staging, deploy-infra-staging]
-    uses: ./.github/workflows/validate.yml
+    uses: ./.github/workflows/validate.yaml
     with:
       environment_url: "https://staging.rpc.walletconnect.com"
 
@@ -181,6 +181,6 @@ jobs:
   validate_prod:
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
     needs: [deploy-app-staging, deploy-infra-staging]
-    uses: ./.github/workflows/validate.yml
+    uses: ./.github/workflows/validate.yaml
     with:
       environment_url: "https://rpc.walletconnect.com"
