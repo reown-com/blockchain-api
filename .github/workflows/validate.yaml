@@ -3,20 +3,10 @@ name: validate
 on:
   workflow_dispatch:
     inputs:
-      environment:
+      environment_url:
         description: "the environment to validate"
         required: true
-        default: "staging"
-        type: choice
-        options:
-          - prod
-          - staging
-  workflow_call:
-    inputs:
-      environment:
-        description: "Environment to test"
-        required: true
-        default: "STAGING"
+        default: "https://staging.rpc.walletconnect.com"
         type: string
 
 jobs:
