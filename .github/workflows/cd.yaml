@@ -103,7 +103,7 @@ jobs:
 
   deployment_windows:
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
-    needs: [validate]
+    needs: [validate_staging]
     outputs:
       result: ${{ steps.decide.outputs.deploy_or_not }}
     runs-on: ubuntu-latest
