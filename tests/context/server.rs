@@ -59,7 +59,7 @@ impl RpcProxy {
         }
 
         Self {
-            public_addr: public_addr.to_string(),
+            public_addr: format!("http://{}", public_addr),
             project_id,
             shutdown_signal: Some(signal),
             is_shutdown: false,
