@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       deploy_infra:
-        description: 'Whether to deploy infrastructure'
+        description: "Whether to deploy infrastructure"
         default: true
         required: true
         type: boolean
       deploy_app:
-        description: 'Whether to deploy app'
+        description: "Whether to deploy app"
         default: true
         required: true
         type: boolean
@@ -36,7 +36,7 @@ on:
 concurrency: cd
 
 env:
-  IMAGE_NAME: 'rpc-proxy'
+  IMAGE_NAME: "rpc-proxy"
   TF_VAR_infura_project_id: ${{ secrets.INFURA_PROJECT_ID }}
   TF_VAR_pokt_project_id: ${{ secrets.POKT_PROJECT_ID }}
   TF_VAR_registry_api_auth_token: ${{ secrets.REGISTRY_API_AUTH_TOKEN }}
@@ -94,17 +94,12 @@ jobs:
           task-definition-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}
           image-name: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
-  validate:
+  validate_staging:
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
     needs: [deploy-app-staging, deploy-infra-staging]
-    runs-on: ubuntu-latest
-    environment:
-      name: app/staging
-      url: https://staging.rpc.walletconnect.com/hello
-    steps:
-      - name: validate
-        run: |
-          curl "https://staging.rpc.walletconnect.com/health"
+    uses: ./.github/workflows/validate.yml
+    with:
+      environment_url: "https://staging.rpc.walletconnect.com"
 
   deployment_windows:
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
@@ -182,3 +177,10 @@ jobs:
           service-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}-service
           task-definition-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}
           image-name: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+  validate_prod:
+    if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
+    needs: [deploy-app-staging, deploy-infra-staging]
+    uses: ./.github/workflows/validate.yml
+    with:
+      environment_url: "https://rpc.walletconnect.com"
