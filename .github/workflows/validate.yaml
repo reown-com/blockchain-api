@@ -1,7 +1,7 @@
 name: validate
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       environment_url:
         description: "the environment to validate"
