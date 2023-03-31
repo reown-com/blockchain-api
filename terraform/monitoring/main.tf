@@ -351,7 +351,7 @@ resource "grafana_dashboard" "at_a_glance" {
               "region" : "default",
               "sqlExpression" : "",
               "statistic" : "Average"
-            }, 
+            },
             {
               "alias" : "",
               "datasource" : {
@@ -525,7 +525,7 @@ resource "grafana_dashboard" "at_a_glance" {
               "region" : "default",
               "sqlExpression" : "",
               "statistic" : "Average"
-            }, {
+              }, {
               "alias" : "",
               "datasource" : {
                 "type" : "cloudwatch",
