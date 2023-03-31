@@ -13,8 +13,8 @@ locals {
   opsgenie_notification_channel = "l_iaPw6nk"
   notifications = (
     var.environment == "prod" ?
-    "[{\"uid\": \"${local.opsgenie_notification_channel}\"}]" :
-    "[]"
+    [{ uid = local.opsgenie_notification_channel }] :
+    []
   )
 
   target_group  = split(":", var.target_group_arn)[5]
@@ -1436,7 +1436,7 @@ resource "grafana_dashboard" "at_a_glance" {
                 "uid" : grafana_data_source.cloudwatch.uid
               },
               "dimensions" : {
-                "TargetGroup" : "${local.target_group}"
+                "TargetGroup" : local.target_group
               },
               "expression" : "",
               "id" : "",
@@ -1472,7 +1472,7 @@ resource "grafana_dashboard" "at_a_glance" {
                     {
                       "operator" : {
                         "name" : "=",
-                        "value" : "${local.load_balancer}"
+                        "value" : local.load_balancer
                       },
                       "property" : {
                         "name" : "LoadBalancer",
