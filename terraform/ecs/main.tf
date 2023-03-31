@@ -172,3 +172,51 @@ resource "aws_ecs_service" "app_service" {
     ignore_changes = [desired_count]
   }
 }
+
+#  Autoscaling
+# We can scale by
+# ECSServiceAverageCPUUtilization, ECSServiceAverageMemoryUtilization, and ALBRequestCountPerTarget
+# out of the box or use custom metrics
+resource "aws_appautoscaling_target" "ecs_target" {
+  max_capacity       = var.autoscaling_max_capacity
+  min_capacity       = var.autoscaling_min_capacity
+  resource_id        = "service/${aws_ecs_cluster.app_cluster.name}/${aws_ecs_service.app_service.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "cpu_scaling" {
+  name               = "${var.app_name}-application-scaling-policy-cpu"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.ecs_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs_target.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = 30
+    scale_in_cooldown  = 180
+    scale_out_cooldown = 180
+  }
+  depends_on = [aws_appautoscaling_target.ecs_target]
+}
+
+resource "aws_appautoscaling_policy" "memory_scaling" {
+  name               = "${var.app_name}-application-scaling-policy-memory"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.ecs_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs_target.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
+    }
+    target_value       = 30
+    scale_in_cooldown  = 180
+    scale_out_cooldown = 180
+  }
+  depends_on = [aws_appautoscaling_target.ecs_target]
+}
