@@ -16,6 +16,9 @@ locals {
     "[{\"uid\": \"${local.opsgenie_notification_channel}\"}]" :
     "[]"
   )
+
+  target_group  = split(":", var.target_group_arn)[5]
+  load_balancer = join("/", slice(split("/", var.load_balancer_arn), 1, 4))
 }
 
 resource "grafana_data_source" "prometheus" {
@@ -1350,6 +1353,142 @@ resource "grafana_dashboard" "at_a_glance" {
             }
           ],
           "title" : "Redis CPU/Memory",
+          "type" : "timeseries"
+        },
+        {
+          "datasource" : {
+            "type" : "cloudwatch",
+            "uid" : grafana_data_source.cloudwatch.uid
+          },
+          "fieldConfig" : {
+            "defaults" : {
+              "color" : {
+                "mode" : "palette-classic"
+              },
+              "custom" : {
+                "axisLabel" : "",
+                "axisPlacement" : "auto",
+                "barAlignment" : 0,
+                "drawStyle" : "line",
+                "fillOpacity" : 0,
+                "gradientMode" : "none",
+                "hideFrom" : {
+                  "legend" : false,
+                  "tooltip" : false,
+                  "viz" : false
+                },
+                "lineInterpolation" : "linear",
+                "lineWidth" : 1,
+                "pointSize" : 5,
+                "scaleDistribution" : {
+                  "type" : "linear"
+                },
+                "showPoints" : "auto",
+                "spanNulls" : false,
+                "stacking" : {
+                  "group" : "A",
+                  "mode" : "none"
+                },
+                "thresholdsStyle" : {
+                  "mode" : "off"
+                }
+              },
+              "mappings" : [],
+              "thresholds" : {
+                "mode" : "absolute",
+                "steps" : [
+                  {
+                    "color" : "green",
+                    "value" : null
+                  },
+                  {
+                    "color" : "red",
+                    "value" : 80
+                  }
+                ]
+              }
+            },
+            "overrides" : []
+          },
+          "gridPos" : {
+            "h" : 8,
+            "w" : 3,
+            "x" : 0,
+            "y" : 24
+          },
+          "id" : 15,
+          "options" : {
+            "legend" : {
+              "calcs" : [],
+              "displayMode" : "list",
+              "placement" : "bottom"
+            },
+            "tooltip" : {
+              "mode" : "single",
+              "sort" : "none"
+            }
+          },
+          "targets" : [
+            {
+              "alias" : "eu-central-1",
+              "datasource" : {
+                "type" : "cloudwatch",
+                "uid" : grafana_data_source.cloudwatch.uid
+              },
+              "dimensions" : {
+                "TargetGroup" : "${local.target_group}"
+              },
+              "expression" : "",
+              "id" : "",
+              "matchExact" : false,
+              "metricEditorMode" : 0,
+              "metricName" : "HealthyHostCount",
+              "metricQueryType" : 1,
+              "namespace" : "AWS/NetworkELB",
+              "period" : "",
+              "queryMode" : "Metrics",
+              "refId" : "A",
+              "region" : "default",
+              "sql" : {
+                "from" : {
+                  "property" : {
+                    "name" : "AWS/NetworkELB",
+                    "type" : "string"
+                  },
+                  "type" : "property"
+                },
+                "select" : {
+                  "name" : "MAX",
+                  "parameters" : [
+                    {
+                      "name" : "HealthyHostCount",
+                      "type" : "functionParameter"
+                    }
+                  ],
+                  "type" : "function"
+                },
+                "where" : {
+                  "expressions" : [
+                    {
+                      "operator" : {
+                        "name" : "=",
+                        "value" : "${local.load_balancer}"
+                      },
+                      "property" : {
+                        "name" : "LoadBalancer",
+                        "type" : "string"
+                      },
+                      "type" : "operator"
+                    }
+                  ],
+                  "type" : "and"
+                }
+              },
+              "sqlExpression" : "SELECT MAX(HealthyHostCount) FROM \"AWS/NetworkELB\" WHERE LoadBalancer = '${local.load_balancer}'",
+              "statistic" : "Maximum"
+            }
+          ],
+          "title" : "Healthy Hosts",
           "type" : "timeseries"
         }
       ],

@@ -113,6 +113,8 @@ module "o11y" {
   prometheus_workspace_id = aws_prometheus_workspace.prometheus.id
   environment             = terraform.workspace
   redis_cluster_id        = module.redis.cluster_id
+  target_group_arn        = module.ecs.target_group_arn
+  load_balancer_arn       = module.ecs.load_balancer_arn
 }
 
 resource "aws_prometheus_workspace" "prometheus" {
