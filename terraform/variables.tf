@@ -32,3 +32,11 @@ variable "analytics_geoip_db_key" {
   type    = string
   default = "GeoLite2-City.mmdb"
 }
+
+variable "autoscaling_max_instances" {
+  type = number
+}
+
+variable "autoscaling_min_instances" {
+  type = number
+}

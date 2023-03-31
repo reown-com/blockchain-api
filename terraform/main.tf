@@ -67,6 +67,9 @@ module "ecs" {
   pokt_project_id            = var.pokt_project_id
   prometheus_endpoint        = aws_prometheus_workspace.prometheus.prometheus_endpoint
 
+  autoscaling_min_capacity = var.autoscaling_min_instances
+  autoscaling_max_capacity = var.autoscaling_max_instances
+
   registry_api_endpoint             = var.registry_api_endpoint
   registry_api_auth_token           = var.registry_api_auth_token
   project_data_cache_ttl            = var.project_data_cache_ttl
