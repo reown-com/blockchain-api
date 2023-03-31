@@ -351,6 +351,29 @@ resource "grafana_dashboard" "at_a_glance" {
               "region" : "default",
               "sqlExpression" : "",
               "statistic" : "Average"
+            }, 
+            {
+              "alias" : "",
+              "datasource" : {
+                "type" : "cloudwatch",
+                "uid" : grafana_data_source.cloudwatch.uid
+              },
+              "dimensions" : {
+                "ServiceName" : "${var.environment}_rpc-proxy-service"
+              },
+              "expression" : "",
+              "id" : "",
+              "matchExact" : false,
+              "metricEditorMode" : 0,
+              "metricName" : "CPUUtilization",
+              "metricQueryType" : 0,
+              "namespace" : "AWS/ECS",
+              "period" : "",
+              "queryMode" : "Metrics",
+              "refId" : "B",
+              "region" : "default",
+              "sqlExpression" : "",
+              "statistic" : "Maximum"
             }
           ],
           "thresholds" : [
@@ -502,6 +525,28 @@ resource "grafana_dashboard" "at_a_glance" {
               "region" : "default",
               "sqlExpression" : "",
               "statistic" : "Average"
+            }, {
+              "alias" : "",
+              "datasource" : {
+                "type" : "cloudwatch",
+                "uid" : grafana_data_source.cloudwatch.uid
+              },
+              "dimensions" : {
+                "ServiceName" : "${var.environment}_rpc-proxy-service"
+              },
+              "expression" : "",
+              "id" : "",
+              "matchExact" : false,
+              "metricEditorMode" : 0,
+              "metricName" : "MemoryUtilization",
+              "metricQueryType" : 0,
+              "namespace" : "AWS/ECS",
+              "period" : "",
+              "queryMode" : "Metrics",
+              "refId" : "B",
+              "region" : "default",
+              "sqlExpression" : "",
+              "statistic" : "Maximum"
             }
           ],
           "thresholds" : [
