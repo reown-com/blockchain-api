@@ -52,6 +52,8 @@ module "logging" {
 module "ecs" {
   source = "./ecs"
 
+  environment = terraform.workspace
+
   ecr_repository_url         = data.aws_ecr_repository.repository.repository_url
   app_name                   = "${terraform.workspace}_${local.app_name}"
   region                     = var.region

@@ -10,6 +10,9 @@ terraform {
 }
 
 locals {
+  cpu    = var.environment != "dev" ? 1024 : 256
+  memory = 2 * local.cpu # 2x is minimum for ECS
+
   REDIS_MAX_CONNECTIONS = "128"
   // TODO: version the RPC image so we can pin it
   # pinned_latest_tag     = sort(setsubtract(data.aws_ecr_image.service_image.image_tags, ["latest"]))[0]
@@ -89,8 +92,8 @@ resource "aws_ecs_task_definition" "app_task" {
           hostPort : var.port
         }
       ],
-      memory : 512,
-      cpu : 256,
+      memory : local.memory,
+      cpu : local.cpu,
       ulimits : [{
         name : "nofile",
         softLimit : local.file_descriptor_soft_limit,
@@ -132,10 +135,10 @@ resource "aws_ecs_task_definition" "app_task" {
     }
   ])
 
-  requires_compatibilities = ["FARGATE"] # Stating that we are using ECS Fargate
-  network_mode             = "awsvpc"    # Using awsvpc as our network mode as this is required for Fargate
-  memory                   = 512         # Specifying the memory our container requires
-  cpu                      = 256         # Specifying the CPU our container requires
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  memory                   = local.memory
+  cpu                      = local.cpu
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_execution_role.arn
 
