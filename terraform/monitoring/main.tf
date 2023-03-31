@@ -88,7 +88,7 @@ resource "grafana_dashboard" "at_a_glance" {
         {
           "datasource" : {
             "type" : "prometheus",
-            "uid" : "m7yD37nVz"
+            "uid" : grafana_data_source.prometheus.uid
           },
           "fieldConfig" : {
             "defaults" : {
@@ -165,7 +165,7 @@ resource "grafana_dashboard" "at_a_glance" {
             {
               "datasource" : {
                 "type" : "prometheus",
-                "uid" : "m7yD37nVz"
+                "uid" : grafana_data_source.prometheus.uid
               },
               "exemplar" : false,
               "expr" : "sum(rate(http_call_counter{aws_ecs_task_family=\"${var.environment}_rpc-proxy\",code=~\"5.+\"}[5m])) or vector(0)",
@@ -177,7 +177,7 @@ resource "grafana_dashboard" "at_a_glance" {
             {
               "datasource" : {
                 "type" : "prometheus",
-                "uid" : "m7yD37nVz"
+                "uid" : grafana_data_source.prometheus.uid
               },
               "exemplar" : true,
               "expr" : "sum(rate(http_call_counter{aws_ecs_task_family=\"${var.environment}_rpc-proxy\"}[5m]))",
@@ -199,7 +199,7 @@ resource "grafana_dashboard" "at_a_glance" {
             {
               "datasource" : {
                 "type" : "prometheus",
-                "uid" : "m7yD37nVz"
+                "uid" : grafana_data_source.prometheus.uid
               },
               "exemplar" : true,
               "expr" : "sum(rate(http_call_counter{aws_ecs_task_family=\"${var.environment}_rpc-proxy\",code=\"429\"}[5m])) or vector(0)",
@@ -248,15 +248,11 @@ resource "grafana_dashboard" "at_a_glance" {
             "message" : "RPC Proxy's CPU utilization is high (over 70%)",
             "name" : "ECS CPU Utilization alert",
             "noDataState" : "no_data",
-            "notifications" : [
-              {
-                "uid" : "l_iaPw6nk"
-              }
-            ]
+            "notifications" : local.notifications
           },
           "datasource" : {
             "type" : "cloudwatch",
-            "uid" : "ACPvq7n4k"
+            "uid" : grafana_data_source.cloudwatch.uid
           },
           "fieldConfig" : {
             "defaults" : {
@@ -337,7 +333,7 @@ resource "grafana_dashboard" "at_a_glance" {
               "alias" : "",
               "datasource" : {
                 "type" : "cloudwatch",
-                "uid" : "ACPvq7n4k"
+                "uid" : grafana_data_source.cloudwatch.uid
               },
               "dimensions" : {
                 "ServiceName" : "${var.environment}_rpc-proxy-service"
@@ -403,15 +399,11 @@ resource "grafana_dashboard" "at_a_glance" {
             "message" : "RPC Proxy's memory utilization is high (over 70%)",
             "name" : "ECS Memory Utilization alert",
             "noDataState" : "no_data",
-            "notifications" : [
-              {
-                "uid" : "l_iaPw6nk"
-              }
-            ]
+            "notifications" : local.notifications
           },
           "datasource" : {
             "type" : "cloudwatch",
-            "uid" : "ACPvq7n4k"
+            "uid" : grafana_data_source.cloudwatch.uid
           },
           "fieldConfig" : {
             "defaults" : {
@@ -492,7 +484,7 @@ resource "grafana_dashboard" "at_a_glance" {
               "alias" : "",
               "datasource" : {
                 "type" : "cloudwatch",
-                "uid" : "ACPvq7n4k"
+                "uid" : grafana_data_source.cloudwatch.uid
               },
               "dimensions" : {
                 "ServiceName" : "${var.environment}_rpc-proxy-service"
@@ -538,7 +530,7 @@ resource "grafana_dashboard" "at_a_glance" {
         {
           "datasource" : {
             "type" : "prometheus",
-            "uid" : "m7yD37nVz"
+            "uid" : grafana_data_source.prometheus.uid
           },
           "fieldConfig" : {
             "defaults" : {
@@ -612,7 +604,7 @@ resource "grafana_dashboard" "at_a_glance" {
             {
               "datasource" : {
                 "type" : "prometheus",
-                "uid" : "m7yD37nVz"
+                "uid" : grafana_data_source.prometheus.uid
               },
               "exemplar" : false,
               "expr" : "sum by (chain_id) (rpc_call_counter{aws_ecs_task_family=\"${var.environment}_rpc-proxy\"})",
@@ -627,7 +619,7 @@ resource "grafana_dashboard" "at_a_glance" {
         {
           "datasource" : {
             "type" : "prometheus",
-            "uid" : "m7yD37nVz"
+            "uid" : grafana_data_source.prometheus.uid
           },
           "fieldConfig" : {
             "defaults" : {
@@ -702,7 +694,7 @@ resource "grafana_dashboard" "at_a_glance" {
             {
               "datasource" : {
                 "type" : "prometheus",
-                "uid" : "m7yD37nVz"
+                "uid" : grafana_data_source.prometheus.uid
               },
               "exemplar" : false,
               "expr" : "sum by (route)(rate(http_latency_tracker{aws_ecs_task_family=\"${var.environment}_rpc-proxy\"}[5m]))",
@@ -748,11 +740,11 @@ resource "grafana_dashboard" "at_a_glance" {
             "handler" : 1,
             "name" : "${var.environment} RPC Proxy Errors alert",
             "noDataState" : "no_data",
-            "notifications" : "[{\"uid\": \"l_iaPw6nk\"}]"
+            "notifications" : local.notifications
           },
           "datasource" : {
             "type" : "prometheus",
-            "uid" : "m7yD37nVz"
+            "uid" : grafana_data_source.prometheus.uid
           },
           "fieldConfig" : {
             "defaults" : {
@@ -826,7 +818,7 @@ resource "grafana_dashboard" "at_a_glance" {
             {
               "datasource" : {
                 "type" : "prometheus",
-                "uid" : "m7yD37nVz"
+                "uid" : grafana_data_source.prometheus.uid
               },
               "exemplar" : true,
               "expr" : "round(sum(increase(http_call_counter{code=~\"5.+\"}[5m])))",
@@ -850,7 +842,7 @@ resource "grafana_dashboard" "at_a_glance" {
         {
           "datasource" : {
             "type" : "prometheus",
-            "uid" : "m7yD37nVz"
+            "uid" : grafana_data_source.prometheus.uid
           },
           "fieldConfig" : {
             "defaults" : {
@@ -924,7 +916,7 @@ resource "grafana_dashboard" "at_a_glance" {
             {
               "datasource" : {
                 "type" : "prometheus",
-                "uid" : "m7yD37nVz"
+                "uid" : grafana_data_source.prometheus.uid
               },
               "exemplar" : true,
               "expr" : "sum by (status_code)(rate(http_requests_total{aws_ecs_task_family=\"${var.environment}_rpc-proxy\"}[5m]))",
@@ -939,7 +931,7 @@ resource "grafana_dashboard" "at_a_glance" {
         {
           "datasource" : {
             "type" : "prometheus",
-            "uid" : "m7yD37nVz"
+            "uid" : grafana_data_source.prometheus.uid
           },
           "fieldConfig" : {
             "defaults" : {
@@ -1013,7 +1005,7 @@ resource "grafana_dashboard" "at_a_glance" {
             {
               "datasource" : {
                 "type" : "prometheus",
-                "uid" : "m7yD37nVz"
+                "uid" : grafana_data_source.prometheus.uid
               },
               "exemplar" : false,
               "expr" : "sum by (code)(rate(http_call_counter{aws_ecs_task_family=\"${var.environment}_rpc-proxy\"}[5m]))",
@@ -1028,7 +1020,7 @@ resource "grafana_dashboard" "at_a_glance" {
         {
           "datasource" : {
             "type" : "prometheus",
-            "uid" : "m7yD37nVz"
+            "uid" : grafana_data_source.prometheus.uid
           },
           "fieldConfig" : {
             "defaults" : {
@@ -1102,7 +1094,7 @@ resource "grafana_dashboard" "at_a_glance" {
             {
               "datasource" : {
                 "type" : "prometheus",
-                "uid" : "m7yD37nVz"
+                "uid" : grafana_data_source.prometheus.uid
               },
               "exemplar" : false,
               "expr" : "sum by (chain_id)(rate(rpc_call_counter{aws_ecs_task_family=\"${var.environment}_rpc-proxy\"}[5m]))",
@@ -1187,11 +1179,11 @@ resource "grafana_dashboard" "at_a_glance" {
             "message" : "${var.environment} CPU/Memory alert",
             "name" : "${var.environment} CPU/Memory alert",
             "noDataState" : "alerting",
-            "notifications" : "[{\"uid\": \"l_iaPw6nk\"}]"
+            "notifications" : local.notifications
           },
           "datasource" : {
             "type" : "cloudwatch",
-            "uid" : "ACPvq7n4k"
+            "uid" : grafana_data_source.cloudwatch.uid
           },
           "fieldConfig" : {
             "defaults" : {
@@ -1268,7 +1260,7 @@ resource "grafana_dashboard" "at_a_glance" {
               "alias" : "",
               "datasource" : {
                 "type" : "cloudwatch",
-                "uid" : "ACPvq7n4k"
+                "uid" : grafana_data_source.cloudwatch.uid
               },
               "dimensions" : {
                 "CacheClusterId" : "rpc-proxy-rpc-${var.environment}"
@@ -1291,7 +1283,7 @@ resource "grafana_dashboard" "at_a_glance" {
               "alias" : "",
               "datasource" : {
                 "type" : "cloudwatch",
-                "uid" : "ACPvq7n4k"
+                "uid" : grafana_data_source.cloudwatch.uid
               },
               "dimensions" : {
                 "CacheClusterId" : "rpc-proxy-rpc-${var.environment}"
