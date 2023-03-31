@@ -52,6 +52,8 @@ module "logging" {
 module "ecs" {
   source = "./ecs"
 
+  environment = terraform.workspace
+
   ecr_repository_url         = data.aws_ecr_repository.repository.repository_url
   app_name                   = "${terraform.workspace}_${local.app_name}"
   region                     = var.region
@@ -67,6 +69,9 @@ module "ecs" {
   infura_project_id          = var.infura_project_id
   pokt_project_id            = var.pokt_project_id
   prometheus_endpoint        = aws_prometheus_workspace.prometheus.prometheus_endpoint
+
+  autoscaling_min_capacity = var.autoscaling_min_instances
+  autoscaling_max_capacity = var.autoscaling_max_instances
 
   registry_api_endpoint             = var.registry_api_endpoint
   registry_api_auth_token           = var.registry_api_auth_token
@@ -111,6 +116,8 @@ module "o11y" {
   prometheus_workspace_id = aws_prometheus_workspace.prometheus.id
   environment             = terraform.workspace
   redis_cluster_id        = module.redis.cluster_id
+  target_group_arn        = module.ecs.target_group_arn
+  load_balancer_arn       = module.ecs.load_balancer_arn
 }
 
 resource "aws_prometheus_workspace" "prometheus" {

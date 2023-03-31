@@ -10,6 +10,9 @@ terraform {
 }
 
 locals {
+  cpu    = var.environment != "dev" ? 1024 : 256
+  memory = 2 * local.cpu # 2x is minimum for ECS
+
   REDIS_MAX_CONNECTIONS = "128"
   // TODO: version the RPC image so we can pin it
   # pinned_latest_tag     = sort(setsubtract(data.aws_ecr_image.service_image.image_tags, ["latest"]))[0]
@@ -89,8 +92,8 @@ resource "aws_ecs_task_definition" "app_task" {
           hostPort : var.port
         }
       ],
-      memory : 512,
-      cpu : 256,
+      memory : local.memory,
+      cpu : local.cpu,
       ulimits : [{
         name : "nofile",
         softLimit : local.file_descriptor_soft_limit,
@@ -132,10 +135,10 @@ resource "aws_ecs_task_definition" "app_task" {
     }
   ])
 
-  requires_compatibilities = ["FARGATE"] # Stating that we are using ECS Fargate
-  network_mode             = "awsvpc"    # Using awsvpc as our network mode as this is required for Fargate
-  memory                   = 512         # Specifying the memory our container requires
-  cpu                      = 256         # Specifying the CPU our container requires
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  memory                   = local.memory
+  cpu                      = local.cpu
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_execution_role.arn
 
@@ -171,4 +174,52 @@ resource "aws_ecs_service" "app_service" {
   lifecycle {
     ignore_changes = [desired_count]
   }
+}
+
+#  Autoscaling
+# We can scale by
+# ECSServiceAverageCPUUtilization, ECSServiceAverageMemoryUtilization, and ALBRequestCountPerTarget
+# out of the box or use custom metrics
+resource "aws_appautoscaling_target" "ecs_target" {
+  max_capacity       = var.autoscaling_max_capacity
+  min_capacity       = var.autoscaling_min_capacity
+  resource_id        = "service/${aws_ecs_cluster.app_cluster.name}/${aws_ecs_service.app_service.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "cpu_scaling" {
+  name               = "${var.app_name}-application-scaling-policy-cpu"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.ecs_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs_target.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = 30
+    scale_in_cooldown  = 180
+    scale_out_cooldown = 180
+  }
+  depends_on = [aws_appautoscaling_target.ecs_target]
+}
+
+resource "aws_appautoscaling_policy" "memory_scaling" {
+  name               = "${var.app_name}-application-scaling-policy-memory"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.ecs_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs_target.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
+    }
+    target_value       = 30
+    scale_in_cooldown  = 180
+    scale_out_cooldown = 180
+  }
+  depends_on = [aws_appautoscaling_target.ecs_target]
 }

@@ -6,6 +6,10 @@ variable "app_name" {
   type = string
 }
 
+variable "environment" {
+  type = string
+}
+
 variable "region" {
   type = string
 }
@@ -93,4 +97,12 @@ variable "analytics_geoip_db_bucket_name" {
 
 variable "analytics_key_arn" {
   type = string
+}
+
+variable "autoscaling_max_capacity" {
+  type = number
+}
+
+variable "autoscaling_min_capacity" {
+  type = number
 }
