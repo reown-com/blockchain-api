@@ -1263,7 +1263,7 @@ resource "grafana_dashboard" "at_a_glance" {
                 "uid" : grafana_data_source.cloudwatch.uid
               },
               "dimensions" : {
-                "CacheClusterId" : "rpc-proxy-rpc-${var.environment}"
+                "CacheClusterId" : var.redis_cluster_id
               },
               "expression" : "",
               "id" : "",
@@ -1286,7 +1286,7 @@ resource "grafana_dashboard" "at_a_glance" {
                 "uid" : grafana_data_source.cloudwatch.uid
               },
               "dimensions" : {
-                "CacheClusterId" : "rpc-proxy-rpc-${var.environment}"
+                "CacheClusterId" : var.redis_cluster_id
               },
               "expression" : "",
               "hide" : false,
