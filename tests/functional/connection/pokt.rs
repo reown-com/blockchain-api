@@ -9,7 +9,7 @@ use {
 #[tokio::test]
 async fn eip155_43114_avax(ctx: &mut ServerContext) {
     let addr = format!(
-        "http://{}/v1?projectId={}&chainId=",
+        "{}/v1?projectId={}&chainId=",
         ctx.server.public_addr, ctx.server.project_id
     );
 
@@ -37,7 +37,7 @@ async fn eip155_43114_avax(ctx: &mut ServerContext) {
 #[tokio::test]
 async fn eip155_100_gnosis(ctx: &mut ServerContext) {
     let addr = format!(
-        "http://{}/v1?projectId={}&chainId=",
+        "{}/v1?projectId={}&chainId=",
         ctx.server.public_addr, ctx.server.project_id
     );
 
@@ -65,7 +65,7 @@ async fn eip155_100_gnosis(ctx: &mut ServerContext) {
 #[tokio::test]
 async fn solana_mainnet(ctx: &mut ServerContext) {
     let addr = format!(
-        "http://{}/v1?projectId={}&chainId=",
+        "{}/v1?projectId={}&chainId=",
         ctx.server.public_addr, ctx.server.project_id
     );
 

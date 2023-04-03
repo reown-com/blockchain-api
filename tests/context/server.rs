@@ -1,33 +1,36 @@
 use {
     super::TestResult,
+    std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream},
+    tokio::time::{sleep, Duration},
+};
+#[cfg(feature = "test-localhost")]
+use {
     rpc_proxy::env::{Config, ServerConfig},
-    std::{
-        env,
-        net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream},
-    },
-    tokio::{
-        runtime::Handle,
-        sync::broadcast,
-        time::{sleep, Duration},
-    },
+    std::{env, net::IpAddr},
+    tokio::{runtime::Handle, sync::broadcast},
 };
 
 pub struct RpcProxy {
-    pub public_addr: SocketAddr,
+    pub public_addr: String,
+    pub public_port: Option<u16>,
+    pub private_addr: Option<SocketAddr>,
     pub project_id: String,
-    shutdown_signal: tokio::sync::broadcast::Sender<()>,
-    is_shutdown: bool,
+    pub shutdown_signal: Option<tokio::sync::broadcast::Sender<()>>,
+    pub is_shutdown: bool,
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {}
 
 impl RpcProxy {
+    #[cfg(feature = "test-localhost")]
     pub async fn start() -> Self {
         let public_port = get_random_port();
+        let private_port = get_random_port();
         let hostname = Ipv4Addr::UNSPECIFIED;
         let rt = Handle::current();
         let public_addr = SocketAddr::new(IpAddr::V4(hostname), public_port);
+        let private_addr = SocketAddr::new(IpAddr::V4(hostname), private_port);
 
         let (signal, shutdown) = broadcast::channel(1);
 
@@ -39,6 +42,7 @@ impl RpcProxy {
                 let mut config: Config = Config::from_env()?;
                 config.server = ServerConfig {
                     port: public_port,
+                    private_port,
                     host: hostname.to_string(),
                     log_level: "NONE".to_string(),
                     ..Default::default()
@@ -54,26 +58,31 @@ impl RpcProxy {
         }
 
         Self {
-            public_addr,
+            public_addr: format!("http://{}", public_addr),
             project_id,
-            shutdown_signal: signal,
+            shutdown_signal: Some(signal),
             is_shutdown: false,
+            private_addr: Some(private_addr),
+            public_port: Some(public_port),
         }
     }
 
+    #[cfg(feature = "test-localhost")]
     pub async fn shutdown(&mut self) {
         if self.is_shutdown {
             return;
         }
         self.is_shutdown = true;
-        let _ = self.shutdown_signal.send(());
-        wait_for_server_to_shutdown(self.public_addr.port())
+        let sender = self.shutdown_signal.clone();
+        let _ = sender.unwrap().send(());
+        wait_for_server_to_shutdown(self.public_port.unwrap())
             .await
             .unwrap();
     }
 }
 
 // Finds a free port.
+#[cfg(feature = "test-localhost")]
 fn get_random_port() -> u16 {
     use std::sync::atomic::{AtomicU16, Ordering};
 
@@ -92,6 +101,7 @@ fn is_port_available(port: u16) -> bool {
     TcpStream::connect(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port)).is_err()
 }
 
+#[allow(unused)]
 async fn wait_for_server_to_shutdown(port: u16) -> TestResult<()> {
     let poll_fut = async {
         while !is_port_available(port) {
@@ -102,6 +112,7 @@ async fn wait_for_server_to_shutdown(port: u16) -> TestResult<()> {
     Ok(tokio::time::timeout(Duration::from_secs(3), poll_fut).await?)
 }
 
+#[cfg(feature = "test-localhost")]
 async fn wait_for_server_to_start(port: u16) -> TestResult<()> {
     let poll_fut = async {
         while is_port_available(port) {

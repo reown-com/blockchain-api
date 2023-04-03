@@ -48,24 +48,9 @@ jobs:
             args: -- --check
             cache: {}
             rust: nightly
-          - name: "Integration Tests: Pokt"
+          - name: "Functional Tests"
             cmd: test
-            args: --all-features -- functional::connection::pokt
-            cache: { sharedKey: "tests" }
-            rust: stable
-          - name: "Integration Tests: Infura"
-            cmd: test
-            args: --all-features -- functional::connection::infura
-            cache: { sharedKey: "tests" }
-            rust: stable
-          - name: "Integration Tests: Binance"
-            cmd: test
-            args: --all-features -- functional::connection::binance
-            cache: { sharedKey: "tests" }
-            rust: stable
-          - name: "Integration Tests: ZkSync"
-            cmd: test
-            args: --all-features -- functional::connection::zksync
+            args: --features test-localhost -- functional::connection::pokt
             cache: { sharedKey: "tests" }
             rust: stable
         include:

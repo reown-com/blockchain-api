@@ -123,7 +123,6 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
         .route("/v1/", any(handlers::proxy::handler))
         .route_layer(proxy_metrics)
         .route("/health", get(handlers::health::handler))
-        .route("/metrics", get(handlers::metrics::handler))
         .layer(cors)
         .layer(global_middleware)
         .with_state(state_arc.clone());
@@ -134,8 +133,16 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
         .parse()
         .expect("Invalid socket address");
 
+    let private_port = state_arc.config.server.private_port;
+    let private_addr = SocketAddr::from(([0, 0, 0, 0], private_port));
+
+    let private_app = Router::new()
+        .route("/metric", get(handlers::metrics::handler))
+        .with_state(state_arc.clone());
+
     select! {
     _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
+    _ = axum::Server::bind(&private_addr).serve(private_app.into_make_service()) => info!("Private server terminating"),
     _ = axum::Server::bind(&addr).serve(app.into_make_service_with_connect_info::<SocketAddr>()) => info!("Server terminating")
         }
     Ok(())

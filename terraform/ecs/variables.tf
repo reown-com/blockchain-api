@@ -22,6 +22,10 @@ variable "port" {
   type = number
 }
 
+variable "private_port" {
+  type = number
+}
+
 variable "acm_certificate_arn" {
   type = string
 }

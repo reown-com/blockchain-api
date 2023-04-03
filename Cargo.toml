@@ -64,3 +64,6 @@ test-context = "0.1"
 
 [build-dependencies]
 vergen = { version = "6", default-features = false, features = ["build", "cargo", "git"] }
+
+[features]
+test-localhost = []
