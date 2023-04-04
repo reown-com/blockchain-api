@@ -20,8 +20,4 @@ jobs:
         run: cargo test --test integration
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          RPC_PROXY_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
-          RPC_PROXY_REGISTRY_API_URL: ${{ secrets.REGISTRY_URL }}
-          RPC_PROXY_REGISTRY_API_AUTH_TOKEN: ${{ secrets.RPC_PROXY_REGISTRY_API_AUTH_TOKEN }}
-          RPC_PROXY_POKT_PROJECT_ID: ${{ secrets.POKT_PROJECT_ID }}
-          RPC_URL: ${{ inputs.environment_url }}
+         
