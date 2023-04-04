@@ -9,6 +9,14 @@ on:
         default: "https://staging.rpc.walletconnect.com"
         type: string
 
+  workflow_dispatch:
+    inputs:
+      environment_url:
+        description: "the environment to validate"
+        required: true
+        default: "https://staging.rpc.walletconnect.com"
+        type: string 
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -20,4 +28,5 @@ jobs:
         run: cargo test --test integration
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          RPC_URL: ${{inputs.environment_url}}
          
