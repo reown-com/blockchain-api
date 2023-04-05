@@ -2,7 +2,8 @@ use {
     super::{ProviderKind, RpcProvider, RpcQueryParams},
     crate::error::{RpcError, RpcResult},
     async_trait::async_trait,
-    hyper::{client::HttpConnector, http, Body, Client, Response},
+    axum::response::{IntoResponse, Response},
+    hyper::{client::HttpConnector, http, Client},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
 };
@@ -23,7 +24,7 @@ impl RpcProvider for BinanceProvider {
         query_params: RpcQueryParams,
         _headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
-    ) -> RpcResult<Response<Body>> {
+    ) -> RpcResult<Response> {
         let uri = self
             .supported_chains
             .get(&query_params.chain_id.to_lowercase())
@@ -38,13 +39,13 @@ impl RpcProvider for BinanceProvider {
         // TODO: map the response error codes properly
         // e.g. HTTP401 from target should map to HTTP500
 
-        let response = self.client.request(hyper_request).await?;
+        let response = self.client.request(hyper_request).await?.into_response();
 
         if is_rate_limited(&response) {
             return Err(RpcError::Throttled);
         }
 
-        Ok(response)
+        Ok(response.into_response())
     }
 
     fn supports_caip_chainid(&self, chain_id: &str) -> bool {
@@ -64,6 +65,6 @@ impl RpcProvider for BinanceProvider {
     }
 }
 
-fn is_rate_limited(response: &Response<Body>) -> bool {
+fn is_rate_limited(response: &Response) -> bool {
     response.status() == http::StatusCode::TOO_MANY_REQUESTS
 }

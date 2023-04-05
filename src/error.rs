@@ -47,6 +47,9 @@ pub enum RpcError {
 
     #[error("{0:?}")]
     Other(#[from] anyhow::Error),
+
+    #[error("Invalid scheme used. Try http(s):// or ws(s)://")]
+    InvalidScheme,
 }
 
 impl IntoResponse for RpcError {
@@ -68,6 +71,12 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+            Self::InvalidScheme => (
+                StatusCode::BAD_REQUEST,
+                "Invalid scheme used. Try http(s):// or ws(s)://".to_string(),
+            )
+                .into_response(),
+
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Internal server error".to_string(),

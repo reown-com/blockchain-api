@@ -2,12 +2,12 @@ use {
     super::{ProviderKind, RpcProvider, RpcQueryParams},
     crate::error::{RpcError, RpcResult},
     async_trait::async_trait,
+    axum::response::{IntoResponse, Response},
     hyper::{
         body::{self, Bytes},
         client::HttpConnector,
         Body,
         Client,
-        Response,
     },
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
@@ -29,7 +29,7 @@ impl RpcProvider for PoktProvider {
         query_params: RpcQueryParams,
         _headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
-    ) -> RpcResult<Response<Body>> {
+    ) -> RpcResult<Response> {
         let chain = self
             .supported_chains
             .get(&query_params.chain_id.to_lowercase())
@@ -56,7 +56,7 @@ impl RpcProvider for PoktProvider {
             return Err(RpcError::Throttled);
         }
 
-        Ok(response)
+        Ok(response.into_response())
     }
 
     fn supports_caip_chainid(&self, chain_id: &str) -> bool {
