@@ -70,7 +70,7 @@ impl Display for ProviderKind {
 }
 
 #[async_trait]
-pub trait RpcProvider: Send + Sync {
+pub trait RpcProvider: Send + Sync + Provider {
     async fn proxy(
         &self,
         method: hyper::http::Method,
@@ -79,24 +79,18 @@ pub trait RpcProvider: Send + Sync {
         headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
     ) -> RpcResult<Response>;
-
-    fn supports_caip_chainid(&self, chain_id: &str) -> bool;
-
-    fn supported_caip_chainids(&self) -> Vec<String>;
-
-    fn provider_kind(&self) -> ProviderKind;
-
-    fn project_id(&self) -> &str;
 }
 
 #[async_trait]
-pub trait RpcWsProvider: Send + Sync {
+pub trait RpcWsProvider: Send + Sync + Provider {
     async fn proxy(
         &self,
         ws: WebSocketUpgrade,
         query_params: RpcQueryParams,
     ) -> RpcResult<Response>;
+}
 
+pub trait Provider {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool;
 
     fn supported_caip_chainids(&self) -> Vec<String>;

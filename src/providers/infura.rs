@@ -1,5 +1,5 @@
 use {
-    super::{ProviderKind, RpcProvider, RpcQueryParams, RpcWsProvider},
+    super::{Provider, ProviderKind, RpcProvider, RpcQueryParams, RpcWsProvider},
     crate::{
         error::{RpcError, RpcResult},
         ws,
@@ -24,6 +24,24 @@ pub struct InfuraWsProvider {
     pub supported_chains: HashMap<String, String>,
 }
 
+impl Provider for InfuraWsProvider {
+    fn supports_caip_chainid(&self, chain_id: &str) -> bool {
+        self.supported_chains.contains_key(chain_id)
+    }
+
+    fn supported_caip_chainids(&self) -> Vec<String> {
+        self.supported_chains.keys().cloned().collect()
+    }
+
+    fn provider_kind(&self) -> ProviderKind {
+        ProviderKind::Infura
+    }
+
+    fn project_id(&self) -> &str {
+        &self.project_id
+    }
+}
+
 #[async_trait]
 impl RpcWsProvider for InfuraWsProvider {
     async fn proxy(
@@ -44,7 +62,9 @@ impl RpcWsProvider for InfuraWsProvider {
 
         Ok(ws.on_upgrade(move |socket| ws::proxy(project_id, socket, websocket_provider)))
     }
+}
 
+impl Provider for InfuraProvider {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool {
         self.supported_chains.contains_key(chain_id)
     }
@@ -92,22 +112,6 @@ impl RpcProvider for InfuraProvider {
         }
 
         Ok(response)
-    }
-
-    fn supports_caip_chainid(&self, chain_id: &str) -> bool {
-        self.supported_chains.contains_key(chain_id)
-    }
-
-    fn supported_caip_chainids(&self) -> Vec<String> {
-        self.supported_chains.keys().cloned().collect()
-    }
-
-    fn provider_kind(&self) -> ProviderKind {
-        ProviderKind::Infura
-    }
-
-    fn project_id(&self) -> &str {
-        &self.project_id
     }
 }
 

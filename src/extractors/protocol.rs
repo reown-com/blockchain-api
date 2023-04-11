@@ -6,7 +6,7 @@ use {
 
 #[derive(Debug)]
 pub enum Protocol {
-    HTTP,
+    Http,
     WebSocket,
     Other(String),
 }
@@ -23,7 +23,7 @@ where
         dbg!(&parts.uri.scheme_str());
         if let Some(scheme) = parts.uri.scheme_str() {
             return Ok(match scheme.to_lowercase().as_str() {
-                "http" | "https" => Protocol::HTTP,
+                "http" | "https" => Protocol::Http,
                 "wss" | "ws" => Protocol::WebSocket,
                 other => Self::Other(other.to_string()),
             });

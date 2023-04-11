@@ -1,5 +1,5 @@
 use {
-    super::{ProviderKind, RpcProvider, RpcQueryParams},
+    super::{Provider, ProviderKind, RpcProvider, RpcQueryParams},
     crate::error::{RpcError, RpcResult},
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
@@ -13,6 +13,24 @@ pub struct BinanceProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
     pub project_id: String,
     pub supported_chains: HashMap<String, String>,
+}
+
+impl Provider for BinanceProvider {
+    fn supports_caip_chainid(&self, chain_id: &str) -> bool {
+        self.supported_chains.contains_key(chain_id)
+    }
+
+    fn supported_caip_chainids(&self) -> Vec<String> {
+        self.supported_chains.keys().cloned().collect()
+    }
+
+    fn provider_kind(&self) -> ProviderKind {
+        ProviderKind::Binance
+    }
+
+    fn project_id(&self) -> &str {
+        &self.project_id
+    }
 }
 
 #[async_trait]
@@ -46,22 +64,6 @@ impl RpcProvider for BinanceProvider {
         }
 
         Ok(response.into_response())
-    }
-
-    fn supports_caip_chainid(&self, chain_id: &str) -> bool {
-        self.supported_chains.contains_key(chain_id)
-    }
-
-    fn supported_caip_chainids(&self) -> Vec<String> {
-        self.supported_chains.keys().cloned().collect()
-    }
-
-    fn provider_kind(&self) -> ProviderKind {
-        ProviderKind::Binance
-    }
-
-    fn project_id(&self) -> &str {
-        &self.project_id
     }
 }
 
