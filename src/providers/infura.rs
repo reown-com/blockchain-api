@@ -40,7 +40,7 @@ impl RpcWsProvider for InfuraWsProvider {
 
         let uri = format!("wss://{}.infura.io/ws/v3/{}", chain, self.project_id);
 
-        let (websocket_provider, _) = async_tungstenite::tokio::connect_async(uri).await.unwrap();
+        let (websocket_provider, _) = async_tungstenite::tokio::connect_async(uri).await?;
 
         Ok(ws.on_upgrade(move |socket| ws::proxy(project_id, socket, websocket_provider)))
     }
@@ -84,9 +84,6 @@ impl RpcProvider for InfuraProvider {
             .uri(uri)
             .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))?;
-
-        // TODO: map the response error codes properly
-        // e.g. HTTP401 from target should map to HTTP500
 
         let response = self.client.request(hyper_request).await?.into_response();
 
