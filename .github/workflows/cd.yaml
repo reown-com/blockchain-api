@@ -32,6 +32,8 @@ on:
         required: true
       REGISTRY_API_AUTH_TOKEN:
         required: true
+      PROJECT_ID:
+        required: true
 
 concurrency: cd
 
