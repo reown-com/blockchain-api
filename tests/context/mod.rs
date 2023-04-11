@@ -1,4 +1,7 @@
-use {self::server::RpcProxy, async_trait::async_trait, std::env, test_context::AsyncTestContext};
+#[cfg(not(feature = "test-localhost"))]
+use std::env;
+
+use {self::server::RpcProxy, async_trait::async_trait, test_context::AsyncTestContext};
 
 mod server;
 

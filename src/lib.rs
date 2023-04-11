@@ -15,6 +15,7 @@ use {
     providers::{
         BinanceProvider,
         InfuraProvider,
+        InfuraWsProvider,
         PoktProvider,
         ProviderRepository,
         ZKSyncProvider,
@@ -45,6 +46,7 @@ mod providers;
 mod state;
 mod storage;
 mod utils;
+mod ws;
 
 pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) -> RpcResult<()> {
     let prometheus_exporter = opentelemetry_prometheus::exporter().init();
@@ -95,7 +97,7 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
     let global_middleware = ServiceBuilder::new().layer(
         TraceLayer::new_for_http()
             .make_span_with(DefaultMakeSpan::new().include_headers(true))
-            .on_request(DefaultOnRequest::new().level(Level::INFO))
+            .on_request(DefaultOnRequest::new().level(Level::DEBUG))
             .on_response(
                 DefaultOnResponse::new()
                     .level(Level::INFO)
@@ -121,6 +123,7 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
     let app = Router::new()
         .route("/v1", any(handlers::proxy::handler))
         .route("/v1/", any(handlers::proxy::handler))
+        .route("/ws", get(handlers::ws_proxy::handler))
         .route_layer(proxy_metrics)
         .route("/health", get(handlers::health::handler))
         .layer(cors)
@@ -151,6 +154,7 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
 fn init_providers(config: &Config) -> ProviderRepository {
     let infura_project_id = config.infura.project_id.clone();
     let infura_supported_chains = config.infura.supported_chains.clone();
+    let infura_ws_supported_chains = config.infura.supported_ws_chains.clone();
     let pokt_project_id = config.pokt.project_id.clone();
     let pokt_supported_chains = config.pokt.supported_chains.clone();
 
@@ -159,10 +163,16 @@ fn init_providers(config: &Config) -> ProviderRepository {
 
     let infura_provider = InfuraProvider {
         client: forward_proxy_client.clone(),
-        project_id: infura_project_id,
+        project_id: infura_project_id.clone(),
         supported_chains: infura_supported_chains,
     };
     providers.add_provider("infura".into(), Arc::new(infura_provider));
+
+    let infura_ws_provider = InfuraWsProvider {
+        project_id: infura_project_id,
+        supported_chains: infura_ws_supported_chains,
+    };
+    providers.add_ws_provider("infura".into(), Arc::new(infura_ws_provider));
 
     let pokt_provider = PoktProvider {
         client: forward_proxy_client.clone(),

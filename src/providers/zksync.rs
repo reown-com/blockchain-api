@@ -1,8 +1,9 @@
 use {
-    super::{ProviderKind, RpcProvider, RpcQueryParams},
+    super::{Provider, ProviderKind, RpcProvider, RpcQueryParams},
     crate::error::{RpcError, RpcResult},
     async_trait::async_trait,
-    hyper::{client::HttpConnector, http, Body, Client, Response},
+    axum::response::{IntoResponse, Response},
+    hyper::{client::HttpConnector, http, Body, Client},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
 };
@@ -14,6 +15,24 @@ pub struct ZKSyncProvider {
     pub supported_chains: HashMap<String, String>,
 }
 
+impl Provider for ZKSyncProvider {
+    fn supports_caip_chainid(&self, chain_id: &str) -> bool {
+        self.supported_chains.contains_key(chain_id)
+    }
+
+    fn supported_caip_chainids(&self) -> Vec<String> {
+        self.supported_chains.keys().cloned().collect()
+    }
+
+    fn provider_kind(&self) -> ProviderKind {
+        ProviderKind::ZKSync
+    }
+
+    fn project_id(&self) -> &str {
+        &self.project_id
+    }
+}
+
 #[async_trait]
 impl RpcProvider for ZKSyncProvider {
     async fn proxy(
@@ -23,7 +42,7 @@ impl RpcProvider for ZKSyncProvider {
         query_params: RpcQueryParams,
         _headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
-    ) -> RpcResult<Response<Body>> {
+    ) -> RpcResult<Response> {
         let uri = self
             .supported_chains
             .get(&query_params.chain_id.to_lowercase())
@@ -41,23 +60,7 @@ impl RpcProvider for ZKSyncProvider {
             return Err(RpcError::Throttled);
         }
 
-        Ok(response)
-    }
-
-    fn supports_caip_chainid(&self, chain_id: &str) -> bool {
-        self.supported_chains.contains_key(chain_id)
-    }
-
-    fn supported_caip_chainids(&self) -> Vec<String> {
-        self.supported_chains.keys().cloned().collect()
-    }
-
-    fn provider_kind(&self) -> ProviderKind {
-        ProviderKind::ZKSync
-    }
-
-    fn project_id(&self) -> &str {
-        &self.project_id
+        Ok(response.into_response())
     }
 }
 
