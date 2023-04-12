@@ -24,9 +24,15 @@ jobs:
       - name: checkout
         uses: actions/checkout@v3         
 
+      - name: Verify provided project_id
+        run: echo $PROJECT_ID | md5
+        env:
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+
       - name: Run integration tests
         run: cargo test --test integration
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
           RPC_URL: ${{inputs.environment_url}}
          
+   
