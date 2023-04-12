@@ -180,7 +180,7 @@ jobs:
 
   validate_prod:
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
-    needs: [deploy-app-staging, deploy-infra-staging]
+    needs: [deploy-app-prod, deploy-infra-prod]
     uses: ./.github/workflows/validate.yaml
     with:
       environment_url: "https://rpc.walletconnect.com"
