@@ -20,7 +20,6 @@ where
     type Rejection = RpcError;
 
     async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
-        dbg!(&parts.uri.scheme_str());
         if let Some(scheme) = parts.uri.scheme_str() {
             return Ok(match scheme.to_lowercase().as_str() {
                 "http" | "https" => Protocol::Http,
