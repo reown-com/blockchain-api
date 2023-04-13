@@ -32,6 +32,9 @@ fn default_infura_supported_chains() -> HashMap<String, String> {
         ("eip155:421613".into(), "arbitrum-goerli".into()),
         // Celo
         ("eip155:42220".into(), "celo-mainnet".into()),
+        // Aurora
+        ("eip155:1313161554".into(), "aurora-mainnet".into()),
+        ("eip155:1313161555".into(), "aurora-testnet".into()),
     ])
 }
 
@@ -56,5 +59,8 @@ fn default_infura_ws_supported_chains() -> HashMap<String, String> {
         ("eip155:421613".into(), "arbitrum-goerli".into()),
         // Celo
         ("eip155:42220".into(), "celo-mainnet".into()),
+        // Aurora
+        ("eip155:1313161554".into(), "aurora-mainnet".into()),
+        ("eip155:1313161555".into(), "aurora-testnet".into()),
     ])
 }

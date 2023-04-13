@@ -84,3 +84,17 @@ async fn eip155_421611_arbitrum_rinkeby_infura(ctx: &mut ServerContext) {
 async fn eip155_421613_arbitrum_goerli_infura(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:421613", "0x66eed").await
 }
+
+#[test_context(ServerContext)]
+#[tokio::test]
+async fn eip155_1313161554_aurora_mainnet_infura(ctx: &mut ServerContext) {
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:1313161554", "0x4e454152")
+        .await
+}
+
+#[test_context(ServerContext)]
+#[tokio::test]
+async fn eip155_1313161554_aurora_testnet_infura(ctx: &mut ServerContext) {
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:1313161555", "0x4e454153")
+        .await
+}

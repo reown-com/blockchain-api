@@ -99,6 +99,7 @@ impl RpcProvider for InfuraProvider {
 
         let uri = format!("https://{}.infura.io/v3/{}", chain, self.project_id);
 
+        dbg!(&uri);
         let hyper_request = hyper::http::Request::builder()
             .method(method)
             .uri(uri)
@@ -106,6 +107,7 @@ impl RpcProvider for InfuraProvider {
             .body(hyper::body::Body::from(body))?;
 
         let response = self.client.request(hyper_request).await?.into_response();
+        dbg!(&response);
 
         if is_rate_limited(&response) {
             return Err(RpcError::Throttled);
