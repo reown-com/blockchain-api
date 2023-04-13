@@ -124,7 +124,7 @@ jobs:
   deploy-infra-prod:
     # Only deploy if tests passed and deployment windows are open
     # Ignore deployment windows if workflow was started manually
-    if: ${{ always() && inputs.deploy_infra && needs.validate.result == 'success' && (needs.deployment_windows.outputs.result == 'yes' || github.event_name == 'workflow_dispatch') }}
+    if: ${{ always() && inputs.deploy_infra && needs.validate_staging.result == 'success' && (needs.deployment_windows.outputs.result == 'yes' || github.event_name == 'workflow_dispatch') }}
     needs: [validate_staging, deployment_windows]
     runs-on: ubuntu-latest
     environment:
@@ -151,7 +151,7 @@ jobs:
   deploy-app-prod:
     # Only deploy if tests passed and deployment windows are open
     # Ignore deployment windows if workflow was started manually
-    if: ${{ always() && inputs.deploy_app && needs.validate.result == 'success' && (needs.deployment_windows.outputs.result == 'yes' || github.event_name == 'workflow_dispatch') }}
+    if: ${{ always() && inputs.deploy_app && needs.validate_staging.result == 'success' && (needs.deployment_windows.outputs.result == 'yes' || github.event_name == 'workflow_dispatch') }}
     needs: [validate_staging, deployment_windows]
     runs-on: ubuntu-latest
     environment:
