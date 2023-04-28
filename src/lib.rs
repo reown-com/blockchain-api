@@ -140,7 +140,7 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
     let private_addr = SocketAddr::from(([0, 0, 0, 0], private_port));
 
     let private_app = Router::new()
-        .route("/metric", get(handlers::metrics::handler))
+        .route("/metrics", get(handlers::metrics::handler))
         .with_state(state_arc.clone());
 
     select! {
