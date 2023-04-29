@@ -27,6 +27,9 @@ fn default_infura_supported_chains() -> HashMap<String, String> {
         ("eip155:42161".into(), "arbitrum-mainnet".into()),
         ("eip155:421611".into(), "arbitrum-rinkeby".into()),
         ("eip155:421613".into(), "arbitrum-goerli".into()),
+        // Polygon
+        ("eip155:137".into(), "polygon-mainnet".into()),
+        ("eip155:80001".into(), "polygon-mumbai".into()),
         // Celo
         ("eip155:42220".into(), "celo-mainnet".into()),
         // Aurora
@@ -43,9 +46,6 @@ fn default_infura_ws_supported_chains() -> HashMap<String, String> {
         ("eip155:42".into(), "kovan".into()),
         ("eip155:4".into(), "rinkeby".into()),
         ("eip155:5".into(), "goerli".into()),
-        // Polygon
-        ("eip155:137".into(), "polygon-mainnet".into()),
-        ("eip155:80001".into(), "polygon-mumbai".into()),
         // Optimism
         ("eip155:10".into(), "optimism-mainnet".into()),
         ("eip155:69".into(), "optimism-kovan".into()),
