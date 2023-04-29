@@ -39,18 +39,6 @@ async fn eip155_5_goerli_infura(ctx: &mut ServerContext) {
 
 #[test_context(ServerContext)]
 #[tokio::test]
-async fn eip155_137_polygon_mainnet_infura(ctx: &mut ServerContext) {
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:137", "0x89").await
-}
-
-#[test_context(ServerContext)]
-#[tokio::test]
-async fn eip155_80001_polygon_mumbai_infura(ctx: &mut ServerContext) {
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:80001", "0x13881").await
-}
-
-#[test_context(ServerContext)]
-#[tokio::test]
 async fn eip155_10_optimism_mainnet_infura(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:10", "0xa").await
 }
