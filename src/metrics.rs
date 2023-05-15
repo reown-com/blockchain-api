@@ -1,5 +1,6 @@
 use {
     crate::providers::{ProviderKind, RpcProvider},
+    hyper::http,
     opentelemetry::metrics::{Counter, Meter, ValueRecorder},
 };
 
@@ -7,10 +8,13 @@ use {
 pub struct Metrics {
     pub rpc_call_counter: Counter<u64>,
     pub http_call_counter: Counter<u64>,
+    pub provider_finished_call_counter: Counter<u64>,
+    pub provider_failed_call_counter: Counter<u64>,
     pub http_latency_tracker: ValueRecorder<f64>,
     pub http_external_latency_tracker: ValueRecorder<f64>,
     pub rejected_project_counter: Counter<u64>,
     pub rate_limited_call_counter: Counter<u64>,
+    pub provider_status_code_counter: Counter<u64>,
 }
 
 impl Metrics {
@@ -45,6 +49,21 @@ impl Metrics {
             .with_description("The number of calls that got rate limited")
             .init();
 
+        let provider_finished_call_counter = meter
+            .u64_counter("provider_finished_call_counter")
+            .with_description("The number of calls to provider that finished successfully")
+            .init();
+
+        let provider_failed_call_counter = meter
+            .u64_counter("provider_failed_call_counter")
+            .with_description("The number of calls to provider that failed")
+            .init();
+
+        let provider_status_code_counter = meter
+            .u64_counter("provider_status_code_counter")
+            .with_description("The count of status codes returned by providers")
+            .init();
+
         Metrics {
             rpc_call_counter,
             http_call_counter,
@@ -52,6 +71,9 @@ impl Metrics {
             http_latency_tracker,
             rejected_project_counter,
             rate_limited_call_counter,
+            provider_failed_call_counter,
+            provider_finished_call_counter,
+            provider_status_code_counter,
         }
     }
 }
@@ -94,6 +116,33 @@ impl Metrics {
         self.rate_limited_call_counter.add(1, &[
             opentelemetry::KeyValue::new("provider_kind", provider.provider_kind().to_string()),
             opentelemetry::KeyValue::new("project_id", project_id),
+        ])
+    }
+
+    pub fn add_failed_provider_call(&self, provider: &dyn RpcProvider) {
+        self.provider_failed_call_counter
+            .add(1, &[opentelemetry::KeyValue::new(
+                "provider",
+                provider.provider_kind().to_string(),
+            )])
+    }
+
+    pub fn add_finished_provider_call(&self, provider: &dyn RpcProvider) {
+        self.provider_finished_call_counter
+            .add(1, &[opentelemetry::KeyValue::new(
+                "provider",
+                provider.provider_kind().to_string(),
+            )])
+    }
+
+    pub fn add_status_code_for_provider(
+        &self,
+        provider: &dyn RpcProvider,
+        status: http::StatusCode,
+    ) {
+        self.provider_status_code_counter.add(1, &[
+            opentelemetry::KeyValue::new("provider", provider.provider_kind().to_string()),
+            opentelemetry::KeyValue::new("status_code", format!("{}", status.as_u16())),
         ])
     }
 }

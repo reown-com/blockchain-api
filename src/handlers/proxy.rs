@@ -11,7 +11,7 @@ use {
         extract::{ConnectInfo, MatchedPath, Query, State},
         response::{IntoResponse, Response},
     },
-    hyper::HeaderMap,
+    hyper::{http, HeaderMap},
     std::{
         borrow::Borrow,
         net::SocketAddr,
@@ -62,6 +62,7 @@ pub async fn handler(
             region,
             country,
             continent,
+            provider.provider_kind(),
         ))
     }
 
@@ -90,6 +91,23 @@ pub async fn handler(
             .unwrap_or(Duration::from_secs(0))
             .as_secs_f64(),
     );
+
+    let response = match response.status() {
+        http::StatusCode::OK => {
+            state.metrics.add_finished_provider_call(provider.borrow());
+            response
+        }
+        status => {
+            state.metrics.add_failed_provider_call(provider.borrow());
+            state
+                .metrics
+                .add_status_code_for_provider(provider.borrow(), status);
+            let (mut parts, body) = response.into_parts();
+            parts.status = http::StatusCode::BAD_GATEWAY;
+
+            Response::from_parts(parts, body)
+        }
+    };
 
     Ok(response.into_response())
 }
