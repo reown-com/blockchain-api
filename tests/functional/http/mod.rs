@@ -62,7 +62,7 @@ async fn check_if_rpc_is_responding_correctly_for_decomissioned(
     let (status, rpc_response) = send_jsonrpc_request(client, addr, chaind_id, request).await;
 
     // Verify that HTTP communication returns error
-    assert_eq!(status, StatusCode::GONE);
+    assert_eq!(status, StatusCode::BAD_GATEWAY);
 
     // Verify the error code is for
     // "Network decommissioned, please use Goerli or Sepolia instead"
