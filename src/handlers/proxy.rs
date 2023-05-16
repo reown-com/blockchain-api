@@ -9,7 +9,7 @@ use {
     axum::{
         body::Bytes,
         extract::{ConnectInfo, MatchedPath, Query, State},
-        response::{IntoResponse, Response},
+        response::Response,
     },
     hyper::{http, HeaderMap},
     std::{
@@ -71,7 +71,7 @@ pub async fn handler(
     // Start timing external provider added time
     let external_call_start = SystemTime::now();
 
-    let response = provider
+    let mut response = provider
         .proxy(method, path, query_params, headers, body)
         .await
         .map_err(|error| {
@@ -92,22 +92,19 @@ pub async fn handler(
             .as_secs_f64(),
     );
 
-    let response = match response.status() {
+    match response.status() {
         http::StatusCode::OK => {
             state.metrics.add_finished_provider_call(provider.borrow());
-            response
         }
         status => {
             state.metrics.add_failed_provider_call(provider.borrow());
             state
                 .metrics
                 .add_status_code_for_provider(provider.borrow(), status);
-            let (mut parts, body) = response.into_parts();
-            parts.status = http::StatusCode::BAD_GATEWAY;
 
-            Response::from_parts(parts, body)
+            *response.status_mut() = http::StatusCode::BAD_GATEWAY;
         }
     };
 
-    Ok(response.into_response())
+    Ok(response)
 }
