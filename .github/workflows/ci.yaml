@@ -50,7 +50,7 @@ jobs:
             rust: nightly
           - name: "Functional Tests"
             cmd: test
-            args: --features test-localhost -- functional::connection::pokt
+            args: --features test-localhost
             cache: { sharedKey: "tests" }
             rust: stable
         include:
