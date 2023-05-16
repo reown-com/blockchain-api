@@ -1,5 +1,5 @@
 use {
-    crate::{handlers::RpcQueryParams, json_rpc::JsonRpcRequest},
+    crate::{handlers::RpcQueryParams, json_rpc::JsonRpcRequest, providers::ProviderKind},
     parquet_derive::ParquetRecordWriter,
     serde::Serialize,
     std::sync::Arc,
@@ -14,6 +14,8 @@ pub struct MessageInfo {
     pub chain_id: String,
     pub method: Arc<str>,
 
+    pub provider: String,
+
     pub region: Option<String>,
     pub country: Option<Arc<str>>,
     pub continent: Option<Arc<str>>,
@@ -26,6 +28,7 @@ impl MessageInfo {
         region: Option<Vec<String>>,
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
+        provider: ProviderKind,
     ) -> Self {
         Self {
             timestamp: gorgon::time::now(),
@@ -33,6 +36,8 @@ impl MessageInfo {
             project_id: query_params.project_id.to_owned(),
             chain_id: query_params.chain_id.to_lowercase(),
             method: request.method.clone(),
+
+            provider: provider.to_string(),
 
             region: region.map(|r| r.join(", ")),
             country,
