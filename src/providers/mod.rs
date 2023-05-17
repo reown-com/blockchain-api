@@ -24,9 +24,11 @@ pub use {
 
 #[derive(Default, Clone)]
 pub struct ProviderRepository {
-    map: HashMap<String, Vec<(Arc<dyn RpcProvider>, Weight)>>,
-    ws_map: HashMap<String, Vec<(Arc<dyn RpcWsProvider>, Weight)>>,
+    map: ProviderList<dyn RpcProvider>,
+    ws_map: ProviderList<dyn RpcWsProvider>,
 }
+
+type ProviderList<T> = HashMap<String, Vec<(Arc<T>, Weight)>>;
 
 impl ProviderRepository {
     pub fn get_provider_for_chain_id(&self, chain_id: &str) -> Option<&Arc<dyn RpcProvider>> {
@@ -37,7 +39,7 @@ impl ProviderRepository {
         }
 
         let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.0).collect();
-        let dist = WeightedIndex::new(&weights).unwrap();
+        let dist = WeightedIndex::new(weights).unwrap();
         let provider = &providers[dist.sample(&mut OsRng)].0;
 
         Some(provider)
@@ -51,7 +53,7 @@ impl ProviderRepository {
         }
 
         let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.0).collect();
-        let dist = WeightedIndex::new(&weights).unwrap();
+        let dist = WeightedIndex::new(weights).unwrap();
         let provider = &providers[dist.sample(&mut OsRng)].0;
 
         Some(provider)
