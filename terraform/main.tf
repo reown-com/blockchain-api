@@ -102,7 +102,7 @@ module "redis" {
 
   redis_name = "rpc-${terraform.workspace}"
   app_name   = local.app_name
-  node_type  = "cache.m6g.large"
+  node_type  = "cache.t4g.micro"
   vpc_name   = "ops-${terraform.workspace}-vpc"
   zone_id    = local.zone_id
   zone_name  = local.private_zone_name
