@@ -2335,6 +2335,7 @@ dependencies = [
  "parquet_derive",
  "pnet_datalink",
  "prometheus",
+ "rand",
  "rmp-serde",
  "serde",
  "serde-aux",

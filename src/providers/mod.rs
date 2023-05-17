@@ -1,4 +1,8 @@
-use {axum::response::Response, axum_tungstenite::WebSocketUpgrade};
+use {
+    axum::response::Response,
+    axum_tungstenite::WebSocketUpgrade,
+    rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
+};
 
 mod binance;
 mod infura;
@@ -19,34 +23,65 @@ pub use {
 
 #[derive(Default, Clone)]
 pub struct ProviderRepository {
-    map: HashMap<String, Arc<dyn RpcProvider>>,
-    ws_map: HashMap<String, Arc<dyn RpcWsProvider>>,
+    map: HashMap<String, Vec<(Arc<dyn RpcProvider>, u32)>>,
+    ws_map: HashMap<String, Vec<(Arc<dyn RpcWsProvider>, u32)>>,
 }
 
 impl ProviderRepository {
     pub fn get_provider_for_chain_id(&self, chain_id: &str) -> Option<&Arc<dyn RpcProvider>> {
-        self.map.get(chain_id)
+        let providers = self.map.get(chain_id)?;
+
+        if providers.is_empty() {
+            return None;
+        }
+
+        let weights: Vec<_> = providers.iter().map(|(_, weight)| *weight).collect();
+        let dist = WeightedIndex::new(&weights).unwrap();
+        let provider = &providers[dist.sample(&mut OsRng)].0;
+
+        Some(provider)
     }
 
     pub fn get_ws_provider_for_chain_id(&self, chain_id: &str) -> Option<&Arc<dyn RpcWsProvider>> {
-        self.ws_map.get(chain_id)
+        let providers = self.ws_map.get(chain_id)?;
+
+        if providers.is_empty() {
+            return None;
+        }
+
+        let weights: Vec<_> = providers.iter().map(|(_, weight)| *weight).collect();
+        let dist = WeightedIndex::new(&weights).unwrap();
+        let provider = &providers[dist.sample(&mut OsRng)].0;
+
+        Some(provider)
     }
 
-    pub fn add_ws_provider(&mut self, _provider_name: String, provider: Arc<dyn RpcWsProvider>) {
+    pub fn add_ws_provider(
+        &mut self,
+        _provider_name: String,
+        provider: Arc<dyn RpcWsProvider>,
+        weight: u32,
+    ) {
         provider
             .supported_caip_chainids()
             .into_iter()
             .for_each(|chain| {
-                self.ws_map.insert(chain, provider.clone());
+                self.ws_map
+                    .entry(chain)
+                    .or_insert_with(Vec::new)
+                    .push((provider.clone(), weight));
             });
     }
 
-    pub fn add_provider(&mut self, _provider_name: String, provider: Arc<dyn RpcProvider>) {
+    pub fn add_provider(&mut self, provider: Arc<dyn RpcProvider>, weight: u32) {
         provider
             .supported_caip_chainids()
             .into_iter()
             .for_each(|chain| {
-                self.map.insert(chain, provider.clone());
+                self.map
+                    .entry(chain)
+                    .or_insert_with(Vec::new)
+                    .push((provider.clone(), weight));
             });
     }
 }
