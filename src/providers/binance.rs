@@ -1,5 +1,5 @@
 use {
-    super::{Provider, ProviderKind, RpcProvider, RpcQueryParams},
+    super::{Provider, ProviderKind, RpcProvider, RpcQueryParams, SupportedChain, Weight},
     crate::error::{RpcError, RpcResult},
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
@@ -12,7 +12,7 @@ use {
 pub struct BinanceProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
     pub project_id: String,
-    pub supported_chains: HashMap<String, String>,
+    pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
 impl Provider for BinanceProvider {
@@ -20,8 +20,14 @@ impl Provider for BinanceProvider {
         self.supported_chains.contains_key(chain_id)
     }
 
-    fn supported_caip_chainids(&self) -> Vec<String> {
-        self.supported_chains.keys().cloned().collect()
+    fn supported_caip_chains(&self) -> Vec<SupportedChain> {
+        self.supported_chains
+            .iter()
+            .map(|(k, v)| SupportedChain {
+                chain_id: k.clone(),
+                weight: v.1.clone(),
+            })
+            .collect()
     }
 
     fn provider_kind(&self) -> ProviderKind {
@@ -43,19 +49,17 @@ impl RpcProvider for BinanceProvider {
         _headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
     ) -> RpcResult<Response> {
-        let uri = self
+        let uri = &self
             .supported_chains
             .get(&query_params.chain_id.to_lowercase())
-            .ok_or(RpcError::ChainNotFound)?;
+            .ok_or(RpcError::ChainNotFound)?
+            .0;
 
         let hyper_request = hyper::http::Request::builder()
             .method(method)
             .uri(uri)
             .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))?;
-
-        // TODO: map the response error codes properly
-        // e.g. HTTP401 from target should map to HTTP500
 
         let response = self.client.request(hyper_request).await?.into_response();
 

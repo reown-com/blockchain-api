@@ -1,12 +1,12 @@
-use {serde::Deserialize, std::collections::HashMap};
+use {crate::providers::Weight, serde::Deserialize, std::collections::HashMap};
 
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Deserialize, Debug, Clone, PartialEq)]
 pub struct ZKSyncConfig {
     #[serde(default)]
     pub project_id: String,
 
     #[serde(default = "default_zksync_supported_chains")]
-    pub supported_chains: HashMap<String, String>,
+    pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
 impl Default for ZKSyncConfig {
@@ -18,17 +18,17 @@ impl Default for ZKSyncConfig {
     }
 }
 
-fn default_zksync_supported_chains() -> HashMap<String, String> {
+fn default_zksync_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // zkSync Testnet
         (
             "eip155:280".into(),
-            "https://zksync2-testnet.zksync.dev".into(),
+            ("https://zksync2-testnet.zksync.dev".into(), Weight(1.0)),
         ),
         // zkSync Mainnet
         (
             "eip155:324".into(),
-            "https://zksync2-mainnet.zksync.io".into(),
+            ("https://zksync2-mainnet.zksync.io".into(), Weight(1.0)),
         ),
     ])
 }

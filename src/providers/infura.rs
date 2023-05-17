@@ -1,5 +1,13 @@
 use {
-    super::{Provider, ProviderKind, RpcProvider, RpcQueryParams, RpcWsProvider},
+    super::{
+        Provider,
+        ProviderKind,
+        RpcProvider,
+        RpcQueryParams,
+        RpcWsProvider,
+        SupportedChain,
+        Weight,
+    },
     crate::{
         error::{RpcError, RpcResult},
         ws,
@@ -16,12 +24,12 @@ use {
 pub struct InfuraProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
     pub project_id: String,
-    pub supported_chains: HashMap<String, String>,
+    pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
 pub struct InfuraWsProvider {
     pub project_id: String,
-    pub supported_chains: HashMap<String, String>,
+    pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
 impl Provider for InfuraWsProvider {
@@ -29,8 +37,14 @@ impl Provider for InfuraWsProvider {
         self.supported_chains.contains_key(chain_id)
     }
 
-    fn supported_caip_chainids(&self) -> Vec<String> {
-        self.supported_chains.keys().cloned().collect()
+    fn supported_caip_chains(&self) -> Vec<SupportedChain> {
+        self.supported_chains
+            .iter()
+            .map(|(k, v)| SupportedChain {
+                chain_id: k.clone(),
+                weight: v.1.clone(),
+            })
+            .collect()
     }
 
     fn provider_kind(&self) -> ProviderKind {
@@ -49,10 +63,11 @@ impl RpcWsProvider for InfuraWsProvider {
         ws: WebSocketUpgrade,
         query_params: RpcQueryParams,
     ) -> RpcResult<Response> {
-        let chain = self
+        let chain = &self
             .supported_chains
             .get(&query_params.chain_id.to_lowercase())
-            .ok_or(RpcError::ChainNotFound)?;
+            .ok_or(RpcError::ChainNotFound)?
+            .0;
 
         let project_id = query_params.project_id;
 
@@ -69,8 +84,14 @@ impl Provider for InfuraProvider {
         self.supported_chains.contains_key(chain_id)
     }
 
-    fn supported_caip_chainids(&self) -> Vec<String> {
-        self.supported_chains.keys().cloned().collect()
+    fn supported_caip_chains(&self) -> Vec<SupportedChain> {
+        self.supported_chains
+            .iter()
+            .map(|(k, v)| SupportedChain {
+                chain_id: k.clone(),
+                weight: v.1.clone(),
+            })
+            .collect()
     }
 
     fn provider_kind(&self) -> ProviderKind {
@@ -92,10 +113,11 @@ impl RpcProvider for InfuraProvider {
         _headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
     ) -> RpcResult<Response> {
-        let chain = self
+        let chain = &self
             .supported_chains
             .get(&query_params.chain_id.to_lowercase())
-            .ok_or(RpcError::ChainNotFound)?;
+            .ok_or(RpcError::ChainNotFound)?
+            .0;
 
         let uri = format!("https://{}.infura.io/v3/{}", chain, self.project_id);
 

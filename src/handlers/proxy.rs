@@ -19,7 +19,6 @@ use {
         time::{Duration, SystemTime},
     },
     tap::TapFallible,
-    tracing::warn,
 };
 
 pub async fn handler(
@@ -42,6 +41,7 @@ pub async fn handler(
         .tap_err(|_| state.metrics.add_rejected_project())?;
 
     let chain_id = query_params.chain_id.to_lowercase();
+
     let provider = state
         .providers
         .get_provider_for_chain_id(&chain_id)
@@ -75,7 +75,6 @@ pub async fn handler(
         .proxy(method, path, query_params, headers, body)
         .await
         .map_err(|error| {
-            warn!(%error, "request failed");
             if let RpcError::Throttled = error {
                 state
                     .metrics
@@ -105,6 +104,6 @@ pub async fn handler(
             *response.status_mut() = http::StatusCode::BAD_GATEWAY;
         }
     };
-
+    dbg!(&provider.provider_kind().to_string());
     Ok(response)
 }
