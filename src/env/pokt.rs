@@ -21,6 +21,6 @@ fn default_pokt_supported_chains() -> HashMap<String, (String, Weight)> {
         ("eip155:100".into(), ("poa-xdai".into(), Weight(1.0))),
         // Binance Smart Chain
         // There's a dedicated BSC provider
-        ("eip155:56".into(), ("bsc-mainnet".into(), Weight(1.0))),
+        ("eip155:56".into(), ("bsc-mainnet".into(), Weight(3.0))),
     ])
 }
