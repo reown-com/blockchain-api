@@ -166,20 +166,20 @@ fn init_providers(config: &Config) -> ProviderRepository {
         project_id: infura_project_id.clone(),
         supported_chains: infura_supported_chains,
     };
-    providers.add_provider("infura".into(), Arc::new(infura_provider));
+    providers.add_provider(Arc::new(infura_provider));
 
     let infura_ws_provider = InfuraWsProvider {
         project_id: infura_project_id,
         supported_chains: infura_ws_supported_chains,
     };
-    providers.add_ws_provider("infura".into(), Arc::new(infura_ws_provider));
+    providers.add_ws_provider(Arc::new(infura_ws_provider));
 
     let pokt_provider = PoktProvider {
         client: forward_proxy_client.clone(),
         project_id: pokt_project_id,
         supported_chains: pokt_supported_chains,
     };
-    providers.add_provider("pokt".into(), Arc::new(pokt_provider));
+    providers.add_provider(Arc::new(pokt_provider));
 
     let binance_config = BinanceConfig::default();
     let binance_provider = BinanceProvider {
@@ -187,7 +187,7 @@ fn init_providers(config: &Config) -> ProviderRepository {
         project_id: binance_config.project_id,
         supported_chains: binance_config.supported_chains,
     };
-    providers.add_provider("binance".into(), Arc::new(binance_provider));
+    providers.add_provider(Arc::new(binance_provider));
 
     let zksync_config = ZKSyncConfig::default();
     let zksync_provider = ZKSyncProvider {
@@ -195,7 +195,7 @@ fn init_providers(config: &Config) -> ProviderRepository {
         project_id: zksync_config.project_id,
         supported_chains: zksync_config.supported_chains,
     };
-    providers.add_provider("zksync".into(), Arc::new(zksync_provider));
+    providers.add_provider(Arc::new(zksync_provider));
 
     providers
 }

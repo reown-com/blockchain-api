@@ -61,6 +61,8 @@ futures-util = "0.3.28"
 tokio-stream = "0.1.12"
 axum-tungstenite = "0.2.0"
 
+rand = "0.8.4"
+
 
 [dev-dependencies]
 jsonrpc = "0.14.0"

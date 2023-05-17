@@ -1,4 +1,9 @@
-use {axum::response::Response, axum_tungstenite::WebSocketUpgrade};
+use {
+    axum::response::Response,
+    axum_tungstenite::WebSocketUpgrade,
+    rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
+    serde::{Deserialize, Serialize},
+};
 
 mod binance;
 mod infura;
@@ -19,34 +24,62 @@ pub use {
 
 #[derive(Default, Clone)]
 pub struct ProviderRepository {
-    map: HashMap<String, Arc<dyn RpcProvider>>,
-    ws_map: HashMap<String, Arc<dyn RpcWsProvider>>,
+    map: ProviderList<dyn RpcProvider>,
+    ws_map: ProviderList<dyn RpcWsProvider>,
 }
+
+type ProviderList<T> = HashMap<String, Vec<(Arc<T>, Weight)>>;
 
 impl ProviderRepository {
     pub fn get_provider_for_chain_id(&self, chain_id: &str) -> Option<&Arc<dyn RpcProvider>> {
-        self.map.get(chain_id)
+        let Some(providers) = self.map.get(chain_id) else {return None};
+
+        if providers.is_empty() {
+            return None;
+        }
+
+        let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.0).collect();
+        let dist = WeightedIndex::new(weights).unwrap();
+        let provider = &providers[dist.sample(&mut OsRng)].0;
+
+        Some(provider)
     }
 
     pub fn get_ws_provider_for_chain_id(&self, chain_id: &str) -> Option<&Arc<dyn RpcWsProvider>> {
-        self.ws_map.get(chain_id)
+        let providers = self.ws_map.get(chain_id)?;
+
+        if providers.is_empty() {
+            return None;
+        }
+
+        let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.0).collect();
+        let dist = WeightedIndex::new(weights).unwrap();
+        let provider = &providers[dist.sample(&mut OsRng)].0;
+
+        Some(provider)
     }
 
-    pub fn add_ws_provider(&mut self, _provider_name: String, provider: Arc<dyn RpcWsProvider>) {
+    pub fn add_ws_provider(&mut self, provider: Arc<dyn RpcWsProvider>) {
         provider
-            .supported_caip_chainids()
+            .supported_caip_chains()
             .into_iter()
             .for_each(|chain| {
-                self.ws_map.insert(chain, provider.clone());
+                self.ws_map
+                    .entry(chain.chain_id)
+                    .or_insert_with(Vec::new)
+                    .push((provider.clone(), chain.weight));
             });
     }
 
-    pub fn add_provider(&mut self, _provider_name: String, provider: Arc<dyn RpcProvider>) {
+    pub fn add_provider(&mut self, provider: Arc<dyn RpcProvider>) {
         provider
-            .supported_caip_chainids()
+            .supported_caip_chains()
             .into_iter()
             .for_each(|chain| {
-                self.map.insert(chain, provider.clone());
+                self.map
+                    .entry(chain.chain_id)
+                    .or_insert_with(Vec::new)
+                    .push((provider.clone(), chain.weight));
             });
     }
 }
@@ -90,10 +123,19 @@ pub trait RpcWsProvider: Send + Sync + Provider {
     ) -> RpcResult<Response>;
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Weight(pub f32);
+
+#[derive(Debug)]
+pub struct SupportedChain {
+    pub chain_id: String,
+    pub weight: Weight,
+}
+
 pub trait Provider {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool;
 
-    fn supported_caip_chainids(&self) -> Vec<String>;
+    fn supported_caip_chains(&self) -> Vec<SupportedChain>;
 
     fn provider_kind(&self) -> ProviderKind;
 
