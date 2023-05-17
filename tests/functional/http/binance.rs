@@ -6,12 +6,10 @@ use {
 
 #[test_context(ServerContext)]
 #[tokio::test]
-async fn eip155_56_bsc_mainnet(ctx: &mut ServerContext) {
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:56", "0x38").await
-}
+async fn binance_provider(ctx: &mut ServerContext) {
+    // Binance mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:56", "0x38").await;
 
-#[test_context(ServerContext)]
-#[tokio::test]
-async fn eip155_97_bsc_testnet(ctx: &mut ServerContext) {
+    // Binance testnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:97", "0x61").await
 }

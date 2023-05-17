@@ -8,13 +8,14 @@ use {
 
 #[test_context(ServerContext)]
 #[tokio::test]
-async fn eip155_43114_avax(ctx: &mut ServerContext) {
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:43114", "0xa86a").await
-}
+async fn pokt_provider(ctx: &mut ServerContext) {
+    // Avax
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:43114", "0xa86a").await;
 
-#[test_context(ServerContext)]
-#[tokio::test]
-async fn eip155_100_gnosis(ctx: &mut ServerContext) {
+    // Binance mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:56", "0x38").await;
+
+    // Gnosis
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:100", "0x64").await
 }
 
