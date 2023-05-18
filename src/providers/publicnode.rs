@@ -9,12 +9,12 @@ use {
 };
 
 #[derive(Clone)]
-pub struct BinanceProvider {
+pub struct PublicnodeProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
     pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
-impl Provider for BinanceProvider {
+impl Provider for PublicnodeProvider {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool {
         self.supported_chains.contains_key(chain_id)
     }
@@ -30,12 +30,12 @@ impl Provider for BinanceProvider {
     }
 
     fn provider_kind(&self) -> ProviderKind {
-        ProviderKind::Binance
+        ProviderKind::Publicnode
     }
 }
 
 #[async_trait]
-impl RpcProvider for BinanceProvider {
+impl RpcProvider for PublicnodeProvider {
     async fn proxy(
         &self,
         method: hyper::http::Method,
@@ -44,11 +44,13 @@ impl RpcProvider for BinanceProvider {
         _headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
     ) -> RpcResult<Response> {
-        let uri = &self
+        let chain = &self
             .supported_chains
             .get(&query_params.chain_id.to_lowercase())
             .ok_or(RpcError::ChainNotFound)?
             .0;
+
+        let uri = format!("https://{}.publicnode.com", chain);
 
         let hyper_request = hyper::http::Request::builder()
             .method(method)
@@ -62,7 +64,7 @@ impl RpcProvider for BinanceProvider {
             return Err(RpcError::Throttled);
         }
 
-        Ok(response.into_response())
+        Ok(response)
     }
 }
 

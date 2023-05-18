@@ -7,7 +7,9 @@ use {
 
 mod binance;
 mod infura;
+mod omnia;
 mod pokt;
+mod publicnode;
 mod zksync;
 
 use {
@@ -18,7 +20,9 @@ use {
 pub use {
     binance::BinanceProvider,
     infura::{InfuraProvider, InfuraWsProvider},
+    omnia::OmniatechProvider,
     pokt::PoktProvider,
+    publicnode::PublicnodeProvider,
     zksync::ZKSyncProvider,
 };
 
@@ -89,6 +93,8 @@ pub enum ProviderKind {
     Pokt,
     Binance,
     ZKSync,
+    Publicnode,
+    Omniatech,
 }
 
 impl Display for ProviderKind {
@@ -98,6 +104,8 @@ impl Display for ProviderKind {
             ProviderKind::Pokt => "Pokt",
             ProviderKind::Binance => "Binance",
             ProviderKind::ZKSync => "zkSync",
+            ProviderKind::Publicnode => "Publicnode",
+            ProviderKind::Omniatech => "Omniatech",
         })
     }
 }
@@ -138,6 +146,4 @@ pub trait Provider {
     fn supported_caip_chains(&self) -> Vec<SupportedChain>;
 
     fn provider_kind(&self) -> ProviderKind;
-
-    fn project_id(&self) -> &str;
 }
