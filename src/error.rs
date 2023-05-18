@@ -3,7 +3,6 @@ use {
     axum::{response::IntoResponse, Json},
     cerberus::registry::RegistryError,
     hyper::StatusCode,
-    tracing::log::info,
 };
 
 pub type RpcResult<T> = Result<T, RpcError>;
@@ -58,7 +57,6 @@ pub enum RpcError {
 
 impl IntoResponse for RpcError {
     fn into_response(self) -> axum::response::Response {
-        info!("{:?}", self);
         match self {
             Self::AxumTungstenite(err) => (StatusCode::GONE, err.to_string()).into_response(),
             Self::UnsupportedChain(chain_id) => (
