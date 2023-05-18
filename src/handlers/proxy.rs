@@ -19,6 +19,7 @@ use {
         time::{Duration, SystemTime},
     },
     tap::TapFallible,
+    tracing::info,
 };
 
 pub async fn handler(
@@ -38,7 +39,13 @@ pub async fn handler(
 
     project
         .validate_access(&query_params.project_id, None)
-        .tap_err(|_| state.metrics.add_rejected_project())?;
+        .tap_err(|e| {
+            state.metrics.add_rejected_project();
+            info!(
+                "Denied access for project: {}, with reason: {}",
+                query_params.project_id, e
+            );
+        })?;
 
     let chain_id = query_params.chain_id.to_lowercase();
 

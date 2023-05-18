@@ -2,19 +2,19 @@ use {crate::providers::Weight, serde::Deserialize, std::collections::HashMap};
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub struct BinanceConfig {
-    #[serde(default = "default_binance_supported_chains")]
+    #[serde(default = "default_supported_chains")]
     pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
 impl Default for BinanceConfig {
     fn default() -> Self {
         Self {
-            supported_chains: default_binance_supported_chains(),
+            supported_chains: default_supported_chains(),
         }
     }
 }
 
-fn default_binance_supported_chains() -> HashMap<String, (String, Weight)> {
+fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Binance Smart Chain Mainnet
         (

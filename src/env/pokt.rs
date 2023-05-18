@@ -4,11 +4,11 @@ use {crate::providers::Weight, serde::Deserialize, std::collections::HashMap};
 pub struct PoktConfig {
     pub project_id: String,
 
-    #[serde(default = "default_pokt_supported_chains")]
+    #[serde(default = "default_supported_chains")]
     pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
-fn default_pokt_supported_chains() -> HashMap<String, (String, Weight)> {
+fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Solana Mainnet
         (

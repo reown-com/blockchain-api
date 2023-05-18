@@ -2,19 +2,19 @@ use {crate::providers::Weight, serde::Deserialize, std::collections::HashMap};
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub struct PublicnodeConfig {
-    #[serde(default = "default_publicnode_supported_chains")]
+    #[serde(default = "default_supported_chains")]
     pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
 impl Default for PublicnodeConfig {
     fn default() -> Self {
         Self {
-            supported_chains: default_publicnode_supported_chains(),
+            supported_chains: default_supported_chains(),
         }
     }
 }
 
-fn default_publicnode_supported_chains() -> HashMap<String, (String, Weight)> {
+fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum mainnet
         ("eip155:1".into(), ("ethereum".into(), Weight(1.0))),

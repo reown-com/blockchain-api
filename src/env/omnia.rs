@@ -2,19 +2,19 @@ use {crate::providers::Weight, serde::Deserialize, std::collections::HashMap};
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub struct OmniatechConfig {
-    #[serde(default = "default_omniatech_supported_chains")]
+    #[serde(default = "default_supported_chains")]
     pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
 impl Default for OmniatechConfig {
     fn default() -> Self {
         Self {
-            supported_chains: default_omniatech_supported_chains(),
+            supported_chains: default_supported_chains(),
         }
     }
 }
 
-fn default_omniatech_supported_chains() -> HashMap<String, (String, Weight)> {
+fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum mainnet
         ("eip155:1".into(), ("eth".into(), Weight(1.0))),

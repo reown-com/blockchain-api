@@ -4,14 +4,14 @@ use {crate::providers::Weight, serde::Deserialize, std::collections::HashMap};
 pub struct InfuraConfig {
     pub project_id: String,
 
-    #[serde(default = "default_infura_supported_chains")]
+    #[serde(default = "default_supported_chains")]
     pub supported_chains: HashMap<String, (String, Weight)>,
 
-    #[serde(default = "default_infura_ws_supported_chains")]
+    #[serde(default = "default_ws_supported_chains")]
     pub supported_ws_chains: HashMap<String, (String, Weight)>,
 }
 
-fn default_infura_supported_chains() -> HashMap<String, (String, Weight)> {
+fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum
         ("eip155:1".into(), ("mainnet".into(), Weight(1.0))),
@@ -56,7 +56,7 @@ fn default_infura_supported_chains() -> HashMap<String, (String, Weight)> {
     ])
 }
 
-fn default_infura_ws_supported_chains() -> HashMap<String, (String, Weight)> {
+fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum
         ("eip155:1".into(), ("mainnet".into(), Weight(1.0))),
