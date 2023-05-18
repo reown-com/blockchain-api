@@ -7,7 +7,7 @@ use {
         routing::{any, get},
         Router,
     },
-    env::{BinanceConfig, OmniatechConfig, PublicnodeConfig, ZKSyncConfig},
+    env::{BinanceConfig, ZKSyncConfig},
     error::RpcResult,
     hyper::{header::HeaderName, Client},
     hyper_tls::HttpsConnector,
@@ -16,10 +16,8 @@ use {
         BinanceProvider,
         InfuraProvider,
         InfuraWsProvider,
-        OmniatechProvider,
         PoktProvider,
         ProviderRepository,
-        PublicnodeProvider,
         ZKSyncProvider,
     },
     std::{
@@ -186,32 +184,18 @@ fn init_providers(config: &Config) -> ProviderRepository {
     let binance_config = BinanceConfig::default();
     let binance_provider = BinanceProvider {
         client: forward_proxy_client.clone(),
+        project_id: binance_config.project_id,
         supported_chains: binance_config.supported_chains,
     };
     providers.add_provider(Arc::new(binance_provider));
 
     let zksync_config = ZKSyncConfig::default();
     let zksync_provider = ZKSyncProvider {
-        client: forward_proxy_client.clone(),
+        client: forward_proxy_client,
         project_id: zksync_config.project_id,
         supported_chains: zksync_config.supported_chains,
     };
     providers.add_provider(Arc::new(zksync_provider));
-
-    let publicnode_config = PublicnodeConfig::default();
-    let publicnode_provider = PublicnodeProvider {
-        client: forward_proxy_client.clone(),
-        supported_chains: publicnode_config.supported_chains,
-    };
-    providers.add_provider(Arc::new(publicnode_provider));
-
-    // Generate and add onerpc provider
-    let onerpc_config = OmniatechConfig::default();
-    let onerpc_provider = OmniatechProvider {
-        client: forward_proxy_client,
-        supported_chains: onerpc_config.supported_chains,
-    };
-    providers.add_provider(Arc::new(onerpc_provider));
 
     providers
 }

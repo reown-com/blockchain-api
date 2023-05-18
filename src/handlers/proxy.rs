@@ -104,5 +104,6 @@ pub async fn handler(
             *response.status_mut() = http::StatusCode::BAD_GATEWAY;
         }
     };
+    dbg!(&provider.provider_kind().to_string());
     Ok(response)
 }

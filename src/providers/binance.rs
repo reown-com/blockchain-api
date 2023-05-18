@@ -11,6 +11,7 @@ use {
 #[derive(Clone)]
 pub struct BinanceProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
+    pub project_id: String,
     pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
@@ -31,6 +32,10 @@ impl Provider for BinanceProvider {
 
     fn provider_kind(&self) -> ProviderKind {
         ProviderKind::Binance
+    }
+
+    fn project_id(&self) -> &str {
+        &self.project_id
     }
 }
 

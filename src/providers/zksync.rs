@@ -33,6 +33,10 @@ impl Provider for ZKSyncProvider {
     fn provider_kind(&self) -> ProviderKind {
         ProviderKind::ZKSync
     }
+
+    fn project_id(&self) -> &str {
+        &self.project_id
+    }
 }
 
 #[async_trait]
