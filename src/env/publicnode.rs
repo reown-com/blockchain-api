@@ -21,7 +21,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Ethereum goerli
         ("eip155:5".into(), ("ethereum-goerli".into(), Weight(1.0))),
         // Binance Smart Chain mainnet
-        ("eip155:56".into(), ("bsc".into(), Weight(1.0))),
+        ("eip155:56".into(), ("bsc".into(), Weight(3.0))),
         // Binance Smart Chain testnet
         ("eip155:97".into(), ("bsc-testnet".into(), Weight(1.0))),
         // Avalanche c chain

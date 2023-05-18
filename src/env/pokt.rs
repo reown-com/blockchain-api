@@ -20,6 +20,6 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Gnosis
         ("eip155:100".into(), ("poa-xdai".into(), Weight(1.0))),
         // Binance Smart Chain
-        ("eip155:56".into(), ("bsc-mainnet".into(), Weight(1.0))),
+        ("eip155:56".into(), ("bsc-mainnet".into(), Weight(3.0))),
     ])
 }
