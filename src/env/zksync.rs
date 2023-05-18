@@ -5,7 +5,7 @@ pub struct ZKSyncConfig {
     #[serde(default)]
     pub project_id: String,
 
-    #[serde(default = "default_zksync_supported_chains")]
+    #[serde(default = "default_supported_chains")]
     pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
@@ -13,12 +13,12 @@ impl Default for ZKSyncConfig {
     fn default() -> Self {
         Self {
             project_id: Default::default(),
-            supported_chains: default_zksync_supported_chains(),
+            supported_chains: default_supported_chains(),
         }
     }
 }
 
-fn default_zksync_supported_chains() -> HashMap<String, (String, Weight)> {
+fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // zkSync Testnet
         (

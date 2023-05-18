@@ -3,7 +3,6 @@ use {
     axum::{response::IntoResponse, Json},
     cerberus::registry::RegistryError,
     hyper::StatusCode,
-    tracing::log::{error, warn},
 };
 
 pub type RpcResult<T> = Result<T, RpcError>;
@@ -58,7 +57,6 @@ pub enum RpcError {
 
 impl IntoResponse for RpcError {
     fn into_response(self) -> axum::response::Response {
-        error!("{:?}", self);
         match self {
             Self::AxumTungstenite(err) => (StatusCode::GONE, err.to_string()).into_response(),
             Self::UnsupportedChain(chain_id) => (
@@ -82,14 +80,11 @@ impl IntoResponse for RpcError {
                 "Invalid scheme used. Try http(s):// or ws(s)://".to_string(),
             )
                 .into_response(),
-            Self::RegistryError(e) => {
-                warn!("Registry error: {:?}", e);
-                (
-                    StatusCode::UNAUTHORIZED,
-                    "We failed to authenticate your request".to_string(),
-                )
-                    .into_response()
-            }
+            Self::RegistryError(_) | Self::Cerberus(_) => (
+                StatusCode::UNAUTHORIZED,
+                "We failed to authenticate your request".to_string(),
+            )
+                .into_response(),
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Internal server error".to_string(),

@@ -9,11 +9,13 @@ use {
 
 mod binance;
 mod infura;
+mod omnia;
 mod pokt;
+mod publicnode;
 mod server;
 mod zksync;
 
-pub use {binance::*, infura::*, pokt::*, server::*, zksync::*};
+pub use {binance::*, infura::*, omnia::*, pokt::*, publicnode::*, server::*, zksync::*};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {

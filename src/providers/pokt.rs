@@ -38,10 +38,6 @@ impl Provider for PoktProvider {
     fn provider_kind(&self) -> ProviderKind {
         ProviderKind::Pokt
     }
-
-    fn project_id(&self) -> &str {
-        &self.project_id
-    }
 }
 
 #[async_trait]
@@ -75,7 +71,7 @@ impl RpcProvider for PoktProvider {
 
         let (body_bytes, response) = copy_body_bytes(response).await.unwrap();
 
-        if is_rate_limited(body_bytes) {
+        if is_rate_limited(&body_bytes).await {
             return Err(RpcError::Throttled);
         }
 
@@ -83,14 +79,10 @@ impl RpcProvider for PoktProvider {
     }
 }
 
-fn is_rate_limited(body_bytes: Bytes) -> bool {
-    let jsonrpc_response = serde_json::from_slice::<jsonrpc::Response>(&body_bytes);
+async fn is_rate_limited(body_bytes: &Bytes) -> bool {
+    let Ok(jsonrpc_response) = serde_json::from_slice::<jsonrpc::Response>(body_bytes) else {return false};
 
-    if jsonrpc_response.is_err() {
-        return false;
-    }
-
-    if let Some(err) = jsonrpc_response.unwrap().error {
+    if let Some(err) = jsonrpc_response.error {
         // Code used by Pokt to indicate rate limited request
         // https://github.com/pokt-foundation/portal-api/blob/e06d1e50abfee8533c58768bb9b638c351b87a48/src/controllers/v1.controller.ts
         if err.code == -32068 {

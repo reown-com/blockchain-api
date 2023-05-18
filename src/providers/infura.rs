@@ -50,10 +50,6 @@ impl Provider for InfuraWsProvider {
     fn provider_kind(&self) -> ProviderKind {
         ProviderKind::Infura
     }
-
-    fn project_id(&self) -> &str {
-        &self.project_id
-    }
 }
 
 #[async_trait]
@@ -96,10 +92,6 @@ impl Provider for InfuraProvider {
 
     fn provider_kind(&self) -> ProviderKind {
         ProviderKind::Infura
-    }
-
-    fn project_id(&self) -> &str {
-        &self.project_id
     }
 }
 

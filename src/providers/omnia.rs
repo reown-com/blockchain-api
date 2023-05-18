@@ -3,18 +3,23 @@ use {
     crate::error::{RpcError, RpcResult},
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
-    hyper::{client::HttpConnector, http, Client},
+    hyper::{
+        body::{self, Bytes},
+        client::HttpConnector,
+        Body,
+        Client,
+    },
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
 };
 
 #[derive(Clone)]
-pub struct BinanceProvider {
+pub struct OmniatechProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
     pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
-impl Provider for BinanceProvider {
+impl Provider for OmniatechProvider {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool {
         self.supported_chains.contains_key(chain_id)
     }
@@ -30,12 +35,12 @@ impl Provider for BinanceProvider {
     }
 
     fn provider_kind(&self) -> ProviderKind {
-        ProviderKind::Binance
+        ProviderKind::Omniatech
     }
 }
 
 #[async_trait]
-impl RpcProvider for BinanceProvider {
+impl RpcProvider for OmniatechProvider {
     async fn proxy(
         &self,
         method: hyper::http::Method,
@@ -44,11 +49,13 @@ impl RpcProvider for BinanceProvider {
         _headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
     ) -> RpcResult<Response> {
-        let uri = &self
+        let chain = &self
             .supported_chains
             .get(&query_params.chain_id.to_lowercase())
             .ok_or(RpcError::ChainNotFound)?
             .0;
+
+        let uri = format!("https://endpoints.omniatech.io/v1/{}/mainnet/public", chain);
 
         let hyper_request = hyper::http::Request::builder()
             .method(method)
@@ -56,9 +63,11 @@ impl RpcProvider for BinanceProvider {
             .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))?;
 
-        let response = self.client.request(hyper_request).await?.into_response();
+        let response = self.client.request(hyper_request).await?;
 
-        if is_rate_limited(&response) {
+        let (body_bytes, response) = copy_body_bytes(response).await.unwrap();
+
+        if is_rate_limited(body_bytes) {
             return Err(RpcError::Throttled);
         }
 
@@ -66,6 +75,25 @@ impl RpcProvider for BinanceProvider {
     }
 }
 
-fn is_rate_limited(response: &Response) -> bool {
-    response.status() == http::StatusCode::TOO_MANY_REQUESTS
+fn is_rate_limited(body_bytes: Bytes) -> bool {
+    let Ok(jsonrpc_response) = serde_json::from_slice::<jsonrpc::Response>(&body_bytes) else {return false};
+
+    if let Some(err) = jsonrpc_response.error {
+        // Code used by 1rpc to indicate rate limited request
+        // https://docs.ata.network/1rpc/introduction/#limitations
+        if err.code == -32001 {
+            return true;
+        }
+    }
+    false
+}
+
+async fn copy_body_bytes(
+    response: Response<Body>,
+) -> Result<(Bytes, Response<Body>), hyper::Error> {
+    let (parts, body) = response.into_parts();
+    let bytes = body::to_bytes(body).await?;
+
+    let body = Body::from(bytes.clone());
+    Ok((bytes, Response::from_parts(parts, body)))
 }
