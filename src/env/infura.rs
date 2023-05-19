@@ -14,7 +14,7 @@ pub struct InfuraConfig {
 fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum
-        ("eip155:1".into(), ("mainnet".into(), Weight(1.0))),
+        ("eip155:1".into(), ("mainnet".into(), Weight(10.0))),
         ("eip155:3".into(), ("ropsten".into(), Weight(1.0))),
         ("eip155:42".into(), ("kovan".into(), Weight(1.0))),
         ("eip155:4".into(), ("rinkeby".into(), Weight(1.0))),
