@@ -37,7 +37,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ("arbitrum-goerli".into(), Weight(1.0)),
         ),
         // Polygon
-        ("eip155:137".into(), ("polygon-mainnet".into(), Weight(1.0))),
+        ("eip155:137".into(), ("polygon-mainnet".into(), Weight(5.0))),
         (
             "eip155:80001".into(),
             ("polygon-mumbai".into(), Weight(1.0)),
