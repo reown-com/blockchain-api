@@ -21,5 +21,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         ("eip155:100".into(), ("poa-xdai".into(), Weight(1.0))),
         // Binance Smart Chain
         ("eip155:56".into(), ("bsc-mainnet".into(), Weight(3.0))),
+        // ETH Mainnet
+        ("eip155:56".into(), ("bsc-mainnet".into(), Weight(1.0))),
     ])
 }
