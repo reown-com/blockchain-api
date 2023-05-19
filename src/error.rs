@@ -83,7 +83,7 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
-            Self::RegistryError(_) | Self::Cerberus(_) => (
+            Self::RegistryError(_) | Self::Cerberus(_) | Self::ProjectDataError(_) => (
                 StatusCode::UNAUTHORIZED,
                 Json(new_error_response(
                     "authentication".to_string(),
