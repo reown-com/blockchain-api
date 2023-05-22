@@ -16,9 +16,6 @@ locals {
     [{ uid = local.opsgenie_notification_channel }] :
     []
   )
-
-  target_group  = split(":", var.target_group_arn)[5]
-  load_balancer = join("/", slice(split("/", var.load_balancer_arn), 1, 4))
 }
 
 resource "grafana_data_source" "prometheus" {
