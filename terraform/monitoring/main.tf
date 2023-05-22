@@ -1851,7 +1851,7 @@ resource "grafana_dashboard" "at_a_glance" {
                 "uid" : grafana_data_source.cloudwatch.uid
               },
               "dimensions" : {
-                "TargetGroup" : "targetgroup/${var.environment}-rpc-proxy-055/d55fc6acac3c3c72"
+                "TargetGroup" : local.target_group
               },
               "expression" : "",
               "id" : "",
@@ -1887,7 +1887,7 @@ resource "grafana_dashboard" "at_a_glance" {
                     {
                       "operator" : {
                         "name" : "=",
-                        "value" : "net/${var.environment}-rpc-proxy-lb-c77/8bc3437271f7cf0b"
+                        "value" : local.load_balancer
                       },
                       "property" : {
                         "name" : "LoadBalancer",
@@ -1899,7 +1899,7 @@ resource "grafana_dashboard" "at_a_glance" {
                   "type" : "and"
                 }
               },
-              "sqlExpression" : "SELECT MAX(HealthyHostCount) FROM \"AWS/NetworkELB\" WHERE LoadBalancer = 'net/${var.environment}-rpc-proxy-lb-c77/8bc3437271f7cf0b'",
+              "sqlExpression" : "SELECT MAX(HealthyHostCount) FROM \"AWS/NetworkELB\" WHERE LoadBalancer = '${local.load_balancer}'",
               "statistic" : "Maximum"
             }
           ],
@@ -2171,7 +2171,7 @@ resource "grafana_dashboard" "at_a_glance" {
                 "uid" : grafana_data_source.cloudwatch.uid
               },
               "dimensions" : {
-                "CacheClusterId" : "rpc-proxy-rpc-${var.environment}"
+                "CacheClusterId" : var.redis_cluster_id
               },
               "expression" : "",
               "id" : "",
@@ -2194,7 +2194,7 @@ resource "grafana_dashboard" "at_a_glance" {
                 "uid" : grafana_data_source.cloudwatch.uid
               },
               "dimensions" : {
-                "CacheClusterId" : "rpc-proxy-rpc-${var.environment}"
+                "CacheClusterId" : var.redis_cluster_id
               },
               "expression" : "",
               "hide" : false,
