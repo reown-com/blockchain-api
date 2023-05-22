@@ -56,6 +56,10 @@ pub async fn handler(
 
     state.metrics.add_rpc_call(&chain_id);
 
+    let origin = headers
+        .get("origin")
+        .map(|v| v.to_str().unwrap_or("invalid_header").to_string());
+
     if let Ok(rpc_request) = serde_json::from_slice(&body) {
         let (country, continent, region) = state
             .analytics
@@ -70,6 +74,7 @@ pub async fn handler(
             country,
             continent,
             provider.provider_kind(),
+            origin,
         ))
     }
 
@@ -99,14 +104,17 @@ pub async fn handler(
     );
 
     match response.status() {
-        http::StatusCode::OK => {
+        status @ http::StatusCode::OK => {
             state.metrics.add_finished_provider_call(provider.borrow());
+            state
+                .metrics
+                .add_status_code_for_provider(provider.borrow(), status, &chain_id);
         }
         status => {
             state.metrics.add_failed_provider_call(provider.borrow());
             state
                 .metrics
-                .add_status_code_for_provider(provider.borrow(), status);
+                .add_status_code_for_provider(provider.borrow(), status, &chain_id);
 
             *response.status_mut() = http::StatusCode::BAD_GATEWAY;
         }

@@ -67,5 +67,5 @@ impl RpcProvider for BinanceProvider {
 }
 
 fn is_rate_limited(response: &Response) -> bool {
-    response.status() == http::StatusCode::TOO_MANY_REQUESTS
+    response.status() == http::StatusCode::FORBIDDEN
 }

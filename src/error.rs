@@ -77,12 +77,28 @@ impl IntoResponse for RpcError {
                 .into_response(),
             Self::InvalidScheme => (
                 StatusCode::BAD_REQUEST,
-                "Invalid scheme used. Try http(s):// or ws(s)://".to_string(),
+                Json(new_error_response(
+                    "scheme".to_string(),
+                    "Invalid scheme used. Try http(s):// or ws(s)://".to_string(),
+                )),
             )
                 .into_response(),
-            Self::RegistryError(_) | Self::Cerberus(_) => (
+            Self::RegistryError(_) | Self::Cerberus(_) | Self::ProjectDataError(_) => (
                 StatusCode::UNAUTHORIZED,
-                "We failed to authenticate your request".to_string(),
+                Json(new_error_response(
+                    "authentication".to_string(),
+                    "We failed to authenticate your request".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::Throttled => (
+                StatusCode::BAD_GATEWAY,
+                Json(new_error_response(
+                    "throttled".to_string(),
+                    "Our provider for this chain this chain is currently throttling our requests. \
+                     Please try again."
+                        .to_string(),
+                )),
             )
                 .into_response(),
             _ => (

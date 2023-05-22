@@ -3,12 +3,7 @@ use {
     crate::error::{RpcError, RpcResult},
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
-    hyper::{
-        body::{self, Bytes},
-        client::HttpConnector,
-        Body,
-        Client,
-    },
+    hyper::{client::HttpConnector, Body, Client, StatusCode},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
 };
@@ -65,9 +60,7 @@ impl RpcProvider for OmniatechProvider {
 
         let response = self.client.request(hyper_request).await?;
 
-        let (body_bytes, response) = copy_body_bytes(response).await.unwrap();
-
-        if is_rate_limited(body_bytes) {
+        if is_rate_limited(&response) {
             return Err(RpcError::Throttled);
         }
 
@@ -75,25 +68,6 @@ impl RpcProvider for OmniatechProvider {
     }
 }
 
-fn is_rate_limited(body_bytes: Bytes) -> bool {
-    let Ok(jsonrpc_response) = serde_json::from_slice::<jsonrpc::Response>(&body_bytes) else {return false};
-
-    if let Some(err) = jsonrpc_response.error {
-        // Code used by 1rpc to indicate rate limited request
-        // https://docs.ata.network/1rpc/introduction/#limitations
-        if err.code == -32001 {
-            return true;
-        }
-    }
-    false
-}
-
-async fn copy_body_bytes(
-    response: Response<Body>,
-) -> Result<(Bytes, Response<Body>), hyper::Error> {
-    let (parts, body) = response.into_parts();
-    let bytes = body::to_bytes(body).await?;
-
-    let body = Body::from(bytes.clone());
-    Ok((bytes, Response::from_parts(parts, body)))
+fn is_rate_limited(response: &Response<Body>) -> bool {
+    response.status() == StatusCode::TOO_MANY_REQUESTS
 }

@@ -14,6 +14,7 @@ pub struct MessageInfo {
     pub chain_id: String,
     pub method: Arc<str>,
 
+    pub origin: Option<String>,
     pub provider: String,
 
     pub region: Option<String>,
@@ -29,6 +30,7 @@ impl MessageInfo {
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
         provider: ProviderKind,
+        origin: Option<String>,
     ) -> Self {
         Self {
             timestamp: gorgon::time::now(),
@@ -37,6 +39,7 @@ impl MessageInfo {
             chain_id: query_params.chain_id.to_lowercase(),
             method: request.method.clone(),
 
+            origin,
             provider: provider.to_string(),
 
             region: region.map(|r| r.join(", ")),
