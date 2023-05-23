@@ -87,7 +87,7 @@ jobs:
         uses: actions/checkout@v3
       - name: Run Terraform Plan
         id: plan
-        uses: WalletConnect/actions/actions/plan-terraform/@master
+        uses: WalletConnect/actions/actions/plan-terraform/@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
