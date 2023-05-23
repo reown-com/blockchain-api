@@ -2033,7 +2033,7 @@ resource "grafana_dashboard" "at_a_glance" {
               {
                 "evaluator" : {
                   "params" : [
-                    50
+                    95
                   ],
                   "type" : "gt"
                 },
@@ -2056,7 +2056,7 @@ resource "grafana_dashboard" "at_a_glance" {
               {
                 "evaluator" : {
                   "params" : [
-                    50
+                    95
                   ],
                   "type" : "gt"
                 },
@@ -2137,7 +2137,7 @@ resource "grafana_dashboard" "at_a_glance" {
                   },
                   {
                     "color" : "red",
-                    "value" : 50
+                    "value" : 95
                   }
                 ]
               }
