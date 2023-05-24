@@ -110,6 +110,10 @@ resource "aws_ecs_task_definition" "app_task" {
       dependsOn : [{
         containerName : "aws-otel-collector",
         condition : "START"
+      },
+      {
+        containerName : "sigv4-prometheus-proxy",
+        condition : "START"
       }]
     },
     {
@@ -132,6 +136,34 @@ resource "aws_ecs_task_definition" "app_task" {
           "awslogs-stream-prefix" : "ecs"
         }
       }
+    }, 
+    {
+      name : "sigv4-prometheus-proxy",
+      image : "public.ecr.aws/aws-observability/aws-sigv4-proxy:latest",
+      environment: [
+        { name : "AWS_ACCESS_KEY_ID", value : aws_iam_access_key.prometheus_proxy_key.id},
+        { name : "AWS_SECRET_ACCESS_KEY", value : aws_iam_access_key.prometheus_proxy_key.secret },
+      ],
+      essential : true,
+      portMappings : [
+        {
+          containerPort : 8080,
+          hostPort : 8080,
+        }
+      ],
+      command : [
+       
+      ],
+      logConfiguration : {
+        logDriver : "awslogs",
+        options : {
+          "awslogs-create-group" : "True",
+          "awslogs-group" : "/ecs/${var.app_name}-ecs-aws-otel-sidecar-collector",
+          "awslogs-region" : var.region,
+          "awslogs-stream-prefix" : "ecs"
+        }
+      },
+
     }
   ])
 
@@ -161,7 +193,7 @@ resource "aws_ecs_service" "app_service" {
   network_configuration {
     subnets          = data.aws_subnets.private_subnets.ids
     assign_public_ip = false                                                                      # We do public ingress through the LB
-    security_groups  = [aws_security_group.tls_ingress.id, aws_security_group.vpc_app_ingress.id] # Setting the security group
+    security_groups  = [aws_security_group.tls_ingress.id, aws_security_group.vpc_app_ingress.id, aws_security_group.vpc_app_ingress_internal.id] # Setting the security group
   }
 
   load_balancer {
@@ -223,3 +255,4 @@ resource "aws_appautoscaling_policy" "memory_scaling" {
   }
   depends_on = [aws_appautoscaling_target.ecs_target]
 }
+

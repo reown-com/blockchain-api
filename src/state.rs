@@ -38,3 +38,9 @@ pub fn new_state(
         compile_info: CompileInfo {},
     }
 }
+
+impl AppState {
+    pub fn update_provider_weights(&self) {
+        self.providers.update_weights();
+    }
+}

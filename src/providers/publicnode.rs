@@ -8,7 +8,7 @@ use {
     std::collections::HashMap,
 };
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct PublicnodeProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
     pub supported_chains: HashMap<String, (String, Weight)>,

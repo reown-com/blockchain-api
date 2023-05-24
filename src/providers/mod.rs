@@ -2,7 +2,8 @@ use {
     axum::response::Response,
     axum_tungstenite::WebSocketUpgrade,
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
-    serde::{Deserialize, Serialize},
+    std::{fmt::Debug, hash::Hash},
+    tracing::info,
 };
 
 mod binance;
@@ -26,8 +27,10 @@ pub use {
     zksync::ZKSyncProvider,
 };
 
-#[derive(Default, Clone)]
+#[derive(Default, Debug)]
 pub struct ProviderRepository {
+    providers: HashMap<ProviderKind, Box<dyn RpcProvider>>,
+    ws_providers: HashMap<ProviderKind, Box<dyn RpcProvider>>,
     map: ProviderList<dyn RpcProvider>,
     ws_map: ProviderList<dyn RpcWsProvider>,
 }
@@ -42,7 +45,7 @@ impl ProviderRepository {
             return None;
         }
 
-        let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.0).collect();
+        let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.value()).collect();
         let dist = WeightedIndex::new(weights).unwrap();
         let provider = &providers[dist.sample(&mut OsRng)].0;
 
@@ -56,7 +59,7 @@ impl ProviderRepository {
             return None;
         }
 
-        let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.0).collect();
+        let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.value()).collect();
         let dist = WeightedIndex::new(weights).unwrap();
         let provider = &providers[dist.sample(&mut OsRng)].0;
 
@@ -76,6 +79,13 @@ impl ProviderRepository {
     }
 
     pub fn add_provider(&mut self, provider: Arc<dyn RpcProvider>) {
+        // Create new provider, take config as argument
+        // Store the provider under ProviderKind => Provider (enum => struct)
+        // Strip weights from the provider, only keep mapping
+        // Build weighted map chainId => ProviderKind
+        // This way we don't need cloning.
+        // We consume the config, so we can take the weights and put them in the map
+        // As we never clone the Weights, we can just update them in the map
         provider
             .supported_caip_chains()
             .into_iter()
@@ -86,8 +96,21 @@ impl ProviderRepository {
                     .push((provider.clone(), chain.weight));
             });
     }
+
+    pub fn update_weights(&self) {
+        info!("Updating weights");
+        self.map.iter().for_each(|(_, providers)| {
+            providers.iter().for_each(|(_, weight)| {
+                info!("Weight for provider: {}", weight.value());
+                weight.0.store(3, std::sync::atomic::Ordering::SeqCst);
+                info!("Weight for provider: {}", weight.value());
+            });
+        });
+    }
 }
 
+// TODO: Find better name
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ProviderKind {
     Infura,
     Pokt,
@@ -111,7 +134,7 @@ impl Display for ProviderKind {
 }
 
 #[async_trait]
-pub trait RpcProvider: Send + Sync + Provider {
+pub trait RpcProvider: Send + Sync + Provider + Debug {
     async fn proxy(
         &self,
         method: hyper::http::Method,
@@ -123,7 +146,7 @@ pub trait RpcProvider: Send + Sync + Provider {
 }
 
 #[async_trait]
-pub trait RpcWsProvider: Send + Sync + Provider {
+pub trait RpcWsProvider: Send + Sync + Provider + Debug {
     async fn proxy(
         &self,
         ws: WebSocketUpgrade,
@@ -131,8 +154,25 @@ pub trait RpcWsProvider: Send + Sync + Provider {
     ) -> RpcResult<Response>;
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Weight(pub f32);
+#[derive(Debug)]
+pub struct Weight(pub std::sync::atomic::AtomicU32);
+
+impl Weight {
+    pub fn value(&self) -> u32 {
+        self.0.load(std::sync::atomic::Ordering::SeqCst)
+    }
+}
+
+// TODO: This is should not be Clone ever.
+// Cloning it makes it possible that updates to the weight are not reflected in
+// the map
+impl Clone for Weight {
+    fn clone(&self) -> Self {
+        let atomic =
+            std::sync::atomic::AtomicU32::new(self.0.load(std::sync::atomic::Ordering::SeqCst));
+        Self(atomic)
+    }
+}
 
 #[derive(Debug)]
 pub struct SupportedChain {

@@ -136,6 +136,29 @@ resource "aws_security_group" "vpc_app_ingress" {
   }
 }
 
+resource "aws_security_group" "vpc_app_ingress_internal" {
+  name        = "${var.app_name}-vpc-ingress-to-sigv4"
+  description = "Allow ingress from inside of vpc to sigv4"
+  vpc_id      = data.aws_vpc.vpc.id
+
+  ingress {
+    description = "allow traffic from inside of cidr block to sigv4 proxy"
+    from_port   = 8080 
+    to_port     = 8080 
+    protocol    = "tcp"
+    #tfsec:ignore:aws-ec2-no-public-ingress-sgr
+    cidr_blocks = [data.aws_vpc.vpc.cidr_block] # Allowing traffic in from the cidr block 
+  }
+
+  egress {           #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
+    from_port = 0    # Allowing any incoming port
+    to_port   = 0    # Allowing any outgoing port
+    protocol  = "-1" # Allowing any outgoing protocol
+    #tfsec:ignore:aws-ec2-no-public-egress-sgr
+    cidr_blocks = ["0.0.0.0/0"] # Allowing traffic out to all IP addresses
+  }
+}
+
 # DNS Records
 resource "aws_route53_record" "dns_load_balancer" {
   zone_id = var.route53_zone_id
@@ -164,4 +187,46 @@ resource "aws_route53_record" "backup_dns_load_balancer" {
 resource "aws_lb_listener_certificate" "backup_cert" {
   listener_arn    = aws_lb_listener.listener.arn
   certificate_arn = var.backup_acm_certificate_arn
+}
+
+# VPC Endpoints
+# Best practice is to keep traffic VPC internal
+# as this is more cost-effective
+resource "aws_security_group" "vpc-endpoint-group" {
+  name        = "${var.environment}.${var.region}.${var.app_name}-vpc-endpoint"
+  description = "Allow tls ingress from everywhere"
+  vpc_id      = data.aws_vpc.vpc.id
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Application = var.app_name
+  }
+}
+
+resource "aws_vpc_endpoint" "prometheus" {
+  vpc_id            = data.aws_vpc.vpc.id
+  service_name      = "com.amazonaws.${var.region}.aps-workspaces"
+  vpc_endpoint_type = "Interface"
+
+  subnet_ids = data.aws_subnets.private_subnets.ids
+
+  security_group_ids = [
+    aws_security_group.vpc-endpoint-group.id,
+  ]
+
+  tags = {
+    Application = var.app_name
+  }
 }

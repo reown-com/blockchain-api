@@ -13,7 +13,7 @@ use {
     std::collections::HashMap,
 };
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct PoktProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
     pub project_id: String,

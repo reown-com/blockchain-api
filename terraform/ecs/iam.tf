@@ -25,10 +25,25 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_write_policy" {
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
 }
 
-# Prometheus Access
+# Prometheus Write Access
 resource "aws_iam_role_policy_attachment" "prometheus_write_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonPrometheusRemoteWriteAccess"
+}
+
+resource "aws_iam_user" "prometheus_proxy" {
+  name = "prometheus_sigv4_proxy_${var.app_name}"
+  path = "/prometheus/"
+}
+
+resource "aws_iam_access_key" "prometheus_proxy_key" {
+  user = aws_iam_user.prometheus_proxy.name
+}
+
+# Prometheus Read Access
+resource "aws_iam_user_policy_attachment" "prometheus_query_policy" {
+  user = aws_iam_user.prometheus_proxy.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonPrometheusQueryAccess"
 }
 
 # Analytics Bucket Access

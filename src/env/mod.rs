@@ -4,7 +4,7 @@ use {
         error,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
     },
-    serde::{de::DeserializeOwned, Deserialize},
+    serde::de::DeserializeOwned,
 };
 
 mod binance;
@@ -17,12 +17,11 @@ mod zksync;
 
 pub use {binance::*, infura::*, omnia::*, pokt::*, publicnode::*, server::*, zksync::*};
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Config {
     pub server: ServerConfig,
     pub infura: InfuraConfig,
     pub pokt: PoktConfig,
-    pub zksync: ZKSyncConfig,
     pub registry: RegistryConfig,
     pub storage: StorageConfig,
     pub analytics: AnalyticsConfig,
@@ -32,9 +31,14 @@ impl Config {
     pub fn from_env() -> error::RpcResult<Config> {
         Ok(Self {
             server: from_env("RPC_PROXY_")?,
-            infura: from_env("RPC_PROXY_INFURA_")?,
-            pokt: from_env("RPC_PROXY_POKT_")?,
-            zksync: from_env("RPC_PROXY_ZKSYNC_")?,
+            infura: InfuraConfig::new(
+                std::env::var("RPC_PROXY_INFURA_PROJECT_ID")
+                    .expect("Missing RPC_PROXY_INFURA_PROJECT_ID env var"),
+            ),
+            pokt: PoktConfig::new(
+                std::env::var("RPC_PROXY_POKT_PROJECT_ID")
+                    .expect("Missing RPC_PROXY_POKT_PROJECT_ID env var"),
+            ),
             registry: from_env("RPC_PROXY_REGISTRY_")?,
             storage: from_env("RPC_PROXY_STORAGE_")?,
             analytics: from_env("RPC_PROXY_ANALYTICS_")?,

@@ -56,6 +56,9 @@ pub async fn handler(
 
     state.metrics.add_rpc_call(&chain_id);
 
+    // TODO: cleanup
+    dbg!(&state.providers);
+
     let origin = headers
         .get("origin")
         .map(|v| v.to_str().unwrap_or("invalid_header").to_string());

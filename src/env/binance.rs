@@ -1,8 +1,7 @@
-use {crate::providers::Weight, serde::Deserialize, std::collections::HashMap};
+use {crate::providers::Weight, std::collections::HashMap};
 
-#[derive(Deserialize, Debug, Clone, PartialEq)]
+#[derive(Debug)]
 pub struct BinanceConfig {
-    #[serde(default = "default_supported_chains")]
     pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
@@ -19,14 +18,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Binance Smart Chain Mainnet
         (
             "eip155:56".into(),
-            ("https://bsc-dataseed.binance.org/".into(), Weight(5.0)),
+            ("https://bsc-dataseed.binance.org/".into(), Weight(5.into())),
         ),
         // Binance Smart Chain Testnet
         (
             "eip155:97".into(),
             (
                 "https://data-seed-prebsc-1-s1.binance.org:8545".into(),
-                Weight(3.0),
+                Weight(3.into()),
             ),
         ),
     ])

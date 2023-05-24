@@ -8,10 +8,9 @@ use {
     std::collections::HashMap,
 };
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct ZKSyncProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
-    pub project_id: String,
     pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
