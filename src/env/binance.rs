@@ -1,8 +1,18 @@
-use {crate::providers::Weight, std::collections::HashMap};
+use {super::ProviderConfig, crate::providers::Weight, std::collections::HashMap};
 
 #[derive(Debug)]
 pub struct BinanceConfig {
     pub supported_chains: HashMap<String, (String, Weight)>,
+}
+
+impl ProviderConfig for BinanceConfig {
+    fn supported_chains(&self) -> &HashMap<String, (String, Weight)> {
+        &self.supported_chains
+    }
+
+    fn provider_kind(&self) -> crate::providers::ProviderKind {
+        crate::providers::ProviderKind::Binance
+    }
 }
 
 impl Default for BinanceConfig {

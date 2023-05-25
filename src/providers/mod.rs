@@ -1,8 +1,9 @@
 use {
+    crate::env::ProviderConfig,
     axum::response::Response,
     axum_tungstenite::WebSocketUpgrade,
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
-    std::{fmt::Debug, hash::Hash},
+    std::{fmt::Debug, hash::Hash, sync::Arc},
     tracing::info,
 };
 
@@ -16,7 +17,7 @@ mod zksync;
 use {
     crate::{error::RpcResult, handlers::RpcQueryParams},
     async_trait::async_trait,
-    std::{collections::HashMap, fmt::Display, sync::Arc},
+    std::{collections::HashMap, fmt::Display},
 };
 pub use {
     binance::BinanceProvider,
@@ -29,17 +30,16 @@ pub use {
 
 #[derive(Default, Debug)]
 pub struct ProviderRepository {
-    providers: HashMap<ProviderKind, Box<dyn RpcProvider>>,
-    ws_providers: HashMap<ProviderKind, Box<dyn RpcProvider>>,
-    map: ProviderList<dyn RpcProvider>,
-    ws_map: ProviderList<dyn RpcWsProvider>,
+    providers: HashMap<ProviderKind, Arc<dyn RpcProvider>>,
+    ws_providers: HashMap<ProviderKind, Arc<dyn RpcWsProvider>>,
+    // TODO: create newtype for ChainId
+    weight_resolver: HashMap<String, Vec<(ProviderKind, Weight)>>,
+    ws_weight_resolver: HashMap<String, Vec<(ProviderKind, Weight)>>,
 }
 
-type ProviderList<T> = HashMap<String, Vec<(Arc<T>, Weight)>>;
-
 impl ProviderRepository {
-    pub fn get_provider_for_chain_id(&self, chain_id: &str) -> Option<&Arc<dyn RpcProvider>> {
-        let Some(providers) = self.map.get(chain_id) else {return None};
+    pub fn get_provider_for_chain_id(&self, chain_id: &str) -> Option<Arc<dyn RpcProvider>> {
+        let Some(providers) = self.weight_resolver.get(chain_id) else {return None};
 
         if providers.is_empty() {
             return None;
@@ -49,11 +49,11 @@ impl ProviderRepository {
         let dist = WeightedIndex::new(weights).unwrap();
         let provider = &providers[dist.sample(&mut OsRng)].0;
 
-        Some(provider)
+        self.providers.get(provider).cloned()
     }
 
-    pub fn get_ws_provider_for_chain_id(&self, chain_id: &str) -> Option<&Arc<dyn RpcWsProvider>> {
-        let providers = self.ws_map.get(chain_id)?;
+    pub fn get_ws_provider_for_chain_id(&self, chain_id: &str) -> Option<Arc<dyn RpcWsProvider>> {
+        let Some(providers) = self.ws_weight_resolver.get(chain_id) else {return None};
 
         if providers.is_empty() {
             return None;
@@ -63,49 +63,48 @@ impl ProviderRepository {
         let dist = WeightedIndex::new(weights).unwrap();
         let provider = &providers[dist.sample(&mut OsRng)].0;
 
-        Some(provider)
+        self.ws_providers.get(provider).cloned()
     }
 
-    pub fn add_ws_provider(&mut self, provider: Arc<dyn RpcWsProvider>) {
-        provider
-            .supported_caip_chains()
-            .into_iter()
-            .for_each(|chain| {
-                self.ws_map
-                    .entry(chain.chain_id)
-                    .or_insert_with(Vec::new)
-                    .push((provider.clone(), chain.weight));
-            });
+    pub fn add_ws_provider(&mut self, provider: impl ProviderConfig) {
+        // provider
+        //     .supported_caip_chains()
+        //     .into_iter()
+        //     .for_each(|chain| {
+        //         self.ws_map
+        //             .entry(chain.chain_id)
+        //             .or_insert_with(Vec::new)
+        //             .push((provider.clone(), chain.weight));
+        //     });
     }
 
-    pub fn add_provider(&mut self, provider: Arc<dyn RpcProvider>) {
+    pub fn add_provider(&mut self, provider_config: impl ProviderConfig) {
         // Create new provider, take config as argument
         // Store the provider under ProviderKind => Provider (enum => struct)
         // Strip weights from the provider, only keep mapping
         // Build weighted map chainId => ProviderKind
         // This way we don't need cloning.
-        // We consume the config, so we can take the weights and put them in the map
-        // As we never clone the Weights, we can just update them in the map
-        provider
-            .supported_caip_chains()
-            .into_iter()
-            .for_each(|chain| {
-                self.map
-                    .entry(chain.chain_id)
-                    .or_insert_with(Vec::new)
-                    .push((provider.clone(), chain.weight));
-            });
+        // We consume the config, so we can take the weights and put them in the
+        // map As we never clone the Weights, we can just update them in
+        // the map provider
+        //     .supported_caip_chains()
+        //     .into_iter()
+        //     .for_each(|chain| {
+        //         self.map
+        //             .entry(chain.chain_id)
+        //             .or_insert_with(Vec::new)
+        //             .push((provider.clone(), chain.weight));
+        //     });
     }
 
     pub fn update_weights(&self) {
         info!("Updating weights");
-        self.map.iter().for_each(|(_, providers)| {
-            providers.iter().for_each(|(_, weight)| {
-                info!("Weight for provider: {}", weight.value());
-                weight.0.store(3, std::sync::atomic::Ordering::SeqCst);
-                info!("Weight for provider: {}", weight.value());
-            });
-        });
+        // self.map.iter().for_each(|(_, providers)| {
+        //     providers.iter().for_each(|(_, weight)| {
+        //         weight.0.store(3, std::sync::atomic::Ordering::SeqCst);
+        //     });
+        // });
+        // self.weight_resolver.
     }
 }
 
@@ -183,7 +182,7 @@ pub struct SupportedChain {
 pub trait Provider {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool;
 
-    fn supported_caip_chains(&self) -> Vec<SupportedChain>;
+    fn supported_caip_chains(&self) -> Vec<String>;
 
     fn provider_kind(&self) -> ProviderKind;
 }

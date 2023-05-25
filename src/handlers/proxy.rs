@@ -76,7 +76,7 @@ pub async fn handler(
             region,
             country,
             continent,
-            provider.provider_kind(),
+            &provider.provider_kind(),
             origin,
         ))
     }

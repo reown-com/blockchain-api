@@ -11,7 +11,7 @@ use {
 #[derive(Debug)]
 pub struct PublicnodeProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
-    pub supported_chains: HashMap<String, (String, Weight)>,
+    pub supported_chains: HashMap<String, String>,
 }
 
 impl Provider for PublicnodeProvider {
@@ -19,14 +19,16 @@ impl Provider for PublicnodeProvider {
         self.supported_chains.contains_key(chain_id)
     }
 
-    fn supported_caip_chains(&self) -> Vec<SupportedChain> {
-        self.supported_chains
-            .iter()
-            .map(|(k, v)| SupportedChain {
-                chain_id: k.clone(),
-                weight: v.1.clone(),
-            })
-            .collect()
+    fn supported_caip_chains(&self) -> Vec<String> {
+        // self.supported_chains
+        //     .iter()
+        //     .map(|(k, v)| SupportedChain {
+        //         chain_id: k.clone(),
+        //         weight: v.1.clone(),
+        //     })
+        //     .collect()
+
+        self.supported_chains.keys().cloned().collect()
     }
 
     fn provider_kind(&self) -> ProviderKind {
@@ -47,8 +49,7 @@ impl RpcProvider for PublicnodeProvider {
         let chain = &self
             .supported_chains
             .get(&query_params.chain_id.to_lowercase())
-            .ok_or(RpcError::ChainNotFound)?
-            .0;
+            .ok_or(RpcError::ChainNotFound)?;
 
         let uri = format!("https://{}.publicnode.com", chain);
 

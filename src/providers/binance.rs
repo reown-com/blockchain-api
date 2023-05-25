@@ -11,7 +11,7 @@ use {
 #[derive(Debug)]
 pub struct BinanceProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
-    pub supported_chains: HashMap<String, (String, Weight)>,
+    pub supported_chains: HashMap<String, String>,
 }
 
 impl Provider for BinanceProvider {
@@ -19,14 +19,15 @@ impl Provider for BinanceProvider {
         self.supported_chains.contains_key(chain_id)
     }
 
-    fn supported_caip_chains(&self) -> Vec<SupportedChain> {
-        self.supported_chains
-            .iter()
-            .map(|(k, v)| SupportedChain {
-                chain_id: k.clone(),
-                weight: v.1.clone(),
-            })
-            .collect()
+    fn supported_caip_chains(&self) -> Vec<String> {
+        // self.supported_chains
+        //     .iter()
+        //     .map(|(k, v)| SupportedChain {
+        //         chain_id: k.clone(),
+        //         weight: v.1.clone(),
+        //     })
+        //     .collect()
+        self.supported_chains.keys().cloned().collect()
     }
 
     fn provider_kind(&self) -> ProviderKind {
@@ -44,11 +45,10 @@ impl RpcProvider for BinanceProvider {
         _headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
     ) -> RpcResult<Response> {
-        let uri = &self
+        let uri = self
             .supported_chains
             .get(&query_params.chain_id.to_lowercase())
-            .ok_or(RpcError::ChainNotFound)?
-            .0;
+            .ok_or(RpcError::ChainNotFound)?;
 
         let hyper_request = hyper::http::Request::builder()
             .method(method)

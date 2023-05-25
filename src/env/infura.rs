@@ -1,4 +1,4 @@
-use {crate::providers::Weight, std::collections::HashMap};
+use {super::ProviderConfig, crate::providers::Weight, std::collections::HashMap};
 
 #[derive(Debug, Clone)]
 pub struct InfuraConfig {
@@ -16,6 +16,16 @@ impl InfuraConfig {
             supported_chains: default_supported_chains(),
             supported_ws_chains: default_ws_supported_chains(),
         }
+    }
+}
+
+impl ProviderConfig for InfuraConfig {
+    fn supported_chains(&self) -> &HashMap<String, (String, Weight)> {
+        &self.supported_chains
+    }
+
+    fn provider_kind(&self) -> crate::providers::ProviderKind {
+        crate::providers::ProviderKind::Infura
     }
 }
 
