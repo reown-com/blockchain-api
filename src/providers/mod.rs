@@ -29,13 +29,15 @@ pub use {
     zksync::ZKSyncProvider,
 };
 
+pub type WeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
+
 #[derive(Default)]
 pub struct ProviderRepository {
     providers: HashMap<ProviderKind, Arc<dyn RpcProvider>>,
     ws_providers: HashMap<ProviderKind, Arc<dyn RpcWsProvider>>,
     // TODO: create newtype for ChainId
-    weight_resolver: HashMap<String, Vec<(ProviderKind, Weight)>>,
-    ws_weight_resolver: HashMap<String, Vec<(ProviderKind, Weight)>>,
+    weight_resolver: WeightResolver,
+    ws_weight_resolver: WeightResolver,
 
     prometheus_client: prometheus_http_query::Client,
 }
@@ -49,8 +51,10 @@ impl ProviderRepository {
         }
 
         let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.value()).collect();
+        let keys = providers.keys().cloned().collect::<Vec<_>>();
         let dist = WeightedIndex::new(weights).unwrap();
-        let provider = &providers[dist.sample(&mut OsRng)].0;
+        let random = dist.sample(&mut OsRng);
+        let provider = keys.get(random).unwrap();
 
         self.providers.get(provider).cloned()
     }
@@ -63,8 +67,10 @@ impl ProviderRepository {
         }
 
         let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.value()).collect();
+        let keys = providers.keys().cloned().collect::<Vec<_>>();
         let dist = WeightedIndex::new(weights).unwrap();
-        let provider = &providers[dist.sample(&mut OsRng)].0;
+        let random = dist.sample(&mut OsRng);
+        let provider = keys.get(random).unwrap();
 
         self.ws_providers.get(provider).cloned()
     }
@@ -90,8 +96,8 @@ impl ProviderRepository {
             .for_each(|(chain_id, (_, weight))| {
                 self.ws_weight_resolver
                     .entry(chain_id.clone())
-                    .or_insert_with(Vec::new)
-                    .push((provider_kind, weight));
+                    .or_insert_with(HashMap::new)
+                    .insert(provider_kind, weight);
             });
     }
 
@@ -113,35 +119,24 @@ impl ProviderRepository {
             .for_each(|(chain_id, (_, weight))| {
                 self.weight_resolver
                     .entry(chain_id.clone())
-                    .or_insert_with(Vec::new)
-                    .push((provider_kind, weight));
+                    .or_insert_with(HashMap::new)
+                    .insert(provider_kind, weight);
             });
     }
 
     pub async fn update_weights(&self) {
         info!("Updating weights");
-        self.weight_resolver.iter().for_each(
-            (|(_, providers)| {
-                providers.iter().for_each(|(_, weight)| {
-                    weight.0.store(
-                        rand::random::<u32>() % 25,
-                        std::sync::atomic::Ordering::SeqCst,
-                    );
-                });
-            }),
-        );
+
         let data = self
             .prometheus_client
-            .query("round(increase(provider_status_code_counter[1m]))")
+            .query("round(increase(provider_status_code_counter[1h]))")
             .get()
             .await
             .unwrap();
-        // self.map.iter().for_each(|(_, providers)| {
-        //     providers.iter().for_each(|(_, weight)| {
-        //         weight.0.store(3, std::sync::atomic::Ordering::SeqCst);
-        //     });
-        // });
-        // self.weight_resolver.
+
+        let parsed_weights = weights::parse_weights(data);
+        weights::update_values(&self.weight_resolver, parsed_weights);
+        dbg!(&self.weight_resolver);
     }
 }
 
@@ -166,6 +161,20 @@ impl Display for ProviderKind {
             ProviderKind::Publicnode => "Publicnode",
             ProviderKind::Omniatech => "Omniatech",
         })
+    }
+}
+
+impl ProviderKind {
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "Infura" => Some(Self::Infura),
+            "Pokt" => Some(Self::Pokt),
+            "Binance" => Some(Self::Binance),
+            "zkSync" => Some(Self::ZKSync),
+            "Publicnode" => Some(Self::Publicnode),
+            "Omniatech" => Some(Self::Omniatech),
+            _ => None,
+        }
     }
 }
 

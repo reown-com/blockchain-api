@@ -5,7 +5,6 @@ use {
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
         providers::{ProviderKind, Weight},
     },
-    anyhow::Chain,
     serde::de::DeserializeOwned,
     std::{collections::HashMap, fmt::Display},
 };
@@ -20,7 +19,7 @@ mod zksync;
 
 pub use {binance::*, infura::*, omnia::*, pokt::*, publicnode::*, server::*, zksync::*};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ChainId(pub String);
 
 impl Display for ChainId {
