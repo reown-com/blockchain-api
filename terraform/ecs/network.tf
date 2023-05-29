@@ -194,20 +194,22 @@ resource "aws_lb_listener_certificate" "backup_cert" {
 # as this is more cost-effective
 resource "aws_security_group" "vpc-endpoint-group" {
   name        = "${var.environment}.${var.region}.${var.app_name}-vpc-endpoint"
-  description = "Allow tls ingress from everywhere"
+  description = "Allow tls ingress from VPC"
   vpc_id      = data.aws_vpc.vpc.id
   ingress {
+    description = "allow TLS traffic from vpc to the proxy"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = data.aws_vpc.vpc.cidr_block
+    cidr_blocks = [data.aws_vpc.vpc.cidr_block]
   }
 
   egress {
+    description = "allow all traffic from the proxy to VPC"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = data.aws_vpc.vpc.cidr_block
+    cidr_blocks = [data.aws_vpc.vpc.cidr_block]
   }
 
   tags = {
