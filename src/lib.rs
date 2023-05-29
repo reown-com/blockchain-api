@@ -152,18 +152,26 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
         .with_state(state_arc.clone());
 
     let updater = tokio::task::spawn(async move {
-        let mut interval = tokio::time::interval(Duration::from_secs(30));
+        let mut interval = tokio::time::interval(Duration::from_secs(15));
         loop {
             interval.tick().await;
             state_arc.update_provider_weights().await;
         }
     });
 
+    #[cfg(not(feature = "test-localhost"))]
     select! {
         _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
         _ = axum::Server::bind(&private_addr).serve(private_app.into_make_service()) => info!("Private server terminating"),
         _ = axum::Server::bind(&addr).serve(app.into_make_service_with_connect_info::<SocketAddr>()) => info!("Server terminating"),
         _ = updater => info!("Updater terminating")
+    }
+
+    #[cfg(feature = "test-localhost")]
+    select! {
+        _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
+        _ = axum::Server::bind(&private_addr).serve(private_app.into_make_service()) => info!("Private server terminating"),
+        _ = axum::Server::bind(&addr).serve(app.into_make_service_with_connect_info::<SocketAddr>()) => info!("Server terminating"),
     }
     Ok(())
 }
