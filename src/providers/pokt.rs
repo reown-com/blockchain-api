@@ -29,13 +29,6 @@ impl Provider for PoktProvider {
     }
 
     fn supported_caip_chains(&self) -> Vec<String> {
-        // self.supported_chains
-        //     .iter()
-        //     .map(|(k, v)| SupportedChain {
-        //         chain_id: k.clone(),
-        //         weight: v.1.clone(),
-        //     })
-        //     .collect()
         self.supported_chains.keys().cloned().collect()
     }
 
