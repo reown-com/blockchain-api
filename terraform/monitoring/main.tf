@@ -270,7 +270,7 @@ resource "grafana_dashboard" "at_a_glance" {
             "frequency" : "1m",
             "handler" : 1,
             "message" : "RPC Proxy's memory utilization is high (over 70%)",
-            "name" : "ECS Memory Utilization alert",
+            "name" : "${var.environment} RPC ECS Memory Utilization alert",
             "noDataState" : "no_data",
             "notifications" : local.notifications
           },
@@ -446,7 +446,7 @@ resource "grafana_dashboard" "at_a_glance" {
             "frequency" : "1m",
             "handler" : 1,
             "message" : "RPC Proxy's CPU utilization is high (over 70%)",
-            "name" : "ECS CPU Utilization alert",
+            "name" : "${var.environment} RPC ECS CPU Utilization alert",
             "noDataState" : "no_data",
             "notifications" : local.notifications
           },
@@ -2033,7 +2033,7 @@ resource "grafana_dashboard" "at_a_glance" {
               {
                 "evaluator" : {
                   "params" : [
-                    50
+                    95
                   ],
                   "type" : "gt"
                 },
@@ -2056,7 +2056,7 @@ resource "grafana_dashboard" "at_a_glance" {
               {
                 "evaluator" : {
                   "params" : [
-                    50
+                    95
                   ],
                   "type" : "gt"
                 },
@@ -2137,7 +2137,7 @@ resource "grafana_dashboard" "at_a_glance" {
                   },
                   {
                     "color" : "red",
-                    "value" : 50
+                    "value" : 95
                   }
                 ]
               }
