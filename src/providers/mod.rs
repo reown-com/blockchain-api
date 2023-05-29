@@ -109,7 +109,7 @@ impl ProviderRepository {
             .into_iter()
             .for_each(|(chain_id, (_, weight))| {
                 self.ws_weight_resolver
-                    .entry(chain_id.clone())
+                    .entry(chain_id)
                     .or_insert_with(HashMap::new)
                     .insert(provider_kind, weight);
             });
@@ -132,7 +132,7 @@ impl ProviderRepository {
             .into_iter()
             .for_each(|(chain_id, (_, weight))| {
                 self.weight_resolver
-                    .entry(chain_id.clone())
+                    .entry(chain_id)
                     .or_insert_with(HashMap::new)
                     .insert(provider_kind, weight);
             });

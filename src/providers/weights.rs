@@ -15,7 +15,7 @@ pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
     let mut weights_data = HashMap::new();
     // fill weights with pair of ProviderKind -> HashMap<ChainId, Availability>
     prometheus_data.data().as_vector().iter().for_each(|v| {
-        for metrics in v.into_iter() {
+        for metrics in v.iter() {
             let mut metric = metrics.metric().to_owned();
             let chain_id = if let Some(chain_id) = metric.remove("chain_id") {
                 ChainId(chain_id)
