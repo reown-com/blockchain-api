@@ -143,8 +143,8 @@ resource "aws_security_group" "vpc_app_ingress_internal" {
 
   ingress {
     description = "allow traffic from inside of cidr block to sigv4 proxy"
-    from_port   = 8080 
-    to_port     = 8080 
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     #tfsec:ignore:aws-ec2-no-public-ingress-sgr
     cidr_blocks = [data.aws_vpc.vpc.cidr_block] # Allowing traffic in from the cidr block 

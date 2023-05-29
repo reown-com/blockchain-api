@@ -42,7 +42,7 @@ resource "aws_iam_access_key" "prometheus_proxy_key" {
 
 # Prometheus Read Access
 resource "aws_iam_user_policy_attachment" "prometheus_query_policy" {
-  user = aws_iam_user.prometheus_proxy.name
+  user       = aws_iam_user.prometheus_proxy.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonPrometheusQueryAccess"
 }
 
