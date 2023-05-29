@@ -12,6 +12,7 @@ mod infura;
 mod omnia;
 mod pokt;
 mod publicnode;
+mod weights;
 mod zksync;
 
 use {
@@ -28,13 +29,15 @@ pub use {
     zksync::ZKSyncProvider,
 };
 
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub struct ProviderRepository {
     providers: HashMap<ProviderKind, Arc<dyn RpcProvider>>,
     ws_providers: HashMap<ProviderKind, Arc<dyn RpcWsProvider>>,
     // TODO: create newtype for ChainId
     weight_resolver: HashMap<String, Vec<(ProviderKind, Weight)>>,
     ws_weight_resolver: HashMap<String, Vec<(ProviderKind, Weight)>>,
+
+    prometheus_client: prometheus_http_query::Client,
 }
 
 impl ProviderRepository {
@@ -66,39 +69,73 @@ impl ProviderRepository {
         self.ws_providers.get(provider).cloned()
     }
 
-    pub fn add_ws_provider(&mut self, provider: impl ProviderConfig) {
-        // provider
-        //     .supported_caip_chains()
-        //     .into_iter()
-        //     .for_each(|chain| {
-        //         self.ws_map
-        //             .entry(chain.chain_id)
-        //             .or_insert_with(Vec::new)
-        //             .push((provider.clone(), chain.weight));
-        //     });
+    pub fn add_ws_provider<
+        T: RpcProviderFactory<C> + RpcWsProvider + 'static,
+        C: ProviderConfig,
+    >(
+        &mut self,
+        provider_config: C,
+    ) {
+        let ws_provider = T::new(&provider_config);
+        let arc_ws_provider = Arc::new(ws_provider);
+
+        self.ws_providers
+            .insert(provider_config.provider_kind(), arc_ws_provider);
+
+        let provider_kind = provider_config.provider_kind();
+        let supported_ws_chains = provider_config.supported_chains();
+
+        supported_ws_chains
+            .into_iter()
+            .for_each(|(chain_id, (_, weight))| {
+                self.ws_weight_resolver
+                    .entry(chain_id.clone())
+                    .or_insert_with(Vec::new)
+                    .push((provider_kind, weight));
+            });
     }
 
-    pub fn add_provider(&mut self, provider_config: impl ProviderConfig) {
-        // Create new provider, take config as argument
-        // Store the provider under ProviderKind => Provider (enum => struct)
-        // Strip weights from the provider, only keep mapping
-        // Build weighted map chainId => ProviderKind
-        // This way we don't need cloning.
-        // We consume the config, so we can take the weights and put them in the
-        // map As we never clone the Weights, we can just update them in
-        // the map provider
-        //     .supported_caip_chains()
-        //     .into_iter()
-        //     .for_each(|chain| {
-        //         self.map
-        //             .entry(chain.chain_id)
-        //             .or_insert_with(Vec::new)
-        //             .push((provider.clone(), chain.weight));
-        //     });
+    pub fn add_provider<T: RpcProviderFactory<C> + RpcProvider + 'static, C: ProviderConfig>(
+        &mut self,
+        provider_config: C,
+    ) {
+        let provider = T::new(&provider_config);
+        let arc_provider = Arc::new(provider);
+
+        self.providers
+            .insert(provider_config.provider_kind(), arc_provider);
+
+        let provider_kind = provider_config.provider_kind();
+        let supported_chains = provider_config.supported_chains();
+
+        supported_chains
+            .into_iter()
+            .for_each(|(chain_id, (_, weight))| {
+                self.weight_resolver
+                    .entry(chain_id.clone())
+                    .or_insert_with(Vec::new)
+                    .push((provider_kind, weight));
+            });
     }
 
-    pub fn update_weights(&self) {
+    pub async fn update_weights(&self) {
         info!("Updating weights");
+        self.weight_resolver.iter().for_each(
+            (|(_, providers)| {
+                providers.iter().for_each(|(_, weight)| {
+                    weight.0.store(
+                        rand::random::<u32>() % 25,
+                        std::sync::atomic::Ordering::SeqCst,
+                    );
+                });
+            }),
+        );
+        let data = self
+            .prometheus_client
+            .query("round(increase(provider_status_code_counter[1m]))")
+            .get()
+            .await
+            .unwrap();
         // self.map.iter().for_each(|(_, providers)| {
         //     providers.iter().for_each(|(_, weight)| {
         //         weight.0.store(3, std::sync::atomic::Ordering::SeqCst);
@@ -133,7 +170,7 @@ impl Display for ProviderKind {
 }
 
 #[async_trait]
-pub trait RpcProvider: Send + Sync + Provider + Debug {
+pub trait RpcProvider: Provider {
     async fn proxy(
         &self,
         method: hyper::http::Method,
@@ -144,8 +181,12 @@ pub trait RpcProvider: Send + Sync + Provider + Debug {
     ) -> RpcResult<Response>;
 }
 
+pub trait RpcProviderFactory<T: ProviderConfig>: Provider {
+    fn new(provider_config: &T) -> Self;
+}
+
 #[async_trait]
-pub trait RpcWsProvider: Send + Sync + Provider + Debug {
+pub trait RpcWsProvider: Provider {
     async fn proxy(
         &self,
         ws: WebSocketUpgrade,
@@ -179,7 +220,7 @@ pub struct SupportedChain {
     pub weight: Weight,
 }
 
-pub trait Provider {
+pub trait Provider: Send + Sync + Debug {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool;
 
     fn supported_caip_chains(&self) -> Vec<String>;

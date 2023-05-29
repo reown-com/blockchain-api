@@ -1,6 +1,9 @@
 use {
-    super::{Provider, ProviderKind, RpcProvider, RpcQueryParams, SupportedChain, Weight},
-    crate::error::{RpcError, RpcResult},
+    super::{Provider, ProviderKind, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    crate::{
+        env::OmniatechConfig,
+        error::{RpcError, RpcResult},
+    },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
     hyper::{client::HttpConnector, Body, Client, StatusCode},
@@ -65,6 +68,22 @@ impl RpcProvider for OmniatechProvider {
         }
 
         Ok(response.into_response())
+    }
+}
+
+impl RpcProviderFactory<OmniatechConfig> for OmniatechProvider {
+    fn new(provider_config: &OmniatechConfig) -> Self {
+        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let supported_chains: HashMap<String, String> = provider_config
+            .supported_chains
+            .iter()
+            .map(|(k, v)| (k.clone(), v.0.clone()))
+            .collect();
+
+        OmniatechProvider {
+            client: forward_proxy_client,
+            supported_chains,
+        }
     }
 }
 

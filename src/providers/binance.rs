@@ -1,6 +1,9 @@
 use {
-    super::{Provider, ProviderKind, RpcProvider, RpcQueryParams, SupportedChain, Weight},
-    crate::error::{RpcError, RpcResult},
+    super::{Provider, ProviderKind, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    crate::{
+        env::BinanceConfig,
+        error::{RpcError, RpcResult},
+    },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
     hyper::{client::HttpConnector, http, Client},
@@ -63,6 +66,22 @@ impl RpcProvider for BinanceProvider {
         }
 
         Ok(response.into_response())
+    }
+}
+
+impl RpcProviderFactory<BinanceConfig> for BinanceProvider {
+    fn new(provider_config: &BinanceConfig) -> Self {
+        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let supported_chains: HashMap<String, String> = provider_config
+            .supported_chains
+            .iter()
+            .map(|(k, v)| (k.clone(), v.0.clone()))
+            .collect();
+
+        BinanceProvider {
+            client: forward_proxy_client,
+            supported_chains,
+        }
     }
 }
 

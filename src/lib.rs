@@ -16,8 +16,7 @@ use {
         ZKSyncConfig,
     },
     error::RpcResult,
-    hyper::{header::HeaderName, Client},
-    hyper_tls::HttpsConnector,
+    hyper::header::HeaderName,
     opentelemetry::metrics::MeterProvider,
     providers::{
         BinanceProvider,
@@ -66,7 +65,7 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
 
     let metrics = Metrics::new(&meter);
     let registry = Registry::new(&config.registry, &config.storage, &meter)?;
-    let providers = init_providers(&config);
+    let providers = init_providers();
 
     let external_ip = config
         .server
@@ -156,7 +155,7 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
         let mut interval = tokio::time::interval(Duration::from_secs(30));
         loop {
             interval.tick().await;
-            state_arc.update_provider_weights();
+            state_arc.update_provider_weights().await;
         }
     });
 
@@ -169,7 +168,7 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
     Ok(())
 }
 
-fn init_providers(config: &Config) -> ProviderRepository {
+fn init_providers() -> ProviderRepository {
     // let infura_project_id = config.infura.project_id.clone();
     // let infura_supported_chains = config.infura.supported_chains.clone();
     // let infura_ws_supported_chains = config.infura.supported_ws_chains.clone();
@@ -177,7 +176,6 @@ fn init_providers(config: &Config) -> ProviderRepository {
     // let pokt_supported_chains = config.pokt.supported_chains.clone();
 
     let mut providers = ProviderRepository::default();
-    let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
     // TODO: Remove mess
 
     // let infura_provider = InfuraProvider {
@@ -186,10 +184,10 @@ fn init_providers(config: &Config) -> ProviderRepository {
     //     supported_chains: infura_supported_chains,
     // };
     // providers.add_provider(Arc::new(infura_provider));
-    providers.add_provider(BinanceConfig::default());
+    providers.add_provider::<BinanceProvider, BinanceConfig>(BinanceConfig::default());
     // infura: ,
     //             pokt: ,
-    providers.add_provider(PoktConfig::new(
+    providers.add_provider::<PoktProvider, PoktConfig>(PoktConfig::new(
         std::env::var("RPC_PROXY_POKT_PROJECT_ID")
             .expect("Missing RPC_PROXY_POKT_PROJECT_ID env var"),
     ));
@@ -197,12 +195,13 @@ fn init_providers(config: &Config) -> ProviderRepository {
         std::env::var("RPC_PROXY_INFURA_PROJECT_ID")
             .expect("Missing RPC_PROXY_INFURA_PROJECT_ID env var"),
     );
-    providers.add_provider(infura_config.clone());
+    providers.add_provider::<InfuraProvider, InfuraConfig>(infura_config.clone());
 
-    providers.add_ws_provider(infura_config);
-    providers.add_provider(OmniatechConfig::default());
-    providers.add_provider(ZKSyncConfig::default());
-    providers.add_provider(PublicnodeConfig::default());
+    // providers.add_ws_provider(infura_config);
+    providers.add_provider::<OmniatechProvider, OmniatechConfig>(OmniatechConfig::default());
+    providers.add_provider::<ZKSyncProvider, ZKSyncConfig>(ZKSyncConfig::default());
+    providers.add_provider::<PublicnodeProvider, PublicnodeConfig>(PublicnodeConfig::default());
+    providers.add_ws_provider::<InfuraWsProvider, InfuraConfig>(infura_config);
 
     // let infura_ws_provider = InfuraWsProvider {
     //     project_id: infura_project_id,

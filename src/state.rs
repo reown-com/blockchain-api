@@ -18,6 +18,7 @@ pub struct AppState {
     pub registry: Registry,
     pub analytics: RPCAnalytics,
     pub compile_info: CompileInfo,
+    pub prometheus_client: prometheus_http_query::Client,
 }
 
 pub fn new_state(
@@ -28,7 +29,11 @@ pub fn new_state(
     registry: Registry,
     analytics: RPCAnalytics,
 ) -> AppState {
+    let client = prometheus_http_query::Client::try_from(config.prometheus_query_url.clone())
+        .expect("Failed to connect to prometheus");
+
     AppState {
+        prometheus_client: client,
         config,
         providers,
         exporter,
@@ -40,7 +45,7 @@ pub fn new_state(
 }
 
 impl AppState {
-    pub fn update_provider_weights(&self) {
-        self.providers.update_weights();
+    pub async fn update_provider_weights(&self) {
+        self.providers.update_weights().await;
     }
 }

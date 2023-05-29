@@ -17,8 +17,8 @@ impl PoktConfig {
 }
 
 impl ProviderConfig for PoktConfig {
-    fn supported_chains(&self) -> &HashMap<String, (String, Weight)> {
-        &self.supported_chains
+    fn supported_chains(self) -> HashMap<String, (String, Weight)> {
+        self.supported_chains
     }
 
     fn provider_kind(&self) -> crate::providers::ProviderKind {

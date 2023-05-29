@@ -20,8 +20,8 @@ impl InfuraConfig {
 }
 
 impl ProviderConfig for InfuraConfig {
-    fn supported_chains(&self) -> &HashMap<String, (String, Weight)> {
-        &self.supported_chains
+    fn supported_chains(self) -> HashMap<String, (String, Weight)> {
+        self.supported_chains
     }
 
     fn provider_kind(&self) -> crate::providers::ProviderKind {

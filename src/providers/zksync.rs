@@ -1,6 +1,9 @@
 use {
-    super::{Provider, ProviderKind, RpcProvider, RpcQueryParams, SupportedChain, Weight},
-    crate::error::{RpcError, RpcResult},
+    super::{Provider, ProviderKind, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    crate::{
+        env::ZKSyncConfig,
+        error::{RpcError, RpcResult},
+    },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
     hyper::{client::HttpConnector, http, Body, Client},
@@ -20,13 +23,6 @@ impl Provider for ZKSyncProvider {
     }
 
     fn supported_caip_chains(&self) -> Vec<String> {
-        // self.supported_chains
-        //     .iter()
-        //     .map(|(k, v)| SupportedChain {
-        //         chain_id: k.clone(),
-        //         weight: v.1.clone(),
-        //     })
-        //     .collect()
         self.supported_chains.keys().cloned().collect()
     }
 
@@ -63,6 +59,22 @@ impl RpcProvider for ZKSyncProvider {
         }
 
         Ok(response.into_response())
+    }
+}
+
+impl RpcProviderFactory<ZKSyncConfig> for ZKSyncProvider {
+    fn new(provider_config: &ZKSyncConfig) -> Self {
+        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let supported_chains: HashMap<String, String> = provider_config
+            .supported_chains
+            .iter()
+            .map(|(k, v)| (k.clone(), v.0.clone()))
+            .collect();
+
+        ZKSyncProvider {
+            client: forward_proxy_client,
+            supported_chains,
+        }
     }
 }
 

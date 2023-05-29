@@ -1,6 +1,9 @@
 use {
-    super::{Provider, ProviderKind, RpcProvider, RpcQueryParams, SupportedChain, Weight},
-    crate::error::{RpcError, RpcResult},
+    super::{Provider, ProviderKind, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    crate::{
+        env::PoktConfig,
+        error::{RpcError, RpcResult},
+    },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
     hyper::{
@@ -76,6 +79,23 @@ impl RpcProvider for PoktProvider {
         }
 
         Ok(response.into_response())
+    }
+}
+
+impl RpcProviderFactory<PoktConfig> for PoktProvider {
+    fn new(provider_config: &PoktConfig) -> Self {
+        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let supported_chains: HashMap<String, String> = provider_config
+            .supported_chains
+            .iter()
+            .map(|(k, v)| (k.clone(), v.0.clone()))
+            .collect();
+
+        PoktProvider {
+            client: forward_proxy_client,
+            supported_chains,
+            project_id: provider_config.project_id.clone(),
+        }
     }
 }
 

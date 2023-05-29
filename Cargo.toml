@@ -62,6 +62,7 @@ tokio-stream = "0.1.12"
 axum-tungstenite = "0.2.0"
 
 rand = "0.8.4"
+prometheus-http-query = "0.6.6"
 
 
 [dev-dependencies]

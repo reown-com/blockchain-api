@@ -6,8 +6,8 @@ pub struct BinanceConfig {
 }
 
 impl ProviderConfig for BinanceConfig {
-    fn supported_chains(&self) -> &HashMap<String, (String, Weight)> {
-        &self.supported_chains
+    fn supported_chains(self) -> HashMap<String, (String, Weight)> {
+        self.supported_chains
     }
 
     fn provider_kind(&self) -> crate::providers::ProviderKind {
