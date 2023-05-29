@@ -169,81 +169,25 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
 }
 
 fn init_providers() -> ProviderRepository {
-    // let infura_project_id = config.infura.project_id.clone();
-    // let infura_supported_chains = config.infura.supported_chains.clone();
-    // let infura_ws_supported_chains = config.infura.supported_ws_chains.clone();
-    // let pokt_project_id = config.pokt.project_id.clone();
-    // let pokt_supported_chains = config.pokt.supported_chains.clone();
-
     let mut providers = ProviderRepository::default();
-    // TODO: Remove mess
 
-    // let infura_provider = InfuraProvider {
-    //     client: forward_proxy_client.clone(),
-    //     project_id: infura_project_id.clone(),
-    //     supported_chains: infura_supported_chains,
-    // };
-    // providers.add_provider(Arc::new(infura_provider));
-    providers.add_provider::<BinanceProvider, BinanceConfig>(BinanceConfig::default());
-    // infura: ,
-    //             pokt: ,
+    let infura_project_id = std::env::var("RPC_PROXY_INFURA_PROJECT_ID")
+        .expect("Missing RPC_PROXY_INFURA_PROJECT_ID env var");
+
     providers.add_provider::<PoktProvider, PoktConfig>(PoktConfig::new(
         std::env::var("RPC_PROXY_POKT_PROJECT_ID")
             .expect("Missing RPC_PROXY_POKT_PROJECT_ID env var"),
     ));
-    let infura_config = InfuraConfig::new(
-        std::env::var("RPC_PROXY_INFURA_PROJECT_ID")
-            .expect("Missing RPC_PROXY_INFURA_PROJECT_ID env var"),
-    );
-    providers.add_provider::<InfuraProvider, InfuraConfig>(infura_config.clone());
 
-    // providers.add_ws_provider(infura_config);
+    providers.add_provider::<BinanceProvider, BinanceConfig>(BinanceConfig::default());
     providers.add_provider::<OmniatechProvider, OmniatechConfig>(OmniatechConfig::default());
     providers.add_provider::<ZKSyncProvider, ZKSyncConfig>(ZKSyncConfig::default());
     providers.add_provider::<PublicnodeProvider, PublicnodeConfig>(PublicnodeConfig::default());
-    providers.add_ws_provider::<InfuraWsProvider, InfuraConfig>(infura_config);
+    providers
+        .add_provider::<InfuraProvider, InfuraConfig>(InfuraConfig::new(infura_project_id.clone()));
 
-    // let infura_ws_provider = InfuraWsProvider {
-    //     project_id: infura_project_id,
-    //     supported_chains: infura_ws_supported_chains,
-    // };
-    // providers.add_ws_provider(Arc::new(infura_ws_provider));
-
-    // let pokt_provider = PoktProvider {
-    //     client: forward_proxy_client.clone(),
-    //     project_id: pokt_project_id,
-    //     supported_chains: pokt_supported_chains,
-    // };
-    // providers.add_provider(Arc::new(pokt_provider));
-
-    // let binance_config = BinanceConfig::default();
-    // let binance_provider = BinanceProvider {
-    //     client: forward_proxy_client.clone(),
-    //     supported_chains: binance_config.supported_chains,
-    // };
-    // providers.add_provider(Arc::new(binance_provider));
-
-    // let zksync_config = ZKSyncConfig::default();
-    // let zksync_provider = ZKSyncProvider {
-    //     client: forward_proxy_client.clone(),
-    //     supported_chains: zksync_config.supported_chains,
-    // };
-    // providers.add_provider(Arc::new(zksync_provider));
-
-    // let publicnode_config = PublicnodeConfig::default();
-    // let publicnode_provider = PublicnodeProvider {
-    //     client: forward_proxy_client.clone(),
-    //     supported_chains: publicnode_config.supported_chains,
-    // };
-    // providers.add_provider(Arc::new(publicnode_provider));
-
-    // // Generate and add onerpc provider
-    // let onerpc_config = OmniatechConfig::default();
-    // let onerpc_provider = OmniatechProvider {
-    //     client: forward_proxy_client,
-    //     supported_chains: onerpc_config.supported_chains,
-    // };
-    // providers.add_provider(Arc::new(onerpc_provider));
+    providers
+        .add_ws_provider::<InfuraWsProvider, InfuraConfig>(InfuraConfig::new(infura_project_id));
 
     providers
 }

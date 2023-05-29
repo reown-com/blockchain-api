@@ -3,6 +3,7 @@ use {
     crate::env::ChainId,
     prometheus_http_query::response::PromqlResult,
     std::collections::HashMap,
+    tracing::log::warn,
 };
 
 #[derive(Debug)]
@@ -16,9 +17,22 @@ pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
     prometheus_data.data().as_vector().iter().for_each(|v| {
         for metrics in v.into_iter() {
             let mut metric = metrics.metric().to_owned();
-            let chain_id = ChainId(metric.remove("chain_id").unwrap());
-            let status_code = metric.remove("status_code").unwrap();
-            let provider = metric.remove("provider").unwrap();
+            let chain_id = if let Some(chain_id) = metric.remove("chain_id") {
+                ChainId(chain_id)
+            } else {
+                warn!("No chain_id found in metric: {:?}", metric);
+                continue;
+            };
+
+            let Some(status_code) = metric.remove("status_code") else { 
+                warn!("No status_code found in metric: {:?}", metric);
+                continue;
+            };
+
+            let Some(provider) = metric.remove("provider") else {
+                warn!("No provider found in metric: {:?}", metric);
+                continue;
+            };
             let amount = metrics.sample().value();
 
             let (provider_map, provider_availability) = weights_data
@@ -47,7 +61,8 @@ fn calculate_chain_weight(
 ) -> u32 {
     let Availability(provider_success, provider_failure) = provider_availability;
     let provider_total = provider_success + provider_failure;
-    // If provider total is 0, then chain for that specific provider is 0 as well
+
+    // If chain had no calls, implicitely had no issues, so we assume it's fine
     if provider_total == 0 {
         return 10000;
     }
@@ -64,54 +79,26 @@ fn calculate_chain_weight(
     weight as u32
 }
 
-fn calculate_provider_weight(availability: Availability) -> u32 {
-    let Availability(success, failure) = availability;
-    let total = success + failure;
-    if total == 0 {
-        return 10000;
-    }
-    let success_rate = success as f64 / total as f64;
-    (success_rate * 10000.0) as u32
-}
-
 pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWeights) {
     for (provider, (chain_availabilities, provider_availability)) in parsed_weights {
-        // let provider_kind = provider.parse::<ProviderKind>().unwrap();
-        // let provider_weight = calculate_provider_weight(provider_availability);
         for (chain_id, chain_availability) in chain_availabilities {
             let chain_id = chain_id.0;
             let chain_weight = calculate_chain_weight(chain_availability, &provider_availability);
 
-            let provider_chain_weight = weight_resolver.get(&chain_id).unwrap();
+            let Some(provider_chain_weight) = weight_resolver.get(&chain_id) else {
+                warn!("Chain {} not found in weight resolver: {:?}", chain_id, weight_resolver);
+                continue;
+            };
 
-            let atomic = provider_chain_weight
-                .get(&ProviderKind::from_str(&provider).unwrap())
-                .unwrap();
+            let Some(atomic) = provider_chain_weight
+                .get(&ProviderKind::from_str(&provider).unwrap()) else {
+                    warn!("Weight for {} not found in weight map: {:?}", &provider, provider_chain_weight);
+                    continue;
+                };
 
             atomic
                 .0
                 .store(chain_weight, std::sync::atomic::Ordering::SeqCst);
-
-            // let provider_chain_weight = weight_resolver
-            //     .entry(chain_id)
-            //     .or_insert_with(|| Vec::new());
-            // provider_chain_weight.push((provider_kind,
-            // Weight(provider_weight))); let provider_chain_weight
-            // = weight_resolver     .entry(provider)
-            //     .or_insert_with(|| Vec::new());
-            // provider_chain_weight.push((provider_kind,
-            // Weight(chain_weight)));
         }
     }
 }
-
-// I've got to getme
-
-// 50 - 150
-// 1/4
-
-// Get availability for provider
-// Get availability for chain per provider
-
-// Vec<ChainId, Vec<Provider, Availability>>
-// HashMap<ProviderKind, HashMap<ChainId, Availability>>

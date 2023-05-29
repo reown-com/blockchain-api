@@ -54,7 +54,6 @@ fn from_env<T: DeserializeOwned>(prefix: &str) -> Result<T, envy::Error> {
     envy::prefixed(prefix).from_env()
 }
 
-// TODO: Is this required
 pub trait ProviderConfig {
     fn supported_chains(self) -> HashMap<String, (String, Weight)>;
     fn provider_kind(&self) -> ProviderKind;

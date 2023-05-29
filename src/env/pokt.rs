@@ -1,6 +1,6 @@
 use {super::ProviderConfig, crate::providers::Weight, std::collections::HashMap};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PoktConfig {
     pub project_id: String,
 

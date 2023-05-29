@@ -4,7 +4,7 @@ use {
     axum_tungstenite::WebSocketUpgrade,
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
     std::{fmt::Debug, hash::Hash, sync::Arc},
-    tracing::info,
+    tracing::{info, log::warn},
 };
 
 mod binance;
@@ -35,7 +35,7 @@ pub type WeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
 pub struct ProviderRepository {
     providers: HashMap<ProviderKind, Arc<dyn RpcProvider>>,
     ws_providers: HashMap<ProviderKind, Arc<dyn RpcWsProvider>>,
-    // TODO: create newtype for ChainId
+
     weight_resolver: WeightResolver,
     ws_weight_resolver: WeightResolver,
 
@@ -52,11 +52,18 @@ impl ProviderRepository {
 
         let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.value()).collect();
         let keys = providers.keys().cloned().collect::<Vec<_>>();
-        let dist = WeightedIndex::new(weights).unwrap();
-        let random = dist.sample(&mut OsRng);
-        let provider = keys.get(random).unwrap();
+        match WeightedIndex::new(weights) {
+            Ok(dist) => {
+                let random = dist.sample(&mut OsRng);
+                let provider = keys.get(random).unwrap();
 
-        self.providers.get(provider).cloned()
+                self.providers.get(provider).cloned()
+            }
+            Err(e) => {
+                warn!("Failed to create weighted index: {}", e);
+                None
+            }
+        }
     }
 
     pub fn get_ws_provider_for_chain_id(&self, chain_id: &str) -> Option<Arc<dyn RpcWsProvider>> {
@@ -68,11 +75,18 @@ impl ProviderRepository {
 
         let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.value()).collect();
         let keys = providers.keys().cloned().collect::<Vec<_>>();
-        let dist = WeightedIndex::new(weights).unwrap();
-        let random = dist.sample(&mut OsRng);
-        let provider = keys.get(random).unwrap();
+        match WeightedIndex::new(weights) {
+            Ok(dist) => {
+                let random = dist.sample(&mut OsRng);
+                let provider = keys.get(random).unwrap();
 
-        self.ws_providers.get(provider).cloned()
+                self.ws_providers.get(provider).cloned()
+            }
+            Err(e) => {
+                warn!("Failed to create weighted index: {}", e);
+                None
+            }
+        }
     }
 
     pub fn add_ws_provider<
@@ -127,20 +141,23 @@ impl ProviderRepository {
     pub async fn update_weights(&self) {
         info!("Updating weights");
 
-        let data = self
+        match self
             .prometheus_client
             .query("round(increase(provider_status_code_counter[1h]))")
             .get()
             .await
-            .unwrap();
-
-        let parsed_weights = weights::parse_weights(data);
-        weights::update_values(&self.weight_resolver, parsed_weights);
-        dbg!(&self.weight_resolver);
+        {
+            Ok(data) => {
+                let parsed_weights = weights::parse_weights(data);
+                weights::update_values(&self.weight_resolver, parsed_weights);
+            }
+            Err(e) => {
+                warn!("Failed to update weights from prometheus: {}", e);
+            }
+        }
     }
 }
 
-// TODO: Find better name
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ProviderKind {
     Infura,
@@ -209,17 +226,6 @@ pub struct Weight(pub std::sync::atomic::AtomicU32);
 impl Weight {
     pub fn value(&self) -> u32 {
         self.0.load(std::sync::atomic::Ordering::SeqCst)
-    }
-}
-
-// TODO: This is should not be Clone ever.
-// Cloning it makes it possible that updates to the weight are not reflected in
-// the map
-impl Clone for Weight {
-    fn clone(&self) -> Self {
-        let atomic =
-            std::sync::atomic::AtomicU32::new(self.0.load(std::sync::atomic::Ordering::SeqCst));
-        Self(atomic)
     }
 }
 
