@@ -140,7 +140,7 @@ resource "aws_ecs_task_definition" "app_task" {
     },
     {
       name : "sigv4-prometheus-proxy",
-      image : "public.ecr.aws/aws-observability/aws-sigv4-proxy:latest", 
+      image : "public.ecr.aws/aws-observability/aws-sigv4-proxy:latest",
       essential : true,
       portMappings : [
         {
@@ -189,7 +189,7 @@ resource "aws_ecs_service" "app_service" {
 
   network_configuration {
     subnets          = data.aws_subnets.private_subnets.ids
-    assign_public_ip = false                                                                                                                      # We do public ingress through the LB
+    assign_public_ip = false                                                                                                                     # We do public ingress through the LB
     security_groups  = [aws_security_group.tls_ingress.id, aws_security_group.vpc_app_ingress.id, aws_security_group.sigv4_proxy_vpc_ingress.id] # Setting the security group
   }
 
