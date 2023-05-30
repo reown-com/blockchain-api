@@ -65,6 +65,7 @@ resource "aws_ecs_cluster" "app_cluster" {
 # ECS Task definition
 resource "aws_ecs_task_definition" "app_task" {
   family = var.app_name
+
   container_definitions = jsonencode([
     {
       name : var.app_name,
@@ -139,11 +140,7 @@ resource "aws_ecs_task_definition" "app_task" {
     },
     {
       name : "sigv4-prometheus-proxy",
-      image : "public.ecr.aws/aws-observability/aws-sigv4-proxy:latest",
-      environment : [
-        { name : "AWS_ACCESS_KEY_ID", value : aws_iam_access_key.prometheus_proxy_key.id },
-        { name : "AWS_SECRET_ACCESS_KEY", value : aws_iam_access_key.prometheus_proxy_key.secret },
-      ],
+      image : "public.ecr.aws/aws-observability/aws-sigv4-proxy:latest", 
       essential : true,
       portMappings : [
         {
@@ -193,7 +190,7 @@ resource "aws_ecs_service" "app_service" {
   network_configuration {
     subnets          = data.aws_subnets.private_subnets.ids
     assign_public_ip = false                                                                                                                      # We do public ingress through the LB
-    security_groups  = [aws_security_group.tls_ingress.id, aws_security_group.vpc_app_ingress.id, aws_security_group.vpc_app_ingress_internal.id] # Setting the security group
+    security_groups  = [aws_security_group.tls_ingress.id, aws_security_group.vpc_app_ingress.id, aws_security_group.sigv4_proxy_vpc_ingress.id] # Setting the security group
   }
 
   load_balancer {

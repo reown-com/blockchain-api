@@ -136,7 +136,7 @@ resource "aws_security_group" "vpc_app_ingress" {
   }
 }
 
-resource "aws_security_group" "vpc_app_ingress_internal" {
+resource "aws_security_group" "sigv4_proxy_vpc_ingress" {
   name        = "${var.app_name}-vpc-ingress-to-sigv4"
   description = "Allow ingress from inside of vpc to sigv4"
   vpc_id      = data.aws_vpc.vpc.id

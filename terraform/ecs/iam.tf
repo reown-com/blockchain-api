@@ -31,6 +31,14 @@ resource "aws_iam_role_policy_attachment" "prometheus_write_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonPrometheusRemoteWriteAccess"
 }
 
+# Prometheus Read Access
+resource "aws_iam_role_policy_attachment" "attachment" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonPrometheusQueryAccess"
+}
+
+
+
 resource "aws_iam_user" "prometheus_proxy" {
   name = "prometheus_sigv4_proxy_${var.app_name}"
   path = "/prometheus/"
@@ -40,11 +48,6 @@ resource "aws_iam_access_key" "prometheus_proxy_key" {
   user = aws_iam_user.prometheus_proxy.name
 }
 
-# Prometheus Read Access
-resource "aws_iam_user_policy_attachment" "prometheus_query_policy" {
-  user       = aws_iam_user.prometheus_proxy.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonPrometheusQueryAccess"
-}
 
 # Analytics Bucket Access
 #tfsec:ignore:aws-iam-no-policy-wildcards
