@@ -6,6 +6,9 @@ use {
     tracing::log::warn,
 };
 
+/// The amount of successful and failed requests to a provider
+///
+/// Availability(success_counter, failure_counter)
 #[derive(Debug)]
 pub struct Availability(u32, u32);
 
@@ -43,7 +46,7 @@ pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
                 .entry(chain_id)
                 .or_insert_with(|| Availability(0, 0));
 
-            if status_code == "200" {
+            if status_code.starts_with("2") || status_code == "404" || status_code == "400" {
                 provider_availability.0 += amount as u32;
                 chain_availability.0 += amount as u32;
             } else {
@@ -55,26 +58,43 @@ pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
     weights_data
 }
 
+/// As we are using unsigned ints to represent the weight
+/// up to two decimal places, the 100_00 is equal to 100,00%
+const MAX_WEIGHT: u32 = 100_00;
+
 fn calculate_chain_weight(
     provider_availability: Availability,
     chain_availability: &Availability,
 ) -> u32 {
     let Availability(provider_success, provider_failure) = provider_availability;
+
+    // Sum failed and successful calls for provider
     let provider_total = provider_success + provider_failure;
 
     // If chain had no calls, implicitely had no issues, so we assume it's fine
     if provider_total == 0 {
-        return 10000;
+        return MAX_WEIGHT;
     }
 
     let Availability(chain_success, chain_failure) = chain_availability;
+
+    // Sum failed and successful calls for chain
     let chain_total = chain_success + chain_failure;
 
+    // Provider success rate is the amount of successful calls to provider over the
+    // total amount of calls to provider
     let provider_success_rate = provider_success as f64 / provider_total as f64;
+
+    // Chain success rate is the amount of successful calls to chain over the total
+    // amount of calls to chain within one provider
     let chain_success_rate = *chain_success as f64 / chain_total as f64;
 
-    // This means that provider scales linearly, but chain scales exponentially
-    // (each chain fail also is counted as provider fail)
+    // As success rate is always a float within (0,1> range
+    // multiplying it by 100_00 will result in a number between (0,100_00>
+    // representing percentage up to two decimal places using u32
+    // (e.g. 99.99% = 99_99) which allows for usage of atomic operations This means
+    // that provider scales linearly, but chain scales exponentially (each chain
+    // fail also is counted as provider fail)
     let weight = provider_success_rate * chain_success_rate * 10000.0;
     weight as u32
 }
