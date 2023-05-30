@@ -58,9 +58,7 @@ pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
     weights_data
 }
 
-/// As we are using unsigned ints to represent the weight
-/// up to two decimal places, the 100_00 is equal to 100,00%
-const MAX_WEIGHT: u32 = 100_00;
+const PERFECT_RATIO: f64 = 1.0;
 
 fn calculate_chain_weight(
     provider_availability: Availability,
@@ -71,11 +69,6 @@ fn calculate_chain_weight(
     // Sum failed and successful calls for provider
     let provider_total = provider_success + provider_failure;
 
-    // If chain had no calls, implicitely had no issues, so we assume it's fine
-    if provider_total == 0 {
-        return MAX_WEIGHT;
-    }
-
     let Availability(chain_success, chain_failure) = chain_availability;
 
     // Sum failed and successful calls for chain
@@ -83,11 +76,20 @@ fn calculate_chain_weight(
 
     // Provider success rate is the amount of successful calls to provider over the
     // total amount of calls to provider
-    let provider_success_rate = provider_success as f64 / provider_total as f64;
+    let provider_success_rate = if provider_total == 0 {
+        // If chain had no calls, implicitely had no issues, so we assume it's fine
+        PERFECT_RATIO
+    } else {
+        provider_success as f64 / provider_total as f64
+    };
 
     // Chain success rate is the amount of successful calls to chain over the total
     // amount of calls to chain within one provider
-    let chain_success_rate = *chain_success as f64 / chain_total as f64;
+    let chain_success_rate = if chain_total == 0 {
+        PERFECT_RATIO
+    } else {
+        *chain_success as f64 / chain_total as f64
+    };
 
     // As success rate is always a float within (0,1> range
     // multiplying it by 100_00 will result in a number between (0,100_00>
@@ -120,5 +122,50 @@ pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWei
                 .0
                 .store(chain_weight, std::sync::atomic::Ordering::SeqCst);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn calcaulate_weights() {
+        // The chain in this provider has 75% success rate
+        let chain_availability = super::Availability(75, 25);
+        // The provider has around 71.42% success rate
+        let provider_availability = super::Availability(125, 50);
+
+        let weight = super::calculate_chain_weight(chain_availability, &provider_availability);
+
+        // 75% * 71.42% ~= 53.57%
+        assert_eq!(weight, 53_57);
+    }
+
+    #[test]
+    fn calcaulate_weights_with_unused_chain() {
+        // The chain in this provider has 100% success rate (as per our assumption
+        // because it hasnt failed yet)
+        let chain_availability = super::Availability(0, 0);
+        // The provider has around 71.42% success rate
+        let provider_availability = super::Availability(125, 50);
+
+        let weight = super::calculate_chain_weight(chain_availability, &provider_availability);
+
+        // 100% * 71.42% ~= 71.42%
+        assert_eq!(weight, 71_42);
+    }
+
+    #[test]
+    fn calcaulate_weights_with_unused_provider() {
+        // The chain in this provider has 100% success rate (as per our assumption
+        // because it hasnt failed yet)
+        let chain_availability = super::Availability(0, 0);
+        // The provider has 100% success rate (as per our assumption
+        // because it hasnt failed yet)
+        let provider_availabilities = super::Availability(0, 0);
+
+        let weight = super::calculate_chain_weight(chain_availability, &provider_availabilities);
+
+        // 100% * 100% = 100%
+        assert_eq!(weight, 100_00);
     }
 }
