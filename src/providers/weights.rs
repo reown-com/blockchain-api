@@ -46,7 +46,7 @@ pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
                 .entry(chain_id)
                 .or_insert_with(|| Availability(0, 0));
 
-            if status_code.starts_with("2") || status_code == "404" || status_code == "400" {
+            if status_code.starts_with('2') || status_code == "404" || status_code == "400" {
                 provider_availability.0 += amount as u32;
                 chain_availability.0 += amount as u32;
             } else {
