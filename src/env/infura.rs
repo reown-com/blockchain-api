@@ -33,9 +33,6 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum
         ("eip155:1".into(), ("mainnet".into(), Weight(10.into()))),
-        ("eip155:3".into(), ("ropsten".into(), Weight(1.into()))),
-        ("eip155:42".into(), ("kovan".into(), Weight(1.into()))),
-        ("eip155:4".into(), ("rinkeby".into(), Weight(1.into()))),
         ("eip155:5".into(), ("goerli".into(), Weight(1.into()))),
         // Optimism
         (
@@ -54,10 +51,6 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         (
             "eip155:42161".into(),
             ("arbitrum-mainnet".into(), Weight(1.into())),
-        ),
-        (
-            "eip155:421611".into(),
-            ("arbitrum-rinkeby".into(), Weight(1.into())),
         ),
         (
             "eip155:421613".into(),
@@ -93,9 +86,6 @@ fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum
         ("eip155:1".into(), ("mainnet".into(), Weight(1.into()))),
-        ("eip155:3".into(), ("ropsten".into(), Weight(1.into()))),
-        ("eip155:42".into(), ("kovan".into(), Weight(1.into()))),
-        ("eip155:4".into(), ("rinkeby".into(), Weight(1.into()))),
         ("eip155:5".into(), ("goerli".into(), Weight(1.into()))),
         // Optimism
         (
@@ -114,10 +104,6 @@ fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
         (
             "eip155:42161".into(),
             ("arbitrum-mainnet".into(), Weight(1.into())),
-        ),
-        (
-            "eip155:421611".into(),
-            ("arbitrum-rinkeby".into(), Weight(1.into())),
         ),
         (
             "eip155:421613".into(),

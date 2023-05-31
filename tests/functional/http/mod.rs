@@ -10,8 +10,6 @@ pub(crate) mod infura;
 pub(crate) mod pokt;
 pub(crate) mod zksync;
 
-const INFURA_CHAIN_DECOMISSIONED_ERROR_CODE: i32 = -32601;
-
 async fn check_if_rpc_is_responding_correctly_for_supported_chain(
     ctx: &mut ServerContext,
     chaind_id: &str,
@@ -40,36 +38,6 @@ async fn check_if_rpc_is_responding_correctly_for_supported_chain(
 
     // Check chainId
     assert_eq!(rpc_response.result::<String>().unwrap(), expected_id)
-}
-
-async fn check_if_rpc_is_responding_correctly_for_decomissioned(
-    ctx: &mut ServerContext,
-    chaind_id: &str,
-) {
-    let addr = format!(
-        "{}/v1?projectId={}&chainId=",
-        ctx.server.public_addr, ctx.server.project_id
-    );
-
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
-    let request = jsonrpc::Request {
-        method: "eth_chainId",
-        params: &[],
-        id: serde_json::Value::Number(1.into()),
-        jsonrpc: JSONRPC_VERSION,
-    };
-
-    let (status, rpc_response) = send_jsonrpc_request(client, addr, chaind_id, request).await;
-
-    // Verify that HTTP communication returns error
-    assert_eq!(status, StatusCode::BAD_GATEWAY);
-
-    // Verify the error code is for
-    // "Network decommissioned, please use Goerli or Sepolia instead"
-    assert_eq!(
-        rpc_response.error.unwrap().code,
-        INFURA_CHAIN_DECOMISSIONED_ERROR_CODE
-    );
 }
 
 #[test_context(ServerContext)]
