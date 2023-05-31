@@ -155,7 +155,7 @@ resource "aws_ecs_task_definition" "app_task" {
         logDriver : "awslogs",
         options : {
           "awslogs-create-group" : "True",
-          "awslogs-group" : "/ecs/${var.app_name}-ecs-aws-otel-sidecar-collector",
+          "awslogs-group" : "/ecs/${var.app_name}-ecs-sigv4-prometheus-proxy",
           "awslogs-region" : var.region,
           "awslogs-stream-prefix" : "ecs"
         }

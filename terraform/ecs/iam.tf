@@ -39,14 +39,6 @@ resource "aws_iam_role_policy_attachment" "attachment" {
 
 
 
-resource "aws_iam_user" "prometheus_proxy" {
-  name = "prometheus_sigv4_proxy_${var.app_name}"
-  path = "/prometheus/"
-}
-
-resource "aws_iam_access_key" "prometheus_proxy_key" {
-  user = aws_iam_user.prometheus_proxy.name
-}
 
 
 # Analytics Bucket Access
