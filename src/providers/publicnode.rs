@@ -1,6 +1,9 @@
 use {
-    super::{Provider, ProviderKind, RpcProvider, RpcQueryParams, SupportedChain, Weight},
-    crate::error::{RpcError, RpcResult},
+    super::{Provider, ProviderKind, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    crate::{
+        env::PublicnodeConfig,
+        error::{RpcError, RpcResult},
+    },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
     hyper::{client::HttpConnector, http, Client},
@@ -8,10 +11,10 @@ use {
     std::collections::HashMap,
 };
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct PublicnodeProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
-    pub supported_chains: HashMap<String, (String, Weight)>,
+    pub supported_chains: HashMap<String, String>,
 }
 
 impl Provider for PublicnodeProvider {
@@ -19,14 +22,8 @@ impl Provider for PublicnodeProvider {
         self.supported_chains.contains_key(chain_id)
     }
 
-    fn supported_caip_chains(&self) -> Vec<SupportedChain> {
-        self.supported_chains
-            .iter()
-            .map(|(k, v)| SupportedChain {
-                chain_id: k.clone(),
-                weight: v.1.clone(),
-            })
-            .collect()
+    fn supported_caip_chains(&self) -> Vec<String> {
+        self.supported_chains.keys().cloned().collect()
     }
 
     fn provider_kind(&self) -> ProviderKind {
@@ -47,8 +44,7 @@ impl RpcProvider for PublicnodeProvider {
         let chain = &self
             .supported_chains
             .get(&query_params.chain_id.to_lowercase())
-            .ok_or(RpcError::ChainNotFound)?
-            .0;
+            .ok_or(RpcError::ChainNotFound)?;
 
         let uri = format!("https://{}.publicnode.com", chain);
 
@@ -65,6 +61,22 @@ impl RpcProvider for PublicnodeProvider {
         }
 
         Ok(response)
+    }
+}
+
+impl RpcProviderFactory<PublicnodeConfig> for PublicnodeProvider {
+    fn new(provider_config: &PublicnodeConfig) -> Self {
+        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let supported_chains: HashMap<String, String> = provider_config
+            .supported_chains
+            .iter()
+            .map(|(k, v)| (k.clone(), v.0.clone()))
+            .collect();
+
+        PublicnodeProvider {
+            client: forward_proxy_client,
+            supported_chains,
+        }
     }
 }
 

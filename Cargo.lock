@@ -2118,6 +2118,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "prometheus-http-query"
+version = "0.6.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7970fd6e91b5cb87e9a093657572a896d133879ced7752d2c7635beae29eaba0"
+dependencies = [
+ "reqwest",
+ "serde",
+ "serde_json",
+ "time 0.3.17",
+ "url",
+]
+
+[[package]]
 name = "protobuf"
 version = "2.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2335,6 +2348,7 @@ dependencies = [
  "parquet_derive",
  "pnet_datalink",
  "prometheus",
+ "prometheus-http-query",
  "rand",
  "rmp-serde",
  "serde",
@@ -3141,6 +3155,7 @@ dependencies = [
  "form_urlencoded",
  "idna",
  "percent-encoding",
+ "serde",
 ]
 
 [[package]]

@@ -68,7 +68,7 @@ impl IntoResponse for RpcError {
             )
                 .into_response(),
             Self::ProviderError => (
-                StatusCode::BAD_REQUEST,
+                StatusCode::BAD_GATEWAY,
                 Json(new_error_response(
                     "unreachable".to_string(),
                     "We failed to reach the provider for your request".to_string(),

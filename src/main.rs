@@ -12,8 +12,9 @@ async fn main() -> error::RpcResult<()> {
 
     let (_signal, shutdown) = broadcast::channel(1);
 
-    let config =
-        Config::from_env().expect("Failed to load config, please ensure all env vars are defined.");
+    let config = Config::from_env()
+        .map_err(|e| dbg!(e))
+        .expect("Failed to load config, please ensure all env vars are defined.");
 
     tracing_subscriber::fmt()
         .with_max_level(
