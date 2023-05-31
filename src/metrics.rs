@@ -15,6 +15,7 @@ pub struct Metrics {
     pub rejected_project_counter: Counter<u64>,
     pub rate_limited_call_counter: Counter<u64>,
     pub provider_status_code_counter: Counter<u64>,
+    pub weights_value_recorder: ValueRecorder<u64>,
 }
 
 impl Metrics {
@@ -64,6 +65,11 @@ impl Metrics {
             .with_description("The count of status codes returned by providers")
             .init();
 
+        let weights_value_recorder = meter
+            .u64_value_recorder("provider_weights")
+            .with_description("The weights of the providers")
+            .init();
+
         Metrics {
             rpc_call_counter,
             http_call_counter,
@@ -74,6 +80,7 @@ impl Metrics {
             provider_failed_call_counter,
             provider_finished_call_counter,
             provider_status_code_counter,
+            weights_value_recorder,
         }
     }
 }
@@ -145,6 +152,13 @@ impl Metrics {
             opentelemetry::KeyValue::new("provider", provider.provider_kind().to_string()),
             opentelemetry::KeyValue::new("status_code", format!("{}", status.as_u16())),
             opentelemetry::KeyValue::new("chain_id", chain_id.to_owned()),
+        ])
+    }
+
+    pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: &str, weight: u64) {
+        self.weights_value_recorder.record(weight, &[
+            opentelemetry::KeyValue::new("provider", provider.to_string()),
+            opentelemetry::KeyValue::new("chain_id", chain_id.to_string()),
         ])
     }
 }

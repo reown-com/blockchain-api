@@ -125,6 +125,15 @@ pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWei
     }
 }
 
+pub fn record_values(weight_resolver: &WeightResolver, metrics: &crate::Metrics) {
+    for (chain_id, provider_chain_weight) in weight_resolver {
+        for (provider_kind, atomic) in provider_chain_weight {
+            let weight = atomic.0.load(std::sync::atomic::Ordering::SeqCst);
+            metrics.record_provider_weight(provider_kind, chain_id, weight.into())
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

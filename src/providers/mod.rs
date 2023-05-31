@@ -138,7 +138,7 @@ impl ProviderRepository {
             });
     }
 
-    pub async fn update_weights(&self) {
+    pub async fn update_weights(&self, metrics: &crate::Metrics) {
         info!("Updating weights");
 
         match self
@@ -150,6 +150,7 @@ impl ProviderRepository {
             Ok(data) => {
                 let parsed_weights = weights::parse_weights(data);
                 weights::update_values(&self.weight_resolver, parsed_weights);
+                weights::record_values(&self.weight_resolver, metrics);
             }
             Err(e) => {
                 warn!("Failed to update weights from prometheus: {}", e);

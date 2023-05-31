@@ -46,6 +46,6 @@ pub fn new_state(
 
 impl AppState {
     pub async fn update_provider_weights(&self) {
-        self.providers.update_weights().await;
+        self.providers.update_weights(&self.metrics).await;
     }
 }
