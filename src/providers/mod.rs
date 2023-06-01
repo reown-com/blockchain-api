@@ -12,6 +12,7 @@ mod infura;
 mod omnia;
 mod pokt;
 mod publicnode;
+#[cfg(feature = "dynamic-weights")]
 mod weights;
 mod zksync;
 
@@ -39,10 +40,20 @@ pub struct ProviderRepository {
     weight_resolver: WeightResolver,
     ws_weight_resolver: WeightResolver,
 
-    prometheus_client: prometheus_http_query::Client,
+    #[allow(dead_code)]
+    prometheus_client: Option<prometheus_http_query::Client>,
 }
 
 impl ProviderRepository {
+    #[cfg(feature = "dynamic-weights")]
+    pub fn with_prometheus_client(
+        mut self,
+        prometheus_client: prometheus_http_query::Client,
+    ) -> Self {
+        self.prometheus_client = Some(prometheus_client);
+        self
+    }
+
     pub fn get_provider_for_chain_id(&self, chain_id: &str) -> Option<Arc<dyn RpcProvider>> {
         let Some(providers) = self.weight_resolver.get(chain_id) else {return None};
 
@@ -128,6 +139,11 @@ impl ProviderRepository {
         let provider_kind = provider_config.provider_kind();
         let supported_chains = provider_config.supported_chains();
 
+        info!(
+            "Adding provider: {:?} with supported chains: {:?}",
+            provider_kind, supported_chains
+        );
+
         supported_chains
             .into_iter()
             .for_each(|(chain_id, (_, weight))| {
@@ -138,11 +154,15 @@ impl ProviderRepository {
             });
     }
 
+    #[cfg(feature = "dynamic-weights")]
     pub async fn update_weights(&self, metrics: &crate::Metrics) {
         info!("Updating weights");
 
-        match self
-            .prometheus_client
+        let Some(client) = &self.prometheus_client else {
+            warn!("Prometheus client not configured");
+            return
+        };
+        match client
             .query("round(increase(provider_status_code_counter[1h]))")
             .get()
             .await

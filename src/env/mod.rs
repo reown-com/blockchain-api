@@ -34,7 +34,6 @@ pub struct Config {
     pub registry: RegistryConfig,
     pub storage: StorageConfig,
     pub analytics: AnalyticsConfig,
-    pub prometheus_query_url: String,
 }
 
 impl Config {
@@ -44,8 +43,6 @@ impl Config {
             registry: from_env("RPC_PROXY_REGISTRY_")?,
             storage: from_env("RPC_PROXY_STORAGE_")?,
             analytics: from_env("RPC_PROXY_ANALYTICS_")?,
-            prometheus_query_url: std::env::var("PROMETHEUS_QUERY_URL")
-                .unwrap_or("http://localhost:9090".into()),
         })
     }
 }

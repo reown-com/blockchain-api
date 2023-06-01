@@ -4,7 +4,7 @@ use {
     opentelemetry::metrics::{Counter, Meter, ValueRecorder},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Metrics {
     pub rpc_call_counter: Counter<u64>,
     pub http_call_counter: Counter<u64>,
@@ -155,6 +155,7 @@ impl Metrics {
         ])
     }
 
+    #[cfg(feature = "dynamic-weights")]
     pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: &str, weight: u64) {
         self.weights_value_recorder.record(weight, &[
             opentelemetry::KeyValue::new("provider", provider.to_string()),

@@ -63,7 +63,7 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
         .unwrap()
         .meter("rpc-proxy", None);
 
-    let metrics = Metrics::new(&meter);
+    let metrics = Arc::new(Metrics::new(&meter));
     let registry = Registry::new(&config.registry, &config.storage, &meter)?;
     let providers = init_providers();
 
@@ -151,23 +151,25 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
         .route("/metrics", get(handlers::metrics::handler))
         .with_state(state_arc.clone());
 
-    let updater = tokio::task::spawn(async move {
-        let mut interval = tokio::time::interval(Duration::from_secs(15));
-        loop {
-            interval.tick().await;
-            state_arc.update_provider_weights().await;
-        }
-    });
+    #[cfg(feature = "dynamic-weights")]
+    {
+        let updater = tokio::task::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(15));
+            loop {
+                interval.tick().await;
+                state_arc.update_provider_weights().await;
+            }
+        });
 
-    #[cfg(not(feature = "test-localhost"))]
-    select! {
-        _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
-        _ = axum::Server::bind(&private_addr).serve(private_app.into_make_service()) => info!("Private server terminating"),
-        _ = axum::Server::bind(&addr).serve(app.into_make_service_with_connect_info::<SocketAddr>()) => info!("Server terminating"),
-        _ = updater => info!("Updater terminating")
+        select! {
+            _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
+            _ = axum::Server::bind(&private_addr).serve(private_app.into_make_service()) => info!("Private server terminating"),
+            _ = axum::Server::bind(&addr).serve(app.into_make_service_with_connect_info::<SocketAddr>()) => info!("Server terminating"),
+            _ = updater => info!("Updater terminating")
+        }
     }
 
-    #[cfg(feature = "test-localhost")]
+    #[cfg(not(feature = "dynamic-weights"))]
     select! {
         _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
         _ = axum::Server::bind(&private_addr).serve(private_app.into_make_service()) => info!("Private server terminating"),
@@ -179,6 +181,16 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
 fn init_providers() -> ProviderRepository {
     let mut providers = ProviderRepository::default();
 
+    #[cfg(feature = "dynamic-weights")]
+    {
+        let prometheus_query_url =
+            std::env::var("PROMETHEUS_QUERY_URL").unwrap_or("http://localhost:9090".into());
+
+        let client = prometheus_http_query::Client::try_from(prometheus_query_url)
+            .expect("Failed to connect to prometheus");
+
+        providers = providers.with_prometheus_client(client);
+    }
     let infura_project_id = std::env::var("RPC_PROXY_INFURA_PROJECT_ID")
         .expect("Missing RPC_PROXY_INFURA_PROJECT_ID env var");
 
