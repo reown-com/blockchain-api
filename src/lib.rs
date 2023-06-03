@@ -1,5 +1,5 @@
 use {
-    crate::{env::Config, metrics::Metrics, project::Registry},
+    crate::{env::Config, metrics::Metrics, project::Registry, state::AppState},
     anyhow::Context,
     axum::{
         http,
@@ -76,7 +76,7 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
         .await
         .context("failed to init analytics")?;
 
-    let state = state::new_state(
+    let state = AppState::new(
         config,
         providers,
         prometheus_exporter,
@@ -151,33 +151,38 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
         .route("/metrics", get(handlers::metrics::handler))
         .with_state(state_arc.clone());
 
-    let updater = tokio::task::spawn(async move {
+    #[cfg(feature = "dynamic-weights")]
+    let updater = async move {
         let mut interval = tokio::time::interval(Duration::from_secs(15));
         loop {
             interval.tick().await;
             state_arc.update_provider_weights().await;
         }
-    });
+    };
 
-    #[cfg(not(feature = "test-localhost"))]
+    let public_server =
+        axum::Server::bind(&addr).serve(app.into_make_service_with_connect_info::<SocketAddr>());
+
+    let private_server = axum::Server::bind(&private_addr)
+        .serve(private_app.into_make_service_with_connect_info::<SocketAddr>());
+
+    let services = vec![
+        tokio::spawn(public_server),
+        tokio::spawn(private_server),
+        // #[cfg(feature = "dynamic-weights")]
+        // updater,
+    ];
+
     select! {
         _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
-        _ = axum::Server::bind(&private_addr).serve(private_app.into_make_service()) => info!("Private server terminating"),
-        _ = axum::Server::bind(&addr).serve(app.into_make_service_with_connect_info::<SocketAddr>()) => info!("Server terminating"),
-        _ = updater => info!("Updater terminating")
+        e =  futures_util::future::select_all(services) => info!("Server terminating with error: {:?}", e),
     }
 
-    #[cfg(feature = "test-localhost")]
-    select! {
-        _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
-        _ = axum::Server::bind(&private_addr).serve(private_app.into_make_service()) => info!("Private server terminating"),
-        _ = axum::Server::bind(&addr).serve(app.into_make_service_with_connect_info::<SocketAddr>()) => info!("Server terminating"),
-    }
     Ok(())
 }
 
 fn init_providers() -> ProviderRepository {
-    let mut providers = ProviderRepository::default();
+    let mut providers = ProviderRepository::new();
 
     let infura_project_id = std::env::var("RPC_PROXY_INFURA_PROJECT_ID")
         .expect("Missing RPC_PROXY_INFURA_PROJECT_ID env var");

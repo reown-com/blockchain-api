@@ -74,3 +74,4 @@ vergen = { version = "6", default-features = false, features = ["build", "cargo"
 
 [features]
 test-localhost = []
+dynamic-weights = []

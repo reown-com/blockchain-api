@@ -98,7 +98,8 @@ fn calculate_chain_weight(
     // that provider scales linearly, but chain scales exponentially (each chain
     // fail also is counted as provider fail)
     let weight = provider_success_rate * chain_success_rate * 10000.0;
-    weight as u32
+
+    u32::min(weight as u32, 1)
 }
 
 pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWeights) {
