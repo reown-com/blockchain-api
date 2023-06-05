@@ -9,17 +9,8 @@ provider "aws" {
   skip_requesting_account_id  = true
 
   default_tags {
-    tags = {
-      Application      = local.app_name
-      Env              = terraform.workspace
-      ProvisionedBy    = "Terraform"
-      EnvironmentGroup = "walletconnect"
-    }
+    tags = module.tags.tags
   }
-
-  #  default_tags {
-  #    tags = module.tags.tags
-  #  }
 }
 
 # Expects GRAFANA_AUTH env variable to be set
