@@ -175,6 +175,6 @@ mod tests {
         let weight = super::calculate_chain_weight(chain_availability, &provider_availabilities);
 
         // 100% * 100% = 100%
-        assert_eq!(weight, 100_00);
+        assert_eq!(weight, 10_000);
     }
 }

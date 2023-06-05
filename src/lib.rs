@@ -157,6 +157,15 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
     let private_server = axum::Server::bind(&private_addr)
         .serve(private_app.into_make_service_with_connect_info::<SocketAddr>());
 
+    #[cfg(feature = "dynamic-weights")]
+    let updater = async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(15));
+        loop {
+            interval.tick().await;
+            state_arc.update_provider_weights().await;
+        }
+    };
+
     let services = vec![
         tokio::spawn(public_server),
         tokio::spawn(private_server),
@@ -174,16 +183,6 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
 fn init_providers() -> ProviderRepository {
     let mut providers = ProviderRepository::new();
 
-    #[cfg(feature = "dynamic-weights")]
-    {
-        let prometheus_query_url =
-            std::env::var("PROMETHEUS_QUERY_URL").unwrap_or("http://localhost:9090".into());
-
-        let client = prometheus_http_query::Client::try_from(prometheus_query_url)
-            .expect("Failed to connect to prometheus");
-
-        providers = providers.with_prometheus_client(client);
-    }
     let infura_project_id = std::env::var("RPC_PROXY_INFURA_PROJECT_ID")
         .expect("Missing RPC_PROXY_INFURA_PROJECT_ID env var");
 
