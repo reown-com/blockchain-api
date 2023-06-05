@@ -32,7 +32,6 @@ pub use {
 
 pub type WeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
 
-#[derive(Default)]
 pub struct ProviderRepository {
     providers: HashMap<ProviderKind, Arc<dyn RpcProvider>>,
     ws_providers: HashMap<ProviderKind, Arc<dyn RpcWsProvider>>,
@@ -40,18 +39,28 @@ pub struct ProviderRepository {
     weight_resolver: WeightResolver,
     ws_weight_resolver: WeightResolver,
 
-    #[allow(dead_code)]
-    prometheus_client: Option<prometheus_http_query::Client>,
+    #[cfg(feature = "dynamic-weights")]
+    prometheus_client: prometheus_http_query::Client,
 }
 
 impl ProviderRepository {
-    #[cfg(feature = "dynamic-weights")]
-    pub fn with_prometheus_client(
-        mut self,
-        prometheus_client: prometheus_http_query::Client,
-    ) -> Self {
-        self.prometheus_client = Some(prometheus_client);
-        self
+    pub fn new() -> Self {
+        #[cfg(feature = "dynamic-weights")]
+        let prometheus_client = {
+            let prometheus_query_url =
+                std::env::var("PROMETHEUS_QUERY_URL").unwrap_or("http://localhost:9090".into());
+            prometheus_http_query::Client::try_from(prometheus_query_url)
+                .expect("Failed to connect to prometheus")
+        };
+
+        Self {
+            providers: HashMap::new(),
+            ws_providers: HashMap::new(),
+            weight_resolver: HashMap::new(),
+            ws_weight_resolver: HashMap::new(),
+            #[cfg(feature = "dynamic-weights")]
+            prometheus_client,
+        }
     }
 
     pub fn get_provider_for_chain_id(&self, chain_id: &str) -> Option<Arc<dyn RpcProvider>> {
@@ -139,11 +148,6 @@ impl ProviderRepository {
         let provider_kind = provider_config.provider_kind();
         let supported_chains = provider_config.supported_chains();
 
-        info!(
-            "Adding provider: {:?} with supported chains: {:?}",
-            provider_kind, supported_chains
-        );
-
         supported_chains
             .into_iter()
             .for_each(|(chain_id, (_, weight))| {
@@ -152,17 +156,15 @@ impl ProviderRepository {
                     .or_insert_with(HashMap::new)
                     .insert(provider_kind, weight);
             });
+        info!("Added provider: {}", provider_kind);
     }
 
     #[cfg(feature = "dynamic-weights")]
     pub async fn update_weights(&self, metrics: &crate::Metrics) {
         info!("Updating weights");
 
-        let Some(client) = &self.prometheus_client else {
-            warn!("Prometheus client not configured");
-            return
-        };
-        match client
+        match self
+            .prometheus_client
             .query("round(increase(provider_status_code_counter[1h]))")
             .get()
             .await

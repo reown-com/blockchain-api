@@ -172,7 +172,7 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
 }
 
 fn init_providers() -> ProviderRepository {
-    let mut providers = ProviderRepository::default();
+    let mut providers = ProviderRepository::new();
 
     #[cfg(feature = "dynamic-weights")]
     {
