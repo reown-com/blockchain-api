@@ -169,8 +169,8 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
     let services = vec![
         tokio::spawn(public_server),
         tokio::spawn(private_server),
-        // #[cfg(feature = "dynamic-weights")]
-        // updater,
+        #[cfg(feature = "dynamic-weights")]
+        tokio::spawn(updater),
     ];
 
     select! {
