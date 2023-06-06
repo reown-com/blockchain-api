@@ -41,23 +41,3 @@ async fn check_if_rpc_is_responding_correctly_for_supported_chain(
         format!("\"{expected_id}\"")
     );
 }
-
-async fn check_if_rpc_is_responding_correctly_for_decomissioned(
-    ctx: &mut ServerContext,
-    chain_id: &str,
-) {
-    let addr = format!(
-        "{}/ws?projectId={}&chainId={}",
-        ctx.server.public_addr, ctx.server.project_id, chain_id
-    )
-    .replace("http", "ws");
-
-    let client = async_tungstenite::tokio::connect_async(addr).await;
-    let err = client.err().unwrap();
-    if let axum_tungstenite::Error::Http(resp) = err {
-        // This chain is no longer supported
-        assert_eq!(resp.status(), hyper::StatusCode::GONE);
-    } else {
-        panic!("Invalid response")
-    }
-}

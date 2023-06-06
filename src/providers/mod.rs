@@ -12,6 +12,7 @@ mod infura;
 mod omnia;
 mod pokt;
 mod publicnode;
+#[cfg(feature = "dynamic-weights")]
 mod weights;
 mod zksync;
 
@@ -31,7 +32,6 @@ pub use {
 
 pub type WeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
 
-#[derive(Default)]
 pub struct ProviderRepository {
     providers: HashMap<ProviderKind, Arc<dyn RpcProvider>>,
     ws_providers: HashMap<ProviderKind, Arc<dyn RpcWsProvider>>,
@@ -39,10 +39,30 @@ pub struct ProviderRepository {
     weight_resolver: WeightResolver,
     ws_weight_resolver: WeightResolver,
 
+    #[cfg(feature = "dynamic-weights")]
     prometheus_client: prometheus_http_query::Client,
 }
 
 impl ProviderRepository {
+    pub fn new() -> Self {
+        #[cfg(feature = "dynamic-weights")]
+        let prometheus_client = {
+            let prometheus_query_url =
+                std::env::var("PROMETHEUS_QUERY_URL").unwrap_or("http://localhost:9090".into());
+            prometheus_http_query::Client::try_from(prometheus_query_url)
+                .expect("Failed to connect to prometheus")
+        };
+
+        Self {
+            providers: HashMap::new(),
+            ws_providers: HashMap::new(),
+            weight_resolver: HashMap::new(),
+            ws_weight_resolver: HashMap::new(),
+            #[cfg(feature = "dynamic-weights")]
+            prometheus_client,
+        }
+    }
+
     pub fn get_provider_for_chain_id(&self, chain_id: &str) -> Option<Arc<dyn RpcProvider>> {
         let Some(providers) = self.weight_resolver.get(chain_id) else {return None};
 
@@ -136,8 +156,10 @@ impl ProviderRepository {
                     .or_insert_with(HashMap::new)
                     .insert(provider_kind, weight);
             });
+        info!("Added provider: {}", provider_kind);
     }
 
+    #[cfg(feature = "dynamic-weights")]
     pub async fn update_weights(&self, metrics: &crate::Metrics) {
         info!("Updating weights");
 
