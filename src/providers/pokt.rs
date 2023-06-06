@@ -1,6 +1,9 @@
 use {
-    super::{Provider, ProviderKind, RpcProvider, RpcQueryParams, SupportedChain, Weight},
-    crate::error::{RpcError, RpcResult},
+    super::{Provider, ProviderKind, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    crate::{
+        env::PoktConfig,
+        error::{RpcError, RpcResult},
+    },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
     hyper::{
@@ -13,11 +16,11 @@ use {
     std::collections::HashMap,
 };
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct PoktProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
     pub project_id: String,
-    pub supported_chains: HashMap<String, (String, Weight)>,
+    pub supported_chains: HashMap<String, String>,
 }
 
 impl Provider for PoktProvider {
@@ -25,14 +28,8 @@ impl Provider for PoktProvider {
         self.supported_chains.contains_key(chain_id)
     }
 
-    fn supported_caip_chains(&self) -> Vec<SupportedChain> {
-        self.supported_chains
-            .iter()
-            .map(|(k, v)| SupportedChain {
-                chain_id: k.clone(),
-                weight: v.1.clone(),
-            })
-            .collect()
+    fn supported_caip_chains(&self) -> Vec<String> {
+        self.supported_chains.keys().cloned().collect()
     }
 
     fn provider_kind(&self) -> ProviderKind {
@@ -53,8 +50,7 @@ impl RpcProvider for PoktProvider {
         let chain = &self
             .supported_chains
             .get(&query_params.chain_id.to_lowercase())
-            .ok_or(RpcError::ChainNotFound)?
-            .0;
+            .ok_or(RpcError::ChainNotFound)?;
 
         let uri = format!(
             "https://{}.gateway.pokt.network/v1/lb/{}",
@@ -76,6 +72,23 @@ impl RpcProvider for PoktProvider {
         }
 
         Ok(response.into_response())
+    }
+}
+
+impl RpcProviderFactory<PoktConfig> for PoktProvider {
+    fn new(provider_config: &PoktConfig) -> Self {
+        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let supported_chains: HashMap<String, String> = provider_config
+            .supported_chains
+            .iter()
+            .map(|(k, v)| (k.clone(), v.0.clone()))
+            .collect();
+
+        PoktProvider {
+            client: forward_proxy_client,
+            supported_chains,
+            project_id: provider_config.project_id.clone(),
+        }
     }
 }
 

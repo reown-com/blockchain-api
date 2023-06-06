@@ -27,18 +27,11 @@ impl AsyncTestContext for ServerContext {
                     public_port: None,
                     public_addr,
                     project_id,
-                    shutdown_signal: None,
-                    is_shutdown: false,
                 }
             }
         };
 
         Self { server }
-    }
-
-    async fn teardown(mut self) {
-        #[cfg(feature = "test-localhost")]
-        self.server.shutdown().await;
     }
 }
 

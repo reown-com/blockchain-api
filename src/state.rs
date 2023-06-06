@@ -8,13 +8,14 @@ use {
         utils::build::CompileInfo,
     },
     opentelemetry_prometheus::PrometheusExporter,
+    std::sync::Arc,
 };
 
 pub struct AppState {
     pub config: Config,
     pub providers: ProviderRepository,
     pub exporter: PrometheusExporter,
-    pub metrics: Metrics,
+    pub metrics: Arc<Metrics>,
     pub registry: Registry,
     pub analytics: RPCAnalytics,
     pub compile_info: CompileInfo,
@@ -24,7 +25,7 @@ pub fn new_state(
     config: Config,
     providers: ProviderRepository,
     exporter: PrometheusExporter,
-    metrics: Metrics,
+    metrics: Arc<Metrics>,
     registry: Registry,
     analytics: RPCAnalytics,
 ) -> AppState {
@@ -36,5 +37,12 @@ pub fn new_state(
         registry,
         analytics,
         compile_info: CompileInfo {},
+    }
+}
+
+impl AppState {
+    #[cfg(feature = "dynamic-weights")]
+    pub async fn update_provider_weights(&self) {
+        self.providers.update_weights(&self.metrics).await;
     }
 }

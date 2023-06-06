@@ -7,10 +7,16 @@ use {
         routing::{any, get},
         Router,
     },
-    env::{BinanceConfig, OmniatechConfig, PublicnodeConfig, ZKSyncConfig},
+    env::{
+        BinanceConfig,
+        InfuraConfig,
+        OmniatechConfig,
+        PoktConfig,
+        PublicnodeConfig,
+        ZKSyncConfig,
+    },
     error::RpcResult,
-    hyper::{header::HeaderName, Client},
-    hyper_tls::HttpsConnector,
+    hyper::header::HeaderName,
     opentelemetry::metrics::MeterProvider,
     providers::{
         BinanceProvider,
@@ -27,13 +33,12 @@ use {
         sync::Arc,
         time::Duration,
     },
-    tokio::{select, sync::broadcast},
     tower::ServiceBuilder,
     tower_http::{
         cors::{Any, CorsLayer},
         trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
     },
-    tracing::{info, Level, Span},
+    tracing::{info, log::warn, Level, Span},
 };
 
 mod analytics;
@@ -50,16 +55,16 @@ mod storage;
 mod utils;
 mod ws;
 
-pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) -> RpcResult<()> {
+pub async fn bootstrap(config: Config) -> RpcResult<()> {
     let prometheus_exporter = opentelemetry_prometheus::exporter().init();
     let meter = prometheus_exporter
         .provider()
         .unwrap()
         .meter("rpc-proxy", None);
 
-    let metrics = Metrics::new(&meter);
+    let metrics = Arc::new(Metrics::new(&meter));
     let registry = Registry::new(&config.registry, &config.storage, &meter)?;
-    let providers = init_providers(&config);
+    let providers = init_providers();
 
     let external_ip = config
         .server
@@ -145,73 +150,55 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
         .route("/metrics", get(handlers::metrics::handler))
         .with_state(state_arc.clone());
 
-    select! {
-    _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
-    _ = axum::Server::bind(&private_addr).serve(private_app.into_make_service()) => info!("Private server terminating"),
-    _ = axum::Server::bind(&addr).serve(app.into_make_service_with_connect_info::<SocketAddr>()) => info!("Server terminating")
+    let public_server =
+        axum::Server::bind(&addr).serve(app.into_make_service_with_connect_info::<SocketAddr>());
+
+    let private_server = axum::Server::bind(&private_addr)
+        .serve(private_app.into_make_service_with_connect_info::<SocketAddr>());
+
+    #[cfg(feature = "dynamic-weights")]
+    let updater = async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(15));
+        loop {
+            interval.tick().await;
+            state_arc.update_provider_weights().await;
         }
+    };
+
+    let services = vec![
+        tokio::spawn(public_server),
+        tokio::spawn(private_server),
+        #[cfg(feature = "dynamic-weights")]
+        tokio::spawn(updater),
+    ];
+
+    if let Err(e) = futures_util::future::select_all(services).await.0 {
+        warn!("Server error: {:?}", e);
+    };
+
     Ok(())
 }
 
-fn init_providers(config: &Config) -> ProviderRepository {
-    let infura_project_id = config.infura.project_id.clone();
-    let infura_supported_chains = config.infura.supported_chains.clone();
-    let infura_ws_supported_chains = config.infura.supported_ws_chains.clone();
-    let pokt_project_id = config.pokt.project_id.clone();
-    let pokt_supported_chains = config.pokt.supported_chains.clone();
+fn init_providers() -> ProviderRepository {
+    let mut providers = ProviderRepository::new();
 
-    let mut providers = ProviderRepository::default();
-    let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let infura_project_id = std::env::var("RPC_PROXY_INFURA_PROJECT_ID")
+        .expect("Missing RPC_PROXY_INFURA_PROJECT_ID env var");
 
-    let infura_provider = InfuraProvider {
-        client: forward_proxy_client.clone(),
-        project_id: infura_project_id.clone(),
-        supported_chains: infura_supported_chains,
-    };
-    providers.add_provider(Arc::new(infura_provider));
+    providers.add_provider::<PoktProvider, PoktConfig>(PoktConfig::new(
+        std::env::var("RPC_PROXY_POKT_PROJECT_ID")
+            .expect("Missing RPC_PROXY_POKT_PROJECT_ID env var"),
+    ));
 
-    let infura_ws_provider = InfuraWsProvider {
-        project_id: infura_project_id,
-        supported_chains: infura_ws_supported_chains,
-    };
-    providers.add_ws_provider(Arc::new(infura_ws_provider));
+    providers.add_provider::<BinanceProvider, BinanceConfig>(BinanceConfig::default());
+    providers.add_provider::<OmniatechProvider, OmniatechConfig>(OmniatechConfig::default());
+    providers.add_provider::<ZKSyncProvider, ZKSyncConfig>(ZKSyncConfig::default());
+    providers.add_provider::<PublicnodeProvider, PublicnodeConfig>(PublicnodeConfig::default());
+    providers
+        .add_provider::<InfuraProvider, InfuraConfig>(InfuraConfig::new(infura_project_id.clone()));
 
-    let pokt_provider = PoktProvider {
-        client: forward_proxy_client.clone(),
-        project_id: pokt_project_id,
-        supported_chains: pokt_supported_chains,
-    };
-    providers.add_provider(Arc::new(pokt_provider));
-
-    let binance_config = BinanceConfig::default();
-    let binance_provider = BinanceProvider {
-        client: forward_proxy_client.clone(),
-        supported_chains: binance_config.supported_chains,
-    };
-    providers.add_provider(Arc::new(binance_provider));
-
-    let zksync_config = ZKSyncConfig::default();
-    let zksync_provider = ZKSyncProvider {
-        client: forward_proxy_client.clone(),
-        project_id: zksync_config.project_id,
-        supported_chains: zksync_config.supported_chains,
-    };
-    providers.add_provider(Arc::new(zksync_provider));
-
-    let publicnode_config = PublicnodeConfig::default();
-    let publicnode_provider = PublicnodeProvider {
-        client: forward_proxy_client.clone(),
-        supported_chains: publicnode_config.supported_chains,
-    };
-    providers.add_provider(Arc::new(publicnode_provider));
-
-    // Generate and add onerpc provider
-    let onerpc_config = OmniatechConfig::default();
-    let onerpc_provider = OmniatechProvider {
-        client: forward_proxy_client,
-        supported_chains: onerpc_config.supported_chains,
-    };
-    providers.add_provider(Arc::new(onerpc_provider));
+    providers
+        .add_ws_provider::<InfuraWsProvider, InfuraConfig>(InfuraConfig::new(infura_project_id));
 
     providers
 }

@@ -29,7 +29,7 @@ impl MessageInfo {
         region: Option<Vec<String>>,
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
-        provider: ProviderKind,
+        provider: &ProviderKind,
         origin: Option<String>,
     ) -> Self {
         Self {
