@@ -27,8 +27,6 @@ impl AsyncTestContext for ServerContext {
                     public_port: None,
                     public_addr,
                     project_id,
-                    shutdown_signal: None,
-                    is_shutdown: false,
                 }
             }
         };

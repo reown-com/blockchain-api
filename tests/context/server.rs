@@ -1,13 +1,13 @@
-use {
-    super::TestResult,
-    std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream},
-    tokio::time::{sleep, Duration},
-};
+use std::net::SocketAddr;
+
 #[cfg(feature = "test-localhost")]
 use {
+    super::TestResult,
     rpc_proxy::env::{Config, ServerConfig},
+    std::net::{Ipv4Addr, SocketAddrV4, TcpStream},
+    std::time::Duration,
     std::{env, net::IpAddr},
-    tokio::{runtime::Handle, sync::broadcast},
+    tokio::{runtime::Handle, time::sleep},
 };
 
 pub struct RpcProxy {
@@ -15,8 +15,6 @@ pub struct RpcProxy {
     pub public_port: Option<u16>,
     pub private_addr: Option<SocketAddr>,
     pub project_id: String,
-    pub shutdown_signal: Option<tokio::sync::broadcast::Sender<()>>,
-    pub is_shutdown: bool,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -31,8 +29,6 @@ impl RpcProxy {
         let rt = Handle::current();
         let public_addr = SocketAddr::new(IpAddr::V4(hostname), public_port);
         let private_addr = SocketAddr::new(IpAddr::V4(hostname), private_port);
-
-        let (signal, shutdown) = broadcast::channel(1);
 
         let project_id =
             env::var("TEST_RPC_PROXY_PROJECT_ID").expect("TEST_RPC_PROXY_PROJECT_ID must be set");
@@ -60,8 +56,6 @@ impl RpcProxy {
         Self {
             public_addr: format!("http://{public_addr}"),
             project_id,
-            shutdown_signal: Some(signal),
-            is_shutdown: false,
             private_addr: Some(private_addr),
             public_port: Some(public_port),
         }
@@ -84,19 +78,9 @@ fn get_random_port() -> u16 {
     }
 }
 
+#[cfg(feature = "test-localhost")]
 fn is_port_available(port: u16) -> bool {
     TcpStream::connect(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port)).is_err()
-}
-
-#[allow(unused)]
-async fn wait_for_server_to_shutdown(port: u16) -> TestResult<()> {
-    let poll_fut = async {
-        while !is_port_available(port) {
-            sleep(Duration::from_millis(10)).await;
-        }
-    };
-
-    Ok(tokio::time::timeout(Duration::from_secs(1), poll_fut).await?)
 }
 
 #[cfg(feature = "test-localhost")]
