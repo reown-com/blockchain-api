@@ -50,38 +50,29 @@ dashboard.new(
   )
 )
 
-.addRow(row.new('ECS')
-  .addPanels(layout.generate_grid([
-    panels.ecs.availability(ds, vars)               { gridPos: pos._3 },
-    panels.ecs.memory(ds, vars)                     { gridPos: pos._3 },
-    panels.ecs.cpu(ds, vars)                        { gridPos: pos._3 },
-  ]))
-)
-.addRow(row.new('Status Codes')
-  .addPanels(layout.generate_grid([
-    panels.status.provider(ds, vars, 'Infura')      { gridPos: pos._3 },
-    panels.status.provider(ds, vars, 'zkSync')      { gridPos: pos._3 },
-    panels.status.provider(ds, vars, 'Publicnode')  { gridPos: pos._3 },
-    panels.status.provider(ds, vars, 'Omniatech')   { gridPos: pos._3 },
-    panels.status.provider(ds, vars, 'Binance')     { gridPos: pos._3 },
-    panels.status.provider(ds, vars, 'Pokt')        { gridPos: pos._3 },
-  ]))
-)
-.addRow(row.new('Proxy Metrics')
-  .addPanels(layout.generate_grid([
-    panels.proxy.calls(ds, vars)                    { gridPos: pos._2 },
-    panels.proxy.latency(ds, vars)                  { gridPos: pos._2 },
+.addPanels(layout.generate_grid([
+  row.new('ECS'),
+  panels.ecs.availability(ds, vars)               { gridPos: pos._3 },
+  panels.ecs.memory(ds, vars)                     { gridPos: pos._3 },
+  panels.ecs.cpu(ds, vars)                        { gridPos: pos._3 },
 
-    panels.proxy.errors_non_provider(ds, vars)      { gridPos: pos._3 },
-    panels.proxy.errors_provider(ds, vars)          { gridPos: pos._3 },
-    panels.proxy.rejected_projects(ds, vars)        { gridPos: pos._3 },
+  row.new('Status Codes'),
+  panels.status.provider(ds, vars, 'Infura')      { gridPos: pos._3 },
+  panels.status.provider(ds, vars, 'zkSync')      { gridPos: pos._3 },
+  panels.status.provider(ds, vars, 'Publicnode')  { gridPos: pos._3 },
+  panels.status.provider(ds, vars, 'Omniatech')   { gridPos: pos._3 },
+  panels.status.provider(ds, vars, 'Binance')     { gridPos: pos._3 },
+  panels.status.provider(ds, vars, 'Pokt')        { gridPos: pos._3 },
 
-    panels.proxy.http_codes(ds, vars)               { gridPos: pos.two_thirds },
-    panels.proxy.healthy_hosts(ds, vars)            { gridPos: pos._3 },
-  ]))
-)
-.addRow(row.new('Database')
-  .addPanels(layout.generate_grid([
-    panels.db.redis_cpu_memory(ds, vars)            { gridPos: pos._2 },
-  ]))
-)
+  row.new('Proxy Metrics'),
+  panels.proxy.calls(ds, vars)                    { gridPos: pos._2 },
+  panels.proxy.latency(ds, vars)                  { gridPos: pos._2 },
+  panels.proxy.errors_non_provider(ds, vars)      { gridPos: pos._3 },
+  panels.proxy.errors_provider(ds, vars)          { gridPos: pos._3 },
+  panels.proxy.rejected_projects(ds, vars)        { gridPos: pos._3 },
+  panels.proxy.http_codes(ds, vars)               { gridPos: pos.two_thirds },
+  panels.proxy.healthy_hosts(ds, vars)            { gridPos: pos._3 },
+
+  row.new('Database'),
+  panels.db.redis_cpu_memory(ds, vars)            { gridPos: pos._2 },
+]))
