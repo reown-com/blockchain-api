@@ -35,11 +35,6 @@ impl AsyncTestContext for ServerContext {
 
         Self { server }
     }
-
-    async fn teardown(mut self) {
-        #[cfg(feature = "test-localhost")]
-        self.server.shutdown().await;
-    }
 }
 
 pub type TestResult<T> = Result<T, TestError>;

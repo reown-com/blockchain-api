@@ -48,7 +48,7 @@ impl RpcProxy {
                     ..Default::default()
                 };
 
-                rpc_proxy::bootstrap(shutdown, config).await
+                rpc_proxy::bootstrap(config).await
             })
             .unwrap();
         });
@@ -65,19 +65,6 @@ impl RpcProxy {
             private_addr: Some(private_addr),
             public_port: Some(public_port),
         }
-    }
-
-    #[cfg(feature = "test-localhost")]
-    pub async fn shutdown(&mut self) {
-        if self.is_shutdown {
-            return;
-        }
-        self.is_shutdown = true;
-        let sender = self.shutdown_signal.clone();
-        let _ = sender.unwrap().send(());
-        wait_for_server_to_shutdown(self.public_port.unwrap())
-            .await
-            .unwrap();
     }
 }
 
@@ -109,7 +96,7 @@ async fn wait_for_server_to_shutdown(port: u16) -> TestResult<()> {
         }
     };
 
-    Ok(tokio::time::timeout(Duration::from_secs(3), poll_fut).await?)
+    Ok(tokio::time::timeout(Duration::from_secs(1), poll_fut).await?)
 }
 
 #[cfg(feature = "test-localhost")]

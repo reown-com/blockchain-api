@@ -25,6 +25,5 @@ pub async fn send_jsonrpc_request(
 
     let (parts, body) = response.into_parts();
     let body = body::to_bytes(body).await.unwrap();
-    dbg!(std::str::from_utf8(&body).unwrap());
     (parts.status, serde_json::from_slice(&body).unwrap())
 }

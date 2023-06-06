@@ -2,15 +2,12 @@ use {
     dotenv::dotenv,
     rpc_proxy::{env::Config, error},
     std::str::FromStr,
-    tokio::sync::broadcast,
     tracing_subscriber::fmt::format::FmtSpan,
 };
 
 #[tokio::main]
 async fn main() -> error::RpcResult<()> {
     dotenv().ok();
-
-    let (_signal, shutdown) = broadcast::channel(1);
 
     let config = Config::from_env()
         .map_err(|e| dbg!(e))
@@ -24,5 +21,5 @@ async fn main() -> error::RpcResult<()> {
         .with_ansi(false)
         .init();
 
-    rpc_proxy::bootstrap(shutdown, config).await
+    rpc_proxy::bootstrap(config).await
 }

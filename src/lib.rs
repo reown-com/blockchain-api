@@ -33,13 +33,12 @@ use {
         sync::Arc,
         time::Duration,
     },
-    tokio::{select, sync::broadcast},
     tower::ServiceBuilder,
     tower_http::{
         cors::{Any, CorsLayer},
         trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
     },
-    tracing::{info, Level, Span},
+    tracing::{info, log::warn, Level, Span},
 };
 
 mod analytics;
@@ -56,7 +55,7 @@ mod storage;
 mod utils;
 mod ws;
 
-pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) -> RpcResult<()> {
+pub async fn bootstrap(config: Config) -> RpcResult<()> {
     let prometheus_exporter = opentelemetry_prometheus::exporter().init();
     let meter = prometheus_exporter
         .provider()
@@ -173,10 +172,10 @@ pub async fn bootstrap(mut shutdown: broadcast::Receiver<()>, config: Config) ->
         tokio::spawn(updater),
     ];
 
-    select! {
-        _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
-        e =  futures_util::future::select_all(services) => info!("Server terminating with error: {:?}", e),
-    }
+    if let Err(e) = futures_util::future::select_all(services).await.0 {
+        warn!("Server error: {:?}", e);
+    };
+
     Ok(())
 }
 
