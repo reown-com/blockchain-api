@@ -60,7 +60,7 @@ impl IntoResponse for RpcError {
         match self {
             Self::AxumTungstenite(err) => (StatusCode::GONE, err.to_string()).into_response(),
             Self::UnsupportedChain(chain_id) => (
-                StatusCode::BAD_REQUEST,
+                StatusCode::NOT_FOUND,
                 Json(new_error_response(
                     "chainId".to_string(),
                     format!("We don't support the chainId you provided: {chain_id}"),
