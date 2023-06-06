@@ -86,13 +86,12 @@ pub async fn handler(
     let mut response = provider
         .proxy(method, path, query_params, headers, body)
         .await
-        .map_err(|error| {
+        .tap_err(|error| {
             if let RpcError::Throttled = error {
                 state
                     .metrics
                     .add_rate_limited_call(provider.borrow(), project_id)
             }
-            RpcError::ProviderError
         })?;
 
     state.metrics.add_external_http_latency(

@@ -35,6 +35,7 @@ impl AsyncTestContext for ServerContext {
     }
 }
 
+#[cfg(feature = "test-localhost")]
 pub type TestResult<T> = Result<T, TestError>;
 
 #[derive(Debug, thiserror::Error)]
