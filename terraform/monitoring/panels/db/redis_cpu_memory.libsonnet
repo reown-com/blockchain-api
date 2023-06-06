@@ -37,6 +37,19 @@ local _configuration  = defaults.overrides.cpu_memory(defaults.configuration.tim
       refId       = 'CPU_Max',
     ))
     .addTarget(targets.cloudwatch(
+      alias       = 'CPU (Avg)',
+      datasource  = ds.cloudwatch,
+      dimensions  = {
+        CacheClusterId : vars.redis_cluster_id
+      },
+      matchExact  = true,
+      metricName  = 'CPUUtilization',
+      namespace   = 'AWS/ElastiCache',
+      statistic   = 'Average',
+      refId       = 'CPU_Avg',
+    ))
+
+    .addTarget(targets.cloudwatch(
       alias       = 'Memory (Max)',
       datasource  = ds.cloudwatch,
       dimensions  = {
@@ -47,5 +60,17 @@ local _configuration  = defaults.overrides.cpu_memory(defaults.configuration.tim
       namespace   = 'AWS/ElastiCache',
       statistic   = 'Maximum',
       refId       = 'Mem_Max',
+    ))
+    .addTarget(targets.cloudwatch(
+      alias       = 'Memory (Avg)',
+      datasource  = ds.cloudwatch,
+      dimensions  = {
+        CacheClusterId : vars.redis_cluster_id
+      },
+      matchExact  = true,
+      metricName  = 'DatabaseMemoryUsagePercentage',
+      namespace   = 'AWS/ElastiCache',
+      statistic   = 'Average',
+      refId       = 'Mem_Avg',
     ))
 }
