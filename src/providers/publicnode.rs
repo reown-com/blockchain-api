@@ -1,5 +1,5 @@
 use {
-    super::{Provider, ProviderKind, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams},
     crate::{
         env::PublicnodeConfig,
         error::{RpcError, RpcResult},
@@ -32,6 +32,13 @@ impl Provider for PublicnodeProvider {
 }
 
 #[async_trait]
+impl RateLimited for PublicnodeProvider {
+    async fn is_rate_limited(&self, response: &mut Response) -> bool {
+        response.status() == http::StatusCode::TOO_MANY_REQUESTS
+    }
+}
+
+#[async_trait]
 impl RpcProvider for PublicnodeProvider {
     async fn proxy(
         &self,
@@ -56,10 +63,6 @@ impl RpcProvider for PublicnodeProvider {
 
         let response = self.client.request(hyper_request).await?.into_response();
 
-        if is_rate_limited(&response) {
-            return Err(RpcError::Throttled);
-        }
-
         Ok(response)
     }
 }
@@ -78,8 +81,4 @@ impl RpcProviderFactory<PublicnodeConfig> for PublicnodeProvider {
             supported_chains,
         }
     }
-}
-
-fn is_rate_limited(response: &Response) -> bool {
-    response.status() == http::StatusCode::TOO_MANY_REQUESTS
 }

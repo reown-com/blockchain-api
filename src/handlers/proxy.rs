@@ -85,14 +85,18 @@ pub async fn handler(
 
     let mut response = provider
         .proxy(method, path, query_params, headers, body)
-        .await
-        .tap_err(|error| {
-            if let RpcError::Throttled = error {
-                state
-                    .metrics
-                    .add_rate_limited_call(provider.borrow(), project_id)
-            }
-        })?;
+        .await?;
+
+    state
+        .metrics
+        .add_status_code_for_provider(provider.borrow(), response.status(), &chain_id);
+
+    if provider.is_rate_limited(&mut response).await {
+        state
+            .metrics
+            .add_rate_limited_call(provider.borrow(), project_id);
+        *response.status_mut() = http::StatusCode::BAD_GATEWAY;
+    }
 
     state.metrics.add_external_http_latency(
         provider.provider_kind(),
@@ -103,19 +107,11 @@ pub async fn handler(
     );
 
     match response.status() {
-        status @ http::StatusCode::OK => {
+        http::StatusCode::OK => {
             state.metrics.add_finished_provider_call(provider.borrow());
-            state
-                .metrics
-                .add_status_code_for_provider(provider.borrow(), status, &chain_id);
         }
-        status => {
+        _ => {
             state.metrics.add_failed_provider_call(provider.borrow());
-            state
-                .metrics
-                .add_status_code_for_provider(provider.borrow(), status, &chain_id);
-
-            *response.status_mut() = http::StatusCode::BAD_GATEWAY;
         }
     };
     Ok(response)

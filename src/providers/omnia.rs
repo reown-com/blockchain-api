@@ -1,12 +1,12 @@
 use {
-    super::{Provider, ProviderKind, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams},
     crate::{
         env::OmniatechConfig,
         error::{RpcError, RpcResult},
     },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
-    hyper::{client::HttpConnector, Body, Client, StatusCode},
+    hyper::{client::HttpConnector, Client, StatusCode},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
 };
@@ -28,6 +28,16 @@ impl Provider for OmniatechProvider {
 
     fn provider_kind(&self) -> ProviderKind {
         ProviderKind::Omniatech
+    }
+}
+
+#[async_trait]
+impl RateLimited for OmniatechProvider {
+    async fn is_rate_limited(&self, response: &mut Response) -> bool
+    where
+        Self: Sized,
+    {
+        response.status() == StatusCode::TOO_MANY_REQUESTS
     }
 }
 
@@ -54,13 +64,9 @@ impl RpcProvider for OmniatechProvider {
             .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))?;
 
-        let response = self.client.request(hyper_request).await?;
+        let response = self.client.request(hyper_request).await?.into_response();
 
-        if is_rate_limited(&response) {
-            return Err(RpcError::Throttled);
-        }
-
-        Ok(response.into_response())
+        Ok(response)
     }
 }
 
@@ -78,8 +84,4 @@ impl RpcProviderFactory<OmniatechConfig> for OmniatechProvider {
             supported_chains,
         }
     }
-}
-
-fn is_rate_limited(response: &Response<Body>) -> bool {
-    response.status() == StatusCode::TOO_MANY_REQUESTS
 }
