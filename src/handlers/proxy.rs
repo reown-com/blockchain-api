@@ -4,6 +4,7 @@ use {
         error::RpcError,
         extractors::method::Method,
         handlers::RpcQueryParams,
+        providers::RateLimitedData,
         state::AppState,
     },
     axum::{
@@ -93,6 +94,10 @@ pub async fn handler(
                     .add_rate_limited_call(provider.borrow(), project_id)
             }
         })?;
+
+    if provider.is_rate_limited(RateLimitedData::Response(&response)) {
+        return Err(RpcError::Throttled);
+    }
 
     state.metrics.add_external_http_latency(
         provider.provider_kind(),

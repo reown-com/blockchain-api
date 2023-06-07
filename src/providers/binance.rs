@@ -40,7 +40,7 @@ impl Provider for BinanceProvider {
 }
 
 impl RateLimited for BinanceProvider {
-    fn is_rate_limited(data: RateLimitedData) -> bool
+    fn is_rate_limited(&self, data: RateLimitedData) -> bool
     where
         Self: Sized,
     {
@@ -71,10 +71,6 @@ impl RpcProvider for BinanceProvider {
             .body(hyper::body::Body::from(body))?;
 
         let response = self.client.request(hyper_request).await?.into_response();
-
-        if Self::is_rate_limited(RateLimitedData::Response(&response)) {
-            return Err(RpcError::Throttled);
-        }
 
         Ok(response)
     }

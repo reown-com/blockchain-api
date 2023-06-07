@@ -40,7 +40,7 @@ impl Provider for PublicnodeProvider {
 }
 
 impl RateLimited for PublicnodeProvider {
-    fn is_rate_limited(response: RateLimitedData) -> bool {
+    fn is_rate_limited(&self, response: RateLimitedData) -> bool {
         let RateLimitedData::Response(response) = response else {return false};
         response.status() == http::StatusCode::TOO_MANY_REQUESTS
     }
@@ -70,10 +70,6 @@ impl RpcProvider for PublicnodeProvider {
             .body(hyper::body::Body::from(body))?;
 
         let response = self.client.request(hyper_request).await?.into_response();
-
-        if Self::is_rate_limited(RateLimitedData::Response(&response)) {
-            return Err(RpcError::Throttled);
-        }
 
         Ok(response)
     }

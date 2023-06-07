@@ -50,7 +50,7 @@ impl Provider for InfuraWsProvider {
 }
 
 impl RateLimited for InfuraWsProvider {
-    fn is_rate_limited(response: RateLimitedData) -> bool
+    fn is_rate_limited(&self, response: RateLimitedData) -> bool
     where
         Self: Sized,
     {
@@ -96,7 +96,7 @@ impl Provider for InfuraProvider {
 }
 
 impl RateLimited for InfuraProvider {
-    fn is_rate_limited(response: RateLimitedData) -> bool
+    fn is_rate_limited(&self, response: RateLimitedData) -> bool
     where
         Self: Sized,
     {
@@ -129,10 +129,6 @@ impl RpcProvider for InfuraProvider {
             .body(hyper::body::Body::from(body))?;
 
         let response = self.client.request(hyper_request).await?.into_response();
-
-        if Self::is_rate_limited(RateLimitedData::Response(&response)) {
-            return Err(RpcError::Throttled);
-        }
 
         Ok(response)
     }

@@ -46,7 +46,7 @@ impl Provider for PoktProvider {
 }
 
 impl RateLimited for PoktProvider {
-    fn is_rate_limited(response: RateLimitedData) -> bool
+    fn is_rate_limited(&self, response: RateLimitedData) -> bool
     where
         Self: Sized,
     {
@@ -93,10 +93,6 @@ impl RpcProvider for PoktProvider {
         let response = self.client.request(hyper_request).await?;
 
         let (body_bytes, response) = copy_body_bytes(response).await?;
-
-        if Self::is_rate_limited(RateLimitedData::Body(&body_bytes)) {
-            return Err(RpcError::Throttled);
-        }
 
         Ok(response.into_response())
     }

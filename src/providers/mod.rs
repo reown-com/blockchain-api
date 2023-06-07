@@ -272,7 +272,5 @@ pub enum RateLimitedData<'a> {
 }
 
 pub trait RateLimited {
-    fn is_rate_limited(data: RateLimitedData) -> bool
-    where
-        Self: Sized;
+    fn is_rate_limited(&self, data: RateLimitedData) -> bool;
 }
