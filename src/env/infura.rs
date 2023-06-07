@@ -32,7 +32,7 @@ impl ProviderConfig for InfuraConfig {
 fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum
-        ("eip155:1".into(), ("mainnet".into(), Weight(10.into()))),
+        ("eip155:1".into(), ("mainnet".into(), Weight(40.into()))),
         ("eip155:5".into(), ("goerli".into(), Weight(1.into()))),
         // Optimism
         (

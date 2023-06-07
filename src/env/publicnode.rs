@@ -26,14 +26,14 @@ impl ProviderConfig for PublicnodeConfig {
 fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum mainnet
-        ("eip155:1".into(), ("ethereum".into(), Weight(1.into()))),
+        ("eip155:1".into(), ("ethereum".into(), Weight(10.into()))),
         // Ethereum goerli
         (
             "eip155:5".into(),
             ("ethereum-goerli".into(), Weight(10.into())),
         ),
         // Binance Smart Chain mainnet
-        ("eip155:56".into(), ("bsc".into(), Weight(3.into()))),
+        ("eip155:56".into(), ("bsc".into(), Weight(5.into()))),
         // Binance Smart Chain testnet
         (
             "eip155:97".into(),
