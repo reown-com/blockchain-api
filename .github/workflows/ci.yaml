@@ -3,7 +3,7 @@ name: ci
 on:
   pull_request:
     paths-ignore:
-      - ".github/**"
+#      - ".github/**"
       - "terraform/**"
       - "docs/**"
       - "README.md"
@@ -28,8 +28,8 @@ env:
   AWS_REGION: "eu-central-1"
 
 jobs:
-  tasks:
-    name: "[${{ matrix.os }}] ${{ matrix.cargo.name }}"
+  checks:
+    name: "Check / ${{ matrix.cargo.name }}"
     runs-on:
       group: ubuntu-runners
     strategy:
@@ -48,11 +48,6 @@ jobs:
             args: -- --check
             cache: {}
             rust: nightly
-          - name: "Functional Tests"
-            cmd: test
-            args: --features test-localhost
-            cache: { sharedKey: "tests" }
-            rust: stable
         include:
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
@@ -65,8 +60,10 @@ jobs:
 
     steps:
       # Checkout code
-      - name: "Git checkout"
+      - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       # Install sccache
       - name: "Install sccache"
@@ -127,16 +124,112 @@ jobs:
       - name: "Stop sccache server"
         run: sccache --stop-server || true
 
+  functional_tests:
+    name: "Functional / ${{ matrix.cargo.name }}"
+    runs-on:
+      group: ubuntu-runners
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        cargo:
+          - name: "Websockets / Infura"
+            test: "functional::websocket::infura"
+          - name: "HTTP / Infura"
+            test: "functional::http::infura::infura_provider"
+          - name: "HTTP / Binance"
+            test: "functional::http::binance::binance_provider"
+          - name: "HTTP / Pokt"
+            test: "functional::http::pokt::pokt_provider"
+          - name: "HTTP / Solana Mainnet"
+            test: "functional::http::pokt::solana_mainnet"
+          - name: "HTTP / zkSync Mainnet"
+            test: "functional::http::zksync::eip155_324_zksync_mainnet"
+        include:
+          - os: ubuntu-latest
+            sccache-path: /home/runner/.cache/sccache
+    env:
+      RUST_BACKTRACE: full
+      RUSTC_WRAPPER: sccache
+      SCCACHE_CACHE_SIZE: 1G
+      SCCACHE_DIR: ${{ matrix.sccache-path }}
+      PROJECT_ID: ${{ secrets.PROJECT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      # Install sccache
+      - name: "Install sccache"
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          SCCACHE_URL: https://github.com/mozilla/sccache/releases/download
+          SCCACHE_VERSION: v0.2.15
+        run: |
+          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
+          curl -sSL "$SCCACHE_URL/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
+          install -vDm 755 "$SCCACHE_FILE/sccache" "$HOME/.local/bin/sccache"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: "Install Rust stable"
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: default
+          override: true
+
+      - name: Cache cargo registry
+        uses: Swatinem/rust-cache@3bb3a9a087029c7bc392586cdc88cb6f66b9c6ef
+        with:
+          cache: "functional_tests"
+        continue-on-error: false
+
+      - name: Cache sccache
+        uses: actions/cache@v2
+        continue-on-error: false
+        with:
+          path: ${{ matrix.sccache-path }}
+          key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-sccache-
+
+      - name: "Start sccache server"
+        run: |
+          sccache --stop-server || true
+          sccache --start-server
+
+      - name: "Task ${{ matrix.cargo.name }}"
+        env:
+          TEST_RPC_PROXY_PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          RPC_PROXY_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
+          RPC_PROXY_REGISTRY_API_URL: ${{ secrets.REGISTRY_URL }}
+          RPC_PROXY_REGISTRY_API_AUTH_TOKEN: ${{ secrets.RPC_PROXY_REGISTRY_API_AUTH_TOKEN }}
+          RPC_PROXY_POKT_PROJECT_ID: ${{ secrets.POKT_PROJECT_ID }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features test-localhost --test integration ${{ matrix.cargo.test }}
+
+      - name: "Print sccache stats"
+        run: sccache --show-stats
+
+      - name: "Stop sccache server"
+        run: sccache --stop-server || true
+
   publish:
     if: github.event_name != 'pull_request'
-    needs: [tasks]
+    needs: [checks]
     runs-on:
       group: ubuntu-runners
     steps:
       # Checkout code
-      - name: "Git checkout"
+      - name: Checkout
         uses: actions/checkout@v3
         with:
+          submodules: recursive
           fetch-depth: 0
 
       # Install Rust toolchain

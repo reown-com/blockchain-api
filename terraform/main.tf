@@ -110,7 +110,7 @@ module "redis" {
   depends_on = [module.private_hosted_zone]
 }
 
-module "o11y" {
+module "monitoring" {
   source = "./monitoring"
 
   prometheus_workspace_id = aws_prometheus_workspace.prometheus.id
