@@ -4,7 +4,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 4.4"
+      version = "~> 4.50"
     }
   }
 }
@@ -252,4 +252,3 @@ resource "aws_appautoscaling_policy" "memory_scaling" {
   }
   depends_on = [aws_appautoscaling_target.ecs_target]
 }
-

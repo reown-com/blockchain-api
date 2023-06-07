@@ -65,8 +65,10 @@ jobs:
 
     steps:
       # Checkout code
-      - name: "Git checkout"
+      - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       # Install sccache
       - name: "Install sccache"
@@ -134,9 +136,10 @@ jobs:
       group: ubuntu-runners
     steps:
       # Checkout code
-      - name: "Git checkout"
+      - name: Checkout
         uses: actions/checkout@v3
         with:
+          submodules: recursive
           fetch-depth: 0
 
       # Install Rust toolchain

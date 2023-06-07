@@ -8,7 +8,7 @@ terraform {
     }
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 4.4"
+      version = "~> 4.50"
     }
     grafana = {
       source  = "grafana/grafana"

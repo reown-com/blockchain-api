@@ -28,6 +28,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
       - id: fmt
         uses: WalletConnect/actions/actions/fmt-check-terraform/@master
 
@@ -37,6 +39,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - uses: aquasecurity/tfsec-action@v1.0.2
         with:
@@ -56,6 +60,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - uses: actions/cache@v3
         name: Cache plugin dir
@@ -85,6 +91,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
       - name: Run Terraform Plan
         id: plan
         uses: WalletConnect/actions/actions/plan-terraform/@v2
