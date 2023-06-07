@@ -28,10 +28,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Binance Smart Chain Mainnet
         (
             "eip155:56".into(),
-            (
-                "https://bsc-dataseed.binance.org/".into(),
-                Weight(10.into()),
-            ),
+            ("https://bsc-dataseed.binance.org/".into(), Weight(9.into())),
         ),
         // Binance Smart Chain Testnet
         (
