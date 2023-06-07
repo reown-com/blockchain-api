@@ -63,9 +63,6 @@ axum-tungstenite = "0.2.0"
 
 rand = "0.8.4"
 prometheus-http-query = "0.6.6"
-http-body = "0.4.5"
-bytes = "1.4.0"
-axum-core = "0.3.4"
 
 
 [dev-dependencies]
