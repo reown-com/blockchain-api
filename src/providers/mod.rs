@@ -266,11 +266,7 @@ pub trait Provider: Send + Sync + Debug + RateLimited {
     fn provider_kind(&self) -> ProviderKind;
 }
 
-pub enum RateLimitedData<'a> {
-    Response(&'a Response),
-    Body(&'a hyper::body::Bytes),
-}
-
+#[async_trait]
 pub trait RateLimited {
-    fn is_rate_limited(&self, data: RateLimitedData) -> bool;
+    async fn is_rate_limited(&self, data: &mut Response) -> bool;
 }

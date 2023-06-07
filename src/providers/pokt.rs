@@ -1,25 +1,12 @@
 use {
-    super::{
-        Provider,
-        ProviderKind,
-        RateLimited,
-        RateLimitedData,
-        RpcProvider,
-        RpcProviderFactory,
-        RpcQueryParams,
-    },
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams},
     crate::{
         env::PoktConfig,
         error::{RpcError, RpcResult},
     },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
-    hyper::{
-        body::{self, Bytes},
-        client::HttpConnector,
-        Body,
-        Client,
-    },
+    hyper::{self, client::HttpConnector, Client},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
 };
@@ -45,22 +32,34 @@ impl Provider for PoktProvider {
     }
 }
 
+#[async_trait]
 impl RateLimited for PoktProvider {
-    fn is_rate_limited(&self, response: RateLimitedData) -> bool
-    where
-        Self: Sized,
-    {
-        let RateLimitedData::Body(bytes) = response else {return false};
-        let Ok(jsonrpc_response) = serde_json::from_slice::<jsonrpc::Response>(bytes) else {return false};
+    // async fn is_rate_limited(&self, response: &mut Response) -> bool
+    // where
+    //     Self: Sized,
+    // {
+    //     let Ok(bytes) = body::to_bytes(response.body_mut()).await else {return
+    // false};     let Ok(jsonrpc_response) =
+    // serde_json::from_slice::<jsonrpc::Response>(&bytes) else {return false};
 
-        if let Some(err) = jsonrpc_response.error {
-            // Code used by Pokt to indicate rate limited request
-            // https://github.com/pokt-foundation/portal-api/blob/e06d1e50abfee8533c58768bb9b638c351b87a48/src/controllers/v1.controller.ts
-            if err.code == -32068 {
-                return true;
-            }
-        }
-        false
+    //     if let Some(err) = jsonrpc_response.error {
+    //         // Code used by Pokt to indicate rate limited request
+    //         // https://github.com/pokt-foundation/portal-api/blob/e06d1e50abfee8533c58768bb9b638c351b87a48/src/controllers/v1.controller.ts
+    //         if err.code == -32068 {
+    //             return true;
+    //         }
+    //     }
+
+    //     let body: axum::body::Body =
+    // axum::body::Body::wrap_stream(hyper::body::Body::from(bytes));
+    //     let body: UnsyncBoxBody<bytes::Bytes, axum_core::Error> =
+    // body.boxed_unsync();     let mut_body = response.body_mut();
+    //     false
+    // }
+
+    // TODO: Implement rate limiting as this is mocked
+    async fn is_rate_limited(&self, _response: &mut Response) -> bool {
+        return false;
     }
 }
 
@@ -92,8 +91,6 @@ impl RpcProvider for PoktProvider {
 
         let response = self.client.request(hyper_request).await?;
 
-        let (body_bytes, response) = copy_body_bytes(response).await?;
-
         Ok(response.into_response())
     }
 }
@@ -113,14 +110,4 @@ impl RpcProviderFactory<PoktConfig> for PoktProvider {
             project_id: provider_config.project_id.clone(),
         }
     }
-}
-
-async fn copy_body_bytes(
-    response: Response<Body>,
-) -> Result<(Bytes, Response<Body>), hyper::Error> {
-    let (parts, body) = response.into_parts();
-    let bytes = body::to_bytes(body).await?;
-
-    let body = Body::from(bytes.clone());
-    Ok((bytes, Response::from_parts(parts, body)))
 }

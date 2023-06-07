@@ -3,7 +3,6 @@ use {
         Provider,
         ProviderKind,
         RateLimited,
-        RateLimitedData,
         RpcProvider,
         RpcProviderFactory,
         RpcQueryParams,
@@ -49,12 +48,12 @@ impl Provider for InfuraWsProvider {
     }
 }
 
+#[async_trait]
 impl RateLimited for InfuraWsProvider {
-    fn is_rate_limited(&self, response: RateLimitedData) -> bool
+    async fn is_rate_limited(&self, response: &mut Response) -> bool
     where
         Self: Sized,
     {
-        let RateLimitedData::Response(response) = response else {return false};
         response.status() == http::StatusCode::TOO_MANY_REQUESTS
     }
 }
@@ -95,12 +94,12 @@ impl Provider for InfuraProvider {
     }
 }
 
+#[async_trait]
 impl RateLimited for InfuraProvider {
-    fn is_rate_limited(&self, response: RateLimitedData) -> bool
+    async fn is_rate_limited(&self, response: &mut Response) -> bool
     where
         Self: Sized,
     {
-        let RateLimitedData::Response(response) = response else {return false};
         response.status() == http::StatusCode::TOO_MANY_REQUESTS
     }
 }

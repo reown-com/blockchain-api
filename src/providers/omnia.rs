@@ -1,13 +1,5 @@
 use {
-    super::{
-        Provider,
-        ProviderKind,
-        RateLimited,
-        RateLimitedData,
-        RpcProvider,
-        RpcProviderFactory,
-        RpcQueryParams,
-    },
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams},
     crate::{
         env::OmniatechConfig,
         error::{RpcError, RpcResult},
@@ -39,12 +31,12 @@ impl Provider for OmniatechProvider {
     }
 }
 
+#[async_trait]
 impl RateLimited for OmniatechProvider {
-    fn is_rate_limited(&self, response: RateLimitedData) -> bool
+    async fn is_rate_limited(&self, response: &mut Response) -> bool
     where
         Self: Sized,
     {
-        let RateLimitedData::Response(response) = response else {return false};
         response.status() == StatusCode::TOO_MANY_REQUESTS
     }
 }

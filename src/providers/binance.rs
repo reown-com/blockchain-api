@@ -1,20 +1,16 @@
 use {
-    super::{
-        Provider,
-        ProviderKind,
-        RateLimited,
-        RateLimitedData,
-        RpcProvider,
-        RpcProviderFactory,
-        RpcQueryParams,
-    },
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams},
     crate::{
         env::BinanceConfig,
         error::{RpcError, RpcResult},
     },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
-    hyper::{client::HttpConnector, http, Client},
+    hyper::{
+        client::HttpConnector,
+        http::{self},
+        Client,
+    },
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
 };
@@ -39,12 +35,12 @@ impl Provider for BinanceProvider {
     }
 }
 
+#[async_trait]
 impl RateLimited for BinanceProvider {
-    fn is_rate_limited(&self, data: RateLimitedData) -> bool
+    async fn is_rate_limited(&self, response: &mut Response) -> bool
     where
         Self: Sized,
     {
-        let RateLimitedData::Response(response) = data else {return false};
         response.status() == http::StatusCode::FORBIDDEN
     }
 }

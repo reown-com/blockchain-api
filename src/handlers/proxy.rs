@@ -4,7 +4,6 @@ use {
         error::RpcError,
         extractors::method::Method,
         handlers::RpcQueryParams,
-        providers::RateLimitedData,
         state::AppState,
     },
     axum::{
@@ -86,17 +85,12 @@ pub async fn handler(
 
     let mut response = provider
         .proxy(method, path, query_params, headers, body)
-        .await
-        .tap_err(|error| {
-            if let RpcError::Throttled = error {
-                state
-                    .metrics
-                    .add_rate_limited_call(provider.borrow(), project_id)
-            }
-        })?;
+        .await?;
 
-    if provider.is_rate_limited(RateLimitedData::Response(&response)) {
-        return Err(RpcError::Throttled);
+    if provider.is_rate_limited(&mut response).await {
+        state
+            .metrics
+            .add_rate_limited_call(provider.borrow(), project_id)
     }
 
     state.metrics.add_external_http_latency(

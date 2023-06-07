@@ -1,13 +1,5 @@
 use {
-    super::{
-        Provider,
-        ProviderKind,
-        RateLimited,
-        RateLimitedData,
-        RpcProvider,
-        RpcProviderFactory,
-        RpcQueryParams,
-    },
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams},
     crate::{
         env::PublicnodeConfig,
         error::{RpcError, RpcResult},
@@ -39,9 +31,9 @@ impl Provider for PublicnodeProvider {
     }
 }
 
+#[async_trait]
 impl RateLimited for PublicnodeProvider {
-    fn is_rate_limited(&self, response: RateLimitedData) -> bool {
-        let RateLimitedData::Response(response) = response else {return false};
+    async fn is_rate_limited(&self, response: &mut Response) -> bool {
         response.status() == http::StatusCode::TOO_MANY_REQUESTS
     }
 }
