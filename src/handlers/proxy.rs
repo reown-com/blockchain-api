@@ -87,9 +87,12 @@ pub async fn handler(
         .proxy(method, path, query_params, headers, body)
         .await?;
 
-    state
-        .metrics
-        .add_status_code_for_provider(provider.borrow(), response.status(), &chain_id);
+    state.metrics.add_status_code_for_provider(
+        provider.borrow(),
+        response.status(),
+        &chain_id,
+        &project_id,
+    );
 
     if provider.is_rate_limited(&mut response).await {
         state
