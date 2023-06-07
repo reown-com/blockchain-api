@@ -258,10 +258,21 @@ pub struct SupportedChain {
     pub weight: Weight,
 }
 
-pub trait Provider: Send + Sync + Debug {
+pub trait Provider: Send + Sync + Debug + RateLimited {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool;
 
     fn supported_caip_chains(&self) -> Vec<String>;
 
     fn provider_kind(&self) -> ProviderKind;
+}
+
+pub enum RateLimitedData<'a> {
+    Response(&'a Response),
+    Body(&'a hyper::body::Bytes),
+}
+
+pub trait RateLimited {
+    fn is_rate_limited(data: RateLimitedData) -> bool
+    where
+        Self: Sized;
 }

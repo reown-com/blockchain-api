@@ -2,6 +2,8 @@ use {
     super::{
         Provider,
         ProviderKind,
+        RateLimited,
+        RateLimitedData,
         RpcProvider,
         RpcProviderFactory,
         RpcQueryParams,
@@ -47,6 +49,16 @@ impl Provider for InfuraWsProvider {
     }
 }
 
+impl RateLimited for InfuraWsProvider {
+    fn is_rate_limited(response: RateLimitedData) -> bool
+    where
+        Self: Sized,
+    {
+        let RateLimitedData::Response(response) = response else {return false};
+        response.status() == http::StatusCode::TOO_MANY_REQUESTS
+    }
+}
+
 #[async_trait]
 impl RpcWsProvider for InfuraWsProvider {
     async fn proxy(
@@ -83,6 +95,16 @@ impl Provider for InfuraProvider {
     }
 }
 
+impl RateLimited for InfuraProvider {
+    fn is_rate_limited(response: RateLimitedData) -> bool
+    where
+        Self: Sized,
+    {
+        let RateLimitedData::Response(response) = response else {return false};
+        response.status() == http::StatusCode::TOO_MANY_REQUESTS
+    }
+}
+
 #[async_trait]
 impl RpcProvider for InfuraProvider {
     async fn proxy(
@@ -108,7 +130,7 @@ impl RpcProvider for InfuraProvider {
 
         let response = self.client.request(hyper_request).await?.into_response();
 
-        if is_rate_limited(&response) {
+        if Self::is_rate_limited(RateLimitedData::Response(&response)) {
             return Err(RpcError::Throttled);
         }
 
@@ -146,8 +168,4 @@ impl RpcProviderFactory<InfuraConfig> for InfuraWsProvider {
             project_id: provider_config.project_id.clone(),
         }
     }
-}
-
-fn is_rate_limited(response: &Response) -> bool {
-    response.status() == http::StatusCode::TOO_MANY_REQUESTS
 }

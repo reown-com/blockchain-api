@@ -1,5 +1,13 @@
 use {
-    super::{Provider, ProviderKind, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    super::{
+        Provider,
+        ProviderKind,
+        RateLimited,
+        RateLimitedData,
+        RpcProvider,
+        RpcProviderFactory,
+        RpcQueryParams,
+    },
     crate::{
         env::PoktConfig,
         error::{RpcError, RpcResult},
@@ -37,6 +45,25 @@ impl Provider for PoktProvider {
     }
 }
 
+impl RateLimited for PoktProvider {
+    fn is_rate_limited(response: RateLimitedData) -> bool
+    where
+        Self: Sized,
+    {
+        let RateLimitedData::Body(bytes) = response else {return false};
+        let Ok(jsonrpc_response) = serde_json::from_slice::<jsonrpc::Response>(bytes) else {return false};
+
+        if let Some(err) = jsonrpc_response.error {
+            // Code used by Pokt to indicate rate limited request
+            // https://github.com/pokt-foundation/portal-api/blob/e06d1e50abfee8533c58768bb9b638c351b87a48/src/controllers/v1.controller.ts
+            if err.code == -32068 {
+                return true;
+            }
+        }
+        false
+    }
+}
+
 #[async_trait]
 impl RpcProvider for PoktProvider {
     async fn proxy(
@@ -65,9 +92,9 @@ impl RpcProvider for PoktProvider {
 
         let response = self.client.request(hyper_request).await?;
 
-        let (body_bytes, response) = copy_body_bytes(response).await.unwrap();
+        let (body_bytes, response) = copy_body_bytes(response).await?;
 
-        if is_rate_limited(&body_bytes).await {
+        if Self::is_rate_limited(RateLimitedData::Body(&body_bytes)) {
             return Err(RpcError::Throttled);
         }
 
@@ -90,19 +117,6 @@ impl RpcProviderFactory<PoktConfig> for PoktProvider {
             project_id: provider_config.project_id.clone(),
         }
     }
-}
-
-async fn is_rate_limited(body_bytes: &Bytes) -> bool {
-    let Ok(jsonrpc_response) = serde_json::from_slice::<jsonrpc::Response>(body_bytes) else {return false};
-
-    if let Some(err) = jsonrpc_response.error {
-        // Code used by Pokt to indicate rate limited request
-        // https://github.com/pokt-foundation/portal-api/blob/e06d1e50abfee8533c58768bb9b638c351b87a48/src/controllers/v1.controller.ts
-        if err.code == -32068 {
-            return true;
-        }
-    }
-    false
 }
 
 async fn copy_body_bytes(

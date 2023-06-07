@@ -1,5 +1,13 @@
 use {
-    super::{Provider, ProviderKind, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    super::{
+        Provider,
+        ProviderKind,
+        RateLimited,
+        RateLimitedData,
+        RpcProvider,
+        RpcProviderFactory,
+        RpcQueryParams,
+    },
     crate::{
         env::BinanceConfig,
         error::{RpcError, RpcResult},
@@ -31,6 +39,16 @@ impl Provider for BinanceProvider {
     }
 }
 
+impl RateLimited for BinanceProvider {
+    fn is_rate_limited(data: RateLimitedData) -> bool
+    where
+        Self: Sized,
+    {
+        let RateLimitedData::Response(response) = data else {return false};
+        response.status() == http::StatusCode::FORBIDDEN
+    }
+}
+
 #[async_trait]
 impl RpcProvider for BinanceProvider {
     async fn proxy(
@@ -54,11 +72,11 @@ impl RpcProvider for BinanceProvider {
 
         let response = self.client.request(hyper_request).await?.into_response();
 
-        if is_rate_limited(&response) {
+        if Self::is_rate_limited(RateLimitedData::Response(&response)) {
             return Err(RpcError::Throttled);
         }
 
-        Ok(response.into_response())
+        Ok(response)
     }
 }
 
@@ -76,8 +94,4 @@ impl RpcProviderFactory<BinanceConfig> for BinanceProvider {
             supported_chains,
         }
     }
-}
-
-fn is_rate_limited(response: &Response) -> bool {
-    response.status() == http::StatusCode::FORBIDDEN
 }

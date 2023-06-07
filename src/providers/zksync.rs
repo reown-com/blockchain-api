@@ -1,12 +1,20 @@
 use {
-    super::{Provider, ProviderKind, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    super::{
+        Provider,
+        ProviderKind,
+        RateLimited,
+        RateLimitedData,
+        RpcProvider,
+        RpcProviderFactory,
+        RpcQueryParams,
+    },
     crate::{
         env::ZKSyncConfig,
         error::{RpcError, RpcResult},
     },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
-    hyper::{client::HttpConnector, http, Body, Client},
+    hyper::{client::HttpConnector, http, Client},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
 };
@@ -31,6 +39,13 @@ impl Provider for ZKSyncProvider {
     }
 }
 
+impl RateLimited for ZKSyncProvider {
+    fn is_rate_limited(response: RateLimitedData) -> bool {
+        let RateLimitedData::Response(response) = response else {return false};
+        response.status() == http::StatusCode::TOO_MANY_REQUESTS
+    }
+}
+
 #[async_trait]
 impl RpcProvider for ZKSyncProvider {
     async fn proxy(
@@ -52,13 +67,13 @@ impl RpcProvider for ZKSyncProvider {
             .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))?;
 
-        let response = self.client.request(hyper_request).await?;
+        let response = self.client.request(hyper_request).await?.into_response();
 
-        if is_rate_limited(&response) {
+        if Self::is_rate_limited(RateLimitedData::Response(&response)) {
             return Err(RpcError::Throttled);
         }
 
-        Ok(response.into_response())
+        Ok(response)
     }
 }
 
@@ -76,8 +91,4 @@ impl RpcProviderFactory<ZKSyncConfig> for ZKSyncProvider {
             supported_chains,
         }
     }
-}
-
-fn is_rate_limited(response: &Response<Body>) -> bool {
-    response.status() == http::StatusCode::TOO_MANY_REQUESTS
 }
