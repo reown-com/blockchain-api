@@ -147,13 +147,11 @@ impl Metrics {
         provider: &dyn RpcProvider,
         status: http::StatusCode,
         chain_id: &str,
-        project_id: &str,
     ) {
         self.provider_status_code_counter.add(1, &[
             opentelemetry::KeyValue::new("provider", provider.provider_kind().to_string()),
             opentelemetry::KeyValue::new("status_code", format!("{}", status.as_u16())),
             opentelemetry::KeyValue::new("chain_id", chain_id.to_owned()),
-            opentelemetry::KeyValue::new("project_id", project_id.to_owned()),
         ])
     }
 
