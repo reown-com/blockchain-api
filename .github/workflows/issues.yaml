@@ -1,0 +1,64 @@
+name: Project Workflows
+
+on:
+  issues:
+    types:
+      - reopened
+      - closed
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+
+env:
+  project_id: 20
+  new: 🆕 New
+  backlog: 🗃 Backlog
+  prioritized: 🔖 Prioritized
+  in_progress: 🏗 In progress
+  blocked: 🛑 Blocked
+  in_review: 👀 In review
+  done: ✅ Done
+
+jobs:
+
+  issue_reopened:
+    name: Issue Reopened
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && github.event.action == 'reopened'
+    steps:
+      - name: Move issue to ${{ env.prioritized }}
+        uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        with:
+          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          organization: WalletConnect
+          project_id: ${{ env.project_id }}
+          resource_node_id: ${{ github.event.issue.node_id }}
+          status_value: ${{ env.prioritized }}
+
+  issue_closed:
+    name: issue_closed
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && github.event.action == 'closed'
+    steps:
+      - name: Moved issue to ${{ env.done }}
+        uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        with:
+          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          organization: WalletConnect
+          project_id: ${{ env.project_id }}
+          resource_node_id: ${{ github.event.issue.node_id }}
+          status_value: ${{ env.done }}
+
+  check_pull_requests:
+    name: Check linked issues
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request_target'
+    permissions:
+      issues: read
+      pull-requests: write
+    steps:
+      - uses: nearform-actions/github-action-check-linked-issues@v1
+        id: check-linked-issues
