@@ -49,7 +49,7 @@ COPY --from=plan    /app/recipe.json recipe.json
 RUN                 cargo chef cook --recipe-path recipe.json ${RELEASE}
 # Build the local binary
 COPY                . .
-RUN                 cargo build --bin rpc-proxy ${RELEASE}
+RUN                 cargo build --bin rpc-proxy ${RELEASE} --features "dynamic-weights"
 
 ################################################################################
 #
@@ -74,9 +74,9 @@ ENV                 RPC_PROXY_HOST=0.0.0.0
 WORKDIR             /app
 COPY --from=build   /app/target/${binpath:-debug}/rpc-proxy /usr/local/bin/rpc-proxy
 RUN                 apt-get update \
-                        && apt-get install -y --no-install-recommends ca-certificates libssl-dev \
-                        && apt-get clean \
-                        && rm -rf /var/lib/apt/lists/*
+    && apt-get install -y --no-install-recommends ca-certificates libssl-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 USER                1001:1001
 EXPOSE              3000/tcp
