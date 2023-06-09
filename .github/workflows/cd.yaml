@@ -32,6 +32,16 @@ on:
       deploy_app:
         required: true
         type: boolean
+      deploy_staging:
+        description: "Deploy staging"
+        default: true
+        required: true
+        type: boolean
+      deploy_production:
+        description: "Deploy production"
+        default: true 
+        required: true
+        type: boolean
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
