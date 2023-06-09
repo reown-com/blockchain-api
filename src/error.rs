@@ -3,7 +3,7 @@ use {
     axum::{response::IntoResponse, Json},
     cerberus::registry::RegistryError,
     hyper::StatusCode,
-    tracing::log::warn,
+    tracing::log::error,
 };
 
 pub type RpcResult<T> = Result<T, RpcError>;
@@ -103,7 +103,7 @@ impl IntoResponse for RpcError {
             )
                 .into_response(),
             e => {
-                error!("Internal server error: {}", e);
+                warn!("Internal server error: {}", e);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Internal server error".to_string(),
