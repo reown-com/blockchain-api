@@ -103,7 +103,7 @@ impl IntoResponse for RpcError {
             )
                 .into_response(),
             e => {
-                warn!("Internal server error: {}", e);
+                error!("Internal server error: {}", e);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Internal server error".to_string(),
