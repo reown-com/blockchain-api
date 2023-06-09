@@ -13,14 +13,17 @@ on:
         default: true
         required: true
         type: boolean
-      deploy_to:
-        description: "Deploy to"
-        type: choice
-        options:
-          - staging
-          - production
-        default: staging
+      deploy_staging:
+        description: "Deploy staging"
+        default: true
         required: true
+        type: boolean
+      deploy_production:
+        description: "Deploy production"
+        default: false 
+        required: true
+        type: boolean
+
   workflow_call:
     inputs:
       deploy_infra:
@@ -51,7 +54,7 @@ env:
 
 jobs:
   deploy-infra-staging:
-    if: ${{ inputs.deploy_infra }}
+    if: ${{ inputs.deploy_infra && inputs.deploy_staging }}
     runs-on: ubuntu-latest
     environment:
       name: infra/staging
@@ -77,7 +80,7 @@ jobs:
           app-name: ${{ github.event.repository.name }}
 
   deploy-app-staging:
-    if: ${{ inputs.deploy_app }}
+    if: ${{ inputs.deploy_app && inputs.deploy_staging }}
     runs-on: ubuntu-latest
     environment:
       name: app/staging
@@ -105,7 +108,7 @@ jobs:
           image-name: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
   validate_staging:
-    if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
+    if: ${{ always() && inputs.deploy_staging && contains(join(needs.*.result, ','), 'success') }}
     needs: [deploy-app-staging, deploy-infra-staging]
     secrets: inherit
     uses: ./.github/workflows/validate.yaml
@@ -134,7 +137,7 @@ jobs:
   deploy-infra-prod:
     # Only deploy if tests passed and deployment windows are open
     # Ignore deployment windows if workflow was started manually
-    if: ${{ always() && inputs.deploy_infra && needs.validate_staging.result == 'success' && (needs.deployment_windows.outputs.result == 'yes' || (github.event_name == 'workflow_dispatch' && inputs.deploy_to == 'production')) }}
+    if: ${{ always() && inputs.deploy_infra  && inputs.deploy_production && needs.validate_staging.result == 'success' && (needs.deployment_windows.outputs.result == 'yes' || (github.event_name == 'workflow_dispatch' )) }}
     needs: [validate_staging, deployment_windows]
     runs-on: ubuntu-latest
     environment:
@@ -163,7 +166,7 @@ jobs:
   deploy-app-prod:
     # Only deploy if tests passed and deployment windows are open
     # Ignore deployment windows if workflow was started manually
-    if: ${{ always() && inputs.deploy_app && needs.validate_staging.result == 'success' && (needs.deployment_windows.outputs.result == 'yes' || (github.event_name == 'workflow_dispatch' && inputs.deploy_to == 'production')) }}
+    if: ${{ always() && inputs.deploy_app && inputs.deploy_production && needs.validate_staging.result == 'success' && (needs.deployment_windows.outputs.result == 'yes' || (github.event_name == 'workflow_dispatch' )) }}
     needs: [validate_staging, deployment_windows]
     runs-on: ubuntu-latest
     environment:
@@ -192,7 +195,7 @@ jobs:
           image-name: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
   validate_prod:
-    if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
+    if: ${{ always() && inputs.deploy_production && contains(join(needs.*.result, ','), 'success') }}
     needs: [deploy-app-prod, deploy-infra-prod]
     secrets: inherit
     uses: ./.github/workflows/validate.yaml
