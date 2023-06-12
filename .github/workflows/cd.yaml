@@ -42,6 +42,11 @@ on:
         default: true 
         required: true
         type: boolean
+      image_version:
+          description: "Image version"
+          required: false 
+          type: string
+          default: "latest"
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true

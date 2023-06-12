@@ -142,4 +142,5 @@ jobs:
     with:
       deploy_app: false
       deploy_infra: true
+      deploy_production: true
     secrets: inherit
