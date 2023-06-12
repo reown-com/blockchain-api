@@ -13,16 +13,16 @@ on:
         default: true
         required: true
         type: boolean
-      deploy_staging:
-        description: "Deploy staging"
-        default: true
-        required: true
-        type: boolean
       deploy_production:
         description: "Deploy production"
         default: false 
         required: true
         type: boolean
+      image_version:
+        description: "Image version"
+        required: false 
+        type: string
+        default: "latest"
 
   workflow_call:
     inputs:
@@ -42,6 +42,11 @@ on:
         default: true 
         required: true
         type: boolean
+      image_version:
+          description: "Image version"
+          required: false 
+          type: string
+          default: "latest"
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -64,7 +69,7 @@ env:
 
 jobs:
   deploy-infra-staging:
-    if: ${{ inputs.deploy_infra && inputs.deploy_staging }}
+    if: ${{ inputs.deploy_infra }}
     runs-on: ubuntu-latest
     environment:
       name: infra/staging
@@ -90,7 +95,7 @@ jobs:
           app-name: ${{ github.event.repository.name }}
 
   deploy-app-staging:
-    if: ${{ inputs.deploy_app && inputs.deploy_staging }}
+    if: ${{ inputs.deploy_app }}
     runs-on: ubuntu-latest
     environment:
       name: app/staging
@@ -115,10 +120,10 @@ jobs:
           cluster-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}_cluster
           service-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}-service
           task-definition-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}
-          image-name: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          image-name: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.image_version }}}
 
   validate_staging:
-    if: ${{ always() && inputs.deploy_staging && contains(join(needs.*.result, ','), 'success') }}
+    if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
     needs: [deploy-app-staging, deploy-infra-staging]
     secrets: inherit
     uses: ./.github/workflows/validate.yaml
