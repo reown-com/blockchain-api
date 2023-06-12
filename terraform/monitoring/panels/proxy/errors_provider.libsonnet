@@ -36,6 +36,7 @@ local error_alert(vars) = alert.new(
       datasource  = ds.prometheus,
     )
     .configure(defaults.configuration.timeseries)
+    .setAlert(error_alert(vars))
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
