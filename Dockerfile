@@ -49,7 +49,7 @@ COPY --from=plan    /app/recipe.json recipe.json
 RUN                 cargo chef cook --recipe-path recipe.json ${RELEASE}
 # Build the local binary
 COPY                . .
-RUN                 cargo build --bin rpc-proxy ${RELEASE} --features "dynamic-weights"
+RUN                 cargo build --bin rpc-proxy ${RELEASE}
 
 ################################################################################
 #
