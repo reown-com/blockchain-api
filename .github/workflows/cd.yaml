@@ -120,7 +120,7 @@ jobs:
           cluster-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}_cluster
           service-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}-service
           task-definition-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}
-          image-name: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.image_version }}}
+          image-name: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.image_version }}
 
   validate_staging:
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
@@ -207,7 +207,7 @@ jobs:
           cluster-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}_cluster
           service-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}-service
           task-definition-name: ${{ env.ENVIRONMENT }}_${{ env.IMAGE_NAME }}
-          image-name: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          image-name: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.image_version }}
 
   validate_prod:
     if: ${{ always() && inputs.deploy_production && contains(join(needs.*.result, ','), 'success') }}
