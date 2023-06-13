@@ -12,6 +12,7 @@ local error_alert(vars) = alert.new(
   message     = "RPC %s - Provider Error alert" % vars.environment,
   period      = '5m',
   frequency   = '1m',
+  noDataState = 'no_data',
   notifications = vars.notifications,
   alertRuleTags = {
     'og_priority': 'P3',
