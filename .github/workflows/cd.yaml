@@ -32,11 +32,6 @@ on:
       deploy_app:
         required: true
         type: boolean
-      deploy_staging:
-        description: "Deploy staging"
-        default: true
-        required: true
-        type: boolean
       deploy_production:
         description: "Deploy production"
         default: true 
