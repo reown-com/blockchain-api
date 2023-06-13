@@ -19,7 +19,7 @@ use {
         time::{Duration, SystemTime},
     },
     tap::TapFallible,
-    tracing::info,
+    tracing::{info, log::warn},
 };
 
 pub async fn handler(
@@ -85,7 +85,14 @@ pub async fn handler(
 
     let mut response = provider
         .proxy(method, path, query_params, headers, body)
-        .await?;
+        .await
+        .tap_err(|e| {
+            warn!(
+                "Failed call to provider: {} with {}",
+                provider.provider_kind(),
+                e
+            );
+        })?;
 
     state
         .metrics

@@ -102,6 +102,14 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+            Self::TransportError(_) => (
+                StatusCode::BAD_GATEWAY,
+                Json(new_error_response(
+                    "transport".to_string(),
+                    "We failed to reach the provider for your request".to_string(),
+                )),
+            )
+                .into_response(),
             e => {
                 error!("Internal server error: {}", e);
                 (
