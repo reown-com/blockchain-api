@@ -22,7 +22,7 @@ local error_alert(vars) = alert.new(
       evaluatorParams = [ 10 ],
       evaluatorType   = 'gt',
       operatorType    = 'or',
-      queryRefId      = 'total',
+      queryRefId      = 'non_provider_errors',
       queryTimeStart  = '5m',
       reducerType     = 'sum',
     ),
@@ -40,20 +40,9 @@ local error_alert(vars) = alert.new(
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'round(sum(increase(http_call_counter{code=~\"5.+\"}[5m])))',
-      refId       = "total",
+      expr        = 'round(sum(increase(http_call_counter{code=~"50[0-1]|50[3-9]|5[1-9][0-9]"}[5m])))',
+      refId       = "non_provider_errors",
       exemplar    = true,
       hide        = true,
-    ))
-    .addTarget(targets.prometheus(
-      datasource  = ds.prometheus,
-      expr        = 'round(sum(increase(http_call_counter{code=\"502\"}[5m])))',
-      refId       = "bad_gateway",
-      exemplar    = true,
-      hide        = true,
-    ))
-    .addTarget(targets.math(
-      expr        = '$total - $bad_gateway',
-      refId       = "Availability",
-    ))
+    )) 
 }
