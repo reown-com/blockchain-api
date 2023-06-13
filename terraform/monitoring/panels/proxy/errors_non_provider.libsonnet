@@ -22,7 +22,7 @@ local error_alert(vars) = alert.new(
       evaluatorParams = [ 10 ],
       evaluatorType   = 'gt',
       operatorType    = 'or',
-      queryRefId      = 'total',
+      queryRefId      = 'Availability',
       queryTimeStart  = '5m',
       reducerType     = 'sum',
     ),
