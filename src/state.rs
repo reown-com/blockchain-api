@@ -41,7 +41,6 @@ pub fn new_state(
 }
 
 impl AppState {
-    #[cfg(feature = "dynamic-weights")]
     pub async fn update_provider_weights(&self) {
         self.providers.update_weights(&self.metrics).await;
     }
