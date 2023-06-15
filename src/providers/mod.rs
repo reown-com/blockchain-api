@@ -12,7 +12,6 @@ mod infura;
 mod omnia;
 mod pokt;
 mod publicnode;
-#[cfg(feature = "dynamic-weights")]
 mod weights;
 mod zksync;
 
@@ -39,13 +38,11 @@ pub struct ProviderRepository {
     weight_resolver: WeightResolver,
     ws_weight_resolver: WeightResolver,
 
-    #[cfg(feature = "dynamic-weights")]
     prometheus_client: prometheus_http_query::Client,
 }
 
 impl ProviderRepository {
     pub fn new() -> Self {
-        #[cfg(feature = "dynamic-weights")]
         let prometheus_client = {
             let prometheus_query_url =
                 std::env::var("PROMETHEUS_QUERY_URL").unwrap_or("http://localhost:9090".into());
@@ -58,7 +55,6 @@ impl ProviderRepository {
             ws_providers: HashMap::new(),
             weight_resolver: HashMap::new(),
             ws_weight_resolver: HashMap::new(),
-            #[cfg(feature = "dynamic-weights")]
             prometheus_client,
         }
     }
@@ -159,7 +155,6 @@ impl ProviderRepository {
         info!("Added provider: {}", provider_kind);
     }
 
-    #[cfg(feature = "dynamic-weights")]
     pub async fn update_weights(&self, metrics: &crate::Metrics) {
         info!("Updating weights");
 

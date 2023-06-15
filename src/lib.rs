@@ -156,7 +156,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     let private_server = axum::Server::bind(&private_addr)
         .serve(private_app.into_make_service_with_connect_info::<SocketAddr>());
 
-    #[cfg(feature = "dynamic-weights")]
     let updater = async move {
         let mut interval = tokio::time::interval(Duration::from_secs(15));
         loop {
@@ -168,7 +167,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     let services = vec![
         tokio::spawn(public_server),
         tokio::spawn(private_server),
-        #[cfg(feature = "dynamic-weights")]
         tokio::spawn(updater),
     ];
 
