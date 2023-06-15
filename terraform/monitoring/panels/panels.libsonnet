@@ -5,6 +5,10 @@
     memory:               (import 'ecs/memory.libsonnet'                  ).new,
   },
 
+  usage: {
+    provider:             (import 'usage/provider.libsonnet'              ).new,
+  },
+
   status: {
     provider:             (import 'status/provider.libsonnet'             ).new,
   },
