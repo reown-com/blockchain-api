@@ -41,8 +41,33 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Gnosis
         ("eip155:100".into(), ("poa-xdai".into(), Weight(1.into()))),
         // Binance Smart Chain
-        ("eip155:56".into(), ("bsc-mainnet".into(), Weight(3.into()))),
-        // ETH Mainnet
-        ("eip155:56".into(), ("bsc-mainnet".into(), Weight(1.into()))),
+        ("eip155:56".into(), ("bsc-mainnet".into(), Weight(5.into()))),
+        // Ethereum
+        ("eip155:1".into(), ("mainnet".into(), Weight(40.into()))),
+        ("eip155:5".into(), ("goerli".into(), Weight(1.into()))),
+        // Optimism
+        (
+            "eip155:10".into(),
+            ("optimism-mainnet".into(), Weight(1.into())),
+        ),
+        // Arbitrum
+        (
+            "eip155:42161".into(),
+            ("arbitrum-mainnet".into(), Weight(1.into())),
+        ),
+        // Polygon
+        (
+            "eip155:137".into(),
+            ("polygon-mainnet".into(), Weight(5.into())),
+        ),
+        (
+            "eip155:80001".into(),
+            ("polygon-mumbai".into(), Weight(1.into())),
+        ),
+        // Celo
+        (
+            "eip155:42220".into(),
+            ("celo-mainnet".into(), Weight(1.into())),
+        ),
     ])
 }
