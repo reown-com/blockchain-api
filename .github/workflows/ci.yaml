@@ -221,7 +221,7 @@ jobs:
 
   publish:
     if: github.event_name != 'pull_request'
-    needs: [checks]
+    needs: [checks, functional_tests]
     runs-on:
       group: ubuntu-runners
     steps:
