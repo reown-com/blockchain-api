@@ -53,16 +53,20 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Arbitrum
         (
             "eip155:42161".into(),
-            ("arbitrum-mainnet".into(), Weight(1.into())),
+            ("arbitrum-one".into(), Weight(1.into())),
         ),
         // Polygon
         (
             "eip155:137".into(),
-            ("polygon-mainnet".into(), Weight(5.into())),
+            ("poly-mainnet".into(), Weight(5.into())),
         ),
         (
             "eip155:80001".into(),
             ("polygon-mumbai".into(), Weight(1.into())),
+        ),
+        (
+            "eip155:1101".into(),
+            ("polygon-zkevm-mainnet".into(), Weight(5.into())),
         ),
         // Celo
         (
