@@ -27,6 +27,7 @@ pub async fn send_jsonrpc_request(
     let body = body::to_bytes(body).await.unwrap();
     (
         parts.status,
-        serde_json::from_slice(&body).expect(&format!("Failed to parse {:?}", &body)),
+        serde_json::from_slice(&body)
+            .unwrap_or_else(|e| panic!("Failed to parse '{:?}': {}", &body, e)),
     )
 }
