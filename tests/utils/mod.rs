@@ -12,7 +12,7 @@ pub async fn send_jsonrpc_request(
     let addr = base_addr + chain;
 
     let json = serde_json::to_string(&rpc_request).unwrap();
-    let body = Body::from(json);
+    let body = Body::from(&json);
 
     let request = Request::builder()
         .method(Method::POST)
@@ -27,7 +27,11 @@ pub async fn send_jsonrpc_request(
     let body = body::to_bytes(body).await.unwrap();
     (
         parts.status,
-        serde_json::from_slice(&body)
-            .unwrap_or_else(|e| panic!("Failed to parse '{:?}' for chain {}: {}", &body, chain, e)),
+        serde_json::from_slice(&body).unwrap_or_else(|_| {
+            panic!(
+                "Failed to parse response '{:?}' ({} / {})",
+                &body, &addr, &json
+            )
+        }),
     )
 }
