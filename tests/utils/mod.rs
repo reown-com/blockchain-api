@@ -28,6 +28,6 @@ pub async fn send_jsonrpc_request(
     (
         parts.status,
         serde_json::from_slice(&body)
-            .unwrap_or_else(|e| panic!("Failed to parse '{:?}': {}", &body, e)),
+            .unwrap_or_else(|e| panic!("Failed to parse '{:?}' for chain {}: {}", chain, &body, e)),
     )
 }
