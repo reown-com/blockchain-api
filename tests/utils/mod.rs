@@ -12,18 +12,26 @@ pub async fn send_jsonrpc_request(
     let addr = base_addr + chain;
 
     let json = serde_json::to_string(&rpc_request).unwrap();
-    let body = Body::from(json);
+    let req_body = Body::from(json.clone());
 
     let request = Request::builder()
         .method(Method::POST)
-        .uri(addr)
+        .uri(addr.clone())
         .header("Content-Type", "application/json")
-        .body(body)
+        .body(req_body)
         .unwrap();
 
     let response = client.request(request).await.unwrap();
 
     let (parts, body) = response.into_parts();
     let body = body::to_bytes(body).await.unwrap();
-    (parts.status, serde_json::from_slice(&body).unwrap())
+    (
+        parts.status,
+        serde_json::from_slice(&body).unwrap_or_else(|_| {
+            panic!(
+                "Failed to parse response '{:?}' ({} / {:?})",
+                &body, &addr, &json
+            )
+        }),
+    )
 }
