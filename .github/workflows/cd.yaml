@@ -206,7 +206,7 @@ jobs:
 
   validate_prod:
     if: ${{ always() && inputs.deploy_production && contains(join(needs.*.result, ','), 'success') }}
-    needs: [deploy-app-prod, deploy-infra-prod]
+    needs: [deploy-app-prod, deploy-infra-prod, deployment_windows]
     secrets: inherit
     uses: ./.github/workflows/validate.yaml
     with:
