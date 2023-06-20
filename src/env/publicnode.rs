@@ -1,4 +1,8 @@
-use {super::ProviderConfig, crate::providers::Weight, std::collections::HashMap};
+use {
+    super::ProviderConfig,
+    crate::providers::{Priority, Weight},
+    std::collections::HashMap,
+};
 
 #[derive(Debug)]
 pub struct PublicnodeConfig {
@@ -26,38 +30,56 @@ impl ProviderConfig for PublicnodeConfig {
 fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum mainnet
-        ("eip155:1".into(), ("ethereum".into(), Weight(10.into()))),
+        (
+            "eip155:1".into(),
+            ("ethereum".into(), Weight::new(Priority::High).unwrap()),
+        ),
         // Ethereum goerli
         (
             "eip155:5".into(),
-            ("ethereum-goerli".into(), Weight(10.into())),
+            (
+                "ethereum-goerli".into(),
+                Weight::new(Priority::High).unwrap(),
+            ),
         ),
         // Binance Smart Chain mainnet
-        ("eip155:56".into(), ("bsc".into(), Weight(10.into()))),
+        (
+            "eip155:56".into(),
+            ("bsc".into(), Weight::new(Priority::High).unwrap()),
+        ),
         // Binance Smart Chain testnet
         (
             "eip155:97".into(),
-            ("bsc-testnet".into(), Weight(10.into())),
+            ("bsc-testnet".into(), Weight::new(Priority::High).unwrap()),
         ),
         // Avalanche c chain
         (
             "eip155:43114".into(),
-            ("avalanche-c-chain".into(), Weight(1.into())),
+            (
+                "avalanche-c-chain".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Avalanche fuji testnet
         (
             "eip155:43113".into(),
-            ("avalanche-fuji-c-chain".into(), Weight(10.into())),
+            (
+                "avalanche-fuji-c-chain".into(),
+                Weight::new(Priority::High).unwrap(),
+            ),
         ),
         // Polygon bor mainnet
         (
             "eip155:137".into(),
-            ("polygon-bor".into(), Weight(1.into())),
+            ("polygon-bor".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Polygon bor testnet
         (
             "eip155:80001".into(),
-            ("polygon-mumbai-bor".into(), Weight(10.into())),
+            (
+                "polygon-mumbai-bor".into(),
+                Weight::new(Priority::High).unwrap(),
+            ),
         ),
     ])
 }

@@ -1,4 +1,8 @@
-use {super::ProviderConfig, crate::providers::Weight, std::collections::HashMap};
+use {
+    super::ProviderConfig,
+    crate::providers::{Priority, Weight},
+    std::collections::HashMap,
+};
 
 #[derive(Debug)]
 pub struct ZKSyncConfig {
@@ -30,13 +34,16 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:280".into(),
             (
                 "https://zksync2-testnet.zksync.dev".into(),
-                Weight(1.into()),
+                Weight::new(Priority::Normal).unwrap(),
             ),
         ),
         // zkSync Mainnet
         (
             "eip155:324".into(),
-            ("https://zksync2-mainnet.zksync.io".into(), Weight(1.into())),
+            (
+                "https://zksync2-mainnet.zksync.io".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
     ])
 }

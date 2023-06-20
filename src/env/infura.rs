@@ -1,4 +1,8 @@
-use {super::ProviderConfig, crate::providers::Weight, std::collections::HashMap};
+use {
+    super::ProviderConfig,
+    crate::providers::{Priority, Weight},
+    std::collections::HashMap,
+};
 
 #[derive(Debug)]
 pub struct InfuraConfig {
@@ -32,52 +36,88 @@ impl ProviderConfig for InfuraConfig {
 fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum
-        ("eip155:1".into(), ("mainnet".into(), Weight(40.into()))),
-        ("eip155:5".into(), ("goerli".into(), Weight(1.into()))),
+        (
+            "eip155:1".into(),
+            ("mainnet".into(), Weight::new(Priority::Max).unwrap()),
+        ),
+        (
+            "eip155:5".into(),
+            ("goerli".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Optimism
         (
             "eip155:10".into(),
-            ("optimism-mainnet".into(), Weight(1.into())),
+            (
+                "optimism-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         (
             "eip155:69".into(),
-            ("optimism-kovan".into(), Weight(1.into())),
+            (
+                "optimism-kovan".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         (
             "eip155:420".into(),
-            ("optimism-goerli".into(), Weight(1.into())),
+            (
+                "optimism-goerli".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Arbitrum
         (
             "eip155:42161".into(),
-            ("arbitrum-mainnet".into(), Weight(1.into())),
+            (
+                "arbitrum-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         (
             "eip155:421613".into(),
-            ("arbitrum-goerli".into(), Weight(1.into())),
+            (
+                "arbitrum-goerli".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Polygon
         (
             "eip155:137".into(),
-            ("polygon-mainnet".into(), Weight(5.into())),
+            (
+                "polygon-mainnet".into(),
+                Weight::new(Priority::High).unwrap(),
+            ),
         ),
         (
             "eip155:80001".into(),
-            ("polygon-mumbai".into(), Weight(1.into())),
+            (
+                "polygon-mumbai".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Celo
         (
             "eip155:42220".into(),
-            ("celo-mainnet".into(), Weight(1.into())),
+            (
+                "celo-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Aurora
         (
             "eip155:1313161554".into(),
-            ("aurora-mainnet".into(), Weight(1.into())),
+            (
+                "aurora-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         (
             "eip155:1313161555".into(),
-            ("aurora-testnet".into(), Weight(1.into())),
+            (
+                "aurora-testnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
     ])
 }
@@ -85,43 +125,73 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
 fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum
-        ("eip155:1".into(), ("mainnet".into(), Weight(1.into()))),
-        ("eip155:5".into(), ("goerli".into(), Weight(1.into()))),
+        (
+            "eip155:1".into(),
+            ("mainnet".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
+        (
+            "eip155:5".into(),
+            ("goerli".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Optimism
         (
             "eip155:10".into(),
-            ("optimism-mainnet".into(), Weight(1.into())),
+            (
+                "optimism-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         (
             "eip155:69".into(),
-            ("optimism-kovan".into(), Weight(1.into())),
+            (
+                "optimism-kovan".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         (
             "eip155:420".into(),
-            ("optimism-goerli".into(), Weight(1.into())),
+            (
+                "optimism-goerli".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Arbitrum
         (
             "eip155:42161".into(),
-            ("arbitrum-mainnet".into(), Weight(1.into())),
+            (
+                "arbitrum-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         (
             "eip155:421613".into(),
-            ("arbitrum-goerli".into(), Weight(1.into())),
+            (
+                "arbitrum-goerli".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Celo
         (
             "eip155:42220".into(),
-            ("celo-mainnet".into(), Weight(1.into())),
+            (
+                "celo-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Aurora
         (
             "eip155:1313161554".into(),
-            ("aurora-mainnet".into(), Weight(1.into())),
+            (
+                "aurora-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         (
             "eip155:1313161555".into(),
-            ("aurora-testnet".into(), Weight(1.into())),
+            (
+                "aurora-testnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
     ])
 }

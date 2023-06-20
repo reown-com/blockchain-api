@@ -1,4 +1,8 @@
-use {super::ProviderConfig, crate::providers::Weight, std::collections::HashMap};
+use {
+    super::ProviderConfig,
+    crate::providers::{Priority, Weight},
+    std::collections::HashMap,
+};
 
 #[derive(Debug)]
 pub struct PoktConfig {
@@ -31,48 +35,81 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Solana Mainnet
         (
             "solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz".into(),
-            ("solana-mainnet".into(), Weight(1.into())),
+            (
+                "solana-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Avax C-Chain
         (
             "eip155:43114".into(),
-            ("avax-mainnet".into(), Weight(1.into())),
+            (
+                "avax-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Gnosis
-        ("eip155:100".into(), ("poa-xdai".into(), Weight(1.into()))),
+        (
+            "eip155:100".into(),
+            ("poa-xdai".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Binance Smart Chain
-        ("eip155:56".into(), ("bsc-mainnet".into(), Weight(5.into()))),
+        (
+            "eip155:56".into(),
+            ("bsc-mainnet".into(), Weight::new(Priority::High).unwrap()),
+        ),
         // Ethereum
         // TODO: Reenable once Pokt fixes
-        ("eip155:1".into(), ("mainnet".into(), Weight(0.into()))),
-        ("eip155:5".into(), ("goerli".into(), Weight(1.into()))),
+        (
+            "eip155:1".into(),
+            ("mainnet".into(), Weight::new(Priority::Disabled).unwrap()),
+        ),
+        (
+            "eip155:5".into(),
+            ("goerli".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Optimism
         (
             "eip155:10".into(),
-            ("optimism-mainnet".into(), Weight(1.into())),
+            (
+                "optimism-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Arbitrum
         (
             "eip155:42161".into(),
-            ("arbitrum-one".into(), Weight(1.into())),
+            (
+                "arbitrum-one".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Polygon
         (
             "eip155:137".into(),
-            ("poly-mainnet".into(), Weight(5.into())),
+            ("poly-mainnet".into(), Weight::new(Priority::High).unwrap()),
         ),
         (
             "eip155:80001".into(),
-            ("polygon-mumbai".into(), Weight(1.into())),
+            (
+                "polygon-mumbai".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         (
             "eip155:1101".into(),
-            ("polygon-zkevm-mainnet".into(), Weight(5.into())),
+            (
+                "polygon-zkevm-mainnet".into(),
+                Weight::new(Priority::High).unwrap(),
+            ),
         ),
         // Celo
         (
             "eip155:42220".into(),
-            ("celo-mainnet".into(), Weight(1.into())),
+            (
+                "celo-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
     ])
 }
