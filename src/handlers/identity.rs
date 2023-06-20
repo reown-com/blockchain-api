@@ -3,7 +3,7 @@ use {
         error::RpcError,
         extractors::method::Method,
         handlers::RpcQueryParams,
-        json_rpc::JsonRpcResponse,
+        json_rpc::{JsonRpcError, JsonRpcResponse},
         state::AppState,
     },
     async_trait::async_trait,
@@ -29,7 +29,7 @@ use {
 #[derive(Serialize)]
 pub struct IdentityResponse {
     name: String,
-    avatar: String,
+    avatar: Option<String>,
 }
 
 pub async fn handler(
@@ -48,23 +48,35 @@ pub async fn handler(
         headers,
     });
 
-    let name = provider
-        .lookup_address(
-            address
-                .parse::<Address>()
-                .map_err(|e| RpcError::Other(anyhow::anyhow!("parse address error: {:?}", e)))?,
-        )
-        .await
-        .map_err(|e| RpcError::Other(anyhow::anyhow!("lookup_address error: {:?}", e)))?;
+    let address = address
+        .parse::<Address>()
+        .map_err(|_| RpcError::IdentityInvalidAddress)?;
 
-    let avatar = provider
-        .resolve_avatar(&name)
+    let name = provider
+        .lookup_address(address)
         .await
-        .map_err(|e| RpcError::Other(anyhow::anyhow!("resolve_avatar error: {:?}", e)))?;
+        .map_err(|e| match e {
+            ProviderError::EnsError(e) | ProviderError::EnsNotOwned(e) => {
+                RpcError::IdentityNotFound(e)
+            }
+            e => RpcError::Other(anyhow::anyhow!("Provider error: {e}")),
+        })?;
+
+    let avatar = provider.resolve_avatar(&name).await.map_or_else(
+        |e| match e {
+            ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
+            ProviderError::CustomError(e) if e.starts_with("relative URL without a base") => {
+                // Seems not having an `avatar` field returns this error
+                Ok(None)
+            }
+            e => Err(RpcError::EthersProviderError(e)),
+        },
+        |url| Ok(Some(url)),
+    )?;
 
     let res = IdentityResponse {
         name,
-        avatar: avatar.to_string(),
+        avatar: avatar.map(|url| url.to_string()),
     };
 
     Ok(Json(res))
@@ -92,9 +104,47 @@ struct JsonRpcRequest<T: Serialize + Send + Sync> {
     params: T,
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum SelfProviderError {
+    #[error(transparent)]
+    RpcError(#[from] Box<RpcError>),
+
+    #[error("proxy_handler status code not OK: {status} {body}")]
+    ProviderError { status: StatusCode, body: String },
+
+    #[error("problem with getting provider body: {0}")]
+    ProviderBody(#[from] axum::Error),
+
+    #[error("problem with deserializing provider body: {0}")]
+    ProviderBodySerde(#[from] serde_json::Error),
+
+    #[error("JsonRpcError: {0:?}")]
+    JsonRpcError(JsonRpcError),
+}
+
+impl ethers::providers::RpcError for SelfProviderError {
+    fn as_error_response(&self) -> Option<&ethers::providers::JsonRpcError> {
+        None
+    }
+
+    fn as_serde_error(&self) -> Option<&serde_json::Error> {
+        if let Self::ProviderBodySerde(e) = self {
+            Some(e)
+        } else {
+            None
+        }
+    }
+}
+
+impl From<SelfProviderError> for ProviderError {
+    fn from(value: SelfProviderError) -> Self {
+        ProviderError::CustomError(format!("{}", value))
+    }
+}
+
 #[async_trait]
 impl JsonRpcClient for SelfProvider {
-    type Error = ProviderError;
+    type Error = SelfProviderError;
 
     async fn request<T: Serialize + Send + Sync, R: DeserializeOwned>(
         &self,
@@ -124,37 +174,31 @@ impl JsonRpcClient for SelfProvider {
                 jsonrpc: "2.0".to_string(),
                 method: method.to_owned(),
                 params,
-            })?
+            })
+            .expect("Should be able to serialize a JsonRpcRequest")
             .into(),
         )
         .await
-        .map_err(|e| ProviderError::CustomError(format!("proxy_handler error: {:?}", e)))?;
+        .map_err(|e| SelfProviderError::RpcError(Box::new(e)))?;
+
         if response.status() != StatusCode::OK {
-            return Err(ProviderError::CustomError(format!(
-                "proxy_handler status code not OK: {} {:?}",
-                response.status(),
-                response.body()
-            )));
+            return Err(SelfProviderError::ProviderError {
+                status: response.status(),
+                body: format!("{:?}", response.body()),
+            });
         }
 
         let bytes = to_bytes(response.into_body())
             .await
-            .map_err(|e| ProviderError::CustomError(format!("to_bytes error: {:?}", e)))?;
+            .map_err(SelfProviderError::ProviderBody)?;
 
-        let response = serde_json::from_slice::<JsonRpcResponse>(&bytes).map_err(|e| {
-            ProviderError::CustomError(format!("serde_json::from_slice error: {:?}", e))
-        })?;
+        let response = serde_json::from_slice::<JsonRpcResponse>(&bytes)
+            .map_err(SelfProviderError::ProviderBodySerde)?;
 
         match response {
-            JsonRpcResponse::Error(e) => {
-                return Err(ProviderError::CustomError(format!(
-                    "JsonRpcResponse::Error: {:?}",
-                    e
-                )))
-            }
-            JsonRpcResponse::Result(r) => serde_json::from_value(r.result).map_err(|e| {
-                ProviderError::CustomError(format!("serde_json::from_value error: {:?}", e))
-            }),
+            JsonRpcResponse::Error(e) => return Err(SelfProviderError::JsonRpcError(e)),
+            JsonRpcResponse::Result(r) => Ok(serde_json::from_value(r.result)
+                .expect("Caller should provide generic parameter of type Bytes")),
         }
     }
 }
