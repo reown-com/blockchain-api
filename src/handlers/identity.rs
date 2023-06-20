@@ -59,7 +59,7 @@ pub async fn handler(
             ProviderError::EnsError(e) | ProviderError::EnsNotOwned(e) => {
                 RpcError::IdentityNotFound(e)
             }
-            e => RpcError::Other(anyhow::anyhow!("Provider error: {e}")),
+            e => RpcError::EthersProviderError(e),
         })?;
 
     let avatar = provider.resolve_avatar(&name).await.map_or_else(
