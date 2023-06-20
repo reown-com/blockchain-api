@@ -38,7 +38,7 @@ resource "aws_elasticache_cluster" "cache" {
   engine               = "redis"
   node_type            = var.node_type
   num_cache_nodes      = 1
-  parameter_group_name = "default.redis6.x"
+  parameter_group_name = "default.redis6.x" # https://walletconnect.slack.com/archives/C03SCF66K2T/p1687225284695649?thread_ts=1687189700.702309&cid=C03SCF66K2T
   engine_version       = "6.x"
   port                 = 6379
   subnet_group_name    = aws_elasticache_subnet_group.private_subnets.name

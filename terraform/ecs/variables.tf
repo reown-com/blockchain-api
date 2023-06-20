@@ -83,6 +83,14 @@ variable "project_data_redis_endpoint_write" {
   type = string
 }
 
+variable "identity_cache_redis_endpoint_read" {
+  type = string
+}
+
+variable "identity_cache_redis_endpoint_write" {
+  type = string
+}
+
 variable "analytics-data-lake_bucket_name" {
   type = string
 }
