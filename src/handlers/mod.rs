@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 pub mod health;
+pub mod identity;
 pub mod metrics;
 pub mod proxy;
 pub mod ws_proxy;
