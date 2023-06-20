@@ -217,10 +217,8 @@ impl ProviderKind {
 pub trait RpcProvider: Provider {
     async fn proxy(
         &self,
+        chain_id: &str,
         method: hyper::http::Method,
-        xpath: axum::extract::MatchedPath,
-        query_params: RpcQueryParams,
-        headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
     ) -> RpcResult<Response>;
 }

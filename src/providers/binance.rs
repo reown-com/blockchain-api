@@ -1,5 +1,5 @@
 use {
-    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
         env::BinanceConfig,
         error::{RpcError, RpcResult},
@@ -49,15 +49,13 @@ impl RateLimited for BinanceProvider {
 impl RpcProvider for BinanceProvider {
     async fn proxy(
         &self,
+        chain_id: &str,
         method: hyper::http::Method,
-        _path: axum::extract::MatchedPath,
-        query_params: RpcQueryParams,
-        _headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
     ) -> RpcResult<Response> {
         let uri = self
             .supported_chains
-            .get(&query_params.chain_id.to_lowercase())
+            .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
         let hyper_request = hyper::http::Request::builder()

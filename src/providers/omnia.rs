@@ -1,5 +1,5 @@
 use {
-    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
         env::OmniatechConfig,
         error::{RpcError, RpcResult},
@@ -45,15 +45,13 @@ impl RateLimited for OmniatechProvider {
 impl RpcProvider for OmniatechProvider {
     async fn proxy(
         &self,
+        chain_id: &str,
         method: hyper::http::Method,
-        _path: axum::extract::MatchedPath,
-        query_params: RpcQueryParams,
-        _headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
     ) -> RpcResult<Response> {
         let chain = self
             .supported_chains
-            .get(&query_params.chain_id.to_lowercase())
+            .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
         let uri = format!("https://endpoints.omniatech.io/v1/{}/mainnet/public", chain);
