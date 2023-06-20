@@ -1,5 +1,5 @@
 use {
-    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
         env::BinanceConfig,
         error::{RpcError, RpcResult},

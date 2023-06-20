@@ -1,5 +1,5 @@
 use {
-    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
         env::PublicnodeConfig,
         error::{RpcError, RpcResult},

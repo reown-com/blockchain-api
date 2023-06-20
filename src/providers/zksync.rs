@@ -1,5 +1,5 @@
 use {
-    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams},
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
         env::ZKSyncConfig,
         error::{RpcError, RpcResult},

@@ -83,16 +83,13 @@ pub async fn handler(
     // Start timing external provider added time
     let external_call_start = SystemTime::now();
 
-    let mut response = provider
-        .proxy(&chain_id, method, body)
-        .await
-        .tap_err(|e| {
-            warn!(
-                "Failed call to provider: {} with {}",
-                provider.provider_kind(),
-                e
-            );
-        })?;
+    let mut response = provider.proxy(&chain_id, method, body).await.tap_err(|e| {
+        warn!(
+            "Failed call to provider: {} with {}",
+            provider.provider_kind(),
+            e
+        );
+    })?;
 
     state
         .metrics
