@@ -27,7 +27,7 @@ pub async fn handler(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Query(query_params): Query<RpcQueryParams>,
     Method(method): Method,
-    path: MatchedPath,
+    _path: MatchedPath,
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response, RpcError> {
