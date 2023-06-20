@@ -84,7 +84,7 @@ pub async fn handler(
     let external_call_start = SystemTime::now();
 
     let mut response = provider
-        .proxy(method, path, query_params, headers, body)
+        .proxy(&chain_id, method, body)
         .await
         .tap_err(|e| {
             warn!(

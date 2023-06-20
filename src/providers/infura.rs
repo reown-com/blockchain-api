@@ -108,15 +108,13 @@ impl RateLimited for InfuraProvider {
 impl RpcProvider for InfuraProvider {
     async fn proxy(
         &self,
+        chain_id: &str,
         method: hyper::http::Method,
-        _path: axum::extract::MatchedPath,
-        query_params: RpcQueryParams,
-        _headers: hyper::http::HeaderMap,
         body: hyper::body::Bytes,
     ) -> RpcResult<Response> {
         let chain = &self
             .supported_chains
-            .get(&query_params.chain_id.to_lowercase())
+            .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
         let uri = format!("https://{}.infura.io/v3/{}", chain, self.project_id);
