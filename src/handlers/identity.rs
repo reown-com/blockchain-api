@@ -49,10 +49,18 @@ pub async fn handler(
     });
 
     let name = provider
-        .lookup_address(address.parse::<Address>().unwrap())
+        .lookup_address(
+            address
+                .parse::<Address>()
+                .map_err(|e| RpcError::Other(anyhow::anyhow!("parse address error: {:?}", e)))?,
+        )
         .await
-        .unwrap();
-    let avatar = provider.resolve_avatar(&name).await.unwrap();
+        .map_err(|e| RpcError::Other(anyhow::anyhow!("lookup_address error: {:?}", e)))?;
+
+    let avatar = provider
+        .resolve_avatar(&name)
+        .await
+        .map_err(|e| RpcError::Other(anyhow::anyhow!("resolve_avatar error: {:?}", e)))?;
 
     let res = IdentityResponse {
         name,
@@ -97,7 +105,7 @@ impl JsonRpcClient for SelfProvider {
 
         let id = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .expect("can get current time")
             .as_millis()
             .to_string();
 
@@ -133,7 +141,9 @@ impl JsonRpcClient for SelfProvider {
             .await
             .map_err(|e| ProviderError::CustomError(format!("to_bytes error: {:?}", e)))?;
 
-        let response = serde_json::from_slice::<JsonRpcResponse>(&bytes).unwrap();
+        let response = serde_json::from_slice::<JsonRpcResponse>(&bytes).map_err(|e| {
+            ProviderError::CustomError(format!("serde_json::from_slice error: {:?}", e))
+        })?;
 
         match response {
             JsonRpcResponse::Error(e) => {
@@ -142,7 +152,9 @@ impl JsonRpcClient for SelfProvider {
                     e
                 )))
             }
-            JsonRpcResponse::Result(r) => Ok(serde_json::from_value(r.result).unwrap()),
+            JsonRpcResponse::Result(r) => serde_json::from_value(r.result).map_err(|e| {
+                ProviderError::CustomError(format!("serde_json::from_value error: {:?}", e))
+            }),
         }
     }
 }
