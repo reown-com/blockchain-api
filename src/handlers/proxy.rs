@@ -27,10 +27,18 @@ pub async fn handler(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Query(query_params): Query<RpcQueryParams>,
     Method(method): Method,
-    _path: MatchedPath,
+    path: MatchedPath,
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response, RpcError> {
+    if method != hyper::Method::POST {
+        warn!(
+            "Handling non-POST method: chain_id:{}, project_id:{}, method:{method}, \
+             path:{path:?}, body:{body:?}",
+            query_params.chain_id, query_params.project_id
+        );
+    }
+
     let project = state
         .registry
         .project_data(&query_params.project_id)
