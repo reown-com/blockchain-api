@@ -27,7 +27,7 @@ pub async fn handler(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Query(query_params): Query<RpcQueryParams>,
     Method(method): Method,
-    path: MatchedPath,
+    _path: MatchedPath,
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response, RpcError> {
@@ -83,16 +83,13 @@ pub async fn handler(
     // Start timing external provider added time
     let external_call_start = SystemTime::now();
 
-    let mut response = provider
-        .proxy(method, path, query_params, headers, body)
-        .await
-        .tap_err(|e| {
-            warn!(
-                "Failed call to provider: {} with {}",
-                provider.provider_kind(),
-                e
-            );
-        })?;
+    let mut response = provider.proxy(&chain_id, method, body).await.tap_err(|e| {
+        warn!(
+            "Failed call to provider: {} with {}",
+            provider.provider_kind(),
+            e
+        );
+    })?;
 
     state
         .metrics
