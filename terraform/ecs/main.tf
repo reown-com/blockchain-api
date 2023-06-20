@@ -84,6 +84,8 @@ resource "aws_ecs_task_definition" "app_task" {
         { "name" : "RPC_PROXY_ANALYTICS_EXPORT_BUCKET", "value" : var.analytics-data-lake_bucket_name },
         { "name" : "RPC_PROXY_ANALYTICS_GEOIP_DB_BUCKET", "value" : var.analytics_geoip_db_bucket_name },
         { "name" : "RPC_PROXY_ANALYTICS_GEOIP_DB_KEY", "value" : var.analytics_geoip_db_key },
+
+        { "name" : "PROMETHEUS_QUERY_URL", "value" : var.prometheus_endpoint },
       ],
       image : local.image,
       essential : true,
