@@ -85,7 +85,7 @@ resource "aws_ecs_task_definition" "app_task" {
         { "name" : "RPC_PROXY_ANALYTICS_GEOIP_DB_BUCKET", "value" : var.analytics_geoip_db_bucket_name },
         { "name" : "RPC_PROXY_ANALYTICS_GEOIP_DB_KEY", "value" : var.analytics_geoip_db_key },
 
-        { "name" : "PROMETHEUS_QUERY_URL", "value" : var.prometheus_endpoint },
+        { "name" : "PROMETHEUS_QUERY_URL", "value" : "http://127.0.0.1:8080" },
       ],
       image : local.image,
       essential : true,
