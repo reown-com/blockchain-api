@@ -40,18 +40,22 @@ pub async fn handler(
     headers: HeaderMap,
     Path(address): Path<String>,
 ) -> Result<Json<IdentityResponse>, RpcError> {
+    let start = SystemTime::now();
+    state.metrics.add_identity_lookup();
+
+    let address = address
+        .parse::<Address>()
+        .map_err(|_| RpcError::IdentityInvalidAddress)?;
+
     let provider = Provider::new(SelfProvider {
-        state,
+        state: state.clone(),
         connect_info,
         query,
         path,
         headers,
     });
 
-    let address = address
-        .parse::<Address>()
-        .map_err(|_| RpcError::IdentityInvalidAddress)?;
-
+    let name_lookup_start = SystemTime::now();
     let name = provider
         .lookup_address(address)
         .await
@@ -61,23 +65,51 @@ pub async fn handler(
             }
             e => RpcError::EthersProviderError(e),
         })?;
+    let tld = name
+        .rsplit('.')
+        .next()
+        .expect("split always returns at least 1 item, even if splitting empty string");
+    state
+        .metrics
+        .add_identity_lookup_name_duration(name_lookup_start, tld.to_string());
+    state
+        .metrics
+        .add_identity_lookup_name_success(tld.to_string());
 
-    let avatar = provider.resolve_avatar(&name).await.map_or_else(
-        |e| match e {
-            ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
-            ProviderError::CustomError(e) if e.starts_with("relative URL without a base") => {
-                // Seems not having an `avatar` field returns this error
-                Ok(None)
-            }
-            e => Err(RpcError::EthersProviderError(e)),
-        },
-        |url| Ok(Some(url)),
-    )?;
+    let avatar_lookup_start = SystemTime::now();
+    let avatar = provider
+        .resolve_avatar(&name)
+        .await
+        .map_or_else(
+            |e| match e {
+                ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
+                ProviderError::CustomError(e) if e.starts_with("relative URL without a base") => {
+                    // Seems not having an `avatar` field returns this error
+                    Ok(None)
+                }
+                e => Err(RpcError::EthersProviderError(e)),
+            },
+            |url| Ok(Some(url)),
+        )?
+        .map(|url| url.to_string());
+    state
+        .metrics
+        .add_identity_lookup_avatar_duration(avatar_lookup_start, tld.to_string());
+    state
+        .metrics
+        .add_identity_lookup_avatar_success(tld.to_string());
+    if avatar.is_some() {
+        state
+            .metrics
+            .add_identity_lookup_avatar_present(tld.to_string());
+    }
 
-    let res = IdentityResponse {
-        name,
-        avatar: avatar.map(|url| url.to_string()),
-    };
+    state
+        .metrics
+        .add_identity_lookup_latency(start, tld.to_string());
+    state.metrics.add_identity_lookup_success(tld.to_string());
+
+    let res = IdentityResponse { name, avatar };
 
     Ok(Json(res))
 }
