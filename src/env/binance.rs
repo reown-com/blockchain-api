@@ -34,7 +34,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:56".into(),
             (
                 "https://bsc-dataseed.binance.org/".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                Weight::new(Priority::High).unwrap(),
             ),
         ),
         // Binance Smart Chain Testnet
@@ -42,7 +42,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:97".into(),
             (
                 "https://data-seed-prebsc-1-s1.binance.org:8545".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                Weight::new(Priority::High).unwrap(),
             ),
         ),
     ])
