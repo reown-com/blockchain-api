@@ -9,6 +9,8 @@ pub struct Config {
     pub redis_max_connections: usize,
     pub project_data_redis_addr_read: Option<String>,
     pub project_data_redis_addr_write: Option<String>,
+    pub identity_cache_redis_addr_read: Option<String>,
+    pub identity_cache_redis_addr_write: Option<String>,
 }
 
 impl Default for Config {
@@ -17,6 +19,8 @@ impl Default for Config {
             redis_max_connections: 64,
             project_data_redis_addr_read: None,
             project_data_redis_addr_write: None,
+            identity_cache_redis_addr_read: None,
+            identity_cache_redis_addr_write: None,
         }
     }
 }
@@ -26,6 +30,16 @@ impl Config {
         match (
             &self.project_data_redis_addr_read,
             &self.project_data_redis_addr_write,
+        ) {
+            (None, None) => None,
+            (addr_read, addr_write) => Some(RedisAddr::from((addr_read, addr_write))),
+        }
+    }
+
+    pub fn identity_cache_redis_addr(&self) -> Option<RedisAddr> {
+        match (
+            &self.identity_cache_redis_addr_read,
+            &self.identity_cache_redis_addr_write,
         ) {
             (None, None) => None,
             (addr_read, addr_write) => Some(RedisAddr::from((addr_read, addr_write))),

@@ -63,6 +63,7 @@ axum-tungstenite = "0.2.0"
 
 rand = "0.8.4"
 prometheus-http-query = "0.6.6"
+ethers = "2.0.7"
 
 
 [dev-dependencies]

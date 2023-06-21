@@ -74,11 +74,13 @@ module "ecs" {
   autoscaling_min_capacity = var.autoscaling_min_instances
   autoscaling_max_capacity = var.autoscaling_max_instances
 
-  registry_api_endpoint             = var.registry_api_endpoint
-  registry_api_auth_token           = var.registry_api_auth_token
-  project_data_cache_ttl            = var.project_data_cache_ttl
-  project_data_redis_endpoint_read  = module.redis.endpoint
-  project_data_redis_endpoint_write = module.redis.endpoint
+  registry_api_endpoint               = var.registry_api_endpoint
+  registry_api_auth_token             = var.registry_api_auth_token
+  project_data_cache_ttl              = var.project_data_cache_ttl
+  project_data_redis_endpoint_read    = module.redis.endpoint
+  project_data_redis_endpoint_write   = module.redis.endpoint
+  identity_cache_redis_endpoint_read  = module.redis.endpoint
+  identity_cache_redis_endpoint_write = module.redis.endpoint
 
   analytics-data-lake_bucket_name = aws_s3_bucket.analytics-data-lake_bucket.bucket
   analytics_key_arn               = aws_kms_key.analytics_bucket.arn
@@ -103,7 +105,7 @@ module "redis" {
 
   redis_name = "rpc-${terraform.workspace}"
   app_name   = local.app_name
-  node_type  = "cache.t4g.micro"
+  node_type  = "cache.t4g.micro" # https://aws.amazon.com/elasticache/pricing/?nc=sn&loc=5#On-demand_nodes
   vpc_name   = "ops-${terraform.workspace}-vpc"
   zone_id    = local.zone_id
   zone_name  = local.private_zone_name

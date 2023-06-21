@@ -54,6 +54,15 @@ pub enum RpcError {
 
     #[error(transparent)]
     AxumTungstenite(#[from] axum_tungstenite::Error),
+
+    #[error("Invalid address")]
+    IdentityInvalidAddress,
+
+    #[error("Identity not found. Error: {0}")]
+    IdentityNotFound(String),
+
+    #[error("Ethers provider error: {0}")]
+    EthersProviderError(ethers::providers::ProviderError),
 }
 
 impl IntoResponse for RpcError {
@@ -107,6 +116,22 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "transport".to_string(),
                     "We failed to reach the provider for your request".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::IdentityInvalidAddress => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "address".to_string(),
+                    "The address provided is invalid".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::IdentityNotFound(e) => (
+                StatusCode::NOT_FOUND,
+                Json(new_error_response(
+                    "address".to_string(),
+                    format!("Could not find the ENS name: {e}"),
                 )),
             )
                 .into_response(),
