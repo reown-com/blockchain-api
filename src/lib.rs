@@ -117,11 +117,11 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         move |response: &Response, latency: Duration, _span: &Span| {
             proxy_state
                 .metrics
-                .add_http_call(response.status().into(), "proxy");
+                .add_http_call(response.status().into(), "proxy".to_owned());
 
             proxy_state.metrics.add_http_latency(
                 response.status().into(),
-                "proxy",
+                "proxy".to_owned(),
                 latency.as_secs_f64(),
             )
         },

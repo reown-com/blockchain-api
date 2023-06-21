@@ -86,24 +86,22 @@ impl Metrics {
 }
 
 impl Metrics {
-    pub fn add_rpc_call(&self, chain_id: &str) {
-        self.rpc_call_counter.add(1, &[opentelemetry::KeyValue::new(
-            "chain.id",
-            chain_id.to_owned(),
-        )]);
+    pub fn add_rpc_call(&self, chain_id: String) {
+        self.rpc_call_counter
+            .add(1, &[opentelemetry::KeyValue::new("chain.id", chain_id)]);
     }
 
-    pub fn add_http_call(&self, code: u16, route: &str) {
+    pub fn add_http_call(&self, code: u16, route: String) {
         self.http_call_counter.add(1, &[
             opentelemetry::KeyValue::new("code", i64::from(code)),
-            opentelemetry::KeyValue::new("route", route.to_owned()),
+            opentelemetry::KeyValue::new("route", route),
         ]);
     }
 
-    pub fn add_http_latency(&self, code: u16, route: &str, latency: f64) {
+    pub fn add_http_latency(&self, code: u16, route: String, latency: f64) {
         self.http_latency_tracker.record(latency, &[
             opentelemetry::KeyValue::new("code", i64::from(code)),
-            opentelemetry::KeyValue::new("route", route.to_owned()),
+            opentelemetry::KeyValue::new("route", route),
         ])
     }
 
@@ -146,19 +144,19 @@ impl Metrics {
         &self,
         provider: &dyn RpcProvider,
         status: http::StatusCode,
-        chain_id: &str,
+        chain_id: String,
     ) {
         self.provider_status_code_counter.add(1, &[
             opentelemetry::KeyValue::new("provider", provider.provider_kind().to_string()),
             opentelemetry::KeyValue::new("status_code", format!("{}", status.as_u16())),
-            opentelemetry::KeyValue::new("chain_id", chain_id.to_owned()),
+            opentelemetry::KeyValue::new("chain_id", chain_id),
         ])
     }
 
-    pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: &str, weight: u64) {
+    pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: String, weight: u64) {
         self.weights_value_recorder.record(weight, &[
             opentelemetry::KeyValue::new("provider", provider.to_string()),
-            opentelemetry::KeyValue::new("chain_id", chain_id.to_string()),
+            opentelemetry::KeyValue::new("chain_id", chain_id),
         ])
     }
 }
