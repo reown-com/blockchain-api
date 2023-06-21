@@ -62,6 +62,10 @@ variable "prometheus_endpoint" {
   type = string
 }
 
+variable "prometheus_workspace_id" {
+  type = string
+}
+
 variable "registry_api_endpoint" {
   type = string
 }
