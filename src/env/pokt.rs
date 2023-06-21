@@ -56,13 +56,12 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Binance Smart Chain
         (
             "eip155:56".into(),
-            ("bsc-mainnet".into(), Weight::new(Priority::High).unwrap()),
+            ("bsc-mainnet".into(), Weight::new(Priority::Max).unwrap()),
         ),
         // Ethereum
-        // TODO: Reenable once Pokt fixes
         (
             "eip155:1".into(),
-            ("mainnet".into(), Weight::new(Priority::Disabled).unwrap()),
+            ("eth-mainnet".into(), Weight::new(Priority::Max).unwrap()),
         ),
         (
             "eip155:5".into(),
