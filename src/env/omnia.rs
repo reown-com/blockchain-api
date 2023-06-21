@@ -32,12 +32,12 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Ethereum mainnet
         (
             "eip155:1".into(),
-            ("eth".into(), Weight::new(Priority::Normal).unwrap()),
+            ("eth".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Binance Smart Chain mainnet
         (
             "eip155:56".into(),
-            ("bsc".into(), Weight::new(Priority::Normal).unwrap()),
+            ("bsc".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Polygon
         (
