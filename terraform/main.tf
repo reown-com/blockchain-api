@@ -69,7 +69,7 @@ module "ecs" {
   infura_project_id          = var.infura_project_id
   pokt_project_id            = var.pokt_project_id
   prometheus_endpoint        = aws_prometheus_workspace.prometheus.prometheus_endpoint
-  prometheus_workspace_id    = aws_prometheus_workspace.prometheus.id 
+  prometheus_workspace_id    = aws_prometheus_workspace.prometheus.id
 
   autoscaling_min_capacity = var.autoscaling_min_instances
   autoscaling_max_capacity = var.autoscaling_max_instances
