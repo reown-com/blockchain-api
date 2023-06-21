@@ -1,4 +1,8 @@
-use {super::ProviderConfig, crate::providers::Weight, std::collections::HashMap};
+use {
+    super::ProviderConfig,
+    crate::providers::{Priority, Weight},
+    std::collections::HashMap,
+};
 
 #[derive(Debug)]
 pub struct BinanceConfig {
@@ -28,14 +32,17 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Binance Smart Chain Mainnet
         (
             "eip155:56".into(),
-            ("https://bsc-dataseed.binance.org/".into(), Weight(6.into())),
+            (
+                "https://bsc-dataseed.binance.org/".into(),
+                Weight::new(Priority::High).unwrap(),
+            ),
         ),
         // Binance Smart Chain Testnet
         (
             "eip155:97".into(),
             (
                 "https://data-seed-prebsc-1-s1.binance.org:8545".into(),
-                Weight(3.into()),
+                Weight::new(Priority::High).unwrap(),
             ),
         ),
     ])

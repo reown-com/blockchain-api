@@ -1,4 +1,8 @@
-use {super::ProviderConfig, crate::providers::Weight, std::collections::HashMap};
+use {
+    super::ProviderConfig,
+    crate::providers::{Priority, Weight},
+    std::collections::HashMap,
+};
 
 #[derive(Debug)]
 pub struct OmniatechConfig {
@@ -26,23 +30,44 @@ impl ProviderConfig for OmniatechConfig {
 fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum mainnet
-        ("eip155:1".into(), ("eth".into(), Weight(1.into()))),
+        (
+            "eip155:1".into(),
+            ("eth".into(), Weight::new(Priority::Low).unwrap()),
+        ),
         // Binance Smart Chain mainnet
-        ("eip155:56".into(), ("bsc".into(), Weight(1.into()))),
+        (
+            "eip155:56".into(),
+            ("bsc".into(), Weight::new(Priority::Low).unwrap()),
+        ),
         // Polygon
-        ("eip155:137".into(), ("matic".into(), Weight(1.into()))),
+        (
+            "eip155:137".into(),
+            ("matic".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Near
-        ("near".into(), ("near".into(), Weight(1.into()))),
+        (
+            "near".into(),
+            ("near".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Aurora
         (
             "eip155:1313161554".into(),
-            ("aurora".into(), Weight(1.into())),
+            ("aurora".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Optimism
-        ("eip155:10".into(), ("op".into(), Weight(1.into()))),
+        (
+            "eip155:10".into(),
+            ("op".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Solana
-        ("solana-mainnet".into(), ("sol".into(), Weight(1.into()))),
+        (
+            "solana-mainnet".into(),
+            ("sol".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Avalanche C chain
-        ("eip155:43114".into(), ("avax".into(), Weight(1.into()))),
+        (
+            "eip155:43114".into(),
+            ("avax".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
     ])
 }

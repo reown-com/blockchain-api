@@ -1,7 +1,8 @@
 use {
-    crate::env::ProviderConfig,
+    crate::{env::ProviderConfig, error::RpcError},
     axum::response::Response,
     axum_tungstenite::WebSocketUpgrade,
+    hyper::http::HeaderValue,
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
     std::{fmt::Debug, hash::Hash, sync::Arc},
     tracing::{info, log::warn},
@@ -39,16 +40,21 @@ pub struct ProviderRepository {
     ws_weight_resolver: WeightResolver,
 
     prometheus_client: prometheus_http_query::Client,
+    prometheus_workspace_header: String,
 }
 
 impl ProviderRepository {
     pub fn new() -> Self {
         let prometheus_client = {
             let prometheus_query_url =
-                std::env::var("PROMETHEUS_QUERY_URL").unwrap_or("http://localhost:9090".into());
+                std::env::var("SIG_PROXY_URL").unwrap_or("http://localhost:8080/".into());
+
             prometheus_http_query::Client::try_from(prometheus_query_url)
                 .expect("Failed to connect to prometheus")
         };
+
+        let prometheus_workspace_header =
+            std::env::var("SIG_PROM_WORKSPACE_HEADER").unwrap_or("localhost:9090".into());
 
         Self {
             providers: HashMap::new(),
@@ -56,6 +62,7 @@ impl ProviderRepository {
             weight_resolver: HashMap::new(),
             ws_weight_resolver: HashMap::new(),
             prometheus_client,
+            prometheus_workspace_header,
         }
     }
 
@@ -158,9 +165,15 @@ impl ProviderRepository {
     pub async fn update_weights(&self, metrics: &crate::Metrics) {
         info!("Updating weights");
 
+        let Ok(header_value) = HeaderValue::from_str(&self.prometheus_workspace_header) else {
+            warn!("Failed to parse prometheus workspace header from {}", self.prometheus_workspace_header);
+            return;
+        };
+
         match self
             .prometheus_client
             .query("round(increase(provider_status_code_counter[1h]))")
+            .header("host", header_value)
             .get()
             .await
         {
@@ -236,12 +249,80 @@ pub trait RpcWsProvider: Provider {
     ) -> RpcResult<Response>;
 }
 
+const MAX_PRIORITY: u32 = 100;
+
+pub enum Priority {
+    Max,
+    High,
+    Normal,
+    Low,
+    Disabled,
+    Custom(u32),
+}
+
+impl TryInto<PriorityValue> for Priority {
+    type Error = RpcError;
+
+    fn try_into(self) -> Result<PriorityValue, Self::Error> {
+        match self {
+            Self::Max => PriorityValue::new(MAX_PRIORITY),
+            Self::High => PriorityValue::new(MAX_PRIORITY / 4 + MAX_PRIORITY / 2),
+            Self::Normal => PriorityValue::new(MAX_PRIORITY / 2),
+            Self::Low => PriorityValue::new(MAX_PRIORITY / 4),
+            Self::Disabled => PriorityValue::new(0),
+            Self::Custom(value) => PriorityValue::new(value),
+        }
+    }
+}
+
 #[derive(Debug)]
-pub struct Weight(pub std::sync::atomic::AtomicU32);
+pub struct PriorityValue(u32);
+
+impl PriorityValue {
+    fn new(value: u32) -> RpcResult<Self> {
+        if value > MAX_PRIORITY {
+            return Err(anyhow::anyhow!(
+                "Priority value cannot be greater than {}",
+                MAX_PRIORITY
+            ))
+            .map_err(RpcError::from);
+        }
+
+        Ok(Self(value))
+    }
+
+    fn value(&self) -> u32 {
+        self.0
+    }
+}
+
+#[derive(Debug)]
+pub struct Weight {
+    value: std::sync::atomic::AtomicU32,
+    priority: PriorityValue,
+}
 
 impl Weight {
+    pub fn new(priority: Priority) -> RpcResult<Self> {
+        let priority_val = TryInto::<PriorityValue>::try_into(priority)?.value();
+        Ok(Self {
+            value: std::sync::atomic::AtomicU32::new(priority_val),
+            priority: PriorityValue::new(priority_val)?,
+        })
+    }
+
     pub fn value(&self) -> u32 {
-        self.0.load(std::sync::atomic::Ordering::SeqCst)
+        self.value.load(std::sync::atomic::Ordering::SeqCst)
+    }
+
+    pub fn update_value(&self, value: u32) {
+        self.value.store(
+            // Calulate the new value based on the priority, with MAX_PRIORITY/2 being the "normal"
+            // value Everything above MAX_PRIORITY/2 will be prioritized, everything
+            // below will be deprioritized
+            (value * self.priority.value()) / (MAX_PRIORITY / 2),
+            std::sync::atomic::Ordering::SeqCst,
+        );
     }
 }
 

@@ -112,23 +112,21 @@ pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWei
                 continue;
             };
 
-            let Some(atomic) = provider_chain_weight
+            let Some(weight) = provider_chain_weight
                 .get(&ProviderKind::from_str(&provider).unwrap()) else {
                     warn!("Weight for {} not found in weight map: {:?}", &provider, provider_chain_weight);
                     continue;
                 };
 
-            atomic
-                .0
-                .store(chain_weight, std::sync::atomic::Ordering::SeqCst);
+            weight.update_value(chain_weight);
         }
     }
 }
 
 pub fn record_values(weight_resolver: &WeightResolver, metrics: &crate::Metrics) {
     for (chain_id, provider_chain_weight) in weight_resolver {
-        for (provider_kind, atomic) in provider_chain_weight {
-            let weight = atomic.0.load(std::sync::atomic::Ordering::SeqCst);
+        for (provider_kind, weight) in provider_chain_weight {
+            let weight = weight.value();
             metrics.record_provider_weight(provider_kind, chain_id.to_owned(), weight.into())
         }
     }
