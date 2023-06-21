@@ -2,6 +2,7 @@ use {
     crate::{env::ProviderConfig, error::RpcError},
     axum::response::Response,
     axum_tungstenite::WebSocketUpgrade,
+    hyper::http::HeaderValue,
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
     std::{fmt::Debug, hash::Hash, sync::Arc},
     tracing::{info, log::warn},
@@ -39,16 +40,21 @@ pub struct ProviderRepository {
     ws_weight_resolver: WeightResolver,
 
     prometheus_client: prometheus_http_query::Client,
+    prometheus_workspace_header: String,
 }
 
 impl ProviderRepository {
     pub fn new() -> Self {
         let prometheus_client = {
             let prometheus_query_url =
-                std::env::var("PROMETHEUS_QUERY_URL").unwrap_or("http://localhost:9090".into());
+                std::env::var("SIG_PROXY_URL").unwrap_or("http://localhost:8080/".into());
+
             prometheus_http_query::Client::try_from(prometheus_query_url)
                 .expect("Failed to connect to prometheus")
         };
+
+        let prometheus_workspace_header =
+            std::env::var("SIG_PROM_WORKSPACE_HEADER").unwrap_or("localhost:9090".into());
 
         Self {
             providers: HashMap::new(),
@@ -56,6 +62,7 @@ impl ProviderRepository {
             weight_resolver: HashMap::new(),
             ws_weight_resolver: HashMap::new(),
             prometheus_client,
+            prometheus_workspace_header,
         }
     }
 
@@ -158,9 +165,15 @@ impl ProviderRepository {
     pub async fn update_weights(&self, metrics: &crate::Metrics) {
         info!("Updating weights");
 
+        let Ok(header_value) = HeaderValue::from_str(&self.prometheus_workspace_header) else {
+            warn!("Failed to parse prometheus workspace header from {}", self.prometheus_workspace_header);
+            return;
+        };
+
         match self
             .prometheus_client
             .query("round(increase(provider_status_code_counter[1h]))")
+            .header("host", header_value)
             .get()
             .await
         {
