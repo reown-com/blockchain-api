@@ -172,7 +172,7 @@ impl ProviderRepository {
 
         match self
             .prometheus_client
-            .query("round(increase(provider_status_code_counter[5m]))")
+            .query("round(increase(provider_status_code_counter[12m]))")
             .header("host", header_value)
             .get()
             .await
