@@ -51,6 +51,7 @@ pub async fn handler(
 
     let cache_key = format!("{}", address);
     if let Some(cache) = &state.identity_cache {
+        debug!("Checking cache for identity");
         let cache_start = SystemTime::now();
         let value = cache.get(&cache_key).await?;
         state.metrics.add_identity_lookup_cache_latency(cache_start);
@@ -76,10 +77,12 @@ pub async fn handler(
         headers,
     });
 
+    debug!("Beginning name lookup");
     let name_lookup_start = SystemTime::now();
     let name = provider
         .lookup_address(address)
         .await
+        .tap_err(|err| debug!("Error while looking up name: {err:?}"))
         .map_err(|e| match e {
             ProviderError::EnsError(e) | ProviderError::EnsNotOwned(e) => {
                 RpcError::IdentityNotFound(e)
@@ -87,6 +90,7 @@ pub async fn handler(
             e => RpcError::EthersProviderError(e),
         })?;
     let tld = tld_from_name(&name);
+    debug!("tld: {tld}");
     state
         .metrics
         .add_identity_lookup_name_duration(name_lookup_start, tld.to_string());
@@ -94,10 +98,12 @@ pub async fn handler(
         .metrics
         .add_identity_lookup_name_success(tld.to_string());
 
+    debug!("Beginning avatar lookup");
     let avatar_lookup_start = SystemTime::now();
     let avatar = provider
         .resolve_avatar(&name)
         .await
+        .tap_err(|err| debug!("Error while looking up avatar: {err:?}"))
         .map_or_else(
             |e| match e {
                 ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
@@ -126,6 +132,7 @@ pub async fn handler(
     let res = IdentityResponse { name, avatar };
 
     if let Some(cache) = &state.identity_cache {
+        debug!("Saving to cache");
         let cache = cache.clone();
         let res = res.clone();
         let cache_ttl = Duration::from_secs(60 * 60 * 24);
@@ -134,8 +141,11 @@ pub async fn handler(
             cache
                 .set(&cache_key, &res, Some(cache_ttl))
                 .await
-                .tap_err(|err| warn!("failed to cache identity lookup: {:?}", err))
+                .tap_err(|err| {
+                    warn!("failed to cache identity lookup (cache_key:{cache_key}): {err:?}")
+                })
                 .ok();
+            debug!("Setting cache success");
         });
     }
 
