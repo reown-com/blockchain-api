@@ -3,6 +3,11 @@ variable "region" {
   default = "eu-central-1"
 }
 
+variable "ecr_app_version" {
+  description = "The tag of the app image to deploy."
+  type        = string
+}
+
 variable "infura_project_id" {
   type = string
 }
