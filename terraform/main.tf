@@ -6,7 +6,7 @@ locals {
   fqdn                    = terraform.workspace == "prod" ? local.hosted_zone_name : "${terraform.workspace}.${local.hosted_zone_name}"
   backup_fqdn             = terraform.workspace == "prod" ? local.backup_hosted_zone_name : "${terraform.workspace}.${local.backup_hosted_zone_name}"
 
-  analytics_geoip_db_bucket_env = terraform.workspace == "dev" ? "staging" : terraform.workspace
+  analytics_geoip_db_bucket_env  = terraform.workspace == "dev" ? "staging" : terraform.workspace
   analytics_geoip_db_bucket_name = "${local.analytics_geoip_db_bucket_env}.relay.geo.ip.database.private.${local.analytics_geoip_db_bucket_env}.walletconnect"
 }
 
