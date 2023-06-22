@@ -76,10 +76,11 @@ impl RpcProvider for PoktProvider {
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let uri = format!(
-            "https://{}.gateway.pokt.network/v1/lb/{}",
-            chain, self.project_id
-        );
+        // let uri = format!(
+        //     "https://{}.gateway.pokt.network/v1/lb/{}",
+        //     chain, self.project_id
+        // );
+        let uri = "http://localhost:4040".to_string();
 
         let hyper_request = hyper::http::Request::builder()
             .method(method)
