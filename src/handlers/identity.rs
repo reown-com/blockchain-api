@@ -236,17 +236,14 @@ impl JsonRpcClient for SelfProvider {
 
         let id = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .expect("can get current time")
+            .expect("Time didn't go backwards")
             .as_millis()
             .to_string();
 
         let response = super::proxy::handler(
             self.state.clone(),
             self.connect_info,
-            Query(RpcQueryParams {
-                chain_id: self.query.chain_id.clone(),
-                project_id: self.query.project_id.clone(),
-            }),
+            self.query.clone(),
             Method(HyperMethod::POST),
             self.path.clone(),
             self.headers.clone(),
@@ -276,10 +273,12 @@ impl JsonRpcClient for SelfProvider {
         let response = serde_json::from_slice::<JsonRpcResponse>(&bytes)
             .map_err(SelfProviderError::ProviderBodySerde)?;
 
-        match response {
+        let result = match response {
             JsonRpcResponse::Error(e) => return Err(SelfProviderError::JsonRpcError(e)),
-            JsonRpcResponse::Result(r) => Ok(serde_json::from_value(r.result)
-                .expect("Caller should provide generic parameter of type Bytes")),
-        }
+            JsonRpcResponse::Result(r) => r.result,
+        };
+        let result = serde_json::from_value(result)
+            .expect("Caller always provides generic parameter R=Bytes");
+        Ok(result)
     }
 }
