@@ -72,7 +72,7 @@ fn calculate_chain_weight(
     let Availability(chain_success, chain_failure) = chain_availability;
 
     // Sum failed and successful calls for chain
-    let chain_total = chain_success + chain_failure;
+    let chain_total = chain_success + chain_failure * chain_failure;
 
     // Provider success rate is the amount of successful calls to provider over the
     // total amount of calls to provider
