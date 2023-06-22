@@ -128,10 +128,11 @@ pub async fn handler(
     if let Some(cache) = &state.identity_cache {
         let cache = cache.clone();
         let res = res.clone();
+        let cache_ttl = Duration::from_secs(60 * 60 * 24);
         // Do not block on cache write.
         tokio::spawn(async move {
             cache
-                .set(&cache_key, &res, Some(Duration::from_secs(60)))
+                .set(&cache_key, &res, Some(cache_ttl))
                 .await
                 .tap_err(|err| warn!("failed to cache identity lookup: {:?}", err))
                 .ok();
