@@ -1,5 +1,14 @@
 use {
-    crate::{env::Config, metrics::Metrics, project::Registry},
+    crate::{
+        env::Config,
+        handlers::identity::IdentityResponse,
+        metrics::Metrics,
+        project::Registry,
+        storage::{
+            redis::{self},
+            KeyValueStorage,
+        },
+    },
     anyhow::Context,
     axum::{
         http,
@@ -64,12 +73,19 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 
     let metrics = Arc::new(Metrics::new(&meter));
     let registry = Registry::new(&config.registry, &config.storage, &meter)?;
+    // TODO refactor encapsulate these details in a lower layer
+    let identity_cache = config
+        .storage
+        .project_data_redis_addr()
+        .map(|addr| redis::Redis::new(&addr, config.storage.redis_max_connections))
+        .transpose()?
+        .map(|r| Arc::new(r) as Arc<dyn KeyValueStorage<IdentityResponse> + 'static>);
     let providers = init_providers();
 
     let external_ip = config
         .server
         .external_ip()
-        .unwrap_or_else(|_| IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
+        .unwrap_or(IpAddr::V4(Ipv4Addr::LOCALHOST));
 
     let analytics = analytics::RPCAnalytics::new(&config.analytics, external_ip)
         .await
@@ -81,6 +97,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         prometheus_exporter,
         metrics.clone(),
         registry,
+        identity_cache,
         analytics,
     );
 

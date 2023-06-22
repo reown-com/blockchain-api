@@ -19,13 +19,14 @@ pub struct Metrics {
     pub weights_value_recorder: ValueRecorder<u64>,
     pub identity_lookup_counter: Counter<u64>,
     pub identity_lookup_success_counter: Counter<u64>,
+    pub identity_lookup_cache_latency_tracker: ValueRecorder<f64>,
+    pub identity_lookup_cache_hit_counter: Counter<u64>,
     pub identity_lookup_name_success_counter: Counter<u64>,
     pub identity_lookup_name_duration_tracker: ValueRecorder<f64>,
     pub identity_lookup_avatar_success_counter: Counter<u64>,
     pub identity_lookup_avatar_duration_tracker: ValueRecorder<f64>,
     pub identity_lookup_avatar_present_counter: Counter<u64>,
     pub identity_lookup_latency_tracker: ValueRecorder<f64>,
-    pub identity_lookup_cache_latency_tracker: ValueRecorder<f64>,
 }
 
 impl Metrics {
@@ -100,6 +101,11 @@ impl Metrics {
             .with_description("The latency to lookup identity in the cache")
             .init();
 
+        let identity_lookup_cache_hit_counter = meter
+            .u64_counter("identity_lookup_cache_hit_counter")
+            .with_description("The number of identity lookups that were cache-hits")
+            .init();
+
         let identity_lookup_name_success_counter = meter
             .u64_counter("identity_lookup_name_success_counter")
             .with_description("The number of identity lookups that returned a name")
@@ -143,6 +149,7 @@ impl Metrics {
             identity_lookup_success_counter,
             identity_lookup_latency_tracker,
             identity_lookup_cache_latency_tracker,
+            identity_lookup_cache_hit_counter,
             identity_lookup_name_success_counter,
             identity_lookup_name_duration_tracker,
             identity_lookup_avatar_success_counter,
@@ -246,14 +253,19 @@ impl Metrics {
         );
     }
 
-    pub fn _add_identity_lookup_cache_latency(&self, start: SystemTime, tld: String) {
+    pub fn add_identity_lookup_cache_latency(&self, start: SystemTime) {
         self.identity_lookup_cache_latency_tracker.record(
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
                 .as_secs_f64(),
-            &[opentelemetry::KeyValue::new("tld", tld)],
+            &[],
         );
+    }
+
+    pub fn add_identity_lookup_cache_hit(&self, tld: String) {
+        self.identity_lookup_cache_hit_counter
+            .add(1, &[opentelemetry::KeyValue::new("tld", tld)]);
     }
 
     pub fn add_identity_lookup_name_success(&self, tld: String) {

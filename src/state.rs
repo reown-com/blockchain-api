@@ -2,9 +2,11 @@ use {
     crate::{
         analytics::RPCAnalytics,
         env::Config,
+        handlers::identity::IdentityResponse,
         metrics::Metrics,
         project::Registry,
         providers::ProviderRepository,
+        storage::KeyValueStorage,
         utils::build::CompileInfo,
     },
     opentelemetry_prometheus::PrometheusExporter,
@@ -17,6 +19,7 @@ pub struct AppState {
     pub exporter: PrometheusExporter,
     pub metrics: Arc<Metrics>,
     pub registry: Registry,
+    pub identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     pub analytics: RPCAnalytics,
     pub compile_info: CompileInfo,
 }
@@ -27,6 +30,7 @@ pub fn new_state(
     exporter: PrometheusExporter,
     metrics: Arc<Metrics>,
     registry: Registry,
+    identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     analytics: RPCAnalytics,
 ) -> AppState {
     AppState {
@@ -35,6 +39,7 @@ pub fn new_state(
         exporter,
         metrics,
         registry,
+        identity_cache,
         analytics,
         compile_info: CompileInfo {},
     }

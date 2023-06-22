@@ -17,16 +17,18 @@ use {
         providers::{JsonRpcClient, Middleware, Provider, ProviderError},
     },
     hyper::{body::to_bytes, HeaderMap, Method as HyperMethod, StatusCode},
-    serde::{de::DeserializeOwned, Serialize},
+    serde::{de::DeserializeOwned, Deserialize, Serialize},
     std::{
         net::SocketAddr,
         sync::Arc,
-        time::{SystemTime, UNIX_EPOCH},
+        time::{Duration, SystemTime, UNIX_EPOCH},
     },
-    tracing::debug,
+    tap::TapFallible,
+    tracing::{debug, warn},
 };
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct IdentityResponse {
     name: String,
     avatar: Option<String>,
@@ -47,6 +49,25 @@ pub async fn handler(
         .parse::<Address>()
         .map_err(|_| RpcError::IdentityInvalidAddress)?;
 
+    let cache_key = format!("{}", address);
+    if let Some(cache) = &state.identity_cache {
+        let cache_start = SystemTime::now();
+        let value = cache.get(&cache_key).await?;
+        state.metrics.add_identity_lookup_cache_latency(cache_start);
+        if let Some(response) = value {
+            let tld = tld_from_name(&response.name);
+            state.metrics.add_identity_lookup_cache_hit(tld.to_string());
+
+            // TODO make below DRY with non-cache branch
+            state
+                .metrics
+                .add_identity_lookup_latency(start, tld.to_string());
+            state.metrics.add_identity_lookup_success(tld.to_string());
+
+            return Ok(Json(response));
+        }
+    }
+
     let provider = Provider::new(SelfProvider {
         state: state.clone(),
         connect_info,
@@ -65,10 +86,7 @@ pub async fn handler(
             }
             e => RpcError::EthersProviderError(e),
         })?;
-    let tld = name
-        .rsplit('.')
-        .next()
-        .expect("split always returns at least 1 item, even if splitting empty string");
+    let tld = tld_from_name(&name);
     state
         .metrics
         .add_identity_lookup_name_duration(name_lookup_start, tld.to_string());
@@ -104,14 +122,34 @@ pub async fn handler(
             .add_identity_lookup_avatar_present(tld.to_string());
     }
 
-    state
-        .metrics
-        .add_identity_lookup_latency(start, tld.to_string());
-    state.metrics.add_identity_lookup_success(tld.to_string());
-
+    let tld = tld.to_string();
     let res = IdentityResponse { name, avatar };
 
+    if let Some(cache) = &state.identity_cache {
+        let cache = cache.clone();
+        let res = res.clone();
+        // Do not block on cache write.
+        tokio::spawn(async move {
+            cache
+                .set(&cache_key, &res, Some(Duration::from_secs(60)))
+                .await
+                .tap_err(|err| warn!("failed to cache identity lookup: {:?}", err))
+                .ok();
+        });
+    }
+
+    state
+        .metrics
+        .add_identity_lookup_latency(start, tld.clone());
+    state.metrics.add_identity_lookup_success(tld);
+
     Ok(Json(res))
+}
+
+fn tld_from_name(name: &str) -> &str {
+    name.rsplit('.')
+        .next()
+        .expect("split always returns at least 1 item, even if splitting empty string")
 }
 
 struct SelfProvider {

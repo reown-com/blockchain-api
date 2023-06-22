@@ -83,4 +83,10 @@ dashboard.new(
 
   row.new('Database'),
     panels.db.redis_cpu_memory(ds, vars)            { gridPos: pos._2 },
+
+  row.new('Identity (ENS) Metrics'),
+    panels.identity.availability(ds, vars)             { gridPos: pos._2 },
+    panels.identity.latency(ds, vars)                  { gridPos: pos._2 },
+    panels.identity.cache(ds, vars)                    { gridPos: pos._2 },
+    panels.identity.avatar(ds, vars)                   { gridPos: pos._2 },
 ]))
