@@ -42,7 +42,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Polygon
         (
             "eip155:137".into(),
-            ("matic".into(), Weight::new(Priority::Normal).unwrap()),
+            ("matic".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Near
         (
