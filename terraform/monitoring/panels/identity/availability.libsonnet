@@ -50,8 +50,6 @@ local targets   = grafana.targets;
       hide        = true,
     ))
     .addTarget(targets.math(
-      // Add lookup_cache_hit to not make our "name availability" appear to drop because it is divided by total lookups, not just name lookups
-      // TODO Consider separate identity_lookup_name metric only created when performing a name lookup
       expr        = '($lookup_name_success / $lookup_name) * 100',
       refId       = "Name availability",
     ))
