@@ -14,8 +14,16 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_avatar_success_counter{}[$__rate_interval]))',
-      refId       = "avatar_lookups",
+      expr        = 'sum(rate(identity_lookup_success_counter{}[$__rate_interval]))',
+      refId       = "lookups",
+      exemplar    = false,
+      hide        = true,
+    ))
+
+    .addTarget(targets.prometheus(
+      datasource  = ds.prometheus,
+      expr        = 'sum(rate(identity_lookup_name_present_counter{}[$__rate_interval]))',
+      refId       = "name_present",
       exemplar    = false,
       hide        = true,
     ))
@@ -29,7 +37,11 @@ local targets   = grafana.targets;
     ))
 
     .addTarget(targets.math(
-      expr        = '($avatar_present / $avatar_lookups) * 100',
-      refId       = "Successful lookups with avatar",
+      expr        = '($name_present / $lookups) * 100',
+      refId       = "% of lookups with name",
+    ))
+    .addTarget(targets.math(
+      expr        = '($avatar_present / $lookups) * 100',
+      refId       = "% of lookups with avatar",
     ))
 }

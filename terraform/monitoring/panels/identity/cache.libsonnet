@@ -10,11 +10,18 @@ local targets   = grafana.targets;
       title       = 'Cache-hit ratio',
       datasource  = ds.prometheus,
     )
-    .configure(defaults.configuration.timeseries.withUnit('percent'))
+    .configure(
+      defaults.configuration.timeseries
+        .withUnit('percent')
+        .withSoftLimit(
+          axisSoftMin = 0,
+          axisSoftMax = 100,
+        )
+    )
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_counter{}[$__rate_interval]))',
+      expr        = 'sum(rate(identity_lookup_success_counter{}[$__rate_interval]))',
       refId       = "lookups",
       exemplar    = false,
       hide        = true,
@@ -22,13 +29,13 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_cache_hit_counter{}[$__rate_interval]))',
-      refId       = "identity_lookup_cache_hit",
+      expr        = 'sum(rate(identity_lookup_success_counter{source="cache"}[$__rate_interval]))',
+      refId       = "cache_hits",
       exemplar    = false,
       hide        = true,
     ))
     .addTarget(targets.math(
-      expr        = '($identity_lookup_cache_hit / $lookups) * 100',
+      expr        = '($cache_hits / $lookups) * 100',
       refId       = "Cache-hits",
     ))
 }

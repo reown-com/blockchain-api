@@ -21,25 +21,25 @@ local _configuration = defaults.configuration.timeseries
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_counter{}[$__rate_interval]))',
-      exemplar    = true,
+      expr        = 'sum(rate(identity_lookup_latency{}[$__rate_interval]))',
+      refId       = "Latency",
     ))
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
       expr        = 'sum(rate(identity_lookup_cache_latency_tracker{}[$__rate_interval]))',
-      exemplar    = true,
+      refId       = "Cache latency",
     ))
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_name_duration_tracker{}[$__rate_interval]))',
-      exemplar    = true,
+      expr        = 'sum(rate(identity_lookup_name_latency_tracker{}[$__rate_interval]))',
+      refId       = "Name RPC latency",
     ))
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_avatar_duration_tracker{}[$__rate_interval]))',
-      exemplar    = true,
+      expr        = 'sum(rate(identity_lookup_avatar_latency_tracker{}[$__rate_interval]))',
+      refId       = "Avatar RPC latency",
     ))
 }

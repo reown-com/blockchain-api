@@ -10,12 +10,19 @@ local targets   = grafana.targets;
       title       = 'Availability',
       datasource  = ds.prometheus,
     )
-    .configure(defaults.configuration.timeseries.withUnit('percent'))
+    .configure(
+      defaults.configuration.timeseries
+        .withUnit('percent')
+        .withSoftLimit(
+          axisSoftMin = 98,
+          axisSoftMax = 100,
+        )
+    )
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
       expr        = 'sum(rate(identity_lookup_counter{}[$__rate_interval]))',
-      refId       = "lookups",
+      refId       = "lookup",
       hide        = true,
     ))
 
@@ -26,17 +33,16 @@ local targets   = grafana.targets;
       hide        = true,
     ))
     .addTarget(targets.math(
-      expr        = '($lookup_success / $lookups) * 100',
+      expr        = '($lookup_success / $lookup) * 100',
       refId       = "Availability",
     ))
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_cache_hit_counter{}[$__rate_interval]))',
-      refId       = "lookup_cache_hit",
+      expr        = 'sum(rate(identity_lookup_name_counter{}[$__rate_interval]))',
+      refId       = "lookup_name",
       hide        = true,
     ))
-
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
       expr        = 'sum(rate(identity_lookup_name_success_counter{}[$__rate_interval]))',
@@ -46,10 +52,16 @@ local targets   = grafana.targets;
     .addTarget(targets.math(
       // Add lookup_cache_hit to not make our "name availability" appear to drop because it is divided by total lookups, not just name lookups
       // TODO Consider separate identity_lookup_name metric only created when performing a name lookup
-      expr        = '(($lookup_cache_hit + $lookup_name_success) / $lookups) * 100',
+      expr        = '($lookup_name_success / $lookup_name) * 100',
       refId       = "Name availability",
     ))
 
+    .addTarget(targets.prometheus(
+      datasource  = ds.prometheus,
+      expr        = 'sum(rate(identity_lookup_avatar_counter{}[$__rate_interval]))',
+      refId       = "lookup_avatar",
+      hide        = true,
+    ))
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
       expr        = 'sum(rate(identity_lookup_avatar_success_counter{}[$__rate_interval]))',
@@ -57,9 +69,7 @@ local targets   = grafana.targets;
       hide        = true,
     ))
     .addTarget(targets.math(
-      // Add lookup_cache_hit to not make our "avatar availability" appear to drop because it is divided by total lookups, not just avatar lookups
-      // TODO Consider separate identity_lookup_avatar metric only created when performing a avatar lookup
-      expr        = '(($lookup_cache_hit + $lookup_avatar_success) / $lookups) * 100',
+      expr        = '($lookup_avatar_success / $lookup_avatar) * 100',
       refId       = "Avatar availability",
     ))
 }

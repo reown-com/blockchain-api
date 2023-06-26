@@ -28,9 +28,10 @@
   },
 
   identity: {
+    requests:             (import 'identity/requests.libsonnet'           ).new,
     availability:         (import 'identity/availability.libsonnet'       ).new,
     latency:              (import 'identity/latency.libsonnet'            ).new,
     cache:                (import 'identity/cache.libsonnet'              ).new,
-    avatar:               (import 'identity/avatar.libsonnet'             ).new,
+    usage:                (import 'identity/usage.libsonnet'              ).new,
   },
 }

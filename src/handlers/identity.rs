@@ -1,6 +1,6 @@
 use {
     crate::{
-        error::RpcError,
+        error::{new_error_response, RpcError},
         extractors::method::Method,
         handlers::RpcQueryParams,
         json_rpc::{JsonRpcError, JsonRpcResponse},
@@ -9,6 +9,7 @@ use {
     async_trait::async_trait,
     axum::{
         extract::{ConnectInfo, MatchedPath, Path, Query, State},
+        response::{IntoResponse, Response},
         Json,
     },
     core::fmt,
@@ -42,7 +43,7 @@ pub async fn handler(
     path: MatchedPath,
     headers: HeaderMap,
     Path(address): Path<String>,
-) -> Result<Json<IdentityResponse>, RpcError> {
+) -> Result<Response, RpcError> {
     let start = SystemTime::now();
     state.metrics.add_identity_lookup();
 
@@ -50,15 +51,31 @@ pub async fn handler(
         .parse::<Address>()
         .map_err(|_| RpcError::IdentityInvalidAddress)?;
 
-    let (source, res, tld) =
+    let (source, res) =
         lookup_identity(address, state.clone(), connect_info, query, path, headers).await?;
 
-    state
-        .metrics
-        .add_identity_lookup_latency(start, tld.clone(), &source);
-    state.metrics.add_identity_lookup_success(tld, &source);
+    state.metrics.add_identity_lookup_latency(start, &source);
+    state.metrics.add_identity_lookup_success(&source);
 
-    Ok(Json(res))
+    if let Some(IdentityResponse { avatar, .. }) = &res {
+        state.metrics.add_identity_lookup_name_present();
+        if avatar.is_some() {
+            state.metrics.add_identity_lookup_avatar_present();
+        }
+    }
+
+    Ok(if let Some(res) = res {
+        Json(res).into_response()
+    } else {
+        (
+            StatusCode::NOT_FOUND,
+            Json(new_error_response(
+                "address".to_string(),
+                "Could not find the address".to_owned(),
+            )),
+        )
+            .into_response()
+    })
 }
 
 pub enum IdentityLookupSource {
@@ -82,7 +99,7 @@ async fn lookup_identity(
     query: Query<RpcQueryParams>,
     path: MatchedPath,
     headers: HeaderMap,
-) -> Result<(IdentityLookupSource, IdentityResponse, String), RpcError> {
+) -> Result<(IdentityLookupSource, Option<IdentityResponse>), RpcError> {
     let cache_key = format!("{}", address);
     if let Some(cache) = &state.identity_cache {
         debug!("Checking cache for identity");
@@ -90,74 +107,12 @@ async fn lookup_identity(
         let value = cache.get(&cache_key).await?;
         state.metrics.add_identity_lookup_cache_latency(cache_start);
         if let Some(response) = value {
-            let tld = tld_from_name(&response.name).to_owned();
-            return Ok((IdentityLookupSource::Cache, response, tld));
+            return Ok((IdentityLookupSource::Cache, response));
         }
     }
 
-    let provider = Provider::new(SelfProvider {
-        state: state.clone(),
-        connect_info,
-        query,
-        path,
-        headers,
-    });
-
-    debug!("Beginning name lookup");
-    let name_lookup_start = SystemTime::now();
-    let name = provider
-        .lookup_address(address)
-        .await
-        .tap_err(|err| debug!("Error while looking up name: {err:?}"))
-        .map_err(|e| match e {
-            ProviderError::EnsError(e) | ProviderError::EnsNotOwned(e) => {
-                // TODO add to latency metrics
-                // TODO cache failures too so hit ratio doesn't get impacted by 404s
-                RpcError::IdentityNotFound(e)
-            }
-            e => RpcError::EthersProviderError(e),
-        })?;
-    let tld = tld_from_name(&name);
-    debug!("tld: {tld}");
-    state
-        .metrics
-        .add_identity_lookup_name_duration(name_lookup_start, tld.to_string());
-    state
-        .metrics
-        .add_identity_lookup_name_success(tld.to_string());
-
-    debug!("Beginning avatar lookup");
-    let avatar_lookup_start = SystemTime::now();
-    let avatar = provider
-        .resolve_avatar(&name)
-        .await
-        .tap_err(|err| debug!("Error while looking up avatar: {err:?}"))
-        .map_or_else(
-            |e| match e {
-                ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
-                ProviderError::CustomError(e) if e.starts_with("relative URL without a base") => {
-                    // Seems not having an `avatar` field returns this error
-                    Ok(None)
-                }
-                e => Err(RpcError::EthersProviderError(e)),
-            },
-            |url| Ok(Some(url)),
-        )?
-        .map(|url| url.to_string());
-    state
-        .metrics
-        .add_identity_lookup_avatar_duration(avatar_lookup_start, tld.to_string());
-    state
-        .metrics
-        .add_identity_lookup_avatar_success(tld.to_string());
-    if avatar.is_some() {
-        state
-            .metrics
-            .add_identity_lookup_avatar_present(tld.to_string());
-    }
-
-    let tld = tld.to_string();
-    let res = IdentityResponse { name, avatar };
+    let res =
+        lookup_identity_rpc(address, state.clone(), connect_info, query, path, headers).await?;
 
     if let Some(cache) = &state.identity_cache {
         debug!("Saving to cache");
@@ -177,13 +132,73 @@ async fn lookup_identity(
         });
     }
 
-    Ok((IdentityLookupSource::Rpc, res, tld))
+    Ok((IdentityLookupSource::Rpc, res))
 }
 
-fn tld_from_name(name: &str) -> &str {
-    name.rsplit('.')
-        .next()
-        .expect("split always returns at least 1 item, even if splitting empty string")
+async fn lookup_identity_rpc(
+    address: H160,
+    state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    query: Query<RpcQueryParams>,
+    path: MatchedPath,
+    headers: HeaderMap,
+) -> Result<Option<IdentityResponse>, RpcError> {
+    let provider = Provider::new(SelfProvider {
+        state: state.clone(),
+        connect_info,
+        query,
+        path,
+        headers,
+    });
+
+    debug!("Beginning name lookup");
+    state.metrics.add_identity_lookup_name();
+    let name_lookup_start = SystemTime::now();
+    let name = provider
+        .lookup_address(address)
+        .await
+        .tap_err(|err| debug!("Error while looking up name: {err:?}"))
+        .map_or_else(
+            |e| match e {
+                ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
+                e => Err(RpcError::EthersProviderError(e)),
+            },
+            |name| Ok(Some(name)),
+        )?;
+    state
+        .metrics
+        .add_identity_lookup_name_latency(name_lookup_start);
+    state.metrics.add_identity_lookup_name_success();
+    let name = match name {
+        Some(name) => name,
+        None => return Ok(None),
+    };
+
+    debug!("Beginning avatar lookup");
+    state.metrics.add_identity_lookup_avatar();
+    let avatar_lookup_start = SystemTime::now();
+    let avatar = provider
+        .resolve_avatar(&name)
+        .await
+        .tap_err(|err| debug!("Error while looking up avatar: {err:?}"))
+        .map_or_else(
+            |e| match e {
+                ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
+                ProviderError::CustomError(e) if e.starts_with("relative URL without a base") => {
+                    // Seems not having an `avatar` field returns this error
+                    Ok(None)
+                }
+                e => Err(RpcError::EthersProviderError(e)),
+            },
+            |url| Ok(Some(url)),
+        )?
+        .map(|url| url.to_string());
+    state
+        .metrics
+        .add_identity_lookup_avatar_latency(avatar_lookup_start);
+    state.metrics.add_identity_lookup_avatar_success();
+
+    Ok(Some(IdentityResponse { name, avatar }))
 }
 
 struct SelfProvider {

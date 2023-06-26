@@ -19,7 +19,7 @@ pub struct AppState {
     pub exporter: PrometheusExporter,
     pub metrics: Arc<Metrics>,
     pub registry: Registry,
-    pub identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
+    pub identity_cache: Option<Arc<dyn KeyValueStorage<Option<IdentityResponse>>>>,
     pub analytics: RPCAnalytics,
     pub compile_info: CompileInfo,
 }
@@ -30,7 +30,7 @@ pub fn new_state(
     exporter: PrometheusExporter,
     metrics: Arc<Metrics>,
     registry: Registry,
-    identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
+    identity_cache: Option<Arc<dyn KeyValueStorage<Option<IdentityResponse>>>>,
     analytics: RPCAnalytics,
 ) -> AppState {
     AppState {
