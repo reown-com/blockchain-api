@@ -23,7 +23,7 @@ local error_alert(vars) = alert.new(
       evaluatorParams = [ 99.5 ],
       evaluatorType   = 'lt',
       operatorType    = 'or',
-      queryRefId      = 'availability',
+      queryRefId      = 'Availability',
       queryTimeStart  = '5m',
       reducerType     = 'avg',
     )
