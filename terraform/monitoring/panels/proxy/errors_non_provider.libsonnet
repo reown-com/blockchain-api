@@ -20,12 +20,12 @@ local error_alert(vars) = alert.new(
   
   conditions  = [
     alertCondition.new(
-      evaluatorParams = [ 10 ],
+      evaluatorParams = [ 15 ],
       evaluatorType   = 'gt',
       operatorType    = 'or',
       queryRefId      = 'non_provider_errors',
       queryTimeStart  = '5m',
-      reducerType     = 'sum',
+      reducerType     = 'max',
     ),
   ]
 );
@@ -41,7 +41,7 @@ local error_alert(vars) = alert.new(
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'round(sum(increase(http_call_counter{code=~"50[0-1]|50[3-9]|5[1-9][0-9]"}[5m])))',
+      expr        = 'round(sum(increase(http_call_counter{code=~"50[0-1]|503|50[5-9]|5[1-9][0-9]"}[5m])))',
       refId       = "non_provider_errors",
       exemplar    = true,
       hide        = true,
