@@ -57,13 +57,14 @@ pub async fn handler(
         state.metrics.add_identity_lookup_cache_latency(cache_start);
         if let Some(response) = value {
             let tld = tld_from_name(&response.name);
-            state.metrics.add_identity_lookup_cache_hit(tld.to_string());
 
             // TODO make below DRY with non-cache branch
             state
                 .metrics
-                .add_identity_lookup_latency(start, tld.to_string());
-            state.metrics.add_identity_lookup_success(tld.to_string());
+                .add_identity_lookup_latency(start, tld.to_string(), true);
+            state
+                .metrics
+                .add_identity_lookup_success(tld.to_string(), true);
 
             return Ok(Json(response));
         }
@@ -85,6 +86,8 @@ pub async fn handler(
         .tap_err(|err| debug!("Error while looking up name: {err:?}"))
         .map_err(|e| match e {
             ProviderError::EnsError(e) | ProviderError::EnsNotOwned(e) => {
+                // TODO add to latency metrics
+                // TODO cache failures too so hit ratio doesn't get impacted by 404s
                 RpcError::IdentityNotFound(e)
             }
             e => RpcError::EthersProviderError(e),
@@ -151,8 +154,8 @@ pub async fn handler(
 
     state
         .metrics
-        .add_identity_lookup_latency(start, tld.clone());
-    state.metrics.add_identity_lookup_success(tld);
+        .add_identity_lookup_latency(start, tld.clone(), false);
+    state.metrics.add_identity_lookup_success(tld, false);
 
     Ok(Json(res))
 }
