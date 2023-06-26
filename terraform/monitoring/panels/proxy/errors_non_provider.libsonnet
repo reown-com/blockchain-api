@@ -44,6 +44,5 @@ local error_alert(vars) = alert.new(
       expr        = 'round(sum(increase(http_call_counter{code=~"50[0-1]|503|50[5-9]|5[1-9][0-9]"}[5m])))',
       refId       = "non_provider_errors",
       exemplar    = true,
-      hide        = true,
     )) 
 }
