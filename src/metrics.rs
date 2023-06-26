@@ -1,5 +1,8 @@
 use {
-    crate::providers::{ProviderKind, RpcProvider},
+    crate::{
+        handlers::identity::IdentityLookupSource,
+        providers::{ProviderKind, RpcProvider},
+    },
     hyper::http,
     opentelemetry::metrics::{Counter, Meter, ValueRecorder},
     std::time::{Duration, SystemTime},
@@ -231,14 +234,19 @@ impl Metrics {
         self.identity_lookup_counter.add(1, &[]);
     }
 
-    pub fn add_identity_lookup_success(&self, tld: String, from_cache: bool) {
+    pub fn add_identity_lookup_success(&self, tld: String, source: &IdentityLookupSource) {
         self.identity_lookup_success_counter.add(1, &[
             opentelemetry::KeyValue::new("tld", tld),
-            opentelemetry::KeyValue::new("source", if from_cache { "cache" } else { "rpc" }),
+            opentelemetry::KeyValue::new("source", source.as_str()),
         ]);
     }
 
-    pub fn add_identity_lookup_latency(&self, start: SystemTime, tld: String, from_cache: bool) {
+    pub fn add_identity_lookup_latency(
+        &self,
+        start: SystemTime,
+        tld: String,
+        source: &IdentityLookupSource,
+    ) {
         self.identity_lookup_latency_tracker.record(
             start
                 .elapsed()
@@ -246,7 +254,7 @@ impl Metrics {
                 .as_secs_f64(),
             &[
                 opentelemetry::KeyValue::new("tld", tld),
-                opentelemetry::KeyValue::new("source", if from_cache { "cache" } else { "rpc" }),
+                opentelemetry::KeyValue::new("source", source.as_str()),
             ],
         );
     }

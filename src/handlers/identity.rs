@@ -15,6 +15,7 @@ use {
     ethers::{
         abi::Address,
         providers::{JsonRpcClient, Middleware, Provider, ProviderError},
+        types::H160,
     },
     hyper::{body::to_bytes, HeaderMap, Method as HyperMethod, StatusCode},
     serde::{de::DeserializeOwned, Deserialize, Serialize},
@@ -49,6 +50,39 @@ pub async fn handler(
         .parse::<Address>()
         .map_err(|_| RpcError::IdentityInvalidAddress)?;
 
+    let (source, res, tld) =
+        lookup_identity(address, state.clone(), connect_info, query, path, headers).await?;
+
+    state
+        .metrics
+        .add_identity_lookup_latency(start, tld.clone(), &source);
+    state.metrics.add_identity_lookup_success(tld, &source);
+
+    Ok(Json(res))
+}
+
+pub enum IdentityLookupSource {
+    Cache,
+    Rpc,
+}
+
+impl IdentityLookupSource {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Cache => "cache",
+            Self::Rpc => "rpc",
+        }
+    }
+}
+
+async fn lookup_identity(
+    address: H160,
+    state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    query: Query<RpcQueryParams>,
+    path: MatchedPath,
+    headers: HeaderMap,
+) -> Result<(IdentityLookupSource, IdentityResponse, String), RpcError> {
     let cache_key = format!("{}", address);
     if let Some(cache) = &state.identity_cache {
         debug!("Checking cache for identity");
@@ -56,17 +90,8 @@ pub async fn handler(
         let value = cache.get(&cache_key).await?;
         state.metrics.add_identity_lookup_cache_latency(cache_start);
         if let Some(response) = value {
-            let tld = tld_from_name(&response.name);
-
-            // TODO make below DRY with non-cache branch
-            state
-                .metrics
-                .add_identity_lookup_latency(start, tld.to_string(), true);
-            state
-                .metrics
-                .add_identity_lookup_success(tld.to_string(), true);
-
-            return Ok(Json(response));
+            let tld = tld_from_name(&response.name).to_owned();
+            return Ok((IdentityLookupSource::Cache, response, tld));
         }
     }
 
@@ -152,12 +177,7 @@ pub async fn handler(
         });
     }
 
-    state
-        .metrics
-        .add_identity_lookup_latency(start, tld.clone(), false);
-    state.metrics.add_identity_lookup_success(tld, false);
-
-    Ok(Json(res))
+    Ok((IdentityLookupSource::Rpc, res, tld))
 }
 
 fn tld_from_name(name: &str) -> &str {
