@@ -7,12 +7,12 @@ local alert          = grafana.alert;
 local alertCondition = grafana.alertCondition;
 
 local error_alert(vars) = alert.new(
-  namespace = "RPC",
+  namespace = 'RPC',
   name      = "RPC %s - Availability" % vars.environment,
   message   = "RPC %s - Availability" % vars.environment,
-  period    = "5m",
-  frequency = "1m",
-  noDataState = "no_data",
+  period    = '5m',
+  frequency = '1m',
+  noDataState = 'no_data',
   notifications = vars.notifications,
   alertRuleTags = {
     'og_priority': 'P3',
@@ -26,7 +26,7 @@ local error_alert(vars) = alert.new(
       queryRefId      = 'Availability',
       queryTimeStart  = '5m',
       reducerType     = 'avg',
-    )
+    ),
   ]
 );
 
