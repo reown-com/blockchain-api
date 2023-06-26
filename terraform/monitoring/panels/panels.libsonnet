@@ -26,4 +26,12 @@
   db: {
     redis_cpu_memory:     (import 'db/redis_cpu_memory.libsonnet'         ).new,
   },
+
+  identity: {
+    requests:             (import 'identity/requests.libsonnet'           ).new,
+    availability:         (import 'identity/availability.libsonnet'       ).new,
+    latency:              (import 'identity/latency.libsonnet'            ).new,
+    cache:                (import 'identity/cache.libsonnet'              ).new,
+    usage:                (import 'identity/usage.libsonnet'              ).new,
+  },
 }

@@ -30,6 +30,7 @@ local vars  = {
 
 local height    = 8;
 local pos       = grafana.layout.pos(height);
+local pos_short       = grafana.layout.pos(6);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -83,4 +84,11 @@ dashboard.new(
 
   row.new('Database'),
     panels.db.redis_cpu_memory(ds, vars)            { gridPos: pos._2 },
+
+  row.new('Identity (ENS) Metrics'),
+    panels.identity.requests(ds, vars)                 { gridPos: pos_short._2 },
+    panels.identity.availability(ds, vars)             { gridPos: pos_short._2 },
+    panels.identity.latency(ds, vars)                  { gridPos: pos_short._2 },
+    panels.identity.cache(ds, vars)                    { gridPos: pos_short._2 },
+    panels.identity.usage(ds, vars)                    { gridPos: pos_short._2 },
 ]))

@@ -1,7 +1,11 @@
 use {
-    crate::providers::{ProviderKind, RpcProvider},
+    crate::{
+        handlers::identity::IdentityLookupSource,
+        providers::{ProviderKind, RpcProvider},
+    },
     hyper::http,
     opentelemetry::metrics::{Counter, Meter, ValueRecorder},
+    std::time::{Duration, SystemTime},
 };
 
 #[derive(Debug)]
@@ -16,6 +20,18 @@ pub struct Metrics {
     pub rate_limited_call_counter: Counter<u64>,
     pub provider_status_code_counter: Counter<u64>,
     pub weights_value_recorder: ValueRecorder<u64>,
+    pub identity_lookup_latency_tracker: ValueRecorder<f64>,
+    pub identity_lookup_counter: Counter<u64>,
+    pub identity_lookup_success_counter: Counter<u64>,
+    pub identity_lookup_cache_latency_tracker: ValueRecorder<f64>,
+    pub identity_lookup_name_counter: Counter<u64>,
+    pub identity_lookup_name_success_counter: Counter<u64>,
+    pub identity_lookup_name_latency_tracker: ValueRecorder<f64>,
+    pub identity_lookup_avatar_counter: Counter<u64>,
+    pub identity_lookup_avatar_success_counter: Counter<u64>,
+    pub identity_lookup_avatar_latency_tracker: ValueRecorder<f64>,
+    pub identity_lookup_avatar_present_counter: Counter<u64>,
+    pub identity_lookup_name_present_counter: Counter<u64>,
 }
 
 impl Metrics {
@@ -70,6 +86,66 @@ impl Metrics {
             .with_description("The weights of the providers")
             .init();
 
+        let identity_lookup_counter = meter
+            .u64_counter("identity_lookup_counter")
+            .with_description("The number of identity lookups served")
+            .init();
+
+        let identity_lookup_success_counter = meter
+            .u64_counter("identity_lookup_success_counter")
+            .with_description("The number of identity lookups that were successful")
+            .init();
+
+        let identity_lookup_latency_tracker = meter
+            .f64_value_recorder("identity_lookup_latency_tracker")
+            .with_description("The latency to serve identity lookups")
+            .init();
+
+        let identity_lookup_cache_latency_tracker = meter
+            .f64_value_recorder("identity_lookup_cache_latency_tracker")
+            .with_description("The latency to lookup identity in the cache")
+            .init();
+
+        let identity_lookup_name_counter = meter
+            .u64_counter("identity_lookup_name_counter")
+            .with_description("The number of name lookups")
+            .init();
+
+        let identity_lookup_name_success_counter = meter
+            .u64_counter("identity_lookup_name_success_counter")
+            .with_description("The number of name lookups that were successfull")
+            .init();
+
+        let identity_lookup_name_latency_tracker = meter
+            .f64_value_recorder("identity_lookup_name_latency_tracker")
+            .with_description("The latency of performing the name lookup")
+            .init();
+
+        let identity_lookup_avatar_counter = meter
+            .u64_counter("identity_lookup_avatar_counter")
+            .with_description("The number of avatar lookups")
+            .init();
+
+        let identity_lookup_avatar_success_counter = meter
+            .u64_counter("identity_lookup_avatar_success_counter")
+            .with_description("The number of avatar lookups that were successfull")
+            .init();
+
+        let identity_lookup_avatar_latency_tracker = meter
+            .f64_value_recorder("identity_lookup_avatar_latency_tracker")
+            .with_description("The latency of performing the avatar lookup")
+            .init();
+
+        let identity_lookup_name_present_counter = meter
+            .u64_counter("identity_lookup_name_present_counter")
+            .with_description("The number of identity lookups that returned a name")
+            .init();
+
+        let identity_lookup_avatar_present_counter = meter
+            .u64_counter("identity_lookup_avatar_present_counter")
+            .with_description("The number of identity lookups that returned an avatar")
+            .init();
+
         Metrics {
             rpc_call_counter,
             http_call_counter,
@@ -81,29 +157,39 @@ impl Metrics {
             provider_finished_call_counter,
             provider_status_code_counter,
             weights_value_recorder,
+            identity_lookup_counter,
+            identity_lookup_success_counter,
+            identity_lookup_latency_tracker,
+            identity_lookup_cache_latency_tracker,
+            identity_lookup_name_counter,
+            identity_lookup_name_success_counter,
+            identity_lookup_name_latency_tracker,
+            identity_lookup_avatar_counter,
+            identity_lookup_avatar_success_counter,
+            identity_lookup_avatar_latency_tracker,
+            identity_lookup_name_present_counter,
+            identity_lookup_avatar_present_counter,
         }
     }
 }
 
 impl Metrics {
-    pub fn add_rpc_call(&self, chain_id: &str) {
-        self.rpc_call_counter.add(1, &[opentelemetry::KeyValue::new(
-            "chain.id",
-            chain_id.to_owned(),
-        )]);
+    pub fn add_rpc_call(&self, chain_id: String) {
+        self.rpc_call_counter
+            .add(1, &[opentelemetry::KeyValue::new("chain.id", chain_id)]);
     }
 
-    pub fn add_http_call(&self, code: u16, route: &str) {
+    pub fn add_http_call(&self, code: u16, route: String) {
         self.http_call_counter.add(1, &[
             opentelemetry::KeyValue::new("code", i64::from(code)),
-            opentelemetry::KeyValue::new("route", route.to_owned()),
+            opentelemetry::KeyValue::new("route", route),
         ]);
     }
 
-    pub fn add_http_latency(&self, code: u16, route: &str, latency: f64) {
+    pub fn add_http_latency(&self, code: u16, route: String, latency: f64) {
         self.http_latency_tracker.record(latency, &[
             opentelemetry::KeyValue::new("code", i64::from(code)),
-            opentelemetry::KeyValue::new("route", route.to_owned()),
+            opentelemetry::KeyValue::new("route", route),
         ])
     }
 
@@ -146,19 +232,95 @@ impl Metrics {
         &self,
         provider: &dyn RpcProvider,
         status: http::StatusCode,
-        chain_id: &str,
+        chain_id: String,
     ) {
         self.provider_status_code_counter.add(1, &[
             opentelemetry::KeyValue::new("provider", provider.provider_kind().to_string()),
             opentelemetry::KeyValue::new("status_code", format!("{}", status.as_u16())),
-            opentelemetry::KeyValue::new("chain_id", chain_id.to_owned()),
+            opentelemetry::KeyValue::new("chain_id", chain_id),
         ])
     }
 
-    pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: &str, weight: u64) {
+    pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: String, weight: u64) {
         self.weights_value_recorder.record(weight, &[
             opentelemetry::KeyValue::new("provider", provider.to_string()),
-            opentelemetry::KeyValue::new("chain_id", chain_id.to_string()),
+            opentelemetry::KeyValue::new("chain_id", chain_id),
         ])
+    }
+
+    pub fn add_identity_lookup(&self) {
+        self.identity_lookup_counter.add(1, &[]);
+    }
+
+    pub fn add_identity_lookup_success(&self, source: &IdentityLookupSource) {
+        self.identity_lookup_success_counter
+            .add(1, &[opentelemetry::KeyValue::new(
+                "source",
+                source.as_str(),
+            )]);
+    }
+
+    pub fn add_identity_lookup_latency(&self, start: SystemTime, source: &IdentityLookupSource) {
+        self.identity_lookup_latency_tracker.record(
+            start
+                .elapsed()
+                .unwrap_or(Duration::from_secs(0))
+                .as_secs_f64(),
+            &[opentelemetry::KeyValue::new("source", source.as_str())],
+        );
+    }
+
+    pub fn add_identity_lookup_cache_latency(&self, start: SystemTime) {
+        self.identity_lookup_cache_latency_tracker.record(
+            start
+                .elapsed()
+                .unwrap_or(Duration::from_secs(0))
+                .as_secs_f64(),
+            &[],
+        );
+    }
+
+    pub fn add_identity_lookup_name(&self) {
+        self.identity_lookup_name_counter.add(1, &[]);
+    }
+
+    pub fn add_identity_lookup_name_success(&self) {
+        self.identity_lookup_name_success_counter.add(1, &[]);
+    }
+
+    pub fn add_identity_lookup_name_latency(&self, start: SystemTime) {
+        self.identity_lookup_name_latency_tracker.record(
+            start
+                .elapsed()
+                .unwrap_or(Duration::from_secs(0))
+                .as_secs_f64(),
+            &[],
+        );
+    }
+
+    pub fn add_identity_lookup_avatar(&self) {
+        self.identity_lookup_avatar_counter.add(1, &[]);
+    }
+
+    pub fn add_identity_lookup_avatar_success(&self) {
+        self.identity_lookup_avatar_success_counter.add(1, &[]);
+    }
+
+    pub fn add_identity_lookup_avatar_latency(&self, start: SystemTime) {
+        self.identity_lookup_avatar_latency_tracker.record(
+            start
+                .elapsed()
+                .unwrap_or(Duration::from_secs(0))
+                .as_secs_f64(),
+            &[],
+        );
+    }
+
+    pub fn add_identity_lookup_name_present(&self) {
+        self.identity_lookup_name_present_counter.add(1, &[]);
+    }
+
+    pub fn add_identity_lookup_avatar_present(&self) {
+        self.identity_lookup_avatar_present_counter.add(1, &[]);
     }
 }

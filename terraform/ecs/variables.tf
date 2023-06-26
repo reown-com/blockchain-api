@@ -2,6 +2,11 @@ variable "ecr_repository_url" {
   type = string
 }
 
+variable "ecr_app_version" {
+  description = "The tag of the app image to deploy."
+  type        = string
+}
+
 variable "app_name" {
   type = string
 }

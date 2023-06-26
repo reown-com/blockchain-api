@@ -6,7 +6,8 @@ locals {
   fqdn                    = terraform.workspace == "prod" ? local.hosted_zone_name : "${terraform.workspace}.${local.hosted_zone_name}"
   backup_fqdn             = terraform.workspace == "prod" ? local.backup_hosted_zone_name : "${terraform.workspace}.${local.backup_hosted_zone_name}"
 
-  analytics_geoip_db_bucket_name = "${terraform.workspace}.relay.geo.ip.database.private.${terraform.workspace}.walletconnect"
+  analytics_geoip_db_bucket_env  = terraform.workspace == "dev" ? "staging" : terraform.workspace
+  analytics_geoip_db_bucket_name = "${local.analytics_geoip_db_bucket_env}.relay.geo.ip.database.private.${local.analytics_geoip_db_bucket_env}.walletconnect"
 }
 
 # tflint-ignore: terraform_unused_declarations
@@ -55,6 +56,7 @@ module "ecs" {
   environment = terraform.workspace
 
   ecr_repository_url         = data.aws_ecr_repository.repository.repository_url
+  ecr_app_version            = var.ecr_app_version
   app_name                   = "${terraform.workspace}_${local.app_name}"
   region                     = var.region
   vpc_name                   = "ops-${terraform.workspace}-vpc"

@@ -3,7 +3,17 @@ resource "aws_s3_bucket" "logging_bucket" {
   bucket = "walletconnect.${var.app_name}.${terraform.workspace}.access-logs"
 }
 
+# https://github.com/hashicorp/terraform-provider-aws/issues/28353
+resource "aws_s3_bucket_ownership_controls" "logging_bucket-controls" {
+  bucket = aws_s3_bucket.logging_bucket.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
 resource "aws_s3_bucket_acl" "logging_bucket-acl" {
+  depends_on = [aws_s3_bucket_ownership_controls.logging_bucket-controls]
+
   bucket = aws_s3_bucket.logging_bucket.id
   acl    = "log-delivery-write"
 }
