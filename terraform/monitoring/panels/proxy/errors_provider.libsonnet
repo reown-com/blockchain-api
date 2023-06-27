@@ -25,7 +25,7 @@ local error_alert(vars) = alert.new(
       operatorType    = 'or',
       queryRefId      = 'bad_gateway',
       queryTimeStart  = '5m',
-      reducerType     = 'max',
+      reducerType     = 'sum',
     ),
   ]
 );

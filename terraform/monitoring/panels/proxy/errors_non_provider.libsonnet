@@ -25,7 +25,7 @@ local error_alert(vars) = alert.new(
       operatorType    = 'or',
       queryRefId      = 'non_provider_errors',
       queryTimeStart  = '5m',
-      reducerType     = 'max',
+      reducerType     = 'sum',
     ),
   ]
 );
