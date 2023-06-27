@@ -41,17 +41,20 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ),
         ),
         // Avax C-Chain
-        (
-            "eip155:43114".into(),
-            (
-                "avax-mainnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
-        ),
+        // (
+        //     "eip155:43114".into(),
+        //     (
+        //         "avax-mainnet".into(),
+        //         Weight::new(Priority::Normal).unwrap(),
+        //     ),
+        // ),
         // Gnosis
         (
             "eip155:100".into(),
-            ("poa-xdai".into(), Weight::new(Priority::Normal).unwrap()),
+            (
+                "gnosischain-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Binance Smart Chain
         (
@@ -65,7 +68,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         ),
         (
             "eip155:5".into(),
-            ("goerli".into(), Weight::new(Priority::Normal).unwrap()),
+            ("eth-goerli".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Optimism
         (
