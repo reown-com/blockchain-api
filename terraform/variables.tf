@@ -6,6 +6,7 @@ variable "region" {
 variable "ecr_app_version" {
   description = "The tag of the app image to deploy."
   type        = string
+  default     = "latest"
 }
 
 variable "infura_project_id" {
