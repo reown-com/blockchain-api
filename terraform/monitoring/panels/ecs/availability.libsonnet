@@ -6,30 +6,6 @@ local targets        = grafana.targets;
 local alert          = grafana.alert;
 local alertCondition = grafana.alertCondition;
 
-local error_alert(vars) = alert.new(
-  namespace = 'RPC',
-  name      = "RPC %s - Availability" % vars.environment,
-  message   = "RPC %s - Availability" % vars.environment,
-  period    = '5m',
-  frequency = '1m',
-  noDataState = 'no_data',
-  notifications = vars.notifications,
-  alertRuleTags = {
-    'og_priority': 'P3',
-  },
-
-  conditions = [
-    alertCondition.new(
-      evaluatorParams = [ 99 ],
-      evaluatorType   = 'lt',
-      operatorType    = 'or',
-      queryRefId      = 'Availability',
-      queryTimeStart  = '5m',
-      reducerType     = 'avg',
-    ),
-  ]
-);
-
 
 {
   new(ds, vars)::
@@ -38,7 +14,6 @@ local error_alert(vars) = alert.new(
       datasource  = ds.prometheus,
     )
     .configure(defaults.configuration.timeseries.withUnit('percent'))
-    .setAlert(error_alert(vars))
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
