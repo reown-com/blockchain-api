@@ -127,7 +127,7 @@ pub fn record_values(weight_resolver: &WeightResolver, metrics: &crate::Metrics)
     for (chain_id, provider_chain_weight) in weight_resolver {
         for (provider_kind, weight) in provider_chain_weight {
             let weight = weight.value();
-            metrics.record_provider_weight(provider_kind, chain_id, weight.into())
+            metrics.record_provider_weight(provider_kind, chain_id.to_owned(), weight.into())
         }
     }
 }

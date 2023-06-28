@@ -13,7 +13,14 @@ local alertCondition = grafana.alertCondition;
       title       = 'Availability',
       datasource  = ds.prometheus,
     )
-    .configure(defaults.configuration.timeseries.withUnit('percent'))
+    .configure(
+      defaults.configuration.timeseries
+        .withUnit('percent')
+        .withSoftLimit(
+          axisSoftMin = 98,
+          axisSoftMax = 100,
+        )
+    )
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,

@@ -15,7 +15,17 @@ resource "aws_s3_bucket" "analytics-data-lake_bucket" {
   bucket = "walletconnect.${local.app_name}.${terraform.workspace}.analytics.data-lake"
 }
 
+# https://github.com/hashicorp/terraform-provider-aws/issues/28353
+resource "aws_s3_bucket_ownership_controls" "analytics-data-lake_controls" {
+  bucket = aws_s3_bucket.analytics-data-lake_bucket.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
 resource "aws_s3_bucket_acl" "analytics-data-lake_acl" {
+  depends_on = [aws_s3_bucket_ownership_controls.analytics-data-lake_controls]
+
   bucket = aws_s3_bucket.analytics-data-lake_bucket.id
   acl    = "private"
 }

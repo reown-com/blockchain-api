@@ -1,6 +1,6 @@
 use {
     crate::{
-        error::RpcError,
+        error::{new_error_response, RpcError},
         extractors::method::Method,
         handlers::RpcQueryParams,
         json_rpc::{JsonRpcError, JsonRpcResponse},
@@ -9,24 +9,28 @@ use {
     async_trait::async_trait,
     axum::{
         extract::{ConnectInfo, MatchedPath, Path, Query, State},
+        response::{IntoResponse, Response},
         Json,
     },
     core::fmt,
     ethers::{
         abi::Address,
         providers::{JsonRpcClient, Middleware, Provider, ProviderError},
+        types::H160,
     },
     hyper::{body::to_bytes, HeaderMap, Method as HyperMethod, StatusCode},
-    serde::{de::DeserializeOwned, Serialize},
+    serde::{de::DeserializeOwned, Deserialize, Serialize},
     std::{
         net::SocketAddr,
         sync::Arc,
-        time::{SystemTime, UNIX_EPOCH},
+        time::{Duration, SystemTime, UNIX_EPOCH},
     },
-    tracing::debug,
+    tap::TapFallible,
+    tracing::{debug, warn},
 };
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct IdentityResponse {
     name: String,
     avatar: Option<String>,
@@ -39,47 +43,162 @@ pub async fn handler(
     path: MatchedPath,
     headers: HeaderMap,
     Path(address): Path<String>,
-) -> Result<Json<IdentityResponse>, RpcError> {
+) -> Result<Response, RpcError> {
+    let start = SystemTime::now();
+    state.metrics.add_identity_lookup();
+
+    let address = address
+        .parse::<Address>()
+        .map_err(|_| RpcError::IdentityInvalidAddress)?;
+
+    let (source, res) =
+        lookup_identity(address, state.clone(), connect_info, query, path, headers).await?;
+
+    state.metrics.add_identity_lookup_latency(start, &source);
+    state.metrics.add_identity_lookup_success(&source);
+
+    if let Some(IdentityResponse { avatar, .. }) = &res {
+        state.metrics.add_identity_lookup_name_present();
+        if avatar.is_some() {
+            state.metrics.add_identity_lookup_avatar_present();
+        }
+    }
+
+    Ok(if let Some(res) = res {
+        Json(res).into_response()
+    } else {
+        (
+            StatusCode::NOT_FOUND,
+            Json(new_error_response(
+                "address".to_string(),
+                "Could not find the address".to_owned(),
+            )),
+        )
+            .into_response()
+    })
+}
+
+pub enum IdentityLookupSource {
+    Cache,
+    Rpc,
+}
+
+impl IdentityLookupSource {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Cache => "cache",
+            Self::Rpc => "rpc",
+        }
+    }
+}
+
+async fn lookup_identity(
+    address: H160,
+    state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    query: Query<RpcQueryParams>,
+    path: MatchedPath,
+    headers: HeaderMap,
+) -> Result<(IdentityLookupSource, Option<IdentityResponse>), RpcError> {
+    let cache_key = format!("{}", address);
+    if let Some(cache) = &state.identity_cache {
+        debug!("Checking cache for identity");
+        let cache_start = SystemTime::now();
+        let value = cache.get(&cache_key).await?;
+        state.metrics.add_identity_lookup_cache_latency(cache_start);
+        if let Some(response) = value {
+            return Ok((IdentityLookupSource::Cache, response));
+        }
+    }
+
+    let res =
+        lookup_identity_rpc(address, state.clone(), connect_info, query, path, headers).await?;
+
+    if let Some(cache) = &state.identity_cache {
+        debug!("Saving to cache");
+        let cache = cache.clone();
+        let res = res.clone();
+        let cache_ttl = Duration::from_secs(60 * 60 * 24);
+        // Do not block on cache write.
+        tokio::spawn(async move {
+            cache
+                .set(&cache_key, &res, Some(cache_ttl))
+                .await
+                .tap_err(|err| {
+                    warn!("failed to cache identity lookup (cache_key:{cache_key}): {err:?}")
+                })
+                .ok();
+            debug!("Setting cache success");
+        });
+    }
+
+    Ok((IdentityLookupSource::Rpc, res))
+}
+
+async fn lookup_identity_rpc(
+    address: H160,
+    state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    query: Query<RpcQueryParams>,
+    path: MatchedPath,
+    headers: HeaderMap,
+) -> Result<Option<IdentityResponse>, RpcError> {
     let provider = Provider::new(SelfProvider {
-        state,
+        state: state.clone(),
         connect_info,
         query,
         path,
         headers,
     });
 
-    let address = address
-        .parse::<Address>()
-        .map_err(|_| RpcError::IdentityInvalidAddress)?;
-
+    debug!("Beginning name lookup");
+    state.metrics.add_identity_lookup_name();
+    let name_lookup_start = SystemTime::now();
     let name = provider
         .lookup_address(address)
         .await
-        .map_err(|e| match e {
-            ProviderError::EnsError(e) | ProviderError::EnsNotOwned(e) => {
-                RpcError::IdentityNotFound(e)
-            }
-            e => RpcError::EthersProviderError(e),
-        })?;
-
-    let avatar = provider.resolve_avatar(&name).await.map_or_else(
-        |e| match e {
-            ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
-            ProviderError::CustomError(e) if e.starts_with("relative URL without a base") => {
-                // Seems not having an `avatar` field returns this error
-                Ok(None)
-            }
-            e => Err(RpcError::EthersProviderError(e)),
-        },
-        |url| Ok(Some(url)),
-    )?;
-
-    let res = IdentityResponse {
-        name,
-        avatar: avatar.map(|url| url.to_string()),
+        .tap_err(|err| debug!("Error while looking up name: {err:?}"))
+        .map_or_else(
+            |e| match e {
+                ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
+                e => Err(RpcError::EthersProviderError(e)),
+            },
+            |name| Ok(Some(name)),
+        )?;
+    state
+        .metrics
+        .add_identity_lookup_name_latency(name_lookup_start);
+    state.metrics.add_identity_lookup_name_success();
+    let name = match name {
+        Some(name) => name,
+        None => return Ok(None),
     };
 
-    Ok(Json(res))
+    debug!("Beginning avatar lookup");
+    state.metrics.add_identity_lookup_avatar();
+    let avatar_lookup_start = SystemTime::now();
+    let avatar = provider
+        .resolve_avatar(&name)
+        .await
+        .tap_err(|err| debug!("Error while looking up avatar: {err:?}"))
+        .map_or_else(
+            |e| match e {
+                ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
+                ProviderError::CustomError(e) if e.starts_with("relative URL without a base") => {
+                    // Seems not having an `avatar` field returns this error
+                    Ok(None)
+                }
+                e => Err(RpcError::EthersProviderError(e)),
+            },
+            |url| Ok(Some(url)),
+        )?
+        .map(|url| url.to_string());
+    state
+        .metrics
+        .add_identity_lookup_avatar_latency(avatar_lookup_start);
+    state.metrics.add_identity_lookup_avatar_success();
+
+    Ok(Some(IdentityResponse { name, avatar }))
 }
 
 struct SelfProvider {
@@ -155,17 +274,14 @@ impl JsonRpcClient for SelfProvider {
 
         let id = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .expect("can get current time")
+            .expect("Time should't go backwards")
             .as_millis()
             .to_string();
 
         let response = super::proxy::handler(
             self.state.clone(),
             self.connect_info,
-            Query(RpcQueryParams {
-                chain_id: self.query.chain_id.clone(),
-                project_id: self.query.project_id.clone(),
-            }),
+            self.query.clone(),
             Method(HyperMethod::POST),
             self.path.clone(),
             self.headers.clone(),
@@ -195,10 +311,12 @@ impl JsonRpcClient for SelfProvider {
         let response = serde_json::from_slice::<JsonRpcResponse>(&bytes)
             .map_err(SelfProviderError::ProviderBodySerde)?;
 
-        match response {
+        let result = match response {
             JsonRpcResponse::Error(e) => return Err(SelfProviderError::JsonRpcError(e)),
-            JsonRpcResponse::Result(r) => Ok(serde_json::from_value(r.result)
-                .expect("Caller should provide generic parameter of type Bytes")),
-        }
+            JsonRpcResponse::Result(r) => r.result,
+        };
+        let result = serde_json::from_value(result)
+            .expect("Caller always provides generic parameter R=Bytes");
+        Ok(result)
     }
 }

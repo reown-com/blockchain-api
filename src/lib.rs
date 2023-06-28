@@ -1,5 +1,14 @@
 use {
-    crate::{env::Config, metrics::Metrics, project::Registry},
+    crate::{
+        env::Config,
+        handlers::identity::IdentityResponse,
+        metrics::Metrics,
+        project::Registry,
+        storage::{
+            redis::{self},
+            KeyValueStorage,
+        },
+    },
     anyhow::Context,
     axum::{
         http,
@@ -64,12 +73,19 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 
     let metrics = Arc::new(Metrics::new(&meter));
     let registry = Registry::new(&config.registry, &config.storage, &meter)?;
+    // TODO refactor encapsulate these details in a lower layer
+    let identity_cache = config
+        .storage
+        .project_data_redis_addr()
+        .map(|addr| redis::Redis::new(&addr, config.storage.redis_max_connections))
+        .transpose()?
+        .map(|r| Arc::new(r) as Arc<dyn KeyValueStorage<Option<IdentityResponse>> + 'static>);
     let providers = init_providers();
 
     let external_ip = config
         .server
         .external_ip()
-        .unwrap_or_else(|_| IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
+        .unwrap_or(IpAddr::V4(Ipv4Addr::LOCALHOST));
 
     let analytics = analytics::RPCAnalytics::new(&config.analytics, external_ip)
         .await
@@ -81,6 +97,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         prometheus_exporter,
         metrics.clone(),
         registry,
+        identity_cache,
         analytics,
     );
 
@@ -103,8 +120,12 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 
     let global_middleware = ServiceBuilder::new().layer(
         TraceLayer::new_for_http()
-            .make_span_with(DefaultMakeSpan::new().include_headers(true))
-            .on_request(DefaultOnRequest::new().level(Level::DEBUG))
+            .make_span_with(
+                DefaultMakeSpan::new()
+                    .level(Level::INFO)
+                    .include_headers(true),
+            )
+            .on_request(DefaultOnRequest::new().level(Level::INFO))
             .on_response(
                 DefaultOnResponse::new()
                     .level(Level::INFO)
@@ -117,11 +138,11 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         move |response: &Response, latency: Duration, _span: &Span| {
             proxy_state
                 .metrics
-                .add_http_call(response.status().into(), "proxy");
+                .add_http_call(response.status().into(), "proxy".to_owned());
 
             proxy_state.metrics.add_http_latency(
                 response.status().into(),
-                "proxy",
+                "proxy".to_owned(),
                 latency.as_secs_f64(),
             )
         },

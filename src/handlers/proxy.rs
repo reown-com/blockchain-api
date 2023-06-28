@@ -62,7 +62,7 @@ pub async fn handler(
         .get_provider_for_chain_id(&chain_id)
         .ok_or(RpcError::UnsupportedChain(chain_id.clone()))?;
 
-    state.metrics.add_rpc_call(&chain_id);
+    state.metrics.add_rpc_call(chain_id.clone());
 
     let origin = headers
         .get("origin")
@@ -101,7 +101,7 @@ pub async fn handler(
 
     state
         .metrics
-        .add_status_code_for_provider(provider.borrow(), response.status(), &chain_id);
+        .add_status_code_for_provider(provider.borrow(), response.status(), chain_id);
 
     if provider.is_rate_limited(&mut response).await {
         state
