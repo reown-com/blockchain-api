@@ -7,7 +7,7 @@ local targets   = grafana.targets;
 {
   new(ds, vars)::
     panels.timeseries(
-      title       = 'Avatar usage',
+      title       = 'Usage',
       datasource  = ds.prometheus,
     )
     .configure(defaults.configuration.timeseries.withUnit('percent'))
