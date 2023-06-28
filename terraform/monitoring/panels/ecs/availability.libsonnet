@@ -1,8 +1,11 @@
 local grafana   = import '../../grafonnet-lib/grafana.libsonnet';
 local defaults  = import '../../grafonnet-lib/defaults.libsonnet';
 
-local panels    = grafana.panels;
-local targets   = grafana.targets;
+local panels         = grafana.panels;
+local targets        = grafana.targets;
+local alert          = grafana.alert;
+local alertCondition = grafana.alertCondition;
+
 
 {
   new(ds, vars)::

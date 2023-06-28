@@ -20,7 +20,7 @@ local error_alert(vars) = alert.new(
   
   conditions  = [
     alertCondition.new(
-      evaluatorParams = [ 3000 ],
+      evaluatorParams = [ 5000 ],
       evaluatorType   = 'gt',
       operatorType    = 'or',
       queryRefId      = 'bad_gateway',
