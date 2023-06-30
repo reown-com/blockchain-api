@@ -92,7 +92,7 @@ resource "aws_security_group" "vpc_app_ingress" {
     to_port     = var.port
     protocol    = "tcp"
     #tfsec:ignore:aws-ec2-no-public-ingress-sgr
-    cidr_blocks = ["0.0.0.0/0"] # Allowing traffic in from all sources
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {           #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
@@ -177,7 +177,7 @@ resource "aws_security_group" "vpc-endpoint-group" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = [var.vpc_cidr]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
@@ -201,16 +201,16 @@ resource "aws_vpc_endpoint" "prometheus" {
   }
 }
 
-# resource "aws_vpc_endpoint" "s3" {
-#   vpc_id            = module.vpc.vpc_id
-#   service_name      = "com.amazonaws.${var.region}.s3"
-#   vpc_endpoint_type = "Gateway"
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.region}.s3"
+  vpc_endpoint_type = "Gateway"
 
-#   route_table_ids = module.vpc.private_route_table_ids
-# }
+  route_table_ids = var.private_route_table_ids
+}
 
 resource "aws_vpc_endpoint" "cloudwatch" {
-  vpc_id            = var.vpc_cidr
+  vpc_id            = var.vpc_id
   service_name      = "com.amazonaws.${var.region}.logs"
   vpc_endpoint_type = "Interface"
 

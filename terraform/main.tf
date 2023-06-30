@@ -87,6 +87,7 @@ module "ecs" {
   public_subnets             = module.vpc.public_subnets
   vpc_cidr                   = module.vpc.vpc_cidr_block
   vpc_id                     = module.vpc.vpc_id
+  private_route_table_ids    = module.vpc.private_route_table_ids
   port                       = 3000
   private_port               = 4000
   acm_certificate_arn        = module.dns.certificate_arn

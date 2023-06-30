@@ -120,6 +120,10 @@ variable "autoscaling_min_capacity" {
   type = number
 }
 
+variable "private_route_table_ids" {
+  type = set(string)
+}
+
 variable "public_subnets" {
   type = set(string)
 }
