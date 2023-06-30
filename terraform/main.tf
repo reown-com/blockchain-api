@@ -2,7 +2,6 @@ locals {
   app_name                = "rpc-proxy"
   hosted_zone_name        = "rpc.walletconnect.com"
   backup_hosted_zone_name = "rpc.walletconnect.org"
-  private_zone_name       = "rpc.repl.internal"
   fqdn                    = terraform.workspace == "prod" ? local.hosted_zone_name : "${terraform.workspace}.${local.hosted_zone_name}"
   backup_fqdn             = terraform.workspace == "prod" ? local.backup_hosted_zone_name : "${terraform.workspace}.${local.backup_hosted_zone_name}"
 
@@ -118,18 +117,6 @@ module "ecs" {
   analytics_geoip_db_key          = var.analytics_geoip_db_key
 }
 
-module "private_hosted_zone" {
-  count  = terraform.workspace == "prod" ? 1 : 0
-  source = "./private_zone"
-
-  name     = local.private_zone_name
-  vpc_name = "ops-${terraform.workspace}-vpc"
-}
-
-locals {
-  zone_id = terraform.workspace == "prod" ? module.private_hosted_zone[0].zone_id : null
-}
-
 module "redis" {
   source = "./redis"
 
@@ -140,7 +127,6 @@ module "redis" {
   vpc_cidr        = module.vpc.vpc_cidr_block
   vpc_id          = module.vpc.vpc_id
   zone_id         = local.zone_id
-  zone_name       = local.private_zone_name
 
   depends_on = [module.private_hosted_zone]
 }
