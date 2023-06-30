@@ -9,10 +9,6 @@ terraform {
   }
 }
 
-locals {
-  zone_name = var.zone_name == null ? "local" : var.zone_name
-}
-
 resource "aws_elasticache_cluster" "cache" {
   cluster_id           = replace("${var.app_name}-${var.redis_name}", "_", "-")
   engine               = "redis"

@@ -126,7 +126,6 @@ module "redis" {
   private_subnets = module.vpc.private_subnets
   vpc_cidr        = module.vpc.vpc_cidr_block
   vpc_id          = module.vpc.vpc_id
-  zone_id         = local.zone_id
 }
 
 module "monitoring" {
