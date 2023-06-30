@@ -20,11 +20,6 @@ variable "allowed_egress_cidr_blocks" {
   default = null
 }
 
-variable "zone_id" {
-  type    = string
-  default = null
-}
-
 variable "zone_name" {
   type    = string
   default = null
