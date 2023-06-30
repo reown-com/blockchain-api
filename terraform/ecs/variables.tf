@@ -19,10 +19,6 @@ variable "region" {
   type = string
 }
 
-variable "vpc_name" {
-  type = string
-}
-
 variable "port" {
   type = number
 }
@@ -122,4 +118,24 @@ variable "autoscaling_max_capacity" {
 
 variable "autoscaling_min_capacity" {
   type = number
+}
+
+variable "private_route_table_ids" {
+  type = set(string)
+}
+
+variable "public_subnets" {
+  type = set(string)
+}
+
+variable "private_subnets" {
+  type = set(string)
+}
+
+variable "vpc_id" {
+  type = string
+}
+
+variable "vpc_cidr" {
+  type = string
 }

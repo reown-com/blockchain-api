@@ -17,6 +17,11 @@ variable "pokt_project_id" {
   type = string
 }
 
+variable "azs" {
+  type    = list(string)
+  default = ["eu-central-1a", "eu-central-1b", "eu-central-1c"]
+}
+
 variable "grafana_endpoint" {
   type = string
 }

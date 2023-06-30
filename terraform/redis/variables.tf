@@ -20,10 +20,6 @@ variable "allowed_egress_cidr_blocks" {
   default = null
 }
 
-variable "vpc_name" {
-  type = string
-}
-
 variable "zone_id" {
   type    = string
   default = null
@@ -32,4 +28,16 @@ variable "zone_id" {
 variable "zone_name" {
   type    = string
   default = null
+}
+
+variable "private_subnets" {
+  type = set(string)
+}
+
+variable "vpc_id" {
+  type = string
+}
+
+variable "vpc_cidr" {
+  type = string
 }

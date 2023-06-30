@@ -4,28 +4,8 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 4.50"
+      version = "~> 5.0.0"
     }
-  }
-}
-
-data "aws_vpc" "vpc" {
-  filter {
-    name   = "tag:Name"
-    values = [var.vpc_name]
-  }
-}
-
-# Providing a reference to our default subnets
-data "aws_subnets" "private_subnets" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.vpc.id]
-  }
-
-  filter {
-    name   = "tag:Class"
-    values = ["private"]
   }
 }
 
@@ -50,20 +30,20 @@ resource "aws_elasticache_cluster" "cache" {
 
 resource "aws_elasticache_subnet_group" "private_subnets" {
   name       = replace("${var.app_name}-${var.redis_name}-private-subnet-group", "_", "-")
-  subnet_ids = data.aws_subnets.private_subnets.ids
+  subnet_ids = var.private_subnets
 }
 
 # Allow only the app to access Redis
 resource "aws_security_group" "service_security_group" {
   name        = "${var.app_name}-${var.redis_name}-redis-service-ingress"
   description = "Allow ingress from the application"
-  vpc_id      = data.aws_vpc.vpc.id
+  vpc_id      = var.vpc_id
   ingress {
     description = "${var.app_name}-${var.redis_name} - ingress from application"
     from_port   = 6379
     to_port     = 6379
     protocol    = "TCP"
-    cidr_blocks = var.allowed_ingress_cidr_blocks == null ? [data.aws_vpc.vpc.cidr_block] : var.allowed_ingress_cidr_blocks
+    cidr_blocks = var.allowed_ingress_cidr_blocks == null ? [var.vpc_cidr] : var.allowed_ingress_cidr_blocks
   }
 
   egress {
@@ -71,7 +51,7 @@ resource "aws_security_group" "service_security_group" {
     from_port   = 0    # Allowing any incoming port
     to_port     = 0    # Allowing any outgoing port
     protocol    = "-1" # Allowing any outgoing protocol
-    cidr_blocks = var.allowed_egress_cidr_blocks == null ? [data.aws_vpc.vpc.cidr_block] : var.allowed_egress_cidr_blocks
+    cidr_blocks = var.allowed_egress_cidr_blocks == null ? [var.vpc_cidr] : var.allowed_egress_cidr_blocks
   }
 }
 

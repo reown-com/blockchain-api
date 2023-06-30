@@ -1,41 +1,9 @@
-data "aws_vpc" "vpc" {
-  filter {
-    name   = "tag:Name"
-    values = [var.vpc_name]
-  }
-}
-
-# Providing a reference to our default subnets
-data "aws_subnets" "private_subnets" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.vpc.id]
-  }
-
-  filter {
-    name   = "tag:Class"
-    values = ["private"]
-  }
-}
-
-data "aws_subnets" "public_subnets" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.vpc.id]
-  }
-
-  filter {
-    name   = "tag:Class"
-    values = ["public"]
-  }
-}
-
 # Load Balancer
 #tfsec:ignore:aws-elb-alb-not-public
 resource "aws_alb" "network_load_balancer" {
   name               = replace("${var.app_name}-lb-${substr(uuid(), 0, 3)}", "_", "-")
   load_balancer_type = "network"
-  subnets            = data.aws_subnets.public_subnets.ids
+  subnets            = var.public_subnets
 
   lifecycle {
     create_before_destroy = true
@@ -48,7 +16,7 @@ resource "aws_lb_target_group" "target_group" {
   port               = var.port
   protocol           = "TCP"
   target_type        = "ip"
-  vpc_id             = data.aws_vpc.vpc.id
+  vpc_id             = var.vpc_id
   preserve_client_ip = true
 
   # Deregister quickly to allow for faster deployments
@@ -93,7 +61,7 @@ moved {
 resource "aws_security_group" "tls_ingress" {
   name        = "${var.app_name}-tls-ingress"
   description = "Allow tls ingress from everywhere"
-  vpc_id      = data.aws_vpc.vpc.id
+  vpc_id      = var.vpc_id
 
   ingress {
     description = "allow TLS traffic from open internet to the proxy"
@@ -116,7 +84,7 @@ resource "aws_security_group" "tls_ingress" {
 resource "aws_security_group" "vpc_app_ingress" {
   name        = "${var.app_name}-vpc-ingress-to-app"
   description = "Allow app port ingress from vpc"
-  vpc_id      = data.aws_vpc.vpc.id
+  vpc_id      = var.vpc_id
 
   ingress {
     description = "allow traffic from open internet to the proxy (needed since lb has client ip forwarding)"
@@ -124,7 +92,7 @@ resource "aws_security_group" "vpc_app_ingress" {
     to_port     = var.port
     protocol    = "tcp"
     #tfsec:ignore:aws-ec2-no-public-ingress-sgr
-    cidr_blocks = ["0.0.0.0/0"] # Allowing traffic in from all sources
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {           #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
@@ -139,7 +107,7 @@ resource "aws_security_group" "vpc_app_ingress" {
 resource "aws_security_group" "sigv4_proxy_vpc_ingress" {
   name        = "${var.app_name}-vpc-ingress-to-sigv4"
   description = "Allow ingress from inside of vpc to sigv4"
-  vpc_id      = data.aws_vpc.vpc.id
+  vpc_id      = var.vpc_id
 
   ingress {
     description = "allow traffic from inside of cidr block to sigv4 proxy"
@@ -147,7 +115,7 @@ resource "aws_security_group" "sigv4_proxy_vpc_ingress" {
     to_port     = 8080
     protocol    = "tcp"
     #tfsec:ignore:aws-ec2-no-public-ingress-sgr
-    cidr_blocks = [data.aws_vpc.vpc.cidr_block] # Allowing traffic in from the cidr block 
+    cidr_blocks = [var.vpc_cidr] # Allowing traffic in from the cidr block 
   }
 
   egress {           #tfsec:ignore:aws-ec2-add-description-to-security-group-rule
@@ -195,13 +163,13 @@ resource "aws_lb_listener_certificate" "backup_cert" {
 resource "aws_security_group" "vpc-endpoint-group" {
   name        = "${var.environment}.${var.region}.${var.app_name}-vpc-endpoint"
   description = "Allow tls ingress from VPC"
-  vpc_id      = data.aws_vpc.vpc.id
+  vpc_id      = var.vpc_id
   ingress {
     description = "allow TLS traffic from vpc to the proxy"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = [data.aws_vpc.vpc.cidr_block]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   egress {
@@ -209,7 +177,7 @@ resource "aws_security_group" "vpc-endpoint-group" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = [data.aws_vpc.vpc.cidr_block]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
@@ -218,11 +186,83 @@ resource "aws_security_group" "vpc-endpoint-group" {
 }
 
 resource "aws_vpc_endpoint" "prometheus" {
-  vpc_id            = data.aws_vpc.vpc.id
+  vpc_id            = var.vpc_id
   service_name      = "com.amazonaws.${var.region}.aps-workspaces"
   vpc_endpoint_type = "Interface"
 
-  subnet_ids = data.aws_subnets.private_subnets.ids
+  subnet_ids = var.private_subnets
+
+  security_group_ids = [
+    aws_security_group.vpc-endpoint-group.id,
+  ]
+
+  tags = {
+    Application = var.app_name
+  }
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.region}.s3"
+  vpc_endpoint_type = "Gateway"
+
+  route_table_ids = var.private_route_table_ids
+}
+
+resource "aws_vpc_endpoint" "cloudwatch" {
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.region}.logs"
+  vpc_endpoint_type = "Interface"
+
+  subnet_ids = var.private_subnets
+
+  security_group_ids = [
+    aws_security_group.vpc-endpoint-group.id,
+  ]
+
+  tags = {
+    Application = var.app_name
+  }
+}
+
+resource "aws_vpc_endpoint" "ssm" {
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.region}.ssm"
+  vpc_endpoint_type = "Interface"
+
+  subnet_ids = var.private_subnets
+
+  security_group_ids = [
+    aws_security_group.vpc-endpoint-group.id,
+  ]
+
+  tags = {
+    Application = var.app_name
+  }
+}
+
+resource "aws_vpc_endpoint" "dkr" {
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.region}.ecr.dkr"
+  vpc_endpoint_type = "Interface"
+
+  subnet_ids = var.private_subnets
+
+  security_group_ids = [
+    aws_security_group.vpc-endpoint-group.id,
+  ]
+
+  tags = {
+    Application = var.app_name
+  }
+}
+
+resource "aws_vpc_endpoint" "ecrapi" {
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.region}.ecr.api"
+  vpc_endpoint_type = "Interface"
+
+  subnet_ids = var.private_subnets
 
   security_group_ids = [
     aws_security_group.vpc-endpoint-group.id,
