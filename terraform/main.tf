@@ -16,6 +16,30 @@ data "assert_test" "workspace" {
   throw = "default workspace is not valid in this project"
 }
 
+module "vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+  name   = "${terraform.workspace}-${local.app_name}"
+
+  cidr = "10.0.0.0/16"
+
+  azs             = var.azs
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnets  = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
+
+  private_subnet_tags = {
+    Visibility = "private"
+  }
+  public_subnet_tags = {
+    Visibility = "public"
+  }
+
+  enable_dns_support     = true
+  enable_dns_hostnames   = true
+  enable_nat_gateway     = true
+  single_nat_gateway     = true
+  one_nat_gateway_per_az = false
+}
+
 module "tags" {
   # tflint-ignore: terraform_module_pinned_source
   source = "github.com/WalletConnect/terraform-modules/modules/tags"
@@ -59,7 +83,10 @@ module "ecs" {
   ecr_app_version            = var.ecr_app_version
   app_name                   = "${terraform.workspace}_${local.app_name}"
   region                     = var.region
-  vpc_name                   = "ops-${terraform.workspace}-vpc"
+  private_subnets            = module.vpc.private_subnets
+  public_subnets             = module.vpc.public_subnets
+  vpc_cidr                   = module.vpc.vpc_cidr_block
+  vpc_id                     = module.vpc.vpc_id
   port                       = 3000
   private_port               = 4000
   acm_certificate_arn        = module.dns.certificate_arn
@@ -105,12 +132,14 @@ locals {
 module "redis" {
   source = "./redis"
 
-  redis_name = "rpc-${terraform.workspace}"
-  app_name   = local.app_name
-  node_type  = "cache.t4g.micro" # https://aws.amazon.com/elasticache/pricing/?nc=sn&loc=5#On-demand_nodes
-  vpc_name   = "ops-${terraform.workspace}-vpc"
-  zone_id    = local.zone_id
-  zone_name  = local.private_zone_name
+  redis_name      = "rpc-${terraform.workspace}"
+  app_name        = local.app_name
+  node_type       = "cache.t4g.micro" # https://aws.amazon.com/elasticache/pricing/?nc=sn&loc=5#On-demand_nodes
+  private_subnets = module.vpc.private_subnets
+  vpc_cidr        = module.vpc.vpc_cidr_block
+  vpc_id          = module.vpc.vpc_id
+  zone_id         = local.zone_id
+  zone_name       = local.private_zone_name
 
   depends_on = [module.private_hosted_zone]
 }

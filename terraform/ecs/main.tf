@@ -4,7 +4,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 4.50"
+      version = "~> 5.0.0"
     }
   }
 }
@@ -193,7 +193,7 @@ resource "aws_ecs_service" "app_service" {
   wait_for_steady_state = true
 
   network_configuration {
-    subnets          = data.aws_subnets.private_subnets.ids
+    subnets          = var.private_subnets
     assign_public_ip = false                                                                                                                     # We do public ingress through the LB
     security_groups  = [aws_security_group.tls_ingress.id, aws_security_group.vpc_app_ingress.id, aws_security_group.sigv4_proxy_vpc_ingress.id] # Setting the security group
   }
