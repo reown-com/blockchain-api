@@ -3,7 +3,7 @@
 resource "aws_alb" "network_load_balancer" {
   name               = replace("${var.app_name}-lb-${substr(uuid(), 0, 3)}", "_", "-")
   load_balancer_type = "network"
-  subnets            = var.private_subnets
+  subnets            = var.public_subnets
 
   lifecycle {
     create_before_destroy = true
