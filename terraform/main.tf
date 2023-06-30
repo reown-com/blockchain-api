@@ -127,8 +127,6 @@ module "redis" {
   vpc_cidr        = module.vpc.vpc_cidr_block
   vpc_id          = module.vpc.vpc_id
   zone_id         = local.zone_id
-
-  depends_on = [module.private_hosted_zone]
 }
 
 module "monitoring" {
