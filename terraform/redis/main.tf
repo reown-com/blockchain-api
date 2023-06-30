@@ -9,10 +9,6 @@ terraform {
   }
 }
 
-locals {
-  zone_name = var.zone_name == null ? "local" : var.zone_name
-}
-
 resource "aws_elasticache_cluster" "cache" {
   cluster_id           = replace("${var.app_name}-${var.redis_name}", "_", "-")
   engine               = "redis"
@@ -53,16 +49,6 @@ resource "aws_security_group" "service_security_group" {
     protocol    = "-1" # Allowing any outgoing protocol
     cidr_blocks = var.allowed_egress_cidr_blocks == null ? [var.vpc_cidr] : var.allowed_egress_cidr_blocks
   }
-}
-
-# DNS
-resource "aws_route53_record" "dns" {
-  count   = terraform.workspace == "prod" ? 1 : 0
-  zone_id = var.zone_id
-  name    = "${replace("${var.redis_name}-redis", "_", "-")}.${local.zone_name}"
-  type    = "CNAME"
-  ttl     = "30"
-  records = [for cache_node in aws_elasticache_cluster.cache.cache_nodes : cache_node.address]
 }
 
 locals {
