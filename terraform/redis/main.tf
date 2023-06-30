@@ -55,16 +55,6 @@ resource "aws_security_group" "service_security_group" {
   }
 }
 
-# DNS
-resource "aws_route53_record" "dns" {
-  count   = terraform.workspace == "prod" ? 1 : 0
-  zone_id = var.zone_id
-  name    = "${replace("${var.redis_name}-redis", "_", "-")}.${local.zone_name}"
-  type    = "CNAME"
-  ttl     = "30"
-  records = [for cache_node in aws_elasticache_cluster.cache.cache_nodes : cache_node.address]
-}
-
 locals {
   cache_endpoint = "${aws_elasticache_cluster.cache.cache_nodes[0].address}:${aws_elasticache_cluster.cache.cache_nodes[0].port}"
 }
