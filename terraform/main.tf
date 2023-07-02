@@ -16,8 +16,9 @@ data "assert_test" "workspace" {
 }
 
 module "vpc" {
-  source = "terraform-aws-modules/vpc/aws"
-  name   = "${terraform.workspace}-${local.app_name}"
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "5.0.0"
+  name    = "${terraform.workspace}-${local.app_name}"
 
   cidr = "10.0.0.0/16"
 
