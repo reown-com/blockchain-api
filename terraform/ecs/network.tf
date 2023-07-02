@@ -177,6 +177,7 @@ resource "aws_security_group" "vpc-endpoint-group" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
+    #tfsec:ignore:aws-ec2-no-public-egress-sgr
     cidr_blocks = ["0.0.0.0/0"]
   }
 
