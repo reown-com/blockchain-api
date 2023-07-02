@@ -188,6 +188,7 @@ resource "aws_ecs_service" "app_service" {
   task_definition = join(":", slice(split(":", aws_ecs_task_definition.app_task.arn), 0, 6))
   launch_type     = "FARGATE"
   desired_count   = 2 # Setting the number of containers we want deployed to 3
+  propagate_tags  = "TASK_DEFINITION"
 
   # Wait for the service deployment to succeed
   wait_for_steady_state = true
