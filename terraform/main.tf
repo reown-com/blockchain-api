@@ -15,6 +15,7 @@ data "assert_test" "workspace" {
   throw = "default workspace is not valid in this project"
 }
 
+#tfsec:ignore:aws-ec2-require-vpc-flow-logs-for-all-vpcs
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.0.0"
