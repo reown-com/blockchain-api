@@ -65,6 +65,14 @@ dashboard.new(
     panels.usage.provider(ds, vars, 'Binance')     { gridPos: pos._3 },
     panels.usage.provider(ds, vars, 'Pokt')        { gridPos: pos._3 },
 
+  row.new('Provider Weights'),
+    panels.weights.provider(ds, vars, 'Infura')    { gridPos: pos._3 },
+    panels.weights.provider(ds, vars, 'zkSync')    { gridPos: pos._3 },
+    panels.weights.provider(ds, vars, 'Publicnode'){ gridPos: pos._3 },
+    panels.weights.provider(ds, vars, 'Omniatech') { gridPos: pos._3 },
+    panels.weights.provider(ds, vars, 'Binance')   { gridPos: pos._3 },
+    panels.weights.provider(ds, vars, 'Pokt')      { gridPos: pos._3 },
+
   row.new('Status Codes'),
     panels.status.provider(ds, vars, 'Infura')      { gridPos: pos._3 },
     panels.status.provider(ds, vars, 'zkSync')      { gridPos: pos._3 },
