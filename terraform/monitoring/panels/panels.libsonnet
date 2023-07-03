@@ -5,6 +5,10 @@
     memory:               (import 'ecs/memory.libsonnet'                  ).new,
   },
 
+  weights: {
+    provider:             (import 'weights/provider.libsonnet'            ).new,
+  },
+
   usage: {
     provider:             (import 'usage/provider.libsonnet'              ).new,
   },
