@@ -140,62 +140,60 @@ async fn lookup_identity_rpc(
         headers,
     });
 
-    debug!("Beginning name lookup");
-    state.metrics.add_identity_lookup_name();
-    let name_lookup_start = SystemTime::now();
-    let name = provider
-        .lookup_address(address)
-        .await
-        .tap_err(|err| debug!("Error while looking up name: {err:?}"))
-        .map_or_else(
-            |e| match e {
-                ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
-                e => Err(RpcError::EthersProviderError(e)),
-            },
-            |name| Ok(Some(name)),
-        )?;
-    state
-        .metrics
-        .add_identity_lookup_name_latency(name_lookup_start);
-    state.metrics.add_identity_lookup_name_success();
-    let name = match name {
-        Some(name) => name,
-        None => {
-            return Ok(IdentityResponse {
-                name: None,
-                avatar: None,
-            });
-        }
+    let name = {
+        debug!("Beginning name lookup");
+        state.metrics.add_identity_lookup_name();
+        let name_lookup_start = SystemTime::now();
+        let name = provider
+            .lookup_address(address)
+            .await
+            .tap_err(|err| debug!("Error while looking up name: {err:?}"))
+            .map_or_else(
+                |e| match e {
+                    ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
+                    e => Err(RpcError::EthersProviderError(e)),
+                },
+                |name| Ok(Some(name)),
+            )?;
+        state
+            .metrics
+            .add_identity_lookup_name_latency(name_lookup_start);
+        state.metrics.add_identity_lookup_name_success();
+        name
     };
 
-    debug!("Beginning avatar lookup");
-    state.metrics.add_identity_lookup_avatar();
-    let avatar_lookup_start = SystemTime::now();
-    let avatar = provider
-        .resolve_avatar(&name)
-        .await
-        .tap_err(|err| debug!("Error while looking up avatar: {err:?}"))
-        .map_or_else(
-            |e| match e {
-                ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
-                ProviderError::CustomError(e) if e.starts_with("relative URL without a base") => {
-                    // Seems not having an `avatar` field returns this error
-                    Ok(None)
-                }
-                e => Err(RpcError::EthersProviderError(e)),
-            },
-            |url| Ok(Some(url)),
-        )?
-        .map(|url| url.to_string());
-    state
-        .metrics
-        .add_identity_lookup_avatar_latency(avatar_lookup_start);
-    state.metrics.add_identity_lookup_avatar_success();
+    let avatar = if let Some(name) = &name {
+        debug!("Beginning avatar lookup");
+        state.metrics.add_identity_lookup_avatar();
+        let avatar_lookup_start = SystemTime::now();
+        let avatar = provider
+            .resolve_avatar(name)
+            .await
+            .tap_err(|err| debug!("Error while looking up avatar: {err:?}"))
+            .map_or_else(
+                |e| match e {
+                    ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
+                    ProviderError::CustomError(e)
+                        if e.starts_with("relative URL without a base") =>
+                    {
+                        // Seems not having an `avatar` field returns this error
+                        Ok(None)
+                    }
+                    e => Err(RpcError::EthersProviderError(e)),
+                },
+                |url| Ok(Some(url)),
+            )?
+            .map(|url| url.to_string());
+        state
+            .metrics
+            .add_identity_lookup_avatar_latency(avatar_lookup_start);
+        state.metrics.add_identity_lookup_avatar_success();
+        avatar
+    } else {
+        None
+    };
 
-    Ok(IdentityResponse {
-        name: Some(name),
-        avatar,
-    })
+    Ok(IdentityResponse { name, avatar })
 }
 
 struct SelfProvider {
