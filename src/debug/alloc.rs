@@ -67,25 +67,25 @@ struct GlobalStats {
 }
 
 pub struct AllocMetrics {
-    allocated: opentelemetry::metrics::ValueRecorder<u64>,
-    active: opentelemetry::metrics::ValueRecorder<u64>,
-    metadata: opentelemetry::metrics::ValueRecorder<u64>,
-    resident: opentelemetry::metrics::ValueRecorder<u64>,
-    mapped: opentelemetry::metrics::ValueRecorder<u64>,
-    retained: opentelemetry::metrics::ValueRecorder<u64>,
+    allocated: opentelemetry::metrics::ObservableGauge<u64>,
+    active: opentelemetry::metrics::ObservableGauge<u64>,
+    metadata: opentelemetry::metrics::ObservableGauge<u64>,
+    resident: opentelemetry::metrics::ObservableGauge<u64>,
+    mapped: opentelemetry::metrics::ObservableGauge<u64>,
+    retained: opentelemetry::metrics::ObservableGauge<u64>,
     bin: AllocBinMetrics,
 }
 
 struct AllocBinMetrics {
-    nmalloc: opentelemetry::metrics::ValueRecorder<u64>,
-    ndalloc: opentelemetry::metrics::ValueRecorder<u64>,
-    nrequests: opentelemetry::metrics::ValueRecorder<u64>,
+    nmalloc: opentelemetry::metrics::ObservableGauge<u64>,
+    ndalloc: opentelemetry::metrics::ObservableGauge<u64>,
+    nrequests: opentelemetry::metrics::ObservableGauge<u64>,
 }
 
 impl AllocBinMetrics {
     pub fn new(meter: &opentelemetry::metrics::Meter) -> Self {
         let nmalloc = meter
-            .u64_value_recorder("jemalloc_memory_bin_nmalloc")
+            .u64_observable_gauge("jemalloc_memory_bin_nmalloc")
             .with_description(
                 "Cumulative number of times a bin region of the corresponding size class was \
                  allocated from the arena, whether to fill the relevant tcache if opt.tcache is \
@@ -93,7 +93,7 @@ impl AllocBinMetrics {
             )
             .init();
         let ndalloc = meter
-            .u64_value_recorder("jemalloc_memory_bin_ndalloc")
+            .u64_observable_gauge("jemalloc_memory_bin_ndalloc")
             .with_description(
                 "Cumulative number of times a bin region of the corresponding size class was \
                  returned to the arena, whether to flush the relevant tcache if opt.tcache is \
@@ -101,7 +101,7 @@ impl AllocBinMetrics {
             )
             .init();
         let nrequests = meter
-            .u64_value_recorder("jemalloc_memory_bin_nrequests")
+            .u64_observable_gauge("jemalloc_memory_bin_nrequests")
             .with_description(
                 "Cumulative number of allocation requests satisfied by bin regions of the \
                  corresponding size class.",
@@ -125,9 +125,12 @@ impl AllocBinMetrics {
                 bin_const.size.try_into().unwrap_or(0i64),
             )];
 
-            self.nmalloc.record(bin_stats.nmalloc, &tags);
-            self.ndalloc.record(bin_stats.ndalloc, &tags);
-            self.nrequests.record(bin_stats.nrequests, &tags);
+            self.nmalloc
+                .observe(&opentelemetry::Context::new(), bin_stats.nmalloc, &tags);
+            self.ndalloc
+                .observe(&opentelemetry::Context::new(), bin_stats.ndalloc, &tags);
+            self.nrequests
+                .observe(&opentelemetry::Context::new(), bin_stats.nrequests, &tags);
         }
     }
 }
@@ -135,42 +138,42 @@ impl AllocBinMetrics {
 impl AllocMetrics {
     pub fn new(meter: &opentelemetry::metrics::Meter) -> Self {
         let allocated = meter
-            .u64_value_recorder("jemalloc_memory_allocated")
+            .u64_observable_gauge("jemalloc_memory_allocated")
             .with_description(
                 "Total number of bytes allocated by the application. This corresponds to \
                  `stats.allocated` in jemalloc's API.",
             )
             .init();
         let active = meter
-            .u64_value_recorder("jemalloc_memory_active")
+            .u64_observable_gauge("jemalloc_memory_active")
             .with_description(
                 "Total number of bytes in active pages allocated by the application. This \
                  corresponds to `stats.active` in jemalloc's API.",
             )
             .init();
         let metadata = meter
-            .u64_value_recorder("jemalloc_memory_metadata")
+            .u64_observable_gauge("jemalloc_memory_metadata")
             .with_description(
                 "Total number of bytes dedicated to `jemalloc` metadata. This corresponds to \
                  `stats.metadata` in jemalloc's API.",
             )
             .init();
         let resident = meter
-            .u64_value_recorder("jemalloc_memory_resident")
+            .u64_observable_gauge("jemalloc_memory_resident")
             .with_description(
                 "Total number of bytes in physically resident data pages mapped by the allocator. \
                  This corresponds to `stats.resident` in jemalloc's API.",
             )
             .init();
         let mapped = meter
-            .u64_value_recorder("jemalloc_memory_mapped")
+            .u64_observable_gauge("jemalloc_memory_mapped")
             .with_description(
                 "Total number of bytes in active extents mapped by the allocator. This \
                  corresponds to `stats.mapped` in jemalloc's API.",
             )
             .init();
         let retained = meter
-            .u64_value_recorder("jemalloc_memory_retained")
+            .u64_observable_gauge("jemalloc_memory_retained")
             .with_description(
                 "Total number of bytes in virtual memory mappings that were retained rather than \
                  being returned to the operating system via e.g. `munmap(2)`. This corresponds to \
@@ -199,12 +202,18 @@ impl AllocMetrics {
 
         let mem_stats = &stats.jemalloc.stats;
 
-        self.allocated.record(mem_stats.allocated, &[]);
-        self.active.record(mem_stats.active, &[]);
-        self.metadata.record(mem_stats.metadata, &[]);
-        self.resident.record(mem_stats.resident, &[]);
-        self.mapped.record(mem_stats.mapped, &[]);
-        self.retained.record(mem_stats.retained, &[]);
+        self.allocated
+            .observe(&opentelemetry::Context::new(), mem_stats.allocated, &[]);
+        self.active
+            .observe(&opentelemetry::Context::new(), mem_stats.active, &[]);
+        self.metadata
+            .observe(&opentelemetry::Context::new(), mem_stats.metadata, &[]);
+        self.resident
+            .observe(&opentelemetry::Context::new(), mem_stats.resident, &[]);
+        self.mapped
+            .observe(&opentelemetry::Context::new(), mem_stats.mapped, &[]);
+        self.retained
+            .observe(&opentelemetry::Context::new(), mem_stats.retained, &[]);
 
         self.bin.collect_alloc_stats(&stats);
     }

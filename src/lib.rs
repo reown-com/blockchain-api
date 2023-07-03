@@ -66,11 +66,22 @@ mod utils;
 mod ws;
 
 pub async fn bootstrap(config: Config) -> RpcResult<()> {
-    let prometheus_exporter = opentelemetry_prometheus::exporter().init();
+    let controller = opentelemetry::sdk::metrics::controllers::basic(
+        opentelemetry::sdk::metrics::processors::factory(
+            opentelemetry::sdk::metrics::selectors::simple::histogram(vec![]),
+            opentelemetry::sdk::export::metrics::aggregation::cumulative_temporality_selector(),
+        ),
+    )
+    .with_resource(opentelemetry::sdk::Resource::new(vec![
+        opentelemetry::KeyValue::new("service_name", "rpc-proxy"),
+    ]))
+    .build();
+
+    let prometheus_exporter = opentelemetry_prometheus::exporter(controller).init();
     let meter = prometheus_exporter
-        .provider()
+        .meter_provider()
         .unwrap()
-        .meter("rpc-proxy", None);
+        .meter("rpc-proxy");
 
     let metrics = Arc::new(Metrics::new(&meter));
     let registry = Registry::new(&config.registry, &config.storage, &meter)?;

@@ -4,7 +4,7 @@ use {
         providers::{ProviderKind, RpcProvider},
     },
     hyper::http,
-    opentelemetry::metrics::{Counter, Meter, ValueRecorder},
+    opentelemetry::metrics::{Counter, Histogram, Meter},
     std::time::{Duration, SystemTime},
 };
 
@@ -14,22 +14,22 @@ pub struct Metrics {
     pub http_call_counter: Counter<u64>,
     pub provider_finished_call_counter: Counter<u64>,
     pub provider_failed_call_counter: Counter<u64>,
-    pub http_latency_tracker: ValueRecorder<f64>,
-    pub http_external_latency_tracker: ValueRecorder<f64>,
+    pub http_latency_tracker: Histogram<f64>,
+    pub http_external_latency_tracker: Histogram<f64>,
     pub rejected_project_counter: Counter<u64>,
     pub rate_limited_call_counter: Counter<u64>,
     pub provider_status_code_counter: Counter<u64>,
-    pub weights_value_recorder: ValueRecorder<u64>,
-    pub identity_lookup_latency_tracker: ValueRecorder<f64>,
+    pub weights_value_recorder: Histogram<u64>,
+    pub identity_lookup_latency_tracker: Histogram<f64>,
     pub identity_lookup_counter: Counter<u64>,
     pub identity_lookup_success_counter: Counter<u64>,
-    pub identity_lookup_cache_latency_tracker: ValueRecorder<f64>,
+    pub identity_lookup_cache_latency_tracker: Histogram<f64>,
     pub identity_lookup_name_counter: Counter<u64>,
     pub identity_lookup_name_success_counter: Counter<u64>,
-    pub identity_lookup_name_latency_tracker: ValueRecorder<f64>,
+    pub identity_lookup_name_latency_tracker: Histogram<f64>,
     pub identity_lookup_avatar_counter: Counter<u64>,
     pub identity_lookup_avatar_success_counter: Counter<u64>,
-    pub identity_lookup_avatar_latency_tracker: ValueRecorder<f64>,
+    pub identity_lookup_avatar_latency_tracker: Histogram<f64>,
     pub identity_lookup_avatar_present_counter: Counter<u64>,
     pub identity_lookup_name_present_counter: Counter<u64>,
 }
@@ -47,12 +47,12 @@ impl Metrics {
             .init();
 
         let http_latency_tracker = meter
-            .f64_value_recorder("http_latency_tracker")
+            .f64_histogram("http_latency_tracker")
             .with_description("The http call latency")
             .init();
 
         let http_external_latency_tracker = meter
-            .f64_value_recorder("http_external_latency_tracker")
+            .f64_histogram("http_external_latency_tracker")
             .with_description("The http call latency for external providers")
             .init();
 
@@ -82,7 +82,7 @@ impl Metrics {
             .init();
 
         let weights_value_recorder = meter
-            .u64_value_recorder("provider_weights")
+            .u64_histogram("provider_weights")
             .with_description("The weights of the providers")
             .init();
 
@@ -97,12 +97,12 @@ impl Metrics {
             .init();
 
         let identity_lookup_latency_tracker = meter
-            .f64_value_recorder("identity_lookup_latency_tracker")
+            .f64_histogram("identity_lookup_latency_tracker")
             .with_description("The latency to serve identity lookups")
             .init();
 
         let identity_lookup_cache_latency_tracker = meter
-            .f64_value_recorder("identity_lookup_cache_latency_tracker")
+            .f64_histogram("identity_lookup_cache_latency_tracker")
             .with_description("The latency to lookup identity in the cache")
             .init();
 
@@ -117,7 +117,7 @@ impl Metrics {
             .init();
 
         let identity_lookup_name_latency_tracker = meter
-            .f64_value_recorder("identity_lookup_name_latency_tracker")
+            .f64_histogram("identity_lookup_name_latency_tracker")
             .with_description("The latency of performing the name lookup")
             .init();
 
@@ -132,7 +132,7 @@ impl Metrics {
             .init();
 
         let identity_lookup_avatar_latency_tracker = meter
-            .f64_value_recorder("identity_lookup_avatar_latency_tracker")
+            .f64_histogram("identity_lookup_avatar_latency_tracker")
             .with_description("The latency of performing the avatar lookup")
             .init();
 
@@ -176,56 +176,59 @@ impl Metrics {
 impl Metrics {
     pub fn add_rpc_call(&self, chain_id: String) {
         self.rpc_call_counter
-            .add(1, &[opentelemetry::KeyValue::new("chain.id", chain_id)]);
+            .add(&opentelemetry::Context::new(), 1, &[
+                opentelemetry::KeyValue::new("chain.id", chain_id),
+            ]);
     }
 
     pub fn add_http_call(&self, code: u16, route: String) {
-        self.http_call_counter.add(1, &[
-            opentelemetry::KeyValue::new("code", i64::from(code)),
-            opentelemetry::KeyValue::new("route", route),
-        ]);
+        self.http_call_counter
+            .add(&opentelemetry::Context::new(), 1, &[
+                opentelemetry::KeyValue::new("code", i64::from(code)),
+                opentelemetry::KeyValue::new("route", route),
+            ]);
     }
 
     pub fn add_http_latency(&self, code: u16, route: String, latency: f64) {
-        self.http_latency_tracker.record(latency, &[
-            opentelemetry::KeyValue::new("code", i64::from(code)),
-            opentelemetry::KeyValue::new("route", route),
-        ])
+        self.http_latency_tracker
+            .record(&opentelemetry::Context::new(), latency, &[
+                opentelemetry::KeyValue::new("code", i64::from(code)),
+                opentelemetry::KeyValue::new("route", route),
+            ])
     }
 
     pub fn add_external_http_latency(&self, provider_kind: ProviderKind, latency: f64) {
         self.http_external_latency_tracker
-            .record(latency, &[opentelemetry::KeyValue::new(
-                "provider",
-                provider_kind.to_string(),
-            )])
+            .record(&opentelemetry::Context::new(), latency, &[
+                opentelemetry::KeyValue::new("provider", provider_kind.to_string()),
+            ])
     }
 
     pub fn add_rejected_project(&self) {
-        self.rejected_project_counter.add(1, &[])
+        self.rejected_project_counter
+            .add(&opentelemetry::Context::new(), 1, &[])
     }
 
     pub fn add_rate_limited_call(&self, provider: &dyn RpcProvider, project_id: String) {
-        self.rate_limited_call_counter.add(1, &[
-            opentelemetry::KeyValue::new("provider_kind", provider.provider_kind().to_string()),
-            opentelemetry::KeyValue::new("project_id", project_id),
-        ])
+        self.rate_limited_call_counter
+            .add(&opentelemetry::Context::new(), 1, &[
+                opentelemetry::KeyValue::new("provider_kind", provider.provider_kind().to_string()),
+                opentelemetry::KeyValue::new("project_id", project_id),
+            ])
     }
 
     pub fn add_failed_provider_call(&self, provider: &dyn RpcProvider) {
         self.provider_failed_call_counter
-            .add(1, &[opentelemetry::KeyValue::new(
-                "provider",
-                provider.provider_kind().to_string(),
-            )])
+            .add(&opentelemetry::Context::new(), 1, &[
+                opentelemetry::KeyValue::new("provider", provider.provider_kind().to_string()),
+            ])
     }
 
     pub fn add_finished_provider_call(&self, provider: &dyn RpcProvider) {
         self.provider_finished_call_counter
-            .add(1, &[opentelemetry::KeyValue::new(
-                "provider",
-                provider.provider_kind().to_string(),
-            )])
+            .add(&opentelemetry::Context::new(), 1, &[
+                opentelemetry::KeyValue::new("provider", provider.provider_kind().to_string()),
+            ])
     }
 
     pub fn add_status_code_for_provider(
@@ -234,34 +237,37 @@ impl Metrics {
         status: http::StatusCode,
         chain_id: String,
     ) {
-        self.provider_status_code_counter.add(1, &[
-            opentelemetry::KeyValue::new("provider", provider.provider_kind().to_string()),
-            opentelemetry::KeyValue::new("status_code", format!("{}", status.as_u16())),
-            opentelemetry::KeyValue::new("chain_id", chain_id),
-        ])
+        self.provider_status_code_counter
+            .add(&opentelemetry::Context::new(), 1, &[
+                opentelemetry::KeyValue::new("provider", provider.provider_kind().to_string()),
+                opentelemetry::KeyValue::new("status_code", format!("{}", status.as_u16())),
+                opentelemetry::KeyValue::new("chain_id", chain_id),
+            ])
     }
 
     pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: String, weight: u64) {
-        self.weights_value_recorder.record(weight, &[
-            opentelemetry::KeyValue::new("provider", provider.to_string()),
-            opentelemetry::KeyValue::new("chain_id", chain_id),
-        ])
+        self.weights_value_recorder
+            .record(&opentelemetry::Context::new(), weight, &[
+                opentelemetry::KeyValue::new("provider", provider.to_string()),
+                opentelemetry::KeyValue::new("chain_id", chain_id),
+            ])
     }
 
     pub fn add_identity_lookup(&self) {
-        self.identity_lookup_counter.add(1, &[]);
+        self.identity_lookup_counter
+            .add(&opentelemetry::Context::new(), 1, &[]);
     }
 
     pub fn add_identity_lookup_success(&self, source: &IdentityLookupSource) {
         self.identity_lookup_success_counter
-            .add(1, &[opentelemetry::KeyValue::new(
-                "source",
-                source.as_str(),
-            )]);
+            .add(&opentelemetry::Context::new(), 1, &[
+                opentelemetry::KeyValue::new("source", source.as_str()),
+            ]);
     }
 
     pub fn add_identity_lookup_latency(&self, start: SystemTime, source: &IdentityLookupSource) {
         self.identity_lookup_latency_tracker.record(
+            &opentelemetry::Context::new(),
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -272,6 +278,7 @@ impl Metrics {
 
     pub fn add_identity_lookup_cache_latency(&self, start: SystemTime) {
         self.identity_lookup_cache_latency_tracker.record(
+            &opentelemetry::Context::new(),
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -281,15 +288,18 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup_name(&self) {
-        self.identity_lookup_name_counter.add(1, &[]);
+        self.identity_lookup_name_counter
+            .add(&opentelemetry::Context::new(), 1, &[]);
     }
 
     pub fn add_identity_lookup_name_success(&self) {
-        self.identity_lookup_name_success_counter.add(1, &[]);
+        self.identity_lookup_name_success_counter
+            .add(&opentelemetry::Context::new(), 1, &[]);
     }
 
     pub fn add_identity_lookup_name_latency(&self, start: SystemTime) {
         self.identity_lookup_name_latency_tracker.record(
+            &opentelemetry::Context::new(),
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -299,15 +309,18 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup_avatar(&self) {
-        self.identity_lookup_avatar_counter.add(1, &[]);
+        self.identity_lookup_avatar_counter
+            .add(&opentelemetry::Context::new(), 1, &[]);
     }
 
     pub fn add_identity_lookup_avatar_success(&self) {
-        self.identity_lookup_avatar_success_counter.add(1, &[]);
+        self.identity_lookup_avatar_success_counter
+            .add(&opentelemetry::Context::new(), 1, &[]);
     }
 
     pub fn add_identity_lookup_avatar_latency(&self, start: SystemTime) {
         self.identity_lookup_avatar_latency_tracker.record(
+            &opentelemetry::Context::new(),
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -317,10 +330,12 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup_name_present(&self) {
-        self.identity_lookup_name_present_counter.add(1, &[]);
+        self.identity_lookup_name_present_counter
+            .add(&opentelemetry::Context::new(), 1, &[]);
     }
 
     pub fn add_identity_lookup_avatar_present(&self) {
-        self.identity_lookup_avatar_present_counter.add(1, &[]);
+        self.identity_lookup_avatar_present_counter
+            .add(&opentelemetry::Context::new(), 1, &[]);
     }
 }
