@@ -2,10 +2,11 @@ use {
     anyhow::Context,
     aws_sdk_s3::Client as S3Client,
     gorgon::{
-        batcher::{AwsExporter, AwsExporterOpts, BatchCollectorOpts},
+        collectors::{batch::BatchOpts, noop::NoopCollector},
+        exporters::aws::{AwsExporter, AwsOpts},
         geoip::{AnalyticsGeoData, GeoIpReader},
+        writers::parquet::ParquetWriter,
         Analytics,
-        NoopCollector,
     },
     std::{net::IpAddr, sync::Arc},
     tracing::info,
@@ -68,18 +69,17 @@ impl RPCAnalytics {
         let node_ip: Arc<str> = node_ip.to_string().into();
 
         let messages = {
-            let opts = BatchCollectorOpts::default();
-            let exporter = AwsExporter::new(AwsExporterOpts {
+            let opts = BatchOpts::default();
+            let exporter = AwsExporter::new(AwsOpts {
                 export_name: "rpc_requests",
                 file_extension: "parquet",
                 bucket_name: bucket_name.into(),
                 s3_client,
                 node_ip,
+                export_prefix: "",
             });
 
-            Analytics::new(gorgon::batcher::create_parquet_collector::<MessageInfo, _>(
-                opts, exporter,
-            )?)
+            Analytics::new(ParquetWriter::new(opts, exporter)?)
         };
 
         Ok(Self { messages, geoip })
