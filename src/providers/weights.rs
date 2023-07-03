@@ -27,7 +27,7 @@ pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
                 continue;
             };
 
-            let Some(status_code) = metric.remove("status_code") else { 
+            let Some(status_code) = metric.remove("status_code") else {
                 warn!("No status_code found in metric: {:?}", metric);
                 continue;
             };
@@ -108,15 +108,22 @@ pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWei
             let chain_weight = calculate_chain_weight(chain_availability, &provider_availability);
 
             let Some(provider_chain_weight) = weight_resolver.get(&chain_id) else {
-                warn!("Chain {} not found in weight resolver: {:?}", chain_id, weight_resolver);
+                warn!(
+                    "Chain {} not found in weight resolver: {:?}",
+                    chain_id, weight_resolver
+                );
                 continue;
             };
 
-            let Some(weight) = provider_chain_weight
-                .get(&ProviderKind::from_str(&provider).unwrap()) else {
-                    warn!("Weight for {} not found in weight map: {:?}", &provider, provider_chain_weight);
-                    continue;
-                };
+            let Some(weight) =
+                provider_chain_weight.get(&ProviderKind::from_str(&provider).unwrap())
+            else {
+                warn!(
+                    "Weight for {} not found in weight map: {:?}",
+                    &provider, provider_chain_weight
+                );
+                continue;
+            };
 
             weight.update_value(chain_weight);
         }
