@@ -66,6 +66,10 @@ prometheus-http-query = "0.6.6"
 ethers = { version = "2.0.7", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
 
 
+# Memory Leak Debugging
+tikv-jemallocator = { version = "0.5", features = ["stats"] }
+tikv-jemalloc-ctl = { version = "0.5", features = ["use_std"] }
+
 [dev-dependencies]
 jsonrpc = "0.14.0"
 test-context = "0.1"

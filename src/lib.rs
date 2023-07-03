@@ -51,6 +51,7 @@ use {
 };
 
 mod analytics;
+mod debug;
 pub mod env;
 pub mod error;
 mod extractors;
@@ -186,11 +187,16 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         }
     };
 
+    let memory_metrics = debug::alloc::AllocMetrics::new(&meter);
+    let memory_debug_stats_handle = tokio::spawn(debug::debug_metrics(memory_metrics));
+
     let services = vec![
         tokio::spawn(public_server),
         tokio::spawn(private_server),
         tokio::spawn(updater),
     ];
+
+    memory_debug_stats_handle.abort();
 
     if let Err(e) = futures_util::future::select_all(services).await.0 {
         warn!("Server error: {:?}", e);
