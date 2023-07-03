@@ -188,15 +188,19 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     };
 
     let memory_metrics = debug::alloc::AllocMetrics::new(&meter);
-    let memory_debug_stats_handle = tokio::spawn(debug::debug_metrics(memory_metrics));
+    let memory_debug_data_collector = async move {
+        if let Err(e) = tokio::spawn(debug::debug_metrics(memory_metrics)).await {
+            warn!("Memory debug stats collection failed with: {:?}", e);
+        }
+        Ok(())
+    };
 
     let services = vec![
         tokio::spawn(public_server),
         tokio::spawn(private_server),
         tokio::spawn(updater),
+        tokio::spawn(memory_debug_data_collector),
     ];
-
-    memory_debug_stats_handle.abort();
 
     if let Err(e) = futures_util::future::select_all(services).await.0 {
         warn!("Server error: {:?}", e);
