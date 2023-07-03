@@ -91,7 +91,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .project_data_redis_addr()
         .map(|addr| redis::Redis::new(&addr, config.storage.redis_max_connections))
         .transpose()?
-        .map(|r| Arc::new(r) as Arc<dyn KeyValueStorage<Option<IdentityResponse>> + 'static>);
+        .map(|r| Arc::new(r) as Arc<dyn KeyValueStorage<IdentityResponse> + 'static>);
     let providers = init_providers();
 
     let external_ip = config
