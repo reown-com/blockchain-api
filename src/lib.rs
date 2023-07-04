@@ -45,7 +45,7 @@ use {
     tower::ServiceBuilder,
     tower_http::{
         cors::{Any, CorsLayer},
-        trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
+        trace::{DefaultMakeSpa, TraceLayer},
     },
     tracing::{info, log::warn, Level, Span},
 };
