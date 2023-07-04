@@ -6,6 +6,30 @@ local targets        = grafana.targets;
 local alert          = grafana.alert;
 local alertCondition = grafana.alertCondition;
 
+local no_data_alert(vars) = alert.new(
+  namespace   = 'RPC',
+  name        = "RPC %s - No Data alert" % vars.environment,
+  message     = "RPC %s - No Data alert" % vars.environment,
+  period      = '5m',
+  frequency   = '1m',
+  noDataState = 'alerting',
+  notifications = vars.notifications,
+  alertRuleTags = {
+    'og_priority': 'P3',
+  },
+  
+  conditions  = [
+    alertCondition.new(
+      evaluatorParams = [ 1 ],
+      evaluatorType   = 'lt',
+      operatorType    = 'or',
+      queryRefId      = 'total',
+      queryTimeStart  = '5m',
+      reducerType     = 'sum',
+    ),
+  ]
+);
+
 
 {
   new(ds, vars)::
@@ -21,6 +45,7 @@ local alertCondition = grafana.alertCondition;
           axisSoftMax = 100,
         )
     )
+    .setAlert(no_data_alert(vars))
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
