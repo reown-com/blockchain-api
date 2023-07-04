@@ -137,12 +137,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
                     .level(Level::INFO)
                     .include_headers(true),
             )
-            .on_request(DefaultOnRequest::new().level(Level::INFO))
-            .on_response(
-                DefaultOnResponse::new()
-                    .level(Level::INFO)
-                    .include_headers(true),
-            ),
     );
 
     let proxy_state = state_arc.clone();
