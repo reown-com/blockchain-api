@@ -14,7 +14,7 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr          = 'sum (increase(rejected_project_counter[5m]))',
+      expr          = 'sum (increase(rejected_project_counter_total[5m]))',
       legendFormat  = '__auto',
     ))
 }

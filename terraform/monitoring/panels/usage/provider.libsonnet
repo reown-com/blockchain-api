@@ -14,7 +14,7 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr          = 'sum by(chain_id) (increase(provider_status_code_counter{provider="%s"}[5m]))' % provider,
+      expr          = 'sum by(chain_id) (increase(provider_status_code_counter_total{provider="%s"}[5m]))' % provider,
       legendFormat  = '__auto',
     ))
 }
