@@ -51,3 +51,8 @@ variable "autoscaling_max_instances" {
 variable "autoscaling_min_instances" {
   type = number
 }
+
+variable "data_lake_kms_key_arn" {
+  description = "The ARN of KMS encryption key for the data-lake bucket."
+  type        = string
+}
