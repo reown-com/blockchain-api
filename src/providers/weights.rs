@@ -69,7 +69,7 @@ fn calculate_chain_weight(
     // Sum failed and successful calls for provider
     let Some(provider_failures_squared) = provider_failure.checked_mul(provider_failure) else {
         // 1 is minimal value for chein weight
-        return 1;
+        return 0;
     };
 
     let provider_total = provider_success + provider_failures_squared;
@@ -79,7 +79,7 @@ fn calculate_chain_weight(
     // Sum failed and successful calls for chain
     let Some(chain_failures_squared) = chain_failure.checked_mul(chain_failure) else {
         // 1 is minimal value for chein weight
-        return 1;
+        return 0;
     };
 
     let chain_total = chain_success + chain_failures_squared;
