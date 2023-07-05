@@ -40,11 +40,12 @@ local alertCondition = grafana.alertCondition;
       datasource  = ds.prometheus,
       expr        = 'sum(rate(http_call_counter_total{aws_ecs_task_family=\"%s_rpc-proxy\"}[5m]))' % vars.environment,
       refId       = 'total',
-      exemplar    = false,
+      exemplar    = true,
       hide        = true,
     ))
     .addTarget(targets.math(
       expr        = '(1 - (($errors + $rate_limits) / $total)) * 100',
       refId       = "Availability",
     ))
+   
 }
