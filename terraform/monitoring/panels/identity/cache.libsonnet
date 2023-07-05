@@ -21,7 +21,7 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_success_counter{}[$__rate_interval]))',
+      expr        = 'sum(rate(identity_lookup_success_counter_total{}[$__rate_interval]))',
       refId       = "lookups",
       exemplar    = false,
       hide        = true,
@@ -29,7 +29,7 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_success_counter{source="cache"}[$__rate_interval]))',
+      expr        = 'sum(rate(identity_lookup_success_counter_total{source="cache"}[$__rate_interval]))',
       refId       = "cache_hits",
       exemplar    = false,
       hide        = true,
