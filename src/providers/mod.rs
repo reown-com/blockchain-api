@@ -256,7 +256,7 @@ pub trait RpcWsProvider: Provider {
     ) -> RpcResult<Response>;
 }
 
-const MAX_PRIORITY: u32 = 100;
+const MAX_PRIORITY: u64 = 100;
 
 pub enum Priority {
     Max,
@@ -264,7 +264,7 @@ pub enum Priority {
     Normal,
     Low,
     Disabled,
-    Custom(u32),
+    Custom(u64),
 }
 
 impl TryInto<PriorityValue> for Priority {
@@ -283,10 +283,10 @@ impl TryInto<PriorityValue> for Priority {
 }
 
 #[derive(Debug)]
-pub struct PriorityValue(u32);
+pub struct PriorityValue(u64);
 
 impl PriorityValue {
-    fn new(value: u32) -> RpcResult<Self> {
+    fn new(value: u64) -> RpcResult<Self> {
         if value > MAX_PRIORITY {
             return Err(anyhow::anyhow!(
                 "Priority value cannot be greater than {}",
@@ -298,14 +298,14 @@ impl PriorityValue {
         Ok(Self(value))
     }
 
-    fn value(&self) -> u32 {
+    fn value(&self) -> u64 {
         self.0
     }
 }
 
 #[derive(Debug)]
 pub struct Weight {
-    value: std::sync::atomic::AtomicU32,
+    value: std::sync::atomic::AtomicU64,
     priority: PriorityValue,
 }
 
@@ -313,16 +313,16 @@ impl Weight {
     pub fn new(priority: Priority) -> RpcResult<Self> {
         let priority_val = TryInto::<PriorityValue>::try_into(priority)?.value();
         Ok(Self {
-            value: std::sync::atomic::AtomicU32::new(priority_val),
+            value: std::sync::atomic::AtomicU64::new(priority_val),
             priority: PriorityValue::new(priority_val)?,
         })
     }
 
-    pub fn value(&self) -> u32 {
+    pub fn value(&self) -> u64 {
         self.value.load(std::sync::atomic::Ordering::SeqCst)
     }
 
-    pub fn update_value(&self, value: u32) {
+    pub fn update_value(&self, value: u64) {
         self.value.store(
             // Calulate the new value based on the priority, with MAX_PRIORITY/2 being the "normal"
             // value Everything above MAX_PRIORITY/2 will be prioritized, everything
