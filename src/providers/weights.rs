@@ -9,8 +9,8 @@ use {
 /// The amount of successful and failed requests to a provider
 ///
 /// Availability(success_counter, failure_counter)
-#[derive(Debug)]
-pub struct Availability(u32, u32);
+#[derive(Debug, Copy, Clone)]
+pub struct Availability(u64, u64);
 
 pub type ParsedWeights = HashMap<String, (HashMap<ChainId, Availability>, Availability)>;
 
@@ -47,11 +47,11 @@ pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
                 .or_insert_with(|| Availability(0, 0));
 
             if status_code.starts_with('2') || status_code == "404" || status_code == "400" {
-                provider_availability.0 += amount as u32;
-                chain_availability.0 += amount as u32;
+                provider_availability.0 += amount as u64;
+                chain_availability.0 += amount as u64;
             } else {
-                provider_availability.1 += amount as u32;
-                chain_availability.1 += amount as u32;
+                provider_availability.1 += amount as u64;
+                chain_availability.1 += amount as u64;
             }
         }
     });
@@ -62,17 +62,27 @@ const PERFECT_RATIO: f64 = 1.0;
 
 fn calculate_chain_weight(
     provider_availability: Availability,
-    chain_availability: &Availability,
-) -> u32 {
+    chain_availability: Availability,
+) -> u64 {
     let Availability(provider_success, provider_failure) = provider_availability;
 
     // Sum failed and successful calls for provider
-    let provider_total = provider_success + provider_failure * provider_failure;
+    let Some(provider_failures_squared) = provider_failure.checked_mul(provider_failure) else {
+        // 1 is minimal value for chein weight
+        return 0;
+    };
+
+    let provider_total = provider_success + provider_failures_squared;
 
     let Availability(chain_success, chain_failure) = chain_availability;
 
     // Sum failed and successful calls for chain
-    let chain_total = chain_success + chain_failure * chain_failure;
+    let Some(chain_failures_squared) = chain_failure.checked_mul(chain_failure) else {
+        // 1 is minimal value for chein weight
+        return 0;
+    };
+
+    let chain_total = chain_success + chain_failures_squared;
 
     // Provider success rate is the amount of successful calls to provider over the
     // total amount of calls to provider
@@ -88,7 +98,7 @@ fn calculate_chain_weight(
     let chain_success_rate = if chain_total == 0 {
         PERFECT_RATIO
     } else {
-        *chain_success as f64 / chain_total as f64
+        chain_success as f64 / chain_total as f64
     };
 
     // As success rate is always a float within (0,1> range
@@ -98,14 +108,14 @@ fn calculate_chain_weight(
     // that provider scales linearly, but chain scales exponentially (each chain
     // fail also is counted as provider fail)
     let weight = provider_success_rate * chain_success_rate * 10000.0;
-    weight as u32
+    weight as u64
 }
 
 pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWeights) {
     for (provider, (chain_availabilities, provider_availability)) in parsed_weights {
         for (chain_id, chain_availability) in chain_availabilities {
             let chain_id = chain_id.0;
-            let chain_weight = calculate_chain_weight(chain_availability, &provider_availability);
+            let chain_weight = calculate_chain_weight(chain_availability, provider_availability);
 
             let Some(provider_chain_weight) = weight_resolver.get(&chain_id) else {
                 warn!(
@@ -134,7 +144,7 @@ pub fn record_values(weight_resolver: &WeightResolver, metrics: &crate::Metrics)
     for (chain_id, provider_chain_weight) in weight_resolver {
         for (provider_kind, weight) in provider_chain_weight {
             let weight = weight.value();
-            metrics.record_provider_weight(provider_kind, chain_id.to_owned(), weight.into())
+            metrics.record_provider_weight(provider_kind, chain_id.to_owned(), weight)
         }
     }
 }
@@ -148,7 +158,7 @@ mod tests {
         // The provider has around 71.42% success rate
         let provider_availability = super::Availability(125, 50);
 
-        let weight = super::calculate_chain_weight(chain_availability, &provider_availability);
+        let weight = super::calculate_chain_weight(chain_availability, provider_availability);
 
         // 75% * 71.42% ~= 53.57%
         assert_eq!(weight, 53_57);
@@ -162,7 +172,7 @@ mod tests {
         // The provider has around 71.42% success rate
         let provider_availability = super::Availability(125, 50);
 
-        let weight = super::calculate_chain_weight(chain_availability, &provider_availability);
+        let weight = super::calculate_chain_weight(chain_availability, provider_availability);
 
         // 100% * 71.42% ~= 71.42%
         assert_eq!(weight, 71_42);
@@ -177,7 +187,7 @@ mod tests {
         // because it hasnt failed yet)
         let provider_availabilities = super::Availability(0, 0);
 
-        let weight = super::calculate_chain_weight(chain_availability, &provider_availabilities);
+        let weight = super::calculate_chain_weight(chain_availability, provider_availabilities);
 
         // 100% * 100% = 100%
         assert_eq!(weight, 10_000);
