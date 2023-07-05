@@ -41,7 +41,7 @@ local error_alert(vars) = alert.new(
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'round(sum(increase(http_call_counter{code=\"502\"}[5m])))',
+      expr        = 'round(sum(increase(http_call_counter_total{code=\"502\"}[5m])))',
       refId       = "bad_gateway",
     ))
 }
