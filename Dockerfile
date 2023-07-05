@@ -41,12 +41,13 @@ RUN                 cargo chef prepare --recipe-path recipe.json
 FROM                chef AS build
 
 ARG                 release
-ENV                 RELEASE=${release:+--release}
+ARG                 PROFILE="release-debug"
+ARG                 BUILD_PROFILE="--profile ${PROFILE}"
 
 WORKDIR             /app
 # Cache dependancies
 COPY --from=plan    /app/recipe.json recipe.json
-RUN                 cargo chef cook --recipe-path recipe.json ${RELEASE}
+RUN                 cargo chef cook ${BUILD_PROFILE} --recipe-path recipe.json 
 # Build the local binary
 COPY                . .
 RUN                 cargo build --bin rpc-proxy ${RELEASE}
@@ -74,9 +75,13 @@ ENV                 RPC_PROXY_HOST=0.0.0.0
 WORKDIR             /app
 COPY --from=build   /app/target/${binpath:-debug}/rpc-proxy /usr/local/bin/rpc-proxy
 RUN                 apt-get update \
-                        && apt-get install -y --no-install-recommends ca-certificates libssl-dev \
-                        && apt-get clean \
-                        && rm -rf /var/lib/apt/lists/*
+    && apt-get install -y --no-install-recommends ca-certificates libssl-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Enable writing files to the work dir.
+RUN                 chown -R 1001:1001 ${WORK_DIR}
+RUN                 chmod 755 ${WORK_DIR}
 
 USER                1001:1001
 EXPOSE              3000/tcp

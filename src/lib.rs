@@ -104,7 +104,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .context("failed to init analytics")?;
 
     let state = state::new_state(
-        config,
+        config.clone(),
         providers,
         prometheus_exporter,
         metrics.clone(),
@@ -200,7 +200,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 
     let memory_metrics = debug::alloc::AllocMetrics::new(&meter);
     let memory_debug_data_collector = async move {
-        if let Err(e) = tokio::spawn(debug::debug_metrics(memory_metrics)).await {
+        if let Err(e) = tokio::spawn(debug::debug_metrics(memory_metrics, &config)).await {
             warn!("Memory debug stats collection failed with: {:?}", e);
         }
         Ok(())
