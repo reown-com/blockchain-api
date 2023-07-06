@@ -16,7 +16,7 @@ resource "aws_iam_policy" "analytics-data-lake_bucket_access" {
       {
         "Sid" : "AllObjectActionsInAnalyticsBucket",
         "Effect" : "Allow",
-        "Action" : "s3:*Object",
+      "Action" : "s3:PutObject",
         "Resource" : ["arn:aws:s3:::${var.analytics_data_lake_bucket_name}/blockchain-api/*"]
       },
       {
