@@ -20,7 +20,7 @@ local error_alert(vars) = alert.new(
   
   conditions  = [
     alertCondition.new(
-      evaluatorParams = [ 98 ],
+      evaluatorParams = [ 95 ],
       evaluatorType   = 'lt',
       operatorType    = 'or',
       queryRefId      = 'availability',
