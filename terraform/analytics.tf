@@ -1,3 +1,6 @@
+
+
+### TODO: REMOVE EVERYTHING BELOW THIS LINE ONCE DATA IS MIGRATED ###
 resource "aws_kms_key" "analytics_bucket" {
   description             = "${terraform.workspace} - analytics bucket encryption"
   enable_key_rotation     = true

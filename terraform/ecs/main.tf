@@ -83,7 +83,7 @@ resource "aws_ecs_task_definition" "app_task" {
         { name : "RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_READ", value : "redis://${var.identity_cache_redis_endpoint_read}/1" },
         { name : "RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_WRITE", value : "redis://${var.identity_cache_redis_endpoint_write}/1" },
 
-        { "name" : "RPC_PROXY_ANALYTICS_EXPORT_BUCKET", "value" : var.analytics-data-lake_bucket_name },
+        { "name" : "RPC_PROXY_ANALYTICS_EXPORT_BUCKET", "value" : var.analytics_data_lake_bucket_name },
         { "name" : "RPC_PROXY_ANALYTICS_GEOIP_DB_BUCKET", "value" : var.analytics_geoip_db_bucket_name },
         { "name" : "RPC_PROXY_ANALYTICS_GEOIP_DB_KEY", "value" : var.analytics_geoip_db_key },
 

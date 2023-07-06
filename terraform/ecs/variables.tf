@@ -96,22 +96,6 @@ variable "identity_cache_redis_endpoint_write" {
   type = string
 }
 
-variable "analytics-data-lake_bucket_name" {
-  type = string
-}
-
-variable "analytics_geoip_db_key" {
-  type = string
-}
-
-variable "analytics_geoip_db_bucket_name" {
-  type = string
-}
-
-variable "analytics_key_arn" {
-  type = string
-}
-
 variable "autoscaling_max_capacity" {
   type = number
 }
@@ -138,4 +122,25 @@ variable "vpc_id" {
 
 variable "vpc_cidr" {
   type = string
+}
+
+variable "analytics_data_lake_bucket_name" {
+  description = "The name of the data-lake bucket."
+  type        = string
+}
+
+variable "analytics_data_lake_kms_key_arn" {
+  description = "The ARN of the KMS encryption key for data-lake bucket."
+  type        = string
+}
+
+variable "analytics_geoip_db_key" {
+  description = "The key to the GeoIP database"
+  type        = string
+  default     = "GeoLite2-City.mmdb"
+}
+
+variable "analytics_geoip_db_bucket_name" {
+  description = "The name of the bucket containing the GeoIP database"
+  type        = string
 }
