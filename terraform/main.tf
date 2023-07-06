@@ -5,7 +5,7 @@ locals {
   fqdn                    = terraform.workspace == "prod" ? local.hosted_zone_name : "${terraform.workspace}.${local.hosted_zone_name}"
   backup_fqdn             = terraform.workspace == "prod" ? local.backup_hosted_zone_name : "${terraform.workspace}.${local.backup_hosted_zone_name}"
 
-  analytics_geoip_db_bucket_name            = "${local.environment}.relay.geo.ip.database.private.${local.environment}.walletconnect"
+  analytics_geoip_db_bucket_name  = "${local.environment}.relay.geo.ip.database.private.${local.environment}.walletconnect"
   analytics_data_lake_bucket_name = "walletconnect.data-lake.${local.environment}"
 }
 
