@@ -39,11 +39,6 @@ variable "project_data_cache_ttl" {
   type = number
 }
 
-variable "analytics_geoip_db_key" {
-  type    = string
-  default = "GeoLite2-City.mmdb"
-}
-
 variable "autoscaling_max_instances" {
   type = number
 }
