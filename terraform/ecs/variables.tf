@@ -96,10 +96,6 @@ variable "identity_cache_redis_endpoint_write" {
   type = string
 }
 
-variable "analytics_key_arn" {
-  type = string
-}
-
 variable "autoscaling_max_capacity" {
   type = number
 }
@@ -142,4 +138,9 @@ variable "analytics_geoip_db_key" {
   description = "The key to the GeoIP database"
   type        = string
   default     = "GeoLite2-City.mmdb"
+}
+
+variable "analytics_geoip_db_bucket_name" {
+  description = "The name of the bucket containing the GeoIP database"
+  type        = string
 }

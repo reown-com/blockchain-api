@@ -76,7 +76,7 @@ impl RPCAnalytics {
                 bucket_name: bucket_name.into(),
                 s3_client,
                 node_ip,
-                export_prefix: "rpc_proxy/requests",
+                export_prefix: "blockchain-api/rpc-requests",
             });
 
             Analytics::new(ParquetWriter::new(opts, exporter)?)

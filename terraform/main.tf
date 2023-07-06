@@ -5,8 +5,8 @@ locals {
   fqdn                    = terraform.workspace == "prod" ? local.hosted_zone_name : "${terraform.workspace}.${local.hosted_zone_name}"
   backup_fqdn             = terraform.workspace == "prod" ? local.backup_hosted_zone_name : "${terraform.workspace}.${local.backup_hosted_zone_name}"
 
-  analytics_geoip_db_bucket_name  = "${local.environment}.relay.geo.ip.database.private.${local.environment}.walletconnect"
-  analytics_data_lake_bucket_name = "walletconnect.data-lake.${local.environment}"
+  analytics_geoip_db_bucket_name  = "${terraform.workspace}.relay.geo.ip.database.private.${terraform.workspace}.walletconnect"
+  analytics_data_lake_bucket_name = "walletconnect.data-lake.${terraform.workspace}"
 }
 
 # tflint-ignore: terraform_unused_declarations
@@ -113,10 +113,9 @@ module "ecs" {
   identity_cache_redis_endpoint_read  = module.redis.endpoint
   identity_cache_redis_endpoint_write = module.redis.endpoint
 
-  analytics-data-lake_bucket_name = locals.analytics_data_lake_bucket_name
-  analytics_key_arn               = var.data_lake_kms_key_arn
+  analytics_data_lake_bucket_name = local.analytics_data_lake_bucket_name
+  analytics_data_lake_kms_key_arn = var.data_lake_kms_key_arn
   analytics_geoip_db_bucket_name  = local.analytics_geoip_db_bucket_name
-  analytics_geoip_db_key          = var.analytics_geoip_db_key
 }
 
 module "redis" {
