@@ -6,7 +6,6 @@ local targets        = grafana.targets;
 local alert          = grafana.alert;
 local alertCondition = grafana.alertCondition;
 
-
 {
   new(ds, vars)::
     panels.timeseries(
@@ -24,28 +23,9 @@ local alertCondition = grafana.alertCondition;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(http_call_counter_total{aws_ecs_task_family=\"%s_rpc-proxy\",code=~\"5.+\"}[5m])) or vector(0)' % vars.environment,
-      refId       = "errors",
+      expr        = '(1-(sum(rate(http_call_counter_total{aws_ecs_task_family="%s_rpc-proxy",code=~"5.+"}[5m])) or vector(0))/(sum(rate(http_call_counter_total{aws_ecs_task_family="%s_rpc-proxy"}[5m]))))*100' % [vars.environment, vars.environment],
+      refId       = "availability",
       exemplar    = false,
-      hide        = true,
+      hide        = false,
     ))
-    .addTarget(targets.prometheus(
-      datasource  = ds.prometheus,
-      expr        = 'sum(rate(http_call_counter_total{aws_ecs_task_family=\"%s_rpc-proxy\",code=\"429\"}[5m])) or vector(0)' % vars.environment,
-      refId       = 'rate_limits',
-      exemplar    = false,
-      hide        = true,
-    ))
-    .addTarget(targets.prometheus(
-      datasource  = ds.prometheus,
-      expr        = 'sum(rate(http_call_counter_total{aws_ecs_task_family=\"%s_rpc-proxy\"}[5m]))' % vars.environment,
-      refId       = 'total',
-      exemplar    = true,
-      hide        = true,
-    ))
-    .addTarget(targets.math(
-      expr        = '(1 - (($errors + $rate_limits) / $total)) * 100',
-      refId       = "Availability",
-    ))
-   
 }
