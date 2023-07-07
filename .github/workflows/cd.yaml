@@ -61,6 +61,7 @@ env:
   TF_VAR_infura_project_id: ${{ secrets.INFURA_PROJECT_ID }}
   TF_VAR_pokt_project_id: ${{ secrets.POKT_PROJECT_ID }}
   TF_VAR_registry_api_auth_token: ${{ secrets.REGISTRY_API_AUTH_TOKEN }}
+  
 
 jobs:
   deploy-infra-staging:
