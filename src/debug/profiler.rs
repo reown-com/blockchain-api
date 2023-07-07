@@ -57,9 +57,11 @@ pub async fn handler(
     let auth = headers.get("Authorization");
 
     if let Some(auth) = auth {
-        if auth == state.config.debug.secret {
-            tokio::spawn(run_profiler(payload));
-            return (StatusCode::OK, "Profiler started.");
+        if let Ok(auth) = auth.to_str() {
+            if auth == state.config.debug.secret {
+                tokio::spawn(run_profiler(payload));
+                return (StatusCode::OK, "Profiler started.");
+            }
         }
     }
     (StatusCode::UNAUTHORIZED, "Unauthorized")
