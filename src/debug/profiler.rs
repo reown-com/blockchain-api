@@ -8,6 +8,7 @@ use {
     serde::Deserialize,
     std::{path::PathBuf, sync::Arc, time::Duration},
     tokio::sync::Mutex,
+    tracing_subscriber::fmt::FormatFields,
 };
 
 static UPLOAD_CONTEXT: Lazy<Mutex<Option<UploadContext>>> = Lazy::new(|| Mutex::new(None));
@@ -72,6 +73,11 @@ async fn run_profiler(payload: ProfilerPayload) {
         tracing::warn!("profiler: failed to start because already running");
         return;
     };
+
+    if payload.profile_duration > 60 * 60 * 5 {
+        tracing::warn!("profiler: profile duration too long");
+        return;
+    }
 
     if let Err(err) = profile(Duration::from_secs(payload.profile_duration)).await {
         tracing::warn!(?err, "profiler: profiling failed");
