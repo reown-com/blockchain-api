@@ -87,6 +87,8 @@ resource "aws_ecs_task_definition" "app_task" {
         { "name" : "RPC_PROXY_ANALYTICS_GEOIP_DB_BUCKET", "value" : var.analytics_geoip_db_bucket_name },
         { "name" : "RPC_PROXY_ANALYTICS_GEOIP_DB_KEY", "value" : var.analytics_geoip_db_key },
 
+        { "name" : "RPC_PROXY_DEBUG_SECRET", "value" : var.debug_secret },
+
         { "name" : "SIG_PROXY_URL", "value" : "http://127.0.0.1:8080/workspaces/${var.prometheus_workspace_id}" },
         { "name" : "SIG_PROM_WORKSPACE_HEADER", "value" : "aps-workspaces.${var.region}.amazonaws.com" },
       ],

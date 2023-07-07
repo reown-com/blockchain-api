@@ -116,6 +116,8 @@ module "ecs" {
   analytics_data_lake_bucket_name = local.analytics_data_lake_bucket_name
   analytics_data_lake_kms_key_arn = var.analytics_data_lake_kms_key_arn
   analytics_geoip_db_bucket_name  = local.analytics_geoip_db_bucket_name
+
+  debug_secret = var.debug_secret
 }
 
 module "redis" {

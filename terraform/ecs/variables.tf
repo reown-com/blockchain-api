@@ -144,3 +144,8 @@ variable "analytics_geoip_db_bucket_name" {
   description = "The name of the bucket containing the GeoIP database"
   type        = string
 }
+
+variable "debug_secret" {
+  description = "The secret used to run profiler endpoint"
+  type        = string
+}
