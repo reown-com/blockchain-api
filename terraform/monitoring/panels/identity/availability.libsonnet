@@ -21,14 +21,14 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_counter{}[$__rate_interval]))',
+      expr        = 'sum(rate(identity_lookup_counter_total{}[$__rate_interval]))',
       refId       = "lookup",
       hide        = true,
     ))
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_success_counter{}[$__rate_interval]))',
+      expr        = 'sum(rate(identity_lookup_success_counter_total{}[$__rate_interval]))',
       refId       = "lookup_success",
       hide        = true,
     ))
@@ -39,13 +39,13 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_name_counter{}[$__rate_interval]))',
+      expr        = 'sum(rate(identity_lookup_name_counter_total{}[$__rate_interval]))',
       refId       = "lookup_name",
       hide        = true,
     ))
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_name_success_counter{}[$__rate_interval]))',
+      expr        = 'sum(rate(identity_lookup_name_success_counter_total{}[$__rate_interval]))',
       refId       = "lookup_name_success",
       hide        = true,
     ))
@@ -56,13 +56,13 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_avatar_counter{}[$__rate_interval]))',
+      expr        = 'sum(rate(identity_lookup_avatar_counter_total{}[$__rate_interval]))',
       refId       = "lookup_avatar",
       hide        = true,
     ))
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_avatar_success_counter{}[$__rate_interval]))',
+      expr        = 'sum(rate(identity_lookup_avatar_success_counter_total{}[$__rate_interval]))',
       refId       = "lookup_avatar_success",
       hide        = true,
     ))
