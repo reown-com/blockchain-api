@@ -1,15 +1,15 @@
-use {crate::env::Config, tracing::info};
+use tracing::info;
 
 pub mod alloc;
 pub mod profiler;
 
-pub struct Config {
-    pub s3_bucket: Option<String>,
-}
+// pub struct Config {
+//     pub s3_bucket: Option<String>,
+// }
 
-pub async fn debug_metrics(alloc_metrics: alloc::AllocMetrics, config: &Config) {
+pub async fn debug_metrics(alloc_metrics: alloc::AllocMetrics, config: crate::env::Config) {
     info!("Initializing profiler upload context");
-    profiler::init_upload_context(config).await;
+    profiler::init_upload_context(&config).await;
 
     info!("Starting debug metrics collection");
     loop {
