@@ -10,6 +10,7 @@ ARG                 version="unknown"
 ARG                 sha="unknown"
 ARG                 maintainer="WalletConnect"
 ARG                 release=""
+ARG                 WORK_DIR="/app"
 
 ################################################################################
 #
