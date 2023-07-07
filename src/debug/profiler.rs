@@ -74,7 +74,7 @@ async fn run_profiler(payload: ProfilerPayload) {
         return;
     };
 
-    if payload.profile_duration > 60 * 60 * 5 {
+    if payload.profile_duration > 60 * 60 * 12 {
         tracing::warn!("profiler: profile duration too long");
         return;
     }
