@@ -55,18 +55,16 @@ pub async fn handler(
     Json(payload): Json<ProfilerPayload>,
 ) -> impl IntoResponse {
     let auth = headers.get("Authorization");
-    if auth.is_none() {
-        return (hyper::StatusCode::UNAUTHORIZED, "Unauthorized");
-    }
 
-    if let Ok(auth) = auth.unwrap().to_str() {
-        if auth != state.config.debug.secret {
-            return (hyper::StatusCode::UNAUTHORIZED, "Unauthorized");
+    if let Some(auth) = auth {
+        if let Ok(auth) = auth.to_str() {
+            if auth == state.config.debug.secret {
+                tokio::spawn(run_profiler(payload));
+                return (StatusCode::OK, "Profiler started.");
+            }
         }
     }
-
-    tokio::spawn(run_profiler(payload));
-    (StatusCode::OK, "Profiler started.")
+    (StatusCode::UNAUTHORIZED, "Unauthorized")
 }
 
 async fn run_profiler(payload: ProfilerPayload) {
@@ -108,9 +106,12 @@ async fn upload_profiles() {
 
     let profiles_glob = "./dhat-*.json";
 
-    let Ok(file_list) = glob::glob(profiles_glob) else {
-        tracing::warn!("profiler: failed to read glob pattern");
-        return;
+    let file_list = match glob::glob(profiles_glob) {
+        Ok(file_list) => file_list,
+        Err(e) => {
+            tracing::warn!(?e, "profiler: failed to read glob pattern");
+            return;
+        }
     };
 
     let ctx = {
@@ -151,9 +152,7 @@ async fn upload_profiles() {
 }
 
 async fn upload_file(ctx: UploadContext, path: PathBuf, key_prefix: &str) -> anyhow::Result<()> {
-    let Ok(metadata) = tokio::fs::metadata(&path).await else {
-        anyhow::bail!("failed to retrieve file metadata");
-    };
+    let metadata = tokio::fs::metadata(&path).await?;
 
     tracing::warn!(?path, size = %metadata.len(), "profiler: uploading file");
 

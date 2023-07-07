@@ -19,7 +19,7 @@ ARG                 WORK_DIR="/app"
 ################################################################################
 FROM                ${base} AS chef
 
-WORKDIR             /app
+WORKDIR             ${WORK_DIR} 
 RUN                 cargo install cargo-chef
 
 ################################################################################
@@ -66,6 +66,7 @@ ARG                 sha
 ARG                 maintainer
 ARG                 release
 ARG                 binpath=${release:+release}
+ARG                 WORK_DIR 
 
 LABEL               version=${version}
 LABEL               sha=${sha}
