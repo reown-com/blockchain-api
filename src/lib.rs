@@ -51,7 +51,7 @@ use {
 };
 
 mod analytics;
-mod debug;
+pub mod debug;
 pub mod env;
 pub mod error;
 mod extractors;
@@ -160,6 +160,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/v1/identity/:address", get(handlers::identity::handler))
         .route_layer(proxy_metrics)
         .route("/health", get(handlers::health::handler))
+        .route("/profiler", get(debug::profiler::handler))
         .layer(cors)
         .layer(global_middleware)
         .with_state(state_arc.clone());

@@ -3,9 +3,10 @@ use tracing::info;
 pub mod alloc;
 pub mod profiler;
 
-// pub struct Config {
-//     pub s3_bucket: Option<String>,
-// }
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct DebugConfig {
+    pub secret: String,
+}
 
 pub async fn debug_metrics(alloc_metrics: alloc::AllocMetrics, config: crate::env::Config) {
     info!("Initializing profiler upload context");
