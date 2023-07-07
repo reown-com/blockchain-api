@@ -32,6 +32,7 @@ pub struct Metrics {
     pub identity_lookup_avatar_latency_tracker: Histogram<f64>,
     pub identity_lookup_avatar_present_counter: Counter<u64>,
     pub identity_lookup_name_present_counter: Counter<u64>,
+    pub websocket_connection_counter: Counter<u64>,
 }
 
 impl Metrics {
@@ -146,6 +147,11 @@ impl Metrics {
             .with_description("The number of identity lookups that returned an avatar")
             .init();
 
+        let websocket_connection_counter = meter
+            .u64_counter("websocket_connection_counter")
+            .with_description("The number of websocket connections")
+            .init();
+
         Metrics {
             rpc_call_counter,
             http_call_counter,
@@ -169,6 +175,7 @@ impl Metrics {
             identity_lookup_avatar_latency_tracker,
             identity_lookup_name_present_counter,
             identity_lookup_avatar_present_counter,
+            websocket_connection_counter,
         }
     }
 }
@@ -337,5 +344,12 @@ impl Metrics {
     pub fn add_identity_lookup_avatar_present(&self) {
         self.identity_lookup_avatar_present_counter
             .add(&opentelemetry::Context::new(), 1, &[]);
+    }
+
+    pub fn add_websocket_connection(&self, chain_id: String) {
+        self.websocket_connection_counter
+            .add(&opentelemetry::Context::new(), 1, &[
+                opentelemetry::KeyValue::new("chain_id", chain_id),
+            ]);
     }
 }

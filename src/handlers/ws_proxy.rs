@@ -31,5 +31,7 @@ pub async fn handler(
         .get_ws_provider_for_chain_id(&chain_id)
         .ok_or(RpcError::UnsupportedChain(chain_id.clone()))?;
 
+    state.metrics.add_websocket_connection(chain_id);
+
     provider.proxy(ws, query_params).await
 }
