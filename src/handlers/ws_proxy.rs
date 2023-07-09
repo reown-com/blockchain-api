@@ -1,5 +1,5 @@
 use {
-    super::RpcQueryParams,
+    super::{RpcQueryParams, HANDLER_TASK_METRICS},
     crate::{error::RpcError, state::AppState},
     axum::{
         extract::{Query, State},
@@ -8,9 +8,20 @@ use {
     axum_tungstenite::WebSocketUpgrade,
     std::sync::Arc,
     tap::TapFallible,
+    wc::future::FutureExt,
 };
 
 pub async fn handler(
+    state: State<Arc<AppState>>,
+    query_params: Query<RpcQueryParams>,
+    ws: WebSocketUpgrade,
+) -> Result<Response, RpcError> {
+    handler_internal(state, query_params, ws)
+        .with_metrics(HANDLER_TASK_METRICS.with_name("ws_proxy"))
+        .await
+}
+
+async fn handler_internal(
     State(state): State<Arc<AppState>>,
     Query(query_params): Query<RpcQueryParams>,
     ws: WebSocketUpgrade,

@@ -1,4 +1,5 @@
 use {
+    super::HANDLER_TASK_METRICS,
     crate::{
         analytics::MessageInfo,
         error::RpcError,
@@ -20,9 +21,24 @@ use {
     },
     tap::TapFallible,
     tracing::{info, log::warn},
+    wc::future::FutureExt,
 };
 
 pub async fn handler(
+    state: State<Arc<AppState>>,
+    addr: ConnectInfo<SocketAddr>,
+    query_params: Query<RpcQueryParams>,
+    method: Method,
+    path: MatchedPath,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Response, RpcError> {
+    handler_internal(state, addr, query_params, method, path, headers, body)
+        .with_metrics(HANDLER_TASK_METRICS.with_name("proxy"))
+        .await
+}
+
+async fn handler_internal(
     State(state): State<Arc<AppState>>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Query(query_params): Query<RpcQueryParams>,

@@ -11,8 +11,8 @@ use {
         project::ProjectData,
         registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult},
     },
-    opentelemetry::metrics::Meter,
     std::{sync::Arc, time::Instant},
+    wc::metrics::ServiceMetrics,
 };
 pub use {config::*, error::*};
 
@@ -36,11 +36,8 @@ pub enum ResponseSource {
 }
 
 impl Registry {
-    pub fn new(
-        cfg_registry: &Config,
-        cfg_storage: &StorageConfig,
-        meter: &Meter,
-    ) -> RpcResult<Self> {
+    pub fn new(cfg_registry: &Config, cfg_storage: &StorageConfig) -> RpcResult<Self> {
+        let meter = ServiceMetrics::meter();
         let api_url = &cfg_registry.api_url;
         let api_auth_token = &cfg_registry.api_auth_token;
 

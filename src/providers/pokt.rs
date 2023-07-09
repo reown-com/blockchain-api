@@ -59,7 +59,7 @@ impl RateLimited for PoktProvider {
 
     // TODO: Implement rate limiting as this is mocked
     async fn is_rate_limited(&self, _response: &mut Response) -> bool {
-        return false;
+        false
     }
 }
 

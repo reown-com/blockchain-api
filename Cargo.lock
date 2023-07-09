@@ -1836,6 +1836,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 
 [[package]]
+name = "future"
+version = "0.1.0"
+source = "git+https://github.com/WalletConnect/utils-rs.git?rev=b5d036a#b5d036acd06c934e09a8350e6ebfc85533fdee9f"
+dependencies = [
+ "metrics",
+ "pin-project",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
 name = "futures"
 version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2610,6 +2622,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a634b1c61a95585bd15607c6ab0c4e5b226e695ff2800ba0cdccddf208c406c"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "metrics"
+version = "0.1.0"
+source = "git+https://github.com/WalletConnect/utils-rs.git?rev=b5d036a#b5d036acd06c934e09a8350e6ebfc85533fdee9f"
+dependencies = [
+ "once_cell",
+ "opentelemetry",
+ "opentelemetry-prometheus",
+ "pin-project",
+ "prometheus",
 ]
 
 [[package]]
@@ -3680,12 +3704,9 @@ dependencies = [
  "ipnet",
  "jsonrpc",
  "once_cell",
- "opentelemetry",
- "opentelemetry-prometheus",
  "parquet",
  "parquet_derive",
  "pnet_datalink",
- "prometheus",
  "prometheus-http-query",
  "rand",
  "rmp-serde",
@@ -3705,6 +3726,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "vergen",
+ "wc",
 ]
 
 [[package]]
@@ -4620,9 +4642,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.4"
+version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bb2e075f03b3d66d8d8785356224ba688d2906a371015e225beeb65ca92c740"
+checksum = "806fe8c2c87eccc8b3267cbae29ed3ab2d0bd37fca70ab622e46aaa9375ddb7d"
 dependencies = [
  "bytes",
  "futures-core",
@@ -4959,6 +4981,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
 
 [[package]]
+name = "utils"
+version = "0.1.0"
+source = "git+https://github.com/WalletConnect/utils-rs.git?rev=b5d036a#b5d036acd06c934e09a8350e6ebfc85533fdee9f"
+
+[[package]]
 name = "uuid"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5105,6 +5132,16 @@ name = "wasm-bindgen-shared"
 version = "0.2.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c38c045535d93ec4f0b4defec448e4291638ee608530863b1e2ba115d4fff7f"
+
+[[package]]
+name = "wc"
+version = "0.1.0"
+source = "git+https://github.com/WalletConnect/utils-rs.git?rev=b5d036a#b5d036acd06c934e09a8350e6ebfc85533fdee9f"
+dependencies = [
+ "future",
+ "metrics",
+ "utils",
+]
 
 [[package]]
 name = "web-sys"
