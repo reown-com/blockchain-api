@@ -9,7 +9,7 @@ authors = [
 build = "build.rs"
 
 [dependencies]
-wc = { git = "https://github.com/WalletConnect/utils-rs.git", rev = "b5d036a", features = ["full"] }
+wc = { git = "https://github.com/WalletConnect/utils-rs.git", rev = "79c2e63", features = ["full"] }
 
 # Async
 async-trait = "0.1.57"
