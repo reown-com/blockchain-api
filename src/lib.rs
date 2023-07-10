@@ -9,6 +9,7 @@ use {
     },
     anyhow::Context,
     axum::{
+        response::Response,
         routing::{any, get},
         Router,
     },
@@ -21,6 +22,7 @@ use {
         ZKSyncConfig,
     },
     error::RpcResult,
+    hyper::{header::HeaderName, http},
     providers::{
         BinanceProvider,
         InfuraProvider,
@@ -36,7 +38,12 @@ use {
         sync::Arc,
         time::Duration,
     },
-    tracing::{info, log::warn},
+    tower::ServiceBuilder,
+    tower_http::{
+        cors::{Any, CorsLayer},
+        trace::TraceLayer,
+    },
+    tracing::{info, log::warn, Span},
     wc::metrics::ServiceMetrics,
 };
 
@@ -96,52 +103,41 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 
     let state_arc = Arc::new(state);
 
-    // FIXME: These are temporarily disabled for debugging purposes.
-    // let cors = CorsLayer::new().allow_origin(Any).allow_headers([
-    //     http::header::CONTENT_TYPE,
-    //     http::header::USER_AGENT,
-    //     http::header::REFERER,
-    //     http::header::ORIGIN,
-    //     http::header::ACCESS_CONTROL_REQUEST_METHOD,
-    //     http::header::ACCESS_CONTROL_REQUEST_HEADERS,
-    //     HeaderName::from_static("solana-client"),
-    //     HeaderName::from_static("sec-fetch-mode"),
-    // ]);
+    let cors = CorsLayer::new().allow_origin(Any).allow_headers([
+        http::header::CONTENT_TYPE,
+        http::header::USER_AGENT,
+        http::header::REFERER,
+        http::header::ORIGIN,
+        http::header::ACCESS_CONTROL_REQUEST_METHOD,
+        http::header::ACCESS_CONTROL_REQUEST_HEADERS,
+        HeaderName::from_static("solana-client"),
+        HeaderName::from_static("sec-fetch-mode"),
+    ]);
 
-    // let global_middleware = ServiceBuilder::new().layer(
-    //     TraceLayer::new_for_http().make_span_with(
-    //         DefaultMakeSpan::new()
-    //             .level(Level::INFO)
-    //             .include_headers(true),
-    //     ),
-    // );
+    let proxy_state = state_arc.clone();
+    let proxy_metrics = ServiceBuilder::new().layer(TraceLayer::new_for_http().on_response(
+        move |response: &Response, latency: Duration, _span: &Span| {
+            proxy_state
+                .metrics
+                .add_http_call(response.status().into(), "proxy".to_owned());
 
-    // let proxy_state = state_arc.clone();
-    // let proxy_metrics =
-    // ServiceBuilder::new().layer(TraceLayer::new_for_http().on_response(
-    //     move |response: &Response, latency: Duration, _span: &Span| {
-    //         proxy_state
-    //             .metrics
-    //             .add_http_call(response.status().into(), "proxy".to_owned());
-
-    //         proxy_state.metrics.add_http_latency(
-    //             response.status().into(),
-    //             "proxy".to_owned(),
-    //             latency.as_secs_f64(),
-    //         )
-    //     },
-    // ));
+            proxy_state.metrics.add_http_latency(
+                response.status().into(),
+                "proxy".to_owned(),
+                latency.as_secs_f64(),
+            )
+        },
+    ));
 
     let app = Router::new()
         .route("/v1", any(handlers::proxy::handler))
         .route("/v1/", any(handlers::proxy::handler))
         .route("/ws", get(handlers::ws_proxy::handler))
         .route("/v1/identity/:address", get(handlers::identity::handler))
-        // .route_layer(proxy_metrics)
+        .route_layer(proxy_metrics)
         .route("/health", get(handlers::health::handler))
         .route("/profiler", get(debug::profiler::handler))
-        // .layer(cors)
-        // .layer(global_middleware)
+        .layer(cors)
         .with_state(state_arc.clone());
 
     info!("v{}", build_version);
