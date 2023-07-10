@@ -7,6 +7,7 @@ use {
         RpcProviderFactory,
         RpcQueryParams,
         RpcWsProvider,
+        WS_PROXY_TASK_METRICS,
     },
     crate::{
         env::InfuraConfig,
@@ -19,6 +20,7 @@ use {
     hyper::{client::HttpConnector, http, Client},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
+    wc::future::FutureExt,
 };
 
 #[derive(Debug)]
@@ -76,7 +78,10 @@ impl RpcWsProvider for InfuraWsProvider {
 
         let (websocket_provider, _) = async_tungstenite::tokio::connect_async(uri).await?;
 
-        Ok(ws.on_upgrade(move |socket| ws::proxy(project_id, socket, websocket_provider)))
+        Ok(ws.on_upgrade(move |socket| {
+            ws::proxy(project_id, socket, websocket_provider)
+                .with_metrics(WS_PROXY_TASK_METRICS.with_name("infura"))
+        }))
     }
 }
 
