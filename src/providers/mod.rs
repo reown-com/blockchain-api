@@ -6,6 +6,7 @@ use {
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
     std::{fmt::Debug, hash::Hash, sync::Arc},
     tracing::{info, log::warn},
+    wc::metrics::TaskMetrics,
 };
 
 mod binance;
@@ -29,6 +30,8 @@ pub use {
     publicnode::PublicnodeProvider,
     zksync::ZKSyncProvider,
 };
+
+static WS_PROXY_TASK_METRICS: TaskMetrics = TaskMetrics::new("ws_proxy_task");
 
 pub type WeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
 
