@@ -1,4 +1,5 @@
 use {
+    super::HANDLER_TASK_METRICS,
     crate::{
         error::RpcError,
         extractors::method::Method,
@@ -27,6 +28,7 @@ use {
     },
     tap::TapFallible,
     tracing::{debug, warn},
+    wc::future::FutureExt,
 };
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
@@ -37,6 +39,19 @@ pub struct IdentityResponse {
 }
 
 pub async fn handler(
+    state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    query: Query<RpcQueryParams>,
+    path: MatchedPath,
+    headers: HeaderMap,
+    address: Path<String>,
+) -> Result<Response, RpcError> {
+    handler_internal(state, connect_info, query, path, headers, address)
+        .with_metrics(HANDLER_TASK_METRICS.with_name("identity"))
+        .await
+}
+
+async fn handler_internal(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
     query: Query<RpcQueryParams>,

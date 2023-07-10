@@ -1,15 +1,14 @@
 use {
-    crate::state::AppState,
-    axum::{extract::State, response::IntoResponse},
+    axum::response::IntoResponse,
     hyper::StatusCode,
-    prometheus_core::TextEncoder,
-    std::sync::Arc,
     tracing::error,
+    wc::metrics::ServiceMetrics,
 };
 
-pub async fn handler(State(state): State<Arc<AppState>>) -> impl IntoResponse {
-    let data = state.exporter.registry().gather();
-    match TextEncoder::new().encode_to_string(&data) {
+pub async fn handler() -> impl IntoResponse {
+    let result = ServiceMetrics::export();
+
+    match result {
         Ok(content) => (StatusCode::OK, content),
         Err(e) => {
             error!(?e, "Failed to parse metrics");

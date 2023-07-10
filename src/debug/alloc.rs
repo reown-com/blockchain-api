@@ -1,3 +1,8 @@
+use wc::metrics::{
+    otel::{self, metrics::ObservableGauge},
+    ServiceMetrics,
+};
+
 fn collect_alloc_stats() -> anyhow::Result<GlobalStats> {
     tikv_jemalloc_ctl::epoch::advance()?;
 
@@ -67,23 +72,24 @@ struct GlobalStats {
 }
 
 pub struct AllocMetrics {
-    allocated: opentelemetry::metrics::ObservableGauge<u64>,
-    active: opentelemetry::metrics::ObservableGauge<u64>,
-    metadata: opentelemetry::metrics::ObservableGauge<u64>,
-    resident: opentelemetry::metrics::ObservableGauge<u64>,
-    mapped: opentelemetry::metrics::ObservableGauge<u64>,
-    retained: opentelemetry::metrics::ObservableGauge<u64>,
+    allocated: ObservableGauge<u64>,
+    active: ObservableGauge<u64>,
+    metadata: ObservableGauge<u64>,
+    resident: ObservableGauge<u64>,
+    mapped: ObservableGauge<u64>,
+    retained: ObservableGauge<u64>,
     bin: AllocBinMetrics,
 }
 
 struct AllocBinMetrics {
-    nmalloc: opentelemetry::metrics::ObservableGauge<u64>,
-    ndalloc: opentelemetry::metrics::ObservableGauge<u64>,
-    nrequests: opentelemetry::metrics::ObservableGauge<u64>,
+    nmalloc: ObservableGauge<u64>,
+    ndalloc: ObservableGauge<u64>,
+    nrequests: ObservableGauge<u64>,
 }
 
 impl AllocBinMetrics {
-    pub fn new(meter: &opentelemetry::metrics::Meter) -> Self {
+    pub fn new() -> Self {
+        let meter = ServiceMetrics::meter();
         let nmalloc = meter
             .u64_observable_gauge("jemalloc_memory_bin_nmalloc")
             .with_description(
@@ -120,23 +126,24 @@ impl AllocBinMetrics {
         let bin_stats = stats.jemalloc.stats_arenas.merged.bins.iter();
 
         for (bin_const, bin_stats) in bin_const.zip(bin_stats) {
-            let tags = [opentelemetry::KeyValue::new(
+            let tags = [otel::KeyValue::new(
                 "bin_size",
                 bin_const.size.try_into().unwrap_or(0i64),
             )];
 
             self.nmalloc
-                .observe(&opentelemetry::Context::new(), bin_stats.nmalloc, &tags);
+                .observe(&otel::Context::new(), bin_stats.nmalloc, &tags);
             self.ndalloc
-                .observe(&opentelemetry::Context::new(), bin_stats.ndalloc, &tags);
+                .observe(&otel::Context::new(), bin_stats.ndalloc, &tags);
             self.nrequests
-                .observe(&opentelemetry::Context::new(), bin_stats.nrequests, &tags);
+                .observe(&otel::Context::new(), bin_stats.nrequests, &tags);
         }
     }
 }
 
 impl AllocMetrics {
-    pub fn new(meter: &opentelemetry::metrics::Meter) -> Self {
+    pub fn new() -> Self {
+        let meter = ServiceMetrics::meter();
         let allocated = meter
             .u64_observable_gauge("jemalloc_memory_allocated")
             .with_description(
@@ -181,7 +188,7 @@ impl AllocMetrics {
             )
             .init();
 
-        let bin = AllocBinMetrics::new(meter);
+        let bin = AllocBinMetrics::new();
 
         Self {
             allocated,
@@ -203,17 +210,17 @@ impl AllocMetrics {
         let mem_stats = &stats.jemalloc.stats;
 
         self.allocated
-            .observe(&opentelemetry::Context::new(), mem_stats.allocated, &[]);
+            .observe(&otel::Context::new(), mem_stats.allocated, &[]);
         self.active
-            .observe(&opentelemetry::Context::new(), mem_stats.active, &[]);
+            .observe(&otel::Context::new(), mem_stats.active, &[]);
         self.metadata
-            .observe(&opentelemetry::Context::new(), mem_stats.metadata, &[]);
+            .observe(&otel::Context::new(), mem_stats.metadata, &[]);
         self.resident
-            .observe(&opentelemetry::Context::new(), mem_stats.resident, &[]);
+            .observe(&otel::Context::new(), mem_stats.resident, &[]);
         self.mapped
-            .observe(&opentelemetry::Context::new(), mem_stats.mapped, &[]);
+            .observe(&otel::Context::new(), mem_stats.mapped, &[]);
         self.retained
-            .observe(&opentelemetry::Context::new(), mem_stats.retained, &[]);
+            .observe(&otel::Context::new(), mem_stats.retained, &[]);
 
         self.bin.collect_alloc_stats(&stats);
     }

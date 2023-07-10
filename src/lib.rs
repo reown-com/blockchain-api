@@ -4,10 +4,7 @@ use {
         handlers::identity::IdentityResponse,
         metrics::Metrics,
         project::Registry,
-        storage::{
-            redis::{self},
-            KeyValueStorage,
-        },
+        storage::{redis, KeyValueStorage},
     },
     anyhow::Context,
     axum::{
@@ -26,7 +23,6 @@ use {
     },
     error::RpcResult,
     hyper::header::HeaderName,
-    opentelemetry::metrics::MeterProvider,
     providers::{
         BinanceProvider,
         InfuraProvider,
@@ -48,6 +44,7 @@ use {
         trace::{DefaultMakeSpan, TraceLayer},
     },
     tracing::{info, log::warn, Level, Span},
+    wc::metrics::ServiceMetrics,
 };
 
 mod analytics;
@@ -66,25 +63,10 @@ mod utils;
 mod ws;
 
 pub async fn bootstrap(config: Config) -> RpcResult<()> {
-    let controller = opentelemetry::sdk::metrics::controllers::basic(
-        opentelemetry::sdk::metrics::processors::factory(
-            opentelemetry::sdk::metrics::selectors::simple::histogram(vec![]),
-            opentelemetry::sdk::export::metrics::aggregation::cumulative_temporality_selector(),
-        ),
-    )
-    .with_resource(opentelemetry::sdk::Resource::new(vec![
-        opentelemetry::KeyValue::new("service_name", "rpc-proxy"),
-    ]))
-    .build();
+    ServiceMetrics::init_with_name("rpc-proxy");
 
-    let prometheus_exporter = opentelemetry_prometheus::exporter(controller).init();
-    let meter = prometheus_exporter
-        .meter_provider()
-        .unwrap()
-        .meter("rpc-proxy");
-
-    let metrics = Arc::new(Metrics::new(&meter));
-    let registry = Registry::new(&config.registry, &config.storage, &meter)?;
+    let metrics = Arc::new(Metrics::new());
+    let registry = Registry::new(&config.registry, &config.storage)?;
     // TODO refactor encapsulate these details in a lower layer
     let identity_cache = config
         .storage
@@ -106,7 +88,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     let state = state::new_state(
         config.clone(),
         providers,
-        prometheus_exporter,
         metrics.clone(),
         registry,
         identity_cache,
@@ -192,7 +173,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         }
     };
 
-    let memory_metrics = debug::alloc::AllocMetrics::new(&meter);
+    let memory_metrics = debug::alloc::AllocMetrics::new();
     let memory_debug_data_collector = async move {
         if let Err(e) = tokio::spawn(debug::debug_metrics(memory_metrics, config)).await {
             warn!("Memory debug stats collection failed with: {:?}", e);

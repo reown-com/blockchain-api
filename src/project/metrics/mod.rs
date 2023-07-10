@@ -1,10 +1,11 @@
 use {
     crate::project::{error::ProjectDataError, storage::ProjectDataResult, ResponseSource},
-    opentelemetry::{
+    std::time::Duration,
+    wc::metrics::otel::{
+        self,
         metrics::{Counter, Histogram, Meter},
         KeyValue,
     },
-    std::time::Duration,
 };
 
 const METRIC_NAMESPACE: &str = "project_data";
@@ -49,22 +50,21 @@ impl ProjectDataMetrics {
 
     pub fn fetch_cache_time(&self, time: Duration) {
         self.local_cache_time
-            .record(&opentelemetry::Context::new(), duration_ms(time), &[]);
+            .record(&otel::Context::new(), duration_ms(time), &[]);
     }
 
     pub fn fetch_registry_time(&self, time: Duration) {
         self.registry_api_time
-            .record(&opentelemetry::Context::new(), duration_ms(time), &[]);
+            .record(&otel::Context::new(), duration_ms(time), &[]);
     }
 
     pub fn request(&self, time: Duration, source: ResponseSource, resp: &ProjectDataResult) {
-        self.requests_total
-            .add(&opentelemetry::Context::new(), 1, &[
-                source_tag(source),
-                response_tag(resp),
-            ]);
+        self.requests_total.add(&otel::Context::new(), 1, &[
+            source_tag(source),
+            response_tag(resp),
+        ]);
         self.total_time
-            .record(&opentelemetry::Context::new(), duration_ms(time), &[]);
+            .record(&otel::Context::new(), duration_ms(time), &[]);
     }
 }
 

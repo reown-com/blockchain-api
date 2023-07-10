@@ -6,11 +6,7 @@ use {
     },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
-    hyper::{
-        client::HttpConnector,
-        http::{self},
-        Client,
-    },
+    hyper::{client::HttpConnector, http, Client},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
 };

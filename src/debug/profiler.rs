@@ -8,7 +8,6 @@ use {
     serde::Deserialize,
     std::{path::PathBuf, sync::Arc, time::Duration},
     tokio::sync::Mutex,
-    tracing_subscriber::fmt::FormatFields,
 };
 
 static UPLOAD_CONTEXT: Lazy<Mutex<Option<UploadContext>>> = Lazy::new(|| Mutex::new(None));

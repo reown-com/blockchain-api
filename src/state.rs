@@ -9,14 +9,12 @@ use {
         storage::KeyValueStorage,
         utils::build::CompileInfo,
     },
-    opentelemetry_prometheus::PrometheusExporter,
     std::sync::Arc,
 };
 
 pub struct AppState {
     pub config: Config,
     pub providers: ProviderRepository,
-    pub exporter: PrometheusExporter,
     pub metrics: Arc<Metrics>,
     pub registry: Registry,
     pub identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
@@ -27,7 +25,6 @@ pub struct AppState {
 pub fn new_state(
     config: Config,
     providers: ProviderRepository,
-    exporter: PrometheusExporter,
     metrics: Arc<Metrics>,
     registry: Registry,
     identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
@@ -36,7 +33,6 @@ pub fn new_state(
     AppState {
         config,
         providers,
-        exporter,
         metrics,
         registry,
         identity_cache,
