@@ -33,11 +33,12 @@ where
             // Number of hyper service tasks started.
             counter!("service_task_started", 1);
 
-            let success = tokio::time::timeout(timeout, fut).await.is_ok();
+            let completed = tokio::time::timeout(timeout, fut).await.is_ok();
 
             // Number of hyper service tasks completed.
-            counter!("service_task_completed", 1, &[otel::KeyValue::new(
-                "success", success
+            counter!("service_task_finished", 1, &[otel::KeyValue::new(
+                "completed",
+                completed
             )]);
         }
         .spawn("server::ServiceTaskExecutor::execute");
