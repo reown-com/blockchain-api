@@ -359,8 +359,8 @@ impl Metrics {
 
     pub fn add_websocket_connection(&self, chain_id: String) {
         self.websocket_connection_counter
-            .add(&opentelemetry::Context::new(), 1, &[
-                opentelemetry::KeyValue::new("chain_id", chain_id),
-            ]);
+            .add(&otel::Context::new(), 1, &[otel::KeyValue::new(
+                "chain_id", chain_id,
+            )]);
     }
 }

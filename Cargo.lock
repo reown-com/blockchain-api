@@ -930,6 +930,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "collections"
+version = "0.1.0"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.1.0#69d982a1269dbc6649e153e78f486e97d6a60815"
+
+[[package]]
 name = "combine"
 version = "4.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1838,7 +1843,7 @@ checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 [[package]]
 name = "future"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?rev=b5d036a#b5d036acd06c934e09a8350e6ebfc85533fdee9f"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.1.0#69d982a1269dbc6649e153e78f486e97d6a60815"
 dependencies = [
  "metrics",
  "pin-project",
@@ -2627,7 +2632,7 @@ dependencies = [
 [[package]]
 name = "metrics"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?rev=b5d036a#b5d036acd06c934e09a8350e6ebfc85533fdee9f"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.1.0#69d982a1269dbc6649e153e78f486e97d6a60815"
 dependencies = [
  "once_cell",
  "opentelemetry",
@@ -4981,11 +4986,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
 
 [[package]]
-name = "utils"
-version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?rev=b5d036a#b5d036acd06c934e09a8350e6ebfc85533fdee9f"
-
-[[package]]
 name = "uuid"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5136,11 +5136,11 @@ checksum = "1c38c045535d93ec4f0b4defec448e4291638ee608530863b1e2ba115d4fff7f"
 [[package]]
 name = "wc"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?rev=b5d036a#b5d036acd06c934e09a8350e6ebfc85533fdee9f"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.1.0#69d982a1269dbc6649e153e78f486e97d6a60815"
 dependencies = [
+ "collections",
  "future",
  "metrics",
- "utils",
 ]
 
 [[package]]
