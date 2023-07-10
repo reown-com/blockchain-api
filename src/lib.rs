@@ -4,6 +4,7 @@ use {
         handlers::identity::IdentityResponse,
         metrics::Metrics,
         project::Registry,
+        server::ServiceTaskExecutor,
         storage::{redis, KeyValueStorage},
     },
     anyhow::Context,
@@ -47,6 +48,8 @@ use {
     wc::metrics::ServiceMetrics,
 };
 
+const SERVICE_TASK_TIMEOUT: Duration = Duration::from_secs(300);
+
 mod analytics;
 pub mod debug;
 pub mod env;
@@ -57,6 +60,7 @@ mod json_rpc;
 mod metrics;
 mod project;
 mod providers;
+mod server;
 mod state;
 mod storage;
 mod utils;
@@ -159,10 +163,12 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/metrics", get(handlers::metrics::handler))
         .with_state(state_arc.clone());
 
-    let public_server =
-        axum::Server::bind(&addr).serve(app.into_make_service_with_connect_info::<SocketAddr>());
+    let public_server = axum::Server::bind(&addr)
+        .executor(ServiceTaskExecutor::new(SERVICE_TASK_TIMEOUT))
+        .serve(app.into_make_service_with_connect_info::<SocketAddr>());
 
     let private_server = axum::Server::bind(&private_addr)
+        .executor(ServiceTaskExecutor::new(SERVICE_TASK_TIMEOUT))
         .serve(private_app.into_make_service_with_connect_info::<SocketAddr>());
 
     let updater = async move {
