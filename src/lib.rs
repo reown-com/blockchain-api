@@ -48,6 +48,7 @@ use {
 };
 
 const SERVICE_TASK_TIMEOUT: Duration = Duration::from_secs(300);
+const HEADER_READ_TIMEOUT: Duration = Duration::from_secs(30);
 
 mod analytics;
 pub mod debug;
@@ -155,10 +156,16 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 
     let public_server = axum::Server::bind(&addr)
         .executor(ServiceTaskExecutor::new(SERVICE_TASK_TIMEOUT))
+        .http1_only(true)
+        .http1_keepalive(false)
+        .http1_header_read_timeout(HEADER_READ_TIMEOUT)
         .serve(app.into_make_service_with_connect_info::<SocketAddr>());
 
     let private_server = axum::Server::bind(&private_addr)
         .executor(ServiceTaskExecutor::new(SERVICE_TASK_TIMEOUT))
+        .http1_only(true)
+        .http1_keepalive(false)
+        .http1_header_read_timeout(HEADER_READ_TIMEOUT)
         .serve(private_app.into_make_service_with_connect_info::<SocketAddr>());
 
     let updater = async move {
