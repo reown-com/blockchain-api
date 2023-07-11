@@ -25,7 +25,7 @@ local error_alert(vars) = alert.new(
       operatorType    = 'or',
       queryRefId      = 'availability',
       queryTimeStart  = '5m',
-      reducerType     = 'min',
+      reducerType     = 'avg',
     ),
   ]
 );
