@@ -47,6 +47,7 @@ pub struct ProviderRepository {
 }
 
 impl ProviderRepository {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         let prometheus_client = {
             let prometheus_query_url =

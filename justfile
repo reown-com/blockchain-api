@@ -58,7 +58,7 @@ fmt:
 
   if command -v cargo-fmt >/dev/null; then
     echo '==> Running rustfmt'
-    cargo +nightly fmt -- --check
+    cargo +nightly fmt
   else
     echo '==> rustfmt not found in PATH, skipping'
   fi

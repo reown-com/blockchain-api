@@ -42,6 +42,7 @@ pub struct Metrics {
 }
 
 impl Metrics {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         let meter = ServiceMetrics::meter();
 

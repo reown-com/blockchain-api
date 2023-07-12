@@ -142,6 +142,7 @@ impl AllocBinMetrics {
 }
 
 impl AllocMetrics {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         let meter = ServiceMetrics::meter();
         let allocated = meter
