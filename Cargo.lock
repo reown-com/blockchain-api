@@ -13,15 +13,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "addr2line"
-version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a76fd60b23679b7d19bd066031410fb7e458ccc5e958eb5c325888ce4baedc97"
-dependencies = [
- "gimli",
-]
-
-[[package]]
 name = "adler"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -58,6 +49,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43f6cb1bf222025340178f382c426f13757b2960e89779dfcb319c32542a5a41"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "alloc"
+version = "0.1.0"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.3.0#99e610e4b909e962874b1453f5e748b1e5429137"
+dependencies = [
+ "metrics",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tikv-jemalloc-ctl",
+ "tikv-jemallocator",
 ]
 
 [[package]]
@@ -166,7 +170,7 @@ dependencies = [
  "bytes",
  "fastrand",
  "hex",
- "http",
+ "http 0.2.8",
  "hyper",
  "ring",
  "time 0.3.17",
@@ -199,7 +203,7 @@ dependencies = [
  "aws-smithy-http",
  "aws-smithy-types",
  "aws-types",
- "http",
+ "http 0.2.8",
  "regex",
  "tracing",
 ]
@@ -215,7 +219,7 @@ dependencies = [
  "aws-smithy-types",
  "aws-types",
  "bytes",
- "http",
+ "http 0.2.8",
  "http-body",
  "lazy_static",
  "percent-encoding",
@@ -245,7 +249,7 @@ dependencies = [
  "aws-smithy-xml",
  "aws-types",
  "bytes",
- "http",
+ "http 0.2.8",
  "http-body",
  "once_cell",
  "percent-encoding",
@@ -274,7 +278,7 @@ dependencies = [
  "aws-smithy-types",
  "aws-types",
  "bytes",
- "http",
+ "http 0.2.8",
  "regex",
  "tokio-stream",
  "tower",
@@ -301,7 +305,7 @@ dependencies = [
  "aws-smithy-xml",
  "aws-types",
  "bytes",
- "http",
+ "http 0.2.8",
  "regex",
  "tower",
  "tracing",
@@ -318,7 +322,7 @@ dependencies = [
  "aws-smithy-eventstream",
  "aws-smithy-http",
  "aws-types",
- "http",
+ "http 0.2.8",
  "tracing",
 ]
 
@@ -334,7 +338,7 @@ dependencies = [
  "form_urlencoded",
  "hex",
  "hmac",
- "http",
+ "http 0.2.8",
  "once_cell",
  "percent-encoding",
  "regex",
@@ -367,7 +371,7 @@ dependencies = [
  "crc32c",
  "crc32fast",
  "hex",
- "http",
+ "http 0.2.8",
  "http-body",
  "md-5",
  "pin-project-lite",
@@ -388,7 +392,7 @@ dependencies = [
  "aws-smithy-types",
  "bytes",
  "fastrand",
- "http",
+ "http 0.2.8",
  "http-body",
  "hyper",
  "hyper-rustls 0.23.2",
@@ -422,7 +426,7 @@ dependencies = [
  "bytes",
  "bytes-utils",
  "futures-core",
- "http",
+ "http 0.2.8",
  "http-body",
  "hyper",
  "once_cell",
@@ -443,7 +447,7 @@ dependencies = [
  "aws-smithy-http",
  "aws-smithy-types",
  "bytes",
- "http",
+ "http 0.2.8",
  "http-body",
  "pin-project-lite",
  "tower",
@@ -502,7 +506,7 @@ dependencies = [
  "aws-smithy-client",
  "aws-smithy-http",
  "aws-smithy-types",
- "http",
+ "http 0.2.8",
  "rustc_version",
  "tracing",
 ]
@@ -519,7 +523,7 @@ dependencies = [
  "bitflags",
  "bytes",
  "futures-util",
- "http",
+ "http 0.2.8",
  "http-body",
  "hyper",
  "itoa",
@@ -552,7 +556,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "futures-util",
- "http",
+ "http 0.2.8",
  "http-body",
  "mime",
  "rustversion",
@@ -571,27 +575,12 @@ dependencies = [
  "base64 0.20.0",
  "bytes",
  "futures-util",
- "http",
+ "http 0.2.8",
  "http-body",
  "hyper",
  "sha-1",
  "tokio",
  "tokio-tungstenite 0.18.0",
-]
-
-[[package]]
-name = "backtrace"
-version = "0.3.67"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "233d376d6d185f2a3093e58f283f60f880315b6c60075b01f36b3b85154564ca"
-dependencies = [
- "addr2line",
- "cc",
- "cfg-if",
- "libc",
- "miniz_oxide",
- "object",
- "rustc-demangle",
 ]
 
 [[package]]
@@ -930,11 +919,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "collections"
-version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.1.0#69d982a1269dbc6649e153e78f486e97d6a60815"
-
-[[package]]
 name = "combine"
 version = "4.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1227,24 +1211,6 @@ dependencies = [
  "quote 1.0.28",
  "rustc_version",
  "syn 1.0.104",
-]
-
-[[package]]
-name = "dhat"
-version = "0.3.2"
-source = "git+https://github.com/WalletConnect/dhat-rs.git?rev=8225b43eaf14dd57647045677f2368b05be5652b#8225b43eaf14dd57647045677f2368b05be5652b"
-dependencies = [
- "backtrace",
- "lazy_static",
- "mintex",
- "parking_lot",
- "rustc-hash",
- "serde",
- "serde_json",
- "thousands",
- "tikv-jemalloc-ctl",
- "tikv-jemalloc-sys",
- "tikv-jemallocator",
 ]
 
 [[package]]
@@ -1670,7 +1636,7 @@ dependencies = [
  "futures-util",
  "hashers",
  "hex",
- "http",
+ "http 0.2.8",
  "instant",
  "once_cell",
  "pin-project",
@@ -1843,7 +1809,7 @@ checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 [[package]]
 name = "future"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.1.0#69d982a1269dbc6649e153e78f486e97d6a60815"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.3.0#99e610e4b909e962874b1453f5e748b1e5429137"
 dependencies = [
  "metrics",
  "pin-project",
@@ -2007,12 +1973,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gimli"
-version = "0.27.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6c80984affa11d98d1b88b66ac8853f143217b399d3c74116778ff8fdb4ed2e"
-
-[[package]]
 name = "git2"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2084,7 +2044,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "futures-util",
- "http",
+ "http 0.2.8",
  "indexmap",
  "slab",
  "tokio",
@@ -2160,6 +2120,17 @@ dependencies = [
 
 [[package]]
 name = "http"
+version = "0.1.0"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.3.0#99e610e4b909e962874b1453f5e748b1e5429137"
+dependencies = [
+ "future",
+ "hyper",
+ "metrics",
+ "tokio",
+]
+
+[[package]]
+name = "http"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "75f43d41e26995c17e71ee126451dd3941010b0514a81a9d11f3b341debc2399"
@@ -2176,7 +2147,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5f38f16d184e36f2408a55281cd658ecbd3ca05cce6d6510a176eca393e26d1"
 dependencies = [
  "bytes",
- "http",
+ "http 0.2.8",
  "pin-project-lite",
 ]
 
@@ -2209,7 +2180,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
+ "http 0.2.8",
  "http-body",
  "httparse",
  "httpdate",
@@ -2228,7 +2199,7 @@ version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1788965e61b367cd03a62950836d5cd41560c3577d90e40e0819373194d1661c"
 dependencies = [
- "http",
+ "http 0.2.8",
  "hyper",
  "log",
  "rustls 0.20.8",
@@ -2243,7 +2214,7 @@ version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0646026eb1b3eea4cd9ba47912ea5ce9cc07713d105b1a14698f4e6433d348b7"
 dependencies = [
- "http",
+ "http 0.2.8",
  "hyper",
  "rustls 0.21.2",
  "tokio",
@@ -2632,7 +2603,7 @@ dependencies = [
 [[package]]
 name = "metrics"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.1.0#69d982a1269dbc6649e153e78f486e97d6a60815"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.3.0#99e610e4b909e962874b1453f5e748b1e5429137"
 dependencies = [
  "once_cell",
  "opentelemetry",
@@ -2654,16 +2625,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b275950c28b37e794e8c55d88aeb5e139d0ce23fdbbeda68f8d7174abdf9e8fa"
 dependencies = [
  "adler",
-]
-
-[[package]]
-name = "mintex"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd7c5ba1c3b5a23418d7bbf98c71c3d4946a0125002129231da8d6b723d559cb"
-dependencies = [
- "once_cell",
- "sys-info",
 ]
 
 [[package]]
@@ -2821,15 +2782,6 @@ dependencies = [
  "proc-macro2 1.0.60",
  "quote 1.0.28",
  "syn 2.0.18",
-]
-
-[[package]]
-name = "object"
-version = "0.30.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03b4680b86d9cfafba8fc491dc9b6df26b68cf40e9e6cd73909194759a63c385"
-dependencies = [
- "memchr",
 ]
 
 [[package]]
@@ -3567,7 +3519,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
+ "http 0.2.8",
  "http-body",
  "hyper",
  "hyper-rustls 0.24.0",
@@ -3697,12 +3649,10 @@ dependencies = [
  "chrono",
  "deadpool-redis",
  "derive_more",
- "dhat",
  "dotenv",
  "envy",
  "ethers",
  "futures-util",
- "glob",
  "gorgon",
  "hyper",
  "hyper-tls",
@@ -3722,8 +3672,6 @@ dependencies = [
  "tap",
  "test-context",
  "thiserror",
- "tikv-jemalloc-ctl",
- "tikv-jemallocator",
  "tokio",
  "tokio-stream",
  "tower",
@@ -3733,18 +3681,6 @@ dependencies = [
  "vergen",
  "wc",
 ]
-
-[[package]]
-name = "rustc-demangle"
-version = "0.1.23"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d626bb9dae77e28219937af045c257c28bfd3f69333c512553507f5f9798cb76"
-
-[[package]]
-name = "rustc-hash"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustc-hex"
@@ -4338,16 +4274,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2047c6ded9c721764247e62cd3b03c09ffc529b2ba5b10ec482ae507a4a70160"
 
 [[package]]
-name = "sys-info"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b3a0d0aba8bf96a0e1ddfdc352fc53b3df7f39318c71854910c3c4b024ae52c"
-dependencies = [
- "cc",
- "libc",
-]
-
-[[package]]
 name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4427,12 +4353,6 @@ dependencies = [
  "quote 1.0.28",
  "syn 1.0.104",
 ]
-
-[[package]]
-name = "thousands"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bf63baf9f5039dadc247375c29eb13706706cfde997d0330d05aa63a77d8820"
 
 [[package]]
 name = "thread_local"
@@ -4719,7 +4639,7 @@ dependencies = [
  "bytes",
  "futures-core",
  "futures-util",
- "http",
+ "http 0.2.8",
  "http-body",
  "http-range-header",
  "pin-project-lite",
@@ -4738,7 +4658,7 @@ dependencies = [
  "bytes",
  "futures-core",
  "futures-util",
- "http",
+ "http 0.2.8",
  "http-body",
  "http-range-header",
  "pin-project-lite",
@@ -4856,7 +4776,7 @@ dependencies = [
  "base64 0.13.1",
  "byteorder",
  "bytes",
- "http",
+ "http 0.2.8",
  "httparse",
  "log",
  "native-tls",
@@ -4876,7 +4796,7 @@ dependencies = [
  "byteorder",
  "bytes",
  "data-encoding",
- "http",
+ "http 0.2.8",
  "httparse",
  "log",
  "rand",
@@ -5136,10 +5056,11 @@ checksum = "1c38c045535d93ec4f0b4defec448e4291638ee608530863b1e2ba115d4fff7f"
 [[package]]
 name = "wc"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.1.0#69d982a1269dbc6649e153e78f486e97d6a60815"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.3.0#99e610e4b909e962874b1453f5e748b1e5429137"
 dependencies = [
- "collections",
+ "alloc",
  "future",
+ "http 0.1.0",
  "metrics",
 ]
 
