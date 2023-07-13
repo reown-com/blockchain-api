@@ -60,17 +60,18 @@ async fn handler_internal(
     Path(address): Path<String>,
 ) -> Result<Response, RpcError> {
     let start = SystemTime::now();
-    state.metrics.add_identity_lookup();
 
     let address = address
         .parse::<Address>()
         .map_err(|_| RpcError::IdentityInvalidAddress)?;
 
-    let (source, res) =
-        lookup_identity(address, state.clone(), connect_info, query, path, headers).await?;
+    let identity_result =
+        lookup_identity(address, state.clone(), connect_info, query, path, headers).await;
 
-    state.metrics.add_identity_lookup_latency(start, &source);
+    state.metrics.add_identity_lookup();
+    let (source, res) = identity_result?;
     state.metrics.add_identity_lookup_success(&source);
+    state.metrics.add_identity_lookup_latency(start, &source);
 
     if res.name.is_some() {
         state.metrics.add_identity_lookup_name_present();
@@ -157,9 +158,8 @@ async fn lookup_identity_rpc(
 
     let name = {
         debug!("Beginning name lookup");
-        state.metrics.add_identity_lookup_name();
         let name_lookup_start = SystemTime::now();
-        let name = provider
+        let name_result = provider
             .lookup_address(address)
             .await
             .tap_err(|err| debug!("Error while looking up name: {err:?}"))
@@ -169,19 +169,22 @@ async fn lookup_identity_rpc(
                     e => Err(RpcError::EthersProviderError(e)),
                 },
                 |name| Ok(Some(name)),
-            )?;
+            );
+
+        state.metrics.add_identity_lookup_name();
+        let name = name_result?;
+        state.metrics.add_identity_lookup_name_success();
         state
             .metrics
             .add_identity_lookup_name_latency(name_lookup_start);
-        state.metrics.add_identity_lookup_name_success();
+
         name
     };
 
     let avatar = if let Some(name) = &name {
         debug!("Beginning avatar lookup");
-        state.metrics.add_identity_lookup_avatar();
         let avatar_lookup_start = SystemTime::now();
-        let avatar = provider
+        let avatar_result = provider
             .resolve_avatar(name)
             .await
             .tap_err(|err| debug!("Error while looking up avatar: {err:?}"))
@@ -197,13 +200,16 @@ async fn lookup_identity_rpc(
                     e => Err(RpcError::EthersProviderError(e)),
                 },
                 |url| Ok(Some(url)),
-            )?
-            .map(|url| url.to_string());
+            );
+
+        state.metrics.add_identity_lookup_avatar();
+        let avatar = avatar_result?;
+        state.metrics.add_identity_lookup_avatar_success();
         state
             .metrics
             .add_identity_lookup_avatar_latency(avatar_lookup_start);
-        state.metrics.add_identity_lookup_avatar_success();
-        avatar
+
+        avatar.map(|url| url.to_string())
     } else {
         None
     };

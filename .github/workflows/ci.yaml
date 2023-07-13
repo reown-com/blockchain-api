@@ -40,7 +40,7 @@ jobs:
         cargo:
           - name: "Clippy"
             cmd: clippy
-            args: --all-features --tests -- -D clippy::all -W clippy::style
+            args: --all-features --tests -- -D clippy::all
             cache: {}
             rust: stable
           - name: "Formatting"

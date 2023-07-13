@@ -46,7 +46,7 @@ clippy:
 
   if command -v cargo-clippy >/dev/null; then
     echo '==> Running clippy'
-    cargo clippy --all-features --tests -- -D clippy::all -W clippy::style
+    cargo clippy --all-features --tests -- -D clippy::all
   else
     echo '==> clippy not found in PATH, skipping'
   fi
@@ -58,7 +58,7 @@ fmt:
 
   if command -v cargo-fmt >/dev/null; then
     echo '==> Running rustfmt'
-    cargo +nightly fmt -- --check
+    cargo +nightly fmt
   else
     echo '==> rustfmt not found in PATH, skipping'
   fi
