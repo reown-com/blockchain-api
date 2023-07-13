@@ -4,7 +4,6 @@ use {
         handlers::identity::IdentityResponse,
         metrics::Metrics,
         project::Registry,
-        server::ServiceTaskExecutor,
         storage::{redis, KeyValueStorage},
     },
     anyhow::Context,
@@ -44,7 +43,7 @@ use {
         trace::TraceLayer,
     },
     tracing::{info, log::warn, Span},
-    wc::metrics::ServiceMetrics,
+    wc::{http::ServiceTaskExecutor, metrics::ServiceMetrics},
 };
 
 const SERVICE_TASK_TIMEOUT: Duration = Duration::from_secs(300);
@@ -63,7 +62,6 @@ mod json_rpc;
 mod metrics;
 mod project;
 mod providers;
-mod server;
 mod state;
 mod storage;
 mod utils;
@@ -140,7 +138,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/v1/identity/:address", get(handlers::identity::handler))
         .route_layer(proxy_metrics)
         .route("/health", get(handlers::health::handler))
-        .route("/profiler", get(debug::profiler::handler))
         .layer(cors)
         .with_state(state_arc.clone());
 
@@ -157,8 +154,12 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/metrics", get(handlers::metrics::handler))
         .with_state(state_arc.clone());
 
+    let executor = ServiceTaskExecutor::new()
+        .name(Some("public_server"))
+        .timeout(Some(SERVICE_TASK_TIMEOUT));
+
     let public_server = axum::Server::bind(&addr)
-        .executor(ServiceTaskExecutor::new(SERVICE_TASK_TIMEOUT))
+        .executor(executor)
         .http1_only(true)
         .http1_keepalive(false)
         .http1_header_read_timeout(HEADER_READ_TIMEOUT)
@@ -168,8 +169,12 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .tcp_sleep_on_accept_errors(false)
         .serve(app.into_make_service_with_connect_info::<SocketAddr>());
 
+    let executor = ServiceTaskExecutor::new()
+        .name(Some("private_server"))
+        .timeout(Some(SERVICE_TASK_TIMEOUT));
+
     let private_server = axum::Server::bind(&private_addr)
-        .executor(ServiceTaskExecutor::new(SERVICE_TASK_TIMEOUT))
+        .executor(executor)
         .http1_only(true)
         .http1_keepalive(false)
         .http1_header_read_timeout(HEADER_READ_TIMEOUT)
@@ -187,9 +192,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         }
     };
 
-    let memory_metrics = debug::alloc::AllocMetrics::new();
     let memory_debug_data_collector = async move {
-        if let Err(e) = tokio::spawn(debug::debug_metrics(memory_metrics, config)).await {
+        if let Err(e) = tokio::spawn(debug::debug_metrics()).await {
             warn!("Memory debug stats collection failed with: {:?}", e);
         }
         Ok(())
