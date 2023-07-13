@@ -6,7 +6,7 @@ use {
     },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
-    hyper::{self, client::HttpConnector, Client},
+    hyper::{self, client::HttpConnector, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
 };
@@ -65,12 +65,7 @@ impl RateLimited for PoktProvider {
 
 #[async_trait]
 impl RpcProvider for PoktProvider {
-    async fn proxy(
-        &self,
-        chain_id: &str,
-        method: hyper::http::Method,
-        body: hyper::body::Bytes,
-    ) -> RpcResult<Response> {
+    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
         let chain = &self
             .supported_chains
             .get(chain_id)
@@ -82,7 +77,7 @@ impl RpcProvider for PoktProvider {
         );
 
         let hyper_request = hyper::http::Request::builder()
-            .method(method)
+            .method(Method::POST)
             .uri(uri)
             .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))?;

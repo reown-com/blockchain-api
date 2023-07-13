@@ -6,7 +6,7 @@ use {
     },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
-    hyper::{client::HttpConnector, http, Client},
+    hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
 };
@@ -40,12 +40,7 @@ impl RateLimited for PublicnodeProvider {
 
 #[async_trait]
 impl RpcProvider for PublicnodeProvider {
-    async fn proxy(
-        &self,
-        chain_id: &str,
-        method: hyper::http::Method,
-        body: hyper::body::Bytes,
-    ) -> RpcResult<Response> {
+    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
         let chain = &self
             .supported_chains
             .get(chain_id)
@@ -54,7 +49,7 @@ impl RpcProvider for PublicnodeProvider {
         let uri = format!("https://{}.publicnode.com", chain);
 
         let hyper_request = hyper::http::Request::builder()
-            .method(method)
+            .method(Method::POST)
             .uri(uri)
             .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))?;

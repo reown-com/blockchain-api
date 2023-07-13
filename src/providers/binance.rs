@@ -6,7 +6,7 @@ use {
     },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
-    hyper::{client::HttpConnector, http, Client},
+    hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
 };
@@ -43,19 +43,14 @@ impl RateLimited for BinanceProvider {
 
 #[async_trait]
 impl RpcProvider for BinanceProvider {
-    async fn proxy(
-        &self,
-        chain_id: &str,
-        method: hyper::http::Method,
-        body: hyper::body::Bytes,
-    ) -> RpcResult<Response> {
+    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
         let uri = self
             .supported_chains
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
         let hyper_request = hyper::http::Request::builder()
-            .method(method)
+            .method(Method::POST)
             .uri(uri)
             .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))?;

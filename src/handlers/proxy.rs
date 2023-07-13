@@ -1,12 +1,6 @@
 use {
     super::HANDLER_TASK_METRICS,
-    crate::{
-        analytics::MessageInfo,
-        error::RpcError,
-        extractors::method::Method,
-        handlers::RpcQueryParams,
-        state::AppState,
-    },
+    crate::{analytics::MessageInfo, error::RpcError, handlers::RpcQueryParams, state::AppState},
     axum::{
         body::Bytes,
         extract::{ConnectInfo, MatchedPath, Query, State},
@@ -28,12 +22,11 @@ pub async fn handler(
     state: State<Arc<AppState>>,
     addr: ConnectInfo<SocketAddr>,
     query_params: Query<RpcQueryParams>,
-    method: Method,
     path: MatchedPath,
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, addr, query_params, method, path, headers, body)
+    handler_internal(state, addr, query_params, path, headers, body)
         .with_metrics(HANDLER_TASK_METRICS.with_name("proxy"))
         .await
 }
@@ -42,7 +35,6 @@ async fn handler_internal(
     State(state): State<Arc<AppState>>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Query(query_params): Query<RpcQueryParams>,
-    Method(method): Method,
     _path: MatchedPath,
     headers: HeaderMap,
     body: Bytes,
@@ -99,7 +91,7 @@ async fn handler_internal(
     // Start timing external provider added time
     let external_call_start = SystemTime::now();
 
-    let mut response = provider.proxy(&chain_id, method, body).await.tap_err(|e| {
+    let mut response = provider.proxy(&chain_id, body).await.tap_err(|e| {
         warn!(
             "Failed call to provider: {} with {}",
             provider.provider_kind(),
