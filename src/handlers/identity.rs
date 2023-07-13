@@ -191,6 +191,12 @@ async fn lookup_identity_rpc(
             .map_or_else(
                 |e| match e {
                     ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
+                    ProviderError::CustomError(e) if &e == "Unsupported ERC token type" => {
+                        // This is a problem with how the avatar was configured by the user. Originates from here:
+                        // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/ext/erc.rs#L34
+                        // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/rpc/provider.rs#L818
+                        Ok(None)
+                    },
                     ProviderError::CustomError(e)
                         if e.starts_with("relative URL without a base") =>
                     {
@@ -241,8 +247,8 @@ struct JsonRpcRequest<T: Serialize + Send + Sync> {
 
 #[derive(Debug, thiserror::Error)]
 pub enum SelfProviderError {
-    #[error(transparent)]
-    RpcError(#[from] Box<RpcError>),
+    #[error("RpcError: {0:?}")]
+    RpcError(RpcError),
 
     #[error("proxy_handler status code not OK: {status} {body}")]
     ProviderError { status: StatusCode, body: String },
@@ -311,7 +317,7 @@ impl JsonRpcClient for SelfProvider {
             .into(),
         )
         .await
-        .map_err(|e| SelfProviderError::RpcError(Box::new(e)))?;
+        .map_err(SelfProviderError::RpcError)?;
 
         if response.status() != StatusCode::OK {
             return Err(SelfProviderError::ProviderError {
