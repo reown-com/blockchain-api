@@ -5,6 +5,7 @@ use {
         extractors::method::Method,
         handlers::RpcQueryParams,
         json_rpc::{JsonRpcError, JsonRpcResponse},
+        project::ProjectDataError,
         state::AppState,
     },
     async_trait::async_trait,
@@ -176,9 +177,12 @@ async fn lookup_identity_rpc(
     let avatar = if let Some(name) = &name {
         debug!("Beginning avatar lookup");
         let avatar_lookup_start = SystemTime::now();
-        let avatar_result = lookup_avatar(&provider, name)
-            .await
-            .map_err(RpcError::AvatarLookup);
+        let avatar_result = lookup_avatar(&provider, name).await.map_err(|e| match e {
+            ProviderError::CustomError(e) if &e == "RpcError: ProjectDataError(NotFound)" => {
+                RpcError::ProjectDataError(ProjectDataError::NotFound)
+            }
+            e => RpcError::AvatarLookup(e),
+        });
 
         state.metrics.add_identity_lookup_avatar();
         let avatar = avatar_result?;
@@ -223,6 +227,11 @@ async fn lookup_avatar(
         .map_or_else(
             |e| match e {
                 ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
+                ProviderError::CustomError(e) if &e == "builder error for url" => {
+                    // Not sure where this is coming from, but probably something to do with
+                    // resolving NFT avatar
+                    Ok(None)
+                }
                 ProviderError::CustomError(e) if &e == "Unsupported ERC token type" => {
                     // Problem with how the avatar was configured by the user
                     // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/ext/erc.rs#L34
