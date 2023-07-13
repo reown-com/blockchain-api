@@ -192,10 +192,21 @@ async fn lookup_identity_rpc(
                 |e| match e {
                     ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
                     ProviderError::CustomError(e) if &e == "Unsupported ERC token type" => {
-                        // This is a problem with how the avatar was configured by the user.
-                        // Originates from here:
-                        // - https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/ext/erc.rs#L34
-                        // - https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/rpc/provider.rs#L818
+                        // Problem with how the avatar was configured by the user
+                        // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/ext/erc.rs#L34
+                        // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/rpc/provider.rs#L818
+                        Ok(None)
+                    }
+                    ProviderError::CustomError(e) if &e == "Incorrect owner." => {
+                        // NFT avatar not owned by same owner
+                        // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/rpc/provider.rs#L830C31-L830C31
+                        Ok(None)
+                    }
+                    ProviderError::CustomError(e)
+                        if e.starts_with("Invalid metadata url: relative URL without a base") =>
+                    {
+                        // Problem with resolving NFT avatar
+                        // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/rpc/provider.rs#L877
                         Ok(None)
                     }
                     ProviderError::CustomError(e)
