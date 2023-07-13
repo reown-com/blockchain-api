@@ -159,17 +159,9 @@ async fn lookup_identity_rpc(
     let name = {
         debug!("Beginning name lookup");
         let name_lookup_start = SystemTime::now();
-        let name_result = provider
-            .lookup_address(address)
+        let name_result = lookup_name(&provider, address)
             .await
-            .tap_err(|err| debug!("Error while looking up name: {err:?}"))
-            .map_or_else(
-                |e| match e {
-                    ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
-                    e => Err(RpcError::EthersProviderError(e)),
-                },
-                |name| Ok(Some(name)),
-            );
+            .map_err(RpcError::NameLookup);
 
         state.metrics.add_identity_lookup_name();
         let name = name_result?;
@@ -184,41 +176,9 @@ async fn lookup_identity_rpc(
     let avatar = if let Some(name) = &name {
         debug!("Beginning avatar lookup");
         let avatar_lookup_start = SystemTime::now();
-        let avatar_result = provider
-            .resolve_avatar(name)
+        let avatar_result = lookup_avatar(&provider, name)
             .await
-            .tap_err(|err| debug!("Error while looking up avatar: {err:?}"))
-            .map_or_else(
-                |e| match e {
-                    ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
-                    ProviderError::CustomError(e) if &e == "Unsupported ERC token type" => {
-                        // Problem with how the avatar was configured by the user
-                        // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/ext/erc.rs#L34
-                        // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/rpc/provider.rs#L818
-                        Ok(None)
-                    }
-                    ProviderError::CustomError(e) if &e == "Incorrect owner." => {
-                        // NFT avatar not owned by same owner
-                        // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/rpc/provider.rs#L830C31-L830C31
-                        Ok(None)
-                    }
-                    ProviderError::CustomError(e)
-                        if e.starts_with("Invalid metadata url: relative URL without a base") =>
-                    {
-                        // Problem with resolving NFT avatar
-                        // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/rpc/provider.rs#L877
-                        Ok(None)
-                    }
-                    ProviderError::CustomError(e)
-                        if e.starts_with("relative URL without a base") =>
-                    {
-                        // Seems not having an `avatar` field returns this error
-                        Ok(None)
-                    }
-                    e => Err(RpcError::EthersProviderError(e)),
-                },
-                |url| Ok(Some(url)),
-            );
+            .map_err(RpcError::AvatarLookup);
 
         state.metrics.add_identity_lookup_avatar();
         let avatar = avatar_result?;
@@ -227,12 +187,69 @@ async fn lookup_identity_rpc(
             .metrics
             .add_identity_lookup_avatar_latency(avatar_lookup_start);
 
-        avatar.map(|url| url.to_string())
+        avatar
     } else {
         None
     };
 
     Ok(IdentityResponse { name, avatar })
+}
+
+async fn lookup_name(
+    provider: &Provider<SelfProvider>,
+    address: Address,
+) -> Result<Option<String>, ProviderError> {
+    provider
+        .lookup_address(address)
+        .await
+        .tap_err(|err| debug!("Error while looking up name: {err:?}"))
+        .map_or_else(
+            |e| match e {
+                ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
+                e => Err(e),
+            },
+            |name| Ok(Some(name)),
+        )
+}
+
+async fn lookup_avatar(
+    provider: &Provider<SelfProvider>,
+    name: &str,
+) -> Result<Option<String>, ProviderError> {
+    provider
+        .resolve_avatar(name)
+        .await
+        .tap_err(|err| debug!("Error while looking up avatar: {err:?}"))
+        .map_or_else(
+            |e| match e {
+                ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
+                ProviderError::CustomError(e) if &e == "Unsupported ERC token type" => {
+                    // Problem with how the avatar was configured by the user
+                    // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/ext/erc.rs#L34
+                    // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/rpc/provider.rs#L818
+                    Ok(None)
+                }
+                ProviderError::CustomError(e) if &e == "Incorrect owner." => {
+                    // NFT avatar not owned by same owner
+                    // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/rpc/provider.rs#L830C31-L830C31
+                    Ok(None)
+                }
+                ProviderError::CustomError(e)
+                    if e.starts_with("Invalid metadata url: relative URL without a base") =>
+                {
+                    // Problem with resolving NFT avatar
+                    // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/rpc/provider.rs#L877
+                    Ok(None)
+                }
+                ProviderError::CustomError(e) if e.starts_with("relative URL without a base") => {
+                    // Seems not having an `avatar` field returns this error
+                    Ok(None)
+                }
+                e => Err(e),
+            },
+            |url| Ok(Some(url)),
+        )
+        .map(|url| url.map(|url| url.to_string()))
 }
 
 struct SelfProvider {
