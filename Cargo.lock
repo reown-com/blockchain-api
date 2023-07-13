@@ -54,7 +54,7 @@ dependencies = [
 [[package]]
 name = "alloc"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?rev=d7edca6#d7edca6df0724e6324cc0faba1fce3536e89f558"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.3.0#99e610e4b909e962874b1453f5e748b1e5429137"
 dependencies = [
  "metrics",
  "serde",
@@ -1809,7 +1809,7 @@ checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 [[package]]
 name = "future"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?rev=d7edca6#d7edca6df0724e6324cc0faba1fce3536e89f558"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.3.0#99e610e4b909e962874b1453f5e748b1e5429137"
 dependencies = [
  "metrics",
  "pin-project",
@@ -2121,7 +2121,7 @@ dependencies = [
 [[package]]
 name = "http"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?rev=d7edca6#d7edca6df0724e6324cc0faba1fce3536e89f558"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.3.0#99e610e4b909e962874b1453f5e748b1e5429137"
 dependencies = [
  "future",
  "hyper",
@@ -2603,7 +2603,7 @@ dependencies = [
 [[package]]
 name = "metrics"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?rev=d7edca6#d7edca6df0724e6324cc0faba1fce3536e89f558"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.3.0#99e610e4b909e962874b1453f5e748b1e5429137"
 dependencies = [
  "once_cell",
  "opentelemetry",
@@ -5056,7 +5056,7 @@ checksum = "1c38c045535d93ec4f0b4defec448e4291638ee608530863b1e2ba115d4fff7f"
 [[package]]
 name = "wc"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?rev=d7edca6#d7edca6df0724e6324cc0faba1fce3536e89f558"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.3.0#99e610e4b909e962874b1453f5e748b1e5429137"
 dependencies = [
  "alloc",
  "future",
