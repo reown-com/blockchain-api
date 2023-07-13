@@ -9,7 +9,7 @@ authors = [
 build = "build.rs"
 
 [dependencies]
-wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.1.0", features = ["full"] }
+wc = { git = "https://github.com/WalletConnect/utils-rs.git", rev = "d7edca6", features = ["alloc", "future", "http", "metrics"] }
 
 # Async
 async-trait = "0.1.57"
@@ -65,12 +65,6 @@ prometheus-http-query = "0.6.6"
 ethers = { version = "2.0.7", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
 
 bytes = "1.4.0"
-
-# Memory Leak Debugging
-tikv-jemallocator = { version = "0.5", features = ["stats"] }
-tikv-jemalloc-ctl = { version = "0.5", features = ["use_std"] }
-dhat = { git = "https://github.com/WalletConnect/dhat-rs.git", rev = "8225b43eaf14dd57647045677f2368b05be5652b" }
-glob = "0.3"
 
 [dev-dependencies]
 jsonrpc = "0.14.0"
