@@ -198,26 +198,23 @@ async fn lookup_name(
     provider: &Provider<SelfProvider>,
     address: Address,
 ) -> Result<Option<String>, RpcError> {
-    provider
-        .lookup_address(address)
-        .await
-        .map_or_else(
-            |e| match e {
-                ProviderError::CustomError(e)
-                    if &e == "SelfProviderError: RpcError: ProjectDataError(NotFound)" =>
-                {
-                    Err(RpcError::ProjectDataError(ProjectDataError::NotFound))
-                }
-                ProviderError::CustomError(e) if e.starts_with(SELF_PROVIDER_ERROR_PREFIX) => Err(
-                    RpcError::NameLookup(e[SELF_PROVIDER_ERROR_PREFIX.len()..].to_string()),
-                ),
-                e => {
-                    debug!("Error while looking up name: {e:?}");
-                    Ok(None)
-                }
-            },
-            |name| Ok(Some(name)),
-        )
+    provider.lookup_address(address).await.map_or_else(
+        |e| match e {
+            ProviderError::CustomError(e)
+                if &e == "SelfProviderError: RpcError: ProjectDataError(NotFound)" =>
+            {
+                Err(RpcError::ProjectDataError(ProjectDataError::NotFound))
+            }
+            ProviderError::CustomError(e) if e.starts_with(SELF_PROVIDER_ERROR_PREFIX) => Err(
+                RpcError::NameLookup(e[SELF_PROVIDER_ERROR_PREFIX.len()..].to_string()),
+            ),
+            e => {
+                debug!("Error while looking up name: {e:?}");
+                Ok(None)
+            }
+        },
+        |name| Ok(Some(name)),
+    )
 }
 
 async fn lookup_avatar(
