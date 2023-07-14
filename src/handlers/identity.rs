@@ -243,7 +243,7 @@ async fn lookup_avatar(
                     Ok(None)
                 }
             },
-            |name| Ok(Some(name)),
+            |avatar| Ok(Some(avatar)),
         )
 }
 
