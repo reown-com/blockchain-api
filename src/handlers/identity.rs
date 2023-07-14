@@ -201,7 +201,6 @@ async fn lookup_name(
     provider
         .lookup_address(address)
         .await
-        .tap_err(|err| debug!("Error while looking up name: {err:?}"))
         .map_or_else(
             |e| match e {
                 ProviderError::CustomError(e)
