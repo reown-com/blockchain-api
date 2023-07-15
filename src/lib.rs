@@ -160,9 +160,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 
     let public_server = axum::Server::bind(&addr)
         .executor(executor)
-        .http1_only(true)
-        .http1_keepalive(false)
-        .http1_header_read_timeout(HEADER_READ_TIMEOUT)
         .tcp_keepalive(Some(KEEPALIVE_IDLE_DURATION))
         .tcp_keepalive_interval(Some(KEEPALIVE_INTERVAL))
         .tcp_keepalive_retries(Some(KEEPALIVE_RETRIES))
