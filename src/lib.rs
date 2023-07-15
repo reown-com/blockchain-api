@@ -47,7 +47,6 @@ use {
 };
 
 const SERVICE_TASK_TIMEOUT: Duration = Duration::from_secs(300);
-const HEADER_READ_TIMEOUT: Duration = Duration::from_secs(30);
 const KEEPALIVE_IDLE_DURATION: Duration = Duration::from_secs(5);
 const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(5);
 const KEEPALIVE_RETRIES: u32 = 1;
@@ -172,9 +171,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 
     let private_server = axum::Server::bind(&private_addr)
         .executor(executor)
-        .http1_only(true)
-        .http1_keepalive(false)
-        .http1_header_read_timeout(HEADER_READ_TIMEOUT)
         .tcp_keepalive(Some(KEEPALIVE_IDLE_DURATION))
         .tcp_keepalive_interval(Some(KEEPALIVE_INTERVAL))
         .tcp_keepalive_retries(Some(KEEPALIVE_RETRIES))
