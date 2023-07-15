@@ -9,7 +9,7 @@ use {
     anyhow::Context,
     axum::{
         response::Response,
-        routing::{any, get},
+        routing::{get, post},
         Router,
     },
     env::{
@@ -132,8 +132,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     ));
 
     let app = Router::new()
-        .route("/v1", any(handlers::proxy::handler))
-        .route("/v1/", any(handlers::proxy::handler))
+        .route("/v1", post(handlers::proxy::handler))
+        .route("/v1/", post(handlers::proxy::handler))
         .route("/ws", get(handlers::ws_proxy::handler))
         .route("/v1/identity/:address", get(handlers::identity::handler))
         .route_layer(proxy_metrics)

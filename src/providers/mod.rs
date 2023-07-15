@@ -239,12 +239,7 @@ impl ProviderKind {
 
 #[async_trait]
 pub trait RpcProvider: Provider {
-    async fn proxy(
-        &self,
-        chain_id: &str,
-        method: hyper::http::Method,
-        body: hyper::body::Bytes,
-    ) -> RpcResult<Response>;
+    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response>;
 }
 
 pub trait RpcProviderFactory<T: ProviderConfig>: Provider {

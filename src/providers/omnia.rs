@@ -6,7 +6,7 @@ use {
     },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
-    hyper::{client::HttpConnector, Client, StatusCode},
+    hyper::{client::HttpConnector, Client, Method, StatusCode},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
 };
@@ -43,12 +43,7 @@ impl RateLimited for OmniatechProvider {
 
 #[async_trait]
 impl RpcProvider for OmniatechProvider {
-    async fn proxy(
-        &self,
-        chain_id: &str,
-        method: hyper::http::Method,
-        body: hyper::body::Bytes,
-    ) -> RpcResult<Response> {
+    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
         let chain = self
             .supported_chains
             .get(chain_id)
@@ -57,7 +52,7 @@ impl RpcProvider for OmniatechProvider {
         let uri = format!("https://endpoints.omniatech.io/v1/{}/mainnet/public", chain);
 
         let hyper_request = hyper::http::Request::builder()
-            .method(method)
+            .method(Method::POST)
             .uri(uri)
             .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))?;

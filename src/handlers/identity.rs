@@ -2,7 +2,6 @@ use {
     super::HANDLER_TASK_METRICS,
     crate::{
         error::RpcError,
-        extractors::method::Method,
         handlers::RpcQueryParams,
         json_rpc::{JsonRpcError, JsonRpcResponse},
         project::ProjectDataError,
@@ -20,7 +19,7 @@ use {
         providers::{JsonRpcClient, Middleware, Provider, ProviderError},
         types::H160,
     },
-    hyper::{body::to_bytes, HeaderMap, Method as HyperMethod, StatusCode},
+    hyper::{body::to_bytes, HeaderMap, StatusCode},
     serde::{de::DeserializeOwned, Deserialize, Serialize},
     std::{
         net::SocketAddr,
@@ -325,7 +324,6 @@ impl JsonRpcClient for SelfProvider {
             self.state.clone(),
             self.connect_info,
             self.query.clone(),
-            Method(HyperMethod::POST),
             self.path.clone(),
             self.headers.clone(),
             serde_json::to_vec(&JsonRpcRequest {
