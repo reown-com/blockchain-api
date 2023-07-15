@@ -160,9 +160,7 @@ async fn lookup_identity_rpc(
     let name = {
         debug!("Beginning name lookup");
         let name_lookup_start = SystemTime::now();
-        let name_result = lookup_name(&provider, address)
-            .await
-            .map_err(RpcError::NameLookup);
+        let name_result = lookup_name(&provider, address).await;
 
         state.metrics.add_identity_lookup_name();
         let name = name_result?;
@@ -177,12 +175,7 @@ async fn lookup_identity_rpc(
     let avatar = if let Some(name) = &name {
         debug!("Beginning avatar lookup");
         let avatar_lookup_start = SystemTime::now();
-        let avatar_result = lookup_avatar(&provider, name).await.map_err(|e| match e {
-            ProviderError::CustomError(e) if &e == "RpcError: ProjectDataError(NotFound)" => {
-                RpcError::ProjectDataError(ProjectDataError::NotFound)
-            }
-            e => RpcError::AvatarLookup(e),
-        });
+        let avatar_result = lookup_avatar(&provider, name).await;
 
         state.metrics.add_identity_lookup_avatar();
         let avatar = avatar_result?;
@@ -199,66 +192,56 @@ async fn lookup_identity_rpc(
     Ok(IdentityResponse { name, avatar })
 }
 
+const SELF_PROVIDER_ERROR_PREFIX: &str = "SelfProviderError: ";
+
 async fn lookup_name(
     provider: &Provider<SelfProvider>,
     address: Address,
-) -> Result<Option<String>, ProviderError> {
-    provider
-        .lookup_address(address)
-        .await
-        .tap_err(|err| debug!("Error while looking up name: {err:?}"))
-        .map_or_else(
-            |e| match e {
-                ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
-                e => Err(e),
-            },
-            |name| Ok(Some(name)),
-        )
+) -> Result<Option<String>, RpcError> {
+    provider.lookup_address(address).await.map_or_else(
+        |e| match e {
+            ProviderError::CustomError(e)
+                if &e == "SelfProviderError: RpcError: ProjectDataError(NotFound)" =>
+            {
+                Err(RpcError::ProjectDataError(ProjectDataError::NotFound))
+            }
+            ProviderError::CustomError(e) if e.starts_with(SELF_PROVIDER_ERROR_PREFIX) => Err(
+                RpcError::NameLookup(e[SELF_PROVIDER_ERROR_PREFIX.len()..].to_string()),
+            ),
+            e => {
+                debug!("Error while looking up name: {e:?}");
+                Ok(None)
+            }
+        },
+        |name| Ok(Some(name)),
+    )
 }
 
 async fn lookup_avatar(
     provider: &Provider<SelfProvider>,
     name: &str,
-) -> Result<Option<String>, ProviderError> {
+) -> Result<Option<String>, RpcError> {
     provider
         .resolve_avatar(name)
         .await
-        .tap_err(|err| debug!("Error while looking up avatar: {err:?}"))
+        .map(|url| url.to_string())
         .map_or_else(
             |e| match e {
-                ProviderError::EnsError(_) | ProviderError::EnsNotOwned(_) => Ok(None),
-                ProviderError::CustomError(e) if &e == "builder error for url" => {
-                    // Not sure where this is coming from, but probably something to do with
-                    // resolving NFT avatar
-                    Ok(None)
-                }
-                ProviderError::CustomError(e) if &e == "Unsupported ERC token type" => {
-                    // Problem with how the avatar was configured by the user
-                    // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/ext/erc.rs#L34
-                    // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/rpc/provider.rs#L818
-                    Ok(None)
-                }
-                ProviderError::CustomError(e) if &e == "Incorrect owner." => {
-                    // NFT avatar not owned by same owner
-                    // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/rpc/provider.rs#L830C31-L830C31
-                    Ok(None)
-                }
                 ProviderError::CustomError(e)
-                    if e.starts_with("Invalid metadata url: relative URL without a base") =>
+                    if &e == "SelfProviderError: RpcError: ProjectDataError(NotFound)" =>
                 {
-                    // Problem with resolving NFT avatar
-                    // https://github.com/gakonst/ethers-rs/blob/f9c72f222cbf82219101c8772cfa49ba4205ef1d/ethers-providers/src/rpc/provider.rs#L877
+                    Err(RpcError::ProjectDataError(ProjectDataError::NotFound))
+                }
+                ProviderError::CustomError(e) if e.starts_with(SELF_PROVIDER_ERROR_PREFIX) => Err(
+                    RpcError::AvatarLookup(e[SELF_PROVIDER_ERROR_PREFIX.len()..].to_string()),
+                ),
+                e => {
+                    debug!("Error while looking up avatar: {e:?}");
                     Ok(None)
                 }
-                ProviderError::CustomError(e) if e.starts_with("relative URL without a base") => {
-                    // Seems not having an `avatar` field returns this error
-                    Ok(None)
-                }
-                e => Err(e),
             },
-            |url| Ok(Some(url)),
+            |avatar| Ok(Some(avatar)),
         )
-        .map(|url| url.map(|url| url.to_string()))
 }
 
 struct SelfProvider {
@@ -317,7 +300,7 @@ impl ethers::providers::RpcError for SelfProviderError {
 
 impl From<SelfProviderError> for ProviderError {
     fn from(value: SelfProviderError) -> Self {
-        ProviderError::CustomError(format!("{}", value))
+        ProviderError::CustomError(format!("{}{}", SELF_PROVIDER_ERROR_PREFIX, value))
     }
 }
 

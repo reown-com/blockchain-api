@@ -59,10 +59,10 @@ pub enum RpcError {
     IdentityInvalidAddress,
 
     #[error("Name lookup error: {0}")]
-    NameLookup(ethers::providers::ProviderError),
+    NameLookup(String),
 
     #[error("Avatar lookup error: {0}")]
-    AvatarLookup(ethers::providers::ProviderError),
+    AvatarLookup(String),
 }
 
 impl IntoResponse for RpcError {
