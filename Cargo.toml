@@ -54,7 +54,7 @@ tracing-subscriber = { version = "0.3", features = ["json", "ansi"] }
 cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.1.2" }
 parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3", default-features = false, features = ["flate2"] }
 parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3" }
-gorgon = { git = "https://github.com/WalletConnect/gorgon.git", tag = "v0.5.1" }
+gorgon = { git = "https://github.com/WalletConnect/gorgon.git", tag = "v0.5.2" }
 chrono = { version = "0.4", features = ["serde"] }
 futures-util = "0.3.28"
 tokio-stream = "0.1.12"

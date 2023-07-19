@@ -2006,7 +2006,7 @@ dependencies = [
 [[package]]
 name = "gorgon"
 version = "0.4.2"
-source = "git+https://github.com/WalletConnect/gorgon.git?tag=v0.5.1#8d757d2a39dc777a098e07c4726ad58618dbe482"
+source = "git+https://github.com/WalletConnect/gorgon.git?tag=v0.5.2#efc84aa16ba6f39a9ec22f362c5ea569dc431a4b"
 dependencies = [
  "anyhow",
  "async-trait",
