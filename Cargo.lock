@@ -3669,6 +3669,7 @@ dependencies = [
  "serde-aux",
  "serde_json",
  "serde_piecewise_default",
+ "sha256",
  "tap",
  "test-context",
  "thiserror",
@@ -4066,6 +4067,19 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest 0.10.6",
+]
+
+[[package]]
+name = "sha256"
+version = "1.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "386f700b0c798d92ac20a53342c240ff9d58030c3b845fbaeb92eead3a774792"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "hex",
+ "sha2 0.10.6",
+ "tokio",
 ]
 
 [[package]]

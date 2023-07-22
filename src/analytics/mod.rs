@@ -11,14 +11,16 @@ use {
     std::{net::IpAddr, sync::Arc},
     tracing::info,
 };
-pub use {config::Config, message_info::MessageInfo};
+pub use {config::Config, identity_lookup_info::IdentityLookupInfo, message_info::MessageInfo};
 
 mod config;
+mod identity_lookup_info;
 mod message_info;
 
 #[derive(Clone)]
 pub struct RPCAnalytics {
     messages: Analytics<MessageInfo>,
+    identity_lookups: Analytics<IdentityLookupInfo>,
     geoip: GeoIpReader,
 }
 
@@ -54,6 +56,7 @@ impl RPCAnalytics {
 
         Self {
             messages: Analytics::new(NoopCollector),
+            identity_lookups: Analytics::new(NoopCollector),
             geoip: GeoIpReader::empty(),
         }
     }
@@ -74,19 +77,41 @@ impl RPCAnalytics {
                 export_name: "rpc_requests",
                 file_extension: "parquet",
                 bucket_name: bucket_name.into(),
-                s3_client,
-                node_ip,
+                s3_client: s3_client.clone(),
+                node_ip: node_ip.clone(),
                 export_prefix: "blockchain-api/rpc-requests",
             });
 
             Analytics::new(ParquetWriter::new(opts, exporter)?)
         };
 
-        Ok(Self { messages, geoip })
+        let identity_lookups = {
+            let opts = BatchOpts::default();
+            let exporter = AwsExporter::new(AwsOpts {
+                export_name: "identity_lookups",
+                file_extension: "parquet",
+                bucket_name: bucket_name.into(),
+                s3_client,
+                node_ip,
+                export_prefix: "blockchain-api/identity-lookups",
+            });
+
+            Analytics::new(ParquetWriter::new(opts, exporter)?)
+        };
+
+        Ok(Self {
+            messages,
+            identity_lookups,
+            geoip,
+        })
     }
 
     pub fn message(&self, data: MessageInfo) {
         self.messages.collect(data);
+    }
+
+    pub fn identity_lookup(&self, data: IdentityLookupInfo) {
+        self.identity_lookups.collect(data);
     }
 
     pub fn lookup_geo_data(&self, addr: IpAddr) -> Option<AnalyticsGeoData> {
