@@ -83,7 +83,7 @@ async fn handler_internal(
             continent,
             &provider.provider_kind(),
             origin,
-        ))
+        ));
     }
 
     let project_id = query_params.project_id.clone();

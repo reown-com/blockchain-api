@@ -284,13 +284,10 @@ impl Metrics {
             )]);
     }
 
-    pub fn add_identity_lookup_latency(&self, start: SystemTime, source: &IdentityLookupSource) {
+    pub fn add_identity_lookup_latency(&self, latency: Duration, source: &IdentityLookupSource) {
         self.identity_lookup_latency_tracker.record(
             &otel::Context::new(),
-            start
-                .elapsed()
-                .unwrap_or(Duration::from_secs(0))
-                .as_secs_f64(),
+            latency.as_secs_f64(),
             &[otel::KeyValue::new("source", source.as_str())],
         );
     }

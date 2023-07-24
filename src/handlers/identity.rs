@@ -1,6 +1,7 @@
 use {
     super::HANDLER_TASK_METRICS,
     crate::{
+        analytics::IdentityLookupInfo,
         error::RpcError,
         handlers::RpcQueryParams,
         json_rpc::{JsonRpcError, JsonRpcResponse},
@@ -65,24 +66,60 @@ async fn handler_internal(
         .parse::<Address>()
         .map_err(|_| RpcError::IdentityInvalidAddress)?;
 
-    let identity_result =
-        lookup_identity(address, state.clone(), connect_info, query, path, headers).await;
+    let identity_result = lookup_identity(
+        address,
+        state.clone(),
+        connect_info,
+        query.clone(),
+        path,
+        headers.clone(),
+    )
+    .await;
 
     state.metrics.add_identity_lookup();
     let (source, res) = identity_result?;
     state.metrics.add_identity_lookup_success(&source);
-    state.metrics.add_identity_lookup_latency(start, &source);
+    let latency = start.elapsed().unwrap_or(Duration::from_secs(0));
+    state.metrics.add_identity_lookup_latency(latency, &source);
 
-    if res.name.is_some() {
+    let name_present = res.name.is_some();
+    if name_present {
         state.metrics.add_identity_lookup_name_present();
     }
-    if res.avatar.is_some() {
+    let avatar_present = res.avatar.is_some();
+    if avatar_present {
         state.metrics.add_identity_lookup_avatar_present();
+    }
+
+    {
+        let origin = headers
+            .get("origin")
+            .map(|v| v.to_str().unwrap_or("invalid_header").to_string());
+
+        let (country, continent, region) = state
+            .analytics
+            .lookup_geo_data(connect_info.0.ip())
+            .map(|geo| (geo.country, geo.continent, geo.region))
+            .unwrap_or((None, None, None));
+
+        state.analytics.identity_lookup(IdentityLookupInfo::new(
+            &query.0,
+            address,
+            name_present,
+            avatar_present,
+            source,
+            latency,
+            origin,
+            region,
+            country,
+            continent,
+        ));
     }
 
     Ok(Json(res).into_response())
 }
 
+#[derive(Serialize, Clone)]
 pub enum IdentityLookupSource {
     Cache,
     Rpc,
