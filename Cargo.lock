@@ -810,7 +810,7 @@ dependencies = [
 [[package]]
 name = "cerberus"
 version = "0.2.0"
-source = "git+https://github.com/WalletConnect/cerberus.git?tag=v0.1.2#835a7178d7d7a7ea5e3b521163586fb072cd7e1d"
+source = "git+https://github.com/WalletConnect/cerberus.git?tag=v0.9.1#e35d31285bcf89e1809192b3a0fe0406f9f40e22"
 dependencies = [
  "async-trait",
  "once_cell",
