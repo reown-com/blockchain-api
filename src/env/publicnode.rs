@@ -12,7 +12,7 @@ pub struct PublicnodeConfig {
 impl Default for PublicnodeConfig {
     fn default() -> Self {
         Self {
-            supported_chains: default_supported_chains(),
+            supported_chains: supported_chains(),
         }
     }
 }
@@ -27,7 +27,7 @@ impl ProviderConfig for PublicnodeConfig {
     }
 }
 
-fn default_supported_chains() -> HashMap<String, (String, Weight)> {
+pub fn supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum mainnet
         (

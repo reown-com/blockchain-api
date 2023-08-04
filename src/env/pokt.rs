@@ -15,7 +15,7 @@ impl PoktConfig {
     pub fn new(project_id: String) -> Self {
         Self {
             project_id,
-            supported_chains: default_supported_chains(),
+            supported_chains: supported_chains(),
         }
     }
 }
@@ -30,7 +30,7 @@ impl ProviderConfig for PoktConfig {
     }
 }
 
-fn default_supported_chains() -> HashMap<String, (String, Weight)> {
+pub fn supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Solana Mainnet
         (

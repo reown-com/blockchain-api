@@ -17,8 +17,8 @@ impl InfuraConfig {
     pub fn new(project_id: String) -> Self {
         Self {
             project_id,
-            supported_chains: default_supported_chains(),
-            supported_ws_chains: default_ws_supported_chains(),
+            supported_chains: supported_chains(),
+            supported_ws_chains: ws_supported_chains(),
         }
     }
 }
@@ -33,7 +33,7 @@ impl ProviderConfig for InfuraConfig {
     }
 }
 
-fn default_supported_chains() -> HashMap<String, (String, Weight)> {
+pub fn supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum
         (
@@ -122,7 +122,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     ])
 }
 
-fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
+pub fn ws_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Ethereum
         (

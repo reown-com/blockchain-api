@@ -22,12 +22,12 @@ impl ProviderConfig for BinanceConfig {
 impl Default for BinanceConfig {
     fn default() -> Self {
         Self {
-            supported_chains: default_supported_chains(),
+            supported_chains: supported_chains(),
         }
     }
 }
 
-fn default_supported_chains() -> HashMap<String, (String, Weight)> {
+pub fn supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Binance Smart Chain Mainnet
         (

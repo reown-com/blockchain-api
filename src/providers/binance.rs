@@ -1,7 +1,7 @@
 use {
     super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
-        env::BinanceConfig,
+        env::binance::BinanceConfig,
         error::{RpcError, RpcResult},
     },
     async_trait::async_trait,

@@ -1,7 +1,7 @@
 use {
     super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
-        env::PoktConfig,
+        env::pokt::PoktConfig,
         error::{RpcError, RpcResult},
     },
     async_trait::async_trait,

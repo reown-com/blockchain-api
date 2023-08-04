@@ -10,7 +10,7 @@ use {
         WS_PROXY_TASK_METRICS,
     },
     crate::{
-        env::InfuraConfig,
+        env::infura::InfuraConfig,
         error::{RpcError, RpcResult},
         ws,
     },

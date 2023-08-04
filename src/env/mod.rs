@@ -10,15 +10,13 @@ use {
     std::{collections::HashMap, fmt::Display},
 };
 
-mod binance;
-mod infura;
-mod omnia;
-mod pokt;
-mod publicnode;
+pub mod binance;
+pub mod infura;
+pub mod omnia;
+pub mod pokt;
+pub mod publicnode;
 mod server;
-mod zksync;
-
-pub use {binance::*, infura::*, omnia::*, pokt::*, publicnode::*, server::*, zksync::*};
+pub mod zksync;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ChainId(pub String);
@@ -31,7 +29,7 @@ impl Display for ChainId {
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    pub server: ServerConfig,
+    pub server: server::ServerConfig,
     pub registry: RegistryConfig,
     pub storage: StorageConfig,
     pub analytics: AnalyticsConfig,

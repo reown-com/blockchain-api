@@ -13,24 +13,14 @@ use {
         Router,
     },
     env::{
-        BinanceConfig,
-        InfuraConfig,
-        OmniatechConfig,
-        PoktConfig,
-        PublicnodeConfig,
-        ZKSyncConfig,
+        binance::BinanceConfig, infura::InfuraConfig, omnia::OmniatechConfig, pokt::PoktConfig,
+        publicnode::PublicnodeConfig, zksync::ZKSyncConfig,
     },
     error::RpcResult,
     hyper::{header::HeaderName, http},
     providers::{
-        BinanceProvider,
-        InfuraProvider,
-        InfuraWsProvider,
-        OmniatechProvider,
-        PoktProvider,
-        ProviderRepository,
-        PublicnodeProvider,
-        ZKSyncProvider,
+        BinanceProvider, InfuraProvider, InfuraWsProvider, OmniatechProvider, PoktProvider,
+        ProviderRepository, PublicnodeProvider, ZKSyncProvider,
     },
     std::{
         net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -60,7 +50,7 @@ mod handlers;
 mod json_rpc;
 mod metrics;
 mod project;
-mod providers;
+pub mod providers;
 mod state;
 mod storage;
 mod utils;
@@ -209,21 +199,23 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 fn init_providers() -> ProviderRepository {
     let mut providers = ProviderRepository::new();
 
-    let infura_project_id = std::env::var("RPC_PROXY_INFURA_PROJECT_ID")
-        .expect("Missing RPC_PROXY_INFURA_PROJECT_ID env var");
+    fn var(var: &str) -> String {
+        std::env::var(var).expect(&format!("Missing {var} env var"))
+    }
 
-    providers.add_provider::<PoktProvider, PoktConfig>(PoktConfig::new(
-        std::env::var("RPC_PROXY_POKT_PROJECT_ID")
-            .expect("Missing RPC_PROXY_POKT_PROJECT_ID env var"),
-    ));
+    // Keep in-sync with src/bin/generate-chain-list.rs#
 
+    providers.add_provider::<PoktProvider, PoktConfig>(PoktConfig::new(var(
+        "RPC_PROXY_POKT_PROJECT_ID",
+    )));
     providers.add_provider::<BinanceProvider, BinanceConfig>(BinanceConfig::default());
     providers.add_provider::<OmniatechProvider, OmniatechConfig>(OmniatechConfig::default());
     providers.add_provider::<ZKSyncProvider, ZKSyncConfig>(ZKSyncConfig::default());
     providers.add_provider::<PublicnodeProvider, PublicnodeConfig>(PublicnodeConfig::default());
+
+    let infura_project_id = var("RPC_PROXY_INFURA_PROJECT_ID");
     providers
         .add_provider::<InfuraProvider, InfuraConfig>(InfuraConfig::new(infura_project_id.clone()));
-
     providers
         .add_ws_provider::<InfuraWsProvider, InfuraConfig>(InfuraConfig::new(infura_project_id));
 
