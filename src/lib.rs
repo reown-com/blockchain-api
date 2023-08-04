@@ -212,6 +212,8 @@ fn init_providers() -> ProviderRepository {
     let infura_project_id = std::env::var("RPC_PROXY_INFURA_PROJECT_ID")
         .expect("Missing RPC_PROXY_INFURA_PROJECT_ID env var");
 
+    // Keep in-sync with SUPPORTED_CHAINS.md
+
     providers.add_provider::<PoktProvider, PoktConfig>(PoktConfig::new(
         std::env::var("RPC_PROXY_POKT_PROJECT_ID")
             .expect("Missing RPC_PROXY_POKT_PROJECT_ID env var"),
