@@ -28,6 +28,8 @@ impl ProviderConfig for PublicnodeConfig {
 }
 
 fn default_supported_chains() -> HashMap<String, (String, Weight)> {
+    // Keep in-sync with SUPPORTED_CHAINS.md
+
     HashMap::from([
         // Ethereum mainnet
         (

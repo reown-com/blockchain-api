@@ -28,6 +28,8 @@ impl Default for BinanceConfig {
 }
 
 fn default_supported_chains() -> HashMap<String, (String, Weight)> {
+    // Keep in-sync with SUPPORTED_CHAINS.md
+
     HashMap::from([
         // Binance Smart Chain Mainnet
         (
