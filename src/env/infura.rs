@@ -28,6 +28,10 @@ impl ProviderConfig for InfuraConfig {
         self.supported_chains
     }
 
+    fn supported_ws_chains(self) -> HashMap<String, (String, Weight)> {
+        self.supported_ws_chains
+    }
+
     fn provider_kind(&self) -> crate::providers::ProviderKind {
         crate::providers::ProviderKind::Infura
     }

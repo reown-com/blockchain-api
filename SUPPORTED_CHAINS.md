@@ -23,10 +23,14 @@ Chain name with associated `chainId` query param to use.
 - Near (`near`)
 - Gnosis Chain (`eip155:100`)
 - Solana (`solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz` or `solana-mainnet`)
+- Base (`eip155:8453`)
+- Base Goerli (`eip155:84531`)
+- Zora (`eip155:7777777`)
+- Zora Goerli (`eip155:999`)
 
 ## Websocket RPC
 
-- Ethereum (`eip115:1`)
+- Ethereum (`eip155:1`)
 - Ethereum Goerli (`eip155:5`)
 - Ethereum Sepolia (`eip155:11155111`)
 - Optimism (`eip155:10`)
@@ -35,3 +39,5 @@ Chain name with associated `chainId` query param to use.
 - Arbitrum Goerli (`eip155:421613`)
 - Aurora (`eip155:1313161554`)
 - Aurora Testnet (`eip155:1313161555`)
+- Zora (`eip155:7777777`)
+- Zora Goerli (`eip155:999`)

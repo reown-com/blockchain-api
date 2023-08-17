@@ -10,6 +10,7 @@ use {
     std::{collections::HashMap, fmt::Display},
 };
 
+mod base;
 mod binance;
 mod infura;
 mod omnia;
@@ -17,8 +18,19 @@ mod pokt;
 mod publicnode;
 mod server;
 mod zksync;
+mod zora;
 
-pub use {binance::*, infura::*, omnia::*, pokt::*, publicnode::*, server::*, zksync::*};
+pub use {
+    base::*,
+    binance::*,
+    infura::*,
+    omnia::*,
+    pokt::*,
+    publicnode::*,
+    server::*,
+    zksync::*,
+    zora::*,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ChainId(pub String);
@@ -56,5 +68,6 @@ fn from_env<T: DeserializeOwned>(prefix: &str) -> Result<T, envy::Error> {
 
 pub trait ProviderConfig {
     fn supported_chains(self) -> HashMap<String, (String, Weight)>;
+    fn supported_ws_chains(self) -> HashMap<String, (String, Weight)>;
     fn provider_kind(&self) -> ProviderKind;
 }
