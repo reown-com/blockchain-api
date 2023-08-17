@@ -1,9 +1,7 @@
 #[derive(Debug, Clone, serde::Deserialize)]
-pub struct DebugConfig {
-    pub secret: String,
-}
+pub struct ProfilerConfig {}
 
-pub async fn debug_metrics() {
+pub async fn run() {
     loop {
         if let Err(err) = wc::alloc::stats::update_jemalloc_metrics() {
             tracing::warn!(?err, "failed to collect jemalloc stats");
