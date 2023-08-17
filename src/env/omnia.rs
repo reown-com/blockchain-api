@@ -63,7 +63,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         ),
         // Solana
         (
-            "solana-mainnet".into(),
+            "solana-mainnet".into(), // consider changing to `solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz` like Pokt provider
             ("sol".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Avalanche C chain
