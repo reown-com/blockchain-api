@@ -1,4 +1,16 @@
-# rpc-proxy
+# Blockchain API
+
+WalletConnect's Blockchain API. We do not run our own RPC nodes but instead proxy to and load balance across other popular RPC providers.
+
+## Usage
+
+Endpoint: `https://rpc.walletconnecct.com/v1?chainId=eip155:1&projectId=<your-project-id>`
+
+Obtain a `projectId` from <https://cloud.walletconnect.com>
+
+See [SUPPORTED_CHAINS.md](./SUPPORTED_CHAINS.md) for which chains we support and which `chainId` to use.
+
+## Development
 
 `cargo run` to run and then `curl -v localhost:3000/health` or `curl -X POST -H "Content-Type:application/json" "http://localhost:3000/v1?chainId=eip155:5&projectId=someid" -d '{"id":"1660887896683","jsonrpc":"2.0","method":"eth_chainId","params":[]}'`
 

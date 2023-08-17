@@ -63,6 +63,8 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         ),
         // Solana
         (
+            // TODO: consider changing from `solana-mainnet` to
+            // `solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz` like Pokt provider
             "solana-mainnet".into(),
             ("sol".into(), Weight::new(Priority::Normal).unwrap()),
         ),
