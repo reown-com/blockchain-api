@@ -59,13 +59,6 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ),
         ),
         (
-            "eip155:69".into(),
-            (
-                "optimism-kovan".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
-        ),
-        (
             "eip155:420".into(),
             (
                 "optimism-goerli".into(),
@@ -154,13 +147,6 @@ fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
             ),
         ),
         (
-            "eip155:69".into(),
-            (
-                "optimism-kovan".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
-        ),
-        (
             "eip155:420".into(),
             (
                 "optimism-goerli".into(),
@@ -184,7 +170,7 @@ fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
         ),
         // Celo
         (
-            "eip155:42220".into(),
+            "eip155:42220".into(), // failed on testing
             (
                 "celo-mainnet".into(),
                 Weight::new(Priority::Normal).unwrap(),
