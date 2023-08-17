@@ -72,6 +72,10 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:5".into(),
             ("eth-goerli".into(), Weight::new(Priority::Normal).unwrap()),
         ),
+        (
+            "eip155:11155111".into(),
+            ("sepolia".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Optimism
         (
             "eip155:10".into(),

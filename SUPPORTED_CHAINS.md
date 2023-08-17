@@ -4,8 +4,8 @@
 
 - Ethereum
 - Ethereum Goerli
+- Ethereum Sepolia
 - Optimism
-- Optimism Kovan
 - Optimism Goerli
 - Arbitrum
 - Arbitrum Goerli
@@ -26,8 +26,8 @@
 
 - Ethereum
 - Ethereum Goerli
+- Ethereum Sepolia
 - Optimism
-- Optimism Kovan
 - Optimism Goerli
 - Arbitrum
 - Arbitrum Goerli
