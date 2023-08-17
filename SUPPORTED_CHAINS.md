@@ -28,7 +28,7 @@ Chain name with associated `chainId` query param to use.
 - Zora (`eip155:7777777`)
 - Zora Goerli (`eip155:999`)
 
-## Websocket RPC
+## WebSocket RPC
 
 - Ethereum (`eip155:1`)
 - Ethereum Goerli (`eip155:5`)
