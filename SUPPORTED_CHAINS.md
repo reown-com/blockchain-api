@@ -4,7 +4,7 @@ Chain name with associated `chainId` query param to use.
 
 ## HTTP RPC
 
-- Ethereum (`eip115:1`)
+- Ethereum (`eip155:1`)
 - Ethereum Goerli (`eip155:5`)
 - Ethereum Sepolia (`eip155:11155111`)
 - Optimism (`eip155:10`)
