@@ -52,13 +52,13 @@ const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(5);
 const KEEPALIVE_RETRIES: u32 = 1;
 
 mod analytics;
-pub mod debug;
 pub mod env;
 pub mod error;
 mod extractors;
 mod handlers;
 mod json_rpc;
 mod metrics;
+pub mod profiler;
 mod project;
 mod providers;
 mod state;
@@ -185,8 +185,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         }
     };
 
-    let memory_debug_data_collector = async move {
-        if let Err(e) = tokio::spawn(debug::debug_metrics()).await {
+    let profiler = async move {
+        if let Err(e) = tokio::spawn(profiler::run()).await {
             warn!("Memory debug stats collection failed with: {:?}", e);
         }
         Ok(())
@@ -196,7 +196,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         tokio::spawn(public_server),
         tokio::spawn(private_server),
         tokio::spawn(updater),
-        tokio::spawn(memory_debug_data_collector),
+        tokio::spawn(profiler),
     ];
 
     if let Err(e) = futures_util::future::select_all(services).await.0 {

@@ -51,8 +51,3 @@ variable "analytics_data_lake_kms_key_arn" {
   description = "The ARN of KMS encryption key for the data-lake bucket."
   type        = string
 }
-
-variable "debug_secret" {
-  description = "The secret used to run memory profile endpoint."
-  type        = string
-}
