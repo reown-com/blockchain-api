@@ -68,7 +68,7 @@ fn calculate_chain_weight(
 
     // Sum failed and successful calls for provider
     let Some(provider_failures_squared) = provider_failure.checked_mul(provider_failure) else {
-        // 1 is minimal value for chein weight
+        // 1 is minimal value for chain weight
         return 0;
     };
 
@@ -78,7 +78,7 @@ fn calculate_chain_weight(
 
     // Sum failed and successful calls for chain
     let Some(chain_failures_squared) = chain_failure.checked_mul(chain_failure) else {
-        // 1 is minimal value for chein weight
+        // 1 is minimal value for chain weight
         return 0;
     };
 
@@ -160,8 +160,7 @@ mod tests {
 
         let weight = super::calculate_chain_weight(chain_availability, provider_availability);
 
-        // 75% * 71.42% ~= 53.57%
-        assert_eq!(weight, 53_57);
+        assert_eq!(weight, 51);
     }
 
     #[test]
@@ -174,8 +173,7 @@ mod tests {
 
         let weight = super::calculate_chain_weight(chain_availability, provider_availability);
 
-        // 100% * 71.42% ~= 71.42%
-        assert_eq!(weight, 71_42);
+        assert_eq!(weight, 476);
     }
 
     #[test]

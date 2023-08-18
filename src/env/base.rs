@@ -5,11 +5,19 @@ use {
 };
 
 #[derive(Debug)]
-pub struct BinanceConfig {
+pub struct BaseConfig {
     pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
-impl ProviderConfig for BinanceConfig {
+impl Default for BaseConfig {
+    fn default() -> Self {
+        Self {
+            supported_chains: default_supported_chains(),
+        }
+    }
+}
+
+impl ProviderConfig for BaseConfig {
     fn supported_chains(self) -> HashMap<String, (String, Weight)> {
         self.supported_chains
     }
@@ -19,15 +27,7 @@ impl ProviderConfig for BinanceConfig {
     }
 
     fn provider_kind(&self) -> crate::providers::ProviderKind {
-        crate::providers::ProviderKind::Binance
-    }
-}
-
-impl Default for BinanceConfig {
-    fn default() -> Self {
-        Self {
-            supported_chains: default_supported_chains(),
-        }
+        crate::providers::ProviderKind::Base
     }
 }
 
@@ -35,20 +35,20 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     // Keep in-sync with SUPPORTED_CHAINS.md
 
     HashMap::from([
-        // Binance Smart Chain Mainnet
+        // Base Mainnet
         (
-            "eip155:56".into(),
+            "eip155:8453".into(),
             (
-                "https://bsc-dataseed.binance.org/".into(),
-                Weight::new(Priority::High).unwrap(),
+                "https://mainnet.base.org".into(),
+                Weight::new(Priority::Normal).unwrap(),
             ),
         ),
-        // Binance Smart Chain Testnet
+        // Base Goerli
         (
-            "eip155:97".into(),
+            "eip155:84531".into(),
             (
-                "https://data-seed-prebsc-1-s1.binance.org:8545".into(),
-                Weight::new(Priority::High).unwrap(),
+                "https://goerli.base.org".into(),
+                Weight::new(Priority::Normal).unwrap(),
             ),
         ),
     ])

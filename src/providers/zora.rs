@@ -10,7 +10,7 @@ use {
         WS_PROXY_TASK_METRICS,
     },
     crate::{
-        env::InfuraConfig,
+        env::ZoraConfig,
         error::{RpcError, RpcResult},
         ws,
     },
@@ -24,19 +24,17 @@ use {
 };
 
 #[derive(Debug)]
-pub struct InfuraProvider {
+pub struct ZoraProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
-    pub project_id: String,
     pub supported_chains: HashMap<String, String>,
 }
 
 #[derive(Debug)]
-pub struct InfuraWsProvider {
-    pub project_id: String,
+pub struct ZoraWsProvider {
     pub supported_chains: HashMap<String, String>,
 }
 
-impl Provider for InfuraWsProvider {
+impl Provider for ZoraWsProvider {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool {
         self.supported_chains.contains_key(chain_id)
     }
@@ -46,12 +44,12 @@ impl Provider for InfuraWsProvider {
     }
 
     fn provider_kind(&self) -> ProviderKind {
-        ProviderKind::Infura
+        ProviderKind::Zora
     }
 }
 
 #[async_trait]
-impl RateLimited for InfuraWsProvider {
+impl RateLimited for ZoraWsProvider {
     async fn is_rate_limited(&self, response: &mut Response) -> bool
     where
         Self: Sized,
@@ -61,31 +59,29 @@ impl RateLimited for InfuraWsProvider {
 }
 
 #[async_trait]
-impl RpcWsProvider for InfuraWsProvider {
+impl RpcWsProvider for ZoraWsProvider {
     async fn proxy(
         &self,
         ws: WebSocketUpgrade,
         query_params: RpcQueryParams,
     ) -> RpcResult<Response> {
-        let chain = &self
+        let uri = self
             .supported_chains
             .get(&query_params.chain_id.to_lowercase())
             .ok_or(RpcError::ChainNotFound)?;
 
         let project_id = query_params.project_id;
 
-        let uri = format!("wss://{}.infura.io/ws/v3/{}", chain, self.project_id);
-
         let (websocket_provider, _) = async_tungstenite::tokio::connect_async(uri).await?;
 
         Ok(ws.on_upgrade(move |socket| {
             ws::proxy(project_id, socket, websocket_provider)
-                .with_metrics(WS_PROXY_TASK_METRICS.with_name("infura"))
+                .with_metrics(WS_PROXY_TASK_METRICS.with_name("Zora"))
         }))
     }
 }
 
-impl Provider for InfuraProvider {
+impl Provider for ZoraProvider {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool {
         self.supported_chains.contains_key(chain_id)
     }
@@ -95,12 +91,12 @@ impl Provider for InfuraProvider {
     }
 
     fn provider_kind(&self) -> ProviderKind {
-        ProviderKind::Infura
+        ProviderKind::Zora
     }
 }
 
 #[async_trait]
-impl RateLimited for InfuraProvider {
+impl RateLimited for ZoraProvider {
     async fn is_rate_limited(&self, response: &mut Response) -> bool
     where
         Self: Sized,
@@ -110,14 +106,12 @@ impl RateLimited for InfuraProvider {
 }
 
 #[async_trait]
-impl RpcProvider for InfuraProvider {
+impl RpcProvider for ZoraProvider {
     async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
-        let chain = &self
+        let uri = self
             .supported_chains
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
-
-        let uri = format!("https://{}.infura.io/v3/{}", chain, self.project_id);
 
         let hyper_request = hyper::http::Request::builder()
             .method(Method::POST)
@@ -131,34 +125,30 @@ impl RpcProvider for InfuraProvider {
     }
 }
 
-impl RpcProviderFactory<InfuraConfig> for InfuraProvider {
-    fn new(provider_config: &InfuraConfig) -> Self {
+impl RpcProviderFactory<ZoraConfig> for ZoraProvider {
+    fn new(provider_config: &ZoraConfig) -> Self {
         let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
-        let supported_chains: HashMap<String, String> = provider_config
-            .supported_ws_chains
-            .iter()
-            .map(|(k, v)| (k.clone(), v.0.clone()))
-            .collect();
-
-        InfuraProvider {
-            client: forward_proxy_client,
-            supported_chains,
-            project_id: provider_config.project_id.clone(),
-        }
-    }
-}
-
-impl RpcProviderFactory<InfuraConfig> for InfuraWsProvider {
-    fn new(provider_config: &InfuraConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
             .map(|(k, v)| (k.clone(), v.0.clone()))
             .collect();
 
-        InfuraWsProvider {
+        ZoraProvider {
+            client: forward_proxy_client,
             supported_chains,
-            project_id: provider_config.project_id.clone(),
         }
+    }
+}
+
+impl RpcProviderFactory<ZoraConfig> for ZoraWsProvider {
+    fn new(provider_config: &ZoraConfig) -> Self {
+        let supported_chains: HashMap<String, String> = provider_config
+            .supported_ws_chains
+            .iter()
+            .map(|(k, v)| (k.clone(), v.0.clone()))
+            .collect();
+
+        ZoraWsProvider { supported_chains }
     }
 }

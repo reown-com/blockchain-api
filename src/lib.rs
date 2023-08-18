@@ -13,16 +13,19 @@ use {
         Router,
     },
     env::{
+        BaseConfig,
         BinanceConfig,
         InfuraConfig,
         OmniatechConfig,
         PoktConfig,
         PublicnodeConfig,
         ZKSyncConfig,
+        ZoraConfig,
     },
     error::RpcResult,
     hyper::{header::HeaderName, http},
     providers::{
+        BaseProvider,
         BinanceProvider,
         InfuraProvider,
         InfuraWsProvider,
@@ -31,6 +34,8 @@ use {
         ProviderRepository,
         PublicnodeProvider,
         ZKSyncProvider,
+        ZoraProvider,
+        ZoraWsProvider,
     },
     std::{
         net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -219,15 +224,18 @@ fn init_providers() -> ProviderRepository {
             .expect("Missing RPC_PROXY_POKT_PROJECT_ID env var"),
     ));
 
+    providers.add_provider::<BaseProvider, BaseConfig>(BaseConfig::default());
     providers.add_provider::<BinanceProvider, BinanceConfig>(BinanceConfig::default());
     providers.add_provider::<OmniatechProvider, OmniatechConfig>(OmniatechConfig::default());
     providers.add_provider::<ZKSyncProvider, ZKSyncConfig>(ZKSyncConfig::default());
     providers.add_provider::<PublicnodeProvider, PublicnodeConfig>(PublicnodeConfig::default());
     providers
         .add_provider::<InfuraProvider, InfuraConfig>(InfuraConfig::new(infura_project_id.clone()));
+    providers.add_provider::<ZoraProvider, ZoraConfig>(ZoraConfig::default());
 
     providers
         .add_ws_provider::<InfuraWsProvider, InfuraConfig>(InfuraConfig::new(infura_project_id));
+    providers.add_ws_provider::<ZoraWsProvider, ZoraConfig>(ZoraConfig::default());
 
     providers
 }

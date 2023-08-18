@@ -15,7 +15,7 @@ pub async fn proxy(
     let mut write = client_ws_receiver.forward(provider_ws_sender);
     let mut read = provider_ws_receiver.forward(client_ws_sender);
     select! {
-        _ = read => info!("Websocket relaying messages to the provider for client {project_id} died.") ,
-        _ = write => info!("Websocket relaying messages from the provider to the client {project_id} died.") ,
+        _ = read => info!("WebSocket relaying messages to the provider for client {project_id} died.") ,
+        _ = write => info!("WebSocket relaying messages from the provider to the client {project_id} died.") ,
     }
 }

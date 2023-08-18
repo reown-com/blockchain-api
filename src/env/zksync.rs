@@ -22,6 +22,10 @@ impl ProviderConfig for ZKSyncConfig {
         self.supported_chains
     }
 
+    fn supported_ws_chains(self) -> HashMap<String, (String, Weight)> {
+        HashMap::new()
+    }
+
     fn provider_kind(&self) -> crate::providers::ProviderKind {
         crate::providers::ProviderKind::ZKSync
     }

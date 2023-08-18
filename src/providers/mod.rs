@@ -9,6 +9,7 @@ use {
     wc::metrics::TaskMetrics,
 };
 
+mod base;
 mod binance;
 mod infura;
 mod omnia;
@@ -16,6 +17,7 @@ mod pokt;
 mod publicnode;
 mod weights;
 mod zksync;
+mod zora;
 
 use {
     crate::{error::RpcResult, handlers::RpcQueryParams},
@@ -23,12 +25,14 @@ use {
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
+    base::BaseProvider,
     binance::BinanceProvider,
     infura::{InfuraProvider, InfuraWsProvider},
     omnia::OmniatechProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
     zksync::ZKSyncProvider,
+    zora::{ZoraProvider, ZoraWsProvider},
 };
 
 static WS_PROXY_TASK_METRICS: TaskMetrics = TaskMetrics::new("ws_proxy_task");
@@ -134,14 +138,14 @@ impl ProviderRepository {
             .insert(provider_config.provider_kind(), arc_ws_provider);
 
         let provider_kind = provider_config.provider_kind();
-        let supported_ws_chains = provider_config.supported_chains();
+        let supported_ws_chains = provider_config.supported_ws_chains();
 
         supported_ws_chains
             .into_iter()
             .for_each(|(chain_id, (_, weight))| {
                 self.ws_weight_resolver
                     .entry(chain_id)
-                    .or_insert_with(HashMap::new)
+                    .or_default()
                     .insert(provider_kind, weight);
             });
     }
@@ -164,7 +168,7 @@ impl ProviderRepository {
             .for_each(|(chain_id, (_, weight))| {
                 self.weight_resolver
                     .entry(chain_id)
-                    .or_insert_with(HashMap::new)
+                    .or_default()
                     .insert(provider_kind, weight);
             });
         info!("Added provider: {}", provider_kind);
@@ -208,6 +212,8 @@ pub enum ProviderKind {
     ZKSync,
     Publicnode,
     Omniatech,
+    Base,
+    Zora,
 }
 
 impl Display for ProviderKind {
@@ -219,6 +225,8 @@ impl Display for ProviderKind {
             ProviderKind::ZKSync => "zkSync",
             ProviderKind::Publicnode => "Publicnode",
             ProviderKind::Omniatech => "Omniatech",
+            ProviderKind::Base => "Base",
+            ProviderKind::Zora => "Zora",
         })
     }
 }
@@ -232,6 +240,8 @@ impl ProviderKind {
             "zkSync" => Some(Self::ZKSync),
             "Publicnode" => Some(Self::Publicnode),
             "Omniatech" => Some(Self::Omniatech),
+            "Base" => Some(Self::Base),
+            "Zora" => Some(Self::Zora),
             _ => None,
         }
     }
