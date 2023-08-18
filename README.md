@@ -25,6 +25,12 @@ just run
 curl -X POST "http://localhost:3000/v1?chainId=eip155:5&projectId=someid" -d '{"id":"1660887896683","jsonrpc":"2.0","method":"eth_chainId","params":[]}'
 ```
 
+## Testing
+
+```bash
+just test-integration
+```
+
 ### Docker
 
 ```console

@@ -27,10 +27,15 @@ test:
   @echo '==> Testing project (default)'
   cargo test
 
-# Run project test suite, including storage tests (requires storage docker services to be running)
+# Run project test suite
 test-all:
   @echo '==> Testing project (all features)'
   cargo test --all-features
+
+# Run integration test suite
+test-integration:
+  @echo '==> Integration testing project (all features)'
+  cargo test --test integration --all-features
 
 # Clean build artifacts
 clean:
