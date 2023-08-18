@@ -8,7 +8,7 @@ use {
         storage::{error::StorageError, redis},
     },
     cerberus::{
-        project::ProjectData,
+        project::{ProjectData, ProjectKey},
         registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult},
     },
     std::{sync::Arc, time::Instant},
@@ -24,7 +24,7 @@ pub mod storage;
 
 #[derive(Debug, Clone)]
 pub struct Registry {
-    client: RegistryHttpClient,
+    client: Option<RegistryHttpClient>,
     cache: Option<ProjectStorage>,
     metrics: ProjectDataMetrics,
 }
@@ -38,23 +38,22 @@ pub enum ResponseSource {
 impl Registry {
     pub fn new(cfg_registry: &Config, cfg_storage: &StorageConfig) -> RpcResult<Self> {
         let meter = ServiceMetrics::meter();
-        let api_url = &cfg_registry.api_url;
-        let api_auth_token = &cfg_registry.api_auth_token;
-
-        let (Some(api_url), Some(api_auth_token)) = (api_url, api_auth_token) else {
-            return Err(RpcError::InvalidConfiguration(
-                "missing registry api parameters".to_string(),
-            ));
-        };
-
-        let client = RegistryHttpClient::new(api_url, api_auth_token)?;
-
         let metrics = ProjectDataMetrics::new(meter);
 
-        let cache_addr = cfg_storage.project_data_redis_addr();
-        let cache = match cache_addr {
-            None => None,
-            Some(cache_addr) => {
+        let api_url = cfg_registry.api_url.as_ref();
+        let api_auth_token = cfg_registry.api_auth_token.as_ref();
+
+        let (client, cache) = if let Some(api_url) = api_url {
+            let Some(api_auth_token) = api_auth_token else {
+                return Err(RpcError::InvalidConfiguration(
+                    "missing registry api_auth_token".to_string(),
+                ));
+            };
+
+            let client = RegistryHttpClient::new(api_url, api_auth_token)?;
+
+            let cache_addr = cfg_storage.project_data_redis_addr();
+            let cache = if let Some(cache_addr) = cache_addr {
                 let cache = open_redis(&cache_addr, cfg_storage.redis_max_connections)?;
 
                 Some(ProjectStorage::new(
@@ -62,7 +61,13 @@ impl Registry {
                     cfg_registry.project_data_cache_ttl(),
                     metrics.clone(),
                 ))
-            }
+            } else {
+                None
+            };
+
+            (Some(client), cache)
+        } else {
+            (None, None)
         };
 
         Ok(Self {
@@ -114,7 +119,25 @@ impl Registry {
 
     async fn fetch_registry(&self, id: &str) -> RegistryResult<Option<ProjectData>> {
         let time = Instant::now();
-        let data = self.client.project_data(id).await;
+        let data = if let Some(client) = &self.client {
+            client.project_data(id).await
+        } else {
+            Ok(Some(ProjectData {
+                uuid: "".to_owned(),
+                creator: "".to_owned(),
+                name: "".to_owned(),
+                push_url: None,
+                keys: vec![ProjectKey {
+                    value: id.to_owned(),
+                    is_valid: true,
+                }],
+                is_enabled: true,
+                is_verify_enabled: false,
+                is_rate_limited: false,
+                allowed_origins: vec![],
+                verified_domains: vec![],
+            }))
+        };
         self.metrics.fetch_registry_time(time.elapsed());
 
         data
