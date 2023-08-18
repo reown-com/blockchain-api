@@ -22,20 +22,17 @@ run: build
   @echo '==> Running project (ctrl+c to exit)'
   cargo run
 
-# Run project test suite, skipping storage tests
-test:
-  @echo '==> Testing project (default)'
-  cargo test
+# Run project test suite
+# Note: Currently broken as lack of test-localhost feature will run integration tests against staging and this uses a different env variable
+#       This is redundnat with test-all or the integration tests run in CI anyway and will be cleaned up later
+# test:
+#   @echo '==> Testing project (default)'
+#   cargo +nightly test
 
 # Run project test suite
 test-all:
   @echo '==> Testing project (all features)'
-  cargo test --all-features
-
-# Run integration test suite
-test-integration:
-  @echo '==> Integration testing project (all features)'
-  cargo test --test integration --all-features
+  cargo +nightly test --all-features
 
 # Clean build artifacts
 clean:
@@ -45,6 +42,8 @@ clean:
 # Lint the project for any quality issues
 lint: check fmt clippy commit-check
 
+amigood: lint test-all
+
 # Run project linter
 clippy:
   #!/bin/bash
@@ -52,7 +51,7 @@ clippy:
 
   if command -v cargo-clippy >/dev/null; then
     echo '==> Running clippy'
-    cargo clippy --all-features --tests -- -D clippy::all
+    cargo +nightly clippy --all-features --tests -- -D clippy::all
   else
     echo '==> clippy not found in PATH, skipping'
   fi
@@ -81,12 +80,13 @@ commit-check:
   #!/bin/bash
   set -euo pipefail
 
-  if command -v cog >/dev/null; then
-    echo '==> Running cog check'
-    cog check --from-latest-tag
-  else
-    echo '==> cog not found in PATH, skipping'
-  fi
+  # FIXME commit check doesn't exist in CI & no tagging takes place (see #53)
+  # if command -v cog >/dev/null; then
+  #   echo '==> Running cog check'
+  #   cog check --from-latest-tag
+  # else
+  #   echo '==> cog not found in PATH, skipping'
+  # fi
 
 lint-tf: tf-validate tf-fmt tfsec tflint
 

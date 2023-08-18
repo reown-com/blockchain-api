@@ -28,7 +28,7 @@ curl -X POST "http://localhost:3000/v1?chainId=eip155:5&projectId=someid" -d '{"
 ## Testing
 
 ```bash
-just test-integration
+just amigood
 ```
 
 ### Docker

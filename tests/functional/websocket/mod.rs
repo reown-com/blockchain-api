@@ -7,7 +7,7 @@ pub(crate) mod infura;
 pub(crate) mod zora;
 
 async fn check_if_rpc_is_responding_correctly_for_supported_chain(
-    ctx: &mut ServerContext,
+    ctx: &ServerContext,
     chain_id: &str,
     expected_id: &str,
 ) {

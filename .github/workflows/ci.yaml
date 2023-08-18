@@ -42,10 +42,21 @@ jobs:
             cmd: clippy
             args: --all-features --tests -- -D clippy::all
             cache: {}
-            rust: stable
+            rust: nightly
           - name: "Formatting"
             cmd: fmt
             args: -- --check
+            cache: {}
+            rust: nightly
+          # See `just test` for why this is disabled
+          # - name: "Unit Tests"
+          #   cmd: test
+          #   args: --lib --bins
+          #   cache: {}
+          #   rust: nightly
+          - name: "Unit Tests (all features)"
+            cmd: test
+            args: --all-features --lib --bins
             cache: {}
             rust: nightly
         include:

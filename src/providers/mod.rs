@@ -145,7 +145,7 @@ impl ProviderRepository {
             .for_each(|(chain_id, (_, weight))| {
                 self.ws_weight_resolver
                     .entry(chain_id)
-                    .or_insert_with(HashMap::new)
+                    .or_default()
                     .insert(provider_kind, weight);
             });
     }
@@ -168,7 +168,7 @@ impl ProviderRepository {
             .for_each(|(chain_id, (_, weight))| {
                 self.weight_resolver
                     .entry(chain_id)
-                    .or_insert_with(HashMap::new)
+                    .or_default()
                     .insert(provider_kind, weight);
             });
         info!("Added provider: {}", provider_kind);

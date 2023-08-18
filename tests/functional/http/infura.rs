@@ -14,7 +14,8 @@ async fn infura_provider(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:5", "0x5").await;
 
     // Ethereum Sepolia
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:11155111", "0xaa36a7").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:11155111", "0xaa36a7")
+        .await;
 
     // Polgyon mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:137", "0x89").await;
