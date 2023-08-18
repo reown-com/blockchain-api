@@ -19,10 +19,10 @@ pub enum RpcError {
     #[error("Project data error: {0}")]
     ProjectDataError(#[from] ProjectDataError),
 
-    #[error("Registry error")]
+    #[error("Registry error: {0}")]
     RegistryError(#[from] RegistryError),
 
-    #[error("Storage error")]
+    #[error("Storage error: {0}")]
     StorageError(#[from] StorageError),
 
     #[error("Chain not found despite previous validation")]
@@ -34,7 +34,7 @@ pub enum RpcError {
     #[error("Request::builder() failed: {0}")]
     RequestBuilderError(#[from] hyper::http::Error),
 
-    #[error("Specified chain is not supported by any of the providers")]
+    #[error("Specified chain is not supported by any of the providers: {0}")]
     UnsupportedChain(String),
 
     #[error("Provider is throttling the requests")]

@@ -1,8 +1,8 @@
 use {
     crate::{
         analytics::Config as AnalyticsConfig,
-        debug::DebugConfig,
         error,
+        profiler::ProfilerConfig,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
         providers::{ProviderKind, Weight},
     },
@@ -47,7 +47,7 @@ pub struct Config {
     pub registry: RegistryConfig,
     pub storage: StorageConfig,
     pub analytics: AnalyticsConfig,
-    pub debug: DebugConfig,
+    pub profiler: ProfilerConfig,
 }
 
 impl Config {
@@ -57,7 +57,7 @@ impl Config {
             registry: from_env("RPC_PROXY_REGISTRY_")?,
             storage: from_env("RPC_PROXY_STORAGE_")?,
             analytics: from_env("RPC_PROXY_ANALYTICS_")?,
-            debug: from_env("RPC_PROXY_DEBUG_")?,
+            profiler: from_env("RPC_PROXY_PROFILER_")?,
         })
     }
 }

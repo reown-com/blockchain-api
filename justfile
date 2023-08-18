@@ -1,4 +1,5 @@
 binary-crate            := "."
+set dotenv-load
 
 export JUST_ROOT        := justfile_directory()
 
