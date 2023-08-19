@@ -64,6 +64,7 @@ dashboard.new(
     panels.usage.provider(ds, vars, 'Omniatech')     { gridPos: pos._3 },
     panels.usage.provider(ds, vars, 'Binance')       { gridPos: pos._3 },
     panels.usage.provider(ds, vars, 'Pokt')          { gridPos: pos._3 },
+    panels.usage.provider(ds, vars, 'Tenderly')      { gridPos: pos._3 },
 
   row.new('Provider Weights'),
     panels.weights.provider(ds, vars, 'Infura')      { gridPos: pos._4 },
@@ -74,6 +75,7 @@ dashboard.new(
     panels.weights.provider(ds, vars, 'Pokt')        { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Base')        { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Zora')        { gridPos: pos._4 },
+    panels.weights.provider(ds, vars, 'Tenderly')    { gridPos: pos._4 },
 
   row.new('Status Codes'),
     panels.status.provider(ds, vars, 'Infura')       { gridPos: pos._4 },
@@ -84,6 +86,7 @@ dashboard.new(
     panels.status.provider(ds, vars, 'Pokt')         { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Base')         { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Zora')         { gridPos: pos._4 },
+    panels.status.provider(ds, vars, 'Tenderly')     { gridPos: pos._4 },
 
   row.new('Proxy Metrics'),
     panels.proxy.calls(ds, vars)                     { gridPos: pos._2 },

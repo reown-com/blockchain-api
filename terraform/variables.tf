@@ -13,6 +13,10 @@ variable "infura_project_id" {
   type = string
 }
 
+variable "tenderly_project_id" {
+  type = string
+}
+
 variable "pokt_project_id" {
   type = string
 }
