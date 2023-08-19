@@ -4,7 +4,13 @@ WalletConnect's Blockchain API. We do not run our own RPC nodes but instead prox
 
 ## Usage
 
-Endpoint: `https://rpc.walletconnecct.com/v1?chainId=eip155:1&projectId=<your-project-id>`
+Endpoint: `https://rpc.walletconnect.com/v1?chainId=eip155:1&projectId=<your-project-id>`
+
+For example:
+
+```bash
+curl -X POST "https://rpc.walletconnect.com/v1?chainId=eip155:1&projectId=<your-project-id>" --data '{"id":"1","jsonrpc":"2.0","method":"eth_chainId","params":[]}'
+```
 
 Obtain a `projectId` from <https://cloud.walletconnect.com>
 
@@ -22,7 +28,8 @@ just run
 ```
 
 ```bash
-curl -X POST "http://localhost:3000/v1?chainId=eip155:5&projectId=someid" -d '{"id":"1660887896683","jsonrpc":"2.0","method":"eth_chainId","params":[]}'
+# projectId is not validated under default .env.example configuration
+curl -X POST "http://localhost:3000/v1?chainId=eip155:1&projectId=someid" --data '{"id":"1","jsonrpc":"2.0","method":"eth_chainId","params":[]}'
 ```
 
 ## Testing
