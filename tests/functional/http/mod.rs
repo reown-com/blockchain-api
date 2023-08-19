@@ -10,6 +10,7 @@ pub(crate) mod binance;
 pub(crate) mod infura;
 pub(crate) mod pokt;
 pub(crate) mod zksync;
+pub(crate) mod tenderly;
 pub(crate) mod zora;
 
 async fn check_if_rpc_is_responding_correctly_for_supported_chain(
