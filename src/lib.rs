@@ -140,9 +140,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             )
         },
     )
-    .on_failure(|error: ServerErrorsFailureClass, latency: Duration, _span: &Span| {
-        tracing::error!("Request failed after {:?} with error {}", latency, error)
-    })
     );
 
     let app = Router::new()
