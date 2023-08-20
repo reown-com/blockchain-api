@@ -136,6 +136,7 @@ jobs:
         run: sccache --stop-server || true
 
   publish:
+    if: github.event_name != 'pull_request'
     needs: [checks]
     runs-on:
       group: ubuntu-runners
@@ -201,7 +202,6 @@ jobs:
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
   kick-off-cd:
-    if: github.event_name != 'pull_request'
     needs: [publish]
     uses: ./.github/workflows/cd.yaml
     with:
