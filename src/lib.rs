@@ -45,6 +45,7 @@ use {
     },
     tower::ServiceBuilder,
     tower_http::{
+        classify::ServerErrorsFailureClass,
         cors::{Any, CorsLayer},
         trace::TraceLayer,
     },
@@ -138,7 +139,11 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
                 latency.as_secs_f64(),
             )
         },
-    ));
+    )
+    .on_failure(|error: ServerErrorsFailureClass, latency: Duration, _span: &Span| {
+        tracing::error!("Request failed after {:?} with error {}", latency, error)
+    })
+    );
 
     let app = Router::new()
         .route("/v1", post(handlers::proxy::handler))
