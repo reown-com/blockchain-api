@@ -45,7 +45,6 @@ use {
     },
     tower::ServiceBuilder,
     tower_http::{
-        classify::ServerErrorsFailureClass,
         cors::{Any, CorsLayer},
         trace::TraceLayer,
     },
