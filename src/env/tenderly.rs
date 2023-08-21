@@ -59,10 +59,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Optimism Mainnet
         (
             "eip155:10".into(),
-            (
-                "optimism".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("optimism".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Optimism Görli
         (
@@ -75,10 +72,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Polygon Mainnet
         (
             "eip155:137".into(),
-            (
-                "polygon".into(),
-                Weight::new(Priority::High).unwrap(),
-            ),
+            ("polygon".into(), Weight::new(Priority::High).unwrap()),
         ),
         // Polygon Mumbai
         (
@@ -91,18 +85,12 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Base Mainnet
         (
             "eip155:8453".into(),
-            (
-                "base".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("base".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Base Görli
         (
             "eip155:84531".into(),
-            (
-                "base-goerli".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("base-goerli".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Boba Ethereum Mainnet
         (
@@ -115,10 +103,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Boba BNB Mainnet
         (
             "eip155:56288".into(),
-            (
-                "boba-bnb".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("boba-bnb".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Boba BNB Testnet
         (
@@ -153,10 +138,7 @@ fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
         // Optimism Mainnet
         (
             "eip155:10".into(),
-            (
-                "optimism".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("optimism".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Optimism Görli
         (
@@ -169,10 +151,7 @@ fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
         // Polygon Mainnet
         (
             "eip155:137".into(),
-            (
-                "polygon".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("polygon".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Polygon Mumbai
         (
@@ -185,18 +164,12 @@ fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
         // Base Mainnet
         (
             "eip155:8453".into(),
-            (
-                "base".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("base".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Base Görli
         (
             "eip155:84531".into(),
-            (
-                "base-goerli".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("base-goerli".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Boba Ethereum Mainnet
         (
@@ -209,10 +182,7 @@ fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
         // Boba BNB Mainnet
         (
             "eip155:56288".into(),
-            (
-                "boba-bnb".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("boba-bnb".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Boba BNB Testnet
         (

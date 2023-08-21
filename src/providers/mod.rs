@@ -15,8 +15,8 @@ mod infura;
 mod omnia;
 mod pokt;
 mod publicnode;
-mod weights;
 mod tenderly;
+mod weights;
 mod zksync;
 mod zora;
 

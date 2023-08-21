@@ -14,7 +14,8 @@ async fn tenderly_provider(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:5", "0x5").await;
 
     // Sepolia
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:11155111", "0xaa36a7").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:11155111", "0xaa36a7")
+        .await;
 
     // Optimism Mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:10", "0xa").await;
@@ -26,7 +27,7 @@ async fn tenderly_provider(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:137", "0x89").await;
 
     // Polygon Mumbai
-    // check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:80001", "0x13881").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:80001", "0x13881").await;
 
     // Base Mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:8453", "0x2105").await;
