@@ -33,4 +33,13 @@ async fn tenderly_provider(ctx: &mut ServerContext) {
 
     // Base Görli
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:84531", "0x14a33").await;
+
+    // Boba Ethereum Mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:288", "0x120").await;
+
+    // Boba BNB Mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:56288", "0xdbe0").await;
+
+    // Boba BNB Testnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:9728", "0x2600").await;
 }
