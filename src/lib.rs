@@ -24,7 +24,8 @@ use {
         ZoraConfig,
     },
     error::RpcResult,
-    hyper::{header::HeaderName, http},
+    http::Request,
+    hyper::{header::HeaderName, http, Body},
     providers::{
         BaseProvider,
         BinanceProvider,
@@ -124,7 +125,11 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     ]);
 
     let proxy_state = state_arc.clone();
-    let proxy_metrics = ServiceBuilder::new().layer(TraceLayer::new_for_http().on_response(
+    let proxy_metrics = ServiceBuilder::new().layer(TraceLayer::new_for_http()
+    .make_span_with(|request: &Request<Body>| {
+        tracing::info_span!("http-request", "method" = ?request.method(), "uri" = ?request.uri())
+    })
+    .on_response(
         move |response: &Response, latency: Duration, _span: &Span| {
             proxy_state
                 .metrics
@@ -136,7 +141,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
                 latency.as_secs_f64(),
             )
         },
-    ));
+    )
+    );
 
     let app = Router::new()
         .route("/v1", post(handlers::proxy::handler))

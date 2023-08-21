@@ -135,7 +135,7 @@ impl RpcProviderFactory<InfuraConfig> for InfuraProvider {
     fn new(provider_config: &InfuraConfig) -> Self {
         let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let supported_chains: HashMap<String, String> = provider_config
-            .supported_ws_chains
+            .supported_chains
             .iter()
             .map(|(k, v)| (k.clone(), v.0.clone()))
             .collect();
@@ -151,7 +151,7 @@ impl RpcProviderFactory<InfuraConfig> for InfuraProvider {
 impl RpcProviderFactory<InfuraConfig> for InfuraWsProvider {
     fn new(provider_config: &InfuraConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
-            .supported_chains
+            .supported_ws_chains
             .iter()
             .map(|(k, v)| (k.clone(), v.0.clone()))
             .collect();
