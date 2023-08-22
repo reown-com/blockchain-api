@@ -40,7 +40,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Ethereum Mainnet
         (
             "eip155:1".into(),
-            ("mainnet".into(), Weight::new(Priority::Max).unwrap()),
+            ("mainnet".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Ethereum Görli
         (
@@ -68,7 +68,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Polygon Mainnet
         (
             "eip155:137".into(),
-            ("polygon".into(), Weight::new(Priority::High).unwrap()),
+            ("polygon".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Polygon Mumbai
         (
