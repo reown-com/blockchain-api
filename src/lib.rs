@@ -226,9 +226,6 @@ fn init_providers() -> ProviderRepository {
     let infura_project_id = std::env::var("RPC_PROXY_INFURA_PROJECT_ID")
         .expect("Missing RPC_PROXY_INFURA_PROJECT_ID env var");
 
-    let tenderly_project_id = std::env::var("RPC_PROXY_TENDERLY_PROJECT_ID")
-        .expect("Missing RPC_PROXY_TENDERLY_PROJECT_ID env var");
-
     // Keep in-sync with SUPPORTED_CHAINS.md
 
     providers.add_provider::<PoktProvider, PoktConfig>(PoktConfig::new(
@@ -244,17 +241,13 @@ fn init_providers() -> ProviderRepository {
     providers
         .add_provider::<InfuraProvider, InfuraConfig>(InfuraConfig::new(infura_project_id.clone()));
     providers.add_provider::<ZoraProvider, ZoraConfig>(ZoraConfig::default());
-    providers.add_provider::<TenderlyProvider, TenderlyConfig>(TenderlyConfig::new(
-        tenderly_project_id.clone(),
-    ));
+    providers.add_provider::<TenderlyProvider, TenderlyConfig>(TenderlyConfig::default());
 
     // WebSocket Providers
     providers
         .add_ws_provider::<InfuraWsProvider, InfuraConfig>(InfuraConfig::new(infura_project_id));
     providers.add_ws_provider::<ZoraWsProvider, ZoraConfig>(ZoraConfig::default());
-    providers.add_ws_provider::<TenderlyWsProvider, TenderlyConfig>(TenderlyConfig::new(
-        tenderly_project_id,
-    ));
+    providers.add_ws_provider::<TenderlyWsProvider, TenderlyConfig>(TenderlyConfig::default());
 
     providers
 }

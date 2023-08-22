@@ -49,8 +49,6 @@ on:
         required: true
       INFURA_PROJECT_ID:
         required: true
-      TENDERLY_PROJECT_ID:
-        required: true
       POKT_PROJECT_ID:
         required: true
       REGISTRY_API_AUTH_TOKEN:
@@ -61,7 +59,6 @@ concurrency: cd
 env:
   IMAGE_NAME: "rpc-proxy"
   TF_VAR_infura_project_id: ${{ secrets.INFURA_PROJECT_ID }}
-  TF_VAR_tenderly_project_id: ${{ secrets.TENDERLY_PROJECT_ID }}
   TF_VAR_pokt_project_id: ${{ secrets.POKT_PROJECT_ID }}
   TF_VAR_registry_api_auth_token: ${{ secrets.REGISTRY_API_AUTH_TOKEN }}
   TF_VAR_debug_secret: ${{ secrets.DEBUG_SECRET }}

@@ -6,17 +6,13 @@ use {
 
 #[derive(Debug)]
 pub struct TenderlyConfig {
-    pub project_id: String,
-
     pub supported_chains: HashMap<String, (String, Weight)>,
-
     pub supported_ws_chains: HashMap<String, (String, Weight)>,
 }
 
-impl TenderlyConfig {
-    pub fn new(project_id: String) -> Self {
+impl Default for TenderlyConfig {
+    fn default() -> Self {
         Self {
-            project_id,
             supported_chains: default_supported_chains(),
             supported_ws_chains: default_ws_supported_chains(),
         }

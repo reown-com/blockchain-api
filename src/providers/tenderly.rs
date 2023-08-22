@@ -26,13 +26,11 @@ use {
 #[derive(Debug)]
 pub struct TenderlyProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
-    pub project_id: String,
     pub supported_chains: HashMap<String, String>,
 }
 
 #[derive(Debug)]
 pub struct TenderlyWsProvider {
-    pub project_id: String,
     pub supported_chains: HashMap<String, String>,
 }
 
@@ -74,7 +72,7 @@ impl RpcWsProvider for TenderlyWsProvider {
 
         let project_id = query_params.project_id;
 
-        let uri = format!("wss://{}.gateway.tenderly.co/{}", chain, self.project_id);
+        let uri = format!("wss://{}.gateway.tenderly.co", chain);
 
         let (websocket_provider, _) = async_tungstenite::tokio::connect_async(uri).await?;
 
@@ -117,7 +115,7 @@ impl RpcProvider for TenderlyProvider {
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let uri = format!("https://{}.gateway.tenderly.co/{}", chain, self.project_id);
+        let uri = format!("https://{}.gateway.tenderly.co", chain);
 
         let hyper_request = hyper::http::Request::builder()
             .method(Method::POST)
@@ -143,7 +141,6 @@ impl RpcProviderFactory<TenderlyConfig> for TenderlyProvider {
         TenderlyProvider {
             client: forward_proxy_client,
             supported_chains,
-            project_id: provider_config.project_id.clone(),
         }
     }
 }
@@ -158,7 +155,6 @@ impl RpcProviderFactory<TenderlyConfig> for TenderlyWsProvider {
 
         TenderlyWsProvider {
             supported_chains,
-            project_id: provider_config.project_id.clone(),
         }
     }
 }

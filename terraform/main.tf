@@ -98,7 +98,6 @@ module "ecs" {
   backup_fqdn                = local.backup_fqdn
   backup_route53_zone_id     = module.backup_dns.zone_id
   infura_project_id          = var.infura_project_id
-  tenderly_project_id        = var.tenderly_project_id
   pokt_project_id            = var.pokt_project_id
   prometheus_endpoint        = aws_prometheus_workspace.prometheus.prometheus_endpoint
   prometheus_workspace_id    = aws_prometheus_workspace.prometheus.id

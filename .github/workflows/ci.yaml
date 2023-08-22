@@ -121,7 +121,6 @@ jobs:
         env:
           TEST_RPC_PROXY_PROJECT_ID: ${{ secrets.PROJECT_ID }}
           RPC_PROXY_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
-          RPC_PROXY_TENDERLY_PROJECT_ID: ${{ secrets.TENDERLY_PROJECT_ID }}
           RPC_PROXY_REGISTRY_API_URL: ${{ secrets.REGISTRY_URL }}
           RPC_PROXY_REGISTRY_API_AUTH_TOKEN: ${{ secrets.RPC_PROXY_REGISTRY_API_AUTH_TOKEN }}
           RPC_PROXY_POKT_PROJECT_ID: ${{ secrets.POKT_PROJECT_ID }}
