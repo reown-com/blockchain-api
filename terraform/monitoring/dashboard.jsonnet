@@ -64,7 +64,6 @@ dashboard.new(
     panels.usage.provider(ds, vars, 'Omniatech')     { gridPos: pos._3 },
     panels.usage.provider(ds, vars, 'Binance')       { gridPos: pos._3 },
     panels.usage.provider(ds, vars, 'Pokt')          { gridPos: pos._3 },
-    panels.usage.provider(ds, vars, 'Tenderly')      { gridPos: pos._3 },
 
   row.new('Provider Weights'),
     panels.weights.provider(ds, vars, 'Infura')      { gridPos: pos._4 },

@@ -153,8 +153,6 @@ impl RpcProviderFactory<TenderlyConfig> for TenderlyWsProvider {
             .map(|(k, v)| (k.clone(), v.0.clone()))
             .collect();
 
-        TenderlyWsProvider {
-            supported_chains,
-        }
+        TenderlyWsProvider { supported_chains }
     }
 }
