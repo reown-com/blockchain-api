@@ -20,6 +20,8 @@ Chain name with associated `chainId` query param to use.
 - Binance Smart Chain Testnet (`eip155:56`)
 - Avalanche C-Chain (`eip155:43114`)
 - Avalanche Fuji Testnet (`eip155:43113`)
+- zkSync Era Mainnet (`eip155:324`)
+- zkSync Era Testnet (`eip155:280`)
 - Near (`near`)
 - Gnosis Chain (`eip155:100`)
 - Solana (`solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz` or `solana-mainnet`)
