@@ -14,7 +14,10 @@ use {
         time::{Duration, SystemTime},
     },
     tap::TapFallible,
-    tracing::{info, log::warn, log::error},
+    tracing::{
+        info,
+        log::{error, warn},
+    },
     wc::future::FutureExt,
 };
 
@@ -123,7 +126,12 @@ async fn handler_internal(
             state.metrics.add_finished_provider_call(provider.borrow());
         }
         _ => {
-            error!("Call to provider '{}' failed with status '{}' and body '{:?}'", provider.provider_kind(), response.status(), response.body());
+            error!(
+                "Call to provider '{}' failed with status '{}' and body '{:?}'",
+                provider.provider_kind(),
+                response.status(),
+                response.body()
+            );
             state.metrics.add_failed_provider_call(provider.borrow());
         }
     };
