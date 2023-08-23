@@ -40,73 +40,67 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Ethereum Mainnet
         (
             "eip155:1".into(),
-            ("mainnet".into(), Weight::new(Priority::Normal).unwrap()),
+            ("mainnet".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Ethereum Görli
         (
             "eip155:5".into(),
-            ("goerli".into(), Weight::new(Priority::Normal).unwrap()),
+            ("goerli".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Ethereum Sepolia
         (
             "eip155:11155111".into(),
-            ("sepolia".into(), Weight::new(Priority::Normal).unwrap()),
+            ("sepolia".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Optimism Mainnet
         (
             "eip155:10".into(),
-            ("optimism".into(), Weight::new(Priority::Normal).unwrap()),
+            ("optimism".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Optimism Görli
         (
             "eip155:420".into(),
             (
                 "optimism-goerli".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                Weight::new(Priority::Low).unwrap(),
             ),
         ),
         // Polygon Mainnet
         (
             "eip155:137".into(),
-            ("polygon".into(), Weight::new(Priority::Normal).unwrap()),
+            ("polygon".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Polygon Mumbai
         (
             "eip155:80001".into(),
-            (
-                "polygon-mumbai".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("polygon-mumbai".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Base Mainnet
         (
             "eip155:8453".into(),
-            ("base".into(), Weight::new(Priority::Normal).unwrap()),
+            ("base".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Base Görli
         (
             "eip155:84531".into(),
-            ("base-goerli".into(), Weight::new(Priority::Normal).unwrap()),
+            ("base-goerli".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Boba Ethereum Mainnet
         (
             "eip155:288".into(),
-            (
-                "boba-ethereum".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("boba-ethereum".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Boba BNB Mainnet
         (
             "eip155:56288".into(),
-            ("boba-bnb".into(), Weight::new(Priority::Normal).unwrap()),
+            ("boba-bnb".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Boba BNB Testnet
         (
             "eip155:9728".into(),
             (
                 "boba-bnb-testnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                Weight::new(Priority::Low).unwrap(),
             ),
         ),
     ])
@@ -119,73 +113,67 @@ fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
         // Ethereum Mainnet
         (
             "eip155:1".into(),
-            ("mainnet".into(), Weight::new(Priority::Normal).unwrap()),
+            ("mainnet".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Ethereum Görli
         (
             "eip155:5".into(),
-            ("goerli".into(), Weight::new(Priority::Normal).unwrap()),
+            ("goerli".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Ethereum Sepolia
         (
             "eip155:11155111".into(),
-            ("sepolia".into(), Weight::new(Priority::Normal).unwrap()),
+            ("sepolia".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Optimism Mainnet
         (
             "eip155:10".into(),
-            ("optimism".into(), Weight::new(Priority::Normal).unwrap()),
+            ("optimism".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Optimism Görli
         (
             "eip155:420".into(),
             (
                 "optimism-goerli".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                Weight::new(Priority::Low).unwrap(),
             ),
         ),
         // Polygon Mainnet
         (
             "eip155:137".into(),
-            ("polygon".into(), Weight::new(Priority::Normal).unwrap()),
+            ("polygon".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Polygon Mumbai
         (
             "eip155:80001".into(),
-            (
-                "polygon-mumbai".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("polygon-mumbai".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Base Mainnet
         (
             "eip155:8453".into(),
-            ("base".into(), Weight::new(Priority::Normal).unwrap()),
+            ("base".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Base Görli
         (
             "eip155:84531".into(),
-            ("base-goerli".into(), Weight::new(Priority::Normal).unwrap()),
+            ("base-goerli".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Boba Ethereum Mainnet
         (
             "eip155:288".into(),
-            (
-                "boba-ethereum".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("boba-ethereum".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Boba BNB Mainnet
         (
             "eip155:56288".into(),
-            ("boba-bnb".into(), Weight::new(Priority::Normal).unwrap()),
+            ("boba-bnb".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Boba BNB Testnet
         (
             "eip155:9728".into(),
             (
                 "boba-bnb-testnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                Weight::new(Priority::Low).unwrap(),
             ),
         ),
     ])
