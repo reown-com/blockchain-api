@@ -122,6 +122,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Base Goerli
+        (
+            "eip155:84531".into(),
+            ("base-goerli".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
     ])
 }
 
