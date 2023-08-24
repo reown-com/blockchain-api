@@ -32,6 +32,8 @@ Chain name with associated `chainId` query param to use.
 
 ## WebSocket RPC
 
+WebSocket RPC is not recommended for production use, and may be removed in the future.
+
 - Ethereum (`eip155:1`)
 - Ethereum Goerli (`eip155:5`)
 - Ethereum Sepolia (`eip155:11155111`)
