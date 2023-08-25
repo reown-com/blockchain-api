@@ -48,7 +48,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:84531".into(),
             (
                 "https://goerli.base.org".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                Weight::new(Priority::Low).unwrap(),
             ),
         ),
     ])
