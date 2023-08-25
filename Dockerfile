@@ -20,7 +20,7 @@ ARG                 WORK_DIR="/app"
 FROM                ${base} AS chef
 
 WORKDIR             ${WORK_DIR} 
-RUN                 cargo install cargo-chef
+RUN                 cargo install cargo-chef --locked
 
 ################################################################################
 #
