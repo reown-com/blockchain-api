@@ -50,4 +50,7 @@ async fn infura_provider(ctx: &mut ServerContext) {
         "0x4e454153",
     )
     .await;
+
+    // Base Goerli
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:84531", "0x14a33").await
 }
