@@ -5,7 +5,7 @@ local panels    = grafana.panels;
 local targets   = grafana.targets;
 
 local _configuration = defaults.configuration.timeseries
-  .withUnit('ms')
+  .withUnit('s')
   .withSoftLimit(
     axisSoftMin = 0.4,
     axisSoftMax = 1.1,
@@ -20,26 +20,30 @@ local _configuration = defaults.configuration.timeseries
     .configure(_configuration)
 
     .addTarget(targets.prometheus(
-      datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_latency_tracker_bucket{}[$__rate_interval]))',
-      refId       = "Latency",
+      datasource    = ds.prometheus,
+      expr          = 'sum(rate(identity_lookup_latency_tracker_sum[$__rate_interval])) / sum(rate(identity_lookup_latency_tracker_count[$__rate_interval]))',
+      refId         = 'EndpointLatency',
+      legendFormat  = 'Endpoint',
     ))
 
     .addTarget(targets.prometheus(
-      datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_cache_latency_tracker_bucket{}[$__rate_interval]))',
-      refId       = "Cache latency",
+      datasource    = ds.prometheus,
+      expr          = 'sum(rate(identity_lookup_cache_latency_tracker_sum[$__rate_interval])) / sum(rate(identity_lookup_cache_latency_tracker_count[$__rate_interval]))',
+      refId         = 'CacheLatency',
+      legendFormat  = 'Cache',
     ))
 
     .addTarget(targets.prometheus(
-      datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_name_latency_tracker_bucket{}[$__rate_interval]))',
-      refId       = "Name RPC latency",
+      datasource    = ds.prometheus,
+      expr          = 'sum(rate(identity_lookup_name_latency_tracker_sum[$__rate_interval])) / sum(rate(identity_lookup_name_latency_tracker_count[$__rate_interval]))',
+      refId         = 'NameLatency',
+      legendFormat  = 'Name',
     ))
 
     .addTarget(targets.prometheus(
-      datasource  = ds.prometheus,
-      expr        = 'sum(rate(identity_lookup_avatar_latency_tracker_bucket{}[$__rate_interval]))',
-      refId       = "Avatar RPC latency",
+      datasource    = ds.prometheus,
+      expr          = 'sum(rate(identity_lookup_avatar_latency_tracker_sum[$__rate_interval])) / sum(rate(identity_lookup_avatar_latency_tracker_count[$__rate_interval]))',
+      refId         = 'AvatarLatency',
+      legendFormat  = 'Avatar',
     ))
 }
