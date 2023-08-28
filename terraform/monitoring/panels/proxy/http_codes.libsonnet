@@ -5,7 +5,7 @@ local panels    = grafana.panels;
 local targets   = grafana.targets;
 
 local _configuration = defaults.configuration.timeseries
-  .withUnit('µs')
+  .withUnit('cpm')
   .withSoftLimit(
     axisSoftMin = 0.4,
     axisSoftMax = 1.1,
