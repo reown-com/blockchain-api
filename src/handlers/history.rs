@@ -23,10 +23,7 @@ use {
     hyper_tls::HttpsConnector,
     std::{net::SocketAddr, sync::Arc},
     tap::TapFallible,
-    tracing::{
-        info,
-        log::error,
-    },
+    tracing::{info, log::error},
     wc::future::FutureExt,
 };
 
@@ -102,7 +99,7 @@ pub async fn handler(
 async fn handler_internal(
     state: State<Arc<AppState>>,
     _connect_info: ConnectInfo<SocketAddr>,
-    _query: Query<HistoryQueryParams>,
+    query: Query<HistoryQueryParams>,
     _path: MatchedPath,
     _headers: HeaderMap,
     Path(address): Path<String>,
@@ -127,8 +124,6 @@ async fn handler_internal(
                 query.project_id, e
             );
         })?;
-
-    let project_id = query.project_id.clone();
 
     let zerion_api_key = std::env::var("RPC_PROXY_ZERION_API_KEY")
         .expect("Missing RPC_PROXY_INFURA_PROJECT_ID env var");

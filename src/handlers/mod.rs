@@ -30,12 +30,12 @@ pub struct SuccessResponse {
 #[serde(rename_all = "camelCase")]
 pub struct HistoryQueryParams {
     pub currency: Option<String>,
+    pub project_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 pub struct ZerionResponseBody {
     pub links: BTreeMap<String, String>,
-    // pub page: Option<HistoryPageObject>,
     pub data: Vec<ZerionTransactionsReponseBody>,
 }
 
