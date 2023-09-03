@@ -29,7 +29,6 @@ pub async fn handler(
         .await
 }
 
-// TODO: parse and use query parameters
 async fn handler_internal(
     state: State<Arc<AppState>>,
     _connect_info: ConnectInfo<SocketAddr>,

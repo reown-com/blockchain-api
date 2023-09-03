@@ -30,12 +30,14 @@ pub struct SuccessResponse {
 pub struct HistoryQueryParams {
     pub currency: Option<String>,
     pub project_id: String,
+    pub cursor: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct HistoryResponseBody {
     pub data: Vec<HistoryTransaction>,
+    pub next: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]

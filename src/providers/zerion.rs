@@ -10,7 +10,7 @@ use {
     hyper::{http, Client},
     hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
-    std::collections::BTreeMap,
+    url::Url,
 };
 
 #[derive(Debug)]
@@ -31,8 +31,15 @@ impl ZerionProvider {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 pub struct ZerionResponseBody {
-    pub links: BTreeMap<String, String>,
+    pub links: ZerionResponseLinks,
     pub data: Vec<ZerionTransactionsReponseBody>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionResponseLinks {
+    #[serde(rename = "self")]
+    pub self_id: String,
+    pub next: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
@@ -85,6 +92,20 @@ impl HistoryProvider for ZerionProvider {
         }
         let body: ZerionResponseBody = serde_json::from_slice(&bytes)?;
 
+        let next: Option<String> = match body.links.next {
+            Some(url) => {
+                let url = Url::parse(&url).map_err(|_| RpcError::HistoryParseCursorError)?;
+                // Get the "after" query parameter
+                if let Some(after_param) = url.query_pairs().find(|(key, _)| key == "page[after]") {
+                    let after_value = after_param.1;
+                    Some(after_value.to_string())
+                } else {
+                    None
+                }
+            }
+            None => None,
+        };
+
         let transactions: Vec<HistoryTransaction> = body
             .data
             .into_iter()
@@ -102,6 +123,9 @@ impl HistoryProvider for ZerionProvider {
             })
             .collect();
 
-        Ok(HistoryResponseBody { data: transactions })
+        Ok(HistoryResponseBody {
+            data: transactions,
+            next,
+        })
     }
 }

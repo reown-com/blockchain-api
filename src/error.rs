@@ -64,6 +64,9 @@ pub enum RpcError {
     #[error("Invalid address")]
     IdentityInvalidAddress,
 
+    #[error("Failed to parse provider cursor")]
+    HistoryParseCursorError,
+
     #[error("Name lookup error: {0}")]
     NameLookup(String),
 
