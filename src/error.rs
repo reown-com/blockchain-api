@@ -43,11 +43,17 @@ pub enum RpcError {
     #[error("Failed to reach the provider")]
     ProviderError,
 
+    #[error("Failed to reach the transaction provider")]
+    TransactionProviderError,
+
     #[error(transparent)]
     Cerberus(#[from] cerberus::project::AccessError),
 
     #[error("{0:?}")]
     Other(#[from] anyhow::Error),
+
+    #[error("{0:?}")]
+    SerdeJson(#[from] serde_json::Error),
 
     #[error("Invalid scheme used. Try http(s):// or ws(s)://")]
     InvalidScheme,

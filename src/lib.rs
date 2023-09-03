@@ -146,6 +146,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/v1/", post(handlers::proxy::handler))
         .route("/ws", get(handlers::ws_proxy::handler))
         .route("/v1/identity/:address", get(handlers::identity::handler))
+        .route("/v1/:address/identity", get(handlers::identity::handler))
+        .route("/v1/:address/history", get(handlers::history::handler))
         .route_layer(proxy_metrics)
         .route("/health", get(handlers::health::handler))
         .layer(cors)
