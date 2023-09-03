@@ -25,11 +25,12 @@ use {
     tap::TapFallible,
     tracing::{
         info,
-        log::{error, warn},
+        log::error,
     },
     wc::future::FutureExt,
 };
 
+// TODO: move this into a provider package
 async fn get_zerion_transactions(
     address: String,
     body: Bytes,
@@ -40,8 +41,6 @@ async fn get_zerion_transactions(
         "https://api.zerion.io/v1/wallets/{}/transactions/?currency=usd",
         address
     );
-
-    println!("api_key: {}", api_key);
 
     let hyper_request = hyper::http::Request::builder()
         .uri(uri)
@@ -99,6 +98,7 @@ pub async fn handler(
         .await
 }
 
+// TODO: parse and use query parameters
 async fn handler_internal(
     state: State<Arc<AppState>>,
     _connect_info: ConnectInfo<SocketAddr>,
