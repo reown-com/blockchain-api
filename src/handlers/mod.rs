@@ -1,6 +1,5 @@
 use {
     serde::{Deserialize, Serialize},
-    std::collections::BTreeMap,
     wc::metrics::TaskMetrics,
 };
 
@@ -34,42 +33,20 @@ pub struct HistoryQueryParams {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
-pub struct ZerionResponseBody {
-    pub links: BTreeMap<String, String>,
-    pub data: Vec<ZerionTransactionsReponseBody>,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
-pub struct ZerionTransactionsReponseBody {
-    pub r#type: String,
-    pub id: String,
-    pub attributes: ZerionTransactionAttributes,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
-pub struct ZerionTransactionAttributes {
-    pub operation_type: String,
-    pub hash: String,
-    pub mined_at_block: usize,
-    pub mined_at: String,
-    pub sent_from: String,
-    pub sent_to: String,
-    pub status: String,
-    pub nonce: usize,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct HistoryResponseBody {
     pub data: Vec<HistoryTransaction>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct HistoryTransaction {
     pub id: String,
     pub metadata: HistoryTransactionMetadata,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct HistoryTransactionMetadata {
     pub operation_type: String,
     pub hash: String,

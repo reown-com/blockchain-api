@@ -1,5 +1,6 @@
 use {
-    crate::{env::ProviderConfig, error::RpcError},
+    self::zerion::ZerionProvider,
+    crate::{env::ProviderConfig, error::RpcError, handlers::HistoryResponseBody},
     axum::response::Response,
     axum_tungstenite::WebSocketUpgrade,
     hyper::http::HeaderValue,
@@ -16,6 +17,7 @@ mod omnia;
 mod pokt;
 mod publicnode;
 mod weights;
+mod zerion;
 mod zksync;
 mod zora;
 
@@ -48,6 +50,8 @@ pub struct ProviderRepository {
 
     prometheus_client: prometheus_http_query::Client,
     prometheus_workspace_header: String,
+
+    pub history_provider: Arc<dyn HistoryProvider>,
 }
 
 impl ProviderRepository {
@@ -64,6 +68,13 @@ impl ProviderRepository {
         let prometheus_workspace_header =
             std::env::var("SIG_PROM_WORKSPACE_HEADER").unwrap_or("localhost:9090".into());
 
+        // Don't crash the application if the ZERION_API_KEY is not set
+        // TODO: find a better way to handle this
+        let zerion_api_key =
+            std::env::var("RPC_PROXY_ZERION_API_KEY").unwrap_or("ZERION_KEY_UNDEFINED".into());
+
+        let history_provider = Arc::new(ZerionProvider::new(zerion_api_key));
+
         Self {
             providers: HashMap::new(),
             ws_providers: HashMap::new(),
@@ -71,6 +82,7 @@ impl ProviderRepository {
             ws_weight_resolver: HashMap::new(),
             prometheus_client,
             prometheus_workspace_header,
+            history_provider,
         }
     }
 
@@ -359,4 +371,13 @@ pub trait Provider: Send + Sync + Debug + RateLimited {
 #[async_trait]
 pub trait RateLimited {
     async fn is_rate_limited(&self, data: &mut Response) -> bool;
+}
+
+#[async_trait]
+pub trait HistoryProvider: Send + Sync + Debug {
+    async fn get_transactions(
+        &self,
+        address: String,
+        body: hyper::body::Bytes,
+    ) -> RpcResult<HistoryResponseBody>;
 }

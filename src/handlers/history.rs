@@ -1,16 +1,6 @@
 use {
-    super::{
-        HistoryResponseBody,
-        HistoryTransaction,
-        HistoryTransactionMetadata,
-        ZerionResponseBody,
-        HANDLER_TASK_METRICS,
-    },
-    crate::{
-        error::{RpcError, RpcResult},
-        handlers::HistoryQueryParams,
-        state::AppState,
-    },
+    super::HANDLER_TASK_METRICS,
+    crate::{error::RpcError, handlers::HistoryQueryParams, state::AppState},
     axum::{
         body::Bytes,
         extract::{ConnectInfo, MatchedPath, Path, Query, State},
@@ -18,68 +8,12 @@ use {
         Json,
     },
     ethers::abi::Address,
-    futures_util::StreamExt,
-    hyper::{http, Client, HeaderMap},
-    hyper_tls::HttpsConnector,
+    hyper::HeaderMap,
     std::{net::SocketAddr, sync::Arc},
     tap::TapFallible,
     tracing::{info, log::error},
     wc::future::FutureExt,
 };
-
-// TODO: move this into a provider package
-async fn get_zerion_transactions(
-    address: String,
-    body: Bytes,
-    api_key: String,
-) -> RpcResult<HistoryResponseBody> {
-    // TODO: query parameters
-    let uri = format!(
-        "https://api.zerion.io/v1/wallets/{}/transactions/?currency=usd",
-        address
-    );
-
-    let hyper_request = hyper::http::Request::builder()
-        .uri(uri)
-        .header("Content-Type", "application/json")
-        .header("authorization", format!("Basic {}", api_key))
-        .body(hyper::body::Body::from(body))?;
-
-    let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
-
-    let response = forward_proxy_client.request(hyper_request).await?;
-
-    if response.status() != http::StatusCode::OK {
-        return Err(RpcError::TransactionProviderError);
-    }
-
-    // Now parse this hyper::Body into a ZerionResponseBody
-    let mut body = response.into_body();
-    let mut bytes = Vec::new();
-    while let Some(next) = body.next().await {
-        bytes.extend_from_slice(&next?);
-    }
-    let body: ZerionResponseBody = serde_json::from_slice(&bytes)?;
-
-    let transactions: Vec<HistoryTransaction> = body
-        .data
-        .into_iter()
-        .map(|f| HistoryTransaction {
-            id: f.id,
-            metadata: HistoryTransactionMetadata {
-                operation_type: f.attributes.operation_type,
-                hash: f.attributes.hash,
-                mined_at: f.attributes.mined_at,
-                nonce: f.attributes.nonce,
-                sent_from: f.attributes.sent_from,
-                sent_to: f.attributes.sent_to,
-                status: f.attributes.status,
-            },
-        })
-        .collect();
-
-    Ok(HistoryResponseBody { data: transactions })
-}
 
 pub async fn handler(
     state: State<Arc<AppState>>,
@@ -105,7 +39,7 @@ async fn handler_internal(
     Path(address): Path<String>,
     body: Bytes,
 ) -> Result<Response, RpcError> {
-    let _address = address
+    address
         .parse::<Address>()
         .map_err(|_| RpcError::IdentityInvalidAddress)?;
 
@@ -125,13 +59,13 @@ async fn handler_internal(
             );
         })?;
 
-    let zerion_api_key = std::env::var("RPC_PROXY_ZERION_API_KEY")
-        .expect("Missing RPC_PROXY_INFURA_PROJECT_ID env var");
-
-    let response = get_zerion_transactions(address, body, zerion_api_key)
+    let response = state
+        .providers
+        .history_provider
+        .get_transactions(address, body)
         .await
         .tap_err(|e| {
-            error!("Failed call history with {}", e);
+            error!("Failed to call transaction history with {}", e);
         })?;
 
     Ok(Json(response).into_response())
