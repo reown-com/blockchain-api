@@ -81,7 +81,7 @@ impl HistoryProvider for ZerionProvider {
 
         let response = self.http_client.request(hyper_request).await?;
 
-        if response.status() != http::StatusCode::OK {
+        if !response.status().is_success() {
             return Err(RpcError::TransactionProviderError);
         }
 
