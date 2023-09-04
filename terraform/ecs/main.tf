@@ -72,6 +72,7 @@ resource "aws_ecs_task_definition" "app_task" {
       environment : [
         { name : "RPC_PROXY_INFURA_PROJECT_ID", value : tostring(var.infura_project_id) },
         { name : "RPC_PROXY_POKT_PROJECT_ID", value : tostring(var.pokt_project_id) },
+        { name : "RPC_PROXY_ZERION_API_KEY", value : tostring(var.zerion_api_key) },
 
         { name : "RPC_PROXY_REGISTRY_API_URL", value : var.registry_api_endpoint },
         { name : "RPC_PROXY_REGISTRY_API_AUTH_TOKEN", value : var.registry_api_auth_token },

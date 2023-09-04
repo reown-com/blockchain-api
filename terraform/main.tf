@@ -99,6 +99,7 @@ module "ecs" {
   backup_route53_zone_id     = module.backup_dns.zone_id
   infura_project_id          = var.infura_project_id
   pokt_project_id            = var.pokt_project_id
+  zerion_api_key             = var.zerion_api_key
   prometheus_endpoint        = aws_prometheus_workspace.prometheus.prometheus_endpoint
   prometheus_workspace_id    = aws_prometheus_workspace.prometheus.id
 
