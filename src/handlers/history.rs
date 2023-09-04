@@ -61,7 +61,7 @@ async fn handler_internal(
     let response = state
         .providers
         .history_provider
-        .get_transactions(address, body)
+        .get_transactions(address, body, query.0)
         .await
         .tap_err(|e| {
             error!("Failed to call transaction history with {}", e);

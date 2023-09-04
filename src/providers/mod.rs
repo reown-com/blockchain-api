@@ -1,6 +1,10 @@
 use {
     self::zerion::ZerionProvider,
-    crate::{env::ProviderConfig, error::RpcError, handlers::HistoryResponseBody},
+    crate::{
+        env::ProviderConfig,
+        error::RpcError,
+        handlers::{HistoryQueryParams, HistoryResponseBody},
+    },
     axum::response::Response,
     axum_tungstenite::WebSocketUpgrade,
     hyper::http::HeaderValue,
@@ -379,5 +383,6 @@ pub trait HistoryProvider: Send + Sync + Debug {
         &self,
         address: String,
         body: hyper::body::Bytes,
+        params: HistoryQueryParams,
     ) -> RpcResult<HistoryResponseBody>;
 }
