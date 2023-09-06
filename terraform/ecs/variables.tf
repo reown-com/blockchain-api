@@ -59,6 +59,10 @@ variable "pokt_project_id" {
   type = string
 }
 
+variable "zerion_api_key" {
+  type = string
+}
+
 variable "prometheus_endpoint" {
   type = string
 }
