@@ -74,23 +74,20 @@ impl HistoryProvider for ZerionProvider {
         body: Bytes,
         params: HistoryQueryParams,
     ) -> RpcResult<HistoryResponseBody> {
-        let currency = params.currency.as_ref().unwrap_or("usd");
-        let uri = match params.cursor {
-            Some(after) => format!(
-                "https://api.zerion.io/v1/wallets/{}/transactions/?currency={}&page[size]=100&page[after]={}",
-                currency,
-                address,
-                after,
-            ),
-            None => format!(
-                "https://api.zerion.io/v1/wallets/{}/transactions/?currency={}&page[size]=100",
-                currency,
-                address
-            )
-        };
+        let base = format!(
+            "https://api.zerion.io/v1/wallets/{}/transactions/?",
+            &address
+        );
+        let mut url = Url::parse(&base).map_err(|_| RpcError::HistoryParseCursorError)?;
+        url.query_pairs_mut()
+            .append_pair("currency", &params.currency.unwrap_or("usd".to_string()));
+
+        if let Some(cursor) = params.cursor {
+            url.query_pairs_mut().append_pair("page[after]", &cursor);
+        }
 
         let hyper_request = hyper::http::Request::builder()
-            .uri(uri)
+            .uri(url.as_str())
             .header("Content-Type", "application/json")
             .header("authorization", format!("Basic {}", self.api_key))
             .body(hyper::body::Body::from(body))?;
