@@ -74,7 +74,7 @@ impl HistoryProvider for ZerionProvider {
         body: Bytes,
         params: HistoryQueryParams,
     ) -> RpcResult<HistoryResponseBody> {
-        let currency = params.currency.unwrap_or("usd".to_string());
+        let currency = params.currency.as_ref().unwrap_or("usd");
         let uri = match params.cursor {
             Some(after) => format!(
                 "https://api.zerion.io/v1/wallets/{}/transactions/?currency={}&page[size]=100&page[after]={}",
