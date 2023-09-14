@@ -7,7 +7,6 @@ use {
     },
     axum_tungstenite::WebSocketUpgrade,
     std::sync::Arc,
-    tap::TapFallible,
     wc::future::FutureExt,
 };
 
@@ -26,15 +25,9 @@ async fn handler_internal(
     Query(query_params): Query<RpcQueryParams>,
     ws: WebSocketUpgrade,
 ) -> Result<Response, RpcError> {
-    let project = state
-        .registry
-        .project_data(&query_params.project_id)
-        .await
-        .tap_err(|_| state.metrics.add_rejected_project())?;
-
-    project
-        .validate_access(&query_params.project_id, None)
-        .tap_err(|_| state.metrics.add_rejected_project())?;
+    state
+        .validate_project_access(&query_params.project_id)
+        .await?;
 
     let chain_id = query_params.chain_id.to_lowercase();
     let provider = state

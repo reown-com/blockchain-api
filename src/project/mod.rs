@@ -8,7 +8,7 @@ use {
         storage::{error::StorageError, redis},
     },
     cerberus::{
-        project::{ProjectData, ProjectKey},
+        project::{ProjectData, ProjectKey, Quota},
         registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult},
     },
     std::{sync::Arc, time::Instant},
@@ -136,6 +136,11 @@ impl Registry {
                 is_rate_limited: false,
                 allowed_origins: vec![],
                 verified_domains: vec![],
+                quota: Quota {
+                    current: 0,
+                    max: 0,
+                    is_valid: true,
+                },
             }))
         };
         self.metrics.fetch_registry_time(time.elapsed());

@@ -11,7 +11,7 @@ use {
     hyper::HeaderMap,
     std::{net::SocketAddr, sync::Arc},
     tap::TapFallible,
-    tracing::{info, log::error},
+    tracing::log::error,
     wc::future::FutureExt,
 };
 
@@ -42,21 +42,7 @@ async fn handler_internal(
         .parse::<Address>()
         .map_err(|_| RpcError::IdentityInvalidAddress)?;
 
-    let project = state
-        .registry
-        .project_data(&query.project_id)
-        .await
-        .tap_err(|_| state.metrics.add_rejected_project())?;
-
-    project
-        .validate_access(&query.project_id, None)
-        .tap_err(|e| {
-            state.metrics.add_rejected_project();
-            info!(
-                "Denied access for project: {}, with reason: {}",
-                query.project_id, e
-            );
-        })?;
+    state.validate_project_access(&query.project_id).await?;
 
     let response = state
         .providers

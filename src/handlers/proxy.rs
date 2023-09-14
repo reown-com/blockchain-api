@@ -14,10 +14,7 @@ use {
         time::{Duration, SystemTime},
     },
     tap::TapFallible,
-    tracing::{
-        info,
-        log::{error, warn},
-    },
+    tracing::log::{error, warn},
     wc::future::FutureExt,
 };
 
@@ -42,21 +39,9 @@ async fn handler_internal(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response, RpcError> {
-    let project = state
-        .registry
-        .project_data(&query_params.project_id)
-        .await
-        .tap_err(|_| state.metrics.add_rejected_project())?;
-
-    project
-        .validate_access(&query_params.project_id, None)
-        .tap_err(|e| {
-            state.metrics.add_rejected_project();
-            info!(
-                "Denied access for project: {}, with reason: {}",
-                query_params.project_id, e
-            );
-        })?;
+    state
+        .validate_project_access(&query_params.project_id)
+        .await?;
 
     let chain_id = query_params.chain_id.to_lowercase();
 
