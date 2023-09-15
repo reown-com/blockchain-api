@@ -2,7 +2,12 @@ use {
     super::HistoryProvider,
     crate::{
         error::{RpcError, RpcResult},
-        handlers::{HistoryResponseBody, HistoryTransaction, HistoryTransactionMetadata},
+        handlers::{
+            HistoryQueryParams,
+            HistoryResponseBody,
+            HistoryTransaction,
+            HistoryTransactionMetadata,
+        },
     },
     async_trait::async_trait,
     axum::body::Bytes,
@@ -67,14 +72,22 @@ impl HistoryProvider for ZerionProvider {
         &self,
         address: String,
         body: Bytes,
+        params: HistoryQueryParams,
     ) -> RpcResult<HistoryResponseBody> {
-        let uri = format!(
-            "https://api.zerion.io/v1/wallets/{}/transactions/?currency=usd",
-            address
+        let base = format!(
+            "https://api.zerion.io/v1/wallets/{}/transactions/?",
+            &address
         );
+        let mut url = Url::parse(&base).map_err(|_| RpcError::HistoryParseCursorError)?;
+        url.query_pairs_mut()
+            .append_pair("currency", &params.currency.unwrap_or("usd".to_string()));
+
+        if let Some(cursor) = params.cursor {
+            url.query_pairs_mut().append_pair("page[after]", &cursor);
+        }
 
         let hyper_request = hyper::http::Request::builder()
-            .uri(uri)
+            .uri(url.as_str())
             .header("Content-Type", "application/json")
             .header("authorization", format!("Basic {}", self.api_key))
             .body(hyper::body::Body::from(body))?;

@@ -18,6 +18,14 @@ See [SUPPORTED_CHAINS.md](./SUPPORTED_CHAINS.md) for which chains we support and
 
 ## Development
 
+### Requirements
+
+- [Rust](https://www.rust-lang.org/tools/install) >= 1.56 version,
+- [Just](https://github.com/casey/just#packages) as a command runner,
+- [Docker](https://www.docker.com/) for building and running Docker containers.
+
+### Building and running
+
 ```bash
 cp .env.example .env
 nano .env
