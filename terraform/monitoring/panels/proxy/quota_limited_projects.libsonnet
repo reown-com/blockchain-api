@@ -7,7 +7,7 @@ local targets   = grafana.targets;
 {
   new(ds, vars)::
     panels.timeseries(
-      title       = 'Qouta limited Project IDs',
+      title       = 'Quota limited Project IDs',
       datasource  = ds.prometheus,
     )
     .configure(defaults.configuration.timeseries)
