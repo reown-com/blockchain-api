@@ -72,6 +72,9 @@ pub enum RpcError {
 
     #[error("Avatar lookup error: {0}")]
     AvatarLookup(String),
+
+    #[error("Quota limit reached")]
+    QuotaLimitReached,
 }
 
 impl IntoResponse for RpcError {
@@ -133,6 +136,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "address".to_string(),
                     "The address provided is invalid".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::QuotaLimitReached => (
+                StatusCode::TOO_MANY_REQUESTS,
+                Json(new_error_response(
+                    "address".to_string(),
+                    "Project's quota limit reached".to_string(),
                 )),
             )
                 .into_response(),

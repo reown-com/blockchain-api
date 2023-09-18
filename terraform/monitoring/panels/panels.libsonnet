@@ -18,13 +18,14 @@
   },
 
   proxy: {
-    calls:                (import 'proxy/calls.libsonnet'                 ).new,
-    latency:              (import 'proxy/latency.libsonnet'               ).new,
-    errors_non_provider:  (import 'proxy/errors_non_provider.libsonnet'   ).new,
-    errors_provider:      (import 'proxy/errors_provider.libsonnet'       ).new,
-    rejected_projects:    (import 'proxy/rejected_projects.libsonnet'     ).new,
-    http_codes:           (import 'proxy/http_codes.libsonnet'            ).new,
-    healthy_hosts:        (import 'proxy/healthy_hosts.libsonnet'         ).new,
+    calls:                  (import 'proxy/calls.libsonnet'                 ).new,
+    latency:                (import 'proxy/latency.libsonnet'               ).new,
+    errors_non_provider:    (import 'proxy/errors_non_provider.libsonnet'   ).new,
+    errors_provider:        (import 'proxy/errors_provider.libsonnet'       ).new,
+    rejected_projects:      (import 'proxy/rejected_projects.libsonnet'     ).new,
+    quota_limited_projects: (import 'proxy/quota_limited_projects.libsonnet').new,
+    http_codes:             (import 'proxy/http_codes.libsonnet'            ).new,
+    healthy_hosts:          (import 'proxy/healthy_hosts.libsonnet'         ).new,
   },
 
   db: {

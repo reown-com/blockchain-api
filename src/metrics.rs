@@ -23,6 +23,7 @@ pub struct Metrics {
     pub http_latency_tracker: Histogram<f64>,
     pub http_external_latency_tracker: Histogram<f64>,
     pub rejected_project_counter: Counter<u64>,
+    pub quota_limited_project_counter: Counter<u64>,
     pub rate_limited_call_counter: Counter<u64>,
     pub provider_status_code_counter: Counter<u64>,
     pub weights_value_recorder: Histogram<u64>,
@@ -69,6 +70,11 @@ impl Metrics {
         let rejected_project_counter = meter
             .u64_counter("rejected_project_counter")
             .with_description("The number of calls for invalid project ids")
+            .init();
+
+        let quota_limited_project_counter = meter
+            .u64_counter("quota_limited_project_counter")
+            .with_description("The number of calls for quota limited project ids")
             .init();
 
         let rate_limited_call_counter = meter
@@ -167,6 +173,7 @@ impl Metrics {
             http_external_latency_tracker,
             http_latency_tracker,
             rejected_project_counter,
+            quota_limited_project_counter,
             rate_limited_call_counter,
             provider_failed_call_counter,
             provider_finished_call_counter,
@@ -222,6 +229,11 @@ impl Metrics {
 
     pub fn add_rejected_project(&self) {
         self.rejected_project_counter
+            .add(&otel::Context::new(), 1, &[])
+    }
+
+    pub fn add_quota_limited_project(&self) {
+        self.quota_limited_project_counter
             .add(&otel::Context::new(), 1, &[])
     }
 

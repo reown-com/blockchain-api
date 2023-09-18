@@ -12,7 +12,7 @@ use {
     async_trait::async_trait,
     axum::body::Bytes,
     futures_util::StreamExt,
-    hyper::{http, Client},
+    hyper::Client,
     hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
     url::Url,
