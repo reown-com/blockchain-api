@@ -10,6 +10,7 @@ use {
         storage::KeyValueStorage,
         utils::build::CompileInfo,
     },
+    cerberus::project::ProjectData,
     std::sync::Arc,
     tap::TapFallible,
     tracing::info,
@@ -49,7 +50,7 @@ impl AppState {
         self.providers.update_weights(&self.metrics).await;
     }
 
-    pub async fn validate_project_access(&self, id: &str) -> Result<(), RpcError> {
+    async fn get_project_data_validated(&self, id: &str) -> Result<ProjectData, RpcError> {
         let project = self
             .registry
             .project_data(id)
@@ -60,6 +61,16 @@ impl AppState {
             self.metrics.add_rejected_project();
             info!("Denied access for project: {id}, with reason: {e}");
         })?;
+
+        Ok(project)
+    }
+
+    pub async fn validate_project_access(&self, id: &str) -> Result<(), RpcError> {
+        self.get_project_data_validated(id).await.map(drop)
+    }
+
+    pub async fn validate_project_access_and_quota(&self, id: &str) -> Result<(), RpcError> {
+        let project = self.get_project_data_validated(id).await?;
 
         if !project.quota.is_valid {
             self.metrics.add_quota_limited_project();

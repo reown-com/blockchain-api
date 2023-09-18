@@ -40,7 +40,7 @@ async fn handler_internal(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     state
-        .validate_project_access(&query_params.project_id)
+        .validate_project_access_and_quota(&query_params.project_id)
         .await?;
 
     let chain_id = query_params.chain_id.to_lowercase();
