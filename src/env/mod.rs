@@ -17,19 +17,13 @@ mod omnia;
 mod pokt;
 mod publicnode;
 mod server;
+mod tenderly;
 mod zksync;
 mod zora;
 
 pub use {
-    base::*,
-    binance::*,
-    infura::*,
-    omnia::*,
-    pokt::*,
-    publicnode::*,
-    server::*,
-    zksync::*,
-    zora::*,
+    base::*, binance::*, infura::*, omnia::*, pokt::*, publicnode::*, server::*, tenderly::*,
+    zksync::*, zora::*,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

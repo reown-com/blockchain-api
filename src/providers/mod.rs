@@ -20,6 +20,7 @@ mod infura;
 mod omnia;
 mod pokt;
 mod publicnode;
+mod tenderly;
 mod weights;
 mod zerion;
 mod zksync;
@@ -37,6 +38,7 @@ pub use {
     omnia::OmniatechProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
+    tenderly::{TenderlyProvider, TenderlyWsProvider},
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
 };
@@ -227,6 +229,7 @@ pub enum ProviderKind {
     Binance,
     ZKSync,
     Publicnode,
+    Tenderly,
     Omniatech,
     Base,
     Zora,
@@ -234,16 +237,21 @@ pub enum ProviderKind {
 
 impl Display for ProviderKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            ProviderKind::Infura => "Infura",
-            ProviderKind::Pokt => "Pokt",
-            ProviderKind::Binance => "Binance",
-            ProviderKind::ZKSync => "zkSync",
-            ProviderKind::Publicnode => "Publicnode",
-            ProviderKind::Omniatech => "Omniatech",
-            ProviderKind::Base => "Base",
-            ProviderKind::Zora => "Zora",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                ProviderKind::Infura => "Infura",
+                ProviderKind::Pokt => "Pokt",
+                ProviderKind::Binance => "Binance",
+                ProviderKind::ZKSync => "zkSync",
+                ProviderKind::Publicnode => "Publicnode",
+                ProviderKind::Tenderly => "Tenderly",
+                ProviderKind::Omniatech => "Omniatech",
+                ProviderKind::Base => "Base",
+                ProviderKind::Zora => "Zora",
+            }
+        )
     }
 }
 
@@ -255,6 +263,7 @@ impl ProviderKind {
             "Binance" => Some(Self::Binance),
             "zkSync" => Some(Self::ZKSync),
             "Publicnode" => Some(Self::Publicnode),
+            "Tenderly" => Some(Self::Tenderly),
             "Omniatech" => Some(Self::Omniatech),
             "Base" => Some(Self::Base),
             "Zora" => Some(Self::Zora),

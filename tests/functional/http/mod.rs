@@ -9,6 +9,7 @@ pub(crate) mod base;
 pub(crate) mod binance;
 pub(crate) mod infura;
 pub(crate) mod pokt;
+pub(crate) mod tenderly;
 pub(crate) mod zksync;
 pub(crate) mod zora;
 

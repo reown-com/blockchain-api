@@ -13,30 +13,16 @@ use {
         Router,
     },
     env::{
-        BaseConfig,
-        BinanceConfig,
-        InfuraConfig,
-        OmniatechConfig,
-        PoktConfig,
-        PublicnodeConfig,
-        ZKSyncConfig,
-        ZoraConfig,
+        BaseConfig, BinanceConfig, InfuraConfig, OmniatechConfig, PoktConfig, PublicnodeConfig,
+        TenderlyConfig, ZKSyncConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
     hyper::{header::HeaderName, http, Body},
     providers::{
-        BaseProvider,
-        BinanceProvider,
-        InfuraProvider,
-        InfuraWsProvider,
-        OmniatechProvider,
-        PoktProvider,
-        ProviderRepository,
-        PublicnodeProvider,
-        ZKSyncProvider,
-        ZoraProvider,
-        ZoraWsProvider,
+        BaseProvider, BinanceProvider, InfuraProvider, InfuraWsProvider, OmniatechProvider,
+        PoktProvider, ProviderRepository, PublicnodeProvider, TenderlyProvider, TenderlyWsProvider,
+        ZKSyncProvider, ZoraProvider, ZoraWsProvider,
     },
     std::{
         net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -246,10 +232,12 @@ fn init_providers() -> ProviderRepository {
     providers
         .add_provider::<InfuraProvider, InfuraConfig>(InfuraConfig::new(infura_project_id.clone()));
     providers.add_provider::<ZoraProvider, ZoraConfig>(ZoraConfig::default());
+    providers.add_provider::<TenderlyProvider, TenderlyConfig>(TenderlyConfig::default());
 
     providers
         .add_ws_provider::<InfuraWsProvider, InfuraConfig>(InfuraConfig::new(infura_project_id));
     providers.add_ws_provider::<ZoraWsProvider, ZoraConfig>(ZoraConfig::default());
+    providers.add_ws_provider::<TenderlyWsProvider, TenderlyConfig>(TenderlyConfig::default());
 
     providers
 }
