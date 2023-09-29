@@ -12,6 +12,7 @@ pub struct ServerConfig {
     pub private_port: u16,
     pub log_level: String,
     pub external_ip: Option<IpAddr>,
+    pub blocked_countries: Vec<String>,
 }
 
 impl Default for ServerConfig {
@@ -22,6 +23,7 @@ impl Default for ServerConfig {
             private_port: 4000,
             log_level: "INFO".to_string(),
             external_ip: None,
+            blocked_countries: Vec::new(),
         }
     }
 }

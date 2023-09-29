@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct ProfilerConfig {}
 
 pub async fn run() {

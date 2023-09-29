@@ -49,7 +49,11 @@ use {
         trace::TraceLayer,
     },
     tracing::{info, log::warn, Span},
-    wc::{http::ServiceTaskExecutor, metrics::ServiceMetrics},
+    wc::{
+        geoip::block::{middleware::GeoBlockLayer, BlockingPolicy},
+        http::ServiceTaskExecutor,
+        metrics::ServiceMetrics,
+    },
 };
 
 const SERVICE_TASK_TIMEOUT: Duration = Duration::from_secs(15);
@@ -94,6 +98,15 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     let analytics = analytics::RPCAnalytics::new(&config.analytics, external_ip)
         .await
         .context("failed to init analytics")?;
+
+    let geoblock = analytics.geoip_resolver().as_ref().map(|resolver| {
+        // let r = resolver.clone().deref();
+        GeoBlockLayer::new(
+            resolver.clone(),
+            config.server.blocked_countries.clone(),
+            BlockingPolicy::AllowAll,
+        )
+    });
 
     let state = state::new_state(
         config.clone(),
@@ -156,8 +169,13 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         )
         .route_layer(proxy_metrics)
         .route("/health", get(handlers::health::handler))
-        .layer(cors)
-        .with_state(state_arc.clone());
+        .layer(cors);
+    let app = if let Some(geoblock) = geoblock {
+        app.layer(geoblock)
+    } else {
+        app
+    };
+    let app = app.with_state(state_arc.clone());
 
     info!("v{}", build_version);
     info!("Running RPC Proxy on port {}", port);

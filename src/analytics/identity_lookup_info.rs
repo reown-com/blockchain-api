@@ -42,7 +42,7 @@ impl IdentityLookupInfo {
         continent: Option<Arc<str>>,
     ) -> Self {
         Self {
-            timestamp: gorgon::time::now(),
+            timestamp: wc::analytics::time::now(),
 
             address_hash: sha256::digest(address.as_ref()),
             name_present,

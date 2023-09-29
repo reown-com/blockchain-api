@@ -9,7 +9,7 @@ authors = [
 build = "build.rs"
 
 [dependencies]
-wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.3.0", features = ["alloc", "future", "http", "metrics"] }
+wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.5.1", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock"] }
 
 # Async
 async-trait = "0.1.57"
@@ -34,9 +34,9 @@ serde_piecewise_default = "0.2"
 serde-aux = "3.1"
 
 # Storage
-aws-config = "0.55"
-aws-sdk-s3 = "0.25"
-deadpool-redis = "0.10"
+aws-config = "0.56"
+aws-sdk-s3 = "0.31"
+deadpool-redis = "0.13"
 
 dotenv = "0.15.0"
 envy = "0.4"
@@ -55,7 +55,6 @@ tracing-subscriber = { version = "0.3", features = ["json", "ansi"] }
 cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.10.0" }
 parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3", default-features = false, features = ["flate2"] }
 parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3" }
-gorgon = { git = "https://github.com/WalletConnect/gorgon.git", tag = "v0.5.2" }
 chrono = { version = "0.4", features = ["serde"] }
 futures-util = "0.3.28"
 tokio-stream = "0.1.12"
