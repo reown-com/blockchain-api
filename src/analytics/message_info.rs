@@ -33,7 +33,7 @@ impl MessageInfo {
         origin: Option<String>,
     ) -> Self {
         Self {
-            timestamp: gorgon::time::now(),
+            timestamp: wc::analytics::time::now(),
 
             project_id: query_params.project_id.to_owned(),
             chain_id: query_params.chain_id.to_lowercase(),
