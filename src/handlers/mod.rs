@@ -45,6 +45,7 @@ pub struct HistoryResponseBody {
 pub struct HistoryTransaction {
     pub id: String,
     pub metadata: HistoryTransactionMetadata,
+    pub transfers: Vec<HistoryTransactionTransferInfo>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
@@ -57,4 +58,43 @@ pub struct HistoryTransactionMetadata {
     pub sent_to: String,
     pub status: String,
     pub nonce: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryTransactionFungibleInfo {
+    pub name: String,
+    pub symbol: String,
+    pub icon_url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryTransactionTransferInfo {
+    pub fungible_info: Option<HistoryTransactionFungibleInfo>,
+    pub nft_info: Option<HistoryTransactionNFTInfo>,
+    pub direction: String,
+    pub value: usize,
+    pub price: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryTransactionNFTInfo {
+    pub name: String,
+    pub content: HistoryTransactionNFTContent,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryTransactionNFTContent {
+    pub preview: HistoryTransactionNFTContentItem,
+    pub detail: HistoryTransactionNFTContentItem,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryTransactionNFTContentItem {
+    pub url: String,
+    pub content_type: String,
 }

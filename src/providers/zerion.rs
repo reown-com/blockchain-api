@@ -6,7 +6,12 @@ use {
             HistoryQueryParams,
             HistoryResponseBody,
             HistoryTransaction,
+            HistoryTransactionFungibleInfo,
             HistoryTransactionMetadata,
+            HistoryTransactionNFTContent,
+            HistoryTransactionNFTContentItem,
+            HistoryTransactionNFTInfo,
+            HistoryTransactionTransferInfo,
         },
     },
     async_trait::async_trait,
@@ -52,6 +57,7 @@ pub struct ZerionTransactionsReponseBody {
     pub r#type: String,
     pub id: String,
     pub attributes: ZerionTransactionAttributes,
+    pub transfers: Vec<ZerionTransactionTransfer>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
@@ -64,6 +70,45 @@ pub struct ZerionTransactionAttributes {
     pub sent_to: String,
     pub status: String,
     pub nonce: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionTransfer {
+    pub fungible_info: ZerionTransactionFungibleInfo,
+    pub nft_info: ZerionTransactionNFTInfo,
+    pub direction: String,
+    pub value: usize,
+    pub price: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionFungibleInfo {
+    pub name: String,
+    pub symbol: String,
+    pub icon: ZerionTransactionURLItem,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionURLItem {
+    pub url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionURLandContentTypeItem {
+    pub url: String,
+    pub content_type: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionNFTContent {
+    pub preview: ZerionTransactionURLandContentTypeItem,
+    pub detail: ZerionTransactionURLandContentTypeItem,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionNFTInfo {
+    pub name: String,
+    pub content: ZerionTransactionNFTContent,
 }
 
 #[async_trait]
@@ -133,6 +178,33 @@ impl HistoryProvider for ZerionProvider {
                     sent_to: f.attributes.sent_to,
                     status: f.attributes.status,
                 },
+                transfers: f
+                    .transfers
+                    .into_iter()
+                    .map(|t| HistoryTransactionTransferInfo {
+                        fungible_info: Some(HistoryTransactionFungibleInfo {
+                            name: t.fungible_info.name,
+                            symbol: t.fungible_info.symbol,
+                            icon_url: t.fungible_info.icon.url,
+                        }),
+                        nft_info: Some(HistoryTransactionNFTInfo {
+                            name: t.nft_info.name,
+                            content: HistoryTransactionNFTContent {
+                                preview: HistoryTransactionNFTContentItem {
+                                    url: t.nft_info.content.preview.url,
+                                    content_type: t.nft_info.content.preview.content_type,
+                                },
+                                detail: HistoryTransactionNFTContentItem {
+                                    url: t.nft_info.content.detail.url,
+                                    content_type: t.nft_info.content.detail.content_type,
+                                },
+                            },
+                        }),
+                        direction: t.direction,
+                        value: t.value,
+                        price: t.price,
+                    })
+                    .collect(),
             })
             .collect();
 
