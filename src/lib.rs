@@ -65,7 +65,7 @@ mod analytics;
 pub mod env;
 pub mod error;
 mod extractors;
-mod handlers;
+pub mod handlers;
 mod json_rpc;
 mod metrics;
 pub mod profiler;
