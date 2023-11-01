@@ -135,9 +135,17 @@ jobs:
       - name: "Stop sccache server"
         run: sccache --stop-server || true
 
+  cargo-deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: EmbarkStudios/cargo-deny-action@v1
+        with:
+          command: check license
+
   publish:
     if: github.event_name != 'pull_request'
-    needs: [checks]
+    needs: [checks, cargo-deny]
     runs-on:
       group: ubuntu-runners
     steps:

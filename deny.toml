@@ -1,0 +1,27 @@
+[licenses]
+unused-allowed-license = "deny"
+copyleft = "deny"
+allow = [
+    "Apache-2.0",
+    "MIT",
+    "CC0-1.0",
+    "Unlicense",
+    "BSD-3-Clause",
+    "BSD-2-Clause",
+    "0BSD",
+    "ISC",
+    "MPL-2.0",
+]
+
+exceptions = [{ name = "unicode-ident", allow = ["Unicode-DFS-2016"] }]
+
+[licenses.private]
+ignore = true
+
+# TODO We should be able to remove `ignore-sources` once we add `publish = false` to all the crates sourced from here.
+ignore-sources = ["https://github.com/WalletConnect/utils-rs.git"]
+
+[[licenses.clarify]]
+name = "ring"
+expression = "ISC"
+license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
