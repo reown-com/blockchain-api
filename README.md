@@ -1,6 +1,10 @@
 # Blockchain API
 
-WalletConnect's Blockchain API. We do not run our own RPC nodes but instead proxy to and load balance across other popular RPC providers.
+[📚 Documentation](https://docs.walletconnect.com/cloud/blockchain-api)
+
+Blockchain RPC proxy for interacting with multiple EVM and non-EVM blockchains. Also offers higher-levels functions such as ENS resolution and transaction history. We do not run our own blockchain RPC nodes but instead proxy to and load balance across other popular RPC providers.
+
+Not to be confused with the [WalletConnect Relay](https://docs.walletconnect.com/cloud/relay).
 
 ## Usage
 
