@@ -21,7 +21,7 @@ mod omnia;
 mod pokt;
 mod publicnode;
 mod weights;
-mod zerion;
+pub mod zerion;
 mod zksync;
 mod zora;
 
