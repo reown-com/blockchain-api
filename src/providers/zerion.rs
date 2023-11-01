@@ -72,8 +72,14 @@ pub struct ZerionTransactionTransfer {
     pub fungible_info: Option<ZerionTransactionFungibleInfo>,
     pub nft_info: Option<ZerionTransactionNFTInfo>,
     pub direction: String,
+    pub quantity: ZerionTransactionTransferQuantity,
     pub value: usize,
     pub price: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionTransferQuantity {
+    pub float: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
