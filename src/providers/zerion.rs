@@ -15,6 +15,7 @@ use {
     hyper::Client,
     hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
+    tracing::log::error,
     url::Url,
 };
 
@@ -64,6 +65,52 @@ pub struct ZerionTransactionAttributes {
     pub sent_to: String,
     pub status: String,
     pub nonce: usize,
+    pub transfers: Vec<ZerionTransactionTransfer>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionTransfer {
+    pub fungible_info: Option<ZerionTransactionFungibleInfo>,
+    pub nft_info: Option<ZerionTransactionNFTInfo>,
+    pub direction: String,
+    pub quantity: ZerionTransactionTransferQuantity,
+    pub value: usize,
+    pub price: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionTransferQuantity {
+    pub numeric: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionFungibleInfo {
+    pub name: Option<String>,
+    pub symbol: Option<String>,
+    pub icon: Option<ZerionTransactionURLItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionURLItem {
+    pub url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionURLandContentTypeItem {
+    pub url: String,
+    pub content_type: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionNFTContent {
+    pub preview: Option<ZerionTransactionURLandContentTypeItem>,
+    pub detail: Option<ZerionTransactionURLandContentTypeItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionNFTInfo {
+    pub name: Option<String>,
+    pub content: Option<ZerionTransactionNFTContent>,
 }
 
 #[async_trait]
@@ -95,6 +142,10 @@ impl HistoryProvider for ZerionProvider {
         let response = self.http_client.request(hyper_request).await?;
 
         if !response.status().is_success() {
+            error!(
+                "Error on zerion transactions response. Status is not OK: {:?}",
+                response.status()
+            );
             return Err(RpcError::TransactionProviderError);
         }
 
@@ -103,7 +154,13 @@ impl HistoryProvider for ZerionProvider {
         while let Some(next) = body.next().await {
             bytes.extend_from_slice(&next?);
         }
-        let body: ZerionResponseBody = serde_json::from_slice(&bytes)?;
+        let body: ZerionResponseBody = match serde_json::from_slice(&bytes) {
+            Ok(body) => body,
+            Err(e) => {
+                error!("Error on parsing zerion transactions response: {:?}", e);
+                return Err(RpcError::TransactionProviderError);
+            }
+        };
 
         let next: Option<String> = match body.links.next {
             Some(url) => {
@@ -133,6 +190,7 @@ impl HistoryProvider for ZerionProvider {
                     sent_to: f.attributes.sent_to,
                     status: f.attributes.status,
                 },
+                transfers: f.attributes.transfers,
             })
             .collect();
 

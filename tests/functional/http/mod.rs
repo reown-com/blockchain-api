@@ -2,6 +2,7 @@ use {
     crate::{context::ServerContext, utils::send_jsonrpc_request, JSONRPC_VERSION},
     hyper::{Body, Client, Method, Request, StatusCode},
     hyper_tls::HttpsConnector,
+    rpc_proxy::handlers::HistoryResponseBody,
     test_context::test_context,
 };
 
@@ -61,4 +62,34 @@ async fn health_check(ctx: &mut ServerContext) {
     let response = client.request(request).await.unwrap();
 
     assert_eq!(response.status(), StatusCode::OK)
+}
+
+#[test_context(ServerContext)]
+#[tokio::test]
+async fn account_history_check(ctx: &mut ServerContext) {
+    let account = "0xf3ea39310011333095CFCcCc7c4Ad74034CABA63";
+    let project_id = ctx.server.project_id.clone();
+    let addr = format!(
+        "{}/v1/account/{}/history?projectId={}",
+        ctx.server.public_addr, account, project_id
+    );
+
+    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri(addr)
+        .body(Body::default())
+        .unwrap();
+
+    let response = client.request(request).await.unwrap();
+    let status = response.status();
+    assert_eq!(status, StatusCode::OK);
+
+    let bytes = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body_str = String::from_utf8_lossy(&bytes);
+
+    let json_response: HistoryResponseBody =
+        serde_json::from_str(&body_str).expect("Failed to parse response body");
+    assert!(!json_response.data.is_empty());
 }

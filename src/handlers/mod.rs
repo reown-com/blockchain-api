@@ -1,4 +1,5 @@
 use {
+    crate::providers::zerion::ZerionTransactionTransfer,
     serde::{Deserialize, Serialize},
     wc::metrics::TaskMetrics,
 };
@@ -45,6 +46,7 @@ pub struct HistoryResponseBody {
 pub struct HistoryTransaction {
     pub id: String,
     pub metadata: HistoryTransactionMetadata,
+    pub transfers: Vec<ZerionTransactionTransfer>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
