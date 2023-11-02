@@ -35,7 +35,7 @@ impl ZerionProvider {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct ZerionResponseBody {
     pub links: ZerionResponseLinks,
     pub data: Vec<ZerionTransactionsReponseBody>,
@@ -48,14 +48,14 @@ pub struct ZerionResponseLinks {
     pub next: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct ZerionTransactionsReponseBody {
     pub r#type: String,
     pub id: String,
     pub attributes: ZerionTransactionAttributes,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct ZerionTransactionAttributes {
     pub operation_type: String,
     pub hash: String,
@@ -68,14 +68,14 @@ pub struct ZerionTransactionAttributes {
     pub transfers: Vec<ZerionTransactionTransfer>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct ZerionTransactionTransfer {
     pub fungible_info: Option<ZerionTransactionFungibleInfo>,
     pub nft_info: Option<ZerionTransactionNFTInfo>,
     pub direction: String,
     pub quantity: ZerionTransactionTransferQuantity,
-    pub value: Option<usize>,
-    pub price: Option<usize>,
+    pub value: Option<f64>,
+    pub price: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
