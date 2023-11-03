@@ -148,3 +148,8 @@ variable "analytics_geoip_db_bucket_name" {
   description = "The name of the bucket containing the GeoIP database"
   type        = string
 }
+
+variable "ofac_countries" {
+  description = "The list of countries on the OFAC sanctions list"
+  type        = string
+}
