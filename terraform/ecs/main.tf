@@ -70,7 +70,7 @@ resource "aws_ecs_task_definition" "app_task" {
     {
       name : var.app_name,
       environment : [
-        { name : "RPC_PROXY_BLOCKED_COUNTRIES", value : "KP,IR,CU,SY,RU" },
+        { name : "RPC_PROXY_BLOCKED_COUNTRIES", value : var.ofac_countries },
 
         { name : "RPC_PROXY_INFURA_PROJECT_ID", value : tostring(var.infura_project_id) },
         { name : "RPC_PROXY_POKT_PROJECT_ID", value : tostring(var.pokt_project_id) },
