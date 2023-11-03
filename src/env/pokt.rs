@@ -123,5 +123,13 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Klaytn
+        (
+            "eip155:8217".into(),
+            (
+                "klaytn-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
     ])
 }

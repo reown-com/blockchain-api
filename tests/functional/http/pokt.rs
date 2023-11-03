@@ -16,7 +16,10 @@ async fn pokt_provider(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:56", "0x38").await;
 
     // Gnosis
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:100", "0x64").await
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:100", "0x64").await;
+
+    // Klaytn
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:8217", "0x2019").await;
 }
 
 #[test_context(ServerContext)]

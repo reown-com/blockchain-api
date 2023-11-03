@@ -29,6 +29,7 @@ Chain name with associated `chainId` query param to use.
 - Base Goerli (`eip155:84531`)
 - Zora (`eip155:7777777`)
 - Zora Goerli (`eip155:999`)
+- Klaytn Mainnet (`eip155:8217`)
 
 ## WebSocket RPC
 
