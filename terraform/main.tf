@@ -102,6 +102,7 @@ module "ecs" {
   zerion_api_key             = var.zerion_api_key
   prometheus_endpoint        = aws_prometheus_workspace.prometheus.prometheus_endpoint
   prometheus_workspace_id    = aws_prometheus_workspace.prometheus.id
+  ofac_countries             = var.ofac_countries
 
   autoscaling_min_capacity = var.autoscaling_min_instances
   autoscaling_max_capacity = var.autoscaling_max_instances
