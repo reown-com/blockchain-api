@@ -29,6 +29,9 @@ Chain name with associated `chainId` query param to use.
 - Base Goerli (`eip155:84531`)
 - Zora (`eip155:7777777`)
 - Zora Goerli (`eip155:999`)
+- Boba Ethereum (`eip155:288`)
+- Boba BNB (`eip155:56288`)
+- Boba BNB Testnet (`eip155:9728`)
 
 ## WebSocket RPC
 
@@ -41,7 +44,14 @@ WebSocket RPC is not recommended for production use, and may be removed in the f
 - Optimism Goerli (`eip155:420`)
 - Arbitrum (`eip155:42161`)
 - Arbitrum Goerli (`eip155:421613`)
+- Polygon (`eip155:137`)
+- Polygon Mumbai (`eip155:80001`)
 - Aurora (`eip155:1313161554`)
 - Aurora Testnet (`eip155:1313161555`)
+- Base (`eip155:8453`)
+- Base Goerli (`eip155:84531`)
 - Zora (`eip155:7777777`)
 - Zora Goerli (`eip155:999`)
+- Boba Ethereum (`eip155:288`)
+- Boba BNB (`eip155:56288`)
+- Boba BNB Testnet (`eip155:9728`)

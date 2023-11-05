@@ -20,6 +20,7 @@ mod infura;
 mod omnia;
 mod pokt;
 mod publicnode;
+mod tenderly;
 mod weights;
 pub mod zerion;
 mod zksync;
@@ -37,6 +38,7 @@ pub use {
     omnia::OmniatechProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
+    tenderly::{TenderlyProvider, TenderlyWsProvider},
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
 };
@@ -227,6 +229,7 @@ pub enum ProviderKind {
     Binance,
     ZKSync,
     Publicnode,
+    Tenderly,
     Omniatech,
     Base,
     Zora,
@@ -240,6 +243,7 @@ impl Display for ProviderKind {
             ProviderKind::Binance => "Binance",
             ProviderKind::ZKSync => "zkSync",
             ProviderKind::Publicnode => "Publicnode",
+            ProviderKind::Tenderly => "Tenderly",
             ProviderKind::Omniatech => "Omniatech",
             ProviderKind::Base => "Base",
             ProviderKind::Zora => "Zora",
@@ -255,6 +259,7 @@ impl ProviderKind {
             "Binance" => Some(Self::Binance),
             "zkSync" => Some(Self::ZKSync),
             "Publicnode" => Some(Self::Publicnode),
+            "Tenderly" => Some(Self::Tenderly),
             "Omniatech" => Some(Self::Omniatech),
             "Base" => Some(Self::Base),
             "Zora" => Some(Self::Zora),

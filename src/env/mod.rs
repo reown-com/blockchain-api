@@ -17,6 +17,7 @@ mod omnia;
 mod pokt;
 mod publicnode;
 mod server;
+mod tenderly;
 mod zksync;
 mod zora;
 
@@ -28,6 +29,7 @@ pub use {
     pokt::*,
     publicnode::*,
     server::*,
+    tenderly::*,
     zksync::*,
     zora::*,
 };

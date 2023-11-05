@@ -19,6 +19,7 @@ use {
         OmniatechConfig,
         PoktConfig,
         PublicnodeConfig,
+        TenderlyConfig,
         ZKSyncConfig,
         ZoraConfig,
     },
@@ -34,6 +35,8 @@ use {
         PoktProvider,
         ProviderRepository,
         PublicnodeProvider,
+        TenderlyProvider,
+        TenderlyWsProvider,
         ZKSyncProvider,
         ZoraProvider,
         ZoraWsProvider,
@@ -264,10 +267,13 @@ fn init_providers() -> ProviderRepository {
     providers
         .add_provider::<InfuraProvider, InfuraConfig>(InfuraConfig::new(infura_project_id.clone()));
     providers.add_provider::<ZoraProvider, ZoraConfig>(ZoraConfig::default());
+    providers.add_provider::<TenderlyProvider, TenderlyConfig>(TenderlyConfig::default());
 
+    // WebSocket Providers
     providers
         .add_ws_provider::<InfuraWsProvider, InfuraConfig>(InfuraConfig::new(infura_project_id));
     providers.add_ws_provider::<ZoraWsProvider, ZoraConfig>(ZoraConfig::default());
+    providers.add_ws_provider::<TenderlyWsProvider, TenderlyConfig>(TenderlyConfig::default());
 
     providers
 }
