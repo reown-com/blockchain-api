@@ -111,6 +111,12 @@ pub struct ZerionTransactionNFTContent {
 pub struct ZerionTransactionNFTInfo {
     pub name: Option<String>,
     pub content: Option<ZerionTransactionNFTContent>,
+    pub flags: ZerionTransactionNFTInfoFlags,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionNFTInfoFlags {
+    pub is_spam: bool,
 }
 
 #[async_trait]
