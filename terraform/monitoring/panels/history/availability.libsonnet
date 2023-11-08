@@ -18,22 +18,9 @@ local targets   = grafana.targets;
           axisSoftMax = 100,
         )
     )
-
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'sum(rate(history_lookup_counter_total{}[$__rate_interval]))',
-      refId       = "lookup",
-      hide        = true,
-    ))
-
-    .addTarget(targets.prometheus(
-      datasource  = ds.prometheus,
-      expr        = 'sum(rate(history_lookup_success_counter_total{}[$__rate_interval]))',
-      refId       = "lookup_success",
-      hide        = true,
-    ))
-    .addTarget(targets.math(
-      expr        = '($lookup_success / $lookup) * 100',
-      refId       = "Availability",
+      expr        = '(sum(rate(history_lookup_success_counter_total{}[$__rate_interval])) / sum(rate(history_lookup_counter_total{}[$__rate_interval]))) * 100',
+      refId       = "availability",
     ))
 }
