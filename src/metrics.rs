@@ -40,6 +40,9 @@ pub struct Metrics {
     pub identity_lookup_avatar_present_counter: Counter<u64>,
     pub identity_lookup_name_present_counter: Counter<u64>,
     pub websocket_connection_counter: Counter<u64>,
+    pub history_lookup_counter: Counter<u64>,
+    pub history_lookup_success_counter: Counter<u64>,
+    pub history_lookup_latency_tracker: Histogram<f64>,
 }
 
 impl Metrics {
@@ -167,6 +170,21 @@ impl Metrics {
             .with_description("The number of websocket connections")
             .init();
 
+        let history_lookup_counter = meter
+            .u64_counter("history_lookup_counter")
+            .with_description("The number of transaction history lookups")
+            .init();
+
+        let history_lookup_success_counter = meter
+            .u64_counter("history_lookup_success_counter")
+            .with_description("The number of transaction history that were successfull")
+            .init();
+
+        let history_lookup_latency_tracker = meter
+            .f64_histogram("history_lookup_latency_tracker")
+            .with_description("The latency to serve transactions history lookups")
+            .init();
+
         Metrics {
             rpc_call_counter,
             http_call_counter,
@@ -192,6 +210,9 @@ impl Metrics {
             identity_lookup_name_present_counter,
             identity_lookup_avatar_present_counter,
             websocket_connection_counter,
+            history_lookup_counter,
+            history_lookup_success_counter,
+            history_lookup_latency_tracker,
         }
     }
 }
@@ -372,5 +393,23 @@ impl Metrics {
             .add(&otel::Context::new(), 1, &[otel::KeyValue::new(
                 "chain_id", chain_id,
             )]);
+    }
+
+    pub fn add_history_lookup(&self) {
+        self.history_lookup_counter
+            .add(&otel::Context::new(), 1, &[]);
+    }
+
+    pub fn add_history_lookup_success(&self) {
+        self.history_lookup_success_counter
+            .add(&otel::Context::new(), 1, &[]);
+    }
+
+    pub fn add_history_lookup_latency(&self, latency: Duration) {
+        self.history_lookup_latency_tracker.record(
+            &otel::Context::new(),
+            latency.as_secs_f64(),
+            &[],
+        );
     }
 }

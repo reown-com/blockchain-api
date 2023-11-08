@@ -44,6 +44,8 @@ async fn handler_internal(
 
     state.validate_project_access(&query.project_id).await?;
 
+    state.metrics.add_history_lookup();
+    let latency_tracker_start = std::time::SystemTime::now();
     let response = state
         .providers
         .history_provider
@@ -52,6 +54,12 @@ async fn handler_internal(
         .tap_err(|e| {
             error!("Failed to call transaction history with {}", e);
         })?;
+
+    let latency_tracker = latency_tracker_start
+        .elapsed()
+        .unwrap_or(std::time::Duration::from_secs(0));
+    state.metrics.add_history_lookup_success();
+    state.metrics.add_history_lookup_latency(latency_tracker);
 
     Ok(Json(response).into_response())
 }
