@@ -13,9 +13,15 @@ use {
         geoip::{self, MaxMindResolver, Resolver},
     },
 };
-pub use {config::Config, identity_lookup_info::IdentityLookupInfo, message_info::MessageInfo};
+pub use {
+    config::Config,
+    history_lookup_info::HistoryLookupInfo,
+    identity_lookup_info::IdentityLookupInfo,
+    message_info::MessageInfo,
+};
 
 mod config;
+mod history_lookup_info;
 mod identity_lookup_info;
 mod message_info;
 
@@ -23,6 +29,7 @@ mod message_info;
 pub struct RPCAnalytics {
     messages: Analytics<MessageInfo>,
     identity_lookups: Analytics<IdentityLookupInfo>,
+    history_lookups: Analytics<HistoryLookupInfo>,
     geoip_resolver: Option<Arc<MaxMindResolver>>,
 }
 
@@ -48,6 +55,7 @@ impl RPCAnalytics {
         Self {
             messages: Analytics::new(NoopCollector),
             identity_lookups: Analytics::new(NoopCollector),
+            history_lookups: Analytics::new(NoopCollector),
             geoip_resolver: None,
         }
     }
@@ -85,6 +93,19 @@ impl RPCAnalytics {
                 export_prefix: "blockchain-api/identity-lookups",
                 export_name: "identity_lookups",
                 file_extension: "parquet",
+                bucket_name: bucket_name.clone(),
+                s3_client: s3_client.clone(),
+                node_ip: node_ip.clone(),
+            });
+
+            Analytics::new(ParquetWriter::new(opts.clone(), exporter)?)
+        };
+
+        let history_lookups = {
+            let exporter = AwsExporter::new(AwsOpts {
+                export_prefix: "blockchain-api/history-lookups",
+                export_name: "history_lookups",
+                file_extension: "parquet",
                 bucket_name,
                 s3_client,
                 node_ip,
@@ -96,6 +117,7 @@ impl RPCAnalytics {
         Ok(Self {
             messages,
             identity_lookups,
+            history_lookups,
             geoip_resolver,
         })
     }
@@ -106,6 +128,10 @@ impl RPCAnalytics {
 
     pub fn identity_lookup(&self, data: IdentityLookupInfo) {
         self.identity_lookups.collect(data);
+    }
+
+    pub fn history_lookup(&self, data: HistoryLookupInfo) {
+        self.history_lookups.collect(data);
     }
 
     pub fn geoip_resolver(&self) -> &Option<Arc<MaxMindResolver>> {
