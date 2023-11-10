@@ -1,27 +1,14 @@
-terraform {
-  required_version = "~> 1.0"
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0.0"
-    }
-  }
-}
-
 locals {
   cpu    = var.environment != "dev" ? 1024 : 256
   memory = 2 * local.cpu # 2x is minimum for ECS
 
-  REDIS_MAX_CONNECTIONS = "128"
-  // TODO: version the RPC image so we can pin it
-  # pinned_latest_tag     = sort(setsubtract(data.aws_ecr_image.service_image.image_tags, ["latest"]))[0]
-  // TODO: allow caller to pin version
-  image_tag = var.ecr_app_version == "latest" ? data.aws_ecr_image.service_image.image_tags[0] : var.ecr_app_version # TODO: var.ecr_app_version == "latest" ? local.pinned_latest_tag : var.ecr_app_version
-  image     = "${var.ecr_repository_url}:${local.image_tag}"
-
   file_descriptor_soft_limit = pow(2, 18)
   file_descriptor_hard_limit = local.file_descriptor_soft_limit * 2
+
+  image_tag = var.ecr_app_version == "latest" ? data.aws_ecr_image.service_image.image_tags[0] : var.ecr_app_version
+  image     = "${var.ecr_repository_url}:${local.image_tag}"
+
+  otel_port = var.port + 1
 }
 
 data "aws_ecr_image" "service_image" {
@@ -70,28 +57,31 @@ resource "aws_ecs_task_definition" "app_task" {
     {
       name : var.app_name,
       environment : [
-        { name : "RPC_PROXY_BLOCKED_COUNTRIES", value : var.ofac_countries },
+        { name = "RPC_PROXY_PORT", value = tostring(var.port) },
+        { name = "RPC_PROXY_PROMETHEUS_PORT", value = tostring(local.otel_port) },
 
-        { name : "RPC_PROXY_INFURA_PROJECT_ID", value : tostring(var.infura_project_id) },
-        { name : "RPC_PROXY_POKT_PROJECT_ID", value : tostring(var.pokt_project_id) },
-        { name : "RPC_PROXY_ZERION_API_KEY", value : tostring(var.zerion_api_key) },
+        { name = "RPC_PROXY_GEOIP_DB_BUCKET", value = var.geoip_db_bucket_name },
+        { name = "RPC_PROXY_GEOIP_DB_KEY", value = var.geoip_db_key },
 
-        { name : "RPC_PROXY_REGISTRY_API_URL", value : var.registry_api_endpoint },
-        { name : "RPC_PROXY_REGISTRY_API_AUTH_TOKEN", value : var.registry_api_auth_token },
-        { name : "RPC_PROXY_REGISTRY_PROJECT_DATA_CACHE_TTL", value : tostring(var.project_data_cache_ttl) },
+        { name = "RPC_PROXY_BLOCKED_COUNTRIES", value = var.ofac_countries },
 
-        { name : "RPC_PROXY_STORAGE_REDIS_MAX_CONNECTIONS", value : tostring(local.REDIS_MAX_CONNECTIONS) },
-        { name : "RPC_PROXY_STORAGE_PROJECT_DATA_REDIS_ADDR_READ", value : "redis://${var.project_data_redis_endpoint_read}/0" },
-        { name : "RPC_PROXY_STORAGE_PROJECT_DATA_REDIS_ADDR_WRITE", value : "redis://${var.project_data_redis_endpoint_write}/0" },
-        { name : "RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_READ", value : "redis://${var.identity_cache_redis_endpoint_read}/1" },
-        { name : "RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_WRITE", value : "redis://${var.identity_cache_redis_endpoint_write}/1" },
+        { name = "RPC_PROXY_PROVIDER_INFURA_PROJECT_ID", value = var.infura_project_id },
+        { name = "RPC_PROXY_PROVIDER_POKT_PROJECT_ID", value = var.pokt_project_id },
+        { name = "RPC_PROXY_PROVIDER_ZERION_API_KEY", value = var.zerion_api_key },
+        { name = "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL", value = "http://127.0.0.1:8080/workspaces/${var.prometheus_workspace_id}" },
+        { name = "RPC_PROXY_PROVIDER_PROMETHEUS_WORKSPACE_HEADER", value = "aps-workspaces.${var.region}.amazonaws.com" },
 
-        { "name" : "RPC_PROXY_ANALYTICS_EXPORT_BUCKET", "value" : var.analytics_data_lake_bucket_name },
-        { "name" : "RPC_PROXY_ANALYTICS_GEOIP_DB_BUCKET", "value" : var.analytics_geoip_db_bucket_name },
-        { "name" : "RPC_PROXY_ANALYTICS_GEOIP_DB_KEY", "value" : var.analytics_geoip_db_key },
+        { name = "RPC_PROXY_REGISTRY_API_URL", value = var.registry_api_endpoint },
+        { name = "RPC_PROXY_REGISTRY_API_AUTH_TOKEN", value = var.registry_api_auth_token },
+        { name = "RPC_PROXY_REGISTRY_PROJECT_DATA_CACHE_TTL", value = tostring(var.project_cache_ttl) },
 
-        { "name" : "SIG_PROXY_URL", "value" : "http://127.0.0.1:8080/workspaces/${var.prometheus_workspace_id}" },
-        { "name" : "SIG_PROM_WORKSPACE_HEADER", "value" : "aps-workspaces.${var.region}.amazonaws.com" },
+        { name = "RPC_PROXY_STORAGE_REDIS_MAX_CONNECTIONS", value = tostring(var.redis_max_connections) },
+        { name = "RPC_PROXY_STORAGE_PROJECT_DATA_REDIS_ADDR_READ", value = "redis://${var.project_cache_endpoint_read}/0" },
+        { name = "RPC_PROXY_STORAGE_PROJECT_DATA_REDIS_ADDR_WRITE", value = "redis://${var.project_cache_endpoint_write}/0" },
+        { name = "RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_READ", value = "redis://${var.identity_cache_endpoint_read}/1" },
+        { name = "RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_WRITE", value = "redis://${var.identity_cache_endpoint_write}/1" },
+
+        { name = "RPC_PROXY_ANALYTICS_EXPORT_BUCKET", value = var.analytics_datalake_bucket_name },
       ],
       image : local.image,
       essential : true,

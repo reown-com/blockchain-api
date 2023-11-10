@@ -9,10 +9,13 @@ use {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
-    pub private_port: u16,
+    pub prometheus_port: u16,
     pub log_level: String,
     pub external_ip: Option<IpAddr>,
+    pub s3_endpoint: Option<String>,
     pub blocked_countries: Vec<String>,
+    pub geoip_db_bucket: Option<String>,
+    pub geoip_db_key: Option<String>,
 }
 
 impl Default for ServerConfig {
@@ -20,10 +23,13 @@ impl Default for ServerConfig {
         ServerConfig {
             host: "127.0.0.1".to_string(),
             port: 3000,
-            private_port: 4000,
+            prometheus_port: 4000,
             log_level: "INFO".to_string(),
             external_ip: None,
+            s3_endpoint: None,
             blocked_countries: Vec::new(),
+            geoip_db_bucket: None,
+            geoip_db_key: None,
         }
     }
 }

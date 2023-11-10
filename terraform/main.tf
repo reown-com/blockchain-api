@@ -107,17 +107,17 @@ module "ecs" {
   autoscaling_min_capacity = var.autoscaling_min_instances
   autoscaling_max_capacity = var.autoscaling_max_instances
 
-  registry_api_endpoint               = var.registry_api_endpoint
-  registry_api_auth_token             = var.registry_api_auth_token
-  project_data_cache_ttl              = var.project_data_cache_ttl
-  project_data_redis_endpoint_read    = module.redis.endpoint
-  project_data_redis_endpoint_write   = module.redis.endpoint
-  identity_cache_redis_endpoint_read  = module.redis.endpoint
-  identity_cache_redis_endpoint_write = module.redis.endpoint
+  registry_api_endpoint         = var.registry_api_endpoint
+  registry_api_auth_token       = var.registry_api_auth_token
+  project_cache_ttl             = var.project_data_cache_ttl
+  project_cache_endpoint_read   = module.redis.endpoint
+  project_cache_endpoint_write  = module.redis.endpoint
+  identity_cache_endpoint_read  = module.redis.endpoint
+  identity_cache_endpoint_write = module.redis.endpoint
 
-  analytics_data_lake_bucket_name = local.analytics_data_lake_bucket_name
+  analytics_datalake_bucket_name  = local.analytics_data_lake_bucket_name
   analytics_data_lake_kms_key_arn = var.analytics_data_lake_kms_key_arn
-  analytics_geoip_db_bucket_name  = local.analytics_geoip_db_bucket_name
+  geoip_db_bucket_name            = local.analytics_geoip_db_bucket_name
 }
 
 module "redis" {

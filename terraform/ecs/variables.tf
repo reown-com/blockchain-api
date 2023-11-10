@@ -23,6 +23,12 @@ variable "port" {
   type = number
 }
 
+variable "redis_max_connections" {
+  description = "The maximum number of connections to the Redis server"
+  type        = number
+  default     = 128
+}
+
 variable "private_port" {
   type = number
 }
@@ -80,23 +86,23 @@ variable "registry_api_auth_token" {
   sensitive = true
 }
 
-variable "project_data_cache_ttl" {
+variable "project_cache_ttl" {
   type = number
 }
 
-variable "project_data_redis_endpoint_read" {
+variable "project_cache_endpoint_read" {
   type = string
 }
 
-variable "project_data_redis_endpoint_write" {
+variable "project_cache_endpoint_write" {
   type = string
 }
 
-variable "identity_cache_redis_endpoint_read" {
+variable "identity_cache_endpoint_read" {
   type = string
 }
 
-variable "identity_cache_redis_endpoint_write" {
+variable "identity_cache_endpoint_write" {
   type = string
 }
 
@@ -128,7 +134,7 @@ variable "vpc_cidr" {
   type = string
 }
 
-variable "analytics_data_lake_bucket_name" {
+variable "analytics_datalake_bucket_name" {
   description = "The name of the data-lake bucket."
   type        = string
 }
@@ -138,13 +144,13 @@ variable "analytics_data_lake_kms_key_arn" {
   type        = string
 }
 
-variable "analytics_geoip_db_key" {
+variable "geoip_db_key" {
   description = "The key to the GeoIP database"
   type        = string
   default     = "GeoLite2-City.mmdb"
 }
 
-variable "analytics_geoip_db_bucket_name" {
+variable "geoip_db_bucket_name" {
   description = "The name of the bucket containing the GeoIP database"
   type        = string
 }

@@ -4,12 +4,22 @@ use {
         error,
         profiler::ProfilerConfig,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
-        providers::{ProviderKind, Weight},
+        providers::{ProviderKind, ProvidersConfig, Weight},
     },
     serde::de::DeserializeOwned,
     std::{collections::HashMap, fmt::Display},
 };
-
+pub use {
+    base::*,
+    binance::*,
+    infura::*,
+    omnia::*,
+    pokt::*,
+    publicnode::*,
+    server::*,
+    zksync::*,
+    zora::*,
+};
 mod base;
 mod binance;
 mod infura;
@@ -48,6 +58,7 @@ pub struct Config {
     pub storage: StorageConfig,
     pub analytics: AnalyticsConfig,
     pub profiler: ProfilerConfig,
+    pub providers: ProvidersConfig,
 }
 
 impl Config {
@@ -58,6 +69,7 @@ impl Config {
             storage: from_env("RPC_PROXY_STORAGE_")?,
             analytics: from_env("RPC_PROXY_ANALYTICS_")?,
             profiler: from_env("RPC_PROXY_PROFILER_")?,
+            providers: from_env("RPC_PROXY_PROVIDER_")?,
         })
     }
 }
@@ -80,6 +92,7 @@ mod test {
             env::{Config, ServerConfig},
             profiler::ProfilerConfig,
             project,
+            providers::ProvidersConfig,
         },
         std::net::Ipv4Addr,
     };
@@ -90,10 +103,12 @@ mod test {
             // Server config.
             ("RPC_PROXY_HOST", "1.2.3.4"),
             ("RPC_PROXY_PORT", "123"),
-            ("RPC_PROXY_PRIVATE_PORT", "234"),
+            ("RPC_PROXY_PROMETHEUS_PORT", "234"),
             ("RPC_PROXY_LOG_LEVEL", "TRACE"),
             ("RPC_PROXY_EXTERNAL_IP", "2.3.4.5"),
             ("RPC_PROXY_BLOCKED_COUNTRIES", "KP,IR,CU,SY"),
+            ("RPC_PROXY_GEOIP_DB_BUCKET", "GEOIP_DB_BUCKET"),
+            ("RPC_PROXY_GEOIP_DB_KEY", "GEOIP_DB_KEY"),
             // Registry config.
             ("RPC_PROXY_REGISTRY_API_URL", "API_URL"),
             ("RPC_PROXY_REGISTRY_API_AUTH_TOKEN", "API_AUTH_TOKEN"),
@@ -119,8 +134,17 @@ mod test {
             // Analytics config.
             ("RPC_PROXY_ANALYTICS_S3_ENDPOINT", "s3://127.0.0.1"),
             ("RPC_PROXY_ANALYTICS_EXPORT_BUCKET", "EXPORT_BUCKET"),
-            ("RPC_PROXY_ANALYTICS_GEOIP_DB_BUCKET", "GEOIP_DB_BUCKET"),
-            ("RPC_PROXY_ANALYTICS_GEOIP_DB_KEY", "GEOIP_DB_KEY"),
+            ("RPC_PROXY_PROVIDER_INFURA_PROJECT_ID", "INFURA_PROJECT_ID"),
+            ("RPC_PROXY_PROVIDER_POKT_PROJECT_ID", "POKT_PROJECT_ID"),
+            ("RPC_PROXY_PROVIDER_ZERION_API_KEY", "ZERION_API_KEY"),
+            (
+                "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL",
+                "PROMETHEUS_QUERY_URL",
+            ),
+            (
+                "RPC_PROXY_PROVIDER_PROMETHEUS_WORKSPACE_HEADER",
+                "PROMETHEUS_WORKSPACE_HEADER",
+            ),
         ];
 
         values.iter().for_each(set_env_var);
@@ -129,15 +153,18 @@ mod test {
             server: ServerConfig {
                 host: "1.2.3.4".to_owned(),
                 port: 123,
-                private_port: 234,
+                prometheus_port: 234,
                 log_level: "TRACE".to_owned(),
                 external_ip: Some(Ipv4Addr::new(2, 3, 4, 5).into()),
                 blocked_countries: vec![
                     "KP".to_owned(),
                     "IR".to_owned(),
                     "CU".to_owned(),
-                    "SY".to_owned()
+                    "SY".to_owned(),
                 ],
+                s3_endpoint: None,
+                geoip_db_bucket: Some("GEOIP_DB_BUCKET".to_owned()),
+                geoip_db_key: Some("GEOIP_DB_KEY".to_owned()),
             },
             registry: project::Config {
                 api_url: Some("API_URL".to_owned()),
@@ -156,10 +183,15 @@ mod test {
             analytics: analytics::Config {
                 s3_endpoint: Some("s3://127.0.0.1".to_owned()),
                 export_bucket: Some("EXPORT_BUCKET".to_owned()),
-                geoip_db_bucket: Some("GEOIP_DB_BUCKET".to_owned()),
-                geoip_db_key: Some("GEOIP_DB_KEY".to_owned()),
             },
             profiler: ProfilerConfig {},
+            providers: ProvidersConfig {
+                prometheus_query_url: Some("PROMETHEUS_QUERY_URL".to_owned()),
+                prometheus_workspace_header: Some("PROMETHEUS_WORKSPACE_HEADER".to_owned()),
+                infura_project_id: "INFURA_PROJECT_ID".to_string(),
+                pokt_project_id: "POKT_PROJECT_ID".to_string(),
+                zerion_api_key: Some("ZERION_API_KEY".to_owned()),
+            },
         });
 
         values.iter().for_each(reset_env_var);
