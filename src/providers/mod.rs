@@ -45,6 +45,16 @@ static WS_PROXY_TASK_METRICS: TaskMetrics = TaskMetrics::new("ws_proxy_task");
 
 pub type WeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
+pub struct ProvidersConfig {
+    pub prometheus_query_url: Option<String>,
+    pub prometheus_workspace_header: Option<String>,
+
+    pub infura_project_id: String,
+    pub pokt_project_id: String,
+    pub zerion_api_key: Option<String>,
+}
+
 pub struct ProviderRepository {
     providers: HashMap<ProviderKind, Arc<dyn RpcProvider>>,
     ws_providers: HashMap<ProviderKind, Arc<dyn RpcWsProvider>>,
@@ -60,22 +70,28 @@ pub struct ProviderRepository {
 
 impl ProviderRepository {
     #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
+    pub fn new(config: &ProvidersConfig) -> Self {
         let prometheus_client = {
-            let prometheus_query_url =
-                std::env::var("SIG_PROXY_URL").unwrap_or("http://localhost:8080/".into());
+            let prometheus_query_url = config
+                .prometheus_query_url
+                .clone()
+                .unwrap_or("http://localhost:8080/".into());
 
             prometheus_http_query::Client::try_from(prometheus_query_url)
                 .expect("Failed to connect to prometheus")
         };
 
-        let prometheus_workspace_header =
-            std::env::var("SIG_PROM_WORKSPACE_HEADER").unwrap_or("localhost:9090".into());
+        let prometheus_workspace_header = config
+            .prometheus_workspace_header
+            .clone()
+            .unwrap_or("localhost:9090".into());
 
         // Don't crash the application if the ZERION_API_KEY is not set
         // TODO: find a better way to handle this
-        let zerion_api_key =
-            std::env::var("RPC_PROXY_ZERION_API_KEY").unwrap_or("ZERION_KEY_UNDEFINED".into());
+        let zerion_api_key = config
+            .zerion_api_key
+            .clone()
+            .unwrap_or("ZERION_KEY_UNDEFINED".into());
 
         let history_provider = Arc::new(ZerionProvider::new(zerion_api_key));
 
