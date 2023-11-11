@@ -117,7 +117,7 @@ resource "aws_ecs_task_definition" "app_task" {
     },
     {
       name : "aws-otel-collector",
-      image : "public.ecr.aws/aws-observability/aws-otel-collector:latest",
+      image : "public.ecr.aws/aws-observability/aws-otel-collector:v0.31.0",
       environment : [
         { name : "AWS_PROMETHEUS_SCRAPING_ENDPOINT", value : "0.0.0.0:${var.private_port}" },
         { name : "AWS_PROMETHEUS_ENDPOINT", value : "${var.prometheus_endpoint}api/v1/remote_write" }
