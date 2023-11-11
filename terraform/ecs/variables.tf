@@ -29,10 +29,6 @@ variable "redis_max_connections" {
   default     = 128
 }
 
-variable "private_port" {
-  type = number
-}
-
 variable "acm_certificate_arn" {
   type = string
 }

@@ -90,7 +90,6 @@ module "ecs" {
   vpc_id                     = module.vpc.vpc_id
   private_route_table_ids    = module.vpc.private_route_table_ids
   port                       = 3000
-  private_port               = 4000
   acm_certificate_arn        = module.dns.certificate_arn
   fqdn                       = local.fqdn
   route53_zone_id            = module.dns.zone_id
