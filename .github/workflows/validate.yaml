@@ -19,7 +19,9 @@ on:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    # Compiles Rust logic so let's use the runners
+    runs-on:
+      group: ubuntu-runners
     steps:
       - name: Checkout
         uses: actions/checkout@v3
