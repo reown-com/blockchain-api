@@ -6,7 +6,7 @@ use {
     },
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
-    hyper::{self, client::HttpConnector, Client, Method},
+    hyper::{self, client::HttpConnector, Client, Method, StatusCode},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
 };
@@ -83,8 +83,17 @@ impl RpcProvider for PoktProvider {
             .body(hyper::body::Body::from(body))?;
 
         let response = self.client.request(hyper_request).await?;
+        let body = hyper::body::to_bytes(response.into_body()).await?;
 
-        Ok(response.into_response())
+        if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+            if let Some(error) = response.error {
+                if error.code == -32004 {
+                    return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response());
+                }
+            }
+        }
+
+        Ok(body.into_response())
     }
 }
 
