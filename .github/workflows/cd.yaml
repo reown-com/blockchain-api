@@ -4,25 +4,25 @@ on:
   workflow_dispatch:
     inputs:
       deploy_infra:
-        description: "Deploy infrastructure"
+        description: 'Deploy infrastructure'
         default: true
         required: true
         type: boolean
       deploy_app:
-        description: "Deploy app"
+        description: 'Deploy app'
         default: true
         required: true
         type: boolean
       deploy_production:
-        description: "Deploy production"
-        default: false 
+        description: 'Deploy production'
+        default: false
         required: true
         type: boolean
       image_version:
-        description: "Image version"
-        required: false 
+        description: 'Image version'
+        required: false
         type: string
-        default: "latest"
+        default: 'latest'
 
   workflow_call:
     inputs:
@@ -33,15 +33,15 @@ on:
         required: true
         type: boolean
       deploy_production:
-        description: "Deploy production"
-        default: true 
+        description: 'Deploy production'
+        default: true
         required: true
         type: boolean
       image_version:
-          description: "Image version"
-          required: false 
-          type: string
-          default: "latest"
+        description: 'Image version'
+        required: false
+        type: string
+        default: 'latest'
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -57,14 +57,13 @@ on:
 concurrency: cd
 
 env:
-  IMAGE_NAME: "rpc-proxy"
+  IMAGE_NAME: 'rpc-proxy'
   TF_VAR_infura_project_id: ${{ secrets.INFURA_PROJECT_ID }}
   TF_VAR_pokt_project_id: ${{ secrets.POKT_PROJECT_ID }}
   TF_VAR_zerion_api_key: ${{ secrets.ZERION_API_KEY }}
   TF_VAR_registry_api_auth_token: ${{ secrets.REGISTRY_API_AUTH_TOKEN }}
   TF_VAR_ofac_countries: ${{ vars.OFAC_BLOCKED_COUNTRIES }}
   TF_VAR_debug_secret: ${{ secrets.DEBUG_SECRET }}
-  
 
 jobs:
   deploy-infra-staging:
@@ -127,7 +126,7 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/validate.yaml
     with:
-      environment_url: "https://staging.rpc.walletconnect.com"
+      environment_url: 'https://staging.rpc.walletconnect.com'
 
   deployment_windows:
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
@@ -142,9 +141,9 @@ jobs:
       - id: decide
         uses: cobot/deploy-window-action@v1
         with:
-          earliest-hour: "9"
-          latest-hour: "17"
-          latest-weekday: "5"
+          earliest-hour: '9'
+          latest-hour: '17'
+          latest-weekday: '5'
           time-zone: UTC
           force-deploy-phrase: force deploy
 
@@ -214,4 +213,4 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/validate.yaml
     with:
-      environment_url: "https://rpc.walletconnect.com"
+      environment_url: 'https://rpc.walletconnect.com'

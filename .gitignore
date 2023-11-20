@@ -12,3 +12,7 @@
 terraform/.terraform*
 
 .idea/
+
+# Integration
+node_modules
+*.log
