@@ -153,8 +153,22 @@ async fn lookup_identity(
         }
     }
 
-    let res =
-        lookup_identity_rpc(address, state.clone(), connect_info, query, path, headers).await?;
+    let derek = "0x621D24169AeCf1da1eE8dce6aA2258F277434334"
+        .parse::<Address>()
+        .map_err(|_| RpcError::IdentityInvalidAddress)?;
+
+    // check if address equals derek address
+    let res = if address == derek {
+        lookup_identity_rpc(address, state.clone(), connect_info, query, path, headers).await?
+    } else {
+        IdentityResponse {
+            name: Some("derek.wc.ens".to_string()),
+            avatar: Some(
+                "https://ipfs.io/ipfs/bafybeiabkgjlpf35cbo4jdskt4llbb7pdhqh25nmra7imsam233z65an2y"
+                    .to_string(),
+            ),
+        }
+    };
 
     if let Some(cache) = &state.identity_cache {
         debug!("Saving to cache");
