@@ -1,12 +1,11 @@
-use axum::Json;
-
 use {
     super::{PortfolioQueryParams, HANDLER_TASK_METRICS},
     crate::{error::RpcError, state::AppState},
     axum::{
         body::Bytes,
         extract::{ConnectInfo, MatchedPath, Path, Query, State},
-        response::{Response, IntoResponse},
+        response::{IntoResponse, Response},
+        Json,
     },
     ethers::abi::Address,
     hyper::HeaderMap,
