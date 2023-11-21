@@ -37,15 +37,16 @@ pub struct PortfolioQueryParams {
 #[serde(rename_all = "camelCase")]
 pub struct PortfolioResponseBody {
     pub data: Vec<PortfolioPosition>,
-    // pub next: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PortfolioPosition {
     pub id: String,
-    // pub metadata: HistoryTransactionMetadata,
-    // pub transfers: Vec<ZerionTransactionTransfer>,
+    // pub price: f32,
+    // pub quantity: String,
+    pub name: String,
+    pub symbol: String,
 }
 
 // TODO: https://developers.zerion.io/reference/listwallettransactions
