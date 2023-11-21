@@ -8,6 +8,7 @@ pub mod health;
 pub mod history;
 pub mod identity;
 pub mod metrics;
+pub mod portfolio;
 pub mod proxy;
 pub mod ws_proxy;
 
@@ -23,6 +24,12 @@ pub struct RpcQueryParams {
 #[derive(Serialize)]
 pub struct SuccessResponse {
     status: String,
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PortfolioQueryParams {
+    pub project_id: String,
 }
 
 // TODO: https://developers.zerion.io/reference/listwallettransactions
