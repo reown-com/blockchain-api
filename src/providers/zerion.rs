@@ -291,8 +291,6 @@ impl PortfolioProvider for ZerionProvider {
                 .into_iter()
                 .map(|f| PortfolioPosition {
                     id: f.id,
-                    // price: f.attributes.price,
-                    // quantity: f.attributes.quantity.numeric,
                     name: f.attributes.fungible_info.name,
                     symbol: f.attributes.fungible_info.symbol,
                 })
