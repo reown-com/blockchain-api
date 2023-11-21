@@ -1,5 +1,5 @@
 locals {
-  cpu    = var.environment != "dev" ? 1024 : 256
+  cpu    = var.environment != "dev" ? 2048 : 256
   memory = 2 * local.cpu # 2x is minimum for ECS
 
   file_descriptor_soft_limit = pow(2, 18)
