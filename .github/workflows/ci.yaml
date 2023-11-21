@@ -3,17 +3,17 @@ name: ci
 on:
   pull_request:
     paths-ignore:
-#      - ".github/**"
-      - "terraform/**"
-      - "docs/**"
-      - "README.md"
+      #      - ".github/**"
+      - 'terraform/**'
+      - 'docs/**'
+      - 'README.md'
 
   push:
-    branches: ["master"]
+    branches: ['master']
     paths-ignore:
-      - ".github/**"
-      - "terraform/**"
-      - "README.md"
+      - '.github/**'
+      - 'terraform/**'
+      - 'README.md'
 
 concurrency:
   # Support push/pr as event types with different behaviors each:
@@ -24,12 +24,12 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  IMAGE_NAME: "rpc-proxy"
-  AWS_REGION: "eu-central-1"
+  IMAGE_NAME: 'rpc-proxy'
+  AWS_REGION: 'eu-central-1'
 
 jobs:
   checks:
-    name: "Check / ${{ matrix.cargo.name }}"
+    name: 'Check / ${{ matrix.cargo.name }}'
     runs-on:
       group: ubuntu-runners
     strategy:
@@ -38,12 +38,12 @@ jobs:
         os:
           - ubuntu-latest
         cargo:
-          - name: "Clippy"
+          - name: 'Clippy'
             cmd: clippy
             args: --all-features --tests -- -D clippy::all
             cache: {}
             rust: nightly
-          - name: "Formatting"
+          - name: 'Formatting'
             cmd: fmt
             args: -- --check
             cache: {}
@@ -54,7 +54,7 @@ jobs:
           #   args: --lib --bins
           #   cache: {}
           #   rust: nightly
-          - name: "Unit Tests (all features)"
+          - name: 'Unit Tests (all features)'
             cmd: test
             args: --all-features --lib --bins
             cache: {}
@@ -77,7 +77,7 @@ jobs:
           submodules: recursive
 
       # Install sccache
-      - name: "Install sccache"
+      - name: 'Install sccache'
         if: matrix.os == 'ubuntu-latest'
         env:
           SCCACHE_URL: https://github.com/mozilla/sccache/releases/download
@@ -89,7 +89,7 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       # Install Rust toolchain
-      - name: "Install Rust ${{ matrix.cargo.rust }}"
+      - name: 'Install Rust ${{ matrix.cargo.rust }}'
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.cargo.rust }}
@@ -112,12 +112,12 @@ jobs:
             ${{ runner.os }}-sccache-
 
       # Run job
-      - name: "Start sccache server"
+      - name: 'Start sccache server'
         run: |
           sccache --stop-server || true
           sccache --start-server
 
-      - name: "Task ${{ matrix.cargo.name }}"
+      - name: 'Task ${{ matrix.cargo.name }}'
         env:
           TEST_RPC_PROXY_PROJECT_ID: ${{ secrets.PROJECT_ID }}
           RPC_PROXY_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
@@ -129,10 +129,10 @@ jobs:
           command: ${{ matrix.cargo.cmd }}
           args: ${{ matrix.cargo.args }}
 
-      - name: "Print sccache stats"
+      - name: 'Print sccache stats'
         run: sccache --show-stats
 
-      - name: "Stop sccache server"
+      - name: 'Stop sccache server'
         run: sccache --stop-server || true
 
   cargo-deny:
@@ -157,7 +157,7 @@ jobs:
           fetch-depth: 0
 
       # Install Rust toolchain
-      - name: "Install Rust toolchain (stable)"
+      - name: 'Install Rust toolchain (stable)'
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -165,7 +165,7 @@ jobs:
           default: true
 
       # Setup Buildkit
-      - name: "Install Docker Buildx"
+      - name: 'Install Docker Buildx'
         uses: docker/setup-buildx-action@v1
 
       - name: Cache Docker layers

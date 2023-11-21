@@ -137,7 +137,6 @@ jobs:
               body: output
             })
 
-
   kick-off-cd:
     needs: [fmt, tfsec, tflint]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
