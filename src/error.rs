@@ -46,6 +46,9 @@ pub enum RpcError {
     #[error("Failed to reach the transaction provider")]
     TransactionProviderError,
 
+    #[error("Failed to reach the portfolio provider")]
+    PortfolioProviderError,
+
     #[error(transparent)]
     Cerberus(#[from] cerberus::project::AccessError),
 

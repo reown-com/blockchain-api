@@ -1,3 +1,7 @@
+use crate::handlers::{PortfolioResponseBody, PortfolioQueryParams, PortfolioPosition};
+
+use super::PortfolioProvider;
+
 use {
     super::HistoryProvider,
     crate::{
@@ -35,10 +39,17 @@ impl ZerionProvider {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(untagged)]
+pub enum ZerionDataResponse {
+    Transactions(Vec<ZerionTransactionsReponseBody>),
+    Portfolio(Vec<ZerionPortfolioResponseBody>),
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct ZerionResponseBody {
     pub links: ZerionResponseLinks,
-    pub data: Vec<ZerionTransactionsReponseBody>,
+    pub data: ZerionDataResponse,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
@@ -46,6 +57,13 @@ pub struct ZerionResponseLinks {
     #[serde(rename = "self")]
     pub self_id: String,
     pub next: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionPortfolioResponseBody {
+    pub r#type: String,
+    pub id: String,
+    // pub attributes: ZerionTransactionAttributes,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -182,9 +200,8 @@ impl HistoryProvider for ZerionProvider {
             None => None,
         };
 
-        let transactions: Vec<HistoryTransaction> = body
-            .data
-            .into_iter()
+        let transactions = if let ZerionDataResponse::Transactions(transactions) = body.data {
+            transactions.into_iter()
             .map(|f| HistoryTransaction {
                 id: f.id,
                 metadata: HistoryTransactionMetadata {
@@ -198,11 +215,91 @@ impl HistoryProvider for ZerionProvider {
                 },
                 transfers: f.attributes.transfers,
             })
-            .collect();
+            .collect()
+        } else {
+            return Err(RpcError::TransactionProviderError);
+        };
 
         Ok(HistoryResponseBody {
             data: transactions,
             next,
         })
+    }
+}
+
+#[async_trait]
+impl PortfolioProvider for ZerionProvider {
+    async fn get_portfolio(
+        &self,
+        address: String,
+        body: Bytes,
+        params: PortfolioQueryParams,
+    ) -> RpcResult<PortfolioResponseBody> {
+        let base = format!(
+            "https://api.zerion.io/v1/wallets/{}/positions/?",
+            &address
+        );
+        let mut url = Url::parse(&base).map_err(|_| RpcError::HistoryParseCursorError)?;
+        url.query_pairs_mut()
+            .append_pair("currency", &params.currency.unwrap_or("usd".to_string()));
+
+        // if let Some(cursor) = params.cursor {
+        //     url.query_pairs_mut().append_pair("page[after]", &cursor);
+        // }
+
+        let hyper_request = hyper::http::Request::builder()
+            .uri(url.as_str())
+            .header("Content-Type", "application/json")
+            .header("authorization", format!("Basic {}", self.api_key))
+            .body(hyper::body::Body::from(body))?;
+
+        let response = self.http_client.request(hyper_request).await?;
+
+        if !response.status().is_success() {
+            error!(
+                "Error on zerion portfolio response. Status is not OK: {:?}",
+                response.status()
+            );
+            return Err(RpcError::TransactionProviderError);
+        }
+
+        let mut body = response.into_body();
+        let mut bytes = Vec::new();
+        while let Some(next) = body.next().await {
+            bytes.extend_from_slice(&next?);
+        }
+        let body: ZerionResponseBody = match serde_json::from_slice(&bytes) {
+            Ok(body) => body,
+            Err(e) => {
+                error!("Error on parsing zerion portfolio response: {:?}", e);
+                return Err(RpcError::TransactionProviderError);
+            }
+        };
+
+        // let next: Option<String> = match body.links.next {
+        //     Some(url) => {
+        //         let url = Url::parse(&url).map_err(|_| RpcError::HistoryParseCursorError)?;
+        //         // Get the "after" query parameter
+        //         if let Some(after_param) = url.query_pairs().find(|(key, _)| key == "page[after]") {
+        //             let after_value = after_param.1;
+        //             Some(after_value.to_string())
+        //         } else {
+        //             None
+        //         }
+        //     }
+        //     None => None,
+        // };
+
+        let portfolio = if let ZerionDataResponse::Portfolio(portfolio) = body.data {
+            portfolio.into_iter()
+            .map(|f| PortfolioPosition {
+                id: f.id,
+            })
+            .collect()
+        } else {
+            return Err(RpcError::PortfolioProviderError);
+        };
+
+        Ok(PortfolioResponseBody { data: portfolio })
     }
 }

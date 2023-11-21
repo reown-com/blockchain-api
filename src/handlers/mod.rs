@@ -30,6 +30,22 @@ pub struct SuccessResponse {
 #[serde(rename_all = "camelCase")]
 pub struct PortfolioQueryParams {
     pub project_id: String,
+    pub currency: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PortfolioResponseBody {
+    pub data: Vec<PortfolioPosition>,
+    // pub next: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PortfolioPosition {
+    pub id: String,
+    // pub metadata: HistoryTransactionMetadata,
+    // pub transfers: Vec<ZerionTransactionTransfer>,
 }
 
 // TODO: https://developers.zerion.io/reference/listwallettransactions

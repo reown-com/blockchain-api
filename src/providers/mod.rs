@@ -3,7 +3,12 @@ use {
     crate::{
         env::ProviderConfig,
         error::RpcError,
-        handlers::{HistoryQueryParams, HistoryResponseBody},
+        handlers::{
+            HistoryQueryParams,
+            HistoryResponseBody,
+            PortfolioQueryParams,
+            PortfolioResponseBody,
+        },
     },
     axum::response::Response,
     axum_tungstenite::WebSocketUpgrade,
@@ -66,6 +71,7 @@ pub struct ProviderRepository {
     prometheus_workspace_header: String,
 
     pub history_provider: Arc<dyn HistoryProvider>,
+    pub portfolio_provider: Arc<dyn PortfolioProvider>,
 }
 
 impl ProviderRepository {
@@ -94,6 +100,7 @@ impl ProviderRepository {
             .unwrap_or("ZERION_KEY_UNDEFINED".into());
 
         let history_provider = Arc::new(ZerionProvider::new(zerion_api_key));
+        let portfolio_provider = history_provider.clone();
 
         Self {
             providers: HashMap::new(),
@@ -103,6 +110,7 @@ impl ProviderRepository {
             prometheus_client,
             prometheus_workspace_header,
             history_provider,
+            portfolio_provider,
         }
     }
 
@@ -401,4 +409,14 @@ pub trait HistoryProvider: Send + Sync + Debug {
         body: hyper::body::Bytes,
         params: HistoryQueryParams,
     ) -> RpcResult<HistoryResponseBody>;
+}
+
+#[async_trait]
+pub trait PortfolioProvider: Send + Sync + Debug {
+    async fn get_portfolio(
+        &self,
+        address: String,
+        body: hyper::body::Bytes,
+        params: PortfolioQueryParams,
+    ) -> RpcResult<PortfolioResponseBody>;
 }

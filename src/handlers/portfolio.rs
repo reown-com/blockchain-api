@@ -4,11 +4,13 @@ use {
     axum::{
         body::Bytes,
         extract::{ConnectInfo, MatchedPath, Path, Query, State},
-        response::{IntoResponse, Response},
+        response::{Response, IntoResponse},
         Json,
     },
     ethers::abi::Address,
     hyper::HeaderMap,
+    tap::TapFallible,
+    tracing::log::error,
     std::{net::SocketAddr, sync::Arc},
     wc::future::FutureExt,
 };
@@ -34,7 +36,7 @@ async fn handler_internal(
     _path: MatchedPath,
     _headers: HeaderMap,
     Path(address): Path<String>,
-    _body: Bytes,
+    body: Bytes,
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
     let _address_hash = address.clone();
@@ -44,5 +46,14 @@ async fn handler_internal(
 
     state.validate_project_access(&project_id).await?;
 
-    Ok(Json("{}".to_string()).into_response())
+    let response = state
+        .providers
+        .portfolio_provider
+        .get_portfolio(address, body, query.0)
+        .await
+        .tap_err(|e| {
+            error!("Failed to call portfolio with {}", e);
+        })?;
+
+    Ok(Json(response).into_response())
 }
