@@ -39,6 +39,13 @@ describe('blockchain api', () => {
       expect(resp.status).toBe(200)
       expect(resp.data.name).toBe('cyberdrk.eth')
     })
+    it('known ens demo', async () => {
+      let resp: any = await http.get(
+        `${baseUrl}/v1/identity/0x621D24169AeCf1da1eE8dce6aA2258F277434334?chainId=eip155%3A1&projectId=${projectId}`,
+      )
+      expect(resp.status).toBe(200)
+      expect(resp.data.name).toBe('DerekDiscoDude.connect.id')
+    })
     it('unknown ens', async () => {
       let resp: any = await http.get(
         `${baseUrl}/v1/identity/0xf3ea39310011333095CFCcCc7c4Ad74034CABA64?chainId=eip155%3A1&projectId=${projectId}`,

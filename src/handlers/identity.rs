@@ -28,7 +28,7 @@ use {
         time::{Duration, SystemTime, UNIX_EPOCH},
     },
     tap::TapFallible,
-    tracing::{debug, warn},
+    tracing::{debug, info, warn},
     wc::future::FutureExt,
 };
 
@@ -153,16 +153,21 @@ async fn lookup_identity(
         }
     }
 
-    let derek = "0x621D24169AeCf1da1eE8dce6aA2258F277434334"
-        .parse::<Address>()
-        .map_err(|_| RpcError::IdentityInvalidAddress)?;
+    let ens_demo_addresses = state.ens_allowlist.clone().unwrap_or_default();
+
+    info!("Looking up identity for address: {}", address);
 
     // check if address equals derek address
-    let res = if address != derek {
+    let res = if !ens_demo_addresses.contains_key(&address) {
         lookup_identity_rpc(address, state.clone(), connect_info, query, path, headers).await?
     } else {
+        let fallback = "unknown".to_string();
+        let ens = ens_demo_addresses
+            .get(&address)
+            .unwrap_or(&fallback)
+            .as_str();
         IdentityResponse {
-            name: Some("derek.wc.ens".to_string()),
+            name: Some(format!("{}.connect.id", ens)),
             avatar: Some(
                 "https://ipfs.io/ipfs/bafybeiabkgjlpf35cbo4jdskt4llbb7pdhqh25nmra7imsam233z65an2y"
                     .to_string(),
