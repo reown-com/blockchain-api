@@ -105,14 +105,14 @@ impl ProviderRepository {
             .clone()
             .unwrap_or("ZERION_KEY_UNDEFINED".into());
 
-        // Don't crash the application if the ZERION_API_KEY is not set
+        // Don't crash the application if the COINBASE_API_KEY_UNDEFINED is not set
         // TODO: find a better way to handle this
         let coinbase_api_key = config
             .coinbase_api_key
             .clone()
             .unwrap_or("COINBASE_API_KEY_UNDEFINED".into());
 
-        // Don't crash the application if the ZERION_API_KEY is not set
+        // Don't crash the application if the COINBASE_APP_ID_UNDEFINED is not set
         // TODO: find a better way to handle this
         let coinbase_app_id = config
             .coinbase_app_id

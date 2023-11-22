@@ -65,7 +65,6 @@ async fn handler_internal(
         })?;
 
     if let Some(_onramp) = query.onramp.clone() {
-        // TODO: call coinbase provider
         let coinbase_transactions: HistoryResponseBody = state
             .providers
             .coinbase_pay_provider
