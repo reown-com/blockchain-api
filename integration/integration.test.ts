@@ -85,6 +85,16 @@ describe('blockchain api', () => {
       expect(typeof resp.data.next).toBe('string')
       expect(resp.data.next).toHaveLength(80)
     })
+    it('fulfilled history with coinbase', async () => {
+      let resp: any = await http.get(
+        `${baseUrl}/v1/account/0xf3ea39310011333095CFCcCc7c4Ad74034CABA63/history?projectId=${projectId}&onramp=coinbase`,
+      )
+      expect(resp.status).toBe(200)
+      expect(typeof resp.data.data).toBe('object')
+      expect(resp.data.data).toHaveLength(50)
+      expect(typeof resp.data.next).toBe('string')
+      expect(resp.data.next).toHaveLength(80)
+    })
     it('empty history', async () => {
       let resp: any = await http.get(
         `${baseUrl}/v1/account/0x739ff389c8eBd9339E69611d46Eec6212179BB67/history?projectId=${projectId}`,

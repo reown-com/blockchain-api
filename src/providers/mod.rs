@@ -1,3 +1,5 @@
+use self::coinbase::CoinbaseProvider;
+
 use {
     self::zerion::ZerionProvider,
     crate::{
@@ -27,6 +29,7 @@ mod pokt;
 mod publicnode;
 mod weights;
 pub mod zerion;
+pub mod coinbase;
 mod zksync;
 mod zora;
 
@@ -58,6 +61,8 @@ pub struct ProvidersConfig {
     pub infura_project_id: String,
     pub pokt_project_id: String,
     pub zerion_api_key: Option<String>,
+    pub coinbase_api_key: Option<String>,
+    pub coinbase_app_id: Option<String>,
 }
 
 pub struct ProviderRepository {
@@ -72,6 +77,7 @@ pub struct ProviderRepository {
 
     pub history_provider: Arc<dyn HistoryProvider>,
     pub portfolio_provider: Arc<dyn PortfolioProvider>,
+    pub coinbase_pay_provider: Arc<dyn HistoryProvider>,
 }
 
 impl ProviderRepository {
@@ -99,8 +105,23 @@ impl ProviderRepository {
             .clone()
             .unwrap_or("ZERION_KEY_UNDEFINED".into());
 
+        // Don't crash the application if the ZERION_API_KEY is not set
+        // TODO: find a better way to handle this
+        let coinbase_api_key = config
+            .coinbase_api_key
+            .clone()
+            .unwrap_or("COINBASE_API_KEY_UNDEFINED".into());
+
+        // Don't crash the application if the ZERION_API_KEY is not set
+        // TODO: find a better way to handle this
+        let coinbase_app_id = config
+            .coinbase_app_id
+            .clone()
+            .unwrap_or("COINBASE_APP_ID_UNDEFINED".into());
+
         let history_provider = Arc::new(ZerionProvider::new(zerion_api_key));
         let portfolio_provider = history_provider.clone();
+        let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(coinbase_api_key, coinbase_app_id ));
 
         Self {
             providers: HashMap::new(),
@@ -111,6 +132,7 @@ impl ProviderRepository {
             prometheus_workspace_header,
             history_provider,
             portfolio_provider,
+            coinbase_pay_provider,
         }
     }
 

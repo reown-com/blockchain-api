@@ -1,3 +1,5 @@
+use super::HistoryResponseBody;
+
 use {
     super::HANDLER_TASK_METRICS,
     crate::{
@@ -53,14 +55,30 @@ async fn handler_internal(
 
     state.validate_project_access(&project_id).await?;
     let latency_tracker_start = std::time::SystemTime::now();
-    let response = state
+    let mut response = state
         .providers
         .history_provider
-        .get_transactions(address, body, query.0)
+        .get_transactions(address.clone(), body.clone(), query.0.clone())
         .await
         .tap_err(|e| {
             error!("Failed to call transaction history with {}", e);
         })?;
+
+    if let Some(_onramp) = query.onramp.clone() {
+        // TODO: call coinbase provider
+        let coinbase_transactions: HistoryResponseBody = state
+            .providers
+            .coinbase_pay_provider
+            .get_transactions(address, body, query.0)
+            .await
+            .tap_err(|e| {
+                error!("Failed to call coinbase transaction history with {}", e);
+            }).unwrap_or(HistoryResponseBody { data: Vec::default(), next: None });
+        
+        // move this to the beginning of the transactions
+        response.data.extend(coinbase_transactions.data);
+    }
+
     let latency_tracker = latency_tracker_start
         .elapsed()
         .unwrap_or(std::time::Duration::from_secs(0));
@@ -87,7 +105,7 @@ async fn handler_internal(
             response
                 .data
                 .iter()
-                .map(|transaction| transaction.transfers.len())
+                .map(|transaction| transaction.transfers.as_ref().map(|v| v.len()).unwrap_or(0))
                 .sum(),
             response
                 .data
@@ -95,9 +113,9 @@ async fn handler_internal(
                 .map(|transaction| {
                     transaction
                         .transfers
-                        .iter()
+                        .as_ref().map(|v| v.iter()
                         .filter(|transfer| transfer.fungible_info.is_some())
-                        .count()
+                        .count()).unwrap_or(0)
                 })
                 .sum(),
             response
@@ -106,9 +124,8 @@ async fn handler_internal(
                 .map(|transaction| {
                     transaction
                         .transfers
-                        .iter()
-                        .filter(|transfer| transfer.nft_info.is_some())
-                        .count()
+                        .as_ref().map(|v| v.iter().filter(|transfer| transfer.nft_info.is_some())
+                        .count()).unwrap_or(0)
                 })
                 .sum(),
             origin,

@@ -193,6 +193,8 @@ mod test {
                 infura_project_id: "INFURA_PROJECT_ID".to_string(),
                 pokt_project_id: "POKT_PROJECT_ID".to_string(),
                 zerion_api_key: Some("ZERION_API_KEY".to_owned()),
+                coinbase_api_key: Some("COINBASE_API_KEY".to_owned()),
+                coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),
             },
         });
 
