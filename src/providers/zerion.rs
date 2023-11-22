@@ -38,17 +38,10 @@ impl ZerionProvider {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-#[serde(untagged)]
-pub enum ZerionDataResponse {
-    Transactions(Vec<ZerionTransactionsReponseBody>),
-    Portfolio(Vec<ZerionPortfolioResponseBody>),
-}
-
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct ZerionResponseBody {
+pub struct ZerionResponseBody<T> {
     pub links: ZerionResponseLinks,
-    pub data: ZerionDataResponse,
+    pub data: T,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
@@ -194,13 +187,14 @@ impl HistoryProvider for ZerionProvider {
         while let Some(next) = body.next().await {
             bytes.extend_from_slice(&next?);
         }
-        let body: ZerionResponseBody = match serde_json::from_slice(&bytes) {
-            Ok(body) => body,
-            Err(e) => {
-                error!("Error on parsing zerion transactions response: {:?}", e);
-                return Err(RpcError::TransactionProviderError);
-            }
-        };
+        let body: ZerionResponseBody<Vec<ZerionTransactionsReponseBody>> =
+            match serde_json::from_slice(&bytes) {
+                Ok(body) => body,
+                Err(e) => {
+                    error!("Error on parsing zerion transactions response: {:?}", e);
+                    return Err(RpcError::TransactionProviderError);
+                }
+            };
 
         let next: Option<String> = match body.links.next {
             Some(url) => {
@@ -216,26 +210,23 @@ impl HistoryProvider for ZerionProvider {
             None => None,
         };
 
-        let transactions = if let ZerionDataResponse::Transactions(transactions) = body.data {
-            transactions
-                .into_iter()
-                .map(|f| HistoryTransaction {
-                    id: f.id,
-                    metadata: HistoryTransactionMetadata {
-                        operation_type: f.attributes.operation_type,
-                        hash: f.attributes.hash,
-                        mined_at: f.attributes.mined_at,
-                        nonce: f.attributes.nonce,
-                        sent_from: f.attributes.sent_from,
-                        sent_to: f.attributes.sent_to,
-                        status: f.attributes.status,
-                    },
-                    transfers: f.attributes.transfers,
-                })
-                .collect()
-        } else {
-            return Err(RpcError::TransactionProviderError);
-        };
+        let transactions = body
+            .data
+            .into_iter()
+            .map(|f| HistoryTransaction {
+                id: f.id,
+                metadata: HistoryTransactionMetadata {
+                    operation_type: f.attributes.operation_type,
+                    hash: f.attributes.hash,
+                    mined_at: f.attributes.mined_at,
+                    nonce: f.attributes.nonce,
+                    sent_from: f.attributes.sent_from,
+                    sent_to: f.attributes.sent_to,
+                    status: f.attributes.status,
+                },
+                transfers: f.attributes.transfers,
+            })
+            .collect();
 
         Ok(HistoryResponseBody {
             data: transactions,
@@ -278,26 +269,24 @@ impl PortfolioProvider for ZerionProvider {
         while let Some(next) = body.next().await {
             bytes.extend_from_slice(&next?);
         }
-        let body: ZerionResponseBody = match serde_json::from_slice(&bytes) {
-            Ok(body) => body,
-            Err(e) => {
-                error!("Error on parsing zerion portfolio response: {:?}", e);
-                return Err(RpcError::PortfolioProviderError);
-            }
-        };
+        let body: ZerionResponseBody<Vec<ZerionPortfolioResponseBody>> =
+            match serde_json::from_slice(&bytes) {
+                Ok(body) => body,
+                Err(e) => {
+                    error!("Error on parsing zerion portfolio response: {:?}", e);
+                    return Err(RpcError::PortfolioProviderError);
+                }
+            };
 
-        let portfolio = if let ZerionDataResponse::Portfolio(portfolio) = body.data {
-            portfolio
-                .into_iter()
-                .map(|f| PortfolioPosition {
-                    id: f.id,
-                    name: f.attributes.fungible_info.name,
-                    symbol: f.attributes.fungible_info.symbol,
-                })
-                .collect()
-        } else {
-            return Err(RpcError::PortfolioProviderError);
-        };
+        let portfolio = body
+            .data
+            .into_iter()
+            .map(|f| PortfolioPosition {
+                id: f.id,
+                name: f.attributes.fungible_info.name,
+                symbol: f.attributes.fungible_info.symbol,
+            })
+            .collect();
 
         Ok(PortfolioResponseBody { data: portfolio })
     }
