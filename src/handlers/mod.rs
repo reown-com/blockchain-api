@@ -43,8 +43,6 @@ pub struct PortfolioResponseBody {
 #[serde(rename_all = "camelCase")]
 pub struct PortfolioPosition {
     pub id: String,
-    // pub price: f32,
-    // pub quantity: String,
     pub name: String,
     pub symbol: String,
 }
