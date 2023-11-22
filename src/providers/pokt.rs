@@ -9,6 +9,7 @@ use {
     hyper::{self, client::HttpConnector, Client, Method, StatusCode},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
+    tracing::info,
 };
 
 #[derive(Debug)]
@@ -83,18 +84,24 @@ impl RpcProvider for PoktProvider {
             .body(hyper::body::Body::from(body))?;
 
         let response = self.client.request(hyper_request).await?;
-        let (parts, body) = response.into_parts();
-        let body = hyper::body::to_bytes(body).await?;
+        let status = response.status();
+        let body = hyper::body::to_bytes(response.into_body()).await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if let Some(error) = response.error {
+            if let Some(error) = &response.error {
+                if status.is_success() {
+                    info!(
+                        "Strange: provider returned JSON RPC error, but status {status} is \
+                         success: Pokt: {response:?}"
+                    );
+                }
                 if error.code == -32004 {
                     return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response());
                 }
             }
         }
 
-        Ok((parts, body).into_response())
+        Ok((status, body).into_response())
     }
 }
 
