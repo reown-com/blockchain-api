@@ -17,7 +17,7 @@ use {
     async_trait::async_trait,
     axum::response::{IntoResponse, Response},
     axum_tungstenite::WebSocketUpgrade,
-    hyper::{client::HttpConnector, http, Client, Method, StatusCode},
+    hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
     tracing::info,
@@ -121,19 +121,19 @@ impl RpcProvider for ZoraProvider {
             .body(hyper::body::Body::from(body))?;
 
         let response = self.client.request(hyper_request).await?;
-        let (parts, body) = response.into_parts();
-        let body = hyper::body::to_bytes(body).await?;
+        let status = response.status();
+        let body = hyper::body::to_bytes(response.into_body()).await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if response.error.is_some() && parts.status == StatusCode::OK {
+            if response.error.is_some() && status.is_success() {
                 info!(
-                    "Strange: provider returned JSON RPC error, but status was OK: Zora: \
-                     {response:?}"
+                    "Strange: provider returned JSON RPC error, but status {status} is success: \
+                     Zora: {response:?}"
                 );
             }
         }
 
-        Ok((parts, body).into_response())
+        Ok((status, body).into_response())
     }
 }
 
