@@ -9,7 +9,6 @@ use {
     hyper::{client::HttpConnector, Client, Method, StatusCode},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
-    tracing::info,
 };
 
 #[derive(Debug)]
@@ -58,20 +57,9 @@ impl RpcProvider for OmniatechProvider {
             .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))?;
 
-        let response = self.client.request(hyper_request).await?;
-        let (parts, body) = response.into_parts();
-        let body = hyper::body::to_bytes(body).await?;
+        let response = self.client.request(hyper_request).await?.into_response();
 
-        if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if response.error.is_some() && parts.status == StatusCode::OK {
-                info!(
-                    "Strange: provider returned JSON RPC error, but status was OK: Omnia: \
-                     {response:?}"
-                );
-            }
-        }
-
-        Ok((parts, body).into_response())
+        Ok(response)
     }
 }
 
