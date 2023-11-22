@@ -1,4 +1,5 @@
 use {
+    axum::http::HeaderValue,
     hyper::{body, client::HttpConnector, Body, Client, Method, Request, StatusCode},
     hyper_tls::HttpsConnector,
 };
@@ -22,6 +23,10 @@ pub async fn send_jsonrpc_request(
         .unwrap();
 
     let response = client.request(request).await.unwrap();
+    assert_eq!(
+        response.headers().get("Content-Type"),
+        Some(&HeaderValue::from_static("application/json"))
+    );
 
     let (parts, body) = response.into_parts();
     let body = body::to_bytes(body).await.unwrap();
