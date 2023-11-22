@@ -5,7 +5,10 @@ use {
         error::{RpcError, RpcResult},
     },
     async_trait::async_trait,
-    axum::response::{IntoResponse, Response},
+    axum::{
+        http::HeaderValue,
+        response::{IntoResponse, Response},
+    },
     hyper::{client::HttpConnector, Client, Method, StatusCode},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
@@ -71,7 +74,11 @@ impl RpcProvider for OmniatechProvider {
             }
         }
 
-        Ok((status, body).into_response())
+        let mut response = (status, body).into_response();
+        response
+            .headers_mut()
+            .insert("Content-Type", HeaderValue::from_static("application/json"));
+        Ok(response)
     }
 }
 
