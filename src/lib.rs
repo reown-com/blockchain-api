@@ -54,7 +54,9 @@ use {
     tower::ServiceBuilder,
     tower_http::{
         cors::{Any, CorsLayer},
+        request_id::MakeRequestUuid,
         trace::TraceLayer,
+        ServiceBuilderExt,
     },
     tracing::{info, log::warn, Span},
     wc::{
@@ -164,24 +166,37 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     ]);
 
     let proxy_state = state_arc.clone();
-    let proxy_metrics = ServiceBuilder::new().layer(TraceLayer::new_for_http()
-        .make_span_with(|request: &Request<Body>| {
-            tracing::info_span!("http-request", "method" = ?request.method(), "uri" = ?request.uri())
-        })
-        .on_response(
-            move |response: &Response, latency: Duration, _span: &Span| {
-                proxy_state
-                    .metrics
-                    .add_http_call(response.status().into(), "proxy".to_owned());
+    let tracing_and_metrics_layer = ServiceBuilder::new()
+        .set_x_request_id(MakeRequestUuid)
+        .layer(
+            TraceLayer::new_for_http()
+            .make_span_with(|request: &Request<Body>| {
+                let request_id = match request.headers().get("x-request-id") {
+                    Some(value) => value.to_str().unwrap_or_default().to_string(),
+                    None => {
+                        // If this warning is triggered, it means that the `x-request-id` was not
+                        // propagated to headers properly. This is a bug in the middleware chain.
+                        warn!("Missing x-request-id header in a middleware");
+                        String::new()
+                    }
+                };
+                tracing::info_span!("http-request", "method" = ?request.method(), "request_id" = ?request_id, "uri" = ?request.uri())
+            })
+            .on_response(
+                move |response: &Response, latency: Duration, _span: &Span| {
+                    proxy_state
+                        .metrics
+                        .add_http_call(response.status().into(), "proxy".to_owned());
 
-                proxy_state.metrics.add_http_latency(
-                    response.status().into(),
-                    "proxy".to_owned(),
-                    latency.as_secs_f64(),
-                )
-            },
+                    proxy_state.metrics.add_http_latency(
+                        response.status().into(),
+                        "proxy".to_owned(),
+                        latency.as_secs_f64(),
+                    )
+                },
+            ),
         )
-    );
+        .propagate_x_request_id();
 
     let app = Router::new()
         .route("/v1", post(handlers::proxy::handler))
@@ -200,7 +215,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/account/:address/portfolio",
             get(handlers::portfolio::handler),
         )
-        .route_layer(proxy_metrics)
+        .route_layer(tracing_and_metrics_layer)
         .route("/health", get(handlers::health::handler))
         .layer(cors);
     let app = if let Some(geoblock) = geoblock {

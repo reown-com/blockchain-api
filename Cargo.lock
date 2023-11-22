@@ -1525,7 +1525,7 @@ dependencies = [
 [[package]]
 name = "ethers"
 version = "2.0.11"
-source = "git+https://github.com/gakonst/ethers-rs#546ea029362a7502365667c6f99fac92ad0aeb9f"
+source = "git+https://github.com/gakonst/ethers-rs#8175f0f97070ad69abd5dfa7b8df31f1c1dcc3d6"
 dependencies = [
  "ethers-addressbook",
  "ethers-contract",
@@ -1540,7 +1540,7 @@ dependencies = [
 [[package]]
 name = "ethers-addressbook"
 version = "2.0.11"
-source = "git+https://github.com/gakonst/ethers-rs#546ea029362a7502365667c6f99fac92ad0aeb9f"
+source = "git+https://github.com/gakonst/ethers-rs#8175f0f97070ad69abd5dfa7b8df31f1c1dcc3d6"
 dependencies = [
  "ethers-core",
  "once_cell",
@@ -1551,7 +1551,7 @@ dependencies = [
 [[package]]
 name = "ethers-contract"
 version = "2.0.11"
-source = "git+https://github.com/gakonst/ethers-rs#546ea029362a7502365667c6f99fac92ad0aeb9f"
+source = "git+https://github.com/gakonst/ethers-rs#8175f0f97070ad69abd5dfa7b8df31f1c1dcc3d6"
 dependencies = [
  "const-hex",
  "ethers-contract-abigen",
@@ -1569,7 +1569,7 @@ dependencies = [
 [[package]]
 name = "ethers-contract-abigen"
 version = "2.0.11"
-source = "git+https://github.com/gakonst/ethers-rs#546ea029362a7502365667c6f99fac92ad0aeb9f"
+source = "git+https://github.com/gakonst/ethers-rs#8175f0f97070ad69abd5dfa7b8df31f1c1dcc3d6"
 dependencies = [
  "Inflector",
  "const-hex",
@@ -1592,7 +1592,7 @@ dependencies = [
 [[package]]
 name = "ethers-contract-derive"
 version = "2.0.11"
-source = "git+https://github.com/gakonst/ethers-rs#546ea029362a7502365667c6f99fac92ad0aeb9f"
+source = "git+https://github.com/gakonst/ethers-rs#8175f0f97070ad69abd5dfa7b8df31f1c1dcc3d6"
 dependencies = [
  "Inflector",
  "const-hex",
@@ -1607,7 +1607,7 @@ dependencies = [
 [[package]]
 name = "ethers-core"
 version = "2.0.11"
-source = "git+https://github.com/gakonst/ethers-rs#546ea029362a7502365667c6f99fac92ad0aeb9f"
+source = "git+https://github.com/gakonst/ethers-rs#8175f0f97070ad69abd5dfa7b8df31f1c1dcc3d6"
 dependencies = [
  "arrayvec",
  "bytes",
@@ -1636,7 +1636,7 @@ dependencies = [
 [[package]]
 name = "ethers-etherscan"
 version = "2.0.11"
-source = "git+https://github.com/gakonst/ethers-rs#546ea029362a7502365667c6f99fac92ad0aeb9f"
+source = "git+https://github.com/gakonst/ethers-rs#8175f0f97070ad69abd5dfa7b8df31f1c1dcc3d6"
 dependencies = [
  "chrono",
  "ethers-core",
@@ -1651,7 +1651,7 @@ dependencies = [
 [[package]]
 name = "ethers-middleware"
 version = "2.0.11"
-source = "git+https://github.com/gakonst/ethers-rs#546ea029362a7502365667c6f99fac92ad0aeb9f"
+source = "git+https://github.com/gakonst/ethers-rs#8175f0f97070ad69abd5dfa7b8df31f1c1dcc3d6"
 dependencies = [
  "async-trait",
  "auto_impl",
@@ -1677,7 +1677,7 @@ dependencies = [
 [[package]]
 name = "ethers-providers"
 version = "2.0.11"
-source = "git+https://github.com/gakonst/ethers-rs#546ea029362a7502365667c6f99fac92ad0aeb9f"
+source = "git+https://github.com/gakonst/ethers-rs#8175f0f97070ad69abd5dfa7b8df31f1c1dcc3d6"
 dependencies = [
  "async-trait",
  "auto_impl",
@@ -1713,7 +1713,7 @@ dependencies = [
 [[package]]
 name = "ethers-signers"
 version = "2.0.11"
-source = "git+https://github.com/gakonst/ethers-rs#546ea029362a7502365667c6f99fac92ad0aeb9f"
+source = "git+https://github.com/gakonst/ethers-rs#8175f0f97070ad69abd5dfa7b8df31f1c1dcc3d6"
 dependencies = [
  "async-trait",
  "coins-bip32",
@@ -1731,7 +1731,7 @@ dependencies = [
 [[package]]
 name = "ethers-solc"
 version = "2.0.11"
-source = "git+https://github.com/gakonst/ethers-rs#546ea029362a7502365667c6f99fac92ad0aeb9f"
+source = "git+https://github.com/gakonst/ethers-rs#8175f0f97070ad69abd5dfa7b8df31f1c1dcc3d6"
 dependencies = [
  "cfg-if",
  "const-hex",
@@ -4811,9 +4811,11 @@ dependencies = [
  "http-body",
  "http-range-header",
  "pin-project-lite",
+ "tower",
  "tower-layer",
  "tower-service",
  "tracing",
+ "uuid 1.6.1",
 ]
 
 [[package]]
@@ -5073,6 +5075,9 @@ name = "uuid"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e395fcf16a7a3d8127ec99782007af141946b4795001f876d54fb0d55978560"
+dependencies = [
+ "getrandom",
+]
 
 [[package]]
 name = "valuable"
