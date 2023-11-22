@@ -5,7 +5,10 @@ use {
         error::{RpcError, RpcResult},
     },
     async_trait::async_trait,
-    axum::response::{IntoResponse, Response},
+    axum::{
+        http::HeaderValue,
+        response::{IntoResponse, Response},
+    },
     hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
@@ -66,7 +69,11 @@ impl RpcProvider for ZKSyncProvider {
             }
         }
 
-        Ok((status, body).into_response())
+        let mut response = (status, body).into_response();
+        response
+            .headers_mut()
+            .insert("Content-Type", HeaderValue::from_static("application/json"));
+        Ok(response)
     }
 }
 
