@@ -16,7 +16,6 @@ use {
         routing::{get, post},
         Router,
     },
-    csv,
     env::{
         BaseConfig,
         BinanceConfig,
@@ -44,7 +43,6 @@ use {
         ZoraProvider,
         ZoraWsProvider,
     },
-    reqwest,
     std::{
         collections::HashMap,
         error::Error,
