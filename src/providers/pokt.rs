@@ -101,6 +101,9 @@ impl RpcProvider for PoktProvider {
                 if error.code == -32004 {
                     return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response());
                 }
+                if error.code == -32603 {
+                    return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
+                }
             }
         }
 
