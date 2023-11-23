@@ -1,7 +1,5 @@
-use self::coinbase::CoinbaseProvider;
-
 use {
-    self::zerion::ZerionProvider,
+    self::{coinbase::CoinbaseProvider, zerion::ZerionProvider},
     crate::{
         env::ProviderConfig,
         error::RpcError,
@@ -23,13 +21,13 @@ use {
 
 mod base;
 mod binance;
+pub mod coinbase;
 mod infura;
 mod omnia;
 mod pokt;
 mod publicnode;
 mod weights;
 pub mod zerion;
-pub mod coinbase;
 mod zksync;
 mod zora;
 
@@ -121,7 +119,8 @@ impl ProviderRepository {
 
         let history_provider = Arc::new(ZerionProvider::new(zerion_api_key));
         let portfolio_provider = history_provider.clone();
-        let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(coinbase_api_key, coinbase_app_id ));
+        let coinbase_pay_provider =
+            Arc::new(CoinbaseProvider::new(coinbase_api_key, coinbase_app_id));
 
         Self {
             providers: HashMap::new(),

@@ -1,5 +1,3 @@
-use axum::http::method;
-
 use {
     super::HistoryProvider,
     crate::{
@@ -12,7 +10,7 @@ use {
         },
     },
     async_trait::async_trait,
-    axum::body::Bytes,
+    axum::{body::Bytes, http::method},
     futures_util::StreamExt,
     hyper::Client,
     hyper_tls::HttpsConnector,
@@ -67,14 +65,17 @@ impl HistoryProvider for CoinbaseProvider {
             &address
         );
         let mut url = Url::parse(&base).map_err(|_| RpcError::HistoryParseCursorError)?;
-        url.query_pairs_mut()
-            .append_pair("page_size", "50");
+        url.query_pairs_mut().append_pair("page_size", "50");
 
         if let Some(cursor) = params.cursor {
             url.query_pairs_mut().append_pair("page_key", &cursor);
         }
 
-        error!("Coinbase URL: {:?}, {:?}", url.as_str(), self.app_id.clone());
+        error!(
+            "Coinbase URL: {:?}, {:?}",
+            url.as_str(),
+            self.app_id.clone()
+        );
 
         let hyper_request = hyper::http::Request::builder()
             .uri(url.as_str())
@@ -99,14 +100,13 @@ impl HistoryProvider for CoinbaseProvider {
         while let Some(next) = body.next().await {
             bytes.extend_from_slice(&next?);
         }
-        let body: CoinbaseResponseBody =
-            match serde_json::from_slice(&bytes) {
-                Ok(body) => body,
-                Err(e) => {
-                    error!("Error on parsing coinbase transactions response: {:?}", e);
-                    return Err(RpcError::TransactionProviderError);
-                }
-            };
+        let body: CoinbaseResponseBody = match serde_json::from_slice(&bytes) {
+            Ok(body) => body,
+            Err(e) => {
+                error!("Error on parsing coinbase transactions response: {:?}", e);
+                return Err(RpcError::TransactionProviderError);
+            }
+        };
 
         let transactions = body
             .transactions

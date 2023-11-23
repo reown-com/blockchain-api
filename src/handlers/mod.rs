@@ -55,7 +55,7 @@ pub struct HistoryQueryParams {
     pub currency: Option<String>,
     pub project_id: String,
     pub cursor: Option<String>,
-    pub onramp: Option<String>
+    pub onramp: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]

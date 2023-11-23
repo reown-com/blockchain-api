@@ -1,7 +1,5 @@
-use super::HistoryResponseBody;
-
 use {
-    super::HANDLER_TASK_METRICS,
+    super::{HistoryResponseBody, HANDLER_TASK_METRICS},
     crate::{
         analytics::HistoryLookupInfo,
         error::RpcError,
@@ -72,8 +70,12 @@ async fn handler_internal(
             .await
             .tap_err(|e| {
                 error!("Failed to call coinbase transaction history with {}", e);
-            }).unwrap_or(HistoryResponseBody { data: Vec::default(), next: None });
-        
+            })
+            .unwrap_or(HistoryResponseBody {
+                data: Vec::default(),
+                next: None,
+            });
+
         // move this to the beginning of the transactions
         response.data.extend(coinbase_transactions.data);
     }
@@ -112,9 +114,13 @@ async fn handler_internal(
                 .map(|transaction| {
                     transaction
                         .transfers
-                        .as_ref().map(|v| v.iter()
-                        .filter(|transfer| transfer.fungible_info.is_some())
-                        .count()).unwrap_or(0)
+                        .as_ref()
+                        .map(|v| {
+                            v.iter()
+                                .filter(|transfer| transfer.fungible_info.is_some())
+                                .count()
+                        })
+                        .unwrap_or(0)
                 })
                 .sum(),
             response
@@ -123,8 +129,13 @@ async fn handler_internal(
                 .map(|transaction| {
                     transaction
                         .transfers
-                        .as_ref().map(|v| v.iter().filter(|transfer| transfer.nft_info.is_some())
-                        .count()).unwrap_or(0)
+                        .as_ref()
+                        .map(|v| {
+                            v.iter()
+                                .filter(|transfer| transfer.nft_info.is_some())
+                                .count()
+                        })
+                        .unwrap_or(0)
                 })
                 .sum(),
             origin,
