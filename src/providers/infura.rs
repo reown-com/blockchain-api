@@ -138,7 +138,7 @@ impl RpcProvider for InfuraProvider {
                 if status.is_success() {
                     info!(
                         "Strange: provider returned JSON RPC error, but status {status} is \
-                         success: Pokt: {response:?}"
+                         success: Infura: {response:?}"
                     );
                 }
                 if error.code == -32603 {
