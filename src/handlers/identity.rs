@@ -143,17 +143,20 @@ async fn lookup_identity(
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
     let cache_key = format!("{}", address);
-    if let Some(cache) = &state.identity_cache {
-        debug!("Checking cache for identity");
-        let cache_start = SystemTime::now();
-        let value = cache.get(&cache_key).await?;
-        state.metrics.add_identity_lookup_cache_latency(cache_start);
-        if let Some(response) = value {
-            return Ok((IdentityLookupSource::Cache, response));
-        }
-    }
 
+    // Skipping the cache for testing addresses
     let ens_demo_addresses = state.ens_allowlist.clone().unwrap_or_default();
+    if !ens_demo_addresses.contains_key(&address) {
+        if let Some(cache) = &state.identity_cache {
+            debug!("Checking cache for identity");
+            let cache_start = SystemTime::now();
+            let value = cache.get(&cache_key).await?;
+            state.metrics.add_identity_lookup_cache_latency(cache_start);
+            if let Some(response) = value {
+                return Ok((IdentityLookupSource::Cache, response));
+            }
+        }
+    };
 
     info!("Looking up identity for address: {}", address);
 
