@@ -67,6 +67,10 @@ ethers = { version = "2.0.7", git = "https://github.com/gakonst/ethers-rs" } # u
 bytes = "1.4.0"
 sha256 = "1.2.2"
 
+# ENS Allowlist Remove later
+reqwest = { version = "0.11", features = ["json"] }
+csv = "1"
+
 [dev-dependencies]
 jsonrpc = "0.14.0"
 test-context = "0.1"

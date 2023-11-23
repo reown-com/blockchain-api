@@ -11,7 +11,8 @@ use {
         utils::build::CompileInfo,
     },
     cerberus::project::ProjectData,
-    std::sync::Arc,
+    ethers::types::H160,
+    std::{collections::HashMap, sync::Arc},
     tap::TapFallible,
     tracing::info,
 };
@@ -24,6 +25,7 @@ pub struct AppState {
     pub identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     pub analytics: RPCAnalytics,
     pub compile_info: CompileInfo,
+    pub ens_allowlist: Option<HashMap<H160, String>>,
 }
 
 pub fn new_state(
@@ -33,6 +35,7 @@ pub fn new_state(
     registry: Registry,
     identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     analytics: RPCAnalytics,
+    ens_allowlist: Option<HashMap<H160, String>>,
 ) -> AppState {
     AppState {
         config,
@@ -42,6 +45,7 @@ pub fn new_state(
         identity_cache,
         analytics,
         compile_info: CompileInfo {},
+        ens_allowlist,
     }
 }
 
