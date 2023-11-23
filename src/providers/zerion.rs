@@ -148,6 +148,7 @@ pub struct ZerionTransactionNFTInfoFlags {
 
 #[async_trait]
 impl HistoryProvider for ZerionProvider {
+    #[tracing::instrument(skip(self, body, params), fields(provider = "Zerion"))]
     async fn get_transactions(
         &self,
         address: String,
@@ -237,6 +238,7 @@ impl HistoryProvider for ZerionProvider {
 
 #[async_trait]
 impl PortfolioProvider for ZerionProvider {
+    #[tracing::instrument(skip(self, body, params), fields(provider = "Zerion"))]
     async fn get_portfolio(
         &self,
         address: String,
