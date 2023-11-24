@@ -68,13 +68,5 @@ fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
-        // Zora Goerli
-        (
-            "eip155:999".into(),
-            (
-                "wss://testnet.rpc.zora.energy".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
-        ),
     ])
 }
