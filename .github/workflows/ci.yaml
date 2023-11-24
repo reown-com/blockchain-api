@@ -192,7 +192,7 @@ jobs:
         uses: docker/build-push-action@v2
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: latest # TODO #85: use proper tag list
+          IMAGE_TAG: ${GITHUB_SHA::7}
           PUSH: true
         with:
           context: .
@@ -216,4 +216,5 @@ jobs:
       deploy_app: true
       deploy_infra: false
       deploy_production: true
+      image_version: ${GITHUB_SHA::7}
     secrets: inherit
