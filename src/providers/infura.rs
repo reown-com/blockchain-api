@@ -20,7 +20,7 @@ use {
         response::{IntoResponse, Response},
     },
     axum_tungstenite::WebSocketUpgrade,
-    hyper::{client::HttpConnector, http, Client, Method},
+    hyper::{client::HttpConnector, http, Client, Method, StatusCode},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
     tracing::info,
@@ -134,11 +134,16 @@ impl RpcProvider for InfuraProvider {
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if response.error.is_some() && status.is_success() {
-                info!(
-                    "Strange: provider returned JSON RPC error, but status {status} is success: \
-                     Infura: {response:?}"
-                );
+            if let Some(error) = &response.error {
+                if status.is_success() {
+                    info!(
+                        "Strange: provider returned JSON RPC error, but status {status} is \
+                         success: Infura: {response:?}"
+                    );
+                }
+                if error.code == -32603 {
+                    return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
+                }
             }
         }
 
