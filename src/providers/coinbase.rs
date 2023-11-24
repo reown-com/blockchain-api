@@ -15,7 +15,7 @@ use {
     hyper::Client,
     hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
-    tracing::log::error,
+    tracing::{info, log::error},
     url::Url,
 };
 
@@ -41,7 +41,7 @@ impl CoinbaseProvider {
 pub struct CoinbaseResponseBody {
     pub transactions: Vec<CoinbaseTransaction>,
     pub next_page_key: Option<String>,
-    pub total_count: i64,
+    pub total_count: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -61,7 +61,7 @@ impl HistoryProvider for CoinbaseProvider {
         params: HistoryQueryParams,
     ) -> RpcResult<HistoryResponseBody> {
         let base = format!(
-            "https://pay.coinbase.com/api/v1/buy/{}/transactions",
+            "https://pay.coinbase.com/api/v1/buy/user/{}/transactions",
             &address
         );
         let mut url = Url::parse(&base).map_err(|_| RpcError::HistoryParseCursorError)?;
@@ -90,7 +90,7 @@ impl HistoryProvider for CoinbaseProvider {
         if !response.status().is_success() {
             error!(
                 "Error on Coinbase transactions response. Status is not OK: {:?}",
-                response.status()
+                response.status(),
             );
             return Err(RpcError::TransactionProviderError);
         }
@@ -125,6 +125,8 @@ impl HistoryProvider for CoinbaseProvider {
                 transfers: None,
             })
             .collect();
+
+        info!("Coinbase transactions: {:?}", transactions);
 
         Ok(HistoryResponseBody {
             data: transactions,

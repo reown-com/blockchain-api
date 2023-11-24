@@ -78,6 +78,14 @@ async fn handler_internal(
 
         // move this to the beginning of the transactions
         response.data.extend(coinbase_transactions.data);
+
+        // now order all of this by `mined_at`
+        response.data.sort_by(|a, b| {
+            a.metadata
+                .mined_at
+                .partial_cmp(&b.metadata.mined_at)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
     }
 
     let latency_tracker = latency_tracker_start
