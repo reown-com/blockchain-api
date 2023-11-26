@@ -13,7 +13,7 @@ locals {
 
 data "aws_ecr_image" "service_image" {
   repository_name = "rpc-proxy"
-  image_tag       = "latest"
+  most_recent     = true
 }
 
 # Log Group for our App
