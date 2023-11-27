@@ -26,6 +26,8 @@ pub struct AppState {
     pub analytics: RPCAnalytics,
     pub compile_info: CompileInfo,
     pub ens_allowlist: Option<HashMap<H160, String>>,
+    /// Service instance uptime measurement
+    pub uptime: std::time::Instant,
 }
 
 pub fn new_state(
@@ -46,6 +48,7 @@ pub fn new_state(
         analytics,
         compile_info: CompileInfo {},
         ens_allowlist,
+        uptime: std::time::Instant::now(),
     }
 }
 

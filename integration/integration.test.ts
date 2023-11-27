@@ -26,9 +26,13 @@ describe('blockchain api', () => {
   })
   describe('Health', () => {
     it('is healthy', async () => {
-      const { status } = await http.get(`${baseUrl}/health`)
+      const resp: any = await http.get(`${baseUrl}/health`)
 
-      expect(status).toBe(200)
+      expect(resp.status).toBe(200)
+      expect(resp.data).toContain('OK v')
+      expect(resp.data).toContain('hash:')
+      expect(resp.data).toContain('features:')
+      expect(resp.data).toContain('uptime:')
     })
   })
   describe('Middlewares', () => {
