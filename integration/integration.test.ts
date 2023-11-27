@@ -31,6 +31,16 @@ describe('blockchain api', () => {
       expect(status).toBe(200)
     })
   })
+  describe('Middlewares', () => {
+    it('headers should contain x-request-id', async () => {
+      let resp: any = await http.get(
+        `${baseUrl}/v1/account/0xf3ea39310011333095CFCcCc7c4Ad74034CABA63/history?projectId=${projectId}`,
+      )
+      expect(resp.status).toBe(200)
+      expect(resp.header['x-request-id']).toBe('string');
+      expect(resp.header['x-request-id']).toHaveLength(36); // UUIDv4
+    })
+  })
   describe('Identity', () => {
     it('known ens', async () => {
       let resp: any = await http.get(

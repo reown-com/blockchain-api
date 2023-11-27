@@ -21,7 +21,7 @@ hyper-tls = "0.5.0"
 tap = "1.0"
 axum = { version = "0.6", features = ["json", "tokio", "ws"] }
 tower = "0.4.11"
-tower-http = { version = "0.4.0", features = ["cors", "trace"] }
+tower-http = { version = "0.4.0", features = ["cors", "trace", "request-id", "util"] }
 jsonrpc = "0.14.0"
 async-tungstenite = { version = "0.20.0", features = ["tokio", "tokio-runtime", "tokio-native-tls"] }
 url = "2.2"
