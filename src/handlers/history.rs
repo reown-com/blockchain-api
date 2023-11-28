@@ -62,6 +62,7 @@ async fn handler_internal(
     let latency_tracker = latency_tracker_start
         .elapsed()
         .unwrap_or(std::time::Duration::from_secs(0));
+    state.metrics.add_history_lookup();
 
     {
         let origin = headers
