@@ -64,6 +64,7 @@ impl RateLimited for ZoraWsProvider {
 
 #[async_trait]
 impl RpcWsProvider for ZoraWsProvider {
+    #[tracing::instrument(skip_all, fields(provider = %self.provider_kind()))]
     async fn proxy(
         &self,
         ws: WebSocketUpgrade,
@@ -111,6 +112,7 @@ impl RateLimited for ZoraProvider {
 
 #[async_trait]
 impl RpcProvider for ZoraProvider {
+    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()))]
     async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
         let uri = self
             .supported_chains
@@ -145,6 +147,7 @@ impl RpcProvider for ZoraProvider {
 }
 
 impl RpcProviderFactory<ZoraConfig> for ZoraProvider {
+    #[tracing::instrument]
     fn new(provider_config: &ZoraConfig) -> Self {
         let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let supported_chains: HashMap<String, String> = provider_config
@@ -161,6 +164,7 @@ impl RpcProviderFactory<ZoraConfig> for ZoraProvider {
 }
 
 impl RpcProviderFactory<ZoraConfig> for ZoraWsProvider {
+    #[tracing::instrument]
     fn new(provider_config: &ZoraConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_ws_chains

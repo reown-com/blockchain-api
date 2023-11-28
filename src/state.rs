@@ -57,6 +57,7 @@ impl AppState {
         self.providers.update_weights(&self.metrics).await;
     }
 
+    #[tracing::instrument(skip(self))]
     async fn get_project_data_validated(&self, id: &str) -> Result<ProjectData, RpcError> {
         let project = self
             .registry
@@ -76,6 +77,7 @@ impl AppState {
         self.get_project_data_validated(id).await.map(drop)
     }
 
+    #[tracing::instrument(skip(self))]
     pub async fn validate_project_access_and_quota(&self, id: &str) -> Result<(), RpcError> {
         let project = self.get_project_data_validated(id).await?;
 

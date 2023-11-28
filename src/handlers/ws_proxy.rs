@@ -20,6 +20,7 @@ pub async fn handler(
         .await
 }
 
+#[tracing::instrument(skip_all)]
 async fn handler_internal(
     State(state): State<Arc<AppState>>,
     Query(query_params): Query<RpcQueryParams>,

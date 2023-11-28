@@ -47,6 +47,7 @@ impl RateLimited for BinanceProvider {
 
 #[async_trait]
 impl RpcProvider for BinanceProvider {
+    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()))]
     async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
         let uri = self
             .supported_chains
@@ -81,6 +82,7 @@ impl RpcProvider for BinanceProvider {
 }
 
 impl RpcProviderFactory<BinanceConfig> for BinanceProvider {
+    #[tracing::instrument]
     fn new(provider_config: &BinanceConfig) -> Self {
         let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let supported_chains: HashMap<String, String> = provider_config

@@ -29,6 +29,7 @@ pub async fn handler(
         .await
 }
 
+#[tracing::instrument(skip_all)]
 async fn handler_internal(
     state: State<Arc<AppState>>,
     _connect_info: ConnectInfo<SocketAddr>,
