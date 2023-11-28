@@ -255,7 +255,7 @@ async fn lookup_identity_rpc(
 
 const SELF_PROVIDER_ERROR_PREFIX: &str = "SelfProviderError: ";
 
-#[tracing::instrument]
+#[tracing::instrument(skip_all)]
 async fn lookup_name(
     provider: &Provider<SelfProvider>,
     address: Address,
@@ -279,7 +279,7 @@ async fn lookup_name(
     )
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip_all)]
 async fn lookup_avatar(
     provider: &Provider<SelfProvider>,
     name: &str,
