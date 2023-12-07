@@ -4,6 +4,7 @@ use {
     tracing::log::info,
 };
 
+#[tracing::instrument(skip(client_ws, provider_ws))]
 pub async fn proxy(
     project_id: String,
     client_ws: axum_tungstenite::WebSocket,

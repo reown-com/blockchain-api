@@ -45,4 +45,3 @@ WebSocket RPC is not recommended for production use, and may be removed in the f
 - Aurora (`eip155:1313161554`)
 - Aurora Testnet (`eip155:1313161555`)
 - Zora (`eip155:7777777`)
-- Zora Goerli (`eip155:999`)

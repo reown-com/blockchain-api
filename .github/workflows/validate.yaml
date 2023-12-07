@@ -4,22 +4,24 @@ on:
   workflow_call:
     inputs:
       environment_url:
-        description: "the environment to validate"
+        description: 'the environment to validate'
         required: true
-        default: "https://staging.rpc.walletconnect.com"
+        default: 'https://staging.rpc.walletconnect.com'
         type: string
 
   workflow_dispatch:
     inputs:
       environment_url:
-        description: "the environment to validate"
+        description: 'the environment to validate'
         required: true
-        default: "https://staging.rpc.walletconnect.com"
-        type: string 
+        default: 'https://staging.rpc.walletconnect.com'
+        type: string
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    # Compiles Rust logic so let's use the runners
+    runs-on:
+      group: ubuntu-runners
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -28,6 +30,23 @@ jobs:
 
       - name: Run integration tests
         run: cargo test --test integration
+        env:
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          RPC_URL: ${{inputs.environment_url}}
+  validate_ts_suite:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: setup-node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+      - name: install
+        run: yarn install
+      - run: yarn integration
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
           RPC_URL: ${{inputs.environment_url}}

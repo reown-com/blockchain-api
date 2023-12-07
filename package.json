@@ -1,0 +1,34 @@
+{
+  "name": "blockchain-api-integration-tests",
+  "version": "1.0.0",
+  "description": "Integration tests for blockchain-api",
+  "scripts": {
+    "integration": "jest --config integration/jestconfig.integration.json --verbose",
+    "format": "prettier --config integration/.prettierrc --write '*.{json,js}' 'integration/**/*.{js,ts}' '.github/**/*.{yml,yaml}'",
+    "lint": "eslint --max-warnings=0 integration && prettier --config integration/.prettierrc --check '*.{json,js}' 'integration/**/*.{js,ts}'"
+  },
+  "author": "WalletConnect, Inc. <walletconnect.com>",
+  "license": "Apache-2.0",
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "typescript",
+      "prettier"
+    ]
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.23",
+    "@typescript-eslint/eslint-plugin": "^4.16.1",
+    "@typescript-eslint/parser": "^4.16.1",
+    "axios": "^0.27.2",
+    "eslint": "^7.21.0",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-config-typescript": "^3.0.0",
+    "jest": "^27.0.1",
+    "prettier": "^2.3.0",
+    "ts-jest": "^27.0.1",
+    "ts-loader": "^9.2.2",
+    "typescript": "^4.3.2"
+  },
+  "dependencies": {}
+}

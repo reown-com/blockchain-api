@@ -15,11 +15,15 @@ use {
         ws,
     },
     async_trait::async_trait,
-    axum::response::{IntoResponse, Response},
+    axum::{
+        http::HeaderValue,
+        response::{IntoResponse, Response},
+    },
     axum_tungstenite::WebSocketUpgrade,
-    hyper::{client::HttpConnector, http, Client, Method},
+    hyper::{client::HttpConnector, http, Client, Method, StatusCode},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
+    tracing::info,
     wc::future::FutureExt,
 };
 
@@ -62,6 +66,7 @@ impl RateLimited for InfuraWsProvider {
 
 #[async_trait]
 impl RpcWsProvider for InfuraWsProvider {
+    #[tracing::instrument(skip_all, fields(provider = %self.provider_kind()))]
     async fn proxy(
         &self,
         ws: WebSocketUpgrade,
@@ -111,6 +116,7 @@ impl RateLimited for InfuraProvider {
 
 #[async_trait]
 impl RpcProvider for InfuraProvider {
+    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()))]
     async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
         let chain = &self
             .supported_chains
@@ -125,13 +131,34 @@ impl RpcProvider for InfuraProvider {
             .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))?;
 
-        let response = self.client.request(hyper_request).await?.into_response();
+        let response = self.client.request(hyper_request).await?;
+        let status = response.status();
+        let body = hyper::body::to_bytes(response.into_body()).await?;
 
+        if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+            if let Some(error) = &response.error {
+                if status.is_success() {
+                    info!(
+                        "Strange: provider returned JSON RPC error, but status {status} is \
+                         success: Infura: {response:?}"
+                    );
+                }
+                if error.code == -32603 {
+                    return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
+                }
+            }
+        }
+
+        let mut response = (status, body).into_response();
+        response
+            .headers_mut()
+            .insert("Content-Type", HeaderValue::from_static("application/json"));
         Ok(response)
     }
 }
 
 impl RpcProviderFactory<InfuraConfig> for InfuraProvider {
+    #[tracing::instrument]
     fn new(provider_config: &InfuraConfig) -> Self {
         let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let supported_chains: HashMap<String, String> = provider_config
@@ -149,6 +176,7 @@ impl RpcProviderFactory<InfuraConfig> for InfuraProvider {
 }
 
 impl RpcProviderFactory<InfuraConfig> for InfuraWsProvider {
+    #[tracing::instrument]
     fn new(provider_config: &InfuraConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_ws_chains

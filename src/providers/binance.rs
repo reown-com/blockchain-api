@@ -5,10 +5,14 @@ use {
         error::{RpcError, RpcResult},
     },
     async_trait::async_trait,
-    axum::response::{IntoResponse, Response},
+    axum::{
+        http::HeaderValue,
+        response::{IntoResponse, Response},
+    },
     hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
+    tracing::info,
 };
 
 #[derive(Debug)]
@@ -43,6 +47,7 @@ impl RateLimited for BinanceProvider {
 
 #[async_trait]
 impl RpcProvider for BinanceProvider {
+    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()))]
     async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
         let uri = self
             .supported_chains
@@ -55,13 +60,29 @@ impl RpcProvider for BinanceProvider {
             .header("Content-Type", "application/json")
             .body(hyper::body::Body::from(body))?;
 
-        let response = self.client.request(hyper_request).await?.into_response();
+        let response = self.client.request(hyper_request).await?;
+        let status = response.status();
+        let body = hyper::body::to_bytes(response.into_body()).await?;
 
+        if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+            if response.error.is_some() && status.is_success() {
+                info!(
+                    "Strange: provider returned JSON RPC error, but status {status} is success: \
+                     Binance: {response:?}"
+                );
+            }
+        }
+
+        let mut response = (status, body).into_response();
+        response
+            .headers_mut()
+            .insert("Content-Type", HeaderValue::from_static("application/json"));
         Ok(response)
     }
 }
 
 impl RpcProviderFactory<BinanceConfig> for BinanceProvider {
+    #[tracing::instrument]
     fn new(provider_config: &BinanceConfig) -> Self {
         let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let supported_chains: HashMap<String, String> = provider_config

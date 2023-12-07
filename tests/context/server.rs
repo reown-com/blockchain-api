@@ -24,11 +24,11 @@ impl RpcProxy {
     #[cfg(feature = "test-localhost")]
     pub async fn start() -> Self {
         let public_port = get_random_port();
-        let private_port = get_random_port();
+        let prometheus_port = get_random_port();
         let hostname = Ipv4Addr::UNSPECIFIED;
         let rt = Handle::current();
         let public_addr = SocketAddr::new(IpAddr::V4(hostname), public_port);
-        let private_addr = SocketAddr::new(IpAddr::V4(hostname), private_port);
+        let private_addr = SocketAddr::new(IpAddr::V4(hostname), prometheus_port);
 
         let project_id =
             env::var("TEST_RPC_PROXY_PROJECT_ID").expect("TEST_RPC_PROXY_PROJECT_ID must be set");
@@ -38,7 +38,7 @@ impl RpcProxy {
                 let mut config: Config = Config::from_env()?;
                 config.server = ServerConfig {
                     port: public_port,
-                    private_port,
+                    prometheus_port,
                     host: hostname.to_string(),
                     log_level: "NONE".to_string(),
                     ..Default::default()

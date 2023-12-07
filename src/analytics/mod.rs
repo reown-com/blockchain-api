@@ -1,7 +1,5 @@
 use {
-    anyhow::Context,
-    aws_config::meta::region::RegionProviderChain,
-    aws_sdk_s3::{config::Region, Client as S3Client},
+    aws_sdk_s3::Client as S3Client,
     std::{net::IpAddr, sync::Arc},
     tap::TapFallible,
     tracing::info,
@@ -15,9 +13,15 @@ use {
         geoip::{self, MaxMindResolver, Resolver},
     },
 };
-pub use {config::Config, identity_lookup_info::IdentityLookupInfo, message_info::MessageInfo};
+pub use {
+    config::Config,
+    history_lookup_info::HistoryLookupInfo,
+    identity_lookup_info::IdentityLookupInfo,
+    message_info::MessageInfo,
+};
 
 mod config;
+mod history_lookup_info;
 mod identity_lookup_info;
 mod message_info;
 
@@ -25,48 +29,23 @@ mod message_info;
 pub struct RPCAnalytics {
     messages: Analytics<MessageInfo>,
     identity_lookups: Analytics<IdentityLookupInfo>,
+    history_lookups: Analytics<HistoryLookupInfo>,
     geoip_resolver: Option<Arc<MaxMindResolver>>,
 }
 
 impl RPCAnalytics {
-    pub async fn new(config: &Config, api_ip: IpAddr) -> anyhow::Result<Self> {
-        match config.export_bucket.as_deref() {
-            Some(export_bucket) => {
-                let region_provider = RegionProviderChain::first_try(Region::new("eu-central-1"));
-                let shared_config = aws_config::from_env().region(region_provider).load().await;
-
-                let aws_config = if let Some(s3_endpoint) = &config.s3_endpoint {
-                    info!(%s3_endpoint, "initializing analytics with custom s3 endpoint");
-
-                    aws_sdk_s3::config::Builder::from(&shared_config)
-                        .endpoint_url(s3_endpoint)
-                        .build()
-                } else {
-                    aws_sdk_s3::config::Builder::from(&shared_config).build()
-                };
-
-                let s3_client = S3Client::from_conf(aws_config);
-
-                let geoip = match (&config.geoip_db_bucket, &config.geoip_db_key) {
-                    (Some(bucket), Some(key)) => {
-                        info!(%bucket, %key, "initializing geoip database from aws s3");
-
-                        let resolver = MaxMindResolver::from_aws_s3(&s3_client, bucket, key)
-                            .await
-                            .context("failed to load geoip database from s3")?;
-
-                        Some(resolver)
-                    }
-                    _ => {
-                        info!("analytics geoip lookup is disabled");
-
-                        None
-                    }
-                };
-
-                Self::with_aws_export(s3_client, export_bucket, api_ip, geoip)
-            }
-            None => Ok(Self::with_noop_export()),
+    pub async fn new(
+        config: &Config,
+        s3_client: S3Client,
+        geoip_resolver: Option<Arc<MaxMindResolver>>,
+        api_ip: IpAddr,
+    ) -> anyhow::Result<Self> {
+        if let Some(export_bucket) = config.export_bucket.as_deref() {
+            Self::with_aws_export(s3_client, export_bucket, api_ip, geoip_resolver)
+        } else if config.export_bucket.as_deref().is_none() {
+            Ok(Self::with_noop_export())
+        } else {
+            unreachable!()
         }
     }
 
@@ -76,6 +55,7 @@ impl RPCAnalytics {
         Self {
             messages: Analytics::new(NoopCollector),
             identity_lookups: Analytics::new(NoopCollector),
+            history_lookups: Analytics::new(NoopCollector),
             geoip_resolver: None,
         }
     }
@@ -84,7 +64,7 @@ impl RPCAnalytics {
         s3_client: S3Client,
         export_bucket: &str,
         node_ip: IpAddr,
-        geo_resolver: Option<MaxMindResolver>,
+        geoip_resolver: Option<Arc<MaxMindResolver>>,
     ) -> anyhow::Result<Self> {
         info!(%export_bucket, "initializing analytics with aws export");
 
@@ -113,6 +93,19 @@ impl RPCAnalytics {
                 export_prefix: "blockchain-api/identity-lookups",
                 export_name: "identity_lookups",
                 file_extension: "parquet",
+                bucket_name: bucket_name.clone(),
+                s3_client: s3_client.clone(),
+                node_ip: node_ip.clone(),
+            });
+
+            Analytics::new(ParquetWriter::new(opts.clone(), exporter)?)
+        };
+
+        let history_lookups = {
+            let exporter = AwsExporter::new(AwsOpts {
+                export_prefix: "blockchain-api/history-lookups",
+                export_name: "history_lookups",
+                file_extension: "parquet",
                 bucket_name,
                 s3_client,
                 node_ip,
@@ -124,7 +117,8 @@ impl RPCAnalytics {
         Ok(Self {
             messages,
             identity_lookups,
-            geoip_resolver: geo_resolver.map(Arc::new),
+            history_lookups,
+            geoip_resolver,
         })
     }
 
@@ -134,6 +128,10 @@ impl RPCAnalytics {
 
     pub fn identity_lookup(&self, data: IdentityLookupInfo) {
         self.identity_lookups.collect(data);
+    }
+
+    pub fn history_lookup(&self, data: HistoryLookupInfo) {
+        self.history_lookups.collect(data);
     }
 
     pub fn geoip_resolver(&self) -> &Option<Arc<MaxMindResolver>> {

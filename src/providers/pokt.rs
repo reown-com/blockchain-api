@@ -5,10 +5,14 @@ use {
         error::{RpcError, RpcResult},
     },
     async_trait::async_trait,
-    axum::response::{IntoResponse, Response},
-    hyper::{self, client::HttpConnector, Client, Method},
+    axum::{
+        http::HeaderValue,
+        response::{IntoResponse, Response},
+    },
+    hyper::{self, client::HttpConnector, Client, Method, StatusCode},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
+    tracing::info,
 };
 
 #[derive(Debug)]
@@ -65,6 +69,7 @@ impl RateLimited for PoktProvider {
 
 #[async_trait]
 impl RpcProvider for PoktProvider {
+    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()))]
     async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
         let chain = &self
             .supported_chains
@@ -83,12 +88,36 @@ impl RpcProvider for PoktProvider {
             .body(hyper::body::Body::from(body))?;
 
         let response = self.client.request(hyper_request).await?;
+        let status = response.status();
+        let body = hyper::body::to_bytes(response.into_body()).await?;
 
-        Ok(response.into_response())
+        if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+            if let Some(error) = &response.error {
+                if status.is_success() {
+                    info!(
+                        "Strange: provider returned JSON RPC error, but status {status} is \
+                         success: Pokt: {response:?}"
+                    );
+                }
+                if error.code == -32004 {
+                    return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response());
+                }
+                if error.code == -32603 {
+                    return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
+                }
+            }
+        }
+
+        let mut response = (status, body).into_response();
+        response
+            .headers_mut()
+            .insert("Content-Type", HeaderValue::from_static("application/json"));
+        Ok(response)
     }
 }
 
 impl RpcProviderFactory<PoktConfig> for PoktProvider {
+    #[tracing::instrument]
     fn new(provider_config: &PoktConfig) -> Self {
         let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let supported_chains: HashMap<String, String> = provider_config

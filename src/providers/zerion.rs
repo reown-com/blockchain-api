@@ -1,5 +1,5 @@
 use {
-    super::HistoryProvider,
+    super::{HistoryProvider, PortfolioProvider},
     crate::{
         error::{RpcError, RpcResult},
         handlers::{
@@ -7,6 +7,9 @@ use {
             HistoryResponseBody,
             HistoryTransaction,
             HistoryTransactionMetadata,
+            PortfolioPosition,
+            PortfolioQueryParams,
+            PortfolioResponseBody,
         },
     },
     async_trait::async_trait,
@@ -36,9 +39,9 @@ impl ZerionProvider {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct ZerionResponseBody {
+pub struct ZerionResponseBody<T> {
     pub links: ZerionResponseLinks,
-    pub data: Vec<ZerionTransactionsReponseBody>,
+    pub data: T,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
@@ -46,6 +49,30 @@ pub struct ZerionResponseLinks {
     #[serde(rename = "self")]
     pub self_id: String,
     pub next: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionPortfolioResponseBody {
+    pub r#type: String,
+    pub id: String,
+    pub attributes: ZerionPortfolioAttributes,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionPortfolioAttributes {
+    pub quantity: ZerionPortfolioQuantity,
+    pub fungible_info: ZerionPortfolioFungibleInfo,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionPortfolioQuantity {
+    pub numeric: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionPortfolioFungibleInfo {
+    pub name: String,
+    pub symbol: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -111,10 +138,17 @@ pub struct ZerionTransactionNFTContent {
 pub struct ZerionTransactionNFTInfo {
     pub name: Option<String>,
     pub content: Option<ZerionTransactionNFTContent>,
+    pub flags: ZerionTransactionNFTInfoFlags,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionNFTInfoFlags {
+    pub is_spam: bool,
 }
 
 #[async_trait]
 impl HistoryProvider for ZerionProvider {
+    #[tracing::instrument(skip(self, body, params), fields(provider = "Zerion"))]
     async fn get_transactions(
         &self,
         address: String,
@@ -154,13 +188,14 @@ impl HistoryProvider for ZerionProvider {
         while let Some(next) = body.next().await {
             bytes.extend_from_slice(&next?);
         }
-        let body: ZerionResponseBody = match serde_json::from_slice(&bytes) {
-            Ok(body) => body,
-            Err(e) => {
-                error!("Error on parsing zerion transactions response: {:?}", e);
-                return Err(RpcError::TransactionProviderError);
-            }
-        };
+        let body: ZerionResponseBody<Vec<ZerionTransactionsReponseBody>> =
+            match serde_json::from_slice(&bytes) {
+                Ok(body) => body,
+                Err(e) => {
+                    error!("Error on parsing zerion transactions response: {:?}", e);
+                    return Err(RpcError::TransactionProviderError);
+                }
+            };
 
         let next: Option<String> = match body.links.next {
             Some(url) => {
@@ -176,7 +211,7 @@ impl HistoryProvider for ZerionProvider {
             None => None,
         };
 
-        let transactions: Vec<HistoryTransaction> = body
+        let transactions = body
             .data
             .into_iter()
             .map(|f| HistoryTransaction {
@@ -198,5 +233,63 @@ impl HistoryProvider for ZerionProvider {
             data: transactions,
             next,
         })
+    }
+}
+
+#[async_trait]
+impl PortfolioProvider for ZerionProvider {
+    #[tracing::instrument(skip(self, body, params), fields(provider = "Zerion"))]
+    async fn get_portfolio(
+        &self,
+        address: String,
+        body: Bytes,
+        params: PortfolioQueryParams,
+    ) -> RpcResult<PortfolioResponseBody> {
+        let base = format!("https://api.zerion.io/v1/wallets/{}/positions/?", &address);
+        let mut url = Url::parse(&base).map_err(|_| RpcError::HistoryParseCursorError)?;
+        url.query_pairs_mut()
+            .append_pair("currency", &params.currency.unwrap_or("usd".to_string()));
+
+        let hyper_request = hyper::http::Request::builder()
+            .uri(url.as_str())
+            .header("Content-Type", "application/json")
+            .header("authorization", format!("Basic {}", self.api_key))
+            .body(hyper::body::Body::from(body))?;
+
+        let response = self.http_client.request(hyper_request).await?;
+
+        if !response.status().is_success() {
+            error!(
+                "Error on zerion portfolio response. Status is not OK: {:?}",
+                response.status()
+            );
+            return Err(RpcError::PortfolioProviderError);
+        }
+
+        let mut body = response.into_body();
+        let mut bytes = Vec::new();
+        while let Some(next) = body.next().await {
+            bytes.extend_from_slice(&next?);
+        }
+        let body: ZerionResponseBody<Vec<ZerionPortfolioResponseBody>> =
+            match serde_json::from_slice(&bytes) {
+                Ok(body) => body,
+                Err(e) => {
+                    error!("Error on parsing zerion portfolio response: {:?}", e);
+                    return Err(RpcError::PortfolioProviderError);
+                }
+            };
+
+        let portfolio = body
+            .data
+            .into_iter()
+            .map(|f| PortfolioPosition {
+                id: f.id,
+                name: f.attributes.fungible_info.name,
+                symbol: f.attributes.fungible_info.symbol,
+            })
+            .collect();
+
+        Ok(PortfolioResponseBody { data: portfolio })
     }
 }

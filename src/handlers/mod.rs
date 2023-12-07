@@ -8,12 +8,13 @@ pub mod health;
 pub mod history;
 pub mod identity;
 pub mod metrics;
+pub mod portfolio;
 pub mod proxy;
 pub mod ws_proxy;
 
 static HANDLER_TASK_METRICS: TaskMetrics = TaskMetrics::new("handler_task");
 
-#[derive(Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RpcQueryParams {
     pub chain_id: String,
@@ -25,8 +26,29 @@ pub struct SuccessResponse {
     status: String,
 }
 
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PortfolioQueryParams {
+    pub project_id: String,
+    pub currency: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PortfolioResponseBody {
+    pub data: Vec<PortfolioPosition>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PortfolioPosition {
+    pub id: String,
+    pub name: String,
+    pub symbol: String,
+}
+
 // TODO: https://developers.zerion.io/reference/listwallettransactions
-#[derive(Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct HistoryQueryParams {
     pub currency: Option<String>,
