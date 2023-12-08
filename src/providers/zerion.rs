@@ -110,11 +110,21 @@ pub struct ZerionTransactionTransferQuantity {
     pub numeric: String,
 }
 
+/// Implementation details of the fungible on various chains.
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionImplementation {
+    /// Unique id of the chain.
+    pub chain_id: String,
+    /// Implementation address on the chain.
+    pub address: Option<String>,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 pub struct ZerionTransactionFungibleInfo {
     pub name: Option<String>,
     pub symbol: Option<String>,
     pub icon: Option<ZerionTransactionURLItem>,
+    pub implementations: Vec<ZerionTransactionImplementation>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
