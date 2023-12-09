@@ -43,6 +43,7 @@ use {
         ZoraProvider,
         ZoraWsProvider,
     },
+    sqlx::postgres::PgPoolOptions,
     std::{
         collections::HashMap,
         error::Error,
@@ -75,6 +76,7 @@ const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(5);
 const KEEPALIVE_RETRIES: u32 = 1;
 
 mod analytics;
+pub mod database;
 pub mod env;
 pub mod error;
 mod extractors;
@@ -130,6 +132,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         )
     });
 
+    // TODO: This should be removed in a near future
     let ens_allowlist = read_google_sheet()
         .await
         .tap_err(|e| {
@@ -138,8 +141,15 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .ok();
     info!(?ens_allowlist, "loaded ens allowlist");
 
+    let postgres = PgPoolOptions::new()
+        .max_connections(config.postgres.max_connections.into())
+        .connect(&config.postgres.uri)
+        .await?;
+    sqlx::migrate!("./migrations").run(&postgres).await?;
+
     let state = state::new_state(
         config.clone(),
+        postgres.clone(),
         providers,
         metrics.clone(),
         registry,

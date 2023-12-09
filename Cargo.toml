@@ -37,6 +37,7 @@ serde-aux = "3.1"
 aws-config = "0.56"
 aws-sdk-s3 = "0.31"
 deadpool-redis = "0.13"
+sqlx = { version = "0.7.3", features = ["runtime-tokio-native-tls", "postgres", "chrono"] }
 
 dotenv = "0.15.0"
 envy = "0.4"
