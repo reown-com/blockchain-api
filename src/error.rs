@@ -78,6 +78,12 @@ pub enum RpcError {
 
     #[error("Quota limit reached")]
     QuotaLimitReached,
+
+    #[error("sqlx error: {0}")]
+    SqlxError(#[from] sqlx::error::Error),
+
+    #[error("sqlx migration error: {0}")]
+    SqlxMigrationError(#[from] sqlx::migrate::MigrateError),
 }
 
 impl IntoResponse for RpcError {

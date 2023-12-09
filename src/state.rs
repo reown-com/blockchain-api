@@ -12,6 +12,7 @@ use {
     },
     cerberus::project::ProjectData,
     ethers::types::H160,
+    sqlx::PgPool,
     std::{collections::HashMap, sync::Arc},
     tap::TapFallible,
     tracing::info,
@@ -19,6 +20,7 @@ use {
 
 pub struct AppState {
     pub config: Config,
+    pub postgres: PgPool,
     pub providers: ProviderRepository,
     pub metrics: Arc<Metrics>,
     pub registry: Registry,
@@ -30,8 +32,10 @@ pub struct AppState {
     pub uptime: std::time::Instant,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn new_state(
     config: Config,
+    postgres: PgPool,
     providers: ProviderRepository,
     metrics: Arc<Metrics>,
     registry: Registry,
@@ -41,6 +45,7 @@ pub fn new_state(
 ) -> AppState {
     AppState {
         config,
+        postgres,
         providers,
         metrics,
         registry,
