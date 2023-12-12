@@ -32,6 +32,18 @@ jobs:
     name: 'Check / ${{ matrix.cargo.name }}'
     runs-on:
       group: ubuntu-runners
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     strategy:
       fail-fast: false
       matrix:
@@ -54,6 +66,11 @@ jobs:
           #   args: --lib --bins
           #   cache: {}
           #   rust: nightly
+          - name: 'Unit Tests (database)'
+            cmd: test
+            args: functional::database
+            cache: {}
+            rust: nightly
           - name: 'Unit Tests (all features)'
             cmd: test
             args: --all-features --lib --bins
@@ -120,10 +137,12 @@ jobs:
       - name: 'Task ${{ matrix.cargo.name }}'
         env:
           TEST_RPC_PROXY_PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          RPC_PROXY_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
           RPC_PROXY_REGISTRY_API_URL: ${{ secrets.REGISTRY_URL }}
           RPC_PROXY_REGISTRY_API_AUTH_TOKEN: ${{ secrets.RPC_PROXY_REGISTRY_API_AUTH_TOKEN }}
-          RPC_PROXY_POKT_PROJECT_ID: ${{ secrets.POKT_PROJECT_ID }}
+          RPC_PROXY_PROVIDER_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
+          RPC_PROXY_PROVIDER_POKT_PROJECT_ID: ${{ secrets.POKT_PROJECT_ID }}
+          RPC_PROXY_PROVIDER_ZERION_API_KEY: ${{ secrets.ZERION_API_KEY }}
+          RPC_PROXY_POSTGRES_URI: 'postgres://postgres:root@localhost:5432/postgres'
         uses: actions-rs/cargo@v1
         with:
           command: ${{ matrix.cargo.cmd }}
