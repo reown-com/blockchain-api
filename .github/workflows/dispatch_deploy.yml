@@ -1,0 +1,78 @@
+name: ⚙️ Deploy
+run-name: "Deploy: ${{ github.sha }} ➠ ${{ inputs.version }}${{ (!inputs.deploy-infra && !inputs.deploy-app) && ' 👀 deploy nothing' || ''}}${{ inputs.deploy-infra && ' ❱❱  infra' || '' }}${{ inputs.deploy-app && ' ❱❱  app' || '' }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy-infra:
+        description: "Deploy Infra"
+        default: true
+        required: true
+        type: boolean
+      deploy-app:
+        description: "Deploy App"
+        default: true
+        required: true
+        type: boolean
+      stage:
+        description: 'Target Environment'
+        type: choice
+        options:
+          - staging
+          - prod
+        default: staging
+        required: true
+      version:
+        description: "Release Version"
+        type: string
+        default: '-current-'
+
+concurrency: deploy
+
+permissions:
+  contents: write
+  checks: write
+  id-token: write
+  packages: write
+
+jobs:
+  get_deployed_version:
+    name: Lookup Version
+    if: ${{ !inputs.deploy-app && inputs.version == '-current-' }}
+    secrets: inherit
+    uses: WalletConnect/ci_workflows/.github/workflows/release-get_deployed_version.yml@0.1.2
+    with:
+      task-name: ${{ vars.IMAGE_NAME }}
+      aws-region: ${{ vars.AWS_REGION }}
+      aws-role-arn: ${{vars.AWS_ROLE_PROD}}
+      run-group: ${{ vars.RUN_GROUP }}
+
+  select_version:
+    name: Select Version
+    needs: [ get_deployed_version ]
+    if: ${{ always() && !cancelled() && !failure() }}
+    runs-on:
+      group: ${{ vars.RUN_GROUP }}
+    steps:
+      - name: Select target version
+        id: select_version
+        run: |
+          if [ "${{ inputs.deploy-app }}" != "true" ] && [ "${{ inputs.version }}" == "-current-" ]; then
+            echo "version=${{ needs.get_deployed_version.outputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          fi
+    outputs:
+      version: ${{ steps.select_version.outputs.version }}
+
+  cd:
+    name: CD
+    uses: ./.github/workflows/sub-cd.yml
+    needs: [ select_version ]
+    if: ${{ always() && !cancelled() && !failure() }}
+    secrets: inherit
+    with:
+      deploy-infra: ${{ inputs.deploy-infra }}
+      deploy-app: ${{ inputs.deploy-app }}
+      deploy-prod: ${{ inputs.stage == 'prod' }}
+      version: ${{ needs.select_version .outputs.version }}

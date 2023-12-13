@@ -1,0 +1,52 @@
+name: ⚙️ Publish
+run-name: "Publish: ${{ github.sha }}${{ inputs.deploy-to != 'none' && format(' ❱❱ {0}', inputs.deploy-to) || ''}}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy-to:
+        description: "Deploy published image to"
+        type: choice
+        options:
+          - none
+          - staging
+          - prod
+        default: staging
+        required: true
+
+concurrency: deploy
+
+permissions:
+  contents: write
+  checks: write
+  id-token: write
+  packages: write
+
+jobs:
+  ci:
+    name: CI
+    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.1.2
+    secrets: inherit
+    with:
+      check-infra: false
+      check-app: true
+
+  release:
+    name: Release
+    uses: WalletConnect/ci_workflows/.github/workflows/release.yml@0.1.2
+    secrets: inherit
+    with:
+      infra-changed: false
+      app-changed: true
+
+  cd:
+    name: CD
+    needs: [ release ]
+    if: ${{ inputs.deploy-to == 'staging' || inputs.deploy-to == 'prod' }}
+    secrets: inherit
+    uses: ./.github/workflows/sub-cd.yml
+    with:
+      deploy-infra: false
+      deploy-app: true
+      deploy-prod: ${{ inputs.deploy-to == 'prod' }}
+      version: ${{ needs.release.outputs.version }}

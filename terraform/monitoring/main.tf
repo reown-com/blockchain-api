@@ -1,14 +1,26 @@
-locals {
-  opsgenie_notification_channel = "NNOynGwVz"
-  notifications = (
-    var.environment == "prod" ?
-    [{ uid = local.opsgenie_notification_channel }] :
-    []
-  )
+data "jsonnet_file" "dashboard" {
+  source = "${path.module}/dashboard.jsonnet"
 
-  target_group = split(":", var.target_group_arn)[5]
+  ext_str = {
+    dashboard_title = "BlockchainAPI - ${title(module.this.stage)}"
+    dashboard_uid   = "blockchainapi-${module.this.stage}"
 
-  # Turns the arn into the format expected by the Grafana provider e.g.
-  # net/prod-relay-load-balancer/e9a51c46020a0f85
-  load_balancer = join("/", slice(split("/", var.load_balancer_arn), 1, 4))
+    prometheus_uid = grafana_data_source.prometheus.uid
+    cloudwatch_uid = grafana_data_source.cloudwatch.uid
+
+    environment   = module.this.stage
+    notifications = jsonencode(var.notification_channels)
+
+    ecs_service_name = var.ecs_service_name
+    ecs_task_family  = var.ecs_task_family
+    load_balancer    = var.load_balancer_arn
+    target_group     = var.ecs_target_group_arn
+    redis_cluster_id = var.redis_cluster_id
+  }
+}
+
+resource "grafana_dashboard" "main" {
+  overwrite   = true
+  message     = "Updated by Terraform"
+  config_json = data.jsonnet_file.dashboard.rendered
 }

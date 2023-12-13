@@ -39,10 +39,4 @@
     cache:                (import 'identity/cache.libsonnet'              ).new,
     usage:                (import 'identity/usage.libsonnet'              ).new,
   },
-
-  history: {
-    availability:         (import 'history/availability.libsonnet'        ).new,
-    requests:             (import 'history/requests.libsonnet'            ).new,
-    latency:              (import 'history/latency.libsonnet'             ).new,
-  },
 }
