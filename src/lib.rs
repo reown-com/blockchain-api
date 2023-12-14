@@ -225,6 +225,16 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/account/:address/portfolio",
             get(handlers::portfolio::handler),
         )
+        // Forward lookup
+        .route(
+            "/v1/profile/account/:name",
+            get(handlers::profile::lookup::handler),
+        )
+        // Reverse lookup
+        .route(
+            "/v1/profile/reverse/:address",
+            get(handlers::profile::reverse::handler),
+        )
         .route_layer(tracing_and_metrics_layer)
         .route("/health", get(handlers::health::handler))
         .layer(cors);

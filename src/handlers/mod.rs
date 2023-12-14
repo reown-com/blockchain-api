@@ -9,6 +9,7 @@ pub mod history;
 pub mod identity;
 pub mod metrics;
 pub mod portfolio;
+pub mod profile;
 pub mod proxy;
 pub mod ws_proxy;
 
