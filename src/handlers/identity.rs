@@ -175,7 +175,7 @@ async fn lookup_identity(
             debug!("Setting cache success");
         });
     }
-    
+
     Ok((IdentityLookupSource::Rpc, res))
 }
 
