@@ -145,6 +145,15 @@ async fn lookup_identity(
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
     let cache_key = format!("{}", address);
+    if let Some(cache) = &state.identity_cache {
+        debug!("Checking cache for identity");
+        let cache_start = SystemTime::now();
+        let value = cache.get(&cache_key).await?;
+        state.metrics.add_identity_lookup_cache_latency(cache_start);
+        if let Some(response) = value {
+            return Ok((IdentityLookupSource::Cache, response));
+        }
+    }
 
     let res =
         lookup_identity_rpc(address, state.clone(), connect_info, query, path, headers).await?;
@@ -166,7 +175,7 @@ async fn lookup_identity(
             debug!("Setting cache success");
         });
     }
-
+    
     Ok((IdentityLookupSource::Rpc, res))
 }
 
