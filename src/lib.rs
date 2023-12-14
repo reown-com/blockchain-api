@@ -230,6 +230,11 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/profile/account/:name",
             get(handlers::profile::lookup::handler),
         )
+        // Register
+        .route(
+            "/v1/profile/account/:name",
+            post(handlers::profile::register::handler),
+        )
         // Reverse lookup
         .route(
             "/v1/profile/reverse/:address",
