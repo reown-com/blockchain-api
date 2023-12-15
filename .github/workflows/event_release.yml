@@ -1,0 +1,63 @@
+name: ⚡ Release
+run-name: 'Release / ${{ github.event.head_commit.message }}'
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - '.github/**'
+      - 'docs/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'LICENSE'
+      - 'justfile'
+      - 'rustfmt.toml'
+      - '.editorconfig'
+      - '.pre-commit-config.yaml'
+      - '.terraformignore'
+      - '.env.example'
+
+concurrency: deploy
+
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+  checks: write
+
+jobs:
+  paths_filter:
+    name: Paths Filter
+    runs-on:
+      group: ${{ vars.RUN_GROUP }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: WalletConnect/actions/github/paths-filter/@2.2.1
+        id: filter
+    outputs:
+      infra: ${{ steps.filter.outputs.infra }}
+      app: ${{ steps.filter.outputs.app }}
+
+  release:
+    name: Release
+    needs: [ paths_filter ]
+    uses: WalletConnect/ci_workflows/.github/workflows/release.yml@0.1.2
+    secrets: inherit
+    with:
+      infra-changed: ${{ needs.paths_filter.outputs.infra == 'true' }}
+      app-changed: ${{ needs.paths_filter.outputs.app == 'true' }}
+
+  cd:
+    name: CD
+    needs: [ paths_filter, release ]
+    secrets: inherit
+    uses: ./.github/workflows/sub-cd.yml
+    with:
+      deploy-infra: ${{ needs.paths_filter.outputs.infra == 'true' }}
+      deploy-app: ${{ needs.paths_filter.outputs.app == 'true' }}
+      deploy-prod: true
+      version: ${{ needs.release.outputs.version }}

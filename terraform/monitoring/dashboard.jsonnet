@@ -106,9 +106,4 @@ dashboard.new(
     panels.identity.latency(ds, vars)                { gridPos: pos_short._2 },
     panels.identity.cache(ds, vars)                  { gridPos: pos_short._2 },
     panels.identity.usage(ds, vars)                  { gridPos: pos_short._2 },
-
-  row.new('History (Zerion) Metrics'),
-    panels.history.requests(ds, vars)               { gridPos: pos_short._3 },
-    panels.history.latency(ds, vars)                { gridPos: pos_short._3 },
-    panels.history.availability(ds, vars)           { gridPos: pos_short._3 },
 ]))

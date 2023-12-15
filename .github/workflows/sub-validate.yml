@@ -1,0 +1,83 @@
+name: ❖ Validate
+
+on:
+  workflow_call:
+    inputs:
+      stage:
+        description: 'the environment to validate'
+        required: true
+        type: string
+        default: 'staging'
+      stage-url:
+        description: 'the URL of the environment'
+        required: true
+        type: string
+        default: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.com/health
+
+permissions:
+  contents: read
+  checks: write
+  id-token: write
+
+jobs:
+  health-check:
+    name: Health Check - ${{ inputs.stage }}
+    runs-on:
+      group: ${{ vars.RUN_GROUP }}
+    environment:
+      name: ${{ inputs.stage }}
+      url: ${{ inputs.stage-url }}
+    steps:
+      - name: health-check
+        run: curl "${{ inputs.stage-url }}"
+
+  integration-tests:
+    name: Integration Tests - ${{ inputs.stage }}
+    runs-on:
+      group: ${{ vars.RUN_GROUP }}
+    environment:
+      name: ${{ inputs.stage }}
+      url: ${{ inputs.stage-url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: "Install Rust ${{ inputs.version }}"
+        uses: WalletConnect/actions-rs/toolchain@1.0.0
+        with:
+          toolchain: ${{ vars.RUST_VERSION }}
+          profile: 'default'
+          override: true
+
+      - name: "Run Integration Tests"
+        uses: WalletConnect/actions-rs/cargo@1.0.0
+        env:
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          RPC_URL: ${{ inputs.stage-url }}
+        with:
+          command: test
+          args: --test integration
+
+  integration-tests-ts:
+    name: TS Integration Tests - ${{ inputs.stage }}
+    runs-on:
+      group: ${{ vars.RUN_GROUP }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+
+      - name: Yarn Install
+        run: yarn install
+
+      - name: Yarn Integration Tests
+        run: yarn integration
+        env:
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          RPC_URL: ${{ inputs.stage-url }}
