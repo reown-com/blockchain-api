@@ -41,6 +41,20 @@ variable "max_capacity" {
 }
 
 #-------------------------------------------------------------------------------
+# Logs
+
+variable "cloudwatch_logs_key_arn" {
+  description = "The ARN of the KMS key to use for encrypting CloudWatch logs"
+  type        = string
+}
+
+variable "cloudwatch_retention_in_days" {
+  description = "The number of days to retain CloudWatch logs for the DB instance"
+  type        = number
+  default     = 14
+}
+
+#-------------------------------------------------------------------------------
 # Networking
 
 variable "vpc_id" {
@@ -48,15 +62,12 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "ingress_cidr_blocks" {
-  description = "The CIDR blocks to allow ingress from"
+variable "subnet_ids" {
+  description = "The IDs of the subnets to deploy to"
   type        = list(string)
 }
 
-#-------------------------------------------------------------------------------
-# Naming
-
-variable "app_name" {
-  description = "App name for naming resources"
-  type        = string
+variable "ingress_cidr_blocks" {
+  description = "The CIDR blocks to allow ingress from"
+  type        = list(string)
 }

@@ -8,6 +8,11 @@ output "master_username" {
   value       = var.db_master_username
 }
 
+output "master_password_id" {
+  description = "The ID of the database master password in Secrets Manager"
+  value       = aws_secretsmanager_secret.db_master_password.id
+}
+
 output "rds_cluster_arn" {
   description = "The ARN of the cluster"
   value       = module.db_cluster.cluster_arn
