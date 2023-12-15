@@ -57,6 +57,7 @@ module "ecs" {
   identity_cache_endpoint_read  = module.redis.endpoint
   identity_cache_endpoint_write = module.redis.endpoint
   ofac_blocked_countries        = var.ofac_blocked_countries
+  postgres_url = module.postgres.database_url
 
   # Providers
   infura_project_id = var.infura_project_id
