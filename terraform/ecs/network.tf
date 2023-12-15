@@ -75,7 +75,7 @@ resource "aws_lb_target_group" "target_group" {
 
   health_check {
     protocol            = "HTTP"
-    path                = "/health" # KeysServer's health path
+    path                = "/health" # Blockchain-API health path
     port                = var.port
     interval            = 15
     timeout             = 10
