@@ -28,7 +28,7 @@ use {
         time::{Duration, SystemTime, UNIX_EPOCH},
     },
     tap::TapFallible,
-    tracing::{debug, info, warn},
+    tracing::{debug, warn},
     wc::future::FutureExt,
 };
 
@@ -145,40 +145,18 @@ async fn lookup_identity(
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
     let cache_key = format!("{}", address);
-
-    // Skipping the cache for testing addresses
-    let ens_demo_addresses = state.ens_allowlist.clone().unwrap_or_default();
-    if !ens_demo_addresses.contains_key(&address) {
-        if let Some(cache) = &state.identity_cache {
-            debug!("Checking cache for identity");
-            let cache_start = SystemTime::now();
-            let value = cache.get(&cache_key).await?;
-            state.metrics.add_identity_lookup_cache_latency(cache_start);
-            if let Some(response) = value {
-                return Ok((IdentityLookupSource::Cache, response));
-            }
+    if let Some(cache) = &state.identity_cache {
+        debug!("Checking cache for identity");
+        let cache_start = SystemTime::now();
+        let value = cache.get(&cache_key).await?;
+        state.metrics.add_identity_lookup_cache_latency(cache_start);
+        if let Some(response) = value {
+            return Ok((IdentityLookupSource::Cache, response));
         }
-    };
+    }
 
-    info!("Looking up identity for address: {}", address);
-
-    // check if address equals derek address
-    let res = if !ens_demo_addresses.contains_key(&address) {
-        lookup_identity_rpc(address, state.clone(), connect_info, query, path, headers).await?
-    } else {
-        let fallback = "unknown".to_string();
-        let ens = ens_demo_addresses
-            .get(&address)
-            .unwrap_or(&fallback)
-            .as_str();
-        IdentityResponse {
-            name: Some(format!("{}.connect.id", ens)),
-            avatar: Some(
-                "https://ipfs.io/ipfs/bafybeiabkgjlpf35cbo4jdskt4llbb7pdhqh25nmra7imsam233z65an2y"
-                    .to_string(),
-            ),
-        }
-    };
+    let res =
+        lookup_identity_rpc(address, state.clone(), connect_info, query, path, headers).await?;
 
     if let Some(cache) = &state.identity_cache {
         debug!("Saving to cache");
