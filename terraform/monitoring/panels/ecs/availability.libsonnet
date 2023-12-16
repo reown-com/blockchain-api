@@ -48,7 +48,7 @@ local error_alert(vars) = alert.new(
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = '(1-(sum(rate(http_call_counter_total{code=~"5.+"}[5m])) or vector(0))/(sum(rate(http_call_counter_total{}[5m]))))*100' % [vars.environment, vars.environment],
+      expr        = '(1-(sum(rate(http_call_counter_total{code=~"5.+"}[5m])) or vector(0))/(sum(rate(http_call_counter_total{}[5m]))))*100',
       refId       = "availability",
       exemplar    = false,
     ))
