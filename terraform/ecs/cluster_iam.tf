@@ -84,6 +84,11 @@ resource "aws_iam_role_policy_attachment" "prometheus_write_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonPrometheusRemoteWriteAccess"
 }
 
+resource "aws_iam_role_policy_attachment" "prometheus_read_policy" {
+  role       = data.aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonPrometheusQueryAccess"
+}
+
 resource "aws_iam_role_policy_attachment" "ssm_read_only_policy" {
   role       = data.aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess"
