@@ -81,7 +81,7 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_PROVIDER_INFURA_PROJECT_ID", value = var.infura_project_id },
         { name = "RPC_PROXY_PROVIDER_POKT_PROJECT_ID", value = var.pokt_project_id },
         { name = "RPC_PROXY_PROVIDER_ZERION_API_KEY", value = var.zerion_api_key },
-        { name = "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL", value = "http://127.0.0.1:${local.prometheus_proxy_port}/${var.prometheus_workspace_id}" },
+        { name = "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL", value = "http://127.0.0.1:${local.prometheus_proxy_port}/workspaces/${var.prometheus_workspace_id}" },
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_WORKSPACE_HEADER", value = "aps-workspaces.${module.this.region}.amazonaws.com" },
 
         { name = "RPC_PROXY_REGISTRY_API_URL", value = var.registry_api_endpoint },
