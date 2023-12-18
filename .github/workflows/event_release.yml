@@ -48,6 +48,7 @@ jobs:
     uses: WalletConnect/ci_workflows/.github/workflows/release.yml@0.1.2
     secrets: inherit
     with:
+      task-name: 'wc-${{ vars.AWS_REGION }}-prod-blockchain-api'
       infra-changed: ${{ needs.paths_filter.outputs.infra == 'true' }}
       app-changed: ${{ needs.paths_filter.outputs.app == 'true' }}
 
