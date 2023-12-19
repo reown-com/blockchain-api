@@ -6,3 +6,4 @@
 !Cargo.*
 !.git
 !bin
+!migrations
