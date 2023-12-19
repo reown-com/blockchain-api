@@ -1,6 +1,12 @@
 use {
     super::HANDLER_TASK_METRICS,
-    crate::{analytics::MessageInfo, error::RpcError, handlers::RpcQueryParams, state::AppState},
+    crate::{
+        analytics::MessageInfo,
+        error::RpcError,
+        handlers::RpcQueryParams,
+        state::AppState,
+        utils::network,
+    },
     axum::{
         body::Bytes,
         extract::{ConnectInfo, MatchedPath, Query, State},
@@ -60,7 +66,7 @@ async fn handler_internal(
     if let Ok(rpc_request) = serde_json::from_slice(&body) {
         let (country, continent, region) = state
             .analytics
-            .lookup_geo_data(addr.ip())
+            .lookup_geo_data(network::get_forwarded_ip(headers).unwrap_or_else(|| addr.ip()))
             .map(|geo| (geo.country, geo.continent, geo.region))
             .unwrap_or((None, None, None));
 

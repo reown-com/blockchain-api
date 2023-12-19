@@ -31,8 +31,8 @@ module "ecs" {
   ecr_repository_url        = local.ecr_repository_url
   image_version             = var.image_version
   task_execution_role_name  = aws_iam_role.application_role.name
-  task_cpu                  = local.is_prod ? 2048 : 256
-  task_memory               = local.is_prod ? 8192 : 512
+  task_cpu                  = module.stage.prod ? 2048 : 256
+  task_memory               = module.stage.prod ? 8192 : 512
   autoscaling_desired_count = var.app_autoscaling_desired_count
   autoscaling_min_capacity  = var.app_autoscaling_min_capacity
   autoscaling_max_capacity  = var.app_autoscaling_max_capacity
