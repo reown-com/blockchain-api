@@ -2,6 +2,22 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.3.0 - 2023-12-19
+#### Bug Fixes
+- **(o11y)** dashboards broken (#420) - (777166c) - Derek
+- ECS task name in version retrieval (#423) - (97440c5) - Xavier Basty
+- query URL (#421) - (8e7e99f) - Chris Smith
+- change ECS role Prometheus permission to read+write access (#422) - (aaac458) - Xavier Basty
+#### Features
+- scaffold sqlx (#412) - (2ef48ec) - Max Kalashnikoff
+- add sql schema and migrations (#411) - (4e2e19a) - Max Kalashnikoff
+- add Postgres 16 to the docker-compose for the CI tests (#410) - (e60d6f1) - Max Kalashnikoff
+#### Miscellaneous Chores
+- **(terraform)** downgrade aurora version (#426) - (6c8e67b) - Max Kalashnikoff
+- **(terraform)** adding Postgres (#415) - (4c899d6) - Max Kalashnikoff
+
+- - -
+
 ## 0.2.0 - 2023-12-15
 #### Features
 - **(identity)** remove ENS demo (#404) - (590da3f) - Derek
