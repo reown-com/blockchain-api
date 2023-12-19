@@ -5,24 +5,7 @@ resource "random_pet" "this" {
 }
 
 locals {
-  ecr_repository_url = local.is_dev ? data.terraform_remote_state.org.outputs.accounts.sdlc.dev.ecr-urls.blockchain : data.terraform_remote_state.org.outputs.accounts.wl.blockchain[local.stage].ecr-url
-
-  stage = lookup({
-    "blockchain-wl-staging" = "staging",
-    "blockchain-wl-prod"    = "prod",
-    "blockchain-wl-dev"     = "dev",
-    "blockchain-staging"    = "staging",
-    "blockchain-prod"       = "prod",
-    "wl-staging"            = "staging",
-    "wl-prod"               = "prod",
-    "wl-dev"                = "dev",
-    "staging"               = "staging",
-    "prod"                  = "prod",
-  }, terraform.workspace, terraform.workspace)
-
-  is_dev     = local.stage == "dev"     #tflint-ignore: terraform_unused_declarations
-  is_staging = local.stage == "staging" #tflint-ignore: terraform_unused_declarations
-  is_prod    = local.stage == "prod"    #tflint-ignore: terraform_unused_declarations
+  ecr_repository_url = module.stage.dev ? data.terraform_remote_state.org.outputs.accounts.sdlc.dev.ecr-urls.blockchain : data.terraform_remote_state.org.outputs.accounts.wl.blockchain[local.stage].ecr-url
 }
 
 resource "aws_kms_key" "cloudwatch_logs" {
