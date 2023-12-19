@@ -141,6 +141,11 @@ variable "ofac_blocked_countries" {
   type        = string
 }
 
+variable "postgres_url" {
+  description = "The connection URL for the PostgreSQL instance"
+  type        = string
+}
+
 #-------------------------------------------------------------------------------
 # Providers
 

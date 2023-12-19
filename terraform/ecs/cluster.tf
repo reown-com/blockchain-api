@@ -94,6 +94,8 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_READ", value = "redis://${var.identity_cache_endpoint_read}/1" },
         { name = "RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_WRITE", value = "redis://${var.identity_cache_endpoint_write}/1" },
 
+        { name = "RPC_PROXY_POSTGRES_URI", value = var.postgres_url },
+
         { name = "RPC_PROXY_ANALYTICS_EXPORT_BUCKET", value = var.analytics_datalake_bucket_name },
       ],
 
