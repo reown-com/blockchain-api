@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.4.0 - 2023-12-19
+#### Features
+- implement helpers (#413) - (389e70e) - Max Kalashnikoff
+#### Miscellaneous Chores
+- **(docker)** moving COPY before the cargo chef cook (#429) - (d540595) - Max Kalashnikoff
+
+- - -
+
 ## 0.3.1 - 2023-12-19
 #### Bug Fixes
 - use the `X-Forwarded-For` header from the ALB to retrieve the client IP (#428) - (306ad07) - Xavier Basty
