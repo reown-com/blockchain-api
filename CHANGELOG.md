@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.6.0 - 2023-12-20
+#### Features
+- implement register handler (#418) - (3c06126) - Max Kalashnikoff
+
+- - -
+
 ## 0.5.0 - 2023-12-20
 #### Features
 - adding lookup and reverse lookup handlers (#417) - (7fc110f) - Max Kalashnikoff
