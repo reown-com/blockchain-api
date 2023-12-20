@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.4.2 - 2023-12-20
+#### Bug Fixes
+- **(ci)** fixing the stage-url variable for the validation (#432) - (3b34ddd) - Max Kalashnikoff
+#### Miscellaneous Chores
+- **(docker)** Revert: moving COPY before the cargo chef cook (#434) - (fd11cfa) - Max Kalashnikoff
+
+- - -
+
 ## 0.4.1 - 2023-12-20
 #### Bug Fixes
 - update shared flows to `0.1.3` to fix ECS task names (#433) - (b66330e) - Xavier Basty
