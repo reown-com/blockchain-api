@@ -12,7 +12,7 @@ on:
         description: 'the URL of the environment'
         required: true
         type: string
-        default: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.com/health
+        default: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.com
 
 permissions:
   contents: read
@@ -29,7 +29,7 @@ jobs:
       url: ${{ inputs.stage-url }}
     steps:
       - name: health-check
-        run: curl "${{ inputs.stage-url }}"
+        run: curl "${{ inputs.stage-url }}/health"
 
   integration-tests:
     name: Integration Tests - ${{ inputs.stage }}
