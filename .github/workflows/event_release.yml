@@ -45,10 +45,10 @@ jobs:
   release:
     name: Release
     needs: [ paths_filter ]
-    uses: WalletConnect/ci_workflows/.github/workflows/release.yml@0.1.2
+    uses: WalletConnect/ci_workflows/.github/workflows/release.yml@0.1.3
     secrets: inherit
     with:
-      task-name: 'wc-${{ vars.AWS_REGION }}-prod-blockchain-api'
+      task-name: ${{ vars.TASK_NAME }}
       infra-changed: ${{ needs.paths_filter.outputs.infra == 'true' }}
       app-changed: ${{ needs.paths_filter.outputs.app == 'true' }}
 
