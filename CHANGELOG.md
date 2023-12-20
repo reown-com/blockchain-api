@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.4.1 - 2023-12-20
+#### Bug Fixes
+- update shared flows to `0.1.3` to fix ECS task names (#433) - (b66330e) - Xavier Basty
+#### Miscellaneous Chores
+- **(ci)** fixing prod validation url (#425) - (8f651f9) - Max Kalashnikoff
+- adding node_modules to the .gitignore (#424) - (d59b6b9) - Max Kalashnikoff
+
+- - -
+
 ## 0.4.0 - 2023-12-19
 #### Features
 - implement helpers (#413) - (389e70e) - Max Kalashnikoff
