@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.5.0 - 2023-12-20
+#### Features
+- adding lookup and reverse lookup handlers (#417) - (7fc110f) - Max Kalashnikoff
+
+- - -
+
 ## 0.4.2 - 2023-12-20
 #### Bug Fixes
 - **(ci)** fixing the stage-url variable for the validation (#432) - (3b34ddd) - Max Kalashnikoff
