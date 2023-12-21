@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.6.1 - 2023-12-21
+#### Bug Fixes
+- use task name instead of image name in ECS deploy on `staging` (#436) - (83f8020) - Xavier Basty
+#### Miscellaneous Chores
+- removing ens_allowlist (#431) - (5c6d644) - Max Kalashnikoff
+
+- - -
+
 ## 0.6.0 - 2023-12-20
 #### Features
 - implement register handler (#418) - (3c06126) - Max Kalashnikoff
