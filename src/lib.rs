@@ -27,7 +27,6 @@ use {
         ZoraConfig,
     },
     error::RpcResult,
-    ethers::types::{Address, H160},
     http::Request,
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
@@ -45,13 +44,10 @@ use {
     },
     sqlx::postgres::PgPoolOptions,
     std::{
-        collections::HashMap,
-        error::Error,
         net::{IpAddr, Ipv4Addr, SocketAddr},
         sync::Arc,
         time::Duration,
     },
-    tap::TapFallible,
     tower::ServiceBuilder,
     tower_http::{
         cors::{Any, CorsLayer},
@@ -132,15 +128,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         )
     });
 
-    // TODO: This should be removed in a near future
-    let ens_allowlist = read_google_sheet()
-        .await
-        .tap_err(|e| {
-            warn!("Failed to read google sheet with {}", e);
-        })
-        .ok();
-    info!(?ens_allowlist, "loaded ens allowlist");
-
     let postgres = PgPoolOptions::new()
         .max_connections(config.postgres.max_connections.into())
         .connect(&config.postgres.uri)
@@ -155,7 +142,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         registry,
         identity_cache,
         analytics,
-        ens_allowlist,
     );
 
     let port = state.config.server.port;
@@ -372,33 +358,4 @@ async fn get_geoip_resolver(config: &Config, s3_client: &S3Client) -> Option<Arc
         info!("geoip lookup is disabled");
         None
     }
-}
-
-async fn read_google_sheet() -> Result<HashMap<H160, String>, Box<dyn Error>> {
-    // URL to access Google Sheet in CSV format
-    let url = "https://docs.google.com/spreadsheets/d/1YqR9S3YEmYn53It6lPOlZ-wrAmMNwxRtzimzcDBAhzE/gviz/tq?tqx=out:csv";
-
-    // Send GET request to the URL
-    let response = reqwest::get(url).await?.text().await?;
-
-    // Create a CSV reader assuming the first row is headers
-    let mut rdr = csv::ReaderBuilder::new()
-        .has_headers(true)
-        .from_reader(response.as_bytes());
-
-    // Create a HashMap to store the address-name pairs
-    let mut data_map: HashMap<H160, String> = HashMap::new();
-
-    // Iterate over each record
-    for result in rdr.records() {
-        let record = result?;
-        // Assuming first column is address and second column is name
-        if let (Some(address), Some(name)) = (record.get(0), record.get(1)) {
-            if let Ok(address) = address.parse::<Address>() {
-                data_map.insert(address, name.to_string());
-            }
-        }
-    }
-
-    Ok(data_map)
 }
