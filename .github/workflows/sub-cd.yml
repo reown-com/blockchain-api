@@ -36,7 +36,7 @@ jobs:
       deploy-infra: ${{ inputs.deploy-infra }}
       deploy-app: ${{ inputs.deploy-app && !inputs.deploy-infra }}
       version: ${{ inputs.version }}
-      task-name: ${{ vars.IMAGE_NAME }}
+      task-name: ${{ vars.TASK_NAME }}
       stage: staging
       stage-url: https://staging.${{ vars.SUBDOMAIN_NAME }}.walletconnect.com/health
       tf-variables: |
