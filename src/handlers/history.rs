@@ -13,9 +13,9 @@ use {
         response::{IntoResponse, Response},
         Json,
     },
-    ethers::abi::Address,
+    ethers::types::H160,
     hyper::HeaderMap,
-    std::{net::SocketAddr, sync::Arc},
+    std::{net::SocketAddr, str::FromStr, sync::Arc},
     tap::TapFallible,
     tracing::log::error,
     wc::future::FutureExt,
@@ -46,30 +46,27 @@ async fn handler_internal(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
-    let address_hash = address.clone();
-    address
-        .parse::<Address>()
-        .map_err(|_| RpcError::IdentityInvalidAddress)?;
+    let address_hash = H160::from_str(&address).map_err(|_| RpcError::IdentityInvalidAddress)?;
 
     state.validate_project_access(&project_id).await?;
     let latency_tracker_start = std::time::SystemTime::now();
     let mut response = state
         .providers
         .history_provider
-        .get_transactions(address.clone(), body.clone(), query.0.clone())
+        .get_transactions(address_hash, body.clone(), query.0.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call transaction history with {}", e);
+            error!("Failed to call transactions history with {}", e);
         })?;
 
     if let Some(_onramp) = query.onramp.clone() {
         let coinbase_transactions: HistoryResponseBody = state
             .providers
             .coinbase_pay_provider
-            .get_transactions(address, body, query.0)
+            .get_transactions(address_hash, body, query.0)
             .await
             .tap_err(|e| {
-                error!("Failed to call coinbase transaction history with {}", e);
+                error!("Failed to call coinbase transactions history with {}", e);
             })
             .unwrap_or(HistoryResponseBody {
                 data: Vec::default(),
@@ -107,7 +104,7 @@ async fn handler_internal(
             .unwrap_or((None, None, None));
 
         state.analytics.history_lookup(HistoryLookupInfo::new(
-            address_hash,
+            address_hash.to_string(),
             project_id,
             response.data.len(),
             latency_tracker,

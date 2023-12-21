@@ -12,6 +12,7 @@ use {
     },
     axum::response::Response,
     axum_tungstenite::WebSocketUpgrade,
+    ethers::types::H160,
     hyper::http::HeaderValue,
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
     std::{fmt::Debug, hash::Hash, sync::Arc},
@@ -429,7 +430,7 @@ pub trait RateLimited {
 pub trait HistoryProvider: Send + Sync + Debug {
     async fn get_transactions(
         &self,
-        address: String,
+        address: H160,
         body: hyper::body::Bytes,
         params: HistoryQueryParams,
     ) -> RpcResult<HistoryResponseBody>;
