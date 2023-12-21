@@ -126,9 +126,12 @@ mod test {
             // Analytics config.
             ("RPC_PROXY_ANALYTICS_S3_ENDPOINT", "s3://127.0.0.1"),
             ("RPC_PROXY_ANALYTICS_EXPORT_BUCKET", "EXPORT_BUCKET"),
+            // Providers config
             ("RPC_PROXY_PROVIDER_INFURA_PROJECT_ID", "INFURA_PROJECT_ID"),
             ("RPC_PROXY_PROVIDER_POKT_PROJECT_ID", "POKT_PROJECT_ID"),
             ("RPC_PROXY_PROVIDER_ZERION_API_KEY", "ZERION_API_KEY"),
+            ("RPC_PROXY_PROVIDER_COINBASE_API_KEY", "COINBASE_API_KEY"),
+            ("RPC_PROXY_PROVIDER_COINBASE_APP_ID", "COINBASE_APP_ID"),
             (
                 "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL",
                 "PROMETHEUS_QUERY_URL",
