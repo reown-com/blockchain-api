@@ -16,7 +16,7 @@ use {
     hyper::Client,
     hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
-    tracing::{info, log::error},
+    tracing::log::error,
     url::Url,
 };
 
@@ -55,6 +55,7 @@ pub struct CoinbaseTransaction {
 
 #[async_trait]
 impl HistoryProvider for CoinbaseProvider {
+    #[tracing::instrument(skip(self, body, params), fields(provider = "Coinbase"))]
     async fn get_transactions(
         &self,
         address: H160,
@@ -71,12 +72,6 @@ impl HistoryProvider for CoinbaseProvider {
         if let Some(cursor) = params.cursor {
             url.query_pairs_mut().append_pair("page_key", &cursor);
         }
-
-        error!(
-            "Coinbase URL: {:?}, {:?}",
-            url.as_str(),
-            self.app_id.clone()
-        );
 
         let hyper_request = hyper::http::Request::builder()
             .uri(url.as_str())
@@ -126,8 +121,6 @@ impl HistoryProvider for CoinbaseProvider {
                 transfers: None,
             })
             .collect();
-
-        info!("Coinbase transactions: {:?}", transactions);
 
         Ok(HistoryResponseBody {
             data: transactions,
