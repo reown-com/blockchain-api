@@ -50,40 +50,29 @@ async fn handler_internal(
 
     state.validate_project_access(&project_id).await?;
     let latency_tracker_start = std::time::SystemTime::now();
-    let mut response = state
-        .providers
-        .history_provider
-        .get_transactions(address_hash, body.clone(), query.0.clone())
-        .await
-        .tap_err(|e| {
-            error!("Failed to call transactions history with {}", e);
-        })?;
-
-    if let Some(_onramp) = query.onramp.clone() {
-        let coinbase_transactions: HistoryResponseBody = state
+    let response: HistoryResponseBody = if let Some(onramp) = query.onramp.clone() {
+        if onramp == "coinbase" {
+            state
+                .providers
+                .coinbase_pay_provider
+                .get_transactions(address_hash, body.clone(), query.clone().0)
+                .await
+                .tap_err(|e| {
+                    error!("Failed to call coinbase transactions history with {}", e);
+                })?
+        } else {
+            return Err(RpcError::UnsupportedProvider(onramp));
+        }
+    } else {
+        state
             .providers
-            .coinbase_pay_provider
-            .get_transactions(address_hash, body, query.0)
+            .history_provider
+            .get_transactions(address_hash, body.clone(), query.0.clone())
             .await
             .tap_err(|e| {
-                error!("Failed to call coinbase transactions history with {}", e);
-            })
-            .unwrap_or(HistoryResponseBody {
-                data: Vec::default(),
-                next: None,
-            });
-
-        // move this to the beginning of the transactions
-        response.data.extend(coinbase_transactions.data);
-
-        // now order all of this by `mined_at`
-        response.data.sort_by(|a, b| {
-            a.metadata
-                .mined_at
-                .partial_cmp(&b.metadata.mined_at)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
-    }
+                error!("Failed to call transactions history with {}", e);
+            })?
+    };
 
     let latency_tracker = latency_tracker_start
         .elapsed()

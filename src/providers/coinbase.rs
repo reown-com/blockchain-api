@@ -16,7 +16,7 @@ use {
     hyper::Client,
     hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
-    tracing::log::error,
+    tracing::log::{error, info},
     url::Url,
 };
 
@@ -63,8 +63,8 @@ impl HistoryProvider for CoinbaseProvider {
         params: HistoryQueryParams,
     ) -> RpcResult<HistoryResponseBody> {
         let base = format!(
-            "https://pay.coinbase.com/api/v1/buy/user/{}/transactions",
-            &address.to_string()
+            "https://pay.coinbase.com/api/v1/buy/user/{:#x}/transactions",
+            &address
         );
         let mut url = Url::parse(&base).map_err(|_| RpcError::HistoryParseCursorError)?;
         url.query_pairs_mut().append_pair("page_size", "50");
@@ -104,6 +104,8 @@ impl HistoryProvider for CoinbaseProvider {
             }
         };
 
+        info!("Coinbase transactions response: {:?}", body);
+
         let transactions = body
             .transactions
             .into_iter()
@@ -115,7 +117,7 @@ impl HistoryProvider for CoinbaseProvider {
                     mined_at: f.created_at,
                     nonce: 1, // TODO: get nonce from somewhere
                     sent_from: "Coinbase".to_string(),
-                    sent_to: address.to_string(),
+                    sent_to: format!("{:#x}", address),
                     status: f.status,
                 },
                 transfers: None,

@@ -157,8 +157,8 @@ impl HistoryProvider for ZerionProvider {
         params: HistoryQueryParams,
     ) -> RpcResult<HistoryResponseBody> {
         let base = format!(
-            "https://api.zerion.io/v1/wallets/{}/transactions/?",
-            &address.to_string()
+            "https://api.zerion.io/v1/wallets/{:#x}/transactions/?",
+            &address
         );
         let mut url = Url::parse(&base).map_err(|_| RpcError::HistoryParseCursorError)?;
         url.query_pairs_mut()
