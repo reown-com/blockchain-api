@@ -14,6 +14,7 @@ use {
     },
     async_trait::async_trait,
     axum::body::Bytes,
+    ethers::types::H160,
     futures_util::StreamExt,
     hyper::Client,
     hyper_tls::HttpsConnector,
@@ -151,12 +152,12 @@ impl HistoryProvider for ZerionProvider {
     #[tracing::instrument(skip(self, body, params), fields(provider = "Zerion"))]
     async fn get_transactions(
         &self,
-        address: String,
+        address: H160,
         body: Bytes,
         params: HistoryQueryParams,
     ) -> RpcResult<HistoryResponseBody> {
         let base = format!(
-            "https://api.zerion.io/v1/wallets/{}/transactions/?",
+            "https://api.zerion.io/v1/wallets/{:#x}/transactions/?",
             &address
         );
         let mut url = Url::parse(&base).map_err(|_| RpcError::HistoryParseCursorError)?;
@@ -225,7 +226,7 @@ impl HistoryProvider for ZerionProvider {
                     sent_to: f.attributes.sent_to,
                     status: f.attributes.status,
                 },
-                transfers: f.attributes.transfers,
+                transfers: Some(f.attributes.transfers),
             })
             .collect();
 

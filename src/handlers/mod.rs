@@ -55,6 +55,7 @@ pub struct HistoryQueryParams {
     pub currency: Option<String>,
     pub project_id: String,
     pub cursor: Option<String>,
+    pub onramp: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -69,7 +70,7 @@ pub struct HistoryResponseBody {
 pub struct HistoryTransaction {
     pub id: String,
     pub metadata: HistoryTransactionMetadata,
-    pub transfers: Vec<ZerionTransactionTransfer>,
+    pub transfers: Option<Vec<ZerionTransactionTransfer>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]

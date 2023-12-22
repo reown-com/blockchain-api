@@ -1,5 +1,5 @@
 use {
-    super::HANDLER_TASK_METRICS,
+    super::{HistoryResponseBody, HANDLER_TASK_METRICS},
     crate::{
         analytics::HistoryLookupInfo,
         error::RpcError,
@@ -13,9 +13,9 @@ use {
         response::{IntoResponse, Response},
         Json,
     },
-    ethers::abi::Address,
+    ethers::types::H160,
     hyper::HeaderMap,
-    std::{net::SocketAddr, sync::Arc},
+    std::{net::SocketAddr, str::FromStr, sync::Arc},
     tap::TapFallible,
     tracing::log::error,
     wc::future::FutureExt,
@@ -46,21 +46,34 @@ async fn handler_internal(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
-    let address_hash = address.clone();
-    address
-        .parse::<Address>()
-        .map_err(|_| RpcError::IdentityInvalidAddress)?;
+    let address_hash = H160::from_str(&address).map_err(|_| RpcError::IdentityInvalidAddress)?;
 
     state.validate_project_access(&project_id).await?;
     let latency_tracker_start = std::time::SystemTime::now();
-    let response = state
-        .providers
-        .history_provider
-        .get_transactions(address, body, query.0)
-        .await
-        .tap_err(|e| {
-            error!("Failed to call transaction history with {}", e);
-        })?;
+    let response: HistoryResponseBody = if let Some(onramp) = query.onramp.clone() {
+        if onramp == "coinbase" {
+            state
+                .providers
+                .coinbase_pay_provider
+                .get_transactions(address_hash, body.clone(), query.clone().0)
+                .await
+                .tap_err(|e| {
+                    error!("Failed to call coinbase transactions history with {}", e);
+                })?
+        } else {
+            return Err(RpcError::UnsupportedProvider(onramp));
+        }
+    } else {
+        state
+            .providers
+            .history_provider
+            .get_transactions(address_hash, body.clone(), query.0.clone())
+            .await
+            .tap_err(|e| {
+                error!("Failed to call transactions history with {}", e);
+            })?
+    };
+
     let latency_tracker = latency_tracker_start
         .elapsed()
         .unwrap_or(std::time::Duration::from_secs(0));
@@ -80,14 +93,14 @@ async fn handler_internal(
             .unwrap_or((None, None, None));
 
         state.analytics.history_lookup(HistoryLookupInfo::new(
-            address_hash,
+            address_hash.to_string(),
             project_id,
             response.data.len(),
             latency_tracker,
             response
                 .data
                 .iter()
-                .map(|transaction| transaction.transfers.len())
+                .map(|transaction| transaction.transfers.as_ref().map(|v| v.len()).unwrap_or(0))
                 .sum(),
             response
                 .data
@@ -95,9 +108,13 @@ async fn handler_internal(
                 .map(|transaction| {
                     transaction
                         .transfers
-                        .iter()
-                        .filter(|transfer| transfer.fungible_info.is_some())
-                        .count()
+                        .as_ref()
+                        .map(|v| {
+                            v.iter()
+                                .filter(|transfer| transfer.fungible_info.is_some())
+                                .count()
+                        })
+                        .unwrap_or(0)
                 })
                 .sum(),
             response
@@ -106,9 +123,13 @@ async fn handler_internal(
                 .map(|transaction| {
                     transaction
                         .transfers
-                        .iter()
-                        .filter(|transfer| transfer.nft_info.is_some())
-                        .count()
+                        .as_ref()
+                        .map(|v| {
+                            v.iter()
+                                .filter(|transfer| transfer.nft_info.is_some())
+                                .count()
+                        })
+                        .unwrap_or(0)
                 })
                 .sum(),
             origin,

@@ -167,6 +167,18 @@ variable "zerion_api_key" {
   sensitive   = true
 }
 
+variable "coinbase_api_key" {
+  description = "The API key for Coinbase Pay SDK"
+  type        = string
+  sensitive   = true
+}
+
+variable "coinbase_app_id" {
+  description = "The APP-ID for Coinbase Pay SDK"
+  type        = string
+  sensitive   = true
+}
+
 #-------------------------------------------------------------------------------
 # Project Registry
 
