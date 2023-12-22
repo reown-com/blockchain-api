@@ -1,12 +1,6 @@
 use {
-    super::HANDLER_TASK_METRICS,
-    crate::{
-        analytics::MessageInfo,
-        error::RpcError,
-        handlers::RpcQueryParams,
-        state::AppState,
-        utils::network,
-    },
+    super::{RpcQueryParams, HANDLER_TASK_METRICS},
+    crate::{analytics::MessageInfo, error::RpcError, state::AppState, utils::network},
     axum::{
         body::Bytes,
         extract::{ConnectInfo, MatchedPath, Query, State},

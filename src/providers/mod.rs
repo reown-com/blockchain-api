@@ -2,26 +2,31 @@ use {
     self::{coinbase::CoinbaseProvider, zerion::ZerionProvider},
     crate::{
         env::ProviderConfig,
-        error::RpcError,
+        error::{RpcError, RpcResult},
         handlers::{
-            HistoryQueryParams,
-            HistoryResponseBody,
-            PortfolioQueryParams,
-            PortfolioResponseBody,
+            history::{HistoryQueryParams, HistoryResponseBody},
+            portfolio::{PortfolioQueryParams, PortfolioResponseBody},
+            RpcQueryParams,
         },
     },
+    async_trait::async_trait,
     axum::response::Response,
     axum_tungstenite::WebSocketUpgrade,
     hyper::http::HeaderValue,
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
-    std::{fmt::Debug, hash::Hash, sync::Arc},
+    std::{
+        collections::HashMap,
+        fmt::{Debug, Display},
+        hash::Hash,
+        sync::Arc,
+    },
     tracing::{info, log::warn},
     wc::metrics::TaskMetrics,
 };
 
 mod base;
 mod binance;
-pub mod coinbase;
+mod coinbase;
 mod infura;
 mod omnia;
 mod pokt;
@@ -31,11 +36,6 @@ pub mod zerion;
 mod zksync;
 mod zora;
 
-use {
-    crate::{error::RpcResult, handlers::RpcQueryParams},
-    async_trait::async_trait,
-    std::{collections::HashMap, fmt::Display},
-};
 pub use {
     base::BaseProvider,
     binance::BinanceProvider,

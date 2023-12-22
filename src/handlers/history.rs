@@ -1,12 +1,6 @@
 use {
-    super::{HistoryResponseBody, HANDLER_TASK_METRICS},
-    crate::{
-        analytics::HistoryLookupInfo,
-        error::RpcError,
-        handlers::HistoryQueryParams,
-        state::AppState,
-        utils::network,
-    },
+    super::HANDLER_TASK_METRICS,
+    crate::{analytics::HistoryLookupInfo, error::RpcError, state::AppState, utils::network},
     axum::{
         body::Bytes,
         extract::{ConnectInfo, MatchedPath, Path, Query, State},
@@ -15,11 +9,99 @@ use {
     },
     ethers::types::H160,
     hyper::HeaderMap,
+    serde::{Deserialize, Serialize},
     std::{net::SocketAddr, str::FromStr, sync::Arc},
     tap::TapFallible,
     tracing::log::error,
     wc::future::FutureExt,
 };
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryQueryParams {
+    pub currency: Option<String>,
+    pub project_id: String,
+    pub cursor: Option<String>,
+    pub onramp: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryResponseBody {
+    pub data: Vec<HistoryTransaction>,
+    pub next: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryTransaction {
+    pub id: String,
+    pub metadata: HistoryTransactionMetadata,
+    pub transfers: Option<Vec<HistoryTransactionTransfer>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryTransactionMetadata {
+    pub operation_type: String,
+    pub hash: String,
+    pub mined_at: String,
+    pub sent_from: String,
+    pub sent_to: String,
+    pub status: String,
+    pub nonce: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct HistoryTransactionTransfer {
+    pub fungible_info: Option<HistoryTransactionFungibleInfo>,
+    pub nft_info: Option<HistoryTransactionNFTInfo>,
+    pub direction: String,
+    pub quantity: HistoryTransactionTransferQuantity,
+    pub value: Option<f64>,
+    pub price: Option<f64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct HistoryTransactionFungibleInfo {
+    pub name: Option<String>,
+    pub symbol: Option<String>,
+    pub icon: Option<HistoryTransactionURLItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct HistoryTransactionURLItem {
+    pub url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct HistoryTransactionTransferQuantity {
+    pub numeric: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct HistoryTransactionNFTInfo {
+    pub name: Option<String>,
+    pub content: Option<HistoryTransactionNFTContent>,
+    pub flags: HistoryTransactionNFTInfoFlags,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct HistoryTransactionNFTInfoFlags {
+    pub is_spam: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct HistoryTransactionNFTContent {
+    pub preview: Option<HistoryTransactionURLandContentTypeItem>,
+    pub detail: Option<HistoryTransactionURLandContentTypeItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct HistoryTransactionURLandContentTypeItem {
+    pub url: String,
+    pub content_type: Option<String>,
+}
 
 pub async fn handler(
     state: State<Arc<AppState>>,

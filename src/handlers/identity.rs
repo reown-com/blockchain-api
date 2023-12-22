@@ -1,9 +1,8 @@
 use {
-    super::HANDLER_TASK_METRICS,
+    super::{RpcQueryParams, HANDLER_TASK_METRICS},
     crate::{
         analytics::IdentityLookupInfo,
         error::RpcError,
-        handlers::RpcQueryParams,
         json_rpc::{JsonRpcError, JsonRpcResponse},
         project::ProjectDataError,
         state::AppState,

@@ -2,7 +2,7 @@ use {
     super::HistoryProvider,
     crate::{
         error::{RpcError, RpcResult},
-        handlers::{
+        handlers::history::{
             HistoryQueryParams,
             HistoryResponseBody,
             HistoryTransaction,
