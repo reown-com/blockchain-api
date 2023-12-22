@@ -46,7 +46,9 @@ async fn handler_internal(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
-    let address_hash = H160::from_str(&address).map_err(|_| RpcError::IdentityInvalidAddress)?;
+
+    // Checking for the H160 address correctness
+    H160::from_str(&address).map_err(|_| RpcError::IdentityInvalidAddress)?;
 
     state.validate_project_access(&project_id).await?;
     let latency_tracker_start = std::time::SystemTime::now();
@@ -55,7 +57,7 @@ async fn handler_internal(
             state
                 .providers
                 .coinbase_pay_provider
-                .get_transactions(address_hash, body.clone(), query.clone().0)
+                .get_transactions(address.clone(), body.clone(), query.clone().0)
                 .await
                 .tap_err(|e| {
                     error!("Failed to call coinbase transactions history with {}", e);
@@ -67,7 +69,7 @@ async fn handler_internal(
         state
             .providers
             .history_provider
-            .get_transactions(address_hash, body.clone(), query.0.clone())
+            .get_transactions(address.clone(), body.clone(), query.0.clone())
             .await
             .tap_err(|e| {
                 error!("Failed to call transactions history with {}", e);
@@ -93,7 +95,7 @@ async fn handler_internal(
             .unwrap_or((None, None, None));
 
         state.analytics.history_lookup(HistoryLookupInfo::new(
-            address_hash.to_string(),
+            address,
             project_id,
             response.data.len(),
             latency_tracker,

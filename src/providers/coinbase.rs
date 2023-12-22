@@ -11,7 +11,6 @@ use {
     },
     async_trait::async_trait,
     axum::{body::Bytes, http::method},
-    ethers::types::H160,
     futures_util::StreamExt,
     hyper::Client,
     hyper_tls::HttpsConnector,
@@ -58,14 +57,15 @@ impl HistoryProvider for CoinbaseProvider {
     #[tracing::instrument(skip(self, body, params), fields(provider = "Coinbase"))]
     async fn get_transactions(
         &self,
-        address: H160,
+        address: String,
         body: Bytes,
         params: HistoryQueryParams,
     ) -> RpcResult<HistoryResponseBody> {
         let base = format!(
-            "https://pay.coinbase.com/api/v1/buy/user/{:#x}/transactions",
+            "https://pay.coinbase.com/api/v1/buy/user/{}/transactions",
             &address
         );
+
         let mut url = Url::parse(&base).map_err(|_| RpcError::HistoryParseCursorError)?;
         url.query_pairs_mut().append_pair("page_size", "50");
 
@@ -117,7 +117,7 @@ impl HistoryProvider for CoinbaseProvider {
                     mined_at: f.created_at,
                     nonce: 1, // TODO: get nonce from somewhere
                     sent_from: "Coinbase".to_string(),
-                    sent_to: format!("{:#x}", address),
+                    sent_to: address.clone(),
                     status: f.status,
                 },
                 transfers: None,
