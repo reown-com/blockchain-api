@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { ethers } from "ethers"
 
 const http = axios.create({
   validateStatus: (_status) => true,
@@ -111,6 +112,108 @@ describe('blockchain api', () => {
       expect(first.id).toBeDefined()
       expect(first.name).toBeDefined()
       expect(first.symbol).toBeDefined()
+    })
+  })
+  
+  describe('Account profile names', () => {
+    // Generate a new eth wallet
+    const wallet = ethers.Wallet.createRandom();
+    const address = wallet.address;
+
+    // Generate a random name
+    const randomString = Array.from({ length: 10 }, 
+      () => (Math.random().toString(36)[2] || '0')).join('')
+    const name = `${randomString}.connect.test`;
+
+    // Create a message to sign
+    const messageObject = {
+        name,
+        address,
+        timestamp: Date.now()
+    };
+    const message = JSON.stringify(messageObject);
+
+    it('register with wrong signature', async () => {
+      // Sign the message
+      const signature = await wallet.signMessage('some other message');
+
+      const payload = {
+        message,
+        signature,
+        address,
+      };
+      let resp: any = await http.post(
+        `${baseUrl}/v1/profile/account/${name}`,
+        payload
+      )
+      expect(resp.status).toBe(401)
+    })
+    it('register new name', async () => {
+      // Sign the message
+      const signature = await wallet.signMessage(message);
+
+      const payload = {
+        message,
+        signature,
+        address,
+      };
+      let resp: any = await http.post(
+        `${baseUrl}/v1/profile/account/${name}`,
+        payload
+      )
+      expect(resp.status).toBe(200)
+    })
+    it('try register already registered name', async () => {
+      // Sign the message
+      const signature = await wallet.signMessage(message);
+
+      const payload = {
+        message,
+        signature,
+        address,
+      };
+      let resp: any = await http.post(
+        `${baseUrl}/v1/profile/account/${name}`,
+        payload
+      )
+      expect(resp.status).toBe(400)
+    })
+    it('inconsistent payload', async () => {
+      // Name in payload is different from the one in the request path
+      const signature = await wallet.signMessage(message);
+
+      const payload = {
+        message,
+        signature,
+        address,
+      };
+      let resp: any = await http.post(
+        `${baseUrl}/v1/profile/account/someothername.connect.id`,
+        payload
+      )
+      expect(resp.status).toBe(400)
+    })
+    it('name forward lookup', async () => {
+      let resp: any = await http.get(
+        `${baseUrl}/v1/profile/account/${name}`
+      )
+      expect(resp.status).toBe(200)
+      expect(resp.data.name).toBe(name)
+      expect(typeof resp.data.addresses).toBe('object')
+      const first = resp.data.addresses[0]
+      expect(first.address).toBe(address)
+    })
+    it('name reverse lookup', async () => {
+      let resp: any = await http.get(
+        `${baseUrl}/v1/profile/reverse/${address}`
+      )
+      expect(resp.status).toBe(200)
+      expect(typeof resp.data).toBe('object')
+      const first_name = resp.data[0]
+      expect(first_name.name).toBe(name)
+      expect(typeof first_name.addresses).toBe('object')
+      const first_address = first_name.addresses[0]
+      expect(first_address.address).toBe(address)
     })
   })
 })
