@@ -6,7 +6,10 @@ use {
             HistoryQueryParams,
             HistoryResponseBody,
             HistoryTransaction,
+            HistoryTransactionFungibleInfo,
             HistoryTransactionMetadata,
+            HistoryTransactionTransfer,
+            HistoryTransactionTransferQuantity,
         },
     },
     async_trait::async_trait,
@@ -50,6 +53,13 @@ pub struct CoinbaseTransaction {
     pub transaction_id: String,
     pub tx_hash: String,
     pub created_at: String,
+    pub purchase_amount: CoinbasePurchaseAmount,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct CoinbasePurchaseAmount {
+    pub value: String,
+    pub currency: String,
 }
 
 #[async_trait]
@@ -120,7 +130,20 @@ impl HistoryProvider for CoinbaseProvider {
                     sent_to: address.clone(),
                     status: f.status,
                 },
-                transfers: None,
+                transfers: Some(vec![HistoryTransactionTransfer {
+                    fungible_info: Some(HistoryTransactionFungibleInfo {
+                        name: Some(f.purchase_amount.currency.clone()),
+                        symbol: Some(f.purchase_amount.currency),
+                        icon: None,
+                    }),
+                    direction: "in".to_string(),
+                    quantity: HistoryTransactionTransferQuantity {
+                        numeric: f.purchase_amount.value,
+                    },
+                    nft_info: None,
+                    value: None,
+                    price: None,
+                }]),
             })
             .collect();
 
