@@ -76,9 +76,12 @@ describe('blockchain api', () => {
     })
   })
   describe('Transactions history', () => {
+    const fulfilled_address = '0x63755B7B300228254FB7d16321eCD3B87f98ca2a'
+    const empty_history_address = '0x739ff389c8eBd9339E69611d46Eec6212179BB67'
+
     it('fulfilled history', async () => {
       let resp: any = await http.get(
-        `${baseUrl}/v1/account/0xf3ea39310011333095CFCcCc7c4Ad74034CABA63/history?projectId=${projectId}`,
+        `${baseUrl}/v1/account/${fulfilled_address}/history?projectId=${projectId}`,
       )
       expect(resp.status).toBe(200)
       expect(typeof resp.data.data).toBe('object')
@@ -88,7 +91,7 @@ describe('blockchain api', () => {
     })
     it('empty history', async () => {
       let resp: any = await http.get(
-        `${baseUrl}/v1/account/0x739ff389c8eBd9339E69611d46Eec6212179BB67/history?projectId=${projectId}`,
+        `${baseUrl}/v1/account/${empty_history_address}/history?projectId=${projectId}`,
       )
       expect(resp.status).toBe(200)
       expect(typeof resp.data.data).toBe('object')
@@ -97,7 +100,27 @@ describe('blockchain api', () => {
     })
     it('wrong address', async () => {
       let resp: any = await http.get(
-        `${baseUrl}/v1/account/01739ff389c8eBd9339E69611d46Eec6212179BB67/history?projectId=${projectId}`,
+        `${baseUrl}/v1/account/0X${fulfilled_address}/history?projectId=${projectId}`,
+      )
+      expect(resp.status).toBe(400)
+    })
+    it('onramp Coinbase provider', async () => {
+      let resp: any = await http.get(
+        `${baseUrl}/v1/account/${fulfilled_address}/history?onramp=coinbase&projectId=${projectId}`,
+      )
+      expect(resp.status).toBe(200)
+      expect(typeof resp.data.next).toBe('string')
+      expect(typeof resp.data.data).toBe('object')
+
+      const first = resp.data.data[0]
+      expect(first.id).toBeDefined()
+      expect(first.metadata.sentFrom).toBe('Coinbase')
+      expect(first.metadata.operationType).toBe('buy')
+      expect(first.metadata.status).toEqual(expect.stringMatching(/^ONRAMP_TRANSACTION_STATUS_/));
+    })
+    it('onramp wrong provider', async () => {
+      let resp: any = await http.get(
+        `${baseUrl}/v1/account/${fulfilled_address}/history?onramp=some&projectId=${projectId}`,
       )
       expect(resp.status).toBe(400)
     })
