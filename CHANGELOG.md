@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.7.0 - 2023-12-22
+#### Bug Fixes
+- **(ci)** add postgres to the sub-validate (#438) - (cc8641e) - Max Kalashnikoff
+- **(ci)** removing /health from the sub-cd validation (#437) - (e9a2f9e) - Max Kalashnikoff
+#### Features
+- **(onramp)** Coinbase transaction status (#388) - (ea4c371) - Derek
+
+- - -
+
 ## 0.6.1 - 2023-12-21
 #### Bug Fixes
 - use task name instead of image name in ECS deploy on `staging` (#436) - (83f8020) - Xavier Basty
