@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.7.1 - 2023-12-22
+#### Bug Fixes
+- revert back to string-based address in transactions (#439) - (68cd876) - Max Kalashnikoff
+
+- - -
+
 ## 0.7.0 - 2023-12-22
 #### Bug Fixes
 - **(ci)** add postgres to the sub-validate (#438) - (cc8641e) - Max Kalashnikoff
