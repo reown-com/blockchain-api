@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.9.0 - 2024-01-02
+#### Features
+- **(onramp)** exposing name and quantity from Coinbase (#442) - (a7a55bc) - Max Kalashnikoff
+#### Miscellaneous Chores
+- **(refactor)** making history structures unite, arranging structures (#441) - (ea71dd3) - Max Kalashnikoff
+
+- - -
+
 ## 0.8.0 - 2023-12-25
 #### Bug Fixes
 - **(providers)** changing the mainnet URL for zksync (#443) - (a77749b) - Max Kalashnikoff
