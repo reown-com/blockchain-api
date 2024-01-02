@@ -3,13 +3,14 @@ use {
     crate::{
         error::{RpcError, RpcResult},
         handlers::{
-            HistoryQueryParams,
-            HistoryResponseBody,
-            HistoryTransaction,
-            HistoryTransactionMetadata,
-            PortfolioPosition,
-            PortfolioQueryParams,
-            PortfolioResponseBody,
+            history::{
+                HistoryQueryParams,
+                HistoryResponseBody,
+                HistoryTransaction,
+                HistoryTransactionMetadata,
+                HistoryTransactionTransfer,
+            },
+            portfolio::{PortfolioPosition, PortfolioQueryParams, PortfolioResponseBody},
         },
     },
     async_trait::async_trait,
@@ -92,58 +93,7 @@ pub struct ZerionTransactionAttributes {
     pub sent_to: String,
     pub status: String,
     pub nonce: usize,
-    pub transfers: Vec<ZerionTransactionTransfer>,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct ZerionTransactionTransfer {
-    pub fungible_info: Option<ZerionTransactionFungibleInfo>,
-    pub nft_info: Option<ZerionTransactionNFTInfo>,
-    pub direction: String,
-    pub quantity: ZerionTransactionTransferQuantity,
-    pub value: Option<f64>,
-    pub price: Option<f64>,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
-pub struct ZerionTransactionTransferQuantity {
-    pub numeric: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
-pub struct ZerionTransactionFungibleInfo {
-    pub name: Option<String>,
-    pub symbol: Option<String>,
-    pub icon: Option<ZerionTransactionURLItem>,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
-pub struct ZerionTransactionURLItem {
-    pub url: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
-pub struct ZerionTransactionURLandContentTypeItem {
-    pub url: String,
-    pub content_type: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
-pub struct ZerionTransactionNFTContent {
-    pub preview: Option<ZerionTransactionURLandContentTypeItem>,
-    pub detail: Option<ZerionTransactionURLandContentTypeItem>,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
-pub struct ZerionTransactionNFTInfo {
-    pub name: Option<String>,
-    pub content: Option<ZerionTransactionNFTContent>,
-    pub flags: ZerionTransactionNFTInfoFlags,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
-pub struct ZerionTransactionNFTInfoFlags {
-    pub is_spam: bool,
+    pub transfers: Vec<HistoryTransactionTransfer>,
 }
 
 #[async_trait]
