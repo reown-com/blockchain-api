@@ -1,6 +1,12 @@
 use {
     super::HANDLER_TASK_METRICS,
-    crate::{analytics::HistoryLookupInfo, error::RpcError, state::AppState, utils::network},
+    crate::{
+        analytics::HistoryLookupInfo,
+        error::RpcError,
+        providers::ProviderKind,
+        state::AppState,
+        utils::network,
+    },
     axum::{
         body::Bytes,
         extract::{ConnectInfo, MatchedPath, Path, Query, State},
@@ -134,8 +140,10 @@ async fn handler_internal(
 
     state.validate_project_access(&project_id).await?;
     let latency_tracker_start = std::time::SystemTime::now();
+    let history_provider: ProviderKind;
     let response: HistoryResponseBody = if let Some(onramp) = query.onramp.clone() {
         if onramp == "coinbase" {
+            history_provider = ProviderKind::Coinbase;
             state
                 .providers
                 .coinbase_pay_provider
@@ -148,6 +156,7 @@ async fn handler_internal(
             return Err(RpcError::UnsupportedProvider(onramp));
         }
     } else {
+        history_provider = ProviderKind::Zerion;
         state
             .providers
             .history_provider
@@ -161,7 +170,7 @@ async fn handler_internal(
     let latency_tracker = latency_tracker_start
         .elapsed()
         .unwrap_or(std::time::Duration::from_secs(0));
-    state.metrics.add_history_lookup();
+    state.metrics.add_history_lookup(&history_provider);
 
     {
         let origin = headers
@@ -226,8 +235,10 @@ async fn handler_internal(
     let latency_tracker = latency_tracker_start
         .elapsed()
         .unwrap_or(std::time::Duration::from_secs(0));
-    state.metrics.add_history_lookup_success();
-    state.metrics.add_history_lookup_latency(latency_tracker);
+    state.metrics.add_history_lookup_success(&history_provider);
+    state
+        .metrics
+        .add_history_lookup_latency(&history_provider, latency_tracker);
 
     Ok(Json(response).into_response())
 }

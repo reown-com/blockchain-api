@@ -14,8 +14,8 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
-      expr          = 'sum(rate(history_lookup_counter_total{}[$__rate_interval]))',
-      refId         = "Requests",
-      legendFormat  = "Requests",
+      expr          = 'sum by(provider) (rate(history_lookup_counter_total{}[$__rate_interval]))',
+      exemplar      = false,
+      legendFormat  = '__auto',
     ))
 }
