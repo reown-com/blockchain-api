@@ -278,6 +278,8 @@ pub enum ProviderKind {
     Omniatech,
     Base,
     Zora,
+    Zerion,
+    Coinbase,
 }
 
 impl Display for ProviderKind {
@@ -291,6 +293,8 @@ impl Display for ProviderKind {
             ProviderKind::Omniatech => "Omniatech",
             ProviderKind::Base => "Base",
             ProviderKind::Zora => "Zora",
+            ProviderKind::Zerion => "Zerion",
+            ProviderKind::Coinbase => "Coinbase",
         })
     }
 }
@@ -306,6 +310,8 @@ impl ProviderKind {
             "Omniatech" => Some(Self::Omniatech),
             "Base" => Some(Self::Base),
             "Zora" => Some(Self::Zora),
+            "Zerion" => Some(Self::Zerion),
+            "Coinbase" => Some(Self::Coinbase),
             _ => None,
         }
     }

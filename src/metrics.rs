@@ -395,21 +395,27 @@ impl Metrics {
             )]);
     }
 
-    pub fn add_history_lookup(&self) {
+    pub fn add_history_lookup(&self, provider: &ProviderKind) {
         self.history_lookup_counter
-            .add(&otel::Context::new(), 1, &[]);
+            .add(&otel::Context::new(), 1, &[otel::KeyValue::new(
+                "provider",
+                provider.to_string(),
+            )]);
     }
 
-    pub fn add_history_lookup_success(&self) {
+    pub fn add_history_lookup_success(&self, provider: &ProviderKind) {
         self.history_lookup_success_counter
-            .add(&otel::Context::new(), 1, &[]);
+            .add(&otel::Context::new(), 1, &[otel::KeyValue::new(
+                "provider",
+                provider.to_string(),
+            )]);
     }
 
-    pub fn add_history_lookup_latency(&self, latency: Duration) {
+    pub fn add_history_lookup_latency(&self, provider: &ProviderKind, latency: Duration) {
         self.history_lookup_latency_tracker.record(
             &otel::Context::new(),
             latency.as_secs_f64(),
-            &[],
+            &[otel::KeyValue::new("provider", provider.to_string())],
         );
     }
 }
