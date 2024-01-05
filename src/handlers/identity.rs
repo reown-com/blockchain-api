@@ -52,7 +52,7 @@ pub async fn handler(
         .await
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
@@ -137,7 +137,7 @@ impl IdentityLookupSource {
     }
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_identity(
     address: H160,
     state: State<Arc<AppState>>,
@@ -181,7 +181,7 @@ async fn lookup_identity(
     Ok((IdentityLookupSource::Rpc, res))
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_identity_rpc(
     address: H160,
     state: State<Arc<AppState>>,
@@ -235,7 +235,7 @@ async fn lookup_identity_rpc(
 
 const SELF_PROVIDER_ERROR_PREFIX: &str = "SelfProviderError: ";
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_name(
     provider: &Provider<SelfProvider>,
     address: Address,
@@ -259,7 +259,7 @@ async fn lookup_name(
     )
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_avatar(
     provider: &Provider<SelfProvider>,
     name: &str,
