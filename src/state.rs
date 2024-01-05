@@ -14,7 +14,7 @@ use {
     sqlx::PgPool,
     std::sync::Arc,
     tap::TapFallible,
-    tracing::warn,
+    tracing::info,
 };
 
 pub struct AppState {
@@ -68,7 +68,7 @@ impl AppState {
 
         project.validate_access(id, None).tap_err(|e| {
             self.metrics.add_rejected_project();
-            warn!("Denied access for project: {id}, with reason: {e}");
+            info!("Denied access for project: {id}, with reason: {e}");
         })?;
 
         Ok(project)
@@ -84,7 +84,7 @@ impl AppState {
 
         if !project.quota.is_valid {
             self.metrics.add_quota_limited_project();
-            warn!(
+            info!(
                 project_id = id,
                 max = project.quota.max,
                 current = project.quota.current,
