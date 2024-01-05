@@ -18,7 +18,7 @@ use {
     hyper::Client,
     hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
-    tracing::log::{error, info},
+    tracing::log::error,
     url::Url,
 };
 
@@ -113,8 +113,6 @@ impl HistoryProvider for CoinbaseProvider {
                 return Err(RpcError::TransactionProviderError);
             }
         };
-
-        info!("Coinbase transactions response: {:?}", body);
 
         let transactions = body
             .transactions
