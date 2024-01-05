@@ -2,6 +2,18 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.9.2 - 2024-01-05
+#### Bug Fixes
+- **(logging)** removing Coinbase response logging (#449) - (079f510) - Max Kalashnikoff
+#### Miscellaneous Chores
+- **(logging)** reducing logging for proxy requests (#447) - (470c0cb) - Max Kalashnikoff
+- **(monitoring)** adding history metrics per provider (#446) - (0e6df79) - Max Kalashnikoff
+- reducing logging for the identity requests (#448) - (44b45ea) - Max Kalashnikoff
+- bumping the ethers version (#435) - (f6b6cd3) - Max Kalashnikoff
+- Bump version for release - (4e9e57a) - geekbrother
+
+- - -
+
 ## 0.9.0 - 2024-01-02
 #### Features
 - **(onramp)** exposing name and quantity from Coinbase (#442) - (a7a55bc) - Max Kalashnikoff
