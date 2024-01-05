@@ -14,7 +14,10 @@ use {
         time::{Duration, SystemTime},
     },
     tap::TapFallible,
-    tracing::log::{error, warn},
+    tracing::{
+        log::{error, warn},
+        Span,
+    },
     wc::future::FutureExt,
 };
 
@@ -31,7 +34,7 @@ pub async fn handler(
         .await
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn handler_internal(
     State(state): State<Arc<AppState>>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
@@ -50,6 +53,8 @@ async fn handler_internal(
         .providers
         .get_provider_for_chain_id(&chain_id)
         .ok_or(RpcError::UnsupportedChain(chain_id.clone()))?;
+
+    Span::current().record("provider", &provider.provider_kind().to_string());
 
     state.metrics.add_rpc_call(chain_id.clone());
 
