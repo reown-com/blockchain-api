@@ -12,7 +12,7 @@ on:
         description: 'the URL of the environment'
         required: true
         type: string
-        default: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.com/health
+        default: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.com
 
 permissions:
   contents: read
@@ -29,12 +29,24 @@ jobs:
       url: ${{ inputs.stage-url }}
     steps:
       - name: health-check
-        run: curl "${{ inputs.stage-url }}"
+        run: curl "${{ inputs.stage-url }}/health"
 
   integration-tests:
     name: Integration Tests - ${{ inputs.stage }}
     runs-on:
       group: ${{ vars.RUN_GROUP }}
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     environment:
       name: ${{ inputs.stage }}
       url: ${{ inputs.stage-url }}
@@ -53,6 +65,7 @@ jobs:
         uses: WalletConnect/actions-rs/cargo@1.0.0
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          RPC_PROXY_POSTGRES_URI: 'postgres://postgres:root@localhost:5432/postgres'
           RPC_URL: ${{ inputs.stage-url }}
         with:
           command: test

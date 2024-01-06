@@ -63,6 +63,8 @@ module "ecs" {
   infura_project_id = var.infura_project_id
   pokt_project_id   = var.pokt_project_id
   zerion_api_key    = var.zerion_api_key
+  coinbase_api_key  = var.coinbase_api_key
+  coinbase_app_id   = var.coinbase_app_id
 
   # Project Registry
   registry_api_endpoint   = var.registry_api_endpoint

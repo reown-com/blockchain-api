@@ -11,9 +11,8 @@ use {
         utils::build::CompileInfo,
     },
     cerberus::project::ProjectData,
-    ethers::types::H160,
     sqlx::PgPool,
-    std::{collections::HashMap, sync::Arc},
+    std::sync::Arc,
     tap::TapFallible,
     tracing::info,
 };
@@ -27,7 +26,6 @@ pub struct AppState {
     pub identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     pub analytics: RPCAnalytics,
     pub compile_info: CompileInfo,
-    pub ens_allowlist: Option<HashMap<H160, String>>,
     /// Service instance uptime measurement
     pub uptime: std::time::Instant,
 }
@@ -41,7 +39,6 @@ pub fn new_state(
     registry: Registry,
     identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     analytics: RPCAnalytics,
-    ens_allowlist: Option<HashMap<H160, String>>,
 ) -> AppState {
     AppState {
         config,
@@ -52,7 +49,6 @@ pub fn new_state(
         identity_cache,
         analytics,
         compile_info: CompileInfo {},
-        ens_allowlist,
         uptime: std::time::Instant::now(),
     }
 }
@@ -62,7 +58,7 @@ impl AppState {
         self.providers.update_weights(&self.metrics).await;
     }
 
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip(self), level = "debug")]
     async fn get_project_data_validated(&self, id: &str) -> Result<ProjectData, RpcError> {
         let project = self
             .registry
@@ -82,7 +78,7 @@ impl AppState {
         self.get_project_data_validated(id).await.map(drop)
     }
 
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip(self), level = "debug")]
     pub async fn validate_project_access_and_quota(&self, id: &str) -> Result<(), RpcError> {
         let project = self.get_project_data_validated(id).await?;
 

@@ -1,6 +1,6 @@
 [package]
 name = "rpc-proxy"
-version = "0.4.1"
+version = "0.9.2"
 edition = "2021"
 authors = [
     "Derek <derek@walletconnect.com>",
@@ -63,14 +63,10 @@ axum-tungstenite = "0.2.0"
 
 rand = "0.8.4"
 prometheus-http-query = "0.6.6"
-ethers = { version = "2.0.7", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
+ethers = { version = "2.0.11", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
 
 bytes = "1.4.0"
 sha256 = "1.2.2"
-
-# ENS Allowlist Remove later
-reqwest = { version = "0.11", features = ["json"] }
-csv = "1"
 
 [dev-dependencies]
 jsonrpc = "0.14.0"

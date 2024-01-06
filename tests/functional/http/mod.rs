@@ -2,7 +2,7 @@ use {
     crate::{context::ServerContext, utils::send_jsonrpc_request, JSONRPC_VERSION},
     hyper::{Body, Client, Method, Request, StatusCode},
     hyper_tls::HttpsConnector,
-    rpc_proxy::handlers::HistoryResponseBody,
+    rpc_proxy::handlers::history::HistoryResponseBody,
     test_context::test_context,
 };
 

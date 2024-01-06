@@ -37,6 +37,9 @@ pub enum RpcError {
     #[error("Specified chain is not supported by any of the providers: {0}")]
     UnsupportedChain(String),
 
+    #[error("Specified provider is not supported: {0}")]
+    UnsupportedProvider(String),
+
     #[error("Provider is throttling the requests")]
     Throttled,
 
@@ -48,6 +51,9 @@ pub enum RpcError {
 
     #[error("Failed to reach the portfolio provider")]
     PortfolioProviderError,
+
+    #[error("Failed to reach the onramp provider")]
+    OnRampProviderError,
 
     #[error(transparent)]
     Cerberus(#[from] cerberus::project::AccessError),
@@ -95,6 +101,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "chainId".to_string(),
                     format!("We don't support the chainId you provided: {chain_id}"),
+                )),
+            )
+                .into_response(),
+            Self::UnsupportedProvider(provider) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "provider".to_string(),
+                    format!("Provider {provider} is not supported"),
                 )),
             )
                 .into_response(),

@@ -100,6 +100,11 @@ dashboard.new(
   row.new('Database'),
     panels.db.redis_cpu_memory(ds, vars)             { gridPos: pos._2 },
 
+  row.new('History Metrics'),
+    panels.history.requests(ds, vars)               { gridPos: pos_short._3 },
+    panels.history.latency(ds, vars)                { gridPos: pos_short._3 },
+    panels.history.availability(ds, vars)           { gridPos: pos_short._3 },
+
   row.new('Identity (ENS) Metrics'),
     panels.identity.requests(ds, vars)               { gridPos: pos_short._2 },
     panels.identity.availability(ds, vars)           { gridPos: pos_short._2 },

@@ -2,6 +2,77 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.9.2 - 2024-01-05
+#### Bug Fixes
+- **(logging)** removing Coinbase response logging (#449) - (079f510) - Max Kalashnikoff
+#### Miscellaneous Chores
+- **(logging)** reducing logging for proxy requests (#447) - (470c0cb) - Max Kalashnikoff
+- **(monitoring)** adding history metrics per provider (#446) - (0e6df79) - Max Kalashnikoff
+- reducing logging for the identity requests (#448) - (44b45ea) - Max Kalashnikoff
+- bumping the ethers version (#435) - (f6b6cd3) - Max Kalashnikoff
+- Bump version for release - (4e9e57a) - geekbrother
+
+- - -
+
+## 0.9.0 - 2024-01-02
+#### Features
+- **(onramp)** exposing name and quantity from Coinbase (#442) - (a7a55bc) - Max Kalashnikoff
+#### Miscellaneous Chores
+- **(refactor)** making history structures unite, arranging structures (#441) - (ea71dd3) - Max Kalashnikoff
+
+- - -
+
+## 0.8.0 - 2023-12-25
+#### Bug Fixes
+- **(providers)** changing the mainnet URL for zksync (#443) - (a77749b) - Max Kalashnikoff
+#### Features
+- **(ci)** implement integration tests for hexless accounts (#419) - (7be75d3) - Max Kalashnikoff
+
+- - -
+
+## 0.7.1 - 2023-12-22
+#### Bug Fixes
+- revert back to string-based address in transactions (#439) - (68cd876) - Max Kalashnikoff
+
+- - -
+
+## 0.7.0 - 2023-12-22
+#### Bug Fixes
+- **(ci)** add postgres to the sub-validate (#438) - (cc8641e) - Max Kalashnikoff
+- **(ci)** removing /health from the sub-cd validation (#437) - (e9a2f9e) - Max Kalashnikoff
+#### Features
+- **(onramp)** Coinbase transaction status (#388) - (ea4c371) - Derek
+
+- - -
+
+## 0.6.1 - 2023-12-21
+#### Bug Fixes
+- use task name instead of image name in ECS deploy on `staging` (#436) - (83f8020) - Xavier Basty
+#### Miscellaneous Chores
+- removing ens_allowlist (#431) - (5c6d644) - Max Kalashnikoff
+
+- - -
+
+## 0.6.0 - 2023-12-20
+#### Features
+- implement register handler (#418) - (3c06126) - Max Kalashnikoff
+
+- - -
+
+## 0.5.0 - 2023-12-20
+#### Features
+- adding lookup and reverse lookup handlers (#417) - (7fc110f) - Max Kalashnikoff
+
+- - -
+
+## 0.4.2 - 2023-12-20
+#### Bug Fixes
+- **(ci)** fixing the stage-url variable for the validation (#432) - (3b34ddd) - Max Kalashnikoff
+#### Miscellaneous Chores
+- **(docker)** Revert: moving COPY before the cargo chef cook (#434) - (fd11cfa) - Max Kalashnikoff
+
+- - -
+
 ## 0.4.1 - 2023-12-20
 #### Bug Fixes
 - update shared flows to `0.1.3` to fix ECS task names (#433) - (b66330e) - Xavier Basty
