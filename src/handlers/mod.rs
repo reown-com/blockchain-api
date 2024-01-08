@@ -3,6 +3,7 @@ use {
     wc::metrics::TaskMetrics,
 };
 
+pub mod generators;
 pub mod health;
 pub mod history;
 pub mod identity;
