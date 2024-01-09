@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.10.0 - 2024-01-09
+#### Features
+- implementing on ramp url generator (#453) - (2ce2e8e) - Max Kalashnikoff
+
+- - -
+
 ## 0.9.2 - 2024-01-05
 #### Bug Fixes
 - **(logging)** removing Coinbase response logging (#449) - (079f510) - Max Kalashnikoff
