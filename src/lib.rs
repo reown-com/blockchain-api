@@ -226,6 +226,11 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/profile/reverse/:address",
             get(handlers::profile::reverse::handler),
         )
+        // Generators
+        .route(
+            "/v1/generators/onrampurl",
+            post(handlers::generators::onrampurl::handler),
+        )
         .route_layer(tracing_and_metrics_layer)
         .route("/health", get(handlers::health::handler))
         .layer(cors);
