@@ -67,7 +67,7 @@ async fn handler_internal(
         .parse::<Address>()
         .map_err(|_| RpcError::IdentityInvalidAddress)?;
 
-    state.validate_project_access(&project_id).await?;
+    state.validate_project_access_and_quota(&project_id).await?;
 
     let response = state
         .providers
