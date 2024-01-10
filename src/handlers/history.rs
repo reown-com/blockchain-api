@@ -138,11 +138,12 @@ async fn handler_internal(
     // Checking for the H160 address correctness
     H160::from_str(&address).map_err(|_| RpcError::IdentityInvalidAddress)?;
 
-    state.validate_project_access(&project_id).await?;
     let latency_tracker_start = std::time::SystemTime::now();
     let history_provider: ProviderKind;
     let response: HistoryResponseBody = if let Some(onramp) = query.onramp.clone() {
         if onramp == "coinbase" {
+            // We don't want to validate the quota for the onramp
+            state.validate_project_access(&project_id).await?;
             history_provider = ProviderKind::Coinbase;
             state
                 .providers
@@ -156,6 +157,7 @@ async fn handler_internal(
             return Err(RpcError::UnsupportedProvider(onramp));
         }
     } else {
+        state.validate_project_access_and_quota(&project_id).await?;
         history_provider = ProviderKind::Zerion;
         state
             .providers
