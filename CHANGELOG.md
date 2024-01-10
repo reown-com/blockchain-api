@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.10.1 - 2024-01-10
+#### Bug Fixes
+- not returning quota limit error (#457) - (22517f3) - xDarksome
+- ignoring Infura tests until resolution (#455) - (5a6ad9a) - Max Kalashnikoff
+- passing infura project id to the tests (#454) - (05a74d5) - Max Kalashnikoff
+
+- - -
+
 ## 0.10.0 - 2024-01-09
 #### Features
 - implementing on ramp url generator (#453) - (2ce2e8e) - Max Kalashnikoff
