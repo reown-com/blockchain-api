@@ -259,7 +259,7 @@ async fn lookup_name(
     )
 }
 
-#[tracing::instrument(skip_all, level = "debug")]
+#[tracing::instrument(skip(provider))]
 async fn lookup_avatar(
     provider: &Provider<SelfProvider>,
     name: &str,
