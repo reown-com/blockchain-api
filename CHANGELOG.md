@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.10.3 - 2024-01-12
+#### Bug Fixes
+- adding temporary instrument logging for the avatar lookup (#462) - (f039e28) - Max Kalashnikoff
+- correct name of dynamic terraform variables (#458) - (07e9250) - Xavier Basty
+
+- - -
+
 ## 0.10.2 - 2024-01-10
 #### Bug Fixes
 - changing to `validate_project_access_and_quota` in history and portfolio handlers (#456) - (456cb6a) - Max Kalashnikoff
