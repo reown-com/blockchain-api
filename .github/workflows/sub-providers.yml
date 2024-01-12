@@ -1,0 +1,84 @@
+name: ❖ Providers
+
+on:
+  workflow_dispatch:
+    inputs:
+      providers:
+        description: 'Providers list to test (space separated)'
+        required: false
+        default: 'coinbase binance'
+      stage-url:
+        description: 'RPC URL'
+        required: false
+        default: 'https://staging.rpc.walletconnect.org/'
+  workflow_call:
+    inputs:
+      providers_directory:
+        type: string
+        required: true
+        description: 'Directory where providers sources are located'
+      stage-url:
+        type: string
+        required: true
+        description: 'Stage RPC URL'
+        default: 'https://staging.rpc.walletconnect.org/'
+
+concurrency: cd
+
+permissions:
+  contents: write
+  checks: write
+  id-token: write
+
+jobs:
+  providers-test:
+    name: "Providers specific tests"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: "Determining changed providers list"
+        id: get_list
+        run: |
+          if [[ -n "${{ github.event.inputs.providers }}" ]]; then
+            PROVIDERS_LIST="${{ github.event.inputs.providers }}"
+          else
+            PROVIDERS_DIR="${{ inputs.providers_directory }}"
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+            PROVIDERS_LIST=""
+
+            for file in $CHANGED_FILES; do
+              if [[ $file == $PROVIDERS_DIR* ]]; then
+                PROVIDER_TEST_NAME=$(echo $file | sed "s|^$PROVIDERS_DIR||" | sed 's|/|::|g' | sed 's|\.rs$||')
+                PROVIDERS_LIST+="$PROVIDER_TEST_NAME "
+              fi
+            done
+          fi
+          echo "PROVIDERS_LIST=$PROVIDERS_LIST" >> $GITHUB_ENV
+
+      - name: "Install Rust ${{ vars.RUST_VERSION }}"
+        uses: WalletConnect/actions-rs/toolchain@1.0.0
+        if: env.PROVIDERS_LIST != ''
+        with:
+          toolchain: ${{ vars.RUST_VERSION }}
+          profile: 'default'
+          override: true
+
+      - name: Run providers tests
+        if: env.PROVIDERS_LIST != ''
+        env:
+          PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          RPC_URL: ${{ inputs.stage-url }}
+        run: |
+          for provider in $PROVIDERS_LIST; do
+            echo "Running tests for ${provider} provider"
+            cargo test ${provider}_provider-- --ignored
+            TEST_EXIT_STATUS=$?
+            if [ $TEST_EXIT_STATUS -ne 0 ]; then
+                echo "Test for ${provider} has failed"
+                exit 1
+            fi
+          done
