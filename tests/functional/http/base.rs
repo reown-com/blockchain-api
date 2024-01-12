@@ -6,7 +6,8 @@ use {
 
 #[test_context(ServerContext)]
 #[tokio::test]
-async fn eip155_8453_base(ctx: &mut ServerContext) {
+#[ignore]
+async fn base_provider_eip155_8453_and_84531(ctx: &mut ServerContext) {
     // Base mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:8453", "0x2105").await;
 

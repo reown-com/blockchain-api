@@ -7,7 +7,7 @@ use {
 #[test_context(ServerContext)]
 #[tokio::test]
 #[ignore]
-async fn infura_websocket_provider(ctx: &mut ServerContext) {
+async fn infura_provider_websocket(ctx: &mut ServerContext) {
     // Ethereum mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:1", "0x1").await;
 

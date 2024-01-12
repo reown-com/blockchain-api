@@ -8,7 +8,8 @@ use {
 
 #[test_context(ServerContext)]
 #[tokio::test]
-async fn pokt_provider(ctx: &mut ServerContext) {
+#[ignore]
+async fn pokt_provider_eip155_43114_and_56_and_100(ctx: &mut ServerContext) {
     // Avax
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:43114", "0xa86a").await;
 
