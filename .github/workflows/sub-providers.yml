@@ -31,17 +31,18 @@ permissions:
   id-token: write
 
 jobs:
-  providers-test:
-    name: "Providers specific tests"
+  providers-list:
+    name: "Preparing providers list"
     runs-on: ubuntu-latest
+    outputs:
+      providers: ${{ steps.set-matrix.outputs.providers }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
           fetch-depth: 2
-
-      - name: "Determining changed providers list"
-        id: get_list
+      - name: Creating list of changed providers
+        id: set-matrix
         run: |
           if [[ -n "${{ github.event.inputs.providers }}" ]]; then
             PROVIDERS_LIST="${{ github.event.inputs.providers }}"
@@ -56,29 +57,39 @@ jobs:
                 PROVIDERS_LIST+="$PROVIDER_TEST_NAME "
               fi
             done
+
+            PROVIDERS_LIST="${PROVIDERS_LIST% }"
           fi
-          echo "PROVIDERS_LIST=$PROVIDERS_LIST" >> $GITHUB_ENV
+
+          JSON_FMT=$(printf '[%s]' "$(echo $PROVIDERS_LIST | awk '{for(i=1;i<=NF;i++) printf "\"%s\",", $i}' | sed 's/,$//')")
+          echo "providers=$JSON_FMT" >> $GITHUB_OUTPUT
+      - name: Print list of changed providers
+        run: |
+          echo "Providers matrix: ${{ steps.set-matrix.outputs.providers }}"
+
+  providers-test:
+    name: "Run provider tests"
+    needs: providers-list
+    runs-on: ubuntu-latest
+    if: needs.providers-list.outputs.providers != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: ${{fromJson(needs.providers-list.outputs.providers)}}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
       - name: "Install Rust ${{ vars.RUST_VERSION }}"
         uses: WalletConnect/actions-rs/toolchain@1.0.0
-        if: env.PROVIDERS_LIST != ''
         with:
           toolchain: ${{ vars.RUST_VERSION }}
           profile: 'default'
           override: true
 
-      - name: Run providers tests
-        if: env.PROVIDERS_LIST != ''
+      - name: Run Tests for ${{ matrix.provider }}
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
           RPC_URL: ${{ inputs.stage-url }}
         run: |
-          for provider in $PROVIDERS_LIST; do
-            echo "Running tests for ${provider} provider"
-            cargo test ${provider}_provider-- --ignored
-            TEST_EXIT_STATUS=$?
-            if [ $TEST_EXIT_STATUS -ne 0 ]; then
-                echo "Test for ${provider} has failed"
-                exit 1
-            fi
-          done
+            cargo test ${{ matrix.provider }}_provider -- --ignored
