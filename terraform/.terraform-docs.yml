@@ -1,0 +1,40 @@
+formatter: 'markdown table'
+
+recursive:
+  enabled: true
+  path: .
+
+output:
+  file: README.md
+  mode: inject
+  template: |-
+    <!-- BEGIN_TF_DOCS -->
+    {{ .Content }}
+    <!-- END_TF_DOCS -->
+
+content: |
+  {{ .Header }}
+  {{ .Requirements }}
+  {{ .Providers }}
+  {{ .Modules }}
+
+  ## Inputs
+  {{- $hideInputs := list "namespace" "region" "stage" "name" "delimiter" "attributes" "tags" "regex_replace_chars" "id_length_limit" "label_key_case" "label_value_case" "label_order" }}
+  {{- $filteredInputs := list -}}
+  {{- range .Module.Inputs -}}
+      {{- if not (has .Name $hideInputs) -}}
+          {{- $filteredInputs = append $filteredInputs . -}}
+      {{- end -}}
+  {{- end -}}
+  {{ if not $filteredInputs }}
+
+    No inputs.
+  {{ else }}
+    | Name | Description | Type | Default | Required |
+    |------|-------------|------|---------|:--------:|
+    {{- range $filteredInputs }}
+        | {{ anchorNameMarkdown "input" .Name }} | {{ tostring .Description | sanitizeMarkdownTbl }} | {{ printf " " }}<pre lang="json">{{ tostring .Type | sanitizeMarkdownTbl }}</pre> | {{ printf " " }}<pre lang="json">{{ .GetValue | sanitizeMarkdownTbl }}</pre> | {{ printf " " }}{{ ternary .Required "yes" "no" }} |
+    {{- end }}
+  {{- end }}
+  {{ .Outputs }}
+  {{/** End of file fixer */}}

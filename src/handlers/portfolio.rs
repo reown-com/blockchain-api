@@ -1,5 +1,5 @@
 use {
-    super::{PortfolioQueryParams, HANDLER_TASK_METRICS},
+    super::HANDLER_TASK_METRICS,
     crate::{error::RpcError, state::AppState},
     axum::{
         body::Bytes,
@@ -9,11 +9,33 @@ use {
     },
     ethers::abi::Address,
     hyper::HeaderMap,
+    serde::{Deserialize, Serialize},
     std::{net::SocketAddr, sync::Arc},
     tap::TapFallible,
     tracing::log::error,
     wc::future::FutureExt,
 };
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PortfolioQueryParams {
+    pub project_id: String,
+    pub currency: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PortfolioResponseBody {
+    pub data: Vec<PortfolioPosition>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PortfolioPosition {
+    pub id: String,
+    pub name: String,
+    pub symbol: String,
+}
 
 pub async fn handler(
     state: State<Arc<AppState>>,
@@ -45,7 +67,7 @@ async fn handler_internal(
         .parse::<Address>()
         .map_err(|_| RpcError::IdentityInvalidAddress)?;
 
-    state.validate_project_access(&project_id).await?;
+    state.validate_project_access_and_quota(&project_id).await?;
 
     let response = state
         .providers

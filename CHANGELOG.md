@@ -1,0 +1,152 @@
+# Changelog
+All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
+
+- - -
+## 0.10.3 - 2024-01-12
+#### Bug Fixes
+- adding temporary instrument logging for the avatar lookup (#462) - (f039e28) - Max Kalashnikoff
+- correct name of dynamic terraform variables (#458) - (07e9250) - Xavier Basty
+
+- - -
+
+## 0.10.2 - 2024-01-10
+#### Bug Fixes
+- changing to `validate_project_access_and_quota` in history and portfolio handlers (#456) - (456cb6a) - Max Kalashnikoff
+
+- - -
+
+## 0.10.1 - 2024-01-10
+#### Bug Fixes
+- not returning quota limit error (#457) - (22517f3) - xDarksome
+- ignoring Infura tests until resolution (#455) - (5a6ad9a) - Max Kalashnikoff
+- passing infura project id to the tests (#454) - (05a74d5) - Max Kalashnikoff
+
+- - -
+
+## 0.10.0 - 2024-01-09
+#### Features
+- implementing on ramp url generator (#453) - (2ce2e8e) - Max Kalashnikoff
+
+- - -
+
+## 0.9.2 - 2024-01-05
+#### Bug Fixes
+- **(logging)** removing Coinbase response logging (#449) - (079f510) - Max Kalashnikoff
+#### Miscellaneous Chores
+- **(logging)** reducing logging for proxy requests (#447) - (470c0cb) - Max Kalashnikoff
+- **(monitoring)** adding history metrics per provider (#446) - (0e6df79) - Max Kalashnikoff
+- reducing logging for the identity requests (#448) - (44b45ea) - Max Kalashnikoff
+- bumping the ethers version (#435) - (f6b6cd3) - Max Kalashnikoff
+- Bump version for release - (4e9e57a) - geekbrother
+
+- - -
+
+## 0.9.0 - 2024-01-02
+#### Features
+- **(onramp)** exposing name and quantity from Coinbase (#442) - (a7a55bc) - Max Kalashnikoff
+#### Miscellaneous Chores
+- **(refactor)** making history structures unite, arranging structures (#441) - (ea71dd3) - Max Kalashnikoff
+
+- - -
+
+## 0.8.0 - 2023-12-25
+#### Bug Fixes
+- **(providers)** changing the mainnet URL for zksync (#443) - (a77749b) - Max Kalashnikoff
+#### Features
+- **(ci)** implement integration tests for hexless accounts (#419) - (7be75d3) - Max Kalashnikoff
+
+- - -
+
+## 0.7.1 - 2023-12-22
+#### Bug Fixes
+- revert back to string-based address in transactions (#439) - (68cd876) - Max Kalashnikoff
+
+- - -
+
+## 0.7.0 - 2023-12-22
+#### Bug Fixes
+- **(ci)** add postgres to the sub-validate (#438) - (cc8641e) - Max Kalashnikoff
+- **(ci)** removing /health from the sub-cd validation (#437) - (e9a2f9e) - Max Kalashnikoff
+#### Features
+- **(onramp)** Coinbase transaction status (#388) - (ea4c371) - Derek
+
+- - -
+
+## 0.6.1 - 2023-12-21
+#### Bug Fixes
+- use task name instead of image name in ECS deploy on `staging` (#436) - (83f8020) - Xavier Basty
+#### Miscellaneous Chores
+- removing ens_allowlist (#431) - (5c6d644) - Max Kalashnikoff
+
+- - -
+
+## 0.6.0 - 2023-12-20
+#### Features
+- implement register handler (#418) - (3c06126) - Max Kalashnikoff
+
+- - -
+
+## 0.5.0 - 2023-12-20
+#### Features
+- adding lookup and reverse lookup handlers (#417) - (7fc110f) - Max Kalashnikoff
+
+- - -
+
+## 0.4.2 - 2023-12-20
+#### Bug Fixes
+- **(ci)** fixing the stage-url variable for the validation (#432) - (3b34ddd) - Max Kalashnikoff
+#### Miscellaneous Chores
+- **(docker)** Revert: moving COPY before the cargo chef cook (#434) - (fd11cfa) - Max Kalashnikoff
+
+- - -
+
+## 0.4.1 - 2023-12-20
+#### Bug Fixes
+- update shared flows to `0.1.3` to fix ECS task names (#433) - (b66330e) - Xavier Basty
+#### Miscellaneous Chores
+- **(ci)** fixing prod validation url (#425) - (8f651f9) - Max Kalashnikoff
+- adding node_modules to the .gitignore (#424) - (d59b6b9) - Max Kalashnikoff
+
+- - -
+
+## 0.4.0 - 2023-12-19
+#### Features
+- implement helpers (#413) - (389e70e) - Max Kalashnikoff
+#### Miscellaneous Chores
+- **(docker)** moving COPY before the cargo chef cook (#429) - (d540595) - Max Kalashnikoff
+
+- - -
+
+## 0.3.1 - 2023-12-19
+#### Bug Fixes
+- use the `X-Forwarded-For` header from the ALB to retrieve the client IP (#428) - (306ad07) - Xavier Basty
+#### Miscellaneous Chores
+- **(docker)** remove migrations directory from dockerignore (#427) - (c438c14) - Max Kalashnikoff
+
+- - -
+
+## 0.3.0 - 2023-12-19
+#### Bug Fixes
+- **(o11y)** dashboards broken (#420) - (777166c) - Derek
+- ECS task name in version retrieval (#423) - (97440c5) - Xavier Basty
+- query URL (#421) - (8e7e99f) - Chris Smith
+- change ECS role Prometheus permission to read+write access (#422) - (aaac458) - Xavier Basty
+#### Features
+- scaffold sqlx (#412) - (2ef48ec) - Max Kalashnikoff
+- add sql schema and migrations (#411) - (4e2e19a) - Max Kalashnikoff
+- add Postgres 16 to the docker-compose for the CI tests (#410) - (e60d6f1) - Max Kalashnikoff
+#### Miscellaneous Chores
+- **(terraform)** downgrade aurora version (#426) - (6c8e67b) - Max Kalashnikoff
+- **(terraform)** adding Postgres (#415) - (4c899d6) - Max Kalashnikoff
+
+- - -
+
+## 0.2.0 - 2023-12-15
+#### Features
+- **(identity)** remove ENS demo (#404) - (590da3f) - Derek
+#### Miscellaneous Chores
+- migrate CI, AWS account and alerting (#382) - (50f30e9) - Xavier Basty
+
+- - -
+
+Changelog generated by [cocogitto](https://github.com/cocogitto/cocogitto).

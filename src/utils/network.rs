@@ -1,4 +1,4 @@
-use {ipnet::IpNet, std::net::IpAddr};
+use {axum::http::HeaderMap, ipnet::IpNet, std::net::IpAddr};
 
 #[derive(thiserror::Error, Debug)]
 pub enum NetworkInterfaceError {
@@ -64,4 +64,12 @@ fn is_public_ip_addr(addr: IpAddr) -> bool {
     });
 
     RESERVED_NETWORKS.iter().all(|range| !range.contains(&addr))
+}
+
+pub fn get_forwarded_ip(headers: HeaderMap) -> Option<IpAddr> {
+    headers
+        .get("X-Forwarded-For")
+        .and_then(|header| header.to_str().ok())
+        .and_then(|header| header.split(',').next())
+        .and_then(|client_ip| client_ip.trim().parse::<IpAddr>().ok())
 }

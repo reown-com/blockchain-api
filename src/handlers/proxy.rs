@@ -1,6 +1,6 @@
 use {
-    super::HANDLER_TASK_METRICS,
-    crate::{analytics::MessageInfo, error::RpcError, handlers::RpcQueryParams, state::AppState},
+    super::{RpcQueryParams, HANDLER_TASK_METRICS},
+    crate::{analytics::MessageInfo, error::RpcError, state::AppState, utils::network},
     axum::{
         body::Bytes,
         extract::{ConnectInfo, MatchedPath, Query, State},
@@ -14,7 +14,10 @@ use {
         time::{Duration, SystemTime},
     },
     tap::TapFallible,
-    tracing::log::{error, warn},
+    tracing::{
+        log::{error, warn},
+        Span,
+    },
     wc::future::FutureExt,
 };
 
@@ -31,7 +34,7 @@ pub async fn handler(
         .await
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn handler_internal(
     State(state): State<Arc<AppState>>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
@@ -51,6 +54,8 @@ async fn handler_internal(
         .get_provider_for_chain_id(&chain_id)
         .ok_or(RpcError::UnsupportedChain(chain_id.clone()))?;
 
+    Span::current().record("provider", &provider.provider_kind().to_string());
+
     state.metrics.add_rpc_call(chain_id.clone());
 
     let origin = headers
@@ -60,7 +65,7 @@ async fn handler_internal(
     if let Ok(rpc_request) = serde_json::from_slice(&body) {
         let (country, continent, region) = state
             .analytics
-            .lookup_geo_data(addr.ip())
+            .lookup_geo_data(network::get_forwarded_ip(headers).unwrap_or_else(|| addr.ip()))
             .map(|geo| (geo.country, geo.continent, geo.region))
             .unwrap_or((None, None, None));
 

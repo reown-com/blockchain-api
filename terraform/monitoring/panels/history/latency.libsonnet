@@ -21,8 +21,8 @@ local _configuration = defaults.configuration.timeseries
 
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
-      expr          = 'sum(rate(history_lookup_latency_tracker_sum[$__rate_interval])) / sum(rate(history_lookup_latency_tracker_count[$__rate_interval]))',
-      refId         = 'EndpointLatency',
-      legendFormat  = 'Endpoint',
+      expr          = 'sum by(provider) (rate(history_lookup_latency_tracker_sum[$__rate_interval])) / sum by(provider) (rate(history_lookup_latency_tracker_count[$__rate_interval]))',
+      exemplar      = false,
+      legendFormat  = '__auto',
     ))
 }

@@ -1,0 +1,57 @@
+name: ⚙️ Validate
+run-name: "Validate: ${{ github.sha }}${{ (!inputs.infra && !inputs.app) && '👀 validate nothing' || ''}}${{ inputs.infra && ' ✓  infra' || '' }}${{ inputs.app && ' ✓  app' || '' }}"
+on:
+  workflow_dispatch:
+    inputs:
+      check-infra:
+        description: "Validate Infra"
+        default: true
+        required: true
+        type: boolean
+      check-app:
+        description: "Validate App"
+        default: true
+        required: true
+        type: boolean
+      check-staging:
+        description: "Validate Staging"
+        default: false
+        required: true
+        type: boolean
+      check-prod:
+        description: "Validate Prod"
+        default: false
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+  checks: write
+  id-token: write
+
+jobs:
+  ci:
+    name: CI
+    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.1.3
+    secrets: inherit
+    with:
+      check-infra: ${{ inputs.check-infra }}
+      check-app: ${{ inputs.check-app }}
+
+  validate-staging:
+    name: Validate - Staging
+    if: ${{ inputs.check-staging }}
+    uses: ./.github/workflows/sub-validate.yml
+    secrets: inherit
+    with:
+      stage: staging
+      stage-url: https://staging.${{ vars.SUBDOMAIN_NAME }}.walletconnect.com
+
+  validate-prod:
+    name: Validate - Prod
+    if: ${{ inputs.check-prod }}
+    uses: ./.github/workflows/sub-validate.yml
+    secrets: inherit
+    with:
+      stage: prod
+      stage-url: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.com

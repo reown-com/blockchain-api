@@ -1,12 +1,12 @@
 use {
-    super::HANDLER_TASK_METRICS,
+    super::{RpcQueryParams, HANDLER_TASK_METRICS},
     crate::{
         analytics::IdentityLookupInfo,
         error::RpcError,
-        handlers::RpcQueryParams,
         json_rpc::{JsonRpcError, JsonRpcResponse},
         project::ProjectDataError,
         state::AppState,
+        utils::network,
     },
     async_trait::async_trait,
     axum::{
@@ -28,7 +28,7 @@ use {
         time::{Duration, SystemTime, UNIX_EPOCH},
     },
     tap::TapFallible,
-    tracing::{debug, info, warn},
+    tracing::{debug, warn},
     wc::future::FutureExt,
 };
 
@@ -52,7 +52,7 @@ pub async fn handler(
         .await
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
@@ -99,7 +99,9 @@ async fn handler_internal(
 
         let (country, continent, region) = state
             .analytics
-            .lookup_geo_data(connect_info.0.ip())
+            .lookup_geo_data(
+                network::get_forwarded_ip(headers).unwrap_or_else(|| connect_info.0.ip()),
+            )
             .map(|geo| (geo.country, geo.continent, geo.region))
             .unwrap_or((None, None, None));
 
@@ -135,7 +137,7 @@ impl IdentityLookupSource {
     }
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_identity(
     address: H160,
     state: State<Arc<AppState>>,
@@ -145,40 +147,18 @@ async fn lookup_identity(
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
     let cache_key = format!("{}", address);
-
-    // Skipping the cache for testing addresses
-    let ens_demo_addresses = state.ens_allowlist.clone().unwrap_or_default();
-    if !ens_demo_addresses.contains_key(&address) {
-        if let Some(cache) = &state.identity_cache {
-            debug!("Checking cache for identity");
-            let cache_start = SystemTime::now();
-            let value = cache.get(&cache_key).await?;
-            state.metrics.add_identity_lookup_cache_latency(cache_start);
-            if let Some(response) = value {
-                return Ok((IdentityLookupSource::Cache, response));
-            }
+    if let Some(cache) = &state.identity_cache {
+        debug!("Checking cache for identity");
+        let cache_start = SystemTime::now();
+        let value = cache.get(&cache_key).await?;
+        state.metrics.add_identity_lookup_cache_latency(cache_start);
+        if let Some(response) = value {
+            return Ok((IdentityLookupSource::Cache, response));
         }
-    };
+    }
 
-    info!("Looking up identity for address: {}", address);
-
-    // check if address equals derek address
-    let res = if !ens_demo_addresses.contains_key(&address) {
-        lookup_identity_rpc(address, state.clone(), connect_info, query, path, headers).await?
-    } else {
-        let fallback = "unknown".to_string();
-        let ens = ens_demo_addresses
-            .get(&address)
-            .unwrap_or(&fallback)
-            .as_str();
-        IdentityResponse {
-            name: Some(format!("{}.connect.id", ens)),
-            avatar: Some(
-                "https://ipfs.io/ipfs/bafybeiabkgjlpf35cbo4jdskt4llbb7pdhqh25nmra7imsam233z65an2y"
-                    .to_string(),
-            ),
-        }
-    };
+    let res =
+        lookup_identity_rpc(address, state.clone(), connect_info, query, path, headers).await?;
 
     if let Some(cache) = &state.identity_cache {
         debug!("Saving to cache");
@@ -201,7 +181,7 @@ async fn lookup_identity(
     Ok((IdentityLookupSource::Rpc, res))
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_identity_rpc(
     address: H160,
     state: State<Arc<AppState>>,
@@ -255,7 +235,7 @@ async fn lookup_identity_rpc(
 
 const SELF_PROVIDER_ERROR_PREFIX: &str = "SelfProviderError: ";
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_name(
     provider: &Provider<SelfProvider>,
     address: Address,
@@ -279,7 +259,7 @@ async fn lookup_name(
     )
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip(provider))]
 async fn lookup_avatar(
     provider: &Provider<SelfProvider>,
     name: &str,

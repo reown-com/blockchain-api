@@ -21,7 +21,7 @@ local _configuration = defaults.configuration.timeseries
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr          = 'sum by (code)(rate(http_call_counter_total{aws_ecs_task_family=\"%s_rpc-proxy\"}[5m]))' % vars.environment,
+      expr          = 'sum by (code)(rate(http_call_counter_total{}[5m]))',
       exemplar      = false,
       legendFormat  = '__auto',
     ))

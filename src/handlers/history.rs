@@ -3,8 +3,9 @@ use {
     crate::{
         analytics::HistoryLookupInfo,
         error::RpcError,
-        handlers::HistoryQueryParams,
+        providers::ProviderKind,
         state::AppState,
+        utils::network,
     },
     axum::{
         body::Bytes,
@@ -12,13 +13,101 @@ use {
         response::{IntoResponse, Response},
         Json,
     },
-    ethers::abi::Address,
+    ethers::types::H160,
     hyper::HeaderMap,
-    std::{net::SocketAddr, sync::Arc},
+    serde::{Deserialize, Serialize},
+    std::{net::SocketAddr, str::FromStr, sync::Arc},
     tap::TapFallible,
     tracing::log::error,
     wc::future::FutureExt,
 };
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryQueryParams {
+    pub currency: Option<String>,
+    pub project_id: String,
+    pub cursor: Option<String>,
+    pub onramp: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryResponseBody {
+    pub data: Vec<HistoryTransaction>,
+    pub next: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryTransaction {
+    pub id: String,
+    pub metadata: HistoryTransactionMetadata,
+    pub transfers: Option<Vec<HistoryTransactionTransfer>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryTransactionMetadata {
+    pub operation_type: String,
+    pub hash: String,
+    pub mined_at: String,
+    pub sent_from: String,
+    pub sent_to: String,
+    pub status: String,
+    pub nonce: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct HistoryTransactionTransfer {
+    pub fungible_info: Option<HistoryTransactionFungibleInfo>,
+    pub nft_info: Option<HistoryTransactionNFTInfo>,
+    pub direction: String,
+    pub quantity: HistoryTransactionTransferQuantity,
+    pub value: Option<f64>,
+    pub price: Option<f64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct HistoryTransactionFungibleInfo {
+    pub name: Option<String>,
+    pub symbol: Option<String>,
+    pub icon: Option<HistoryTransactionURLItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct HistoryTransactionURLItem {
+    pub url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct HistoryTransactionTransferQuantity {
+    pub numeric: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct HistoryTransactionNFTInfo {
+    pub name: Option<String>,
+    pub content: Option<HistoryTransactionNFTContent>,
+    pub flags: HistoryTransactionNFTInfoFlags,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct HistoryTransactionNFTInfoFlags {
+    pub is_spam: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct HistoryTransactionNFTContent {
+    pub preview: Option<HistoryTransactionURLandContentTypeItem>,
+    pub detail: Option<HistoryTransactionURLandContentTypeItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct HistoryTransactionURLandContentTypeItem {
+    pub url: String,
+    pub content_type: Option<String>,
+}
 
 pub async fn handler(
     state: State<Arc<AppState>>,
@@ -45,25 +134,45 @@ async fn handler_internal(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
-    let address_hash = address.clone();
-    address
-        .parse::<Address>()
-        .map_err(|_| RpcError::IdentityInvalidAddress)?;
 
-    state.validate_project_access(&project_id).await?;
+    // Checking for the H160 address correctness
+    H160::from_str(&address).map_err(|_| RpcError::IdentityInvalidAddress)?;
+
     let latency_tracker_start = std::time::SystemTime::now();
-    let response = state
-        .providers
-        .history_provider
-        .get_transactions(address, body, query.0)
-        .await
-        .tap_err(|e| {
-            error!("Failed to call transaction history with {}", e);
-        })?;
+    let history_provider: ProviderKind;
+    let response: HistoryResponseBody = if let Some(onramp) = query.onramp.clone() {
+        if onramp == "coinbase" {
+            // We don't want to validate the quota for the onramp
+            state.validate_project_access(&project_id).await?;
+            history_provider = ProviderKind::Coinbase;
+            state
+                .providers
+                .coinbase_pay_provider
+                .get_transactions(address.clone(), body.clone(), query.clone().0)
+                .await
+                .tap_err(|e| {
+                    error!("Failed to call coinbase transactions history with {}", e);
+                })?
+        } else {
+            return Err(RpcError::UnsupportedProvider(onramp));
+        }
+    } else {
+        state.validate_project_access_and_quota(&project_id).await?;
+        history_provider = ProviderKind::Zerion;
+        state
+            .providers
+            .history_provider
+            .get_transactions(address.clone(), body.clone(), query.0.clone())
+            .await
+            .tap_err(|e| {
+                error!("Failed to call transactions history with {}", e);
+            })?
+    };
+
     let latency_tracker = latency_tracker_start
         .elapsed()
         .unwrap_or(std::time::Duration::from_secs(0));
-    state.metrics.add_history_lookup();
+    state.metrics.add_history_lookup(&history_provider);
 
     {
         let origin = headers
@@ -72,19 +181,21 @@ async fn handler_internal(
 
         let (country, continent, region) = state
             .analytics
-            .lookup_geo_data(connect_info.0.ip())
+            .lookup_geo_data(
+                network::get_forwarded_ip(headers).unwrap_or_else(|| connect_info.0.ip()),
+            )
             .map(|geo| (geo.country, geo.continent, geo.region))
             .unwrap_or((None, None, None));
 
         state.analytics.history_lookup(HistoryLookupInfo::new(
-            address_hash,
+            address,
             project_id,
             response.data.len(),
             latency_tracker,
             response
                 .data
                 .iter()
-                .map(|transaction| transaction.transfers.len())
+                .map(|transaction| transaction.transfers.as_ref().map(|v| v.len()).unwrap_or(0))
                 .sum(),
             response
                 .data
@@ -92,9 +203,13 @@ async fn handler_internal(
                 .map(|transaction| {
                     transaction
                         .transfers
-                        .iter()
-                        .filter(|transfer| transfer.fungible_info.is_some())
-                        .count()
+                        .as_ref()
+                        .map(|v| {
+                            v.iter()
+                                .filter(|transfer| transfer.fungible_info.is_some())
+                                .count()
+                        })
+                        .unwrap_or(0)
                 })
                 .sum(),
             response
@@ -103,9 +218,13 @@ async fn handler_internal(
                 .map(|transaction| {
                     transaction
                         .transfers
-                        .iter()
-                        .filter(|transfer| transfer.nft_info.is_some())
-                        .count()
+                        .as_ref()
+                        .map(|v| {
+                            v.iter()
+                                .filter(|transfer| transfer.nft_info.is_some())
+                                .count()
+                        })
+                        .unwrap_or(0)
                 })
                 .sum(),
             origin,
@@ -118,8 +237,10 @@ async fn handler_internal(
     let latency_tracker = latency_tracker_start
         .elapsed()
         .unwrap_or(std::time::Duration::from_secs(0));
-    state.metrics.add_history_lookup_success();
-    state.metrics.add_history_lookup_latency(latency_tracker);
+    state.metrics.add_history_lookup_success(&history_provider);
+    state
+        .metrics
+        .add_history_lookup_latency(&history_provider, latency_tracker);
 
     Ok(Json(response).into_response())
 }

@@ -1,6 +1,6 @@
 [package]
 name = "rpc-proxy"
-version = "0.1.0"
+version = "0.10.3"
 edition = "2021"
 authors = [
     "Derek <derek@walletconnect.com>",
@@ -24,7 +24,7 @@ tower = "0.4.11"
 tower-http = { version = "0.4.0", features = ["cors", "trace", "request-id", "util"] }
 jsonrpc = "0.14.0"
 async-tungstenite = { version = "0.20.0", features = ["tokio", "tokio-runtime", "tokio-native-tls"] }
-url = "2.2"
+url = "2.5"
 
 # Serialization
 rmp-serde = "1.1"
@@ -32,11 +32,13 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_piecewise_default = "0.2"
 serde-aux = "3.1"
+validator = { version = "0.16", features = ["derive"] }
 
 # Storage
 aws-config = "0.56"
 aws-sdk-s3 = "0.31"
 deadpool-redis = "0.13"
+sqlx = { version = "0.7.3", features = ["runtime-tokio-native-tls", "postgres", "chrono"] }
 
 dotenv = "0.15.0"
 envy = "0.4"
@@ -62,14 +64,10 @@ axum-tungstenite = "0.2.0"
 
 rand = "0.8.4"
 prometheus-http-query = "0.6.6"
-ethers = { version = "2.0.7", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
+ethers = { version = "2.0.11", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
 
 bytes = "1.4.0"
 sha256 = "1.2.2"
-
-# ENS Allowlist Remove later
-reqwest = { version = "0.11", features = ["json"] }
-csv = "1"
 
 [dev-dependencies]
 jsonrpc = "0.14.0"

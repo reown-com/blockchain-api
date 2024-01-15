@@ -47,7 +47,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         (
             "eip155:324".into(),
             (
-                "https://zksync2-mainnet.zksync.io".into(),
+                "https://mainnet.era.zksync.io".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),

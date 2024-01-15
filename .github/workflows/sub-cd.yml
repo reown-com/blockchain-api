@@ -1,0 +1,79 @@
+name: ❖ CD
+
+on:
+  workflow_call:
+    inputs:
+      deploy-infra:
+        description: "Deploy infrastructure"
+        type: boolean
+        default: true
+      deploy-app:
+        description: "Deploy app"
+        type: boolean
+        default: true
+      deploy-prod:
+        description: "Deploy to production after successful deployment to staging"
+        type: boolean
+        default: false
+      version:
+        description: "The release version"
+        type: string
+        required: true
+
+concurrency: cd
+
+permissions:
+  contents: write
+  checks: write
+  id-token: write
+
+jobs:
+  cd-staging:
+    name: Staging
+    secrets: inherit
+    uses: WalletConnect/ci_workflows/.github/workflows/cd.yml@0.1.3
+    with:
+      deploy-infra: ${{ inputs.deploy-infra }}
+      deploy-app: ${{ inputs.deploy-app && !inputs.deploy-infra }}
+      version: ${{ inputs.version }}
+      task-name: ${{ vars.TASK_NAME }}
+      stage: staging
+      stage-url: https://staging.${{ vars.SUBDOMAIN_NAME }}.walletconnect.com/health
+      tf-variables: |
+        ofac_blocked_countries: ${{ vars.OFAC_BLOCKED_ZONES }}
+      aws-role-arn: ${{ vars.AWS_ROLE_STAGING }}
+
+  validate-staging:
+    name: Validate Staging
+    needs: [ cd-staging ]
+    uses: ./.github/workflows/sub-validate.yml
+    secrets: inherit
+    with:
+      stage: staging
+      stage-url: https://staging.${{ vars.SUBDOMAIN_NAME }}.walletconnect.com
+
+  cd-prod:
+    name: Prod
+    needs: [ validate-staging ]
+    if: ${{ inputs.deploy-prod }}
+    secrets: inherit
+    uses: WalletConnect/ci_workflows/.github/workflows/cd.yml@0.1.3
+    with:
+      deploy-infra: ${{ inputs.deploy-infra }}
+      deploy-app: ${{ inputs.deploy-app && !inputs.deploy-infra }}
+      version: ${{ inputs.version }}
+      task-name: ${{ vars.TASK_NAME }}
+      stage: prod
+      stage-url: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.com/health
+      tf-variables: |
+        ofac_blocked_countries: ${{ vars.OFAC_BLOCKED_ZONES }}
+      aws-role-arn: ${{ vars.AWS_ROLE_PROD }}
+
+  validate-prod:
+    name: Validate Prod
+    needs: [ cd-prod ]
+    uses: ./.github/workflows/sub-validate.yml
+    secrets: inherit
+    with:
+      stage: prod
+      stage-url: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.com

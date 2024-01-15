@@ -1,6 +1,7 @@
 use {
     crate::{
         analytics::Config as AnalyticsConfig,
+        database::config::PostgresConfig,
         error,
         profiler::ProfilerConfig,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
@@ -44,6 +45,7 @@ pub struct Config {
     pub server: ServerConfig,
     pub registry: RegistryConfig,
     pub storage: StorageConfig,
+    pub postgres: PostgresConfig,
     pub analytics: AnalyticsConfig,
     pub profiler: ProfilerConfig,
     pub providers: ProvidersConfig,
@@ -55,6 +57,7 @@ impl Config {
             server: from_env("RPC_PROXY_")?,
             registry: from_env("RPC_PROXY_REGISTRY_")?,
             storage: from_env("RPC_PROXY_STORAGE_")?,
+            postgres: from_env("RPC_PROXY_POSTGRES_")?,
             analytics: from_env("RPC_PROXY_ANALYTICS_")?,
             profiler: from_env("RPC_PROXY_PROFILER_")?,
             providers: from_env("RPC_PROXY_PROVIDER_")?,
@@ -77,6 +80,7 @@ mod test {
     use {
         crate::{
             analytics,
+            database::config::PostgresConfig,
             env::{Config, ServerConfig},
             profiler::ProfilerConfig,
             project,
@@ -122,9 +126,12 @@ mod test {
             // Analytics config.
             ("RPC_PROXY_ANALYTICS_S3_ENDPOINT", "s3://127.0.0.1"),
             ("RPC_PROXY_ANALYTICS_EXPORT_BUCKET", "EXPORT_BUCKET"),
+            // Providers config
             ("RPC_PROXY_PROVIDER_INFURA_PROJECT_ID", "INFURA_PROJECT_ID"),
             ("RPC_PROXY_PROVIDER_POKT_PROJECT_ID", "POKT_PROJECT_ID"),
             ("RPC_PROXY_PROVIDER_ZERION_API_KEY", "ZERION_API_KEY"),
+            ("RPC_PROXY_PROVIDER_COINBASE_API_KEY", "COINBASE_API_KEY"),
+            ("RPC_PROXY_PROVIDER_COINBASE_APP_ID", "COINBASE_APP_ID"),
             (
                 "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL",
                 "PROMETHEUS_QUERY_URL",
@@ -133,6 +140,12 @@ mod test {
                 "RPC_PROXY_PROVIDER_PROMETHEUS_WORKSPACE_HEADER",
                 "PROMETHEUS_WORKSPACE_HEADER",
             ),
+            // Postgres config.
+            (
+                "RPC_PROXY_POSTGRES_URI",
+                "postgres://postgres@localhost:5432/postgres",
+            ),
+            ("RPC_PROXY_POSTGRES_MAX_CONNECTIONS", "32"),
         ];
 
         values.iter().for_each(set_env_var);
@@ -168,6 +181,10 @@ mod test {
                     "redis://127.0.0.1/identity/write".to_owned()
                 ),
             },
+            postgres: PostgresConfig {
+                uri: "postgres://postgres@localhost:5432/postgres".to_owned(),
+                max_connections: 32,
+            },
             analytics: analytics::Config {
                 s3_endpoint: Some("s3://127.0.0.1".to_owned()),
                 export_bucket: Some("EXPORT_BUCKET".to_owned()),
@@ -179,6 +196,8 @@ mod test {
                 infura_project_id: "INFURA_PROJECT_ID".to_string(),
                 pokt_project_id: "POKT_PROJECT_ID".to_string(),
                 zerion_api_key: Some("ZERION_API_KEY".to_owned()),
+                coinbase_api_key: Some("COINBASE_API_KEY".to_owned()),
+                coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),
             },
         });
 

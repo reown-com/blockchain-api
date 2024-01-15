@@ -7,6 +7,13 @@ services:
     volumes:
       - redis:/data
 
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+    - "5432:5432"
+
   proxy:
     platform: linux/x86_64
     build:
@@ -26,10 +33,12 @@ services:
       - RPC_PROXY_STORAGE_PROJECT_DATA_REDIS_ADDR_WRITE=redis://redis:6379/0
       - RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_READ=redis://redis:6379/1
       - RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_WRITE=redis://redis:6379/1
+      - RPC_PROXY_POSTGRES_URI=postgres://postgres@postgres:5432/postgres
     cap_add:
       - SYS_PTRACE    # Enabling GDB to attach to a running process
     depends_on:
       - redis
+      - postgres
 
 volumes:
   redis:

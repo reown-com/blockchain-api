@@ -1,0 +1,64 @@
+name: ⚡ Pull-Request
+run-name: 'PR / ${{ github.event.pull_request.title }}'
+
+on:
+  pull_request:
+    types:
+      - opened        # A pull request was created.
+      - reopened      # A closed pull request was reopened.
+      - edited        # A pull request's title, body, or labels are edited.
+      - synchronize   # A pull request's branch was synchronized with its base branch.
+      - unlocked      # Conversation on a pull request was unlocked.
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+  issues: read
+  pull-requests: write
+
+jobs:
+  check_pr:
+    name: Check PR
+    runs-on:
+      group: ${{ vars.RUN_GROUP }}
+    permissions:
+      statuses: write
+    steps:
+      - name: Check PR Title
+        uses: aslafy-z/conventional-pr-title-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  paths-filter:
+    name: Paths Filter
+    runs-on:
+      group: ${{ vars.RUN_GROUP }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: WalletConnect/actions/github/paths-filter/@2.2.1
+        id: filter
+    outputs:
+      infra: ${{ steps.filter.outputs.infra }}
+      app: ${{ steps.filter.outputs.app }}
+
+  ci:
+    name: CI
+    needs: [ paths-filter ]
+    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.1.3
+    secrets: inherit
+    with:
+      check-app: ${{ needs.paths-filter.outputs.app == 'true' }}
+      check-infra: ${{ needs.paths-filter.outputs.infra == 'true' }}
+
+  merge_check:
+    name: Merge Check
+    needs: [ check_pr, ci ]
+    if: ${{ always() && !cancelled() && !failure() }}
+    runs-on:
+      group: ${{ vars.RUN_GROUP }}
+    steps:
+      - run: echo "CI is successful"
