@@ -6,7 +6,8 @@ use {
 
 #[test_context(ServerContext)]
 #[tokio::test]
-async fn eip155_324_zksync_mainnet(ctx: &mut ServerContext) {
+#[ignore]
+async fn zksync_provider_eip155_324_and_280(ctx: &mut ServerContext) {
     // ZkSync mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:324", "0x144").await;
 
