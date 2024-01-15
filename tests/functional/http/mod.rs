@@ -6,6 +6,7 @@ use {
     test_context::test_context,
 };
 
+pub(crate) mod aurora;
 pub(crate) mod base;
 pub(crate) mod binance;
 pub(crate) mod infura;

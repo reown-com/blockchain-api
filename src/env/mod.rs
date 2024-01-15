@@ -11,6 +11,7 @@ use {
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
+    aurora::*,
     base::*,
     binance::*,
     infura::*,
@@ -21,6 +22,7 @@ pub use {
     zksync::*,
     zora::*,
 };
+mod aurora;
 mod base;
 mod binance;
 mod infura;
