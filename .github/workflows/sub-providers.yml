@@ -10,7 +10,7 @@ on:
       stage-url:
         description: 'RPC URL'
         required: false
-        default: 'https://staging.rpc.walletconnect.org/'
+        default: 'https://staging.rpc.walletconnect.org'
   workflow_call:
     inputs:
       providers_directory:
@@ -21,7 +21,7 @@ on:
         type: string
         required: true
         description: 'Stage RPC URL'
-        default: 'https://staging.rpc.walletconnect.org/'
+        default: 'https://staging.rpc.walletconnect.org'
 
 concurrency: cd
 
