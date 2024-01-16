@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.11.2 - 2024-01-16
+#### Bug Fixes
+- **(ci)** removing write permissions from the workflow (#475) - (d78711f) - Max Kalashnikoff
+- **(ci)** noop change in providers code to test the CI (#474) - (ae88560) - Max Kalashnikoff
+- **(ci)** changing to call providers workflow as a job (#473) - (eaaf79e) - Max Kalashnikoff
+- **(noop)** checking the providers CI workflow (#476) - (71916af) - Max Kalashnikoff
+
+- - -
+
 ## 0.11.1 - 2024-01-15
 #### Bug Fixes
 - **(ci)** adding the branch tag for the sub workflow (#470) - (846045c) - Max Kalashnikoff
