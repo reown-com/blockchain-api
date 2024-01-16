@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.11.3 - 2024-01-16
+#### Bug Fixes
+- **(ci)** inherit secrets to providers validation (#477) - (15ff3db) - Max Kalashnikoff
+- **(noop)** checking the providers CI workflow (#478) - (b32f1c2) - Max Kalashnikoff
+
+- - -
+
 ## 0.11.2 - 2024-01-16
 #### Bug Fixes
 - **(ci)** removing write permissions from the workflow (#475) - (d78711f) - Max Kalashnikoff
