@@ -75,6 +75,7 @@ jobs:
   integration-tests-providers:
     name: Providers Integration Tests - ${{ inputs.stage }}
     uses: ./.github/workflows/sub-providers.yml
+    secrets: inherit
     with:
       providers_directory: "src/providers/"
       stage-url: ${{ inputs.stage-url }}
