@@ -33,12 +33,13 @@ permissions:
 jobs:
   providers-list:
     name: "Preparing providers list"
-    runs-on: ubuntu-latest
+    runs-on:
+      group: ${{ vars.RUN_GROUP }}
     outputs:
       providers: ${{ steps.set-matrix.outputs.providers }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
       - name: Creating list of changed providers
@@ -70,7 +71,8 @@ jobs:
   providers-test:
     name: "Run provider tests"
     needs: providers-list
-    runs-on: ubuntu-latest
+    runs-on:
+      group: ${{ vars.RUN_GROUP }}
     if: needs.providers-list.outputs.providers != '[]'
     strategy:
       fail-fast: false
@@ -78,7 +80,7 @@ jobs:
         provider: ${{fromJson(needs.providers-list.outputs.providers)}}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: "Install Rust ${{ vars.RUST_VERSION }}"
         uses: WalletConnect/actions-rs/toolchain@1.0.0
