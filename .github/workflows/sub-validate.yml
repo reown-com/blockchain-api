@@ -72,6 +72,12 @@ jobs:
           command: test
           args: --test integration
 
+      - name: "Run Providers Integration Tests"
+        uses: ./.github/workflows/sub-providers.yml@master
+        with:
+          providers_directory: "src/providers/"
+          stage-url: ${{ inputs.stage-url }}
+
   integration-tests-ts:
     name: TS Integration Tests - ${{ inputs.stage }}
     runs-on:

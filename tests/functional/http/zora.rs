@@ -6,7 +6,8 @@ use {
 
 #[test_context(ServerContext)]
 #[tokio::test]
-async fn eip155_7777777_zora(ctx: &mut ServerContext) {
+#[ignore]
+async fn zora_provider_eip155_7777777_and_999(ctx: &mut ServerContext) {
     // Zora mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:7777777", "0x76adf1")
         .await;

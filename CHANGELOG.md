@@ -2,6 +2,23 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.11.1 - 2024-01-15
+#### Bug Fixes
+- **(ci)** adding the branch tag for the sub workflow (#470) - (846045c) - Max Kalashnikoff
+- **(noop)** this is noop commit to check the provider tests new CI (#471) - (da2d7da) - Max Kalashnikoff
+
+- - -
+
+## 0.11.0 - 2024-01-15
+#### Bug Fixes
+- **(ci)** removnge the trailing slash from rpc url (#467) - (c2184ba) - Max Kalashnikoff
+- **(noop)** this is noop commit to check the provider tests new CI (#468) - (e8813d9) - Max Kalashnikoff
+#### Features
+- **(ci)** run provider integration tests from sub-validate (#466) - (5fc1df8) - Max Kalashnikoff
+- **(ci)** per provider integration tests (#465) - (36e3652) - Max Kalashnikoff
+
+- - -
+
 ## 0.10.3 - 2024-01-12
 #### Bug Fixes
 - adding temporary instrument logging for the avatar lookup (#462) - (f039e28) - Max Kalashnikoff
