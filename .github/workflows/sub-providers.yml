@@ -22,8 +22,6 @@ on:
         required: true
         description: 'Stage RPC URL'
 
-concurrency: cd
-
 jobs:
   providers-list:
     name: "Preparing providers list"
