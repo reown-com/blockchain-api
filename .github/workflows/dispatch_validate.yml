@@ -1,5 +1,5 @@
 name: ⚙️ Validate
-run-name: "Validate: ${{ github.sha }}${{ (!inputs.infra && !inputs.app) && '👀 validate nothing' || ''}}${{ inputs.infra && ' ✓  infra' || '' }}${{ inputs.app && ' ✓  app' || '' }}"
+run-name: "Validate: ${{ github.sha }}${{ (!inputs.check-infra && !inputs.check-app) && '👀 validate nothing' || ''}}${{ inputs.check-infra && ' ✓  infra' || '' }}${{ inputs.check-app && ' ✓  app' || '' }}"
 on:
   workflow_dispatch:
     inputs:

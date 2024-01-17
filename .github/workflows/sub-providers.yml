@@ -13,7 +13,7 @@ on:
         default: 'https://staging.rpc.walletconnect.org'
   workflow_call:
     inputs:
-      providers_directory:
+      providers-directory:
         type: string
         required: true
         description: 'Directory where providers sources are located'
@@ -21,7 +21,6 @@ on:
         type: string
         required: true
         description: 'Stage RPC URL'
-        default: 'https://staging.rpc.walletconnect.org'
 
 concurrency: cd
 
@@ -43,8 +42,8 @@ jobs:
           if [[ -n "${{ github.event.inputs.providers }}" ]]; then
             PROVIDERS_LIST="${{ github.event.inputs.providers }}"
           else
-            PROVIDERS_DIR="${{ inputs.providers_directory }}"
-            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+            PROVIDERS_DIR="${{ inputs.providers-directory }}"
+            CHANGED_FILES=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")
             PROVIDERS_LIST=""
 
             for file in $CHANGED_FILES; do
@@ -58,7 +57,7 @@ jobs:
           fi
 
           JSON_FMT=$(printf '[%s]' "$(echo $PROVIDERS_LIST | awk '{for(i=1;i<=NF;i++) printf "\"%s\",", $i}' | sed 's/,$//')")
-          echo "providers=$JSON_FMT" >> $GITHUB_OUTPUT
+          echo "providers=$JSON_FMT" >> "$GITHUB_OUTPUT"
       - name: Print list of changed providers
         run: |
           echo "Providers matrix: ${{ steps.set-matrix.outputs.providers }}"
