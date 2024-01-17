@@ -13,6 +13,7 @@ Chain name with associated `chainId` query param to use.
 - Arbitrum Goerli (`eip155:421613`)
 - Polygon (`eip155:137`)
 - Polygon Mumbai (`eip155:80001`)
+- Polygon Zkevm (`eip155:1101`)
 - Celo (`eip155:42220`)
 - Aurora (`eip155:1313161554`)
 - Aurora Testnet (`eip155:1313161555`)
