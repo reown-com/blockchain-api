@@ -54,7 +54,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: "Install Rust ${{ inputs.version }}"
+      - name: "Install Rust ${{ vars.RUST_VERSION }}"
         uses: WalletConnect/actions-rs/toolchain@1.0.0
         with:
           toolchain: ${{ vars.RUST_VERSION }}
@@ -77,7 +77,7 @@ jobs:
     uses: ./.github/workflows/sub-providers.yml
     secrets: inherit
     with:
-      providers_directory: "src/providers/"
+      providers-directory: "src/providers/"
       stage-url: ${{ inputs.stage-url }}
 
   integration-tests-ts:
