@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.11.4 - 2024-01-18
+#### Bug Fixes
+- **(ci)** fixes to actions workflow files according to the `actionlint` (#480) - (9ddb398) - Max Kalashnikoff
+- **(noop)** checking providers CI workflow (#481) - (949592e) - Max Kalashnikoff
+
+- - -
+
 ## 0.11.3 - 2024-01-16
 #### Bug Fixes
 - **(ci)** inherit secrets to providers validation (#477) - (15ff3db) - Max Kalashnikoff
