@@ -77,7 +77,6 @@ impl RpcProvider for BinanceProvider {
         response
             .headers_mut()
             .insert("Content-Type", HeaderValue::from_static("application/json"));
-
         Ok(response)
     }
 }
