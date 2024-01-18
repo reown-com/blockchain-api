@@ -39,7 +39,7 @@ jobs:
         run: |
           if [[ -n "${{ github.event.inputs.providers }}" ]]; then
             PROVIDERS_LIST="${{ github.event.inputs.providers }}"
-          else
+          elif [[ -n "${{ github.event.before }}" && -n "${{ github.sha }}" ]]; then
             PROVIDERS_DIR="${{ inputs.providers-directory }}"
             CHANGED_FILES=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")
             PROVIDERS_LIST=""
@@ -52,6 +52,8 @@ jobs:
             done
 
             PROVIDERS_LIST="${PROVIDERS_LIST% }"
+          else
+            PROVIDERS_LIST=""
           fi
 
           JSON_FMT=$(printf '[%s]' "$(echo $PROVIDERS_LIST | awk '{for(i=1;i<=NF;i++) printf "\"%s\",", $i}' | sed 's/,$//')")
