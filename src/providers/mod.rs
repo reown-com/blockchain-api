@@ -24,6 +24,7 @@ use {
     wc::metrics::TaskMetrics,
 };
 
+mod aurora;
 mod base;
 mod binance;
 mod coinbase;
@@ -270,6 +271,7 @@ impl ProviderRepository {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ProviderKind {
+    Aurora,
     Infura,
     Pokt,
     Binance,
@@ -285,6 +287,7 @@ pub enum ProviderKind {
 impl Display for ProviderKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", match self {
+            ProviderKind::Aurora => "Aurora",
             ProviderKind::Infura => "Infura",
             ProviderKind::Pokt => "Pokt",
             ProviderKind::Binance => "Binance",
@@ -302,6 +305,7 @@ impl Display for ProviderKind {
 impl ProviderKind {
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
+            "Aurora" => Some(Self::Aurora),
             "Infura" => Some(Self::Infura),
             "Pokt" => Some(Self::Pokt),
             "Binance" => Some(Self::Binance),
