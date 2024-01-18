@@ -107,21 +107,6 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
-        // Aurora
-        (
-            "eip155:1313161554".into(),
-            (
-                "aurora-mainnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
-        ),
-        (
-            "eip155:1313161555".into(),
-            (
-                "aurora-testnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
-        ),
         // Base Goerli
         (
             "eip155:84531".into(),
