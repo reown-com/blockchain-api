@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.12.1 - 2024-01-18
+#### Bug Fixes
+- **(providers)** removing Aurora from the Infura provider (#482) - (0d9887e) - Max Kalashnikoff
+
+- - -
+
 ## 0.12.0 - 2024-01-18
 #### Features
 - **(providers)** adding the Aurora native mainnet and testnet RPC (#469) - (48b18c7) - Max Kalashnikoff
