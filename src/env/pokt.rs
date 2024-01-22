@@ -46,14 +46,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
-        // Avax C-Chain
-        // (
-        //     "eip155:43114".into(),
-        //     (
-        //         "avax-mainnet".into(),
-        //         Weight::new(Priority::Normal).unwrap(),
-        //     ),
-        // ),
+        // AVAX mainnet
+        (
+            "eip155:43114".into(),
+            (
+                "avax-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
         // Gnosis
         (
             "eip155:100".into(),
@@ -75,10 +75,6 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         (
             "eip155:5".into(),
             ("eth-goerli".into(), Weight::new(Priority::Normal).unwrap()),
-        ),
-        (
-            "eip155:11155111".into(),
-            ("sepolia".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Optimism
         (
