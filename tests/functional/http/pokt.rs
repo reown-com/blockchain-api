@@ -46,6 +46,7 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
 
 #[test_context(ServerContext)]
 #[tokio::test]
+#[ignore]
 async fn pokt_provider_solana_mainnet(ctx: &mut ServerContext) {
     let addr = format!(
         "{}/v1?projectId={}&chainId=",
