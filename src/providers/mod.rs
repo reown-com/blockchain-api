@@ -38,6 +38,7 @@ mod zksync;
 mod zora;
 
 pub use {
+    aurora::AuroraProvider,
     base::BaseProvider,
     binance::BinanceProvider,
     infura::{InfuraProvider, InfuraWsProvider},
