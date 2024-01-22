@@ -65,11 +65,9 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:10".into(),
             ("op".into(), Weight::new(Priority::Normal).unwrap()),
         ),
-        // Solana
+        // Solana Mainnet
         (
-            // TODO: consider changing from `solana-mainnet` to
-            // `solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz` like Pokt provider
-            "solana-mainnet".into(),
+            "solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz".into(),
             ("sol".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Avalanche C chain

@@ -25,7 +25,7 @@ Chain name with associated `chainId` query param to use.
 - zkSync Era Testnet (`eip155:280`)
 - Near (`near`)
 - Gnosis Chain (`eip155:100`)
-- Solana (`solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz` or `solana-mainnet`)
+- Solana Mainnet (`solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz`)
 - Base (`eip155:8453`)
 - Base Goerli (`eip155:84531`)
 - Zora (`eip155:7777777`)

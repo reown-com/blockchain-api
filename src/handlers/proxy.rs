@@ -47,7 +47,13 @@ async fn handler_internal(
         .validate_project_access_and_quota(&query_params.project_id)
         .await?;
 
-    let chain_id = query_params.chain_id.to_lowercase();
+    // TODO: Remove the `solana-mainnet` chain_id alias for
+    // `solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz` when ready
+    let chain_id = if query_params.chain_id.to_lowercase() == "solana-mainnet" {
+        "solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz".to_string()
+    } else {
+        query_params.chain_id.to_lowercase()
+    };
 
     let provider = state
         .providers
