@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.13.0 - 2024-01-22
+#### Features
+- **(providers)** updating Pokt to the new endpoint (#479) - (6fa8672) - Max Kalashnikoff
+
+- - -
+
 ## 0.12.1 - 2024-01-18
 #### Bug Fixes
 - **(providers)** removing Aurora from the Infura provider (#482) - (0d9887e) - Max Kalashnikoff
