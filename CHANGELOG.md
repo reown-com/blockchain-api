@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.13.1 - 2024-01-23
+#### Bug Fixes
+- **(ci)** ignoring pokt solana test (#485) - (dcddb88) - Max Kalashnikoff
+- **(ci)** using the `current`, `latest` or `manual` image tag in the manual deploy (#483) - (12f813a) - Max Kalashnikoff
+- **(providers)** unifying Solana chain_id (#486) - (9100ab7) - Max Kalashnikoff
+
+- - -
+
 ## 0.13.0 - 2024-01-22
 #### Features
 - **(providers)** updating Pokt to the new endpoint (#479) - (6fa8672) - Max Kalashnikoff
