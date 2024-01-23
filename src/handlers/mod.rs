@@ -20,6 +20,7 @@ static HANDLER_TASK_METRICS: TaskMetrics = TaskMetrics::new("handler_task");
 pub struct RpcQueryParams {
     pub chain_id: String,
     pub project_id: String,
+    pub provider_id: Option<String>,
 }
 
 #[derive(Serialize)]

@@ -1,6 +1,7 @@
 use {
     super::check_if_rpc_is_responding_correctly_for_supported_chain,
     crate::context::ServerContext,
+    rpc_proxy::providers::ProviderKind,
     test_context::test_context,
 };
 
@@ -9,9 +10,20 @@ use {
 #[ignore]
 async fn zora_provider_eip155_7777777_and_999(ctx: &mut ServerContext) {
     // Zora mainnet
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:7777777", "0x76adf1")
-        .await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Zora,
+        "eip155:7777777",
+        "0x76adf1",
+    )
+    .await;
 
     // Zora Goerli
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:999", "0x3e7").await
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Zora,
+        "eip155:999",
+        "0x3e7",
+    )
+    .await
 }

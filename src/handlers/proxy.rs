@@ -55,10 +55,17 @@ async fn handler_internal(
         query_params.chain_id.to_lowercase()
     };
 
-    let provider = state
-        .providers
-        .get_provider_for_chain_id(&chain_id)
-        .ok_or(RpcError::UnsupportedChain(chain_id.clone()))?;
+    let provider = if let Some(provider_id) = query_params.clone().provider_id {
+        match state.providers.get_provider_by_provider_id(&provider_id) {
+            None => return Err(RpcError::UnsupportedProvider(provider_id)),
+            Some(provider) => provider,
+        }
+    } else {
+        state
+            .providers
+            .get_provider_for_chain_id(&chain_id)
+            .ok_or(RpcError::UnsupportedChain(chain_id.clone()))?
+    };
 
     Span::current().record("provider", &provider.provider_kind().to_string());
 
