@@ -152,7 +152,7 @@ describe('blockchain api', () => {
     const messageObject = {
         name,
         address,
-        timestamp: Date.now()
+        timestamp: Math.round(Date.now() / 1000)
     };
     const message = JSON.stringify(messageObject);
 

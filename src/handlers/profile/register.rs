@@ -1,9 +1,11 @@
 use {
     super::{
         super::HANDLER_TASK_METRICS,
+        is_timestamp_within_interval,
         verify_message_signature,
         RegisterPayload,
         RegisterRequest,
+        UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{
         database::{
@@ -85,7 +87,14 @@ pub async fn handler_internal(
         return Ok((StatusCode::BAD_REQUEST, "Name is already registered").into_response());
     };
 
-    // TODO: Check the timestamp within 5-10 minutes ttl
+    // Check the timestamp is within the sync threshold interval
+    if !is_timestamp_within_interval(payload.timestamp, UNIXTIMESTAMP_SYNC_THRESHOLD) {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            "Timestamp is too old or in the future",
+        )
+            .into_response());
+    }
 
     let owner = match ethers::types::H160::from_str(&register_request.address) {
         Ok(owner) => owner,
