@@ -25,20 +25,4 @@ async fn infura_provider_websocket(ctx: &mut ServerContext) {
 
     // Arbitrum goerli
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:421613", "0x66eed").await;
-
-    // Aurora mainnet
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        "eip155:1313161554",
-        "0x4e454152",
-    )
-    .await;
-
-    // Aurora testnet
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        "eip155:1313161555",
-        "0x4e454153",
-    )
-    .await;
 }

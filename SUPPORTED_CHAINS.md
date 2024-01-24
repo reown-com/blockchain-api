@@ -42,6 +42,4 @@ WebSocket RPC is not recommended for production use, and may be removed in the f
 - Optimism Goerli (`eip155:420`)
 - Arbitrum (`eip155:42161`)
 - Arbitrum Goerli (`eip155:421613`)
-- Aurora (`eip155:1313161554`)
-- Aurora Testnet (`eip155:1313161555`)
 - Zora (`eip155:7777777`)
