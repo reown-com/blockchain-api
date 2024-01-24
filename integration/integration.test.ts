@@ -142,6 +142,11 @@ describe('blockchain api', () => {
     // Generate a new eth wallet
     const wallet = ethers.Wallet.createRandom();
     const address = wallet.address;
+    const coin_type = 60; // SLIP-44 Ethereum
+    const chain_id = 1; // Ethereum mainnet
+    const attributes = {
+      bio: 'integration test domain',
+    };
 
     // Generate a random name
     const randomString = Array.from({ length: 10 }, 
@@ -151,7 +156,10 @@ describe('blockchain api', () => {
     // Create a message to sign
     const messageObject = {
         name,
+        coin_type,
+        chain_id,
         address,
+        attributes,
         timestamp: Math.round(Date.now() / 1000)
     };
     const message = JSON.stringify(messageObject);
@@ -163,6 +171,7 @@ describe('blockchain api', () => {
       const payload = {
         message,
         signature,
+        coin_type,
         address,
       };
       let resp: any = await http.post(
@@ -178,6 +187,7 @@ describe('blockchain api', () => {
       const payload = {
         message,
         signature,
+        coin_type,
         address,
       };
       let resp: any = await http.post(
@@ -193,6 +203,7 @@ describe('blockchain api', () => {
       const payload = {
         message,
         signature,
+        coin_type,
         address,
       };
       let resp: any = await http.post(
@@ -208,6 +219,7 @@ describe('blockchain api', () => {
       const payload = {
         message,
         signature,
+        coin_type,
         address,
       };
       let resp: any = await http.post(
@@ -223,7 +235,8 @@ describe('blockchain api', () => {
       expect(resp.status).toBe(200)
       expect(resp.data.name).toBe(name)
       expect(typeof resp.data.addresses).toBe('object')
-      const first = resp.data.addresses[0]
+      // ENSIP-11 using the 60 for the Ethereum mainnet
+      const first = resp.data.addresses["60"]
       expect(first.address).toBe(address)
     })
     it('name reverse lookup', async () => {
@@ -235,7 +248,8 @@ describe('blockchain api', () => {
       const first_name = resp.data[0]
       expect(first_name.name).toBe(name)
       expect(typeof first_name.addresses).toBe('object')
-      const first_address = first_name.addresses[0]
+      // ENSIP-11 using the 60 for the Ethereum mainnet
+      const first_address = first_name.addresses["60"]
       expect(first_address.address).toBe(address)
     })
   })

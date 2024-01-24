@@ -24,12 +24,11 @@ async fn insert_and_get_name_by_name() {
 
     let name = format!("{}.connect.id", generate_random_string(10));
     let address = format!("0x{}", generate_random_string(16));
-    let addresses = vec![types::Address {
-        namespace: types::SupportedNamespaces::Eip155,
-        chain_id: None,
+    let chain_id = 1;
+    let addresses = HashMap::from([(chain_id, types::Address {
         address,
         created_at: None,
-    }];
+    })]);
 
     // create a new hashmap with attributes
     let attributes: HashMap<String, String> = HashMap::from_iter([
@@ -40,7 +39,14 @@ async fn insert_and_get_name_by_name() {
         ("bio".to_string(), "just about myself".to_string()),
     ]);
 
-    let insert_result = insert_name(name.clone(), attributes.clone(), addresses, &pg_pool).await;
+    let insert_result = insert_name(
+        name.clone(),
+        attributes.clone(),
+        types::SupportedNamespaces::Eip155,
+        addresses,
+        &pg_pool,
+    )
+    .await;
     if let Err(ref e) = insert_result {
         println!("Error: {:?}", e);
     }
@@ -70,15 +76,20 @@ async fn insert_and_get_names_by_address() {
 
     let name = format!("{}.connect.id", generate_random_string(10));
     let address = format!("0x{}", generate_random_string(16));
-
-    let addresses = vec![types::Address {
-        namespace: types::SupportedNamespaces::Eip155,
-        chain_id: None,
+    let chain_id = 1;
+    let addresses = HashMap::from([(chain_id, types::Address {
         address: address.clone(),
         created_at: None,
-    }];
+    })]);
 
-    let insert_result = insert_name(name.clone(), HashMap::new(), addresses, &pg_pool).await;
+    let insert_result = insert_name(
+        name.clone(),
+        HashMap::new(),
+        types::SupportedNamespaces::Eip155,
+        addresses,
+        &pg_pool,
+    )
+    .await;
     assert!(insert_result.is_ok(), "Inserting a new name should succeed");
 
     let get_names_result = get_names_by_address(address, &pg_pool).await;
@@ -102,15 +113,20 @@ async fn insert_and_get_names_by_address_and_namespace() {
     let name = format!("{}.connect.id", generate_random_string(10));
     let address = format!("0x{}", generate_random_string(16));
     let namespace = types::SupportedNamespaces::Eip155;
-
-    let addresses = vec![types::Address {
-        namespace: namespace.clone(),
-        chain_id: None,
+    let chain_id = 1;
+    let addresses = HashMap::from([(chain_id, types::Address {
         address: address.clone(),
         created_at: None,
-    }];
+    })]);
 
-    let insert_result = insert_name(name.clone(), HashMap::new(), addresses, &pg_pool).await;
+    let insert_result = insert_name(
+        name.clone(),
+        HashMap::new(),
+        types::SupportedNamespaces::Eip155,
+        addresses,
+        &pg_pool,
+    )
+    .await;
     assert!(insert_result.is_ok(), "Inserting a new name should succeed");
 
     let get_names_result = get_names_by_address_and_namespace(address, namespace, &pg_pool).await;
@@ -134,20 +150,19 @@ async fn insert_and_get_name_and_addresses() {
     let name = format!("{}.connect.id", generate_random_string(10));
     let address = format!("0x{}", generate_random_string(16));
     let namespace = types::SupportedNamespaces::Eip155;
-
-    let addresses = vec![types::Address {
-        namespace: namespace.clone(),
-        chain_id: None,
+    let chain_id = 1;
+    let addresses = HashMap::from([(chain_id, types::Address {
         address: address.clone(),
         created_at: None,
-    }];
+    })]);
 
     let attributes: HashMap<String, String> = HashMap::from_iter([(
         "avatar".to_string(),
         "http://test.url/avatar.png".to_string(),
     )]);
 
-    let insert_result = insert_name(name.clone(), attributes.clone(), addresses, &pg_pool).await;
+    let insert_result =
+        insert_name(name.clone(), HashMap::new(), namespace, addresses, &pg_pool).await;
     assert!(insert_result.is_ok(), "Inserting a new name should succeed");
 
     let get_name_result = get_name_and_addresses_by_name(name.clone(), &pg_pool).await;
@@ -159,7 +174,7 @@ async fn insert_and_get_name_and_addresses() {
     let got_name = get_name_result.unwrap();
     assert_eq!(got_name.name, name);
     assert_eq!(got_name.attributes.unwrap()["avatar"], attributes["avatar"]);
-    assert_eq!(got_name.addresses[0].address, address);
+    assert_eq!(got_name.addresses.get(&chain_id).unwrap().address, address);
 
     // Cleanup
     let delete_result = delete_name(name, &pg_pool).await;
@@ -172,12 +187,11 @@ async fn insert_and_update_name() {
 
     let name = format!("{}.connect.id", generate_random_string(10));
     let address = format!("0x{}", generate_random_string(16));
-    let addresses = vec![types::Address {
-        namespace: types::SupportedNamespaces::Eip155,
-        chain_id: None,
+    let chain_id = 1;
+    let addresses = HashMap::from([(chain_id, types::Address {
         address,
         created_at: None,
-    }];
+    })]);
 
     // create a new hashmap with attributes
     let attributes: HashMap<String, String> = HashMap::from_iter([
@@ -188,7 +202,14 @@ async fn insert_and_update_name() {
         ("bio".to_string(), "just about myself".to_string()),
     ]);
 
-    let insert_result = insert_name(name.clone(), attributes.clone(), addresses, &pg_pool).await;
+    let insert_result = insert_name(
+        name.clone(),
+        attributes.clone(),
+        types::SupportedNamespaces::Eip155,
+        addresses,
+        &pg_pool,
+    )
+    .await;
     assert!(insert_result.is_ok(), "Inserting a new name should succeed");
 
     let get_name_result = get_name(name.clone(), &pg_pool).await;
@@ -228,14 +249,20 @@ async fn insert_update_delete_address() {
 
     let name = format!("{}.connect.id", generate_random_string(10));
     let address = format!("0x{}", generate_random_string(16));
-    let addresses = vec![types::Address {
-        namespace: types::SupportedNamespaces::Eip155,
-        chain_id: None,
+    let chain_id = 1;
+    let addresses = HashMap::from([(chain_id, types::Address {
         address: address.clone(),
         created_at: None,
-    }];
+    })]);
 
-    let insert_result = insert_name(name.clone(), HashMap::new(), addresses, &pg_pool).await;
+    let insert_result = insert_name(
+        name.clone(),
+        HashMap::new(),
+        types::SupportedNamespaces::Eip155,
+        addresses,
+        &pg_pool,
+    )
+    .await;
     assert!(insert_result.is_ok(), "Inserting a new name should succeed");
 
     let delete_address_result = delete_address(
@@ -254,7 +281,7 @@ async fn insert_update_delete_address() {
     let insert_address_result = insert_address(
         name.clone(),
         types::SupportedNamespaces::Eip155,
-        None,
+        format!("{}", chain_id),
         new_address.clone(),
         &pg_pool,
     )
@@ -272,7 +299,7 @@ async fn insert_update_delete_address() {
         name.clone(),
         types::SupportedNamespaces::Eip155,
         None,
-        address.clone(),
+        address,
         &pg_pool,
     )
     .await;

@@ -1,16 +1,29 @@
 use {
-    crate::database::{error::DatabaseError, types, utils},
+    crate::{
+        database::{error::DatabaseError, types, utils},
+        utils::crypto::convert_evm_chain_id_to_coin_type,
+    },
+    chrono::{DateTime, Utc},
     sqlx::{PgPool, Postgres},
     std::collections::HashMap,
-    tracing::instrument,
+    tracing::{error, instrument},
 };
+
+#[derive(sqlx::FromRow)]
+struct RowAddress {
+    namespace: types::SupportedNamespaces,
+    chain_id: String,
+    address: String,
+    created_at: DateTime<Utc>,
+}
 
 /// Initial name registration insert
 #[instrument(skip(postgres))]
 pub async fn insert_name(
     name: String,
     attributes: HashMap<String, String>,
-    addresses: Vec<types::Address>,
+    namespace: types::SupportedNamespaces,
+    addresses: types::ENSIP11AddressesMap,
     postgres: &PgPool,
 ) -> Result<(), DatabaseError> {
     if addresses.is_empty() {
@@ -29,12 +42,13 @@ pub async fn insert_name(
         .bind(&utils::hashmap_to_hstore(&attributes))
         .execute(&mut *transaction)
         .await?;
+
     for address in addresses {
         insert_address(
             name.clone(),
-            address.namespace,
-            address.chain_id,
-            address.address,
+            namespace.clone(),
+            format!("{}", address.0),
+            address.1.address,
             &mut *transaction,
         )
         .await?;
@@ -115,16 +129,40 @@ pub async fn get_names_by_address(
 pub async fn get_addresses_by_name(
     name: String,
     postgres: &PgPool,
-) -> Result<Vec<types::Address>, sqlx::error::Error> {
+) -> Result<types::ENSIP11AddressesMap, sqlx::error::Error> {
     let query = "
       SELECT namespace, chain_id, address, created_at
       FROM addresses
         WHERE name = $1
     ";
-    sqlx::query_as::<Postgres, types::Address>(query)
+
+    let rows_result = sqlx::query_as::<Postgres, RowAddress>(query)
         .bind(name)
         .fetch_all(postgres)
-        .await
+        .await?;
+
+    let mut result_map = types::ENSIP11AddressesMap::new();
+
+    for row in rows_result {
+        if row.namespace != types::SupportedNamespaces::Eip155 {
+            error!("Unsupported namespace: {:?}", row.namespace);
+            continue;
+        }
+
+        // Return 60 for the ETH mainnet and ENSIP-11 chain ID for other
+        let ensip11_chain_id = if row.chain_id == "1" {
+            60
+        } else {
+            convert_evm_chain_id_to_coin_type(row.chain_id.parse::<u32>().unwrap_or_default())
+        };
+
+        result_map.insert(ensip11_chain_id, types::Address {
+            address: row.address,
+            created_at: Some(row.created_at),
+        });
+    }
+
+    Ok(result_map)
 }
 
 #[instrument(skip(postgres))]
@@ -209,7 +247,7 @@ pub async fn delete_address(
 pub async fn insert_address<'e>(
     name: String,
     namespace: types::SupportedNamespaces,
-    chain_id: Option<String>,
+    chain_id: String,
     address: String,
     postgres: impl sqlx::PgExecutor<'e>,
 ) -> Result<sqlx::postgres::PgQueryResult, sqlx::error::Error> {
@@ -221,7 +259,7 @@ pub async fn insert_address<'e>(
     )
     .bind(&name)
     .bind(&namespace)
-    .bind(chain_id.unwrap_or_default())
+    .bind(chain_id)
     .bind(&address);
 
     query.execute(postgres).await

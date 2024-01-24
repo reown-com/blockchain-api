@@ -2,7 +2,6 @@ use {
     super::{
         super::HANDLER_TASK_METRICS,
         is_timestamp_within_interval,
-        verify_message_signature,
         RegisterPayload,
         RegisterRequest,
         UNIXTIMESTAMP_SYNC_THRESHOLD,
@@ -10,10 +9,11 @@ use {
     crate::{
         database::{
             helpers::{get_name_and_addresses_by_name, insert_name},
-            types::{Address, SupportedNamespaces},
+            types::{Address, ENSIP11AddressesMap, SupportedNamespaces},
         },
         error::RpcError,
         state::AppState,
+        utils::crypto::verify_message_signature,
     },
     axum::{
         body::Bytes,
@@ -78,6 +78,20 @@ pub async fn handler_internal(
             .into_response());
     }
 
+    if payload.coin_type != register_request.coin_type {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            "Coin type in payload request and message are not equal",
+        )
+            .into_response());
+    }
+
+    // Check for the supported SLIP-44 coin types
+    if SupportedNamespaces::from_slip44(payload.coin_type).is_none() {
+        info!("Unsupported coin type {}", payload.coin_type);
+        return Ok((StatusCode::BAD_REQUEST, "Unsupported coin type").into_response());
+    }
+
     // Check is name already registered
     if get_name_and_addresses_by_name(name.clone(), &state.postgres.clone())
         .await
@@ -122,13 +136,19 @@ pub async fn handler_internal(
     }
 
     // Register (insert) a new domain with address
-    let addresses = vec![Address {
-        namespace: SupportedNamespaces::Eip155,
-        chain_id: None,
-        address: register_request.address,
+    let addresses: ENSIP11AddressesMap = HashMap::from([(payload.chain_id, Address {
+        address: payload.address,
         created_at: None,
-    }];
-    let insert_result = insert_name(name.clone(), HashMap::new(), addresses, &state.postgres).await;
+    })]);
+
+    let insert_result = insert_name(
+        name.clone(),
+        payload.attributes.unwrap_or(HashMap::new()),
+        SupportedNamespaces::Eip155,
+        addresses,
+        &state.postgres,
+    )
+    .await;
     if let Err(e) = insert_result {
         error!("Failed to insert new name: {}", e);
         return Ok((StatusCode::INTERNAL_SERVER_ERROR, "").into_response());
