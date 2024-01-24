@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.13.2 - 2024-01-24
+#### Bug Fixes
+- **(providers)** adding Aurora to the init providers (#488) - (ae26198) - Max Kalashnikoff
+
+- - -
+
 ## 0.13.1 - 2024-01-23
 #### Bug Fixes
 - **(ci)** ignoring pokt solana test (#485) - (dcddb88) - Max Kalashnikoff
