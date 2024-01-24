@@ -17,6 +17,7 @@ use {
         Router,
     },
     env::{
+        AuroraConfig,
         BaseConfig,
         BinanceConfig,
         InfuraConfig,
@@ -30,6 +31,7 @@ use {
     http::Request,
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
+        AuroraProvider,
         BaseProvider,
         BinanceProvider,
         InfuraProvider,
@@ -311,6 +313,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
 
     // Keep in-sync with SUPPORTED_CHAINS.md
 
+    providers.add_provider::<AuroraProvider, AuroraConfig>(AuroraConfig::default());
     providers
         .add_provider::<PoktProvider, PoktConfig>(PoktConfig::new(config.pokt_project_id.clone()));
 
