@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.13.3 - 2024-01-24
+#### Bug Fixes
+- **(providers)** removing Aurora websocket from the Infura (#492) - (3b3dc64) - Max Kalashnikoff
+
+- - -
+
 ## 0.13.2 - 2024-01-24
 #### Bug Fixes
 - **(providers)** adding Aurora to the init providers (#488) - (ae26198) - Max Kalashnikoff
