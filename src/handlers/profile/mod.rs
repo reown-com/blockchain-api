@@ -1,12 +1,18 @@
 use {
     ethers::types::H160,
     serde::{Deserialize, Serialize},
-    std::str::FromStr,
+    std::{
+        str::FromStr,
+        time::{SystemTime, UNIX_EPOCH},
+    },
+    tap::TapFallible,
 };
 
 pub mod lookup;
 pub mod register;
 pub mod reverse;
+
+pub const UNIXTIMESTAMP_SYNC_THRESHOLD: u64 = 10;
 
 /// Payload to register domain name that should be serialized to JSON
 /// and passed to the RegisterRequest.message
@@ -47,6 +53,19 @@ pub fn verify_message_signature(
     }
 }
 
+/// Check if the given unixtimestamp is within the threshold interval relative
+/// to the current time
+#[tracing::instrument(level = "debug")]
+pub fn is_timestamp_within_interval(unix_timestamp: u64, threshold_interval: u64) -> bool {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .tap_err(|_| tracing::error!("SystemTime before UNIX EPOCH!"))
+        .unwrap_or_default()
+        .as_secs();
+
+    unix_timestamp >= (now - threshold_interval) && unix_timestamp <= (now + threshold_interval)
+}
+
 #[cfg(test)]
 mod tests {
     use {super::*, ethers::types::H160, std::str::FromStr};
@@ -83,5 +102,36 @@ mod tests {
         let result = verify_message_signature(message, signature, &owner);
         assert!(result.is_ok());
         assert!(!result.unwrap());
+    }
+
+    #[test]
+    fn test_verify_is_timestamp_within_interval_valid() {
+        let threshold_interval = 10;
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .tap_err(|_| tracing::error!("SystemTime before UNIX EPOCH!"))
+            .unwrap_or_default()
+            .as_secs();
+        assert!(is_timestamp_within_interval(now, threshold_interval));
+    }
+
+    #[test]
+    fn test_verify_is_timestamp_within_interval_invalid() {
+        let threshold_interval = 10;
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .tap_err(|_| tracing::error!("SystemTime before UNIX EPOCH!"))
+            .unwrap_or_default()
+            .as_secs();
+        // Upper bound reached
+        assert!(!is_timestamp_within_interval(
+            now + threshold_interval + 1,
+            threshold_interval
+        ));
+        // Lower bound reached
+        assert!(!is_timestamp_within_interval(
+            now - threshold_interval - 1,
+            threshold_interval
+        ));
     }
 }
