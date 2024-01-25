@@ -2,6 +2,7 @@ use {
     ethers::types::H160,
     serde::{Deserialize, Serialize},
     std::{
+        collections::HashMap,
         str::FromStr,
         time::{SystemTime, UNIX_EPOCH},
     },
@@ -16,15 +17,22 @@ pub const UNIXTIMESTAMP_SYNC_THRESHOLD: u64 = 10;
 
 /// Payload to register domain name that should be serialized to JSON
 /// and passed to the RegisterRequest.message
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RegisterPayload {
     /// Name to register
     pub name: String,
+    /// Coin type SLIP-44
+    pub coin_type: u32,
+    /// Chain ID for the EVM
+    pub chain_id: u32,
     /// Address
     pub address: String,
+    /// Attributes
+    pub attributes: Option<HashMap<String, String>>,
     /// Unixtime
     pub timestamp: u64,
 }
+
 /// Data structure representing a request to register a name
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RegisterRequest {
@@ -32,6 +40,8 @@ pub struct RegisterRequest {
     pub message: String,
     /// Message signature
     pub signature: String,
+    /// Coin type SLIP-44
+    pub coin_type: u32,
     /// Address
     pub address: String,
 }
