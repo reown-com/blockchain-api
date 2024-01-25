@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.14.0 - 2024-01-25
+#### Features
+- **(ens)** adding timestamp threshold check (#491) - (58bed27) - Max Kalashnikoff
+
+- - -
+
 ## 0.13.3 - 2024-01-24
 #### Bug Fixes
 - **(providers)** removing Aurora websocket from the Infura (#492) - (3b3dc64) - Max Kalashnikoff
