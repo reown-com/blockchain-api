@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.15.0 - 2024-01-25
+#### Features
+- **(ens)** changes to SLIP-44 and ENSIP-11 compatible responses (#489) - (1b78a00) - Max Kalashnikoff
+
+- - -
+
 ## 0.14.0 - 2024-01-25
 #### Features
 - **(ens)** adding timestamp threshold check (#491) - (58bed27) - Max Kalashnikoff
