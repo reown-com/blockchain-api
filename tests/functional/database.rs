@@ -151,6 +151,7 @@ async fn insert_and_get_name_and_addresses() {
     let address = format!("0x{}", generate_random_string(16));
     let namespace = types::SupportedNamespaces::Eip155;
     let chain_id = 1;
+    let expected_ensip11_coin_type = 60;
     let addresses = HashMap::from([(chain_id, types::Address {
         address: address.clone(),
         created_at: None,
@@ -161,8 +162,14 @@ async fn insert_and_get_name_and_addresses() {
         "http://test.url/avatar.png".to_string(),
     )]);
 
-    let insert_result =
-        insert_name(name.clone(), HashMap::new(), namespace, addresses, &pg_pool).await;
+    let insert_result = insert_name(
+        name.clone(),
+        attributes.clone(),
+        namespace,
+        addresses,
+        &pg_pool,
+    )
+    .await;
     assert!(insert_result.is_ok(), "Inserting a new name should succeed");
 
     let get_name_result = get_name_and_addresses_by_name(name.clone(), &pg_pool).await;
@@ -174,7 +181,14 @@ async fn insert_and_get_name_and_addresses() {
     let got_name = get_name_result.unwrap();
     assert_eq!(got_name.name, name);
     assert_eq!(got_name.attributes.unwrap()["avatar"], attributes["avatar"]);
-    assert_eq!(got_name.addresses.get(&chain_id).unwrap().address, address);
+    assert_eq!(
+        got_name
+            .addresses
+            .get(&expected_ensip11_coin_type)
+            .unwrap()
+            .address,
+        address
+    );
 
     // Cleanup
     let delete_result = delete_name(name, &pg_pool).await;
@@ -182,7 +196,7 @@ async fn insert_and_get_name_and_addresses() {
 }
 
 #[tokio::test]
-async fn insert_and_update_name() {
+async fn insert_and_update_name_attributes() {
     let pg_pool = get_postgres_pool().await;
 
     let name = format!("{}.connect.id", generate_random_string(10));
@@ -244,12 +258,12 @@ async fn insert_and_update_name() {
 }
 
 #[tokio::test]
-async fn insert_update_delete_address() {
+async fn insert_delete_two_addresses() {
     let pg_pool = get_postgres_pool().await;
 
     let name = format!("{}.connect.id", generate_random_string(10));
     let address = format!("0x{}", generate_random_string(16));
-    let chain_id = 1;
+    let mut chain_id = 1;
     let addresses = HashMap::from([(chain_id, types::Address {
         address: address.clone(),
         created_at: None,
@@ -268,7 +282,7 @@ async fn insert_update_delete_address() {
     let delete_address_result = delete_address(
         name.clone(),
         types::SupportedNamespaces::Eip155,
-        None,
+        format!("{}", chain_id),
         address.clone(),
         &pg_pool,
     )
@@ -277,6 +291,7 @@ async fn insert_update_delete_address() {
     assert!(delete_address_result.is_err());
 
     // Inserting a new address
+    chain_id = 137;
     let new_address = format!("0x{}", generate_random_string(16));
     let insert_address_result = insert_address(
         name.clone(),
@@ -292,13 +307,13 @@ async fn insert_update_delete_address() {
     let current_addresses = get_addresses_by_name(name.clone(), &pg_pool).await;
     assert!(insert_address_result.is_ok());
     let current_addresses = current_addresses.unwrap();
-    assert!(current_addresses.len() == 2);
+    assert_eq!(current_addresses.len(), 2);
 
     // Deleting the address should succeed because there is more than one address
     let delete_address_result = delete_address(
         name.clone(),
         types::SupportedNamespaces::Eip155,
-        None,
+        format!("{}", chain_id),
         address,
         &pg_pool,
     )
