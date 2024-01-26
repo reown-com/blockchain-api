@@ -212,7 +212,7 @@ pub async fn get_name_and_addresses_by_name(
 pub async fn delete_address(
     name: String,
     namespace: types::SupportedNamespaces,
-    chain_id: Option<String>,
+    chain_id: String,
     address: String,
     postgres: &PgPool,
 ) -> Result<sqlx::postgres::PgQueryResult, DatabaseError> {
@@ -234,7 +234,7 @@ pub async fn delete_address(
     )
     .bind(&name)
     .bind(&namespace)
-    .bind(chain_id.unwrap_or_default())
+    .bind(chain_id)
     .bind(&address);
 
     query
