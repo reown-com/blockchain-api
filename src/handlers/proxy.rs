@@ -1,6 +1,11 @@
 use {
     super::{RpcQueryParams, HANDLER_TASK_METRICS},
-    crate::{analytics::MessageInfo, error::RpcError, state::AppState, utils::network},
+    crate::{
+        analytics::MessageInfo,
+        error::RpcError,
+        state::AppState,
+        utils::{crypto, network},
+    },
     axum::{
         body::Bytes,
         extract::{ConnectInfo, MatchedPath, Query, State},
@@ -65,7 +70,7 @@ async fn handler_internal(
                 .ok_or_else(|| RpcError::UnsupportedProvider(provider_id.clone()))?;
 
             if let Some(ref testing_project_id) = state.config.server.testing_project_id {
-                if testing_project_id != &query_params.project_id {
+                if !crypto::constant_time_eq(testing_project_id, &query_params.project_id) {
                     return Err(RpcError::InvalidParameter(format!(
                         "The project ID {} is not allowed to use the exact provider request",
                         query_params.project_id
