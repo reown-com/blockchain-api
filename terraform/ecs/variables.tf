@@ -179,6 +179,12 @@ variable "coinbase_app_id" {
   sensitive   = true
 }
 
+variable "testing_project_id" {
+  description = "Project ID used in a testing suite"
+  type        = string
+  sensitive   = true
+}
+
 #-------------------------------------------------------------------------------
 # Project Registry
 

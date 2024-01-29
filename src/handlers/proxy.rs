@@ -55,16 +55,35 @@ async fn handler_internal(
         query_params.chain_id.to_lowercase()
     };
 
-    let provider = if let Some(provider_id) = query_params.clone().provider_id {
-        match state.providers.get_provider_by_provider_id(&provider_id) {
-            None => return Err(RpcError::UnsupportedProvider(provider_id)),
-            Some(provider) => provider,
+    // Exact provider proxy request for testing suite
+    // This request is allowed only for the RPC_PROXY_TESTING_PROJECT_ID
+    let provider = match query_params.provider_id.clone() {
+        Some(provider_id) => {
+            let provider = state
+                .providers
+                .get_provider_by_provider_id(&provider_id)
+                .ok_or_else(|| RpcError::UnsupportedProvider(provider_id.clone()))?;
+
+            if let Some(ref testing_project_id) = state.config.server.testing_project_id {
+                if testing_project_id != &query_params.project_id {
+                    return Err(RpcError::InvalidParameter(format!(
+                        "The project ID {} is not allowed to use the exact provider request",
+                        query_params.project_id
+                    )));
+                }
+            } else {
+                return Err(RpcError::InvalidParameter(
+                    "RPC_PROXY_TESTING_PROJECT_ID should be configured for this type of request"
+                        .into(),
+                ));
+            }
+
+            provider
         }
-    } else {
-        state
+        None => state
             .providers
             .get_provider_for_chain_id(&chain_id)
-            .ok_or(RpcError::UnsupportedChain(chain_id.clone()))?
+            .ok_or_else(|| RpcError::UnsupportedChain(chain_id.clone()))?,
     };
 
     Span::current().record("provider", &provider.provider_kind().to_string());

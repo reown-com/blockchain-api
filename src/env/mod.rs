@@ -103,6 +103,8 @@ mod test {
             ("RPC_PROXY_BLOCKED_COUNTRIES", "KP,IR,CU,SY"),
             ("RPC_PROXY_GEOIP_DB_BUCKET", "GEOIP_DB_BUCKET"),
             ("RPC_PROXY_GEOIP_DB_KEY", "GEOIP_DB_KEY"),
+            // Integration tests config.
+            ("RPC_PROXY_TESTING_PROJECT_ID", "TESTING_PROJECT_ID"),
             // Registry config.
             ("RPC_PROXY_REGISTRY_API_URL", "API_URL"),
             ("RPC_PROXY_REGISTRY_API_AUTH_TOKEN", "API_AUTH_TOKEN"),
@@ -168,6 +170,7 @@ mod test {
                 s3_endpoint: None,
                 geoip_db_bucket: Some("GEOIP_DB_BUCKET".to_owned()),
                 geoip_db_key: Some("GEOIP_DB_KEY".to_owned()),
+                testing_project_id: Some("TESTING_PROJECT_ID".to_owned()),
             },
             registry: project::Config {
                 api_url: Some("API_URL".to_owned()),

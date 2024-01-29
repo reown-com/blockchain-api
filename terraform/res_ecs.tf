@@ -83,5 +83,8 @@ module "ecs" {
   geoip_db_bucket_name = data.aws_s3_bucket.geoip.id
   geoip_db_key         = var.geoip_db_key
 
+  # Project ID used in a testing suite
+  testing_project_id = var.testing_project_id
+
   depends_on = [aws_iam_role.application_role]
 }
