@@ -7,8 +7,16 @@ use {
                 HistoryQueryParams,
                 HistoryResponseBody,
                 HistoryTransaction,
+                HistoryTransactionFungibleInfo,
                 HistoryTransactionMetadata,
+                HistoryTransactionMetadataApplication,
+                HistoryTransactionNFTContent,
+                HistoryTransactionNFTInfo,
+                HistoryTransactionNFTInfoFlags,
                 HistoryTransactionTransfer,
+                HistoryTransactionTransferQuantity,
+                HistoryTransactionURLItem,
+                HistoryTransactionURLandContentTypeItem,
             },
             portfolio::{PortfolioPosition, PortfolioQueryParams, PortfolioResponseBody},
         },
@@ -81,6 +89,23 @@ pub struct ZerionTransactionsReponseBody {
     pub r#type: String,
     pub id: String,
     pub attributes: ZerionTransactionAttributes,
+    pub relationships: ZerionTransactionsRelationships,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionTransactionsRelationships {
+    pub chain: ZerionTransactionsRelationshipsChain,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionTransactionsRelationshipsChain {
+    pub data: ZerionTransactionsRelationshipsChainData,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionTransactionsRelationshipsChainData {
+    pub r#type: String,
+    pub id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -93,7 +118,70 @@ pub struct ZerionTransactionAttributes {
     pub sent_to: String,
     pub status: String,
     pub nonce: usize,
-    pub transfers: Vec<HistoryTransactionTransfer>,
+    pub transfers: Vec<ZerionTransactionTransfer>,
+    pub application_metadata: Option<ZerionTransactionApplicationMetadata>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionTransactionTransfer {
+    pub fungible_info: Option<ZerionTransactionFungibleInfo>,
+    pub nft_info: Option<ZerionTransactionNFTInfo>,
+    pub direction: String,
+    pub quantity: ZerionTransactionTransferQuantity,
+    pub value: Option<f64>,
+    pub price: Option<f64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionFungibleInfo {
+    pub name: Option<String>,
+    pub symbol: Option<String>,
+    pub icon: Option<ZerionTransactionURLItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionURLItem {
+    pub url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionTransferQuantity {
+    pub numeric: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionNFTInfo {
+    pub name: Option<String>,
+    pub content: Option<ZerionTransactionNFTContent>,
+    pub flags: ZerionTransactionNFTInfoFlags,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionNFTInfoFlags {
+    pub is_spam: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionNFTContent {
+    pub preview: Option<ZerionTransactionURLandContentTypeItem>,
+    pub detail: Option<ZerionTransactionURLandContentTypeItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionTransactionURLandContentTypeItem {
+    pub url: String,
+    pub content_type: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionTransactionApplicationMetadata {
+    pub name: Option<String>,
+    pub icon: Option<ZerionUrlItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionUrlItem {
+    pub url: String,
 }
 
 #[async_trait]
@@ -174,8 +262,60 @@ impl HistoryProvider for ZerionProvider {
                     sent_from: f.attributes.sent_from,
                     sent_to: f.attributes.sent_to,
                     status: f.attributes.status,
+                    application: f.attributes.application_metadata.map(|f| {
+                        HistoryTransactionMetadataApplication {
+                            name: f.name,
+                            icon_url: f.icon.map(|f| f.url),
+                        }
+                    }),
+                    chain: if f.relationships.chain.data.r#type != "chains" {
+                        None
+                    } else {
+                        Some(f.relationships.chain.data.id)
+                    },
                 },
-                transfers: Some(f.attributes.transfers),
+                transfers: f
+                    .attributes
+                    .transfers
+                    .into_iter()
+                    .map(|f| {
+                        Some(HistoryTransactionTransfer {
+                            fungible_info: f.fungible_info.map(|f| {
+                                HistoryTransactionFungibleInfo {
+                                    name: f.name,
+                                    symbol: f.symbol,
+                                    icon: f.icon.map(|f| HistoryTransactionURLItem { url: f.url }),
+                                }
+                            }),
+                            nft_info: f.nft_info.map(|f| HistoryTransactionNFTInfo {
+                                name: f.name,
+                                content: f.content.map(|f| HistoryTransactionNFTContent {
+                                    preview: f.preview.map(|f| {
+                                        HistoryTransactionURLandContentTypeItem {
+                                            url: f.url,
+                                            content_type: f.content_type,
+                                        }
+                                    }),
+                                    detail: f.detail.map(|f| {
+                                        HistoryTransactionURLandContentTypeItem {
+                                            url: f.url,
+                                            content_type: f.content_type,
+                                        }
+                                    }),
+                                }),
+                                flags: HistoryTransactionNFTInfoFlags {
+                                    is_spam: f.flags.is_spam,
+                                },
+                            }),
+                            direction: f.direction,
+                            quantity: HistoryTransactionTransferQuantity {
+                                numeric: f.quantity.numeric,
+                            },
+                            value: f.value,
+                            price: f.price,
+                        })
+                    })
+                    .collect(),
             })
             .collect();
 

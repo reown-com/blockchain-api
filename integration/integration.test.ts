@@ -88,6 +88,13 @@ describe('blockchain api', () => {
       expect(resp.data.data).toHaveLength(50)
       expect(typeof resp.data.next).toBe('string')
       expect(resp.data.next).toHaveLength(80)
+      
+      const first = resp.data.data[0]
+      expect(first.id).toBeDefined()
+      expect(typeof first.metadata).toBe('object')
+      expect(first.metadata.chain).toBeDefined()
+      expect(typeof first.metadata.application).toBe('object')
+      expect(typeof first.transfers).toBe('object')
     })
     it('empty history', async () => {
       let resp: any = await http.get(

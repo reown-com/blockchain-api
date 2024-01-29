@@ -56,6 +56,15 @@ pub struct HistoryTransactionMetadata {
     pub sent_to: String,
     pub status: String,
     pub nonce: usize,
+    pub application: Option<HistoryTransactionMetadataApplication>,
+    pub chain: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryTransactionMetadataApplication {
+    pub name: Option<String>,
+    pub icon_url: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
