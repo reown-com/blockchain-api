@@ -282,7 +282,7 @@ impl HistoryProvider for ZerionProvider {
                                     "Error on parsing chain id to caip2 format: {:?}",
                                     f.relationships.chain.data.id
                                 );
-                                Some(f.relationships.chain.data.id)
+                                None
                             }
                         }
                     },
