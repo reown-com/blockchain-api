@@ -20,6 +20,7 @@ use {
             },
             portfolio::{PortfolioPosition, PortfolioQueryParams, PortfolioResponseBody},
         },
+        utils::crypto,
     },
     async_trait::async_trait,
     axum::body::Bytes,
@@ -27,7 +28,7 @@ use {
     hyper::Client,
     hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
-    tracing::log::error,
+    tracing::log::{error, info},
     url::Url,
 };
 
@@ -271,7 +272,19 @@ impl HistoryProvider for ZerionProvider {
                     chain: if f.relationships.chain.data.r#type != "chains" {
                         None
                     } else {
-                        Some(f.relationships.chain.data.id)
+                        // Try to convert chain id from human readable to caip2 format
+                        match crypto::string_chain_id_to_caip2_format(
+                            &f.relationships.chain.data.id,
+                        ) {
+                            Ok(chain) => Some(chain),
+                            Err(_) => {
+                                info!(
+                                    "Error on parsing chain id to caip2 format: {:?}",
+                                    f.relationships.chain.data.id
+                                );
+                                Some(f.relationships.chain.data.id)
+                            }
+                        }
                     },
                 },
                 transfers: f
