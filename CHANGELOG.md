@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.16.0 - 2024-01-31
+#### Features
+- **(history)** exposing dapp and chain info (#494) - (a3bf46e) - Max Kalashnikoff
+
+- - -
+
 ## 0.15.1 - 2024-01-26
 #### Bug Fixes
 - **(tests)** fixing database test for the recent ENSIP-11 update (#493) - (eb5efba) - Max Kalashnikoff
