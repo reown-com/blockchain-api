@@ -89,12 +89,18 @@ describe('blockchain api', () => {
       expect(typeof resp.data.next).toBe('string')
       expect(resp.data.next).toHaveLength(80)
       
-      const first = resp.data.data[0]
-      expect(first.id).toBeDefined()
-      expect(typeof first.metadata).toBe('object')
-      expect(first.metadata.chain).toBeDefined()
-      expect(typeof first.metadata.application).toBe('object')
-      expect(typeof first.transfers).toBe('object')
+      for (const item of resp.data.data) {
+        expect(item.id).toBeDefined()
+        expect(typeof item.metadata).toBe('object')
+        // expect chain to be null or caip-2 format
+        if (item.metadata.chain !== null) {
+          expect(item.metadata.chain).toEqual(expect.stringMatching(/^(eip155:)?\d+$/));
+        } else {
+          expect(item.metadata.chain).toBeNull();
+        }
+        expect(typeof item.metadata.application).toBe('object')
+        expect(typeof item.transfers).toBe('object')
+      }
     })
     it('empty history', async () => {
       let resp: any = await http.get(
