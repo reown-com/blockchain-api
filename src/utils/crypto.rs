@@ -1,4 +1,7 @@
-use {ethers::types::H160, std::str::FromStr};
+use {
+    ethers::types::H160,
+    std::{collections::HashMap, str::FromStr},
+};
 
 /// Veryfy message signature signed by the keccak256
 #[tracing::instrument]
@@ -30,9 +33,35 @@ pub fn convert_coin_type_to_evm_chain_id(coin_type: u32) -> u32 {
     0x7FFFFFFF & coin_type
 }
 
+/// Convert from human readable chain id (e.g. polygon) to CAIP-2 format
+/// (e.g. eip155:137)
+pub fn string_chain_id_to_caip2_format(chain_id: &str) -> Result<String, anyhow::Error> {
+    // Aliases for string chain ids
+    let aliases: HashMap<String, Vec<String>> =
+        HashMap::from([("mainnet".into(), vec!["ethereum".into()])]);
+
+    for (alias_name, aliases_vec) in aliases {
+        if aliases_vec.contains(&chain_id.to_lowercase()) {
+            return Ok(format!(
+                "eip155:{}",
+                ethers::types::Chain::from_str(&alias_name)? as u64
+            ));
+        }
+    }
+
+    Ok(format!(
+        "eip155:{}",
+        ethers::types::Chain::from_str(chain_id)? as u64
+    ))
+}
+
 #[cfg(test)]
 mod tests {
-    use {super::*, ethers::types::H160, std::str::FromStr};
+    use {
+        super::*,
+        ethers::types::H160,
+        std::{collections::HashMap, str::FromStr},
+    };
 
     #[test]
     fn test_verify_message_signature_valid() {
@@ -75,5 +104,25 @@ mod tests {
         let coin_type = 2147483785;
         assert_eq!(convert_evm_chain_id_to_coin_type(chain_id), coin_type);
         assert_eq!(convert_coin_type_to_evm_chain_id(coin_type), chain_id);
+    }
+
+    #[test]
+    fn test_string_chain_id_to_caip2_format() {
+        let mut chains: HashMap<&str, u64> = HashMap::new();
+        chains.insert("mainnet", 1);
+        // Test for an `ethereum` alias
+        chains.insert("ethereum", 1);
+        chains.insert("goerli", 5);
+        chains.insert("optimism", 10);
+        chains.insert("bsc", 56);
+        chains.insert("xdai", 100);
+        chains.insert("polygon", 137);
+        chains.insert("base", 8453);
+
+        for (chain_id, coin_type) in chains.iter() {
+            let result = string_chain_id_to_caip2_format(chain_id);
+            assert!(result.is_ok(), "chain_id is not found: {}", chain_id);
+            assert_eq!(result.unwrap(), format!("eip155:{}", coin_type));
+        }
     }
 }

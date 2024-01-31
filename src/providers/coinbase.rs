@@ -127,6 +127,8 @@ impl HistoryProvider for CoinbaseProvider {
                     sent_from: "Coinbase".to_string(),
                     sent_to: address.clone(),
                     status: f.status,
+                    application: None,
+                    chain: None,
                 },
                 transfers: Some(vec![HistoryTransactionTransfer {
                     fungible_info: Some(HistoryTransactionFungibleInfo {
