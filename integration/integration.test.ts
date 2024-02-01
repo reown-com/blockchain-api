@@ -329,7 +329,7 @@ describe('blockchain api', () => {
         `${baseUrl}/v1?chainId=${chainId}&projectId=${notAllowedProjectId}&providerId=${providerId}`,
         payload
       )
-      expect(resp.status).toBe(400)
+      expect(resp.status).toBe(401)
     })
   })
 })
