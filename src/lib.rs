@@ -83,7 +83,7 @@ mod json_rpc;
 mod metrics;
 pub mod profiler;
 mod project;
-mod providers;
+pub mod providers;
 mod state;
 mod storage;
 mod utils;

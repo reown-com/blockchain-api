@@ -55,6 +55,20 @@ pub fn string_chain_id_to_caip2_format(chain_id: &str) -> Result<String, anyhow:
     ))
 }
 
+/// Compare two strings in constant time to prevent timing attacks
+pub fn constant_time_eq(a: &str, b: &str) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+
+    let mut result = 0;
+    for (byte_a, byte_b) in a.bytes().zip(b.bytes()) {
+        result |= byte_a ^ byte_b;
+    }
+
+    result == 0
+}
+
 #[cfg(test)]
 mod tests {
     use {
@@ -124,5 +138,13 @@ mod tests {
             assert!(result.is_ok(), "chain_id is not found: {}", chain_id);
             assert_eq!(result.unwrap(), format!("eip155:{}", coin_type));
         }
+    }
+
+    #[test]
+    fn test_constant_time_eq() {
+        let string_one = "some string";
+        let string_two = "some another string";
+        assert!(!constant_time_eq(string_one, string_two));
+        assert!(constant_time_eq(string_one, string_one));
     }
 }

@@ -268,6 +268,13 @@ impl ProviderRepository {
             }
         }
     }
+
+    #[tracing::instrument(skip(self), level = "debug")]
+    pub fn get_provider_by_provider_id(&self, provider_id: &str) -> Option<Arc<dyn RpcProvider>> {
+        let provider = ProviderKind::from_str(provider_id)?;
+
+        self.providers.get(&provider).cloned()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -303,6 +310,7 @@ impl Display for ProviderKind {
     }
 }
 
+#[allow(clippy::should_implement_trait)]
 impl ProviderKind {
     pub fn from_str(s: &str) -> Option<Self> {
         match s {

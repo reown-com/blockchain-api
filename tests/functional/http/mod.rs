@@ -2,7 +2,7 @@ use {
     crate::{context::ServerContext, utils::send_jsonrpc_request, JSONRPC_VERSION},
     hyper::{Body, Client, Method, Request, StatusCode},
     hyper_tls::HttpsConnector,
-    rpc_proxy::handlers::history::HistoryResponseBody,
+    rpc_proxy::{handlers::history::HistoryResponseBody, providers::ProviderKind},
     test_context::test_context,
 };
 
@@ -16,12 +16,13 @@ pub(crate) mod zora;
 
 async fn check_if_rpc_is_responding_correctly_for_supported_chain(
     ctx: &ServerContext,
+    provider_id: &ProviderKind,
     chaind_id: &str,
     expected_id: &str,
 ) {
     let addr = format!(
-        "{}/v1/?projectId={}&chainId=",
-        ctx.server.public_addr, ctx.server.project_id
+        "{}/v1/?projectId={}&providerId={}&chainId=",
+        ctx.server.public_addr, ctx.server.project_id, provider_id
     );
 
     let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());

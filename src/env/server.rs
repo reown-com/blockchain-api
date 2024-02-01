@@ -16,6 +16,7 @@ pub struct ServerConfig {
     pub blocked_countries: Vec<String>,
     pub geoip_db_bucket: Option<String>,
     pub geoip_db_key: Option<String>,
+    pub testing_project_id: Option<String>,
 }
 
 impl Default for ServerConfig {
@@ -30,6 +31,7 @@ impl Default for ServerConfig {
             blocked_countries: Vec::new(),
             geoip_db_bucket: None,
             geoip_db_key: None,
+            testing_project_id: None,
         }
     }
 }

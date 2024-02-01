@@ -3,6 +3,7 @@ use {
     crate::{context::ServerContext, utils::send_jsonrpc_request, JSONRPC_VERSION},
     hyper::{Client, StatusCode},
     hyper_tls::HttpsConnector,
+    rpc_proxy::providers::ProviderKind,
     test_context::test_context,
 };
 
@@ -11,37 +12,103 @@ use {
 #[ignore]
 async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     // Avax mainnet
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:43114", "0xa86a").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Pokt,
+        "eip155:43114",
+        "0xa86a",
+    )
+    .await;
 
     // Gnosis
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:100", "0x64").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Pokt,
+        "eip155:100",
+        "0x64",
+    )
+    .await;
 
     // Binance mainnet
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:56", "0x38").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Pokt,
+        "eip155:56",
+        "0x38",
+    )
+    .await;
 
     // Ethereum
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:1", "0x1").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Pokt,
+        "eip155:1",
+        "0x1",
+    )
+    .await;
 
     // Goerli
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:5", "0x5").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Pokt,
+        "eip155:5",
+        "0x5",
+    )
+    .await;
 
     // Optimism
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:10", "0xa").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Pokt,
+        "eip155:10",
+        "0xa",
+    )
+    .await;
 
     // Arbitrum
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:42161", "0xa4b1").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Pokt,
+        "eip155:42161",
+        "0xa4b1",
+    )
+    .await;
 
     // Polygon mainnet
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:137", "0x89").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Pokt,
+        "eip155:137",
+        "0x89",
+    )
+    .await;
 
     // Polygon mumbai
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:80001", "0x13881").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Pokt,
+        "eip155:80001",
+        "0x13881",
+    )
+    .await;
 
     // Polygon zkevm
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:1101", "0x44d").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Pokt,
+        "eip155:1101",
+        "0x44d",
+    )
+    .await;
 
     // Polygon celo
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:42220", "0xa4ec").await
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Pokt,
+        "eip155:42220",
+        "0xa4ec",
+    )
+    .await
 }
 
 #[test_context(ServerContext)]

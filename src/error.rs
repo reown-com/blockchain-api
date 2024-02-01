@@ -90,6 +90,9 @@ pub enum RpcError {
 
     #[error("sqlx migration error: {0}")]
     SqlxMigrationError(#[from] sqlx::migrate::MigrateError),
+
+    #[error("invalid parameter: {0}")]
+    InvalidParameter(String),
 }
 
 impl IntoResponse for RpcError {
@@ -167,6 +170,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "address".to_string(),
                     "Project's quota limit reached".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::InvalidParameter(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "".to_string(),
+                    format!("Invalid parameter: {}", e),
                 )),
             )
                 .into_response(),
