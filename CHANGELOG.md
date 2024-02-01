@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.17.0 - 2024-02-01
+#### Features
+- **(providers)** proxy request for a certain provider (#487) - (fcbb608) - Max Kalashnikoff
+
+- - -
+
 ## 0.16.0 - 2024-01-31
 #### Features
 - **(history)** exposing dapp and chain info (#494) - (a3bf46e) - Max Kalashnikoff
