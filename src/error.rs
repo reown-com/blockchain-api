@@ -103,7 +103,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "chainId".to_string(),
-                    format!("We don't support the chainId you provided: {chain_id}"),
+                    format!("We don't support the chainId you provided: {chain_id}. See the list of supported chains here: https://docs.walletconnect.com/cloud/blockchain-api#supported-chains"),
                 )),
             )
                 .into_response(),
