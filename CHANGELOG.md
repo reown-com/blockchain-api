@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.17.1 - 2024-02-02
+#### Bug Fixes
+- **(ci)** fixing the new integration test error from 400 to 401 (#495) - (763323b) - Max Kalashnikoff
+- link to supported chains from error message (#496) - (845d7aa) - Chris Smith
+
+- - -
+
 ## 0.17.0 - 2024-02-01
 #### Features
 - **(providers)** proxy request for a certain provider (#487) - (fcbb608) - Max Kalashnikoff
