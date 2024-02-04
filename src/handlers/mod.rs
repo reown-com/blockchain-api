@@ -8,6 +8,7 @@ pub mod health;
 pub mod history;
 pub mod identity;
 pub mod metrics;
+pub mod onramp;
 pub mod portfolio;
 pub mod profile;
 pub mod proxy;

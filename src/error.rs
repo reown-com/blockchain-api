@@ -55,6 +55,9 @@ pub enum RpcError {
     #[error("Failed to reach the portfolio provider")]
     PortfolioProviderError,
 
+    #[error("Failed to parse onramp provider url")]
+    OnRampParseURLError,
+
     #[error("Failed to reach the onramp provider")]
     OnRampProviderError,
 
