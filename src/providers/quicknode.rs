@@ -9,7 +9,7 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    hyper::{client::HttpConnector, http, Client, Method, StatusCode},
+    hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
     tracing::info,
@@ -68,16 +68,11 @@ impl RpcProvider for QuicknodeProvider {
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if let Some(error) = &response.error {
-                if status.is_success() {
-                    info!(
-                        "Strange: provider returned JSON RPC error, but status {status} is \
-                         success: Quicknode: {response:?}"
-                    );
-                }
-                if error.code == -32603 {
-                    return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
-                }
+            if response.error.is_some() && status.is_success() {
+                info!(
+                    "Strange: provider returned JSON RPC error, but status {status} is success: \
+                     Quicknode: {response:?}"
+                );
             }
         }
 
