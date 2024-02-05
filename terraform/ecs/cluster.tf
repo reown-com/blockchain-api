@@ -81,6 +81,7 @@ resource "aws_ecs_task_definition" "app_task" {
 
         { name = "RPC_PROXY_PROVIDER_INFURA_PROJECT_ID", value = var.infura_project_id },
         { name = "RPC_PROXY_PROVIDER_POKT_PROJECT_ID", value = var.pokt_project_id },
+        { name = "RPC_PROXY_PROVIDER_QUICKNODE_API_TOKEN", value = var.quicknode_api_token },
         { name = "RPC_PROXY_PROVIDER_ZERION_API_KEY", value = var.zerion_api_key },
         { name = "RPC_PROXY_PROVIDER_COINBASE_API_KEY", value = var.coinbase_api_key },
         { name = "RPC_PROXY_PROVIDER_COINBASE_APP_ID", value = var.coinbase_app_id },

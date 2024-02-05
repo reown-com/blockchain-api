@@ -32,6 +32,7 @@ mod infura;
 mod omnia;
 mod pokt;
 mod publicnode;
+mod quicknode;
 mod weights;
 pub mod zerion;
 mod zksync;
@@ -45,6 +46,7 @@ pub use {
     omnia::OmniatechProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
+    quicknode::QuicknodeProvider,
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
 };
@@ -60,6 +62,8 @@ pub struct ProvidersConfig {
 
     pub infura_project_id: String,
     pub pokt_project_id: String,
+    pub quicknode_api_token: String,
+
     pub zerion_api_key: Option<String>,
     pub coinbase_api_key: Option<String>,
     pub coinbase_app_id: Option<String>,
@@ -290,6 +294,7 @@ pub enum ProviderKind {
     Zora,
     Zerion,
     Coinbase,
+    Quicknode,
 }
 
 impl Display for ProviderKind {
@@ -306,6 +311,7 @@ impl Display for ProviderKind {
             ProviderKind::Zora => "Zora",
             ProviderKind::Zerion => "Zerion",
             ProviderKind::Coinbase => "Coinbase",
+            ProviderKind::Quicknode => "Quicknode",
         })
     }
 }
@@ -325,6 +331,7 @@ impl ProviderKind {
             "Zora" => Some(Self::Zora),
             "Zerion" => Some(Self::Zerion),
             "Coinbase" => Some(Self::Coinbase),
+            "Quicknode" => Some(Self::Quicknode),
             _ => None,
         }
     }
