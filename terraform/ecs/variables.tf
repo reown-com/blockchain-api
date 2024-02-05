@@ -167,6 +167,12 @@ variable "zerion_api_key" {
   sensitive   = true
 }
 
+variable "quicknode_api_token" {
+  description = "The API key for Quicknode"
+  type        = string
+  sensitive   = true
+}
+
 variable "coinbase_api_key" {
   description = "The API key for Coinbase Pay SDK"
   type        = string
