@@ -1,0 +1,120 @@
+import { getTestSetup } from './init';
+import { ethers } from "ethers"
+
+describe('Account profile names', () => {
+  const { baseUrl, projectId, httpClient } = getTestSetup();
+
+  // Generate a new eth wallet
+  const wallet = ethers.Wallet.createRandom();
+  const address = wallet.address;
+  const coin_type = 60; // SLIP-44 Ethereum
+  const chain_id = 1; // Ethereum mainnet
+  const attributes = {
+    bio: 'integration test domain',
+  };
+
+  // Generate a random name
+  const randomString = Array.from({ length: 10 }, 
+    () => (Math.random().toString(36)[2] || '0')).join('')
+  const name = `${randomString}.connect.test`;
+
+  // Create a message to sign
+  const messageObject = {
+      name,
+      coin_type,
+      chain_id,
+      address,
+      attributes,
+      timestamp: Math.round(Date.now() / 1000)
+  };
+  const message = JSON.stringify(messageObject);
+
+  it('register with wrong signature', async () => {
+    // Sign the message
+    const signature = await wallet.signMessage('some other message');
+
+    const payload = {
+      message,
+      signature,
+      coin_type,
+      address,
+    };
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account/${name}`,
+      payload
+    )
+    expect(resp.status).toBe(401)
+  })
+  it('register new name', async () => {
+    // Sign the message
+    const signature = await wallet.signMessage(message);
+
+    const payload = {
+      message,
+      signature,
+      coin_type,
+      address,
+    };
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account/${name}`,
+      payload
+    )
+    expect(resp.status).toBe(200)
+  })
+  it('try register already registered name', async () => {
+    // Sign the message
+    const signature = await wallet.signMessage(message);
+
+    const payload = {
+      message,
+      signature,
+      coin_type,
+      address,
+    };
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account/${name}`,
+      payload
+    )
+    expect(resp.status).toBe(400)
+  })
+  it('inconsistent payload', async () => {
+    // Name in payload is different from the one in the request path
+    const signature = await wallet.signMessage(message);
+
+    const payload = {
+      message,
+      signature,
+      coin_type,
+      address,
+    };
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account/someothername.connect.id`,
+      payload
+    )
+    expect(resp.status).toBe(400)
+  })
+  it('name forward lookup', async () => {
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/profile/account/${name}`
+    )
+    expect(resp.status).toBe(200)
+    expect(resp.data.name).toBe(name)
+    expect(typeof resp.data.addresses).toBe('object')
+    // ENSIP-11 using the 60 for the Ethereum mainnet
+    const first = resp.data.addresses["60"]
+    expect(first.address).toBe(address)
+  })
+  it('name reverse lookup', async () => {
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/profile/reverse/${address}`
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data).toBe('object')
+    const first_name = resp.data[0]
+    expect(first_name.name).toBe(name)
+    expect(typeof first_name.addresses).toBe('object')
+    // ENSIP-11 using the 60 for the Ethereum mainnet
+    const first_address = first_name.addresses["60"]
+    expect(first_address.address).toBe(address)
+  })
+})
