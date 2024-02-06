@@ -68,7 +68,7 @@ pub async fn delete_name(
 }
 
 #[instrument(skip(postgres))]
-pub async fn update_name(
+pub async fn update_name_attributes(
     name: String,
     attributes: HashMap<String, String>,
     postgres: &PgPool,

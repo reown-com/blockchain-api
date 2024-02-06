@@ -11,7 +11,7 @@ use {
             get_names_by_address_and_namespace,
             insert_address,
             insert_name,
-            update_name,
+            update_name_attributes,
         },
         types,
     },
@@ -241,7 +241,8 @@ async fn insert_and_update_name_attributes() {
     // Updating the name with new attributes
     let updated_attributes: HashMap<String, String> =
         HashMap::from_iter([("GitHub".to_string(), "SomeProfile".to_string())]);
-    let updated_result = update_name(name.clone(), updated_attributes.clone(), &pg_pool).await;
+    let updated_result =
+        update_name_attributes(name.clone(), updated_attributes.clone(), &pg_pool).await;
     assert!(updated_result.is_ok(), "Updating name should succeed");
 
     let got_update_name = get_name(name.clone(), &pg_pool).await.unwrap();
