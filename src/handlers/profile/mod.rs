@@ -31,12 +31,6 @@ static SUPPORTED_ATTRIBUTES: Lazy<HashMap<String, Regex>> = Lazy::new(|| {
 pub struct RegisterPayload {
     /// Name to register
     pub name: String,
-    /// Coin type SLIP-44
-    pub coin_type: u32,
-    /// Chain ID for the EVM
-    pub chain_id: u32,
-    /// Address
-    pub address: String,
     /// Attributes
     pub attributes: Option<HashMap<String, String>>,
     /// Unixtime
@@ -50,7 +44,7 @@ pub struct RegisterRequest {
     pub message: String,
     /// Message signature
     pub signature: String,
-    /// Coin type SLIP-44
+    /// Coin type ENSIP-11
     pub coin_type: u32,
     /// Address
     pub address: String,

@@ -1,8 +1,5 @@
 use {
-    crate::{
-        database::{error::DatabaseError, types, utils},
-        utils::crypto::convert_evm_chain_id_to_coin_type,
-    },
+    crate::database::{error::DatabaseError, types, utils},
     chrono::{DateTime, Utc},
     sqlx::{PgPool, Postgres},
     std::collections::HashMap,
@@ -149,17 +146,13 @@ pub async fn get_addresses_by_name(
             continue;
         }
 
-        // Return 60 for the ETH mainnet and ENSIP-11 chain ID for other
-        let ensip11_chain_id = if row.chain_id == "1" {
-            60
-        } else {
-            convert_evm_chain_id_to_coin_type(row.chain_id.parse::<u32>().unwrap_or_default())
-        };
-
-        result_map.insert(ensip11_chain_id, types::Address {
-            address: row.address,
-            created_at: Some(row.created_at),
-        });
+        result_map.insert(
+            row.chain_id.parse::<u32>().unwrap_or_default(),
+            types::Address {
+                address: row.address,
+                created_at: Some(row.created_at),
+            },
+        );
     }
 
     Ok(result_map)

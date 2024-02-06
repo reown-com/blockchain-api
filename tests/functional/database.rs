@@ -150,9 +150,8 @@ async fn insert_and_get_name_and_addresses() {
     let name = format!("{}.connect.id", generate_random_string(10));
     let address = format!("0x{}", generate_random_string(16));
     let namespace = types::SupportedNamespaces::Eip155;
-    let chain_id = 1;
     let expected_ensip11_coin_type = 60;
-    let addresses = HashMap::from([(chain_id, types::Address {
+    let addresses = HashMap::from([(expected_ensip11_coin_type, types::Address {
         address: address.clone(),
         created_at: None,
     })]);
