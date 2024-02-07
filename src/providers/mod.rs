@@ -20,7 +20,7 @@ use {
         hash::Hash,
         sync::Arc,
     },
-    tracing::{info, log::warn},
+    tracing::{error, info, log::warn},
     wc::metrics::TaskMetrics,
 };
 
@@ -159,9 +159,18 @@ impl ProviderRepository {
         match WeightedIndex::new(weights) {
             Ok(dist) => {
                 let random = dist.sample(&mut OsRng);
-                let provider = keys.get(random).unwrap();
+                let provider = keys.get(random).ok_or_else(|| {
+                    error!("Failed to get random provider for chain_id: {}", chain_id);
+                    RpcError::UnsupportedChain(chain_id.to_string())
+                })?;
 
-                Ok(self.providers.get(provider).cloned().unwrap())
+                self.providers.get(provider).cloned().ok_or_else(|| {
+                    error!(
+                        "Provider not found during the weighted index check: {}",
+                        provider
+                    );
+                    RpcError::UnsupportedProvider(provider.to_string())
+                })
             }
             Err(e) => {
                 // Respond with temporarily unavailable when all weights are 0 for
