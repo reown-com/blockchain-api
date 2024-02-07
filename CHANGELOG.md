@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.21.0 - 2024-02-07
+#### Features
+- **(providers)** adding Base for Pokt and Publicnode providers (#506) - (d0acd3c) - Max Kalashnikoff
+
+- - -
+
 ## 0.20.0 - 2024-02-07
 #### Features
 - **(analytics)** extracting onramp transactions history analytics (#498) - (7b58903) - Max Kalashnikoff
