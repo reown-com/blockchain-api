@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.20.0 - 2024-02-07
+#### Features
+- **(analytics)** extracting onramp transactions history analytics (#498) - (7b58903) - Max Kalashnikoff
+
+- - -
+
 ## 0.19.1 - 2024-02-07
 #### Bug Fixes
 - respond with temporary unavailable when no working providers found (#507) - (f0f905f) - Max Kalashnikoff
