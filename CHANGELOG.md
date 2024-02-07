@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.19.1 - 2024-02-07
+#### Bug Fixes
+- respond with temporary unavailable when no working providers found (#507) - (f0f905f) - Max Kalashnikoff
+
+- - -
+
 ## 0.19.0 - 2024-02-07
 #### Bug Fixes
 - **(ci)** bump ci_workflows version (#504) - (a46cdfa) - Max Kalashnikoff
