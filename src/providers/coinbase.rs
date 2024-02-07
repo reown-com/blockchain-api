@@ -11,6 +11,7 @@ use {
             HistoryTransactionTransfer,
             HistoryTransactionTransferQuantity,
         },
+        utils::crypto::string_chain_id_to_caip2_format,
     },
     async_trait::async_trait,
     axum::{body::Bytes, http::method},
@@ -53,6 +54,7 @@ pub struct CoinbaseTransaction {
     pub transaction_id: String,
     pub tx_hash: String,
     pub created_at: String,
+    pub purchase_network: String,
     pub purchase_amount: CoinbasePurchaseAmount,
 }
 
@@ -128,7 +130,7 @@ impl HistoryProvider for CoinbaseProvider {
                     sent_to: address.clone(),
                     status: f.status,
                     application: None,
-                    chain: None,
+                    chain: string_chain_id_to_caip2_format(&f.purchase_network).ok(),
                 },
                 transfers: Some(vec![HistoryTransactionTransfer {
                     fungible_info: Some(HistoryTransactionFungibleInfo {
