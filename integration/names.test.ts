@@ -45,6 +45,30 @@ describe('Account profile names', () => {
     )
     expect(resp.status).toBe(401)
   })
+
+  it('register with wrong attributes', async () => {
+    // Create a message to sign with wrong attributes
+    const wrongAttributesMessageObject = {
+      name,
+      attributes: { someAttribute: 'some attribute name' },
+      timestamp: Math.round(Date.now() / 1000)
+    };
+    const message = JSON.stringify(wrongAttributesMessageObject);
+    const signature = await wallet.signMessage(message);
+
+    const payload = {
+      message,
+      signature,
+      coin_type,
+      address,
+    };
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account/${name}`,
+      payload
+    )
+    expect(resp.status).toBe(400)
+  })
+
   it('register new name', async () => {
     // Sign the message
     const signature = await wallet.signMessage(message);

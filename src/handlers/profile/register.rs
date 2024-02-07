@@ -1,7 +1,7 @@
 use {
     super::{
         super::HANDLER_TASK_METRICS,
-        is_timestamp_within_interval,
+        utils::{check_attributes, is_timestamp_within_interval},
         RegisterPayload,
         RegisterRequest,
         UNIXTIMESTAMP_SYNC_THRESHOLD,
@@ -117,6 +117,22 @@ pub async fn handler_internal(
             return Ok((StatusCode::BAD_REQUEST, "Invalid H160 address format").into_response());
         }
     };
+
+    // Check for supported attributes
+    if let Some(attributes) = payload.attributes.clone() {
+        if !check_attributes(
+            &attributes,
+            &super::SUPPORTED_ATTRIBUTES,
+            super::ATTRIBUTES_VALUE_MAX_LENGTH,
+        ) {
+            return Ok((
+                StatusCode::BAD_REQUEST,
+                "Unsupported attribute in
+        payload",
+            )
+                .into_response());
+        }
+    }
 
     // Check the signature
     let sinature_check =
