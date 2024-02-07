@@ -48,6 +48,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::High).unwrap(),
             ),
         ),
+        // Base mainnet
+        (
+            "eip155:8453".into(),
+            ("base".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Binance Smart Chain mainnet
         (
             "eip155:56".into(),
