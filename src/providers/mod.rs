@@ -142,13 +142,16 @@ impl ProviderRepository {
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
-    pub fn get_provider_for_chain_id(&self, chain_id: &str) -> Option<Arc<dyn RpcProvider>> {
+    pub fn get_provider_for_chain_id(
+        &self,
+        chain_id: &str,
+    ) -> Result<Arc<dyn RpcProvider>, RpcError> {
         let Some(providers) = self.weight_resolver.get(chain_id) else {
-            return None;
+            return Err(RpcError::UnsupportedChain(chain_id.to_string()));
         };
 
         if providers.is_empty() {
-            return None;
+            return Err(RpcError::UnsupportedChain(chain_id.to_string()));
         }
 
         let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.value()).collect();
@@ -158,11 +161,13 @@ impl ProviderRepository {
                 let random = dist.sample(&mut OsRng);
                 let provider = keys.get(random).unwrap();
 
-                self.providers.get(provider).cloned()
+                Ok(self.providers.get(provider).cloned().unwrap())
             }
             Err(e) => {
+                // Respond with temporarily unavailable when all weights are 0 for
+                // a chain providers
                 warn!("Failed to create weighted index: {}", e);
-                None
+                Err(RpcError::ChainTemporarilyUnavailable(chain_id.to_string()))
             }
         }
     }
