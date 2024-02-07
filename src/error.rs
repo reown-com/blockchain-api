@@ -37,6 +37,9 @@ pub enum RpcError {
     #[error("Specified chain is not supported by any of the providers: {0}")]
     UnsupportedChain(String),
 
+    #[error("Requested chain provider is temporarily unavailable: {0}")]
+    ChainTemporarilyUnavailable(String),
+
     #[error("Specified provider is not supported: {0}")]
     UnsupportedProvider(String),
 
@@ -104,6 +107,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "chainId".to_string(),
                     format!("We don't support the chainId you provided: {chain_id}. See the list of supported chains here: https://docs.walletconnect.com/cloud/blockchain-api#supported-chains"),
+                )),
+            )
+                .into_response(),
+            Self::ChainTemporarilyUnavailable(chain_id) => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "chainId".to_string(),
+                    format!("Requested {chain_id} chain provider is temporarily unavailable"),
                 )),
             )
                 .into_response(),
