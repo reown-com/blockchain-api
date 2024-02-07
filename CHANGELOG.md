@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.19.0 - 2024-02-07
+#### Bug Fixes
+- **(ci)** bump ci_workflows version (#504) - (a46cdfa) - Max Kalashnikoff
+#### Features
+- **(ens)** checking for supported attributes (#497) - (a46130f) - Max Kalashnikoff
+- **(grafana)** adding Aurora and Quicknode providers dashboards (#501) - (f060240) - Max Kalashnikoff
+- **(testsing)** splitting integration tests (#503) - (3b0c4dd) - Max Kalashnikoff
+
+- - -
+
 ## 0.18.0 - 2024-02-05
 #### Features
 - **(providers)** adding the Quicknode provider for zkSync (#500) - (d1ca64c) - Max Kalashnikoff
