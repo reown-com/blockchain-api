@@ -108,7 +108,7 @@ describe('Account profile names', () => {
     expect(resp.data.attributes['bio']).toBe(attributes['bio'])
     expect(typeof resp.data.addresses).toBe('object')
     // ENSIP-11 using the 60 for the Ethereum mainnet
-    const first = resp.data.addresses["60"]
+    const first = resp.data.addresses[coin_type]
     expect(first.address).toBe(address)
   })
 
@@ -122,7 +122,7 @@ describe('Account profile names', () => {
     expect(first_name.name).toBe(name)
     expect(typeof first_name.addresses).toBe('object')
     // ENSIP-11 using the 60 for the Ethereum mainnet
-    const first_address = first_name.addresses["60"]
+    const first_address = first_name.addresses[coin_type]
     expect(first_address.address).toBe(address)
   })
 
@@ -155,5 +155,46 @@ describe('Account profile names', () => {
     
     expect(resp.status).toBe(200)
     expect(resp.data['bio']).toBe(updatedAttributes['bio'])
+  })
+
+  it('update name address', async () => {
+    // Generate a new eth wallet
+    const new_address = ethers.Wallet.createRandom().address;
+
+    // Prepare updated address payload
+    const UpdateAddressMessageObject = {
+      coin_type,
+      address: new_address,
+      timestamp: Math.round(Date.now() / 1000)
+    };
+    const updateMessage = JSON.stringify(UpdateAddressMessageObject);
+
+    // Sign the message
+    const signature = await wallet.signMessage(updateMessage);
+
+    const payload = {
+      message: updateMessage,
+      signature,
+      coin_type,
+      address,
+    };
+
+    // Update the address
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account/${name}/address`,
+      payload
+    );
+    expect(resp.status).toBe(200)
+    expect(resp.data[coin_type].address).toBe(new_address)
+
+    // Query the name to see if the address was updated
+    resp = await httpClient.get(
+      `${baseUrl}/v1/profile/account/${name}`
+    )
+    expect(resp.status).toBe(200)
+    expect(resp.data.name).toBe(name)
+    expect(typeof resp.data.addresses).toBe('object')
+    const first = resp.data.addresses[coin_type]
+    expect(first.address).toBe(new_address)
   })
 })

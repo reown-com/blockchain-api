@@ -6,6 +6,7 @@ use {
     std::collections::HashMap,
 };
 
+pub mod address;
 pub mod attributes;
 pub mod lookup;
 pub mod register;
@@ -52,6 +53,17 @@ pub struct RegisterPayload {
 pub struct UpdateAttributesPayload {
     /// Attributes
     pub attributes: HashMap<String, String>,
+    /// Unixtime
+    pub timestamp: u64,
+}
+
+/// Payload to update name address that should be serialized to JSON and signed
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateAddressPayload {
+    /// Coin type ENSIP-11
+    pub coin_type: u32,
+    /// Address
+    pub address: String,
     /// Unixtime
     pub timestamp: u64,
 }

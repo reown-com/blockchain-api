@@ -225,6 +225,11 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/profile/account/:name/attributes",
             post(handlers::profile::attributes::handler),
         )
+        // Update account name address
+        .route(
+            "/v1/profile/account/:name/address",
+            post(handlers::profile::address::handler),
+        )
         // Forward address lookup
         .route(
             "/v1/profile/account/:name",
