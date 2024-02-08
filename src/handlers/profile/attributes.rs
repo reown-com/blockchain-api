@@ -2,6 +2,7 @@ use {
     super::{
         super::HANDLER_TASK_METRICS,
         utils::{check_attributes, is_timestamp_within_interval},
+        Eip155SupportedChains,
         RegisterRequest,
         UpdateAttributesPayload,
         UNIXTIMESTAMP_SYNC_THRESHOLD,
@@ -18,7 +19,7 @@ use {
         Json,
     },
     hyper::StatusCode,
-    sqlx::Error as SqlxError,
+    num_enum::TryFromPrimitive,
     std::{str::FromStr, sync::Arc},
     tracing::log::{error, info},
     wc::future::FutureExt,
@@ -44,17 +45,17 @@ pub async fn handler_internal(
     let payload = match serde_json::from_str::<UpdateAttributesPayload>(raw_payload) {
         Ok(payload) => payload,
         Err(e) => {
-            info!("Failed to deserialize register payload: {}", e);
+            info!("Failed to deserialize update attributes payload: {}", e);
             return Ok((StatusCode::BAD_REQUEST, "").into_response());
         }
     };
 
     // Check for the supported ENSIP-11 coin type
-    if request_payload.coin_type != 60 {
+    if Eip155SupportedChains::try_from_primitive(request_payload.coin_type).is_err() {
         info!("Unsupported coin type {}", request_payload.coin_type);
         return Ok((
             StatusCode::BAD_REQUEST,
-            "Only Ethereum Mainnet (60) coin type is supported for name registration",
+            "Unsupported coin type for name attributes update",
         )
             .into_response());
     }
@@ -107,7 +108,10 @@ pub async fn handler_internal(
     }
 
     // Check for the name address ownership and address from the signed payload
-    let name_owner = match name_addresses.addresses.get(&60) {
+    let name_owner = match name_addresses
+        .addresses
+        .get(&Eip155SupportedChains::Mainnet.into())
+    {
         Some(address_entry) => match ethers::types::H160::from_str(&address_entry.address) {
             Ok(owner) => owner,
             Err(e) => {
@@ -146,25 +150,11 @@ pub async fn handler_internal(
             .into_response());
     }
 
-    let update_attributes_result =
-        update_name_attributes(name.clone(), payload.attributes, &state.postgres).await;
-    if let Err(e) = update_attributes_result {
-        error!("Failed to update attributes: {}", e);
-        return Ok((StatusCode::INTERNAL_SERVER_ERROR, "").into_response());
-    }
-
-    // Return the registered name, addresses and attributes
-    match get_name_and_addresses_by_name(name, &state.postgres.clone()).await {
-        Ok(response) => Ok(Json(response).into_response()),
-        Err(e) => match e {
-            SqlxError::RowNotFound => {
-                error!("New registered name is not found in the database: {}", e);
-                Ok((StatusCode::INTERNAL_SERVER_ERROR, "Name is not registered").into_response())
-            }
-            _ => {
-                error!("Error on lookup new registered name: {}", e);
-                Ok((StatusCode::INTERNAL_SERVER_ERROR, "Name is not registered").into_response())
-            }
-        },
+    match update_name_attributes(name.clone(), payload.attributes, &state.postgres).await {
+        Err(e) => {
+            error!("Failed to update attributes: {}", e);
+            Ok((StatusCode::INTERNAL_SERVER_ERROR, "").into_response())
+        }
+        Ok(attributes) => Ok(Json(attributes).into_response()),
     }
 }

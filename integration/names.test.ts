@@ -128,8 +128,10 @@ describe('Account profile names', () => {
 
   it('update name attributes', async () => {
     // Prepare updated attributes payload
+    const randomBioString = Array.from({ length: 24 }, 
+      () => (Math.random().toString(36)[2] || '0')).join('')
     const updatedAttributes = {
-      bio: 'integration test domain updated attribute',
+      bio: randomBioString,
     };
     const updateAttributesMessageObject = {
       attributes: updatedAttributes,
@@ -152,7 +154,6 @@ describe('Account profile names', () => {
     );
     
     expect(resp.status).toBe(200)
-    expect(resp.data.name).toBe(name)
-    expect(resp.data.attributes['bio']).toBe(updatedAttributes['bio'])
+    expect(resp.data['bio']).toBe(updatedAttributes['bio'])
   })
 })

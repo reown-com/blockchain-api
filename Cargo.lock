@@ -4007,6 +4007,7 @@ dependencies = [
  "hyper-tls",
  "ipnet",
  "jsonrpc",
+ "num_enum",
  "once_cell",
  "parquet",
  "parquet_derive",

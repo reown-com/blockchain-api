@@ -72,17 +72,27 @@ pub async fn update_name_attributes(
     name: String,
     attributes: HashMap<String, String>,
     postgres: &PgPool,
-) -> Result<sqlx::postgres::PgQueryResult, sqlx::error::Error> {
-    let insert_name_query = "
+) -> Result<HashMap<String, String>, sqlx::error::Error> {
+    let update_attributes_query = "
       UPDATE names SET attributes = $2::hstore, updated_at = NOW()
-        WHERE name = $1
+        WHERE name = $1 
+        RETURNING attributes::json
     ";
-    sqlx::query::<Postgres>(insert_name_query)
+    let result: (serde_json::Value,) = sqlx::query_as(update_attributes_query)
         .bind(&name)
-        // Convert JSON to String for hstore update
         .bind(&utils::hashmap_to_hstore(&attributes))
-        .execute(postgres)
-        .await
+        .fetch_one(postgres)
+        .await?;
+
+    let updated_attributes_result: Result<HashMap<String, String>, sqlx::Error> =
+        serde_json::from_value(result.0.clone()).map_err(|e| {
+            sqlx::Error::Protocol(format!(
+                "Failed to convert serde_json::Value to HashMap<String, String>: {}",
+                e
+            ))
+        });
+
+    updated_attributes_result
 }
 
 #[instrument(skip(postgres))]
