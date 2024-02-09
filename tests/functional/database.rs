@@ -9,8 +9,8 @@ use {
             get_name_and_addresses_by_name,
             get_names_by_address,
             get_names_by_address_and_namespace,
-            insert_address,
             insert_name,
+            insert_or_update_address,
             update_name_attributes,
         },
         types,
@@ -293,7 +293,7 @@ async fn insert_delete_two_addresses() {
     // Inserting a new address
     chain_id = 137;
     let new_address = format!("0x{}", generate_random_string(16));
-    let insert_address_result = insert_address(
+    let insert_address_result = insert_or_update_address(
         name.clone(),
         types::SupportedNamespaces::Eip155,
         format!("{}", chain_id),

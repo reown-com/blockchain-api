@@ -41,7 +41,7 @@ pub async fn insert_name(
         .await?;
 
     for address in addresses {
-        insert_address(
+        insert_or_update_address(
             name.clone(),
             namespace.clone(),
             format!("{}", address.0),
@@ -245,23 +245,36 @@ pub async fn delete_address(
 }
 
 #[instrument(skip(postgres))]
-pub async fn insert_address<'e>(
+pub async fn insert_or_update_address<'e>(
     name: String,
     namespace: types::SupportedNamespaces,
     chain_id: String,
     address: String,
     postgres: impl sqlx::PgExecutor<'e>,
-) -> Result<sqlx::postgres::PgQueryResult, sqlx::error::Error> {
-    let query = sqlx::query::<Postgres>(
-        "
+) -> Result<types::ENSIP11AddressesMap, sqlx::error::Error> {
+    let insert_or_update_query = "
         INSERT INTO addresses (name, namespace, chain_id, address)
         VALUES ($1, $2, $3, $4)
-        ",
-    )
-    .bind(&name)
-    .bind(&namespace)
-    .bind(chain_id)
-    .bind(&address);
+        ON CONFLICT (name, namespace, chain_id, address) DO UPDATE
+        SET address = EXCLUDED.address, created_at = NOW()
+        RETURNING *
+        ";
+    let row_result = sqlx::query_as::<Postgres, RowAddress>(insert_or_update_query)
+        .bind(&name)
+        .bind(&namespace)
+        .bind(chain_id)
+        .bind(&address)
+        .fetch_one(postgres)
+        .await?;
 
-    query.execute(postgres).await
+    let mut result_map = types::ENSIP11AddressesMap::new();
+    result_map.insert(
+        row_result.chain_id.parse::<u32>().unwrap_or_default(),
+        types::Address {
+            address: row_result.address,
+            created_at: Some(row_result.created_at),
+        },
+    );
+
+    Ok(result_map)
 }
