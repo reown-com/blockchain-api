@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.22.0 - 2024-02-09
+#### Features
+- **(ens)** updating name attributes handler (#509) - (725961b) - Max Kalashnikoff
+
+- - -
+
 ## 0.21.2 - 2024-02-09
 #### Bug Fixes
 - **(ens)** register name endpoint cleanup (#505) - (fc4c07b) - Max Kalashnikoff
