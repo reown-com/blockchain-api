@@ -16,7 +16,7 @@ pub mod utils;
 #[repr(u32)]
 #[derive(Debug, Clone, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
 enum Eip155SupportedChains {
-    Mainnet = 60,
+    EthereumMainnet = 60,
 }
 
 pub const UNIXTIMESTAMP_SYNC_THRESHOLD: u64 = 10;

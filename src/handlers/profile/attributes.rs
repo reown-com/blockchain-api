@@ -46,7 +46,11 @@ pub async fn handler_internal(
         Ok(payload) => payload,
         Err(e) => {
             info!("Failed to deserialize update attributes payload: {}", e);
-            return Ok((StatusCode::BAD_REQUEST, "").into_response());
+            return Ok((
+                StatusCode::BAD_REQUEST,
+                format!("Failed to deserialize update attributes payload: {}", e),
+            )
+                .into_response());
         }
     };
 
@@ -110,7 +114,7 @@ pub async fn handler_internal(
     // Check for the name address ownership and address from the signed payload
     let name_owner = match name_addresses
         .addresses
-        .get(&Eip155SupportedChains::Mainnet.into())
+        .get(&Eip155SupportedChains::EthereumMainnet.into())
     {
         Some(address_entry) => match ethers::types::H160::from_str(&address_entry.address) {
             Ok(owner) => owner,
@@ -153,7 +157,11 @@ pub async fn handler_internal(
     match update_name_attributes(name.clone(), payload.attributes, &state.postgres).await {
         Err(e) => {
             error!("Failed to update attributes: {}", e);
-            Ok((StatusCode::INTERNAL_SERVER_ERROR, "").into_response())
+            Ok((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to update attributes: {}", e),
+            )
+                .into_response())
         }
         Ok(attributes) => Ok(Json(attributes).into_response()),
     }

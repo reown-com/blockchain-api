@@ -1,7 +1,7 @@
 use {
     crate::database::{error::DatabaseError, types, utils},
     chrono::{DateTime, Utc},
-    sqlx::{PgPool, Postgres},
+    sqlx::{PgPool, Postgres, Row},
     std::collections::HashMap,
     tracing::{error, instrument},
 };
@@ -72,24 +72,22 @@ pub async fn update_name_attributes(
     name: String,
     attributes: HashMap<String, String>,
     postgres: &PgPool,
-) -> Result<HashMap<String, String>, sqlx::error::Error> {
+) -> Result<HashMap<String, String>, DatabaseError> {
     let update_attributes_query = "
       UPDATE names SET attributes = $2::hstore, updated_at = NOW()
         WHERE name = $1 
         RETURNING attributes::json
     ";
-    let result: (serde_json::Value,) = sqlx::query_as(update_attributes_query)
+    let row = sqlx::query(update_attributes_query)
         .bind(&name)
         .bind(&utils::hashmap_to_hstore(&attributes))
         .fetch_one(postgres)
         .await?;
-
-    let updated_attributes_result: Result<HashMap<String, String>, sqlx::Error> =
-        serde_json::from_value(result.0.clone()).map_err(|e| {
-            sqlx::Error::Protocol(format!(
-                "Failed to convert serde_json::Value to HashMap<String, String>: {}",
-                e
-            ))
+    let result: serde_json::Value = row.get(0);
+    let updated_attributes_result: Result<HashMap<String, String>, DatabaseError> =
+        serde_json::from_value(result.clone()).map_err(|e| {
+            error!("Failed to deserialize updated attributes: {}", e);
+            DatabaseError::SerdeJson(e)
         });
 
     updated_attributes_result
