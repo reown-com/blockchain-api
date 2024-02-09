@@ -24,6 +24,7 @@ use {
     ethers::types::H160,
     hyper::StatusCode,
     num_enum::TryFromPrimitive,
+    sqlx::Error as SqlxError,
     std::{str::FromStr, sync::Arc},
     tracing::log::{error, info},
     wc::future::FutureExt,
@@ -68,13 +69,23 @@ pub async fn handler_internal(
     let name_addresses =
         match get_name_and_addresses_by_name(name.clone(), &state.postgres.clone()).await {
             Ok(result) => result,
-            Err(_) => {
-                info!(
-                    "Update address request for not registered name {}",
-                    name.clone()
-                );
-                return Ok((StatusCode::BAD_REQUEST, "Name is not registered").into_response());
-            }
+            Err(e) => match e {
+                SqlxError::RowNotFound => {
+                    return Ok((
+                        StatusCode::BAD_REQUEST,
+                        format!("Name {} is not registered", name.clone()),
+                    )
+                        .into_response())
+                }
+                _ => {
+                    error!("Failed to lookup name in the database: {}", e);
+                    return Ok((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Name lookup database error",
+                    )
+                        .into_response());
+                }
+            },
         };
 
     // Check the timestamp is within the sync threshold interval
