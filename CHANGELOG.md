@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.21.2 - 2024-02-09
+#### Bug Fixes
+- **(ens)** register name endpoint cleanup (#505) - (fc4c07b) - Max Kalashnikoff
+
+- - -
+
 ## 0.21.1 - 2024-02-07
 #### Bug Fixes
 - removing unwraps from the WeightedIndex (#508) - (e1228ff) - Max Kalashnikoff
