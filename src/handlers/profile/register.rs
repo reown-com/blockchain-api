@@ -2,6 +2,7 @@ use {
     super::{
         super::HANDLER_TASK_METRICS,
         utils::{check_attributes, is_timestamp_within_interval},
+        Eip155SupportedChains,
         RegisterPayload,
         RegisterRequest,
         UNIXTIMESTAMP_SYNC_THRESHOLD,
@@ -21,6 +22,7 @@ use {
         Json,
     },
     hyper::StatusCode,
+    num_enum::TryFromPrimitive,
     sqlx::Error as SqlxError,
     std::{collections::HashMap, str::FromStr, sync::Arc},
     tracing::log::{error, info},
@@ -51,11 +53,11 @@ pub async fn handler_internal(
     };
 
     // Check for the supported ENSIP-11 coin type
-    if register_request.coin_type != 60 {
+    if Eip155SupportedChains::try_from_primitive(register_request.coin_type).is_err() {
         info!("Unsupported coin type {}", register_request.coin_type);
         return Ok((
             StatusCode::BAD_REQUEST,
-            "Only Ethereum Mainnet (60) coin type is supported for name registration",
+            "Unsupported coin type for name registration",
         )
             .into_response());
     }

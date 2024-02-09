@@ -1,14 +1,23 @@
 use {
+    num_enum::{IntoPrimitive, TryFromPrimitive},
     once_cell::sync::Lazy,
     regex::Regex,
     serde::{Deserialize, Serialize},
     std::collections::HashMap,
 };
 
+pub mod attributes;
 pub mod lookup;
 pub mod register;
 pub mod reverse;
 pub mod utils;
+
+/// List of supported Ethereum chains in ENSIP-11 format
+#[repr(u32)]
+#[derive(Debug, Clone, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
+enum Eip155SupportedChains {
+    EthereumMainnet = 60,
+}
 
 pub const UNIXTIMESTAMP_SYNC_THRESHOLD: u64 = 10;
 
@@ -33,6 +42,16 @@ pub struct RegisterPayload {
     pub name: String,
     /// Attributes
     pub attributes: Option<HashMap<String, String>>,
+    /// Unixtime
+    pub timestamp: u64,
+}
+
+/// Payload to update name attributes that should be serialized to JSON and
+/// signed
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateAttributesPayload {
+    /// Attributes
+    pub attributes: HashMap<String, String>,
     /// Unixtime
     pub timestamp: u64,
 }

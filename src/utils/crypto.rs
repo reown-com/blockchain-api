@@ -55,14 +55,18 @@ pub fn string_chain_id_to_caip2_format(chain_id: &str) -> Result<String, anyhow:
     ))
 }
 
-/// Compare two strings in constant time to prevent timing attacks
-pub fn constant_time_eq(a: &str, b: &str) -> bool {
-    if a.len() != b.len() {
+/// Compare two values (either H160 or &str) in constant time to prevent timing
+/// attacks
+pub fn constant_time_eq(a: impl AsRef<[u8]>, b: impl AsRef<[u8]>) -> bool {
+    let a_bytes = a.as_ref();
+    let b_bytes = b.as_ref();
+
+    if a_bytes.len() != b_bytes.len() {
         return false;
     }
 
     let mut result = 0;
-    for (byte_a, byte_b) in a.bytes().zip(b.bytes()) {
+    for (byte_a, byte_b) in a_bytes.iter().zip(b_bytes.iter()) {
         result |= byte_a ^ byte_b;
     }
 
