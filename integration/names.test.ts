@@ -7,8 +7,7 @@ describe('Account profile names', () => {
   // Generate a new eth wallet
   const wallet = ethers.Wallet.createRandom();
   const address = wallet.address;
-  const coin_type = 60; // SLIP-44 Ethereum
-  const chain_id = 1; // Ethereum mainnet
+  const coin_type = 60; // ENSIP-11 Ethereum Mainnet
   const attributes = {
     bio: 'integration test domain',
   };
@@ -22,8 +21,6 @@ describe('Account profile names', () => {
   const messageObject = {
       name,
       coin_type,
-      chain_id,
-      address,
       attributes,
       timestamp: Math.round(Date.now() / 1000)
   };
@@ -40,7 +37,7 @@ describe('Account profile names', () => {
       address,
     };
     let resp: any = await httpClient.post(
-      `${baseUrl}/v1/profile/account/${name}`,
+      `${baseUrl}/v1/profile/account`,
       payload
     )
     expect(resp.status).toBe(401)
@@ -63,7 +60,7 @@ describe('Account profile names', () => {
       address,
     };
     let resp: any = await httpClient.post(
-      `${baseUrl}/v1/profile/account/${name}`,
+      `${baseUrl}/v1/profile/account`,
       payload
     )
     expect(resp.status).toBe(400)
@@ -80,7 +77,7 @@ describe('Account profile names', () => {
       address,
     };
     let resp: any = await httpClient.post(
-      `${baseUrl}/v1/profile/account/${name}`,
+      `${baseUrl}/v1/profile/account`,
       payload
     )
     expect(resp.status).toBe(200)
@@ -96,23 +93,7 @@ describe('Account profile names', () => {
       address,
     };
     let resp: any = await httpClient.post(
-      `${baseUrl}/v1/profile/account/${name}`,
-      payload
-    )
-    expect(resp.status).toBe(400)
-  })
-  it('inconsistent payload', async () => {
-    // Name in payload is different from the one in the request path
-    const signature = await wallet.signMessage(message);
-
-    const payload = {
-      message,
-      signature,
-      coin_type,
-      address,
-    };
-    let resp: any = await httpClient.post(
-      `${baseUrl}/v1/profile/account/someothername.connect.id`,
+      `${baseUrl}/v1/profile/account`,
       payload
     )
     expect(resp.status).toBe(400)

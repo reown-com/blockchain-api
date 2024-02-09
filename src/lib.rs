@@ -215,17 +215,17 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/account/:address/portfolio",
             get(handlers::portfolio::handler),
         )
-        // Forward lookup
+        // Register account name
+        .route(
+            "/v1/profile/account",
+            post(handlers::profile::register::handler),
+        )
+        // Forward address lookup
         .route(
             "/v1/profile/account/:name",
             get(handlers::profile::lookup::handler),
         )
-        // Register
-        .route(
-            "/v1/profile/account/:name",
-            post(handlers::profile::register::handler),
-        )
-        // Reverse lookup
+        // Reverse name lookup
         .route(
             "/v1/profile/reverse/:address",
             get(handlers::profile::reverse::handler),
