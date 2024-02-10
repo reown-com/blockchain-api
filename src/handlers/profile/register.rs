@@ -1,10 +1,16 @@
 use {
     super::{
         super::HANDLER_TASK_METRICS,
-        utils::{check_attributes, is_timestamp_within_interval},
+        utils::{
+            check_attributes,
+            is_name_format_correct,
+            is_name_in_allowed_zones,
+            is_timestamp_within_interval,
+        },
         Eip155SupportedChains,
         RegisterPayload,
         RegisterRequest,
+        ALLOWED_ZONES,
         UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{
@@ -51,6 +57,18 @@ pub async fn handler_internal(
             return Ok((StatusCode::BAD_REQUEST, "").into_response());
         }
     };
+
+    // Check if the name is in the correct format
+    if !is_name_format_correct(&payload.name) {
+        info!("Invalid name format: {}", payload.name);
+        return Ok((StatusCode::BAD_REQUEST, "Invalid name format").into_response());
+    }
+
+    // Check is name in the allowed zones
+    if !is_name_in_allowed_zones(&payload.name, &ALLOWED_ZONES) {
+        info!("Name is not in the allowed zones");
+        return Ok((StatusCode::BAD_REQUEST, "Name is not in the allowed zones").into_response());
+    }
 
     // Check for the supported ENSIP-11 coin type
     if Eip155SupportedChains::try_from_primitive(register_request.coin_type).is_err() {

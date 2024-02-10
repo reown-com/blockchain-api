@@ -57,6 +57,23 @@ pub fn check_attributes(
     })
 }
 
+/// Check if the given name is in the allowed zones
+pub fn is_name_in_allowed_zones(name: &str, allowed_zones: &[&str]) -> bool {
+    let name_parts: Vec<&str> = name.split('.').collect();
+    if name_parts.len() != 3 {
+        return false;
+    }
+    let tld = format!("{}.{}", name_parts[1], name_parts[2]);
+    allowed_zones.contains(&tld.as_str())
+}
+
+/// Check if the given name is in the correct format
+pub fn is_name_format_correct(name: &str) -> bool {
+    let domain_regex = Regex::new(r"^[a-zA-Z0-9.-]+$").unwrap();
+
+    domain_regex.is_match(name)
+}
+
 #[cfg(test)]
 mod tests {
     use {
@@ -160,5 +177,34 @@ mod tests {
             &SUPPORTED_ATTRIBUTES,
             ATTRIBUTES_VALUE_MAX_LENGTH,
         ));
+    }
+
+    #[test]
+    fn test_is_name_in_allowed_zones() {
+        let allowed_zones = ["eth.link", "ens.domains"];
+
+        let mut valid_name = "test.eth.link";
+        assert!(is_name_in_allowed_zones(valid_name, &allowed_zones));
+
+        valid_name = "some.ens.domains";
+        assert!(is_name_in_allowed_zones(valid_name, &allowed_zones));
+
+        let mut invalid_name = "test.com";
+        assert!(!is_name_in_allowed_zones(invalid_name, &allowed_zones));
+
+        invalid_name = "eth.link";
+        assert!(!is_name_in_allowed_zones(invalid_name, &allowed_zones));
+
+        invalid_name = "test.some.link";
+        assert!(!is_name_in_allowed_zones(invalid_name, &allowed_zones));
+    }
+
+    #[test]
+    fn test_is_name_format_correct() {
+        let valid_name = "test.eth.link";
+        assert!(is_name_format_correct(valid_name));
+
+        let invalid_name = "test*.eth.link";
+        assert!(!is_name_format_correct(invalid_name));
     }
 }

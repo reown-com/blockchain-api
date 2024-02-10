@@ -15,7 +15,8 @@ describe('Account profile names', () => {
   // Generate a random name
   const randomString = Array.from({ length: 10 }, 
     () => (Math.random().toString(36)[2] || '0')).join('')
-  const name = `${randomString}.connect.test`;
+  const zone = 'wc.ink';
+  const name = `integration-test-${randomString}.${zone}`;
 
   // Create a message to sign
   const registerMessageObject = {
@@ -50,6 +51,52 @@ describe('Account profile names', () => {
       timestamp: Math.round(Date.now() / 1000)
     };
     const message = JSON.stringify(wrongAttributesMessageObject);
+    const signature = await wallet.signMessage(message);
+
+    const payload = {
+      message,
+      signature,
+      coin_type,
+      address,
+    };
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account`,
+      payload
+    )
+    expect(resp.status).toBe(400)
+  })
+
+  it('register with wrong name format', async () => {
+    // Create a message to sign with wrong name format
+    const wrongNameFormatMessageObject = {
+      name: `!name.${zone}`,
+      attributes: { bio: 'some attribute name' },
+      timestamp: Math.round(Date.now() / 1000)
+    };
+    const message = JSON.stringify(wrongNameFormatMessageObject);
+    const signature = await wallet.signMessage(message);
+
+    const payload = {
+      message,
+      signature,
+      coin_type,
+      address,
+    };
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account`,
+      payload
+    )
+    expect(resp.status).toBe(400)
+  })
+
+  it('register with wrong name zone', async () => {
+    // Create a message to sign with wrong name format
+    const wrongNameZoneMessageObject = {
+      name: `${name}.connect.id`,
+      attributes: { bio: 'some attribute name' },
+      timestamp: Math.round(Date.now() / 1000)
+    };
+    const message = JSON.stringify(wrongNameZoneMessageObject);
     const signature = await wallet.signMessage(message);
 
     const payload = {

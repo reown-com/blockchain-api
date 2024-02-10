@@ -1,5 +1,9 @@
 use {
-    super::super::HANDLER_TASK_METRICS,
+    super::{
+        super::HANDLER_TASK_METRICS,
+        utils::{is_name_format_correct, is_name_in_allowed_zones},
+        ALLOWED_ZONES,
+    },
     crate::{database::helpers::get_name_and_addresses_by_name, error::RpcError, state::AppState},
     axum::{
         extract::{Path, State},
@@ -27,6 +31,16 @@ async fn handler_internal(
     state: State<Arc<AppState>>,
     Path(name): Path<String>,
 ) -> Result<Response, RpcError> {
+    // Check if the name is in the correct format
+    if !is_name_format_correct(&name) {
+        return Ok((StatusCode::BAD_REQUEST, "Invalid name format").into_response());
+    }
+
+    // Check is name in the allowed zones
+    if !is_name_in_allowed_zones(&name, &ALLOWED_ZONES) {
+        return Ok((StatusCode::BAD_REQUEST, "Name is not in the allowed zones").into_response());
+    }
+
     match get_name_and_addresses_by_name(name, &state.postgres).await {
         Ok(response) => Ok(Json(response).into_response()),
         Err(e) => match e {
