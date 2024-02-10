@@ -24,6 +24,7 @@ use {
         OmniatechConfig,
         PoktConfig,
         PublicnodeConfig,
+        QuicknodeConfig,
         ZKSyncConfig,
         ZoraConfig,
     },
@@ -40,6 +41,7 @@ use {
         PoktProvider,
         ProviderRepository,
         PublicnodeProvider,
+        QuicknodeProvider,
         ZKSyncProvider,
         ZoraProvider,
         ZoraWsProvider,
@@ -213,17 +215,27 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/account/:address/portfolio",
             get(handlers::portfolio::handler),
         )
-        // Forward lookup
+        // Register account name
+        .route(
+            "/v1/profile/account",
+            post(handlers::profile::register::handler),
+        )
+         // Update account name attributes
+         .route(
+            "/v1/profile/account/:name/attributes",
+            post(handlers::profile::attributes::handler),
+        )
+        // Update account name address
+        .route(
+            "/v1/profile/account/:name/address",
+            post(handlers::profile::address::handler),
+        )
+        // Forward address lookup
         .route(
             "/v1/profile/account/:name",
             get(handlers::profile::lookup::handler),
         )
-        // Register
-        .route(
-            "/v1/profile/account/:name",
-            post(handlers::profile::register::handler),
-        )
-        // Reverse lookup
+        // Reverse name lookup
         .route(
             "/v1/profile/reverse/:address",
             get(handlers::profile::reverse::handler),
@@ -322,6 +334,9 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_provider::<OmniatechProvider, OmniatechConfig>(OmniatechConfig::default());
     providers.add_provider::<ZKSyncProvider, ZKSyncConfig>(ZKSyncConfig::default());
     providers.add_provider::<PublicnodeProvider, PublicnodeConfig>(PublicnodeConfig::default());
+    providers.add_provider::<QuicknodeProvider, QuicknodeConfig>(QuicknodeConfig::new(
+        config.quicknode_api_token.clone(),
+    ));
     providers.add_provider::<InfuraProvider, InfuraConfig>(InfuraConfig::new(
         config.infura_project_id.clone(),
     ));

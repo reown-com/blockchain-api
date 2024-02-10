@@ -1,10 +1,7 @@
 use {
-    crate::{
-        database::{error::DatabaseError, types, utils},
-        utils::crypto::convert_evm_chain_id_to_coin_type,
-    },
+    crate::database::{error::DatabaseError, types, utils},
     chrono::{DateTime, Utc},
-    sqlx::{PgPool, Postgres},
+    sqlx::{PgPool, Postgres, Row},
     std::collections::HashMap,
     tracing::{error, instrument},
 };
@@ -44,7 +41,7 @@ pub async fn insert_name(
         .await?;
 
     for address in addresses {
-        insert_address(
+        insert_or_update_address(
             name.clone(),
             namespace.clone(),
             format!("{}", address.0),
@@ -71,21 +68,29 @@ pub async fn delete_name(
 }
 
 #[instrument(skip(postgres))]
-pub async fn update_name(
+pub async fn update_name_attributes(
     name: String,
     attributes: HashMap<String, String>,
     postgres: &PgPool,
-) -> Result<sqlx::postgres::PgQueryResult, sqlx::error::Error> {
-    let insert_name_query = "
+) -> Result<HashMap<String, String>, DatabaseError> {
+    let update_attributes_query = "
       UPDATE names SET attributes = $2::hstore, updated_at = NOW()
-        WHERE name = $1
+        WHERE name = $1 
+        RETURNING attributes::json
     ";
-    sqlx::query::<Postgres>(insert_name_query)
+    let row = sqlx::query(update_attributes_query)
         .bind(&name)
-        // Convert JSON to String for hstore update
         .bind(&utils::hashmap_to_hstore(&attributes))
-        .execute(postgres)
-        .await
+        .fetch_one(postgres)
+        .await?;
+    let result: serde_json::Value = row.get(0);
+    let updated_attributes_result: Result<HashMap<String, String>, DatabaseError> =
+        serde_json::from_value(result.clone()).map_err(|e| {
+            error!("Failed to deserialize updated attributes: {}", e);
+            DatabaseError::SerdeJson(e)
+        });
+
+    updated_attributes_result
 }
 
 #[instrument(skip(postgres))]
@@ -149,17 +154,13 @@ pub async fn get_addresses_by_name(
             continue;
         }
 
-        // Return 60 for the ETH mainnet and ENSIP-11 chain ID for other
-        let ensip11_chain_id = if row.chain_id == "1" {
-            60
-        } else {
-            convert_evm_chain_id_to_coin_type(row.chain_id.parse::<u32>().unwrap_or_default())
-        };
-
-        result_map.insert(ensip11_chain_id, types::Address {
-            address: row.address,
-            created_at: Some(row.created_at),
-        });
+        result_map.insert(
+            row.chain_id.parse::<u32>().unwrap_or_default(),
+            types::Address {
+                address: row.address,
+                created_at: Some(row.created_at),
+            },
+        );
     }
 
     Ok(result_map)
@@ -244,23 +245,36 @@ pub async fn delete_address(
 }
 
 #[instrument(skip(postgres))]
-pub async fn insert_address<'e>(
+pub async fn insert_or_update_address<'e>(
     name: String,
     namespace: types::SupportedNamespaces,
     chain_id: String,
     address: String,
     postgres: impl sqlx::PgExecutor<'e>,
-) -> Result<sqlx::postgres::PgQueryResult, sqlx::error::Error> {
-    let query = sqlx::query::<Postgres>(
-        "
+) -> Result<types::ENSIP11AddressesMap, sqlx::error::Error> {
+    let insert_or_update_query = "
         INSERT INTO addresses (name, namespace, chain_id, address)
         VALUES ($1, $2, $3, $4)
-        ",
-    )
-    .bind(&name)
-    .bind(&namespace)
-    .bind(chain_id)
-    .bind(&address);
+        ON CONFLICT (name, namespace, chain_id, address) DO UPDATE
+        SET address = EXCLUDED.address, created_at = NOW()
+        RETURNING *
+        ";
+    let row_result = sqlx::query_as::<Postgres, RowAddress>(insert_or_update_query)
+        .bind(&name)
+        .bind(&namespace)
+        .bind(chain_id)
+        .bind(&address)
+        .fetch_one(postgres)
+        .await?;
 
-    query.execute(postgres).await
+    let mut result_map = types::ENSIP11AddressesMap::new();
+    result_map.insert(
+        row_result.chain_id.parse::<u32>().unwrap_or_default(),
+        types::Address {
+            address: row_result.address,
+            created_at: Some(row_result.created_at),
+        },
+    );
+
+    Ok(result_map)
 }

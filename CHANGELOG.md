@@ -2,6 +2,64 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.23.0 - 2024-02-09
+#### Features
+- **(ens)** updating name address handler (#510) - (1ff2211) - Max Kalashnikoff
+
+- - -
+
+## 0.22.0 - 2024-02-09
+#### Features
+- **(ens)** updating name attributes handler (#509) - (725961b) - Max Kalashnikoff
+
+- - -
+
+## 0.21.2 - 2024-02-09
+#### Bug Fixes
+- **(ens)** register name endpoint cleanup (#505) - (fc4c07b) - Max Kalashnikoff
+
+- - -
+
+## 0.21.1 - 2024-02-07
+#### Bug Fixes
+- removing unwraps from the WeightedIndex (#508) - (e1228ff) - Max Kalashnikoff
+
+- - -
+
+## 0.21.0 - 2024-02-07
+#### Features
+- **(providers)** adding Base for Pokt and Publicnode providers (#506) - (d0acd3c) - Max Kalashnikoff
+
+- - -
+
+## 0.20.0 - 2024-02-07
+#### Features
+- **(analytics)** extracting onramp transactions history analytics (#498) - (7b58903) - Max Kalashnikoff
+
+- - -
+
+## 0.19.1 - 2024-02-07
+#### Bug Fixes
+- respond with temporary unavailable when no working providers found (#507) - (f0f905f) - Max Kalashnikoff
+
+- - -
+
+## 0.19.0 - 2024-02-07
+#### Bug Fixes
+- **(ci)** bump ci_workflows version (#504) - (a46cdfa) - Max Kalashnikoff
+#### Features
+- **(ens)** checking for supported attributes (#497) - (a46130f) - Max Kalashnikoff
+- **(grafana)** adding Aurora and Quicknode providers dashboards (#501) - (f060240) - Max Kalashnikoff
+- **(testsing)** splitting integration tests (#503) - (3b0c4dd) - Max Kalashnikoff
+
+- - -
+
+## 0.18.0 - 2024-02-05
+#### Features
+- **(providers)** adding the Quicknode provider for zkSync (#500) - (d1ca64c) - Max Kalashnikoff
+
+- - -
+
 ## 0.17.1 - 2024-02-02
 #### Bug Fixes
 - **(ci)** fixing the new integration test error from 400 to 401 (#495) - (763323b) - Max Kalashnikoff

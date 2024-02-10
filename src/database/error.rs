@@ -6,4 +6,6 @@ pub enum DatabaseError {
     BadArgument(String),
     #[error("Address required: {0}")]
     AddressRequired(String),
+    #[error("{0:?}")]
+    SerdeJson(#[from] serde_json::Error),
 }

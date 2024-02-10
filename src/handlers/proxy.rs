@@ -85,10 +85,7 @@ async fn handler_internal(
 
             provider
         }
-        None => state
-            .providers
-            .get_provider_for_chain_id(&chain_id)
-            .ok_or_else(|| RpcError::UnsupportedChain(chain_id.clone()))?,
+        None => state.providers.get_provider_for_chain_id(&chain_id)?,
     };
 
     Span::current().record("provider", &provider.provider_kind().to_string());

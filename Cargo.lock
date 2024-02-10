@@ -3985,7 +3985,7 @@ dependencies = [
 
 [[package]]
 name = "rpc-proxy"
-version = "0.17.1"
+version = "0.23.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4007,12 +4007,14 @@ dependencies = [
  "hyper-tls",
  "ipnet",
  "jsonrpc",
+ "num_enum",
  "once_cell",
  "parquet",
  "parquet_derive",
  "pnet_datalink",
  "prometheus-http-query",
  "rand",
+ "regex",
  "rmp-serde",
  "serde",
  "serde-aux",

@@ -1,7 +1,8 @@
 use {
     super::{
         super::HANDLER_TASK_METRICS,
-        is_timestamp_within_interval,
+        utils::{check_attributes, is_timestamp_within_interval},
+        Eip155SupportedChains,
         RegisterPayload,
         RegisterRequest,
         UNIXTIMESTAMP_SYNC_THRESHOLD,
@@ -16,12 +17,12 @@ use {
         utils::crypto::verify_message_signature,
     },
     axum::{
-        body::Bytes,
-        extract::{Path, State},
+        extract::State,
         response::{IntoResponse, Response},
         Json,
     },
     hyper::StatusCode,
+    num_enum::TryFromPrimitive,
     sqlx::Error as SqlxError,
     std::{collections::HashMap, str::FromStr, sync::Arc},
     tracing::log::{error, info},
@@ -30,10 +31,9 @@ use {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
-    name: Path<String>,
-    body: Bytes,
+    Json(register_request): Json<RegisterRequest>,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, name, body)
+    handler_internal(state, register_request)
         .with_metrics(HANDLER_TASK_METRICS.with_name("profile_register"))
         .await
 }
@@ -41,18 +41,8 @@ pub async fn handler(
 #[tracing::instrument(skip(state))]
 pub async fn handler_internal(
     state: State<Arc<AppState>>,
-    Path(name): Path<String>,
-    body: Bytes,
+    register_request: RegisterRequest,
 ) -> Result<Response, RpcError> {
-    // Check the request body format
-    let register_request = match serde_json::from_slice::<RegisterRequest>(&body) {
-        Ok(register_request_payload) => register_request_payload,
-        Err(e) => {
-            info!("Failed to deserialize register request: {}", e);
-            return Ok((StatusCode::BAD_REQUEST, "").into_response());
-        }
-    };
-
     let raw_payload = &register_request.message;
     let payload = match serde_json::from_str::<RegisterPayload>(raw_payload) {
         Ok(payload) => payload,
@@ -62,42 +52,25 @@ pub async fn handler_internal(
         }
     };
 
-    if payload.name != name {
+    // Check for the supported ENSIP-11 coin type
+    if Eip155SupportedChains::try_from_primitive(register_request.coin_type).is_err() {
+        info!("Unsupported coin type {}", register_request.coin_type);
         return Ok((
             StatusCode::BAD_REQUEST,
-            "Name in payload and path are not equal",
+            "Unsupported coin type for name registration",
         )
             .into_response());
-    }
-
-    if payload.address != register_request.address {
-        return Ok((
-            StatusCode::BAD_REQUEST,
-            "Address in payload request and message are not equal",
-        )
-            .into_response());
-    }
-
-    if payload.coin_type != register_request.coin_type {
-        return Ok((
-            StatusCode::BAD_REQUEST,
-            "Coin type in payload request and message are not equal",
-        )
-            .into_response());
-    }
-
-    // Check for the supported SLIP-44 coin types
-    if SupportedNamespaces::from_slip44(payload.coin_type).is_none() {
-        info!("Unsupported coin type {}", payload.coin_type);
-        return Ok((StatusCode::BAD_REQUEST, "Unsupported coin type").into_response());
     }
 
     // Check is name already registered
-    if get_name_and_addresses_by_name(name.clone(), &state.postgres.clone())
+    if get_name_and_addresses_by_name(payload.name.clone(), &state.postgres.clone())
         .await
         .is_ok()
     {
-        info!("Registration request for registered name {}", name.clone());
+        info!(
+            "Registration request for already registered name {}",
+            payload.name.clone()
+        );
         return Ok((StatusCode::BAD_REQUEST, "Name is already registered").into_response());
     };
 
@@ -118,6 +91,22 @@ pub async fn handler_internal(
         }
     };
 
+    // Check for supported attributes
+    if let Some(attributes) = payload.attributes.clone() {
+        if !check_attributes(
+            &attributes,
+            &super::SUPPORTED_ATTRIBUTES,
+            super::ATTRIBUTES_VALUE_MAX_LENGTH,
+        ) {
+            return Ok((
+                StatusCode::BAD_REQUEST,
+                "Unsupported attribute in
+        payload",
+            )
+                .into_response());
+        }
+    }
+
     // Check the signature
     let sinature_check =
         match verify_message_signature(raw_payload, &register_request.signature, &owner) {
@@ -136,13 +125,13 @@ pub async fn handler_internal(
     }
 
     // Register (insert) a new domain with address
-    let addresses: ENSIP11AddressesMap = HashMap::from([(payload.chain_id, Address {
-        address: payload.address,
+    let addresses: ENSIP11AddressesMap = HashMap::from([(register_request.coin_type, Address {
+        address: register_request.address,
         created_at: None,
     })]);
 
     let insert_result = insert_name(
-        name.clone(),
+        payload.name.clone(),
         payload.attributes.unwrap_or(HashMap::new()),
         SupportedNamespaces::Eip155,
         addresses,
@@ -155,7 +144,7 @@ pub async fn handler_internal(
     }
 
     // Return the registered name and addresses
-    match get_name_and_addresses_by_name(name, &state.postgres.clone()).await {
+    match get_name_and_addresses_by_name(payload.name, &state.postgres.clone()).await {
         Ok(response) => Ok(Json(response).into_response()),
         Err(e) => match e {
             SqlxError::RowNotFound => {

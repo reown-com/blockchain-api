@@ -18,6 +18,7 @@ pub use {
     omnia::*,
     pokt::*,
     publicnode::*,
+    quicknode::*,
     server::*,
     zksync::*,
     zora::*,
@@ -29,6 +30,7 @@ mod infura;
 mod omnia;
 mod pokt;
 mod publicnode;
+mod quicknode;
 mod server;
 mod zksync;
 mod zora;
@@ -134,6 +136,10 @@ mod test {
             ("RPC_PROXY_PROVIDER_INFURA_PROJECT_ID", "INFURA_PROJECT_ID"),
             ("RPC_PROXY_PROVIDER_POKT_PROJECT_ID", "POKT_PROJECT_ID"),
             ("RPC_PROXY_PROVIDER_ZERION_API_KEY", "ZERION_API_KEY"),
+            (
+                "RPC_PROXY_PROVIDER_QUICKNODE_API_TOKEN",
+                "QUICKNODE_API_TOKEN",
+            ),
             ("RPC_PROXY_PROVIDER_COINBASE_API_KEY", "COINBASE_API_KEY"),
             ("RPC_PROXY_PROVIDER_COINBASE_APP_ID", "COINBASE_APP_ID"),
             (
@@ -200,6 +206,7 @@ mod test {
                 prometheus_workspace_header: Some("PROMETHEUS_WORKSPACE_HEADER".to_owned()),
                 infura_project_id: "INFURA_PROJECT_ID".to_string(),
                 pokt_project_id: "POKT_PROJECT_ID".to_string(),
+                quicknode_api_token: "QUICKNODE_API_TOKEN".to_string(),
                 zerion_api_key: Some("ZERION_API_KEY".to_owned()),
                 coinbase_api_key: Some("COINBASE_API_KEY".to_owned()),
                 coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),

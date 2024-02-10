@@ -9,9 +9,9 @@ use {
             get_name_and_addresses_by_name,
             get_names_by_address,
             get_names_by_address_and_namespace,
-            insert_address,
             insert_name,
-            update_name,
+            insert_or_update_address,
+            update_name_attributes,
         },
         types,
     },
@@ -150,9 +150,8 @@ async fn insert_and_get_name_and_addresses() {
     let name = format!("{}.connect.id", generate_random_string(10));
     let address = format!("0x{}", generate_random_string(16));
     let namespace = types::SupportedNamespaces::Eip155;
-    let chain_id = 1;
     let expected_ensip11_coin_type = 60;
-    let addresses = HashMap::from([(chain_id, types::Address {
+    let addresses = HashMap::from([(expected_ensip11_coin_type, types::Address {
         address: address.clone(),
         created_at: None,
     })]);
@@ -242,7 +241,8 @@ async fn insert_and_update_name_attributes() {
     // Updating the name with new attributes
     let updated_attributes: HashMap<String, String> =
         HashMap::from_iter([("GitHub".to_string(), "SomeProfile".to_string())]);
-    let updated_result = update_name(name.clone(), updated_attributes.clone(), &pg_pool).await;
+    let updated_result =
+        update_name_attributes(name.clone(), updated_attributes.clone(), &pg_pool).await;
     assert!(updated_result.is_ok(), "Updating name should succeed");
 
     let got_update_name = get_name(name.clone(), &pg_pool).await.unwrap();
@@ -293,7 +293,7 @@ async fn insert_delete_two_addresses() {
     // Inserting a new address
     chain_id = 137;
     let new_address = format!("0x{}", generate_random_string(16));
-    let insert_address_result = insert_address(
+    let insert_address_result = insert_or_update_address(
         name.clone(),
         types::SupportedNamespaces::Eip155,
         format!("{}", chain_id),

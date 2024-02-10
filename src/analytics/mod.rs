@@ -18,18 +18,21 @@ pub use {
     history_lookup_info::HistoryLookupInfo,
     identity_lookup_info::IdentityLookupInfo,
     message_info::MessageInfo,
+    onramp_history_lookup_info::OnrampHistoryLookupInfo,
 };
 
 mod config;
 mod history_lookup_info;
 mod identity_lookup_info;
 mod message_info;
+mod onramp_history_lookup_info;
 
 #[derive(Clone)]
 pub struct RPCAnalytics {
     messages: Analytics<MessageInfo>,
     identity_lookups: Analytics<IdentityLookupInfo>,
     history_lookups: Analytics<HistoryLookupInfo>,
+    onramp_history_lookups: Analytics<OnrampHistoryLookupInfo>,
     geoip_resolver: Option<Arc<MaxMindResolver>>,
 }
 
@@ -56,6 +59,7 @@ impl RPCAnalytics {
             messages: Analytics::new(NoopCollector),
             identity_lookups: Analytics::new(NoopCollector),
             history_lookups: Analytics::new(NoopCollector),
+            onramp_history_lookups: Analytics::new(NoopCollector),
             geoip_resolver: None,
         }
     }
@@ -106,6 +110,19 @@ impl RPCAnalytics {
                 export_prefix: "blockchain-api/history-lookups",
                 export_name: "history_lookups",
                 file_extension: "parquet",
+                bucket_name: bucket_name.clone(),
+                s3_client: s3_client.clone(),
+                node_ip: node_ip.clone(),
+            });
+
+            Analytics::new(ParquetWriter::new(opts.clone(), exporter)?)
+        };
+
+        let onramp_history_lookups = {
+            let exporter = AwsExporter::new(AwsOpts {
+                export_prefix: "blockchain-api/onramp-history-lookups",
+                export_name: "onramp-history_lookups",
+                file_extension: "parquet",
                 bucket_name,
                 s3_client,
                 node_ip,
@@ -118,6 +135,7 @@ impl RPCAnalytics {
             messages,
             identity_lookups,
             history_lookups,
+            onramp_history_lookups,
             geoip_resolver,
         })
     }
@@ -132,6 +150,10 @@ impl RPCAnalytics {
 
     pub fn history_lookup(&self, data: HistoryLookupInfo) {
         self.history_lookups.collect(data);
+    }
+
+    pub fn onramp_history_lookup(&self, data: OnrampHistoryLookupInfo) {
+        self.onramp_history_lookups.collect(data);
     }
 
     pub fn geoip_resolver(&self) -> &Option<Arc<MaxMindResolver>> {

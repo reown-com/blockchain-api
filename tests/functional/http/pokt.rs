@@ -29,6 +29,24 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     )
     .await;
 
+    // Base mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Pokt,
+        "eip155:8453",
+        "0x2105",
+    )
+    .await;
+
+    // Base testnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Pokt,
+        "eip155:84531",
+        "0x14a33",
+    )
+    .await;
+
     // Binance mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,

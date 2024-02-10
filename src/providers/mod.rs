@@ -20,7 +20,7 @@ use {
         hash::Hash,
         sync::Arc,
     },
-    tracing::{info, log::warn},
+    tracing::{error, info, log::warn},
     wc::metrics::TaskMetrics,
 };
 
@@ -32,6 +32,7 @@ mod infura;
 mod omnia;
 mod pokt;
 mod publicnode;
+mod quicknode;
 mod weights;
 pub mod zerion;
 mod zksync;
@@ -45,6 +46,7 @@ pub use {
     omnia::OmniatechProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
+    quicknode::QuicknodeProvider,
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
 };
@@ -60,6 +62,8 @@ pub struct ProvidersConfig {
 
     pub infura_project_id: String,
     pub pokt_project_id: String,
+    pub quicknode_api_token: String,
+
     pub zerion_api_key: Option<String>,
     pub coinbase_api_key: Option<String>,
     pub coinbase_app_id: Option<String>,
@@ -138,13 +142,16 @@ impl ProviderRepository {
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
-    pub fn get_provider_for_chain_id(&self, chain_id: &str) -> Option<Arc<dyn RpcProvider>> {
+    pub fn get_provider_for_chain_id(
+        &self,
+        chain_id: &str,
+    ) -> Result<Arc<dyn RpcProvider>, RpcError> {
         let Some(providers) = self.weight_resolver.get(chain_id) else {
-            return None;
+            return Err(RpcError::UnsupportedChain(chain_id.to_string()));
         };
 
         if providers.is_empty() {
-            return None;
+            return Err(RpcError::UnsupportedChain(chain_id.to_string()));
         }
 
         let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.value()).collect();
@@ -152,13 +159,24 @@ impl ProviderRepository {
         match WeightedIndex::new(weights) {
             Ok(dist) => {
                 let random = dist.sample(&mut OsRng);
-                let provider = keys.get(random).unwrap();
+                let provider = keys.get(random).ok_or_else(|| {
+                    error!("Failed to get random provider for chain_id: {}", chain_id);
+                    RpcError::UnsupportedChain(chain_id.to_string())
+                })?;
 
-                self.providers.get(provider).cloned()
+                self.providers.get(provider).cloned().ok_or_else(|| {
+                    error!(
+                        "Provider not found during the weighted index check: {}",
+                        provider
+                    );
+                    RpcError::UnsupportedProvider(provider.to_string())
+                })
             }
             Err(e) => {
+                // Respond with temporarily unavailable when all weights are 0 for
+                // a chain providers
                 warn!("Failed to create weighted index: {}", e);
-                None
+                Err(RpcError::ChainTemporarilyUnavailable(chain_id.to_string()))
             }
         }
     }
@@ -290,6 +308,7 @@ pub enum ProviderKind {
     Zora,
     Zerion,
     Coinbase,
+    Quicknode,
 }
 
 impl Display for ProviderKind {
@@ -306,6 +325,7 @@ impl Display for ProviderKind {
             ProviderKind::Zora => "Zora",
             ProviderKind::Zerion => "Zerion",
             ProviderKind::Coinbase => "Coinbase",
+            ProviderKind::Quicknode => "Quicknode",
         })
     }
 }
@@ -325,6 +345,7 @@ impl ProviderKind {
             "Zora" => Some(Self::Zora),
             "Zerion" => Some(Self::Zerion),
             "Coinbase" => Some(Self::Coinbase),
+            "Quicknode" => Some(Self::Quicknode),
             _ => None,
         }
     }

@@ -1,7 +1,7 @@
 use {
     super::HANDLER_TASK_METRICS,
     crate::{
-        analytics::HistoryLookupInfo,
+        analytics::{HistoryLookupInfo, OnrampHistoryLookupInfo},
         error::RpcError,
         providers::ProviderKind,
         state::AppState,
@@ -183,64 +183,100 @@ async fn handler_internal(
         .unwrap_or(std::time::Duration::from_secs(0));
     state.metrics.add_history_lookup(&history_provider);
 
-    {
-        let origin = headers
-            .get("origin")
-            .map(|v| v.to_str().unwrap_or("invalid_header").to_string());
+    let origin = headers
+        .get("origin")
+        .map(|v| v.to_str().unwrap_or("invalid_header").to_string());
 
-        let (country, continent, region) = state
-            .analytics
-            .lookup_geo_data(
-                network::get_forwarded_ip(headers).unwrap_or_else(|| connect_info.0.ip()),
-            )
-            .map(|geo| (geo.country, geo.continent, geo.region))
-            .unwrap_or((None, None, None));
+    let (country, continent, region) = state
+        .analytics
+        .lookup_geo_data(network::get_forwarded_ip(headers).unwrap_or_else(|| connect_info.0.ip()))
+        .map(|geo| (geo.country, geo.continent, geo.region))
+        .unwrap_or((None, None, None));
 
-        state.analytics.history_lookup(HistoryLookupInfo::new(
-            address,
-            project_id,
-            response.data.len(),
-            latency_tracker,
-            response
-                .data
-                .iter()
-                .map(|transaction| transaction.transfers.as_ref().map(|v| v.len()).unwrap_or(0))
-                .sum(),
-            response
-                .data
-                .iter()
-                .map(|transaction| {
-                    transaction
-                        .transfers
-                        .as_ref()
-                        .map(|v| {
-                            v.iter()
-                                .filter(|transfer| transfer.fungible_info.is_some())
-                                .count()
-                        })
-                        .unwrap_or(0)
-                })
-                .sum(),
-            response
-                .data
-                .iter()
-                .map(|transaction| {
-                    transaction
-                        .transfers
-                        .as_ref()
-                        .map(|v| {
-                            v.iter()
-                                .filter(|transfer| transfer.nft_info.is_some())
-                                .count()
-                        })
-                        .unwrap_or(0)
-                })
-                .sum(),
-            origin,
-            region,
-            country,
-            continent,
-        ));
+    // Different analytics for different history providers
+    match history_provider {
+        ProviderKind::Zerion => {
+            state.analytics.history_lookup(HistoryLookupInfo::new(
+                address,
+                project_id,
+                response.data.len(),
+                latency_tracker,
+                response
+                    .data
+                    .iter()
+                    .map(|transaction| transaction.transfers.as_ref().map(|v| v.len()).unwrap_or(0))
+                    .sum(),
+                response
+                    .data
+                    .iter()
+                    .map(|transaction| {
+                        transaction
+                            .transfers
+                            .as_ref()
+                            .map(|v| {
+                                v.iter()
+                                    .filter(|transfer| transfer.fungible_info.is_some())
+                                    .count()
+                            })
+                            .unwrap_or(0)
+                    })
+                    .sum(),
+                response
+                    .data
+                    .iter()
+                    .map(|transaction| {
+                        transaction
+                            .transfers
+                            .as_ref()
+                            .map(|v| {
+                                v.iter()
+                                    .filter(|transfer| transfer.nft_info.is_some())
+                                    .count()
+                            })
+                            .unwrap_or(0)
+                    })
+                    .sum(),
+                origin,
+                region,
+                country,
+                continent,
+            ));
+        }
+        ProviderKind::Coinbase => {
+            for transaction in response.clone().data {
+                state
+                    .analytics
+                    .onramp_history_lookup(OnrampHistoryLookupInfo::new(
+                        latency_tracker,
+                        address.clone(),
+                        project_id.clone(),
+                        origin.clone(),
+                        region.clone(),
+                        country.clone(),
+                        continent.clone(),
+                        transaction.metadata.status,
+                        transaction
+                            .transfers
+                            .as_ref()
+                            .map(|v| {
+                                v.first()
+                                    .and_then(|item| {
+                                        item.fungible_info.as_ref().map(|info| info.name.clone())
+                                    })
+                                    .unwrap_or_default()
+                            })
+                            .unwrap_or(None)
+                            .unwrap_or_default(),
+                        transaction.metadata.chain.clone().unwrap_or_default(),
+                        transaction
+                            .transfers
+                            .as_ref()
+                            .map(|v| v[0].quantity.numeric.clone())
+                            .unwrap_or_default(),
+                    ));
+            }
+        }
+        _ => {}
     }
 
     let latency_tracker = latency_tracker_start
