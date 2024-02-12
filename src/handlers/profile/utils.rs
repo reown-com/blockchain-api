@@ -1,5 +1,6 @@
 use {
     ethers::types::H160,
+    once_cell::sync::Lazy,
     regex::Regex,
     std::{
         collections::HashMap,
@@ -8,6 +9,13 @@ use {
     },
     tap::TapFallible,
 };
+
+static DOMAIN_FORMAT_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^[a-zA-Z0-9.-]+$").expect("Failed to initialize regexp for the domain format")
+});
+
+const NAME_MIN_LENGTH: usize = 5;
+const NAME_MAX_LENGTH: usize = 64;
 
 #[tracing::instrument]
 pub fn verify_message_signature(
@@ -55,6 +63,30 @@ pub fn check_attributes(
         }
         keys_allowed[key].is_match(value)
     })
+}
+
+/// Check if the given name is in the allowed zones
+pub fn is_name_in_allowed_zones(name: &str, allowed_zones: &[&str]) -> bool {
+    let name_parts: Vec<&str> = name.split('.').collect();
+    if name_parts.len() != 3 {
+        return false;
+    }
+    let tld = format!("{}.{}", name_parts[1], name_parts[2]);
+    allowed_zones.contains(&tld.as_str())
+}
+
+/// Check if the given name is in the correct format
+pub fn is_name_format_correct(name: &str) -> bool {
+    DOMAIN_FORMAT_REGEX.is_match(name)
+}
+
+/// Check the given name length
+pub fn is_name_length_correct(name: &str) -> bool {
+    let name_parts: Vec<&str> = name.split('.').collect();
+    if name_parts.len() != 3 {
+        return false;
+    }
+    name_parts[0].len() >= NAME_MIN_LENGTH && name_parts[0].len() <= NAME_MAX_LENGTH
 }
 
 #[cfg(test)]
@@ -160,5 +192,49 @@ mod tests {
             &SUPPORTED_ATTRIBUTES,
             ATTRIBUTES_VALUE_MAX_LENGTH,
         ));
+    }
+
+    #[test]
+    fn test_is_name_in_allowed_zones() {
+        let allowed_zones = ["eth.link", "ens.domains"];
+
+        let mut valid_name = "test.eth.link";
+        assert!(is_name_in_allowed_zones(valid_name, &allowed_zones));
+
+        valid_name = "some.ens.domains";
+        assert!(is_name_in_allowed_zones(valid_name, &allowed_zones));
+
+        let mut invalid_name = "test.com";
+        assert!(!is_name_in_allowed_zones(invalid_name, &allowed_zones));
+
+        invalid_name = "eth.link";
+        assert!(!is_name_in_allowed_zones(invalid_name, &allowed_zones));
+
+        invalid_name = "test.some.link";
+        assert!(!is_name_in_allowed_zones(invalid_name, &allowed_zones));
+    }
+
+    #[test]
+    fn test_is_name_format_correct() {
+        let valid_name = "test.eth.link";
+        assert!(is_name_format_correct(valid_name));
+
+        let invalid_name = "test*.eth.link";
+        assert!(!is_name_format_correct(invalid_name));
+    }
+
+    #[test]
+    fn test_is_name_length_correct() {
+        let name = "a".repeat(NAME_MIN_LENGTH) + ".test.eth";
+        assert!(is_name_length_correct(&name));
+
+        let name = "a".repeat(NAME_MAX_LENGTH) + ".test.eth";
+        assert!(is_name_length_correct(&name));
+
+        let name = "a".repeat(NAME_MIN_LENGTH - 1) + ".test.eth";
+        assert!(!is_name_length_correct(&name));
+
+        let name = "a".repeat(NAME_MAX_LENGTH + 1) + ".test.eth";
+        assert!(!is_name_length_correct(&name));
     }
 }
