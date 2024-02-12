@@ -49,20 +49,12 @@ pub async fn handler_internal(
     let raw_payload = &request_payload.message;
     let payload = match serde_json::from_str::<UpdateAddressPayload>(raw_payload) {
         Ok(payload) => payload,
-        Err(e) => {
-            info!("Failed to deserialize update address payload: {}", e);
-            return Ok((StatusCode::BAD_REQUEST, "").into_response());
-        }
+        Err(e) => return Err(RpcError::SerdeJson(e)),
     };
 
     // Check for the supported ENSIP-11 coin type
     if Eip155SupportedChains::try_from_primitive(request_payload.coin_type).is_err() {
-        info!("Unsupported coin type {}", request_payload.coin_type);
-        return Ok((
-            StatusCode::BAD_REQUEST,
-            "Unsupported coin type for name address update",
-        )
-            .into_response());
+        return Err(RpcError::UnsupportedCoinType(request_payload.coin_type));
     }
 
     // Check is name registered
@@ -70,13 +62,7 @@ pub async fn handler_internal(
         match get_name_and_addresses_by_name(name.clone(), &state.postgres.clone()).await {
             Ok(result) => result,
             Err(e) => match e {
-                SqlxError::RowNotFound => {
-                    return Ok((
-                        StatusCode::BAD_REQUEST,
-                        format!("Name {} is not registered", name.clone()),
-                    )
-                        .into_response())
-                }
+                SqlxError::RowNotFound => return Err(RpcError::NameNotRegistered(name)),
                 _ => {
                     error!("Failed to lookup name in the database: {}", e);
                     return Ok((
@@ -90,46 +76,35 @@ pub async fn handler_internal(
 
     // Check the timestamp is within the sync threshold interval
     if !is_timestamp_within_interval(payload.timestamp, UNIXTIMESTAMP_SYNC_THRESHOLD) {
-        return Ok((
-            StatusCode::BAD_REQUEST,
-            "Timestamp is too old or in the future",
-        )
-            .into_response());
+        return Err(RpcError::ExpiredTimestamp(payload.timestamp));
     }
 
     let payload_owner = match H160::from_str(&request_payload.address) {
         Ok(owner) => owner,
-        Err(e) => {
-            info!("Failed to parse H160 address: {}", e);
-            return Ok((StatusCode::BAD_REQUEST, "Invalid H160 address format").into_response());
-        }
+        Err(_) => return Err(RpcError::InvalidAddress),
     };
 
     // Check the signature
     let sinature_check =
         match verify_message_signature(raw_payload, &request_payload.signature, &payload_owner) {
             Ok(sinature_check) => sinature_check,
-            Err(e) => {
-                info!("Invalid signature: {}", e);
-                return Ok((
-                    StatusCode::UNAUTHORIZED,
-                    "Invalid signature or message format",
-                )
-                    .into_response());
+            Err(_) => {
+                return Err(RpcError::SignatureValidationError(
+                    "Invalid signature".into(),
+                ))
             }
         };
     if !sinature_check {
-        return Ok((StatusCode::UNAUTHORIZED, "Signature verification error").into_response());
+        return Err(RpcError::SignatureValidationError(
+            "Signature verification error".into(),
+        ));
     }
 
     // Check for the name address ownership and address from the signed payload
     let name_owner = match name_addresses.addresses.get(&60) {
         Some(address_entry) => match H160::from_str(&address_entry.address) {
             Ok(owner) => owner,
-            Err(e) => {
-                info!("Failed to parse H160 address: {}", e);
-                return Ok((StatusCode::BAD_REQUEST, "Invalid H160 address format").into_response());
-            }
+            Err(_) => return Err(RpcError::InvalidAddress),
         },
         None => {
             info!("Address entry not found for key 60");
@@ -141,30 +116,17 @@ pub async fn handler_internal(
         }
     };
     if !constant_time_eq(payload_owner, name_owner) {
-        return Ok((
-            StatusCode::UNAUTHORIZED,
-            "Address is not the owner of the name",
-        )
-            .into_response());
+        return Err(RpcError::NameOwnerValidationError);
     }
 
     // Check for supported chain id and address format
     if Eip155SupportedChains::try_from_primitive(payload.coin_type).is_err() {
-        info!(
-            "Unsupported coin type for name address update {}",
-            payload.coin_type
-        );
-        return Ok((
-            StatusCode::BAD_REQUEST,
-            "Unsupported coin type for name address update",
-        )
-            .into_response());
+        return Err(RpcError::UnsupportedCoinType(payload.coin_type));
     }
 
     // Check the new address format
-    if let Err(e) = H160::from_str(&payload.address) {
-        info!("Failed to parse H160 address for update: {}", e);
-        return Ok((StatusCode::BAD_REQUEST, "Invalid H160 address format").into_response());
+    if H160::from_str(&payload.address).is_err() {
+        return Err(RpcError::InvalidAddress);
     }
 
     match insert_or_update_address(

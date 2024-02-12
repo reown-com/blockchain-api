@@ -39,9 +39,7 @@ async fn handler_internal(
     };
 
     if names.is_empty() {
-        // Respond with a "Not Found" status code if no name was found for the address
-        let not_found_response = (StatusCode::NOT_FOUND, "No rigistered names for the address");
-        return Ok(not_found_response.into_response());
+        return Err(RpcError::NameByAddressNotFound);
     }
 
     let mut result = Vec::new();

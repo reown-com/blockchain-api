@@ -33,27 +33,23 @@ async fn handler_internal(
 ) -> Result<Response, RpcError> {
     // Check if the name is in the correct format
     if !is_name_format_correct(&name) {
-        return Ok((StatusCode::BAD_REQUEST, "Invalid name format").into_response());
+        return Err(RpcError::InvalidNameFormat(name));
     }
 
     // Check if the name length is correct
     if !is_name_length_correct(&name) {
-        return Ok((StatusCode::BAD_REQUEST, "Invalid name length").into_response());
+        return Err(RpcError::InvalidNameLength(name));
     }
 
     // Check is name in the allowed zones
     if !is_name_in_allowed_zones(&name, &ALLOWED_ZONES) {
-        return Ok((StatusCode::BAD_REQUEST, "Name is not in the allowed zones").into_response());
+        return Err(RpcError::InvalidNameZone(name));
     }
 
-    match get_name_and_addresses_by_name(name, &state.postgres).await {
+    match get_name_and_addresses_by_name(name.clone(), &state.postgres).await {
         Ok(response) => Ok(Json(response).into_response()),
         Err(e) => match e {
-            SqlxError::RowNotFound => {
-                // Respond with a "Not Found" status code if name was found
-                let not_found_response = (StatusCode::NOT_FOUND, "Name is not registered");
-                Ok(not_found_response.into_response())
-            }
+            SqlxError::RowNotFound => return Err(RpcError::NameNotFound(name)),
             _ => {
                 // Handle other types of errors
                 error!("Failed to lookup name: {}", e);

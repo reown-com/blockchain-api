@@ -145,7 +145,7 @@ async fn handler_internal(
     let project_id = query.project_id.clone();
 
     // Checking for the H160 address correctness
-    H160::from_str(&address).map_err(|_| RpcError::IdentityInvalidAddress)?;
+    H160::from_str(&address).map_err(|_| RpcError::InvalidAddress)?;
 
     let latency_tracker_start = std::time::SystemTime::now();
     let history_provider: ProviderKind;
