@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.24.0 - 2024-02-12
+#### Features
+- **(ens)** checks for allowed zones and name format (#511) - (446956d) - Max Kalashnikoff
+
+- - -
+
 ## 0.23.0 - 2024-02-09
 #### Features
 - **(ens)** updating name address handler (#510) - (1ff2211) - Max Kalashnikoff
