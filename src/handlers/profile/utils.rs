@@ -1,5 +1,6 @@
 use {
     ethers::types::H160,
+    once_cell::sync::Lazy,
     regex::Regex,
     std::{
         collections::HashMap,
@@ -8,6 +9,10 @@ use {
     },
     tap::TapFallible,
 };
+
+static DOMAIN_FORMAT_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^[a-zA-Z0-9.-]+$").expect("Failed to initialize regexp for the domain format")
+});
 
 #[tracing::instrument]
 pub fn verify_message_signature(
@@ -69,9 +74,7 @@ pub fn is_name_in_allowed_zones(name: &str, allowed_zones: &[&str]) -> bool {
 
 /// Check if the given name is in the correct format
 pub fn is_name_format_correct(name: &str) -> bool {
-    let domain_regex = Regex::new(r"^[a-zA-Z0-9.-]+$").unwrap();
-
-    domain_regex.is_match(name)
+    DOMAIN_FORMAT_REGEX.is_match(name)
 }
 
 #[cfg(test)]
