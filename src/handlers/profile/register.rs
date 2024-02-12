@@ -5,6 +5,7 @@ use {
             check_attributes,
             is_name_format_correct,
             is_name_in_allowed_zones,
+            is_name_length_correct,
             is_timestamp_within_interval,
         },
         Eip155SupportedChains,
@@ -62,6 +63,12 @@ pub async fn handler_internal(
     if !is_name_format_correct(&payload.name) {
         info!("Invalid name format: {}", payload.name);
         return Ok((StatusCode::BAD_REQUEST, "Invalid name format").into_response());
+    }
+
+    // Check if the name length is correct
+    if !is_name_length_correct(&payload.name) {
+        info!("Invalid name length: {}", payload.name);
+        return Ok((StatusCode::BAD_REQUEST, "Invalid name length").into_response());
     }
 
     // Check is name in the allowed zones

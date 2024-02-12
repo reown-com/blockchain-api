@@ -1,7 +1,7 @@
 use {
     super::{
         super::HANDLER_TASK_METRICS,
-        utils::{is_name_format_correct, is_name_in_allowed_zones},
+        utils::{is_name_format_correct, is_name_in_allowed_zones, is_name_length_correct},
         ALLOWED_ZONES,
     },
     crate::{database::helpers::get_name_and_addresses_by_name, error::RpcError, state::AppState},
@@ -34,6 +34,11 @@ async fn handler_internal(
     // Check if the name is in the correct format
     if !is_name_format_correct(&name) {
         return Ok((StatusCode::BAD_REQUEST, "Invalid name format").into_response());
+    }
+
+    // Check if the name length is correct
+    if !is_name_length_correct(&name) {
+        return Ok((StatusCode::BAD_REQUEST, "Invalid name length").into_response());
     }
 
     // Check is name in the allowed zones

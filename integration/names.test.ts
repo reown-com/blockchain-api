@@ -66,7 +66,7 @@ describe('Account profile names', () => {
     expect(resp.status).toBe(400)
   })
 
-  it('register with wrong name format', async () => {
+  it('register with wrong name format (wrong characters)', async () => {
     // Create a message to sign with wrong name format
     const wrongNameFormatMessageObject = {
       name: `!name.${zone}`,
@@ -83,6 +83,54 @@ describe('Account profile names', () => {
       address,
     };
     let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account`,
+      payload
+    )
+    expect(resp.status).toBe(400)
+  })
+
+  it('register with wrong name format (length)', async () => {
+    // Check for the short name (<5 characters)
+    let randomString = Array.from({ length: 4 }, 
+      () => (Math.random().toString(36)[2] || '0')).join('')
+    const shortNameLengthMessageObject = {
+      name: `${randomString}.${zone}`,
+      attributes: { bio: 'some attribute name' },
+      timestamp: Math.round(Date.now() / 1000)
+    };
+    let message = JSON.stringify(shortNameLengthMessageObject);
+    let signature = await wallet.signMessage(message);
+
+    let payload = {
+      message,
+      signature,
+      coin_type,
+      address,
+    };
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account`,
+      payload
+    )
+    expect(resp.status).toBe(400)
+
+    // Check for the long name (>64 characters)
+    randomString = Array.from({ length: 65 }, 
+      () => (Math.random().toString(36)[2] || '0')).join('')
+    const longNameLengthMessageObject = {
+      name: `${randomString}.${zone}`,
+      attributes: { bio: 'some attribute name' },
+      timestamp: Math.round(Date.now() / 1000)
+    };
+    message = JSON.stringify(longNameLengthMessageObject);
+    signature = await wallet.signMessage(message);
+
+    payload = {
+      message,
+      signature,
+      coin_type,
+      address,
+    };
+    resp = await httpClient.post(
       `${baseUrl}/v1/profile/account`,
       payload
     )
