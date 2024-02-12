@@ -89,10 +89,33 @@ describe('Account profile names', () => {
     expect(resp.status).toBe(400)
   })
 
-  it('register with wrong name zone', async () => {
+  it('register with wrong name zone (subdomain)', async () => {
     // Create a message to sign with wrong name format
     const wrongNameZoneMessageObject = {
-      name: `${name}.connect.id`,
+      name: `test.${randomString}.${zone}`,
+      attributes: { bio: 'some attribute name' },
+      timestamp: Math.round(Date.now() / 1000)
+    };
+    const message = JSON.stringify(wrongNameZoneMessageObject);
+    const signature = await wallet.signMessage(message);
+
+    const payload = {
+      message,
+      signature,
+      coin_type,
+      address,
+    };
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account`,
+      payload
+    )
+    expect(resp.status).toBe(400)
+  })
+
+  it('register with wrong name zone (root zone)', async () => {
+    // Create a message to sign with wrong name format
+    const wrongNameZoneMessageObject = {
+      name: `${randomString}.connect.id`,
       attributes: { bio: 'some attribute name' },
       timestamp: Math.round(Date.now() / 1000)
     };
