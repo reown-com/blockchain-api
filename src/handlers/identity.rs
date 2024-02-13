@@ -65,7 +65,7 @@ async fn handler_internal(
 
     let address = address
         .parse::<Address>()
-        .map_err(|_| RpcError::IdentityInvalidAddress)?;
+        .map_err(|_| RpcError::InvalidAddress)?;
 
     let identity_result = lookup_identity(
         address,
