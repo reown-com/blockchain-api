@@ -327,6 +327,14 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+            Self::SerdeJson(e) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                Json(new_error_response(
+                    "".to_string(),
+                    format!("Deserialization error: {}", e),
+                )),
+            )
+                .into_response(),
 
             // Any other errors considering as 500
             e => {
