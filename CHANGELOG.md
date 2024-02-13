@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.25.0 - 2024-02-13
+#### Features
+- **(ens)** unifying errors (#512) - (e360409) - Max Kalashnikoff
+
+- - -
+
 ## 0.24.0 - 2024-02-12
 #### Features
 - **(ens)** checks for allowed zones and name format (#511) - (446956d) - Max Kalashnikoff
