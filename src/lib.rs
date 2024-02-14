@@ -273,11 +273,25 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     let public_server = create_server("public_server", app, &addr);
     let private_server = create_server("private_server", private_app, &private_addr);
 
-    let updater = async move {
-        let mut interval = tokio::time::interval(Duration::from_secs(15));
-        loop {
-            interval.tick().await;
-            state_arc.update_provider_weights().await;
+    let weights_updater = {
+        let state_arc = state_arc.clone();
+        async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(15));
+            loop {
+                interval.tick().await;
+                state_arc.clone().update_provider_weights().await;
+            }
+        }
+    };
+
+    let system_metrics_updater = {
+        let state_arc = state_arc.clone();
+        async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(60));
+            loop {
+                interval.tick().await;
+                state_arc.clone().metrics.gather_system_metrics().await;
+            }
         }
     };
 
@@ -291,7 +305,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     let services = vec![
         tokio::spawn(public_server),
         tokio::spawn(private_server),
-        tokio::spawn(updater),
+        tokio::spawn(weights_updater),
+        tokio::spawn(system_metrics_updater),
         tokio::spawn(profiler),
     ];
 
