@@ -126,7 +126,16 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
         "eip155:42220",
         "0xa4ec",
     )
-    .await
+    .await;
+
+    // Klaytn mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Pokt,
+        "eip155:8217",
+        "0x2019",
+    )
+    .await;
 }
 
 #[test_context(ServerContext)]
