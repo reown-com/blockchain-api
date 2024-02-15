@@ -5,7 +5,13 @@ use {
     },
     hyper::http,
     std::time::{Duration, SystemTime},
-    sysinfo::{System, MINIMUM_CPU_UPDATE_INTERVAL},
+    sysinfo::{
+        CpuRefreshKind,
+        MemoryRefreshKind,
+        RefreshKind,
+        System,
+        MINIMUM_CPU_UPDATE_INTERVAL,
+    },
     wc::metrics::{
         otel::{
             self,
@@ -460,9 +466,13 @@ impl Metrics {
 
     /// Gathering system CPU(s) and Memory usage metrics
     pub async fn gather_system_metrics(&self) {
-        let mut system = System::new_all();
-
+        let mut system = System::new_with_specifics(
+            RefreshKind::new()
+                .with_memory(MemoryRefreshKind::new().with_ram())
+                .with_cpu(CpuRefreshKind::everything().without_frequency()),
+        );
         system.refresh_all();
+
         // Wait a bit because CPU usage is based on diff.
         // https://docs.rs/sysinfo/0.30.5/sysinfo/struct.Cpu.html#method.cpu_usage
         tokio::time::sleep(MINIMUM_CPU_UPDATE_INTERVAL).await;
