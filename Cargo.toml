@@ -71,6 +71,9 @@ bytes = "1.4.0"
 regex = "1.10"
 sha256 = "1.2.2"
 
+# System CPU and Memory metrics
+sysinfo = "0.30"
+
 [dev-dependencies]
 jsonrpc = "0.14.0"
 test-context = "0.1"

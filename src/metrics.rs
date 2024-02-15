@@ -5,6 +5,13 @@ use {
     },
     hyper::http,
     std::time::{Duration, SystemTime},
+    sysinfo::{
+        CpuRefreshKind,
+        MemoryRefreshKind,
+        RefreshKind,
+        System,
+        MINIMUM_CPU_UPDATE_INTERVAL,
+    },
     wc::metrics::{
         otel::{
             self,
@@ -43,6 +50,11 @@ pub struct Metrics {
     pub history_lookup_counter: Counter<u64>,
     pub history_lookup_success_counter: Counter<u64>,
     pub history_lookup_latency_tracker: Histogram<f64>,
+
+    // System metrics
+    pub cpu_usage: Histogram<f64>,
+    pub memory_total: Histogram<f64>,
+    pub memory_used: Histogram<f64>,
 }
 
 impl Metrics {
@@ -185,6 +197,21 @@ impl Metrics {
             .with_description("The latency to serve transactions history lookups")
             .init();
 
+        let cpu_usage = meter
+            .f64_histogram("cpu_usage")
+            .with_description("The cpu(s) usage")
+            .init();
+
+        let memory_total = meter
+            .f64_histogram("memory_total")
+            .with_description("Total system memory")
+            .init();
+
+        let memory_used = meter
+            .f64_histogram("memory_used")
+            .with_description("Used system memory")
+            .init();
+
         Metrics {
             rpc_call_counter,
             http_call_counter,
@@ -213,6 +240,9 @@ impl Metrics {
             history_lookup_counter,
             history_lookup_success_counter,
             history_lookup_latency_tracker,
+            cpu_usage,
+            memory_total,
+            memory_used,
         }
     }
 }
@@ -417,5 +447,42 @@ impl Metrics {
             latency.as_secs_f64(),
             &[otel::KeyValue::new("provider", provider.to_string())],
         );
+    }
+
+    fn add_cpu_usage(&self, usage: f64, cpu_id: f64) {
+        self.cpu_usage
+            .record(&otel::Context::new(), usage, &[otel::KeyValue::new(
+                "cpu", cpu_id,
+            )]);
+    }
+
+    fn add_memory_total(&self, memory: f64) {
+        self.memory_total.record(&otel::Context::new(), memory, &[]);
+    }
+
+    fn add_memory_used(&self, memory: f64) {
+        self.memory_used.record(&otel::Context::new(), memory, &[]);
+    }
+
+    /// Gathering system CPU(s) and Memory usage metrics
+    pub async fn gather_system_metrics(&self) {
+        let mut system = System::new_with_specifics(
+            RefreshKind::new()
+                .with_memory(MemoryRefreshKind::new().with_ram())
+                .with_cpu(CpuRefreshKind::everything().without_frequency()),
+        );
+        system.refresh_all();
+
+        // Wait a bit because CPU usage is based on diff.
+        // https://docs.rs/sysinfo/0.30.5/sysinfo/struct.Cpu.html#method.cpu_usage
+        tokio::time::sleep(MINIMUM_CPU_UPDATE_INTERVAL).await;
+        system.refresh_cpu();
+
+        for (i, processor) in system.cpus().iter().enumerate() {
+            self.add_cpu_usage(processor.cpu_usage() as f64, i as f64);
+        }
+
+        self.add_memory_total(system.total_memory() as f64);
+        self.add_memory_used(system.used_memory() as f64);
     }
 }
