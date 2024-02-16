@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.28.0 - 2024-02-16
+#### Features
+- **(history)** using the shared reqwest http client (#516) - (99b63bc) - Max Kalashnikoff
+
+- - -
+
 ## 0.27.0 - 2024-02-15
 #### Features
 - **(metrics)** exporting CPU and Memory usage metrics to Prometheus (#514) - (2abe3a6) - Max Kalashnikoff
