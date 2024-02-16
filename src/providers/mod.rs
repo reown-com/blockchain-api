@@ -470,8 +470,8 @@ pub trait HistoryProvider: Send + Sync + Debug {
     async fn get_transactions(
         &self,
         address: String,
-        body: hyper::body::Bytes,
         params: HistoryQueryParams,
+        http_client: reqwest::Client,
     ) -> RpcResult<HistoryResponseBody>;
 }
 

@@ -133,6 +133,9 @@ pub enum RpcError {
 
     #[error("Name owner validation error")]
     NameOwnerValidationError,
+
+    #[error(transparent)]
+    Reqwest(#[from] reqwest::Error),
 }
 
 impl IntoResponse for RpcError {
