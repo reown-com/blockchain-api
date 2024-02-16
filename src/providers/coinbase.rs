@@ -14,8 +14,6 @@ use {
         utils::crypto::string_chain_id_to_caip2_format,
     },
     async_trait::async_trait,
-    axum::{body::Bytes, http::method},
-    futures_util::StreamExt,
     hyper::Client,
     hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
@@ -66,12 +64,12 @@ pub struct CoinbasePurchaseAmount {
 
 #[async_trait]
 impl HistoryProvider for CoinbaseProvider {
-    #[tracing::instrument(skip(self, body, params), fields(provider = "Coinbase"))]
+    #[tracing::instrument(skip(self, params), fields(provider = "Coinbase"))]
     async fn get_transactions(
         &self,
         address: String,
-        body: Bytes,
         params: HistoryQueryParams,
+        http_client: reqwest::Client,
     ) -> RpcResult<HistoryResponseBody> {
         let base = format!(
             "https://pay.coinbase.com/api/v1/buy/user/{}/transactions",
@@ -85,17 +83,15 @@ impl HistoryProvider for CoinbaseProvider {
             url.query_pairs_mut().append_pair("page_key", &cursor);
         }
 
-        let hyper_request = hyper::http::Request::builder()
-            .uri(url.as_str())
-            .method(method::Method::GET)
+        let response = http_client
+            .get(url)
             .header("Content-Type", "application/json")
             .header("CBPAY-APP-ID", self.app_id.clone())
             .header("CBPAY-API-KEY", self.api_key.clone())
-            .body(hyper::body::Body::from(body))?;
+            .send()
+            .await?;
 
-        let response = self.http_client.request(hyper_request).await?;
-
-        if !response.status().is_success() {
+        if response.status() != reqwest::StatusCode::OK {
             error!(
                 "Error on Coinbase transactions response. Status is not OK: {:?}",
                 response.status(),
@@ -103,18 +99,7 @@ impl HistoryProvider for CoinbaseProvider {
             return Err(RpcError::TransactionProviderError);
         }
 
-        let mut body = response.into_body();
-        let mut bytes = Vec::new();
-        while let Some(next) = body.next().await {
-            bytes.extend_from_slice(&next?);
-        }
-        let body: CoinbaseResponseBody = match serde_json::from_slice(&bytes) {
-            Ok(body) => body,
-            Err(e) => {
-                error!("Error on parsing coinbase transactions response: {:?}", e);
-                return Err(RpcError::TransactionProviderError);
-            }
-        };
+        let body = response.json::<CoinbaseResponseBody>().await?;
 
         let transactions = body
             .transactions
