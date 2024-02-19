@@ -173,7 +173,7 @@ impl OnRampProvider for CoinbaseProvider {
                 "Error on CoinBase buy options response. Status is not OK: {:?}",
                 response.status(),
             );
-            return Err(RpcError::TransactionProviderError);
+            return Err(RpcError::OnRampProviderError);
         }
 
         Ok(response.json::<OnRampBuyOptionsResponse>().await?)
