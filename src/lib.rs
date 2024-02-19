@@ -253,6 +253,10 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/onramp/buy/options",
             get(handlers::onramp::options::handler),
         )
+        .route(
+            "/v1/onramp/buy/quotes",
+            get(handlers::onramp::quotes::handler),
+        )
         .route_layer(tracing_and_metrics_layer)
         .route("/health", get(handlers::health::handler))
         .layer(cors);
