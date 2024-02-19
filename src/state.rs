@@ -79,11 +79,19 @@ impl AppState {
     }
 
     pub async fn validate_project_access(&self, id: &str) -> Result<(), RpcError> {
+        if !self.config.server.validate_project_id {
+            return Ok(());
+        }
+
         self.get_project_data_validated(id).await.map(drop)
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
     pub async fn validate_project_access_and_quota(&self, id: &str) -> Result<(), RpcError> {
+        if !self.config.server.validate_project_id {
+            return Ok(());
+        }
+
         let project = self.get_project_data_validated(id).await?;
 
         validate_project_quota(&project).tap_err(|_| {
