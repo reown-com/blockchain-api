@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.29.0 - 2024-02-19
+#### Features
+- **(config)** config parameter to disable project id check (#526) - (04cd050) - Max Kalashnikoff
+
+- - -
+
 ## 0.28.0 - 2024-02-16
 #### Features
 - **(history)** using the shared reqwest http client (#516) - (99b63bc) - Max Kalashnikoff
