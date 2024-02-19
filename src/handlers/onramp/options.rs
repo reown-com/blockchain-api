@@ -10,14 +10,17 @@ use {
     std::{net::SocketAddr, sync::Arc},
     tap::TapFallible,
     tracing::log::error,
+    validator::Validate,
     wc::future::FutureExt,
 };
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct OnRampBuyOptionsParams {
     pub project_id: String,
+    #[validate(length(equal = 2))]
     pub country: String,
+    #[validate(length(equal = 2))]
     pub subdivision: Option<String>,
 }
 
@@ -86,7 +89,7 @@ async fn handler_internal(
     let buy_options = state
         .providers
         .onramp_provider
-        .get_buy_options(query.0)
+        .get_buy_options(query.0, state.http_client.clone())
         .await
         .tap_err(|e| {
             error!("Failed to call coinbase buy options with {}", e);

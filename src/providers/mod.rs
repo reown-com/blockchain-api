@@ -496,5 +496,6 @@ pub trait OnRampProvider: Send + Sync + Debug {
     async fn get_buy_options(
         &self,
         params: OnRampBuyOptionsParams,
+        http_client: reqwest::Client,
     ) -> RpcResult<OnRampBuyOptionsResponse>;
 }

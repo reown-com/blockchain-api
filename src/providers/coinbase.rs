@@ -149,9 +149,9 @@ impl OnRampProvider for CoinbaseProvider {
     async fn get_buy_options(
         &self,
         params: OnRampBuyOptionsParams,
+        http_client: reqwest::Client,
     ) -> RpcResult<OnRampBuyOptionsResponse> {
         let base = format!("{}/buy/options", &self.base_api_url);
-        error!("base: {:?}", base);
         let mut url = Url::parse(&base).map_err(|_| RpcError::OnRampParseURLError)?;
         url.query_pairs_mut()
             .append_pair("country", &params.country);
@@ -160,37 +160,22 @@ impl OnRampProvider for CoinbaseProvider {
                 .append_pair("subdivision", &subdivision);
         }
 
-        let hyper_request = hyper::http::Request::builder()
-            .uri(url.as_str())
+        let response = http_client
+            .get(url)
             .header("Content-Type", "application/json")
             .header("CBPAY-APP-ID", self.app_id.clone())
             .header("CBPAY-API-KEY", self.api_key.clone())
-            .body(hyper::body::Body::empty())?;
+            .send()
+            .await?;
 
-        let hyper_response = self.http_client.request(hyper_request).await?;
-
-        if !hyper_response.status().is_success() {
+        if response.status() != reqwest::StatusCode::OK {
             error!(
                 "Error on CoinBase buy options response. Status is not OK: {:?}",
-                hyper_response.status()
+                response.status(),
             );
-            return Err(RpcError::OnRampProviderError);
+            return Err(RpcError::TransactionProviderError);
         }
 
-        let mut body = hyper_response.into_body();
-        let mut bytes = Vec::new();
-        while let Some(next) = body.next().await {
-            bytes.extend_from_slice(&next?);
-        }
-
-        let response: OnRampBuyOptionsResponse = match serde_json::from_slice(&bytes) {
-            Ok(body) => body,
-            Err(e) => {
-                error!("Error on parsing CoinBase buy options response: {:?}", e);
-                return Err(RpcError::OnRampProviderError);
-            }
-        };
-
-        Ok(response)
+        Ok(response.json::<OnRampBuyOptionsResponse>().await?)
     }
 }
