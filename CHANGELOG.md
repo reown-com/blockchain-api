@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.31.1 - 2024-02-20
+#### Bug Fixes
+- increasing keep-alive timeouts (#527) - (b2b4a36) - Max Kalashnikoff
+
+- - -
+
 ## 0.31.0 - 2024-02-20
 #### Features
 - **(onramp)** adding onramp buy quotes endpoint (#525) - (8058278) - Max Kalashnikoff
