@@ -12,7 +12,10 @@ use {
                 HistoryTransactionTransfer,
                 HistoryTransactionTransferQuantity,
             },
-            onramp::options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
+            onramp::{
+                options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
+                quotes::{OnRampBuyQuotesParams, OnRampBuyQuotesResponse},
+            },
         },
         utils::crypto::string_chain_id_to_caip2_format,
     },
@@ -177,5 +180,33 @@ impl OnRampProvider for CoinbaseProvider {
         }
 
         Ok(response.json::<OnRampBuyOptionsResponse>().await?)
+    }
+
+    async fn get_buy_quotes(
+        &self,
+        params: OnRampBuyQuotesParams,
+        http_client: reqwest::Client,
+    ) -> RpcResult<OnRampBuyQuotesResponse> {
+        let base = format!("{}/buy/quote", &self.base_api_url);
+        let url = Url::parse(&base).map_err(|_| RpcError::OnRampParseURLError)?;
+
+        let response = http_client
+            .post(url)
+            .json(&params)
+            .header("Content-Type", "application/json")
+            .header("CBPAY-APP-ID", self.app_id.clone())
+            .header("CBPAY-API-KEY", self.api_key.clone())
+            .send()
+            .await?;
+
+        if response.status() != reqwest::StatusCode::OK {
+            error!(
+                "Error on CoinBase buy quotes response. Status is not OK: {:?}",
+                response.status(),
+            );
+            return Err(RpcError::OnRampProviderError);
+        }
+
+        Ok(response.json::<OnRampBuyQuotesResponse>().await?)
     }
 }

@@ -5,7 +5,10 @@ use {
         error::{RpcError, RpcResult},
         handlers::{
             history::{HistoryQueryParams, HistoryResponseBody},
-            onramp::options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
+            onramp::{
+                options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
+                quotes::{OnRampBuyQuotesParams, OnRampBuyQuotesResponse},
+            },
             portfolio::{PortfolioQueryParams, PortfolioResponseBody},
             RpcQueryParams,
         },
@@ -498,4 +501,10 @@ pub trait OnRampProvider: Send + Sync + Debug {
         params: OnRampBuyOptionsParams,
         http_client: reqwest::Client,
     ) -> RpcResult<OnRampBuyOptionsResponse>;
+
+    async fn get_buy_quotes(
+        &self,
+        params: OnRampBuyQuotesParams,
+        http_client: reqwest::Client,
+    ) -> RpcResult<OnRampBuyQuotesResponse>;
 }
