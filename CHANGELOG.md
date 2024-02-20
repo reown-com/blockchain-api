@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.31.0 - 2024-02-20
+#### Features
+- **(onramp)** adding onramp buy quotes endpoint (#525) - (8058278) - Max Kalashnikoff
+
+- - -
+
 ## 0.30.0 - 2024-02-20
 #### Features
 - **(onramp)** adding onramp buy options endpoint (#499) - (2c98a73) - Max Kalashnikoff
