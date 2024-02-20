@@ -71,8 +71,8 @@ use {
 };
 
 const SERVICE_TASK_TIMEOUT: Duration = Duration::from_secs(15);
-const KEEPALIVE_IDLE_DURATION: Duration = Duration::from_secs(5);
-const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(5);
+const KEEPALIVE_IDLE_DURATION: Duration = Duration::from_secs(65);
+const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(65);
 const KEEPALIVE_RETRIES: u32 = 1;
 
 mod analytics;
