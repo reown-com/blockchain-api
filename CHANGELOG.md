@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.31.2 - 2024-02-21
+#### Bug Fixes
+- **(errors)** unifying provider reachability errors to the 503 HTTP Error (#531) - (e66ff12) - Max Kalashnikoff
+
+- - -
+
 ## 0.31.1 - 2024-02-20
 #### Bug Fixes
 - increasing keep-alive timeouts (#527) - (b2b4a36) - Max Kalashnikoff
