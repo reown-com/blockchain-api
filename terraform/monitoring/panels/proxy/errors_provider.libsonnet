@@ -16,7 +16,7 @@ local alertCondition  = grafana.alertCondition;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'round(sum(increase(http_call_counter_total{code=\"502\"}[5m])))',
-      refId       = "bad_gateway",
+      expr        = 'round(sum(increase(http_call_counter_total{code=\"503\"}[5m])))',
+      refId       = "service_unavailable",
     ))
 }

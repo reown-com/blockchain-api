@@ -38,7 +38,6 @@ async fn check_if_rpc_is_responding_correctly_for_supported_chain(
     let (status, rpc_response) = send_jsonrpc_request(client, addr, chaind_id, request).await;
 
     match status {
-        StatusCode::BAD_GATEWAY => {}
         StatusCode::OK => {
             // Verify there was no error in rpc
             assert!(rpc_response.error.is_none());
