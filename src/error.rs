@@ -43,9 +43,6 @@ pub enum RpcError {
     #[error("Specified provider is not supported: {0}")]
     UnsupportedProvider(String),
 
-    #[error("Provider is throttling the requests")]
-    Throttled,
-
     #[error("Failed to reach the provider")]
     ProviderError,
 
@@ -190,16 +187,6 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "authentication".to_string(),
                     "We failed to authenticate your request".to_string(),
-                )),
-            )
-                .into_response(),
-            Self::Throttled => (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(new_error_response(
-                    "throttled".to_string(),
-                    "Our provider for this chain this chain is currently throttling our requests. \
-                     Please try again."
-                        .to_string(),
                 )),
             )
                 .into_response(),
