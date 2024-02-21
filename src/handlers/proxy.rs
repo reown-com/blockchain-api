@@ -135,7 +135,7 @@ async fn handler_internal(
         state
             .metrics
             .add_rate_limited_call(provider.borrow(), project_id);
-        *response.status_mut() = http::StatusCode::BAD_GATEWAY;
+        *response.status_mut() = http::StatusCode::SERVICE_UNAVAILABLE;
     }
 
     state.metrics.add_external_http_latency(

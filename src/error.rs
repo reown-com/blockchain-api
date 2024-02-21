@@ -170,7 +170,7 @@ impl IntoResponse for RpcError {
             )
                 .into_response(),
             Self::ProviderError => (
-                StatusCode::BAD_GATEWAY,
+                StatusCode::SERVICE_UNAVAILABLE,
                 Json(new_error_response(
                     "unreachable".to_string(),
                     "We failed to reach the provider for your request".to_string(),
@@ -194,7 +194,7 @@ impl IntoResponse for RpcError {
             )
                 .into_response(),
             Self::Throttled => (
-                StatusCode::BAD_GATEWAY,
+                StatusCode::SERVICE_UNAVAILABLE,
                 Json(new_error_response(
                     "throttled".to_string(),
                     "Our provider for this chain this chain is currently throttling our requests. \
@@ -204,7 +204,7 @@ impl IntoResponse for RpcError {
             )
                 .into_response(),
             Self::TransportError(_) => (
-                StatusCode::BAD_GATEWAY,
+                StatusCode::SERVICE_UNAVAILABLE,
                 Json(new_error_response(
                     "transport".to_string(),
                     "We failed to reach the provider for your request".to_string(),
