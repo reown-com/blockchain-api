@@ -71,8 +71,8 @@ use {
 };
 
 const SERVICE_TASK_TIMEOUT: Duration = Duration::from_secs(15);
-const KEEPALIVE_IDLE_DURATION: Duration = Duration::from_secs(5);
-const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(5);
+const KEEPALIVE_IDLE_DURATION: Duration = Duration::from_secs(65);
+const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(65);
 const KEEPALIVE_RETRIES: u32 = 1;
 
 mod analytics;
@@ -138,6 +138,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .await?;
     sqlx::migrate!("./migrations").run(&postgres).await?;
 
+    let http_client = reqwest::Client::new();
+
     let state = state::new_state(
         config.clone(),
         postgres.clone(),
@@ -146,6 +148,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         registry,
         identity_cache,
         analytics,
+        http_client,
     );
 
     let port = state.config.server.port;
@@ -245,6 +248,15 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/generators/onrampurl",
             post(handlers::generators::onrampurl::handler),
         )
+        // OnRamp
+        .route(
+            "/v1/onramp/buy/options",
+            get(handlers::onramp::options::handler),
+        )
+        .route(
+            "/v1/onramp/buy/quotes",
+            get(handlers::onramp::quotes::handler),
+        )
         .route_layer(tracing_and_metrics_layer)
         .route("/health", get(handlers::health::handler))
         .layer(cors);
@@ -273,11 +285,25 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     let public_server = create_server("public_server", app, &addr);
     let private_server = create_server("private_server", private_app, &private_addr);
 
-    let updater = async move {
-        let mut interval = tokio::time::interval(Duration::from_secs(15));
-        loop {
-            interval.tick().await;
-            state_arc.update_provider_weights().await;
+    let weights_updater = {
+        let state_arc = state_arc.clone();
+        async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(15));
+            loop {
+                interval.tick().await;
+                state_arc.clone().update_provider_weights().await;
+            }
+        }
+    };
+
+    let system_metrics_updater = {
+        let state_arc = state_arc.clone();
+        async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(60));
+            loop {
+                interval.tick().await;
+                state_arc.clone().metrics.gather_system_metrics().await;
+            }
         }
     };
 
@@ -291,7 +317,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     let services = vec![
         tokio::spawn(public_server),
         tokio::spawn(private_server),
-        tokio::spawn(updater),
+        tokio::spawn(weights_updater),
+        tokio::spawn(system_metrics_updater),
         tokio::spawn(profiler),
     ];
 

@@ -20,6 +20,9 @@ enum Eip155SupportedChains {
     EthereumMainnet = 60,
 }
 
+/// List of allowed name zones
+pub const ALLOWED_ZONES: [&str; 1] = ["wc.ink"];
+
 pub const UNIXTIMESTAMP_SYNC_THRESHOLD: u64 = 10;
 
 /// Attributes value max length

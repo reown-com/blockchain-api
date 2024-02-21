@@ -1,21 +1,25 @@
 use {
-    super::HistoryProvider,
+    super::{HistoryProvider, OnRampProvider},
     crate::{
         error::{RpcError, RpcResult},
-        handlers::history::{
-            HistoryQueryParams,
-            HistoryResponseBody,
-            HistoryTransaction,
-            HistoryTransactionFungibleInfo,
-            HistoryTransactionMetadata,
-            HistoryTransactionTransfer,
-            HistoryTransactionTransferQuantity,
+        handlers::{
+            history::{
+                HistoryQueryParams,
+                HistoryResponseBody,
+                HistoryTransaction,
+                HistoryTransactionFungibleInfo,
+                HistoryTransactionMetadata,
+                HistoryTransactionTransfer,
+                HistoryTransactionTransferQuantity,
+            },
+            onramp::{
+                options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
+                quotes::{OnRampBuyQuotesParams, OnRampBuyQuotesResponse},
+            },
         },
         utils::crypto::string_chain_id_to_caip2_format,
     },
     async_trait::async_trait,
-    axum::{body::Bytes, http::method},
-    futures_util::StreamExt,
     hyper::Client,
     hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
@@ -28,15 +32,17 @@ pub struct CoinbaseProvider {
     pub api_key: String,
     pub app_id: String,
     pub http_client: Client<HttpsConnector<hyper::client::HttpConnector>>,
+    pub base_api_url: String,
 }
 
 impl CoinbaseProvider {
-    pub fn new(api_key: String, app_id: String) -> Self {
+    pub fn new(api_key: String, app_id: String, base_api_url: String) -> Self {
         let http_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         Self {
             api_key,
             app_id,
             http_client,
+            base_api_url,
         }
     }
 }
@@ -66,17 +72,14 @@ pub struct CoinbasePurchaseAmount {
 
 #[async_trait]
 impl HistoryProvider for CoinbaseProvider {
-    #[tracing::instrument(skip(self, body, params), fields(provider = "Coinbase"))]
+    #[tracing::instrument(skip(self, params), fields(provider = "Coinbase"))]
     async fn get_transactions(
         &self,
         address: String,
-        body: Bytes,
         params: HistoryQueryParams,
+        http_client: reqwest::Client,
     ) -> RpcResult<HistoryResponseBody> {
-        let base = format!(
-            "https://pay.coinbase.com/api/v1/buy/user/{}/transactions",
-            &address
-        );
+        let base = format!("{}/buy/user/{}/transactions", &self.base_api_url, &address);
 
         let mut url = Url::parse(&base).map_err(|_| RpcError::HistoryParseCursorError)?;
         url.query_pairs_mut().append_pair("page_size", "50");
@@ -85,17 +88,15 @@ impl HistoryProvider for CoinbaseProvider {
             url.query_pairs_mut().append_pair("page_key", &cursor);
         }
 
-        let hyper_request = hyper::http::Request::builder()
-            .uri(url.as_str())
-            .method(method::Method::GET)
+        let response = http_client
+            .get(url)
             .header("Content-Type", "application/json")
             .header("CBPAY-APP-ID", self.app_id.clone())
             .header("CBPAY-API-KEY", self.api_key.clone())
-            .body(hyper::body::Body::from(body))?;
+            .send()
+            .await?;
 
-        let response = self.http_client.request(hyper_request).await?;
-
-        if !response.status().is_success() {
+        if response.status() != reqwest::StatusCode::OK {
             error!(
                 "Error on Coinbase transactions response. Status is not OK: {:?}",
                 response.status(),
@@ -103,18 +104,7 @@ impl HistoryProvider for CoinbaseProvider {
             return Err(RpcError::TransactionProviderError);
         }
 
-        let mut body = response.into_body();
-        let mut bytes = Vec::new();
-        while let Some(next) = body.next().await {
-            bytes.extend_from_slice(&next?);
-        }
-        let body: CoinbaseResponseBody = match serde_json::from_slice(&bytes) {
-            Ok(body) => body,
-            Err(e) => {
-                error!("Error on parsing coinbase transactions response: {:?}", e);
-                return Err(RpcError::TransactionProviderError);
-            }
-        };
+        let body = response.json::<CoinbaseResponseBody>().await?;
 
         let transactions = body
             .transactions
@@ -153,5 +143,70 @@ impl HistoryProvider for CoinbaseProvider {
             data: transactions,
             next: body.next_page_key,
         })
+    }
+}
+
+#[async_trait]
+impl OnRampProvider for CoinbaseProvider {
+    #[tracing::instrument(skip(self), fields(provider = "Coinbase"))]
+    async fn get_buy_options(
+        &self,
+        params: OnRampBuyOptionsParams,
+        http_client: reqwest::Client,
+    ) -> RpcResult<OnRampBuyOptionsResponse> {
+        let base = format!("{}/buy/options", &self.base_api_url);
+        let mut url = Url::parse(&base).map_err(|_| RpcError::OnRampParseURLError)?;
+        url.query_pairs_mut()
+            .append_pair("country", &params.country);
+        if let Some(subdivision) = params.subdivision {
+            url.query_pairs_mut()
+                .append_pair("subdivision", &subdivision);
+        }
+
+        let response = http_client
+            .get(url)
+            .header("Content-Type", "application/json")
+            .header("CBPAY-APP-ID", self.app_id.clone())
+            .header("CBPAY-API-KEY", self.api_key.clone())
+            .send()
+            .await?;
+
+        if response.status() != reqwest::StatusCode::OK {
+            error!(
+                "Error on CoinBase buy options response. Status is not OK: {:?}",
+                response.status(),
+            );
+            return Err(RpcError::OnRampProviderError);
+        }
+
+        Ok(response.json::<OnRampBuyOptionsResponse>().await?)
+    }
+
+    async fn get_buy_quotes(
+        &self,
+        params: OnRampBuyQuotesParams,
+        http_client: reqwest::Client,
+    ) -> RpcResult<OnRampBuyQuotesResponse> {
+        let base = format!("{}/buy/quote", &self.base_api_url);
+        let url = Url::parse(&base).map_err(|_| RpcError::OnRampParseURLError)?;
+
+        let response = http_client
+            .post(url)
+            .json(&params)
+            .header("Content-Type", "application/json")
+            .header("CBPAY-APP-ID", self.app_id.clone())
+            .header("CBPAY-API-KEY", self.api_key.clone())
+            .send()
+            .await?;
+
+        if response.status() != reqwest::StatusCode::OK {
+            error!(
+                "Error on CoinBase buy quotes response. Status is not OK: {:?}",
+                response.status(),
+            );
+            return Err(RpcError::OnRampProviderError);
+        }
+
+        Ok(response.json::<OnRampBuyQuotesResponse>().await?)
     }
 }

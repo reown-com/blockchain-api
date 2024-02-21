@@ -55,6 +55,9 @@ pub enum RpcError {
     #[error("Failed to reach the portfolio provider")]
     PortfolioProviderError,
 
+    #[error("Failed to parse onramp provider url")]
+    OnRampParseURLError,
+
     #[error("Failed to reach the onramp provider")]
     OnRampProviderError,
 
@@ -74,7 +77,7 @@ pub enum RpcError {
     AxumTungstenite(#[from] axum_tungstenite::Error),
 
     #[error("Invalid address")]
-    IdentityInvalidAddress,
+    InvalidAddress,
 
     #[error("Failed to parse provider cursor")]
     HistoryParseCursorError,
@@ -96,6 +99,46 @@ pub enum RpcError {
 
     #[error("invalid parameter: {0}")]
     InvalidParameter(String),
+
+    // Profile names errors
+    #[error("Name is already registered: {0}")]
+    NameAlreadyRegistered(String),
+
+    #[error("Name is not registered: {0}")]
+    NameNotRegistered(String),
+
+    #[error("Name is not found: {0}")]
+    NameNotFound(String),
+
+    #[error("No name is found for address")]
+    NameByAddressNotFound,
+
+    #[error("Invalid name format: {0}")]
+    InvalidNameFormat(String),
+
+    #[error("Invalid name length: {0}")]
+    InvalidNameLength(String),
+
+    #[error("Name is not in the allowed zones: {0}")]
+    InvalidNameZone(String),
+
+    #[error("Unsupported coin type: {0}")]
+    UnsupportedCoinType(u32),
+
+    #[error("Unsupported name attribute")]
+    UnsupportedNameAttribute,
+
+    #[error("Signature UNIXTIME timestamp is too old: {0}")]
+    ExpiredTimestamp(u64),
+
+    #[error("Error during the signature validation: {0}")]
+    SignatureValidationError(String),
+
+    #[error("Name owner validation error")]
+    NameOwnerValidationError,
+
+    #[error(transparent)]
+    Reqwest(#[from] reqwest::Error),
 }
 
 impl IntoResponse for RpcError {
@@ -168,7 +211,7 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
-            Self::IdentityInvalidAddress => (
+            Self::InvalidAddress => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "address".to_string(),
@@ -192,6 +235,114 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+
+            // Profile names errors
+            Self::InvalidNameFormat(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "name".to_string(),
+                    format!("Invalid name format: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::InvalidNameLength(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "name".to_string(),
+                    format!("Invalid name length: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::InvalidNameZone(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "name".to_string(),
+                    format!("Name is not in the allowed zones: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::UnsupportedCoinType(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "coin_type".to_string(),
+                    format!("Unsupported coin type: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::UnsupportedNameAttribute => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "attributes".to_string(),
+                    "Unsupported name attribute in payload".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::NameAlreadyRegistered(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "name".to_string(),
+                    format!("Name is already registered: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::NameNotRegistered(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "name".to_string(),
+                    format!("Name is not registered: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::NameNotFound(e) => (
+                StatusCode::NOT_FOUND,
+                Json(new_error_response(
+                    "name".to_string(),
+                    format!("Name is not found in the database: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::NameByAddressNotFound => (
+                StatusCode::NOT_FOUND,
+                Json(new_error_response(
+                    "address".to_string(),
+                    "No name for address is found".into(),
+                )),
+            )
+                .into_response(),
+            Self::ExpiredTimestamp(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "timestamp".to_string(),
+                    format!("Signature UNIXTIME timestamp is too old: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::SignatureValidationError(e) => (
+                StatusCode::UNAUTHORIZED,
+                Json(new_error_response(
+                    "signature".to_string(),
+                    format!("Signature validation error: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::NameOwnerValidationError => (
+                StatusCode::UNAUTHORIZED,
+                Json(new_error_response(
+                    "address".to_string(),
+                    "Name owner validation error".into(),
+                )),
+            )
+                .into_response(),
+            Self::SerdeJson(e) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                Json(new_error_response(
+                    "".to_string(),
+                    format!("Deserialization error: {}", e),
+                )),
+            )
+                .into_response(),
+
+            // Any other errors considering as 500
             e => {
                 error!("Internal server error: {}", e);
                 (

@@ -187,12 +187,12 @@ pub struct ZerionUrlItem {
 
 #[async_trait]
 impl HistoryProvider for ZerionProvider {
-    #[tracing::instrument(skip(self, body, params), fields(provider = "Zerion"))]
+    #[tracing::instrument(skip(self, params), fields(provider = "Zerion"))]
     async fn get_transactions(
         &self,
         address: String,
-        body: Bytes,
         params: HistoryQueryParams,
+        http_client: reqwest::Client,
     ) -> RpcResult<HistoryResponseBody> {
         let base = format!(
             "https://api.zerion.io/v1/wallets/{}/transactions/?",
@@ -206,35 +206,23 @@ impl HistoryProvider for ZerionProvider {
             url.query_pairs_mut().append_pair("page[after]", &cursor);
         }
 
-        let hyper_request = hyper::http::Request::builder()
-            .uri(url.as_str())
+        let response = http_client
+            .get(url)
             .header("Content-Type", "application/json")
             .header("authorization", format!("Basic {}", self.api_key))
-            .body(hyper::body::Body::from(body))?;
+            .send()
+            .await?;
 
-        let response = self.http_client.request(hyper_request).await?;
-
-        if !response.status().is_success() {
+        if response.status() != reqwest::StatusCode::OK {
             error!(
                 "Error on zerion transactions response. Status is not OK: {:?}",
-                response.status()
+                response.status(),
             );
             return Err(RpcError::TransactionProviderError);
         }
-
-        let mut body = response.into_body();
-        let mut bytes = Vec::new();
-        while let Some(next) = body.next().await {
-            bytes.extend_from_slice(&next?);
-        }
-        let body: ZerionResponseBody<Vec<ZerionTransactionsReponseBody>> =
-            match serde_json::from_slice(&bytes) {
-                Ok(body) => body,
-                Err(e) => {
-                    error!("Error on parsing zerion transactions response: {:?}", e);
-                    return Err(RpcError::TransactionProviderError);
-                }
-            };
+        let body = response
+            .json::<ZerionResponseBody<Vec<ZerionTransactionsReponseBody>>>()
+            .await?;
 
         let next: Option<String> = match body.links.next {
             Some(url) => {

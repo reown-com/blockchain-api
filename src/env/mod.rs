@@ -177,6 +177,7 @@ mod test {
                 geoip_db_bucket: Some("GEOIP_DB_BUCKET".to_owned()),
                 geoip_db_key: Some("GEOIP_DB_KEY".to_owned()),
                 testing_project_id: Some("TESTING_PROJECT_ID".to_owned()),
+                validate_project_id: true,
             },
             registry: project::Config {
                 api_url: Some("API_URL".to_owned()),

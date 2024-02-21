@@ -8,7 +8,6 @@ use {
         utils::network,
     },
     axum::{
-        body::Bytes,
         extract::{ConnectInfo, MatchedPath, Path, Query, State},
         response::{IntoResponse, Response},
         Json,
@@ -125,9 +124,8 @@ pub async fn handler(
     path: MatchedPath,
     headers: HeaderMap,
     address: Path<String>,
-    body: Bytes,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, connect_info, query, path, headers, address, body)
+    handler_internal(state, connect_info, query, path, headers, address)
         .with_metrics(HANDLER_TASK_METRICS.with_name("transactions"))
         .await
 }
@@ -140,12 +138,11 @@ async fn handler_internal(
     _path: MatchedPath,
     headers: HeaderMap,
     Path(address): Path<String>,
-    body: Bytes,
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
 
     // Checking for the H160 address correctness
-    H160::from_str(&address).map_err(|_| RpcError::IdentityInvalidAddress)?;
+    H160::from_str(&address).map_err(|_| RpcError::InvalidAddress)?;
 
     let latency_tracker_start = std::time::SystemTime::now();
     let history_provider: ProviderKind;
@@ -157,7 +154,7 @@ async fn handler_internal(
             state
                 .providers
                 .coinbase_pay_provider
-                .get_transactions(address.clone(), body.clone(), query.clone().0)
+                .get_transactions(address.clone(), query.clone().0, state.http_client.clone())
                 .await
                 .tap_err(|e| {
                     error!("Failed to call coinbase transactions history with {}", e);
@@ -171,7 +168,7 @@ async fn handler_internal(
         state
             .providers
             .history_provider
-            .get_transactions(address.clone(), body.clone(), query.0.clone())
+            .get_transactions(address.clone(), query.0.clone(), state.http_client.clone())
             .await
             .tap_err(|e| {
                 error!("Failed to call transactions history with {}", e);

@@ -2,6 +2,60 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.31.1 - 2024-02-20
+#### Bug Fixes
+- increasing keep-alive timeouts (#527) - (b2b4a36) - Max Kalashnikoff
+
+- - -
+
+## 0.31.0 - 2024-02-20
+#### Features
+- **(onramp)** adding onramp buy quotes endpoint (#525) - (8058278) - Max Kalashnikoff
+
+- - -
+
+## 0.30.0 - 2024-02-20
+#### Features
+- **(onramp)** adding onramp buy options endpoint (#499) - (2c98a73) - Max Kalashnikoff
+
+- - -
+
+## 0.29.0 - 2024-02-19
+#### Features
+- **(config)** config parameter to disable project id check (#526) - (04cd050) - Max Kalashnikoff
+
+- - -
+
+## 0.28.0 - 2024-02-16
+#### Features
+- **(history)** using the shared reqwest http client (#516) - (99b63bc) - Max Kalashnikoff
+
+- - -
+
+## 0.27.0 - 2024-02-15
+#### Features
+- **(metrics)** exporting CPU and Memory usage metrics to Prometheus (#514) - (2abe3a6) - Max Kalashnikoff
+
+- - -
+
+## 0.26.0 - 2024-02-15
+#### Features
+- **(rpc)** adding Klaytn mainnet to supported chains (#513) - (e54b603) - Max Kalashnikoff
+
+- - -
+
+## 0.25.0 - 2024-02-13
+#### Features
+- **(ens)** unifying errors (#512) - (e360409) - Max Kalashnikoff
+
+- - -
+
+## 0.24.0 - 2024-02-12
+#### Features
+- **(ens)** checks for allowed zones and name format (#511) - (446956d) - Max Kalashnikoff
+
+- - -
+
 ## 0.23.0 - 2024-02-09
 #### Features
 - **(ens)** updating name address handler (#510) - (1ff2211) - Max Kalashnikoff

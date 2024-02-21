@@ -28,6 +28,8 @@ pub struct AppState {
     pub compile_info: CompileInfo,
     /// Service instance uptime measurement
     pub uptime: std::time::Instant,
+    /// Shared http client
+    pub http_client: reqwest::Client,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -39,6 +41,7 @@ pub fn new_state(
     registry: Registry,
     identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     analytics: RPCAnalytics,
+    http_client: reqwest::Client,
 ) -> AppState {
     AppState {
         config,
@@ -50,6 +53,7 @@ pub fn new_state(
         analytics,
         compile_info: CompileInfo {},
         uptime: std::time::Instant::now(),
+        http_client,
     }
 }
 
@@ -75,11 +79,19 @@ impl AppState {
     }
 
     pub async fn validate_project_access(&self, id: &str) -> Result<(), RpcError> {
+        if !self.config.server.validate_project_id {
+            return Ok(());
+        }
+
         self.get_project_data_validated(id).await.map(drop)
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
     pub async fn validate_project_access_and_quota(&self, id: &str) -> Result<(), RpcError> {
+        if !self.config.server.validate_project_id {
+            return Ok(());
+        }
+
         let project = self.get_project_data_validated(id).await?;
 
         validate_project_quota(&project).tap_err(|_| {

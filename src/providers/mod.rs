@@ -5,6 +5,10 @@ use {
         error::{RpcError, RpcResult},
         handlers::{
             history::{HistoryQueryParams, HistoryResponseBody},
+            onramp::{
+                options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
+                quotes::{OnRampBuyQuotesParams, OnRampBuyQuotesResponse},
+            },
             portfolio::{PortfolioQueryParams, PortfolioResponseBody},
             RpcQueryParams,
         },
@@ -82,6 +86,7 @@ pub struct ProviderRepository {
     pub history_provider: Arc<dyn HistoryProvider>,
     pub portfolio_provider: Arc<dyn PortfolioProvider>,
     pub coinbase_pay_provider: Arc<dyn HistoryProvider>,
+    pub onramp_provider: Arc<dyn OnRampProvider>,
 }
 
 impl ProviderRepository {
@@ -125,8 +130,11 @@ impl ProviderRepository {
 
         let history_provider = Arc::new(ZerionProvider::new(zerion_api_key));
         let portfolio_provider = history_provider.clone();
-        let coinbase_pay_provider =
-            Arc::new(CoinbaseProvider::new(coinbase_api_key, coinbase_app_id));
+        let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
+            coinbase_api_key,
+            coinbase_app_id,
+            "https://pay.coinbase.com/api/v1".into(),
+        ));
 
         Self {
             providers: HashMap::new(),
@@ -137,7 +145,8 @@ impl ProviderRepository {
             prometheus_workspace_header,
             history_provider,
             portfolio_provider,
-            coinbase_pay_provider,
+            coinbase_pay_provider: coinbase_pay_provider.clone(),
+            onramp_provider: coinbase_pay_provider,
         }
     }
 
@@ -470,8 +479,8 @@ pub trait HistoryProvider: Send + Sync + Debug {
     async fn get_transactions(
         &self,
         address: String,
-        body: hyper::body::Bytes,
         params: HistoryQueryParams,
+        http_client: reqwest::Client,
     ) -> RpcResult<HistoryResponseBody>;
 }
 
@@ -483,4 +492,19 @@ pub trait PortfolioProvider: Send + Sync + Debug {
         body: hyper::body::Bytes,
         params: PortfolioQueryParams,
     ) -> RpcResult<PortfolioResponseBody>;
+}
+
+#[async_trait]
+pub trait OnRampProvider: Send + Sync + Debug {
+    async fn get_buy_options(
+        &self,
+        params: OnRampBuyOptionsParams,
+        http_client: reqwest::Client,
+    ) -> RpcResult<OnRampBuyOptionsResponse>;
+
+    async fn get_buy_quotes(
+        &self,
+        params: OnRampBuyQuotesParams,
+        http_client: reqwest::Client,
+    ) -> RpcResult<OnRampBuyQuotesResponse>;
 }

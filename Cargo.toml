@@ -1,6 +1,6 @@
 [package]
 name = "rpc-proxy"
-version = "0.23.0"
+version = "0.31.1"
 edition = "2021"
 authors = [
     "Derek <derek@walletconnect.com>",
@@ -25,6 +25,7 @@ tower-http = { version = "0.4.0", features = ["cors", "trace", "request-id", "ut
 jsonrpc = "0.14.0"
 async-tungstenite = { version = "0.20.0", features = ["tokio", "tokio-runtime", "tokio-native-tls"] }
 url = "2.5"
+reqwest = { version= "0.11", features = ["deflate", "brotli", "gzip"] }
 
 # Serialization
 rmp-serde = "1.1"
@@ -70,6 +71,9 @@ ethers = { version = "2.0.11", git = "https://github.com/gakonst/ethers-rs" } # 
 bytes = "1.4.0"
 regex = "1.10"
 sha256 = "1.2.2"
+
+# System CPU and Memory metrics
+sysinfo = "0.30"
 
 [dev-dependencies]
 jsonrpc = "0.14.0"

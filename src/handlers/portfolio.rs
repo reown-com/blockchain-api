@@ -65,7 +65,7 @@ async fn handler_internal(
     let _address_hash = address.clone();
     address
         .parse::<Address>()
-        .map_err(|_| RpcError::IdentityInvalidAddress)?;
+        .map_err(|_| RpcError::InvalidAddress)?;
 
     state.validate_project_access_and_quota(&project_id).await?;
 

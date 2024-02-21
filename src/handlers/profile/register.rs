@@ -1,10 +1,17 @@
 use {
     super::{
         super::HANDLER_TASK_METRICS,
-        utils::{check_attributes, is_timestamp_within_interval},
+        utils::{
+            check_attributes,
+            is_name_format_correct,
+            is_name_in_allowed_zones,
+            is_name_length_correct,
+            is_timestamp_within_interval,
+        },
         Eip155SupportedChains,
         RegisterPayload,
         RegisterRequest,
+        ALLOWED_ZONES,
         UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{
@@ -25,7 +32,7 @@ use {
     num_enum::TryFromPrimitive,
     sqlx::Error as SqlxError,
     std::{collections::HashMap, str::FromStr, sync::Arc},
-    tracing::log::{error, info},
+    tracing::log::error,
     wc::future::FutureExt,
 };
 
@@ -46,20 +53,27 @@ pub async fn handler_internal(
     let raw_payload = &register_request.message;
     let payload = match serde_json::from_str::<RegisterPayload>(raw_payload) {
         Ok(payload) => payload,
-        Err(e) => {
-            info!("Failed to deserialize register payload: {}", e);
-            return Ok((StatusCode::BAD_REQUEST, "").into_response());
-        }
+        Err(e) => return Err(RpcError::SerdeJson(e)),
     };
+
+    // Check if the name is in the correct format
+    if !is_name_format_correct(&payload.name) {
+        return Err(RpcError::InvalidNameFormat(payload.name));
+    }
+
+    // Check if the name length is correct
+    if !is_name_length_correct(&payload.name) {
+        return Err(RpcError::InvalidNameLength(payload.name));
+    }
+
+    // Check is name in the allowed zones
+    if !is_name_in_allowed_zones(&payload.name, &ALLOWED_ZONES) {
+        return Err(RpcError::InvalidNameZone(payload.name));
+    }
 
     // Check for the supported ENSIP-11 coin type
     if Eip155SupportedChains::try_from_primitive(register_request.coin_type).is_err() {
-        info!("Unsupported coin type {}", register_request.coin_type);
-        return Ok((
-            StatusCode::BAD_REQUEST,
-            "Unsupported coin type for name registration",
-        )
-            .into_response());
+        return Err(RpcError::UnsupportedCoinType(register_request.coin_type));
     }
 
     // Check is name already registered
@@ -67,28 +81,17 @@ pub async fn handler_internal(
         .await
         .is_ok()
     {
-        info!(
-            "Registration request for already registered name {}",
-            payload.name.clone()
-        );
-        return Ok((StatusCode::BAD_REQUEST, "Name is already registered").into_response());
+        return Err(RpcError::NameAlreadyRegistered(payload.name.clone()));
     };
 
     // Check the timestamp is within the sync threshold interval
     if !is_timestamp_within_interval(payload.timestamp, UNIXTIMESTAMP_SYNC_THRESHOLD) {
-        return Ok((
-            StatusCode::BAD_REQUEST,
-            "Timestamp is too old or in the future",
-        )
-            .into_response());
+        return Err(RpcError::ExpiredTimestamp(payload.timestamp));
     }
 
     let owner = match ethers::types::H160::from_str(&register_request.address) {
         Ok(owner) => owner,
-        Err(e) => {
-            info!("Failed to parse H160 address: {}", e);
-            return Ok((StatusCode::BAD_REQUEST, "Invalid H160 address format").into_response());
-        }
+        Err(_) => return Err(RpcError::InvalidAddress),
     };
 
     // Check for supported attributes
@@ -98,12 +101,7 @@ pub async fn handler_internal(
             &super::SUPPORTED_ATTRIBUTES,
             super::ATTRIBUTES_VALUE_MAX_LENGTH,
         ) {
-            return Ok((
-                StatusCode::BAD_REQUEST,
-                "Unsupported attribute in
-        payload",
-            )
-                .into_response());
+            return Err(RpcError::UnsupportedNameAttribute);
         }
     }
 
@@ -111,17 +109,16 @@ pub async fn handler_internal(
     let sinature_check =
         match verify_message_signature(raw_payload, &register_request.signature, &owner) {
             Ok(sinature_check) => sinature_check,
-            Err(e) => {
-                info!("Invalid signature: {}", e);
-                return Ok((
-                    StatusCode::UNAUTHORIZED,
-                    "Invalid signature or message format",
-                )
-                    .into_response());
+            Err(_) => {
+                return Err(RpcError::SignatureValidationError(
+                    "Invalid signature".into(),
+                ))
             }
         };
     if !sinature_check {
-        return Ok((StatusCode::UNAUTHORIZED, "Signature verification error").into_response());
+        return Err(RpcError::SignatureValidationError(
+            "Signature verification error".into(),
+        ));
     }
 
     // Register (insert) a new domain with address
@@ -144,16 +141,14 @@ pub async fn handler_internal(
     }
 
     // Return the registered name and addresses
-    match get_name_and_addresses_by_name(payload.name, &state.postgres.clone()).await {
+    match get_name_and_addresses_by_name(payload.name.clone(), &state.postgres.clone()).await {
         Ok(response) => Ok(Json(response).into_response()),
         Err(e) => match e {
-            SqlxError::RowNotFound => {
-                error!("New registered name is not found in the database: {}", e);
-                Ok((StatusCode::INTERNAL_SERVER_ERROR, "Name is not registered").into_response())
-            }
+            SqlxError::RowNotFound => Err(RpcError::NameNotFound(payload.name.clone())),
             _ => {
-                error!("Error on lookup new registered name: {}", e);
-                Ok((StatusCode::INTERNAL_SERVER_ERROR, "Name is not registered").into_response())
+                // Handle other types of errors
+                error!("Failed to lookup name: {}", e);
+                return Ok((StatusCode::INTERNAL_SERVER_ERROR, "").into_response());
             }
         },
     }
