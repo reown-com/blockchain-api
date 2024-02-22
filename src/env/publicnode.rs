@@ -48,6 +48,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::High).unwrap(),
             ),
         ),
+        // Ethereum Holesky
+        (
+            "eip155:17000".into(),
+            (
+                "ethereum-holesky-rpc".into(),
+                Weight::new(Priority::High).unwrap(),
+            ),
+        ),
         // Base mainnet
         (
             "eip155:8453".into(),

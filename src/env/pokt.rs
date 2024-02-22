@@ -83,14 +83,23 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:56".into(),
             ("bsc-mainnet".into(), Weight::new(Priority::Max).unwrap()),
         ),
-        // Ethereum
+        // Ethereum mainnet
         (
             "eip155:1".into(),
             ("eth-mainnet".into(), Weight::new(Priority::Max).unwrap()),
         ),
+        // Ethereum goerli
         (
             "eip155:5".into(),
             ("eth-goerli".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
+        // Ethereum holesky
+        (
+            "eip155:17000".into(),
+            (
+                "holesky-fullnode-testnet".into(),
+                Weight::new(Priority::High).unwrap(),
+            ),
         ),
         // Optimism
         (

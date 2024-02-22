@@ -6,6 +6,7 @@ Chain name with associated `chainId` query param to use.
 
 - Ethereum (`eip155:1`)
 - Ethereum Goerli (`eip155:5`)
+- Ethereum Holesky (`eip155:17000`)
 - Ethereum Sepolia (`eip155:11155111`)
 - Optimism (`eip155:10`)
 - Optimism Goerli (`eip155:420`)
