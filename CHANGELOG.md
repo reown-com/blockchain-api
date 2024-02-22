@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.32.0 - 2024-02-22
+#### Features
+- adding Holesky to the supported chains (#534) - (8c5fd5d) - Max Kalashnikoff
+
+- - -
+
 ## 0.31.3 - 2024-02-22
 #### Bug Fixes
 - **(providers)** adding more Near protocol support (#535) - (4ed8520) - Max Kalashnikoff
