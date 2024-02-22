@@ -27,6 +27,15 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
     )
     .await;
 
+    // Ethereum holesky
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Publicnode,
+        "eip155:17000",
+        "0x4268",
+    )
+    .await;
+
     // Base mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
