@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.31.3 - 2024-02-22
+#### Bug Fixes
+- **(providers)** adding more Near protocol support (#535) - (4ed8520) - Max Kalashnikoff
+
+- - -
+
 ## 0.31.2 - 2024-02-21
 #### Bug Fixes
 - **(errors)** unifying provider reachability errors to the 503 HTTP Error (#531) - (e66ff12) - Max Kalashnikoff
