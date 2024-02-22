@@ -15,6 +15,7 @@ pub use {
     base::*,
     binance::*,
     infura::*,
+    near::*,
     omnia::*,
     pokt::*,
     publicnode::*,
@@ -27,6 +28,7 @@ mod aurora;
 mod base;
 mod binance;
 mod infura;
+mod near;
 mod omnia;
 mod pokt;
 mod publicnode;
