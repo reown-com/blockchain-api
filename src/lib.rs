@@ -21,6 +21,7 @@ use {
         BaseConfig,
         BinanceConfig,
         InfuraConfig,
+        NearConfig,
         OmniatechConfig,
         PoktConfig,
         PublicnodeConfig,
@@ -37,6 +38,7 @@ use {
         BinanceProvider,
         InfuraProvider,
         InfuraWsProvider,
+        NearProvider,
         OmniatechProvider,
         PoktProvider,
         ProviderRepository,
@@ -368,6 +370,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
         config.infura_project_id.clone(),
     ));
     providers.add_provider::<ZoraProvider, ZoraConfig>(ZoraConfig::default());
+    providers.add_provider::<NearProvider, NearConfig>(NearConfig::default());
 
     providers.add_ws_provider::<InfuraWsProvider, InfuraConfig>(InfuraConfig::new(
         config.infura_project_id.clone(),
