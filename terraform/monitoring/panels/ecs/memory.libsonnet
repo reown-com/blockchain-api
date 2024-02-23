@@ -27,7 +27,7 @@ local overrides       = defaults.overrides;
       },
       conditions  = [
         alertCondition.new(
-          evaluatorParams = [ 50 ],
+          evaluatorParams = [ 70 ],
           evaluatorType   = 'gt',
           operatorType    = 'or',
           queryRefId      = 'RAM_Avg',
