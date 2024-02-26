@@ -18,8 +18,8 @@ local overrides       = defaults.overrides;
       namespace     = 'RPC Proxy',
       name          = "RPC %s - High CPU usage" % vars.environment,
       message       = "RPC %s - High CPU usage" % vars.environment,
-      period        = '5m',
-      frequency     = '1m',
+      period        = '6m',
+      frequency     = '3m',
       noDataState   = 'alerting',
       notifications = vars.notifications,
       alertRuleTags = {
@@ -31,14 +31,16 @@ local overrides       = defaults.overrides;
           evaluatorType   = 'gt',
           operatorType    = 'or',
           queryRefId      = 'CPU_Avg',
-          queryTimeStart  = '5m',
+          queryTimeStart  = '6m',
           reducerType     = 'avg',
         ),
       ]
     ))
     .addTarget(targets.prometheus(
-      datasource  = ds.prometheus,
-      expr        = 'sum(rate(cpu_usage_sum[$__rate_interval])) / sum(rate(cpu_usage_count[$__rate_interval]))',
-      refId       = 'CPU_Avg',
+      datasource    = ds.prometheus,
+      expr          = 'sum(rate(cpu_usage_sum[$__rate_interval])) / sum(rate(cpu_usage_count[$__rate_interval]))',
+      interval      = '3m',
+      legendFormat  = 'CPU Utilization 3m avg.',
+      refId         = 'CPU_Avg',
     ))
 }
