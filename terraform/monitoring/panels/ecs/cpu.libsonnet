@@ -18,7 +18,7 @@ local overrides       = defaults.overrides;
       namespace     = 'RPC Proxy',
       name          = "RPC %s - High CPU usage" % vars.environment,
       message       = "RPC %s - High CPU usage" % vars.environment,
-      period        = '6m',
+      period        = '15m',
       frequency     = '3m',
       noDataState   = 'alerting',
       notifications = vars.notifications,
@@ -31,8 +31,8 @@ local overrides       = defaults.overrides;
           evaluatorType   = 'gt',
           operatorType    = 'or',
           queryRefId      = 'CPU_Avg',
-          queryTimeStart  = '6m',
-          reducerType     = 'avg',
+          queryTimeStart  = '15m',
+          reducerType     = 'max',
         ),
       ]
     ))
