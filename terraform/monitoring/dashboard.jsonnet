@@ -68,6 +68,7 @@ dashboard.new(
     panels.usage.provider(ds, vars, 'Quicknode')     { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Zora')          { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'zkSync')        { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Mantle')        { gridPos: pos._4 },
 
   row.new('Provider Weights'),
     panels.weights.provider(ds, vars, 'Aurora')      { gridPos: pos._4 },
@@ -80,6 +81,7 @@ dashboard.new(
     panels.weights.provider(ds, vars, 'Quicknode')   { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Zora')        { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'zkSync')      { gridPos: pos._4 },
+    panels.weights.provider(ds, vars, 'Mantle')      { gridPos: pos._4 },
 
   row.new('Status Codes'),
     panels.status.provider(ds, vars, 'Aurora')       { gridPos: pos._4 },
@@ -92,6 +94,7 @@ dashboard.new(
     panels.status.provider(ds, vars, 'Quicknode')    { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Zora')         { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'zkSync')       { gridPos: pos._4 },
+    panels.status.provider(ds, vars, 'Mantle')       { gridPos: pos._4 },
 
   row.new('Proxy Metrics'),
     panels.proxy.calls(ds, vars)                     { gridPos: pos._2 },

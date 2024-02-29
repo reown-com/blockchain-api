@@ -98,4 +98,13 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
         "0x13881",
     )
     .await;
+
+    // Mantle mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Publicnode,
+        "eip155:5000",
+        "0x1388",
+    )
+    .await;
 }

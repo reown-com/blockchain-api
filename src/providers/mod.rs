@@ -33,6 +33,7 @@ mod base;
 mod binance;
 mod coinbase;
 mod infura;
+mod mantle;
 mod near;
 mod omnia;
 mod pokt;
@@ -48,6 +49,7 @@ pub use {
     base::BaseProvider,
     binance::BinanceProvider,
     infura::{InfuraProvider, InfuraWsProvider},
+    mantle::MantleProvider,
     near::NearProvider,
     omnia::OmniatechProvider,
     pokt::PoktProvider,
@@ -321,6 +323,7 @@ pub enum ProviderKind {
     Coinbase,
     Quicknode,
     Near,
+    Mantle,
 }
 
 impl Display for ProviderKind {
@@ -339,6 +342,7 @@ impl Display for ProviderKind {
             ProviderKind::Coinbase => "Coinbase",
             ProviderKind::Quicknode => "Quicknode",
             ProviderKind::Near => "Near",
+            ProviderKind::Mantle => "Mantle",
         })
     }
 }
@@ -360,6 +364,7 @@ impl ProviderKind {
             "Coinbase" => Some(Self::Coinbase),
             "Quicknode" => Some(Self::Quicknode),
             "Near" => Some(Self::Near),
+            "Mantle" => Some(Self::Mantle),
             _ => None,
         }
     }

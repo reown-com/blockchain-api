@@ -100,5 +100,10 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::High).unwrap(),
             ),
         ),
+        // Mantle mainnet
+        (
+            "eip155:5000".into(),
+            ("mantle-rpc".into(), Weight::new(Priority::High).unwrap()),
+        ),
     ])
 }
