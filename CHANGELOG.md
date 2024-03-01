@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.33.1 - 2024-03-01
+#### Bug Fixes
+- **(providers)** changing Near chain id to be CAIP-2 compatible (#547) - (b96bec0) - Max Kalashnikoff
+
+- - -
+
 ## 0.33.0 - 2024-03-01
 #### Bug Fixes
 - **(grafana)** adding missed Near provider panels (#542) - (3ea1840) - Max Kalashnikoff
