@@ -154,7 +154,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         ),
         // Near protocol
         (
-            "near".into(),
+            "near:mainnet".into(),
             (
                 "near-mainnet".into(),
                 Weight::new(Priority::Normal).unwrap(),

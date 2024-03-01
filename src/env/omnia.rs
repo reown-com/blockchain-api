@@ -52,7 +52,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         ),
         // Near
         (
-            "near".into(),
+            "near:mainnet".into(),
             ("near".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Aurora
