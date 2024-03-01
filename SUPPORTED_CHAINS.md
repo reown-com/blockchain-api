@@ -32,6 +32,8 @@ Chain name with associated `chainId` query param to use.
 - Zora (`eip155:7777777`)
 - Zora Goerli (`eip155:999`)
 - Klaytn Mainnet (`eip155:8217`)
+- Mantle (`eip155:5000`)
+- Mantle Testnet (`eip155:5001`)
 
 ## WebSocket RPC
 

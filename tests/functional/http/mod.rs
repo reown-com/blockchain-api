@@ -10,6 +10,7 @@ pub(crate) mod aurora;
 pub(crate) mod base;
 pub(crate) mod binance;
 pub(crate) mod infura;
+pub(crate) mod mantle;
 pub(crate) mod near;
 pub(crate) mod pokt;
 pub(crate) mod publicnode;
