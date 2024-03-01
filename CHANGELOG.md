@@ -2,6 +2,19 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.33.0 - 2024-03-01
+#### Bug Fixes
+- **(grafana)** adding missed Near provider panels (#542) - (3ea1840) - Max Kalashnikoff
+- **(monitoring)** removing 503 from non-providers errors (#546) - (6d760ec) - Max Kalashnikoff
+- **(monitoring)** increasing CPU alarm threshold (#539) - (9481d93) - Max Kalashnikoff
+- **(monitoring)** using 3 minutes CPU average (#536) - (e3cb34e) - Max Kalashnikoff
+#### Features
+- **(monitoring)** changing to use Prometheus data for the Memory usage (#529) - (6105312) - Max Kalashnikoff
+- **(monitoring)** changing to use Prometheus data for the CPU usage (#528) - (cd66e9c) - Max Kalashnikoff
+- **(providers)** adding Mantle to supported chains (#541) - (a1c15d3) - Max Kalashnikoff
+
+- - -
+
 ## 0.32.0 - 2024-02-22
 #### Features
 - adding Holesky to the supported chains (#534) - (8c5fd5d) - Max Kalashnikoff
