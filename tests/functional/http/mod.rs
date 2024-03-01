@@ -68,7 +68,7 @@ async fn check_if_rpc_is_responding_correctly_for_near_protocol(
         jsonrpc: JSONRPC_VERSION,
     };
 
-    let (status, rpc_response) = send_jsonrpc_request(client, addr, "near", request).await;
+    let (status, rpc_response) = send_jsonrpc_request(client, addr, "near:mainnet", request).await;
 
     #[derive(serde::Deserialize)]
     struct GenesisConfig {

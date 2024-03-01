@@ -24,7 +24,7 @@ Chain name with associated `chainId` query param to use.
 - Avalanche Fuji Testnet (`eip155:43113`)
 - zkSync Era (`eip155:324`)
 - zkSync Era Testnet (`eip155:280`)
-- Near (`near`)
+- Near Mainnet(`near:mainnet`)
 - Gnosis Chain (`eip155:100`)
 - Solana Mainnet (`solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz`)
 - Base (`eip155:8453`)

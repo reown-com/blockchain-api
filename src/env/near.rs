@@ -37,7 +37,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Near protocol
         (
-            "near".into(),
+            "near:mainnet".into(),
             (
                 "https://rpc.mainnet.near.org".into(),
                 Weight::new(Priority::High).unwrap(),
