@@ -4,6 +4,7 @@ use {
         env::ProviderConfig,
         error::{RpcError, RpcResult},
         handlers::{
+            balance::{self, BalanceQueryParams, BalanceResponseBody},
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
@@ -91,6 +92,7 @@ pub struct ProviderRepository {
     pub portfolio_provider: Arc<dyn PortfolioProvider>,
     pub coinbase_pay_provider: Arc<dyn HistoryProvider>,
     pub onramp_provider: Arc<dyn OnRampProvider>,
+    pub balance_provider: Arc<dyn BalanceProvider>,
 }
 
 impl ProviderRepository {
@@ -132,8 +134,11 @@ impl ProviderRepository {
             .clone()
             .unwrap_or("COINBASE_APP_ID_UNDEFINED".into());
 
-        let history_provider = Arc::new(ZerionProvider::new(zerion_api_key));
-        let portfolio_provider = history_provider.clone();
+        let zerion_provider = Arc::new(ZerionProvider::new(zerion_api_key));
+        let history_provider = zerion_provider.clone();
+        let portfolio_provider = zerion_provider.clone();
+        let balance_provider = zerion_provider;
+
         let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
             coinbase_api_key,
             coinbase_app_id,
@@ -151,6 +156,7 @@ impl ProviderRepository {
             portfolio_provider,
             coinbase_pay_provider: coinbase_pay_provider.clone(),
             onramp_provider: coinbase_pay_provider,
+            balance_provider,
         }
     }
 
@@ -517,4 +523,14 @@ pub trait OnRampProvider: Send + Sync + Debug {
         params: OnRampBuyQuotesParams,
         http_client: reqwest::Client,
     ) -> RpcResult<OnRampBuyQuotesResponse>;
+}
+
+#[async_trait]
+pub trait BalanceProvider: Send + Sync + Debug {
+    async fn get_balance(
+        &self,
+        address: String,
+        params: BalanceQueryParams,
+        http_client: reqwest::Client,
+    ) -> RpcResult<BalanceResponseBody>;
 }

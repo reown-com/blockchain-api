@@ -222,6 +222,10 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/account/:address/portfolio",
             get(handlers::portfolio::handler),
         )
+        .route(
+            "/v1/account/:address/balance",
+            get(handlers::balance::handler),
+        )
         // Register account name
         .route(
             "/v1/profile/account",
