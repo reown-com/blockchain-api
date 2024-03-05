@@ -1,6 +1,6 @@
 import { getTestSetup } from './init';
 
-describe('Address balance', () => {
+describe('Account balance', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
 
   const fulfilled_address = '0xf3ea39310011333095CFCcCc7c4Ad74034CABA63'

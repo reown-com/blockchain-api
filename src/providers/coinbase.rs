@@ -17,7 +17,7 @@ use {
                 quotes::{OnRampBuyQuotesParams, OnRampBuyQuotesResponse},
             },
         },
-        utils::crypto::string_chain_id_to_caip2_format,
+        utils::crypto::ChainId,
     },
     async_trait::async_trait,
     hyper::Client,
@@ -120,7 +120,7 @@ impl HistoryProvider for CoinbaseProvider {
                     sent_to: address.clone(),
                     status: f.status,
                     application: None,
-                    chain: string_chain_id_to_caip2_format(&f.purchase_network).ok(),
+                    chain: ChainId::to_caip2(&f.purchase_network),
                 },
                 transfers: Some(vec![HistoryTransactionTransfer {
                     fungible_info: Some(HistoryTransactionFungibleInfo {

@@ -30,8 +30,7 @@ use {
     hyper::Client,
     hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
-    tap::TapFallible,
-    tracing::log::{error, info},
+    tracing::log::error,
     url::Url,
 };
 
@@ -272,19 +271,7 @@ impl HistoryProvider for ZerionProvider {
                     chain: if f.relationships.chain.data.r#type != "chains" {
                         None
                     } else {
-                        // Try to convert chain id from human readable to caip2 format
-                        match crypto::string_chain_id_to_caip2_format(
-                            &f.relationships.chain.data.id,
-                        ) {
-                            Ok(chain) => Some(chain),
-                            Err(_) => {
-                                info!(
-                                    "Error on parsing chain id to caip2 format: {:?}",
-                                    f.relationships.chain.data.id
-                                );
-                                None
-                            }
-                        }
+                        crypto::ChainId::to_caip2(&f.relationships.chain.data.id)
                     },
                 },
                 transfers: f
@@ -412,9 +399,12 @@ impl BalanceProvider for ZerionProvider {
             .append_pair("currency", &params.currency.to_string());
         url.query_pairs_mut()
             .append_pair("filter[position_types]", "wallet");
+
         if let Some(chain_id) = params.chain_id {
+            let chain_name = crypto::ChainId::from_caip2(&chain_id)
+                .ok_or(RpcError::InvalidParameter(chain_id))?;
             url.query_pairs_mut()
-                .append_pair("filter[chain_ids]", &chain_id);
+                .append_pair("filter[chain_ids]", &chain_name);
         }
 
         let response = http_client
@@ -441,14 +431,7 @@ impl BalanceProvider for ZerionProvider {
             .map(|f| BalanceItem {
                 name: f.attributes.fungible_info.name,
                 symbol: f.attributes.fungible_info.symbol,
-                chain_id: crypto::string_chain_id_to_caip2_format(&f.relationships.chain.data.id)
-                    .tap_err(|_| {
-                        error!(
-                            "Error on parsing chain id to caip2 format: {:?}",
-                            f.relationships.chain.data.id
-                        )
-                    })
-                    .ok(),
+                chain_id: crypto::ChainId::to_caip2(&f.relationships.chain.data.id),
                 value: f.attributes.value,
                 price: f.attributes.price,
                 quantity: BalanceQuantity {
