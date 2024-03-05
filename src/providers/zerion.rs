@@ -1,8 +1,9 @@
 use {
-    super::{HistoryProvider, PortfolioProvider},
+    super::{BalanceProvider, HistoryProvider, PortfolioProvider},
     crate::{
         error::{RpcError, RpcResult},
         handlers::{
+            balance::{BalanceQueryParams, BalanceResponseBody},
             history::{
                 HistoryQueryParams,
                 HistoryResponseBody,
@@ -20,6 +21,7 @@ use {
             },
             portfolio::{PortfolioPosition, PortfolioQueryParams, PortfolioResponseBody},
         },
+        providers::balance::{BalanceItem, BalanceQuantity},
         utils::crypto,
     },
     async_trait::async_trait,
@@ -28,7 +30,7 @@ use {
     hyper::Client,
     hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
-    tracing::log::{error, info},
+    tracing::log::error,
     url::Url,
 };
 
@@ -70,19 +72,14 @@ pub struct ZerionPortfolioResponseBody {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct ZerionPortfolioAttributes {
-    pub quantity: ZerionPortfolioQuantity,
-    pub fungible_info: ZerionPortfolioFungibleInfo,
+    pub quantity: ZerionQuantityAttribute,
+    pub fungible_info: ZerionFungibleInfoAttribute,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct ZerionPortfolioQuantity {
+pub struct ZerionQuantityAttribute {
+    pub decimals: usize,
     pub numeric: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct ZerionPortfolioFungibleInfo {
-    pub name: String,
-    pub symbol: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -90,21 +87,21 @@ pub struct ZerionTransactionsReponseBody {
     pub r#type: String,
     pub id: String,
     pub attributes: ZerionTransactionAttributes,
-    pub relationships: ZerionTransactionsRelationships,
+    pub relationships: ZerionRelationshipsItem,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct ZerionTransactionsRelationships {
-    pub chain: ZerionTransactionsRelationshipsChain,
+pub struct ZerionRelationshipsItem {
+    pub chain: ZerionRelationshipsItemChain,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct ZerionTransactionsRelationshipsChain {
-    pub data: ZerionTransactionsRelationshipsChainData,
+pub struct ZerionRelationshipsItemChain {
+    pub data: ZerionRelationshipsItemChainData,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct ZerionTransactionsRelationshipsChainData {
+pub struct ZerionRelationshipsItemChainData {
     pub r#type: String,
     pub id: String,
 }
@@ -125,7 +122,7 @@ pub struct ZerionTransactionAttributes {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct ZerionTransactionTransfer {
-    pub fungible_info: Option<ZerionTransactionFungibleInfo>,
+    pub fungible_info: Option<ZerionFungibleInfoAttribute>,
     pub nft_info: Option<ZerionTransactionNFTInfo>,
     pub direction: String,
     pub quantity: ZerionTransactionTransferQuantity,
@@ -134,9 +131,9 @@ pub struct ZerionTransactionTransfer {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
-pub struct ZerionTransactionFungibleInfo {
-    pub name: Option<String>,
-    pub symbol: Option<String>,
+pub struct ZerionFungibleInfoAttribute {
+    pub name: String,
+    pub symbol: String,
     pub icon: Option<ZerionTransactionURLItem>,
 }
 
@@ -183,6 +180,20 @@ pub struct ZerionTransactionApplicationMetadata {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct ZerionUrlItem {
     pub url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionPosition {
+    pub attributes: ZerionPositionAttributes,
+    pub relationships: ZerionRelationshipsItem,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionPositionAttributes {
+    pub value: Option<f64>,
+    pub price: f64,
+    pub quantity: ZerionQuantityAttribute,
+    pub fungible_info: ZerionFungibleInfoAttribute,
 }
 
 #[async_trait]
@@ -260,19 +271,7 @@ impl HistoryProvider for ZerionProvider {
                     chain: if f.relationships.chain.data.r#type != "chains" {
                         None
                     } else {
-                        // Try to convert chain id from human readable to caip2 format
-                        match crypto::string_chain_id_to_caip2_format(
-                            &f.relationships.chain.data.id,
-                        ) {
-                            Ok(chain) => Some(chain),
-                            Err(_) => {
-                                info!(
-                                    "Error on parsing chain id to caip2 format: {:?}",
-                                    f.relationships.chain.data.id
-                                );
-                                None
-                            }
-                        }
+                        crypto::ChainId::to_caip2(&f.relationships.chain.data.id)
                     },
                 },
                 transfers: f
@@ -283,8 +282,8 @@ impl HistoryProvider for ZerionProvider {
                         Some(HistoryTransactionTransfer {
                             fungible_info: f.fungible_info.map(|f| {
                                 HistoryTransactionFungibleInfo {
-                                    name: f.name,
-                                    symbol: f.symbol,
+                                    name: Some(f.name),
+                                    symbol: Some(f.symbol),
                                     icon: f.icon.map(|f| HistoryTransactionURLItem { url: f.url }),
                                 }
                             }),
@@ -382,5 +381,76 @@ impl PortfolioProvider for ZerionProvider {
             .collect();
 
         Ok(PortfolioResponseBody { data: portfolio })
+    }
+}
+
+#[async_trait]
+impl BalanceProvider for ZerionProvider {
+    #[tracing::instrument(skip(self, params), fields(provider = "Zerion"))]
+    async fn get_balance(
+        &self,
+        address: String,
+        params: BalanceQueryParams,
+        http_client: reqwest::Client,
+    ) -> RpcResult<BalanceResponseBody> {
+        let base = format!("https://api.zerion.io/v1/wallets/{}/positions/?", &address);
+        let mut url = Url::parse(&base).map_err(|_| RpcError::BalanceParseURLError)?;
+        url.query_pairs_mut()
+            .append_pair("currency", &params.currency.to_string());
+        url.query_pairs_mut()
+            .append_pair("filter[position_types]", "wallet");
+
+        if let Some(chain_id) = params.chain_id {
+            let chain_name = crypto::ChainId::from_caip2(&chain_id)
+                .ok_or(RpcError::InvalidParameter(chain_id))?;
+            url.query_pairs_mut()
+                .append_pair("filter[chain_ids]", &chain_name);
+        }
+
+        let response = http_client
+            .get(url)
+            .header("Content-Type", "application/json")
+            .header("authorization", format!("Basic {}", self.api_key))
+            .send()
+            .await?;
+
+        if response.status() != reqwest::StatusCode::OK {
+            error!(
+                "Error on zerion balance response. Status is not OK: {:?}",
+                response.status(),
+            );
+            return Err(RpcError::BalanceProviderError);
+        }
+        let body = response
+            .json::<ZerionResponseBody<Vec<ZerionPosition>>>()
+            .await?;
+
+        let balances_vec = body
+            .data
+            .into_iter()
+            .map(|f| BalanceItem {
+                name: f.attributes.fungible_info.name,
+                symbol: f.attributes.fungible_info.symbol,
+                chain_id: crypto::ChainId::to_caip2(&f.relationships.chain.data.id),
+                value: f.attributes.value,
+                price: f.attributes.price,
+                quantity: BalanceQuantity {
+                    decimals: f.attributes.quantity.decimals.to_string(),
+                    numeric: f.attributes.quantity.numeric,
+                },
+                icon_url: f
+                    .attributes
+                    .fungible_info
+                    .icon
+                    .map(|f| f.url)
+                    .unwrap_or_default(),
+            })
+            .collect();
+
+        let response = BalanceResponseBody {
+            balances: balances_vec,
+        };
+
+        Ok(response)
     }
 }

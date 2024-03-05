@@ -1,6 +1,9 @@
 use {
     ethers::types::H160,
-    std::{collections::HashMap, str::FromStr},
+    std::str::FromStr,
+    strum::IntoEnumIterator,
+    strum_macros::{Display, EnumIter, EnumString},
+    tracing::warn,
 };
 
 /// Veryfy message signature signed by the keccak256
@@ -33,26 +36,82 @@ pub fn convert_coin_type_to_evm_chain_id(coin_type: u32) -> u32 {
     0x7FFFFFFF & coin_type
 }
 
-/// Convert from human readable chain id (e.g. polygon) to CAIP-2 format
-/// (e.g. eip155:137)
-pub fn string_chain_id_to_caip2_format(chain_id: &str) -> Result<String, anyhow::Error> {
-    // Aliases for string chain ids
-    let aliases: HashMap<String, Vec<String>> =
-        HashMap::from([("mainnet".into(), vec!["ethereum".into()])]);
+/// Human readable chain ids to CAIP-2 chain ids
+#[derive(Clone, Copy, Debug, EnumString, EnumIter, Display)]
+#[strum(serialize_all = "lowercase")]
+#[repr(u64)]
+pub enum ChainId {
+    Arbitrum = 42161,
+    Aurora = 1313161554,
+    Avalanche = 43114,
+    Base = 8453,
+    #[strum(
+        to_string = "binance-smart-chain",
+        serialize = "binance_smart_chain",
+        serialize = "bsc"
+    )]
+    BinanceSmartChain = 56,
+    Blast = 81032,
+    Celo = 42220,
+    #[strum(serialize = "ethereum", serialize = "mainnet")]
+    Ethereum = 1,
+    Fantom = 250,
+    Goerli = 5,
+    Linea = 59160,
+    Optimism = 10,
+    Polygon = 137,
+    Scroll = 8508132,
+    #[strum(
+        to_string = "xdai",
+        serialize = "gnosis",
+        serialize = "gnosis_chain",
+        serialize = "gnosis-chain",
+        serialize = "gnosischain"
+    )]
+    GnosisChain = 100,
+    #[strum(serialize = "zksync", serialize = "zksyncera")]
+    ZkSyncEra = 328,
+    Zora = 7854577,
+}
 
-    for (alias_name, aliases_vec) in aliases {
-        if aliases_vec.contains(&chain_id.to_lowercase()) {
-            return Ok(format!(
-                "eip155:{}",
-                ethers::types::Chain::from_str(&alias_name)? as u64
-            ));
+impl ChainId {
+    /// Convert from human readable chain name id (e.g. polygon) to CAIP-2
+    /// format chain id (e.g. `eip155:137`)
+    pub fn to_caip2(chain_name: &str) -> Option<String> {
+        match ChainId::from_str(chain_name) {
+            Ok(chain_id) => Some(format!("eip155:{}", chain_id as u64)),
+            Err(_) => {
+                warn!("CAIP-2 Convertion: Chain name is not found: {}", chain_name);
+                None
+            }
         }
     }
 
-    Ok(format!(
-        "eip155:{}",
-        ethers::types::Chain::from_str(chain_id)? as u64
-    ))
+    /// Convert from CAIP-2 format (e.g. `eip155:137`) to human readable chain
+    /// name id (e.g. polygon)
+    pub fn from_caip2(caip2_chain_id: &str) -> Option<String> {
+        let extracted_chain_id = caip2_chain_id
+            .split(':')
+            .collect::<Vec<&str>>()
+            .pop()
+            .unwrap_or_default()
+            .parse::<u64>()
+            .unwrap_or_default();
+
+        match ChainId::iter()
+            .find(|&x| x as u64 == extracted_chain_id)
+            .map(|x| x.to_string())
+        {
+            Some(chain_id) => Some(chain_id),
+            None => {
+                warn!(
+                    "CAIP-2 Convertion: Chain id is not found: {}",
+                    caip2_chain_id
+                );
+                None
+            }
+        }
+    }
 }
 
 /// Compare two values (either H160 or &str) in constant time to prevent timing
@@ -125,22 +184,40 @@ mod tests {
     }
 
     #[test]
-    fn test_string_chain_id_to_caip2_format() {
-        let mut chains: HashMap<&str, u64> = HashMap::new();
-        chains.insert("mainnet", 1);
-        // Test for an `ethereum` alias
-        chains.insert("ethereum", 1);
-        chains.insert("goerli", 5);
-        chains.insert("optimism", 10);
-        chains.insert("bsc", 56);
-        chains.insert("xdai", 100);
-        chains.insert("polygon", 137);
-        chains.insert("base", 8453);
+    fn test_human_format_to_caip2_format() {
+        let mut chains: HashMap<&str, &str> = HashMap::new();
+        chains.insert("ethereum", "eip155:1");
+        chains.insert("mainnet", "eip155:1");
+        chains.insert("goerli", "eip155:5");
+        chains.insert("optimism", "eip155:10");
+        chains.insert("bsc", "eip155:56");
+        chains.insert("gnosis", "eip155:100");
+        chains.insert("xdai", "eip155:100");
+        chains.insert("polygon", "eip155:137");
+        chains.insert("base", "eip155:8453");
 
-        for (chain_id, coin_type) in chains.iter() {
-            let result = string_chain_id_to_caip2_format(chain_id);
-            assert!(result.is_ok(), "chain_id is not found: {}", chain_id);
-            assert_eq!(result.unwrap(), format!("eip155:{}", coin_type));
+        for (chain_name, coin_type) in chains.iter() {
+            let result = ChainId::to_caip2(chain_name);
+            assert!(result.is_some(), "chain_name is not found: {}", chain_name);
+            assert_eq!(&result.unwrap(), coin_type);
+        }
+    }
+
+    #[test]
+    fn test_caip2_format_to_human_format() {
+        let mut chains: HashMap<&str, &str> = HashMap::new();
+        chains.insert("eip155:1", "ethereum");
+        chains.insert("eip155:5", "goerli");
+        chains.insert("eip155:10", "optimism");
+        chains.insert("eip155:56", "binance-smart-chain");
+        chains.insert("eip155:100", "xdai");
+        chains.insert("eip155:137", "polygon");
+        chains.insert("eip155:8453", "base");
+
+        for (chain_id, chain_name) in chains.iter() {
+            let result = ChainId::from_caip2(chain_id);
+            assert!(result.is_some(), "chain_id is not found: {}", chain_id);
+            assert_eq!(&result.unwrap(), chain_name);
         }
     }
 
