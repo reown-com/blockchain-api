@@ -67,6 +67,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         ),
         // Solana Mainnet
         (
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp".into(),
+            ("sol".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
+        (
+            // Incorrect (not CAIP-2), uses block explorer blockhash instead of getGenesisHash RPC
             "solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz".into(),
             ("sol".into(), Weight::new(Priority::Normal).unwrap()),
         ),

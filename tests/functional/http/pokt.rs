@@ -170,6 +170,41 @@ async fn pokt_provider_solana_mainnet(ctx: &mut ServerContext) {
     let (status, rpc_response) = send_jsonrpc_request(
         client,
         addr,
+        "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+        request,
+    )
+    .await;
+
+    // Verify that HTTP communication was successful
+    assert_eq!(status, StatusCode::OK);
+
+    // Verify there was no error in rpc
+    assert!(rpc_response.error.is_none());
+
+    // Check chainId
+    assert_eq!(rpc_response.result::<String>().unwrap(), "ok")
+}
+
+#[test_context(ServerContext)]
+#[tokio::test]
+#[ignore]
+async fn pokt_provider_solana_mainnet_non_standard(ctx: &mut ServerContext) {
+    let addr = format!(
+        "{}/v1?projectId={}&chainId=",
+        ctx.server.public_addr, ctx.server.project_id
+    );
+
+    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let request = jsonrpc::Request {
+        method: "getHealth",
+        params: &[],
+        id: serde_json::Value::Number(1.into()),
+        jsonrpc: JSONRPC_VERSION,
+    };
+
+    let (status, rpc_response) = send_jsonrpc_request(
+        client,
+        addr,
         "solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz",
         request,
     )
