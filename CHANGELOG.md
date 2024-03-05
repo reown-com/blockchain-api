@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.34.0 - 2024-03-05
+#### Bug Fixes
+- **(monitoring)** fixing typo in excluding 503 from availability (#550) - (bfc8e85) - Max Kalashnikoff
+- correct Solana chain ID (#565) - (5bfe565) - Chris Smith
+#### Features
+- sorting supported chains list by the chainid (#562) - (378304e) - Max Kalashnikoff
+
+- - -
+
 ## 0.33.1 - 2024-03-01
 #### Bug Fixes
 - **(providers)** changing Near chain id to be CAIP-2 compatible (#547) - (b96bec0) - Max Kalashnikoff
