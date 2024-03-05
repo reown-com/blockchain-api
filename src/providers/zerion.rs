@@ -224,7 +224,7 @@ impl HistoryProvider for ZerionProvider {
             .send()
             .await?;
 
-        if response.status() != reqwest::StatusCode::OK {
+        if !response.status().is_success() {
             error!(
                 "Error on zerion transactions response. Status is not OK: {:?}",
                 response.status(),
@@ -414,7 +414,7 @@ impl BalanceProvider for ZerionProvider {
             .send()
             .await?;
 
-        if response.status() != reqwest::StatusCode::OK {
+        if !response.status().is_success() {
             error!(
                 "Error on zerion balance response. Status is not OK: {:?}",
                 response.status(),
