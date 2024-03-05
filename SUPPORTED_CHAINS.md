@@ -35,7 +35,7 @@ Chain name with associated `chainId` query param to use.
 | Aurora                         | eip155:1313161554    |
 | Aurora Testnet                 | eip155:1313161555    |
 | Near Mainnet                   | near:mainnet         |
-| Solana Mainnet                 | solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz |
+| Solana Mainnet                 | solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp |
 
 ## WebSocket RPC
 

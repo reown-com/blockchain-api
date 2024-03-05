@@ -52,13 +52,7 @@ async fn handler_internal(
         .validate_project_access_and_quota(&query_params.project_id)
         .await?;
 
-    // TODO: Remove the `solana-mainnet` chain_id alias for
-    // `solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz` when ready
-    let chain_id = if query_params.chain_id.to_lowercase() == "solana-mainnet" {
-        "solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz".to_string()
-    } else {
-        query_params.chain_id.to_lowercase()
-    };
+    let chain_id = query_params.chain_id.clone();
 
     // Exact provider proxy request for testing suite
     // This request is allowed only for the RPC_PROXY_TESTING_PROJECT_ID
