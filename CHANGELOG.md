@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.35.0 - 2024-03-05
+#### Features
+- account balance endpoint (#563) - (ef11f08) - Max Kalashnikoff
+
+- - -
+
 ## 0.34.0 - 2024-03-05
 #### Bug Fixes
 - **(monitoring)** fixing typo in excluding 503 from availability (#550) - (bfc8e85) - Max Kalashnikoff
