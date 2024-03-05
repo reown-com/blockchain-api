@@ -188,7 +188,7 @@ async fn pokt_provider_solana_mainnet(ctx: &mut ServerContext) {
 #[test_context(ServerContext)]
 #[tokio::test]
 #[ignore]
-async fn pokt_provider_solana_mainnet_incorrect(ctx: &mut ServerContext) {
+async fn pokt_provider_solana_mainnet_non_standard(ctx: &mut ServerContext) {
     let addr = format!(
         "{}/v1?projectId={}&chainId=",
         ctx.server.public_addr, ctx.server.project_id
