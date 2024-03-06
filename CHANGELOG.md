@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.35.1 - 2024-03-06
+#### Bug Fixes
+- **(zerion)** allowing HTTP 202 return code to pass (#564) - (8e7dc7b) - Max Kalashnikoff
+
+- - -
+
 ## 0.35.0 - 2024-03-05
 #### Features
 - account balance endpoint (#563) - (ef11f08) - Max Kalashnikoff
