@@ -79,6 +79,7 @@ pub struct ProvidersConfig {
     pub zerion_api_key: Option<String>,
     pub coinbase_api_key: Option<String>,
     pub coinbase_app_id: Option<String>,
+    pub one_inch_api_key: Option<String>,
 }
 
 pub struct ProviderRepository {
@@ -138,11 +139,18 @@ impl ProviderRepository {
             .clone()
             .unwrap_or("COINBASE_APP_ID_UNDEFINED".into());
 
+        // Don't crash the application if the ONE_INCH_API_KEY is not set
+        // TODO: find a better way to handle this
+        let one_inch_api_key = config
+            .one_inch_api_key
+            .clone()
+            .unwrap_or("ONE_INCH_API_KEY".into());
+
         let zerion_provider = Arc::new(ZerionProvider::new(zerion_api_key));
         let history_provider = zerion_provider.clone();
         let portfolio_provider = zerion_provider.clone();
         let balance_provider = zerion_provider;
-        let conversion_provider = Arc::new(OneInchProvider::new("test".into()));
+        let conversion_provider = Arc::new(OneInchProvider::new(one_inch_api_key));
 
         let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
             coinbase_api_key,

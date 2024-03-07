@@ -146,6 +146,7 @@ mod test {
             ),
             ("RPC_PROXY_PROVIDER_COINBASE_API_KEY", "COINBASE_API_KEY"),
             ("RPC_PROXY_PROVIDER_COINBASE_APP_ID", "COINBASE_APP_ID"),
+            ("RPC_PROXY_PROVIDER_ONE_INCH_API_KEY", "ONE_INCH_API_KEY"),
             (
                 "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL",
                 "PROMETHEUS_QUERY_URL",
@@ -215,6 +216,7 @@ mod test {
                 zerion_api_key: Some("ZERION_API_KEY".to_owned()),
                 coinbase_api_key: Some("COINBASE_API_KEY".to_owned()),
                 coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),
+                one_inch_api_key: Some("ONE_INCH_API_KEY".to_owned()),
             },
         });
 
