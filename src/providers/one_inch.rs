@@ -98,7 +98,7 @@ impl ConversionProvider for OneInchProvider {
                     decimals: token.decimals,
                     logo_uri: token.logo_uri,
                     eip2612: if token.eip2612.is_some() {
-                        Some(token.eip2612.unwrap_or_default())
+                        token.eip2612
                     } else {
                         Some(false)
                     },

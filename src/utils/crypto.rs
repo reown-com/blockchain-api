@@ -120,7 +120,7 @@ impl ChainId {
     }
 }
 
-#[derive(Clone, Copy, Debug, EnumString, EnumIter, Display)]
+#[derive(Clone, Copy, Debug, EnumString, EnumIter, Display, Eq, PartialEq)]
 #[strum(serialize_all = "lowercase")]
 pub enum CaipNamespaces {
     Eip155,
@@ -254,5 +254,21 @@ mod tests {
         let string_two = "some another string";
         assert!(!constant_time_eq(string_one, string_two));
         assert!(constant_time_eq(string_one, string_one));
+    }
+
+    #[test]
+    fn test_format_to_caip10() {
+        assert_eq!(
+            format_to_caip10(CaipNamespaces::Eip155, "1", "0xtest"),
+            "eip155:1:0xtest"
+        );
+    }
+
+    #[test]
+    fn test_disassemble_caip2() {
+        let caip2 = "eip155:1";
+        let result = disassemble_caip2(caip2).unwrap();
+        assert_eq!(result.0, CaipNamespaces::Eip155);
+        assert_eq!(result.1, "1".to_string());
     }
 }
