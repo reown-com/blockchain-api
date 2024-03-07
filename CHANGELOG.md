@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.36.0 - 2024-03-07
+#### Features
+- **(conversion)** available tokens list endpoint implementation (#567) - (e78f77a) - Max Kalashnikoff
+
+- - -
+
 ## 0.35.1 - 2024-03-06
 #### Bug Fixes
 - **(zerion)** allowing HTTP 202 return code to pass (#564) - (8e7dc7b) - Max Kalashnikoff
