@@ -2,6 +2,12 @@ use {
     crate::{
         error::{RpcError, RpcResult},
         handlers::convert::{
+            approve::{
+                ConvertApproveQueryParams,
+                ConvertApproveResponseBody,
+                ConvertApproveTx,
+                ConvertApproveTxEip155,
+            },
             quotes::{ConvertQuoteQueryParams, ConvertQuoteResponseBody, QuoteItem},
             tokens::{TokenItem, TokensListQueryParams, TokensListResponseBody},
         },
@@ -67,6 +73,15 @@ struct OneInchTokenItem {
 #[serde(rename_all = "camelCase")]
 struct OneInchQuoteResponse {
     dst_amount: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OneInchApproveTxResponse {
+    data: String,
+    gas_price: String,
+    to: String,
+    value: String,
 }
 
 #[async_trait]
@@ -161,6 +176,60 @@ impl ConversionProvider for OneInchProvider {
                 to_amount: body.dst_amount,
                 to_account: params.to,
             }],
+        };
+
+        Ok(response)
+    }
+
+    async fn build_approve_tx(
+        &self,
+        params: ConvertApproveQueryParams,
+    ) -> RpcResult<ConvertApproveResponseBody> {
+        let chain_id = crypto::disassemble_caip10(&params.from)?.1;
+        let (_, dst_chain_id, dst_address) = crypto::disassemble_caip10(&params.to)?;
+
+        // Check if from and to chain ids are different
+        // 1inch provider does not support cross-chain swaps
+        if dst_chain_id != chain_id {
+            return Err(RpcError::InvalidParameter(
+                "from and to chain ids are different in a single chain swap".into(),
+            ));
+        }
+
+        let base = format!(
+            "{}/{}/approve/transaction",
+            &self.base_api_url,
+            chain_id.clone()
+        );
+        let mut url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
+
+        url.query_pairs_mut()
+            .append_pair("tokenAddress", &dst_address);
+        url.query_pairs_mut()
+            .append_pair("amount", &params.amount.to_string());
+
+        let response = self.send_request(url, &self.http_client.clone()).await?;
+
+        if !response.status().is_success() {
+            error!(
+                "Error on building approval tx for conversion from 1inch provider. Status is not \
+                 OK: {:?}",
+                response.status(),
+            );
+            return Err(RpcError::ConversionProviderError);
+        }
+        let body = response.json::<OneInchApproveTxResponse>().await?;
+
+        let response = ConvertApproveResponseBody {
+            tx: ConvertApproveTx {
+                from: params.from,
+                to: crypto::format_to_caip10(crypto::CaipNamespaces::Eip155, &chain_id, &body.to),
+                data: body.data,
+                value: body.value,
+                eip155: Some(ConvertApproveTxEip155 {
+                    gas_price: body.gas_price,
+                }),
+            },
         };
 
         Ok(response)

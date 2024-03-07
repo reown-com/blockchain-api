@@ -6,6 +6,7 @@ use {
         handlers::{
             balance::{self, BalanceQueryParams, BalanceResponseBody},
             convert::{
+                approve::{ConvertApproveQueryParams, ConvertApproveResponseBody},
                 quotes::{ConvertQuoteQueryParams, ConvertQuoteResponseBody},
                 tokens::{TokensListQueryParams, TokensListResponseBody},
             },
@@ -563,4 +564,9 @@ pub trait ConversionProvider: Send + Sync + Debug {
         &self,
         params: ConvertQuoteQueryParams,
     ) -> RpcResult<ConvertQuoteResponseBody>;
+
+    async fn build_approve_tx(
+        &self,
+        params: ConvertApproveQueryParams,
+    ) -> RpcResult<ConvertApproveResponseBody>;
 }
