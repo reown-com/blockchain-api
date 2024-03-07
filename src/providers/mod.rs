@@ -5,6 +5,7 @@ use {
         error::{RpcError, RpcResult},
         handlers::{
             balance::{self, BalanceQueryParams, BalanceResponseBody},
+            convert::tokens::{TokensListQueryParams, TokensListResponseBody},
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
@@ -37,6 +38,7 @@ mod infura;
 mod mantle;
 mod near;
 mod omnia;
+mod one_inch;
 mod pokt;
 mod publicnode;
 mod quicknode;
@@ -53,6 +55,7 @@ pub use {
     mantle::MantleProvider,
     near::NearProvider,
     omnia::OmniatechProvider,
+    one_inch::OneInchProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
     quicknode::QuicknodeProvider,
@@ -76,6 +79,7 @@ pub struct ProvidersConfig {
     pub zerion_api_key: Option<String>,
     pub coinbase_api_key: Option<String>,
     pub coinbase_app_id: Option<String>,
+    pub one_inch_api_key: Option<String>,
 }
 
 pub struct ProviderRepository {
@@ -93,6 +97,7 @@ pub struct ProviderRepository {
     pub coinbase_pay_provider: Arc<dyn HistoryProvider>,
     pub onramp_provider: Arc<dyn OnRampProvider>,
     pub balance_provider: Arc<dyn BalanceProvider>,
+    pub conversion_provider: Arc<dyn ConversionProvider>,
 }
 
 impl ProviderRepository {
@@ -134,10 +139,18 @@ impl ProviderRepository {
             .clone()
             .unwrap_or("COINBASE_APP_ID_UNDEFINED".into());
 
+        // Don't crash the application if the ONE_INCH_API_KEY is not set
+        // TODO: find a better way to handle this
+        let one_inch_api_key = config
+            .one_inch_api_key
+            .clone()
+            .unwrap_or("ONE_INCH_API_KEY".into());
+
         let zerion_provider = Arc::new(ZerionProvider::new(zerion_api_key));
         let history_provider = zerion_provider.clone();
         let portfolio_provider = zerion_provider.clone();
         let balance_provider = zerion_provider;
+        let conversion_provider = Arc::new(OneInchProvider::new(one_inch_api_key));
 
         let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
             coinbase_api_key,
@@ -157,6 +170,7 @@ impl ProviderRepository {
             coinbase_pay_provider: coinbase_pay_provider.clone(),
             onramp_provider: coinbase_pay_provider,
             balance_provider,
+            conversion_provider,
         }
     }
 
@@ -533,4 +547,12 @@ pub trait BalanceProvider: Send + Sync + Debug {
         params: BalanceQueryParams,
         http_client: reqwest::Client,
     ) -> RpcResult<BalanceResponseBody>;
+}
+
+#[async_trait]
+pub trait ConversionProvider: Send + Sync + Debug {
+    async fn get_tokens_list(
+        &self,
+        params: TokensListQueryParams,
+    ) -> RpcResult<TokensListResponseBody>;
 }

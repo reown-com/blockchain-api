@@ -6,6 +6,12 @@ use {
     tracing::warn,
 };
 
+#[derive(thiserror::Error, Debug)]
+pub enum CryptoUitlsError {
+    #[error("Namespace is not supported: {0}")]
+    WrongNamespace(String),
+}
+
 /// Veryfy message signature signed by the keccak256
 #[tracing::instrument]
 pub fn verify_message_signature(
@@ -112,6 +118,27 @@ impl ChainId {
             }
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, EnumString, EnumIter, Display, Eq, PartialEq)]
+#[strum(serialize_all = "lowercase")]
+pub enum CaipNamespaces {
+    Eip155,
+}
+
+pub fn format_to_caip10(namespace: CaipNamespaces, chain_id: &str, address: &str) -> String {
+    format!("{}:{}:{}", namespace, chain_id, address)
+}
+
+/// Disassemble CAIP-2 to namespace and chainId
+pub fn disassemble_caip2(caip10: &str) -> Result<(CaipNamespaces, String), CryptoUitlsError> {
+    let parts = caip10.split(':').collect::<Vec<&str>>();
+    let namespace = match parts[0].parse::<CaipNamespaces>() {
+        Ok(namespace) => namespace,
+        Err(_) => return Err(CryptoUitlsError::WrongNamespace(caip10.into())),
+    };
+    let chain_id = parts[1].to_string();
+    Ok((namespace, chain_id))
 }
 
 /// Compare two values (either H160 or &str) in constant time to prevent timing
@@ -227,5 +254,21 @@ mod tests {
         let string_two = "some another string";
         assert!(!constant_time_eq(string_one, string_two));
         assert!(constant_time_eq(string_one, string_one));
+    }
+
+    #[test]
+    fn test_format_to_caip10() {
+        assert_eq!(
+            format_to_caip10(CaipNamespaces::Eip155, "1", "0xtest"),
+            "eip155:1:0xtest"
+        );
+    }
+
+    #[test]
+    fn test_disassemble_caip2() {
+        let caip2 = "eip155:1";
+        let result = disassemble_caip2(caip2).unwrap();
+        assert_eq!(result.0, CaipNamespaces::Eip155);
+        assert_eq!(result.1, "1".to_string());
     }
 }

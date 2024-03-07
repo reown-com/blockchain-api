@@ -66,6 +66,7 @@ module "ecs" {
   zerion_api_key      = var.zerion_api_key
   coinbase_api_key    = var.coinbase_api_key
   coinbase_app_id     = var.coinbase_app_id
+  one_inch_api_key    = var.one_inch_api_key
 
   # Project Registry
   registry_api_endpoint   = var.registry_api_endpoint

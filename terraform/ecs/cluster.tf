@@ -85,6 +85,7 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_PROVIDER_ZERION_API_KEY", value = var.zerion_api_key },
         { name = "RPC_PROXY_PROVIDER_COINBASE_API_KEY", value = var.coinbase_api_key },
         { name = "RPC_PROXY_PROVIDER_COINBASE_APP_ID", value = var.coinbase_app_id },
+        { name = "RPC_PROXY_PROVIDER_ONE_INCH_API_KEY", value = var.one_inch_api_key },
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL", value = "http://127.0.0.1:${local.prometheus_proxy_port}/workspaces/${var.prometheus_workspace_id}" },
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_WORKSPACE_HEADER", value = "aps-workspaces.${module.this.region}.amazonaws.com" },
 
