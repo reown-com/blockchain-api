@@ -270,6 +270,10 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/convert/tokens",
             get(handlers::convert::tokens::handler),
         )
+        .route(
+            "/v1/convert/quotes",
+            get(handlers::convert::quotes::handler),
+        )
         .route_layer(tracing_and_metrics_layer)
         .route("/health", get(handlers::health::handler))
         .layer(cors);
