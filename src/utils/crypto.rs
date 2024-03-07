@@ -6,6 +6,12 @@ use {
     tracing::warn,
 };
 
+#[derive(thiserror::Error, Debug)]
+pub enum CryptoUitlsError {
+    #[error("Namespace is not supported: {0}")]
+    WrongNamespace(String),
+}
+
 /// Veryfy message signature signed by the keccak256
 #[tracing::instrument]
 pub fn verify_message_signature(
@@ -112,6 +118,27 @@ impl ChainId {
             }
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, EnumString, EnumIter, Display)]
+#[strum(serialize_all = "lowercase")]
+pub enum CaipNamespaces {
+    Eip155,
+}
+
+pub fn format_to_caip10(namespace: CaipNamespaces, chain_id: &str, address: &str) -> String {
+    format!("{}:{}:{}", namespace, chain_id, address)
+}
+
+/// Disassemble CAIP-2 to namespace and chainId
+pub fn disassemble_caip2(caip10: &str) -> Result<(CaipNamespaces, String), CryptoUitlsError> {
+    let parts = caip10.split(':').collect::<Vec<&str>>();
+    let namespace = match parts[0].parse::<CaipNamespaces>() {
+        Ok(namespace) => namespace,
+        Err(_) => return Err(CryptoUitlsError::WrongNamespace(caip10.into())),
+    };
+    let chain_id = parts[1].to_string();
+    Ok((namespace, chain_id))
 }
 
 /// Compare two values (either H160 or &str) in constant time to prevent timing

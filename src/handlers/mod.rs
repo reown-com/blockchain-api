@@ -4,6 +4,7 @@ use {
 };
 
 pub mod balance;
+pub mod convert;
 pub mod generators;
 pub mod health;
 pub mod history;

@@ -5,6 +5,7 @@ use {
         error::{RpcError, RpcResult},
         handlers::{
             balance::{self, BalanceQueryParams, BalanceResponseBody},
+            convert::tokens::{TokensListQueryParams, TokensListResponseBody},
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
@@ -37,6 +38,7 @@ mod infura;
 mod mantle;
 mod near;
 mod omnia;
+mod one_inch;
 mod pokt;
 mod publicnode;
 mod quicknode;
@@ -53,6 +55,7 @@ pub use {
     mantle::MantleProvider,
     near::NearProvider,
     omnia::OmniatechProvider,
+    one_inch::OneInchProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
     quicknode::QuicknodeProvider,
@@ -93,6 +96,7 @@ pub struct ProviderRepository {
     pub coinbase_pay_provider: Arc<dyn HistoryProvider>,
     pub onramp_provider: Arc<dyn OnRampProvider>,
     pub balance_provider: Arc<dyn BalanceProvider>,
+    pub conversion_provider: Arc<dyn ConversionProvider>,
 }
 
 impl ProviderRepository {
@@ -138,6 +142,7 @@ impl ProviderRepository {
         let history_provider = zerion_provider.clone();
         let portfolio_provider = zerion_provider.clone();
         let balance_provider = zerion_provider;
+        let conversion_provider = Arc::new(OneInchProvider::new("test".into()));
 
         let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
             coinbase_api_key,
@@ -157,6 +162,7 @@ impl ProviderRepository {
             coinbase_pay_provider: coinbase_pay_provider.clone(),
             onramp_provider: coinbase_pay_provider,
             balance_provider,
+            conversion_provider,
         }
     }
 
@@ -533,4 +539,12 @@ pub trait BalanceProvider: Send + Sync + Debug {
         params: BalanceQueryParams,
         http_client: reqwest::Client,
     ) -> RpcResult<BalanceResponseBody>;
+}
+
+#[async_trait]
+pub trait ConversionProvider: Send + Sync + Debug {
+    async fn get_tokens_list(
+        &self,
+        params: TokensListQueryParams,
+    ) -> RpcResult<TokensListResponseBody>;
 }
