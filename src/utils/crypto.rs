@@ -131,14 +131,28 @@ pub fn format_to_caip10(namespace: CaipNamespaces, chain_id: &str, address: &str
 }
 
 /// Disassemble CAIP-2 to namespace and chainId
-pub fn disassemble_caip2(caip10: &str) -> Result<(CaipNamespaces, String), CryptoUitlsError> {
+pub fn disassemble_caip2(caip2: &str) -> Result<(CaipNamespaces, String), CryptoUitlsError> {
+    let parts = caip2.split(':').collect::<Vec<&str>>();
+    let namespace = match parts[0].parse::<CaipNamespaces>() {
+        Ok(namespace) => namespace,
+        Err(_) => return Err(CryptoUitlsError::WrongNamespace(caip2.into())),
+    };
+    let chain_id = parts[1].to_string();
+    Ok((namespace, chain_id))
+}
+
+/// Disassemble CAIP-10 to namespace, chainId and address
+pub fn disassemble_caip10(
+    caip10: &str,
+) -> Result<(CaipNamespaces, String, String), CryptoUitlsError> {
     let parts = caip10.split(':').collect::<Vec<&str>>();
     let namespace = match parts[0].parse::<CaipNamespaces>() {
         Ok(namespace) => namespace,
         Err(_) => return Err(CryptoUitlsError::WrongNamespace(caip10.into())),
     };
     let chain_id = parts[1].to_string();
-    Ok((namespace, chain_id))
+    let address = parts[2].to_string();
+    Ok((namespace, chain_id, address))
 }
 
 /// Compare two values (either H160 or &str) in constant time to prevent timing
@@ -270,5 +284,14 @@ mod tests {
         let result = disassemble_caip2(caip2).unwrap();
         assert_eq!(result.0, CaipNamespaces::Eip155);
         assert_eq!(result.1, "1".to_string());
+    }
+
+    #[test]
+    fn test_disassemble_caip10() {
+        let caip10 = "eip155:1:0xtest";
+        let result = disassemble_caip10(caip10).unwrap();
+        assert_eq!(result.0, CaipNamespaces::Eip155);
+        assert_eq!(result.1, "1".to_string());
+        assert_eq!(result.2, "0xtest".to_string());
     }
 }

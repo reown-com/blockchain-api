@@ -5,7 +5,10 @@ use {
         error::{RpcError, RpcResult},
         handlers::{
             balance::{self, BalanceQueryParams, BalanceResponseBody},
-            convert::tokens::{TokensListQueryParams, TokensListResponseBody},
+            convert::{
+                quotes::{ConvertQuoteQueryParams, ConvertQuoteResponseBody},
+                tokens::{TokensListQueryParams, TokensListResponseBody},
+            },
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
@@ -555,4 +558,9 @@ pub trait ConversionProvider: Send + Sync + Debug {
         &self,
         params: TokensListQueryParams,
     ) -> RpcResult<TokensListResponseBody>;
+
+    async fn get_convert_quote(
+        &self,
+        params: ConvertQuoteQueryParams,
+    ) -> RpcResult<ConvertQuoteResponseBody>;
 }
