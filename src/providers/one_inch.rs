@@ -167,7 +167,7 @@ impl ConversionProvider for OneInchProvider {
         // 1inch provider does not support cross-chain swaps
         if dst_chain_id != chain_id {
             return Err(RpcError::InvalidParameter(
-                "from and to chain ids are different in a single chain swap".into(),
+                "`from` and `to` chain IDs must have the same value".into(),
             ));
         }
 
@@ -215,7 +215,7 @@ impl ConversionProvider for OneInchProvider {
         // 1inch provider does not support cross-chain swaps
         if dst_chain_id != chain_id {
             return Err(RpcError::InvalidParameter(
-                "from and to chain ids are different in a single chain swap".into(),
+                "`from` and `to` chain IDs must have the same value".into(),
             ));
         }
 
@@ -262,12 +262,11 @@ impl ConversionProvider for OneInchProvider {
         let (_, dst_chain_id, dst_address) = crypto::disassemble_caip10(&params.to)?;
         let (_, user_chain_id, user_address) = crypto::disassemble_caip10(&params.user_address)?;
 
-        // Check if from and to chain ids are different
+        // Check if from, to and user chain ids are different
         // 1inch provider does not support cross-chain swaps
         if (dst_chain_id != chain_id) || (user_chain_id != chain_id) {
             return Err(RpcError::InvalidParameter(
-                "`from`, `to` and `userAddress` chain ids are different in a single chain swap"
-                    .into(),
+                "`from`, `to` and `userAddress` chain IDs must have the same value".into(),
             ));
         }
 
