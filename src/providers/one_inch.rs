@@ -196,11 +196,7 @@ impl ConversionProvider for OneInchProvider {
             ));
         }
 
-        let base = format!(
-            "{}/{}/approve/transaction",
-            &self.base_api_url,
-            chain_id.clone()
-        );
+        let base = format!("{}/{}/approve/transaction", &self.base_api_url, chain_id);
         let mut url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
 
         url.query_pairs_mut()
