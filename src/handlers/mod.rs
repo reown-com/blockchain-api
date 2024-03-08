@@ -15,6 +15,7 @@ pub mod portfolio;
 pub mod profile;
 pub mod proxy;
 pub mod ws_proxy;
+pub mod supported_chains;
 
 static HANDLER_TASK_METRICS: TaskMetrics = TaskMetrics::new("handler_task");
 
