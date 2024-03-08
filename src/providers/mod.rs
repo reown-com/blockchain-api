@@ -9,6 +9,7 @@ use {
                 approve::{ConvertApproveQueryParams, ConvertApproveResponseBody},
                 quotes::{ConvertQuoteQueryParams, ConvertQuoteResponseBody},
                 tokens::{TokensListQueryParams, TokensListResponseBody},
+                transaction::{ConvertTransactionQueryParams, ConvertTransactionResponseBody},
             },
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
@@ -569,4 +570,9 @@ pub trait ConversionProvider: Send + Sync + Debug {
         &self,
         params: ConvertApproveQueryParams,
     ) -> RpcResult<ConvertApproveResponseBody>;
+
+    async fn build_convert_tx(
+        &self,
+        params: ConvertTransactionQueryParams,
+    ) -> RpcResult<ConvertTransactionResponseBody>;
 }

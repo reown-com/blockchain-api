@@ -278,6 +278,10 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/convert/build-approve",
             get(handlers::convert::approve::handler),
         )
+        .route(
+            "/v1/convert/build-transaction",
+            post(handlers::convert::transaction::handler),
+        )
         .route_layer(tracing_and_metrics_layer)
         .route("/health", get(handlers::health::handler))
         .layer(cors);

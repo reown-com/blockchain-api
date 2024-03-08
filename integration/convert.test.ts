@@ -9,7 +9,8 @@ describe('Token conversion (single chain)', () => {
 
   const srcAsset = `${namespace}:${chainId}:0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee`;
   const destAsset = `${namespace}:${chainId}:0x111111111117dc0aa78b770fa6a738034120c302`;
-  const amount = 10000000000000000;
+  const userAddress = `${namespace}:${chainId}:0xf3ea39310011333095cfcccc7c4ad74034caba63`;
+  const amount = 100000;
 
   it('available tokens list', async () => {
     let resp: any = await httpClient.get(
@@ -61,5 +62,36 @@ describe('Token conversion (single chain)', () => {
     expect(tx.to).toEqual(destAsset);
     expect(tx.data).toEqual(expect.stringMatching(/^0x.*/));
     expect(tx.eip155.gasPrice).toEqual(expect.stringMatching(/[0-9].*/));
+  })
+
+  it('build conversion tx', async () => {
+    const payload = {
+      projectId,
+      amount,
+      from: srcAsset,
+      to: destAsset,
+      userAddress,
+      eip155: {
+        slippage: 1,
+      }
+    };
+
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/convert/build-transaction`,
+      payload
+    )
+    
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.tx).toBe('object')
+
+    const tx = resp.data.tx;
+    expect(tx.from).toEqual(userAddress);
+    expect(tx.to).toEqual(expect.stringMatching(new RegExp(`^${namespace}:${chainId}:0x.*$`)));
+    expect(tx.data).toEqual(expect.stringMatching(/^0x.*/));
+    expect(tx.amount).toEqual(expect.stringMatching(/[0-9].*/));
+
+    const eip155 = resp.data.tx.eip155;
+    expect(eip155.gas).toEqual(expect.stringMatching(/[0-9].*/));
+    expect(eip155.gasPrice).toEqual(expect.stringMatching(/[0-9].*/));
   })
 })
