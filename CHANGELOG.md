@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.37.0 - 2024-03-08
+#### Features
+- **(conversion)** conversion quotes endpoint implementation (#568) - (1b798b2) - Max Kalashnikoff
+
+- - -
+
 ## 0.36.0 - 2024-03-07
 #### Features
 - **(conversion)** available tokens list endpoint implementation (#567) - (e78f77a) - Max Kalashnikoff
