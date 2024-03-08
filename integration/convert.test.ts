@@ -48,4 +48,18 @@ describe('Token conversion (single chain)', () => {
       expect(quote.toAmount).toEqual(expect.stringMatching(/[0-9].*/));
     }
   })
+
+  it('build approve tx', async () => {
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/convert/build-approve?projectId=${projectId}&amount=${amount}&from=${srcAsset}&to=${destAsset}`
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.tx).toBe('object')
+
+    const tx = resp.data.tx;
+    expect(tx.from).toEqual(srcAsset);
+    expect(tx.to).toEqual(destAsset);
+    expect(tx.data).toEqual(expect.stringMatching(/^0x.*/));
+    expect(tx.eip155.gasPrice).toEqual(expect.stringMatching(/[0-9].*/));
+  })
 })
