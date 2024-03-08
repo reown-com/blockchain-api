@@ -5,7 +5,12 @@ use {
         error::{RpcError, RpcResult},
         handlers::{
             balance::{self, BalanceQueryParams, BalanceResponseBody},
-            convert::tokens::{TokensListQueryParams, TokensListResponseBody},
+            convert::{
+                approve::{ConvertApproveQueryParams, ConvertApproveResponseBody},
+                quotes::{ConvertQuoteQueryParams, ConvertQuoteResponseBody},
+                tokens::{TokensListQueryParams, TokensListResponseBody},
+                transaction::{ConvertTransactionQueryParams, ConvertTransactionResponseBody},
+            },
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
@@ -570,4 +575,19 @@ pub trait ConversionProvider: Send + Sync + Debug {
         &self,
         params: TokensListQueryParams,
     ) -> RpcResult<TokensListResponseBody>;
+
+    async fn get_convert_quote(
+        &self,
+        params: ConvertQuoteQueryParams,
+    ) -> RpcResult<ConvertQuoteResponseBody>;
+
+    async fn build_approve_tx(
+        &self,
+        params: ConvertApproveQueryParams,
+    ) -> RpcResult<ConvertApproveResponseBody>;
+
+    async fn build_convert_tx(
+        &self,
+        params: ConvertTransactionQueryParams,
+    ) -> RpcResult<ConvertTransactionResponseBody>;
 }
