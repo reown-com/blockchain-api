@@ -20,6 +20,7 @@ use {
     axum_tungstenite::WebSocketUpgrade,
     hyper::http::HeaderValue,
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
+    serde::{Deserialize, Serialize},
     std::{
         collections::{HashMap, HashSet},
         fmt::{Debug, Display},
@@ -82,8 +83,14 @@ pub struct ProvidersConfig {
     pub one_inch_api_key: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SupportedChains {
+    pub http: HashSet<String>,
+    pub ws: HashSet<String>,
+}
+
 pub struct ProviderRepository {
-    pub supported_chains: HashSet<String>,
+    pub supported_chains: SupportedChains,
 
     providers: HashMap<ProviderKind, Arc<dyn RpcProvider>>,
     ws_providers: HashMap<ProviderKind, Arc<dyn RpcWsProvider>>,
@@ -161,7 +168,10 @@ impl ProviderRepository {
         ));
 
         Self {
-            supported_chains: HashSet::new(),
+            supported_chains: SupportedChains {
+                http: HashSet::new(),
+                ws: HashSet::new(),
+            },
             providers: HashMap::new(),
             ws_providers: HashMap::new(),
             weight_resolver: HashMap::new(),
@@ -262,7 +272,7 @@ impl ProviderRepository {
         supported_ws_chains
             .into_iter()
             .for_each(|(chain_id, (_, weight))| {
-                self.supported_chains.insert(chain_id.clone());
+                self.supported_chains.ws.insert(chain_id.clone());
                 self.ws_weight_resolver
                     .entry(chain_id)
                     .or_default()
@@ -286,6 +296,7 @@ impl ProviderRepository {
         supported_chains
             .into_iter()
             .for_each(|(chain_id, (_, weight))| {
+                self.supported_chains.http.insert(chain_id.clone());
                 self.weight_resolver
                     .entry(chain_id)
                     .or_default()
