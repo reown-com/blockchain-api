@@ -23,7 +23,6 @@ use {
         InfuraConfig,
         MantleConfig,
         NearConfig,
-        OmniatechConfig,
         PoktConfig,
         PublicnodeConfig,
         QuicknodeConfig,
@@ -41,7 +40,6 @@ use {
         InfuraWsProvider,
         MantleProvider,
         NearProvider,
-        OmniatechProvider,
         PoktProvider,
         ProviderRepository,
         PublicnodeProvider,
@@ -384,7 +382,6 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
 
     providers.add_provider::<BaseProvider, BaseConfig>(BaseConfig::default());
     providers.add_provider::<BinanceProvider, BinanceConfig>(BinanceConfig::default());
-    providers.add_provider::<OmniatechProvider, OmniatechConfig>(OmniatechConfig::default());
     providers.add_provider::<ZKSyncProvider, ZKSyncConfig>(ZKSyncConfig::default());
     providers.add_provider::<PublicnodeProvider, PublicnodeConfig>(PublicnodeConfig::default());
     providers.add_provider::<QuicknodeProvider, QuicknodeConfig>(QuicknodeConfig::new(
