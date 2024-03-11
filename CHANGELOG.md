@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.40.0 - 2024-03-11
+#### Bug Fixes
+- supported chains endpoint (#571) - (8d0888d) - Chris Smith
+#### Features
+- **(docs)** adding the footnote for not guaranteed RPC chains (#574) - (f24d882) - Max Kalashnikoff
+
+- - -
+
 ## 0.39.0 - 2024-03-08
 #### Features
 - **(conversion)** convert transaction builder endpoint implementation (#572) - (ddec3bb) - Max Kalashnikoff
