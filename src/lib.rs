@@ -208,6 +208,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     let app = Router::new()
         .route("/v1", post(handlers::proxy::handler))
         .route("/v1/", post(handlers::proxy::handler))
+        .route("/v1/supported-chains", get(handlers::supported_chains::handler))
         .route("/ws", get(handlers::ws_proxy::handler))
         .route("/v1/identity/:address", get(handlers::identity::handler))
         .route(
