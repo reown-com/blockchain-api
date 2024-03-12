@@ -17,7 +17,6 @@ pub use {
     infura::*,
     mantle::*,
     near::*,
-    omnia::*,
     pokt::*,
     publicnode::*,
     quicknode::*,
@@ -31,7 +30,6 @@ mod binance;
 mod infura;
 mod mantle;
 mod near;
-mod omnia;
 mod pokt;
 mod publicnode;
 mod quicknode;

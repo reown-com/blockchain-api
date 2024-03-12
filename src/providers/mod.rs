@@ -43,7 +43,6 @@ mod coinbase;
 mod infura;
 mod mantle;
 mod near;
-mod omnia;
 mod one_inch;
 mod pokt;
 mod publicnode;
@@ -60,7 +59,6 @@ pub use {
     infura::{InfuraProvider, InfuraWsProvider},
     mantle::MantleProvider,
     near::NearProvider,
-    omnia::OmniatechProvider,
     one_inch::OneInchProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
@@ -356,7 +354,6 @@ pub enum ProviderKind {
     Binance,
     ZKSync,
     Publicnode,
-    Omniatech,
     Base,
     Zora,
     Zerion,
@@ -375,7 +372,6 @@ impl Display for ProviderKind {
             ProviderKind::Binance => "Binance",
             ProviderKind::ZKSync => "zkSync",
             ProviderKind::Publicnode => "Publicnode",
-            ProviderKind::Omniatech => "Omniatech",
             ProviderKind::Base => "Base",
             ProviderKind::Zora => "Zora",
             ProviderKind::Zerion => "Zerion",
@@ -397,7 +393,6 @@ impl ProviderKind {
             "Binance" => Some(Self::Binance),
             "zkSync" => Some(Self::ZKSync),
             "Publicnode" => Some(Self::Publicnode),
-            "Omniatech" => Some(Self::Omniatech),
             "Base" => Some(Self::Base),
             "Zora" => Some(Self::Zora),
             "Zerion" => Some(Self::Zerion),
