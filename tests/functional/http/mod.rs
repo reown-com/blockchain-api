@@ -9,6 +9,7 @@ use {
 pub(crate) mod aurora;
 pub(crate) mod base;
 pub(crate) mod binance;
+pub(crate) mod getblock;
 pub(crate) mod infura;
 pub(crate) mod mantle;
 pub(crate) mod near;
@@ -88,6 +89,37 @@ async fn check_if_rpc_is_responding_correctly_for_near_protocol(
         }
         _ => panic!("Unexpected status code: {}", status),
     };
+}
+
+async fn check_if_rpc_is_responding_correctly_for_solana(
+    ctx: &ServerContext,
+    chain_id: &str,
+    provider_id: &ProviderKind,
+) {
+    let addr = format!(
+        "{}/v1/?projectId={}&providerId={}&chainId=",
+        ctx.server.public_addr, ctx.server.project_id, provider_id
+    );
+
+    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let request = jsonrpc::Request {
+        method: "getHealth",
+        params: &[],
+        id: serde_json::Value::Number(1.into()),
+        jsonrpc: JSONRPC_VERSION,
+    };
+
+    let (status, rpc_response) =
+        send_jsonrpc_request(client, addr, &format!("solana:{}", chain_id), request).await;
+
+    // Verify that HTTP communication was successful
+    assert_eq!(status, StatusCode::OK);
+
+    // Verify there was no error in rpc
+    assert!(rpc_response.error.is_none());
+
+    // Check chainId
+    assert_eq!(rpc_response.result::<String>().unwrap(), "ok")
 }
 
 #[test_context(ServerContext)]

@@ -20,6 +20,7 @@ use {
         AuroraConfig,
         BaseConfig,
         BinanceConfig,
+        GetBlockConfig,
         InfuraConfig,
         MantleConfig,
         NearConfig,
@@ -36,6 +37,7 @@ use {
         AuroraProvider,
         BaseProvider,
         BinanceProvider,
+        GetBlockProvider,
         InfuraProvider,
         InfuraWsProvider,
         MantleProvider,
@@ -393,6 +395,12 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_provider::<ZoraProvider, ZoraConfig>(ZoraConfig::default());
     providers.add_provider::<NearProvider, NearConfig>(NearConfig::default());
     providers.add_provider::<MantleProvider, MantleConfig>(MantleConfig::default());
+
+    if let Some(get_block_api_tokens) = &config.getblock_access_tokens_json {
+        providers.add_provider::<GetBlockProvider, GetBlockConfig>(GetBlockConfig::new(
+            get_block_api_tokens.clone(),
+        ));
+    };
 
     providers.add_ws_provider::<InfuraWsProvider, InfuraConfig>(InfuraConfig::new(
         config.infura_project_id.clone(),
