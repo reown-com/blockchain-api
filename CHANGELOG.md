@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.40.2 - 2024-03-13
+#### Bug Fixes
+- **(providers)** changing the Base testnet to Sepolia (#578) - (cd95039) - Max Kalashnikoff
+
+- - -
+
 ## 0.40.1 - 2024-03-12
 #### Bug Fixes
 - **(providers)** removing Omnia provider (#575) - (9d42f41) - Max Kalashnikoff
