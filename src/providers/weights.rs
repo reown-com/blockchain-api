@@ -12,7 +12,7 @@ use {
 #[derive(Debug, Copy, Clone)]
 pub struct Availability(u64, u64);
 
-pub type ParsedWeights = HashMap<String, (HashMap<ChainId, Availability>, Availability)>;
+pub type ParsedWeights = HashMap<ProviderKind, (HashMap<ChainId, Availability>, Availability)>;
 
 #[tracing::instrument(skip_all)]
 pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
@@ -37,10 +37,19 @@ pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
                 warn!("No provider found in metric: {:?}", metric);
                 continue;
             };
+
+            let provider_kind = match ProviderKind::from_str(&provider) {
+                Some(provider_kind) => provider_kind,
+                None => {
+                    warn!("Failed to parse provider kind in metric: {}", provider);
+                    continue;
+                }
+            };
+
             let amount = metrics.sample().value();
 
             let (provider_map, provider_availability) = weights_data
-                .entry(provider)
+                .entry(provider_kind)
                 .or_insert_with(|| (HashMap::new(), Availability(0, 0)));
 
             let chain_availability = provider_map
@@ -116,16 +125,6 @@ fn calculate_chain_weight(
 #[tracing::instrument(skip_all)]
 pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWeights) {
     for (provider, (chain_availabilities, provider_availability)) in parsed_weights {
-        let provider_kind = match ProviderKind::from_str(&provider.clone()) {
-            Some(provider_kind) => provider_kind,
-            None => {
-                warn!(
-                    "Failed to parse provider kind in weight resolver: {}",
-                    provider
-                );
-                continue;
-            }
-        };
         for (chain_id, chain_availability) in chain_availabilities {
             let chain_id = chain_id.0;
             let chain_weight = calculate_chain_weight(chain_availability, provider_availability);
@@ -138,10 +137,10 @@ pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWei
                 continue;
             };
 
-            let Some(weight) = provider_chain_weight.get(&provider_kind) else {
+            let Some(weight) = provider_chain_weight.get(&provider) else {
                 warn!(
                     "Weight for {} not found in weight map: {:?}",
-                    &provider_kind, provider_chain_weight
+                    &provider, provider_chain_weight
                 );
                 continue;
             };
