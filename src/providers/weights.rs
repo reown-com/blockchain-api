@@ -116,6 +116,16 @@ fn calculate_chain_weight(
 #[tracing::instrument(skip_all)]
 pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWeights) {
     for (provider, (chain_availabilities, provider_availability)) in parsed_weights {
+        let provider_kind = match ProviderKind::from_str(&provider.clone()) {
+            Some(provider_kind) => provider_kind,
+            None => {
+                warn!(
+                    "Failed to parse provider kind in weight resolver: {}",
+                    provider
+                );
+                continue;
+            }
+        };
         for (chain_id, chain_availability) in chain_availabilities {
             let chain_id = chain_id.0;
             let chain_weight = calculate_chain_weight(chain_availability, provider_availability);
@@ -128,12 +138,10 @@ pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWei
                 continue;
             };
 
-            let Some(weight) =
-                provider_chain_weight.get(&ProviderKind::from_str(&provider).unwrap())
-            else {
+            let Some(weight) = provider_chain_weight.get(&provider_kind) else {
                 warn!(
                     "Weight for {} not found in weight map: {:?}",
-                    &provider, provider_chain_weight
+                    &provider_kind, provider_chain_weight
                 );
                 continue;
             };
