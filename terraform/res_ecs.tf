@@ -60,14 +60,14 @@ module "ecs" {
   postgres_url                  = module.postgres.database_url
 
   # Providers
-  infura_project_id       = var.infura_project_id
-  pokt_project_id         = var.pokt_project_id
-  quicknode_api_token     = var.quicknode_api_token
-  zerion_api_key          = var.zerion_api_key
-  coinbase_api_key        = var.coinbase_api_key
-  coinbase_app_id         = var.coinbase_app_id
-  one_inch_api_key        = var.one_inch_api_key
-  getblock_access_tokens  = var.getblock_access_tokens
+  infura_project_id      = var.infura_project_id
+  pokt_project_id        = var.pokt_project_id
+  quicknode_api_token    = var.quicknode_api_token
+  zerion_api_key         = var.zerion_api_key
+  coinbase_api_key       = var.coinbase_api_key
+  coinbase_app_id        = var.coinbase_app_id
+  one_inch_api_key       = var.one_inch_api_key
+  getblock_access_tokens = var.getblock_access_tokens
 
   # Project Registry
   registry_api_endpoint   = var.registry_api_endpoint

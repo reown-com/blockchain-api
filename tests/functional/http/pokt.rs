@@ -41,8 +41,8 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &provider,
-        "eip155:84531",
-        "0x14a33",
+        "eip155:84532",
+        "0x14a34",
     )
     .await;
 
