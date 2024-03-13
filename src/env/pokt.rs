@@ -78,9 +78,9 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
-        // Base testnet
+        // Base Sepolia
         (
-            "eip155:84531".into(),
+            "eip155:84532".into(),
             (
                 "base-testnet".into(),
                 Weight::new(Priority::Normal).unwrap(),

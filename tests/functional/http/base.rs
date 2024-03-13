@@ -18,12 +18,12 @@ async fn base_provider_eip155_8453_and_84531(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Base Goerli
+    // Base Sepolia
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &ProviderKind::Base,
-        "eip155:84531",
-        "0x14a33",
+        "eip155:84532",
+        "0x14a34",
     )
     .await
 }

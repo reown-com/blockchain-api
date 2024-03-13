@@ -43,11 +43,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
-        // Base Goerli
+        // Base Sepolia
         (
-            "eip155:84531".into(),
+            "eip155:84532".into(),
             (
-                "https://goerli.base.org".into(),
+                "https://sepolia.base.org".into(),
                 Weight::new(Priority::Low).unwrap(),
             ),
         ),

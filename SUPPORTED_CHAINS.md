@@ -28,7 +28,7 @@ Chain name with associated `chainId` query param to use.
 | Avalanche Fuji Testnet <sup>[1](#footnote1)</sup>        | eip155:43113         |
 | Avalanche C-Chain                                        | eip155:43114         |
 | Polygon Mumbai                                           | eip155:80001         |
-| Base Goerli                                              | eip155:84531         |
+| Base Sepolia                                             | eip155:84532         |
 | Arbitrum Goerli                                          | eip155:421613        |
 | Zora <sup>[1](#footnote1)</sup>                          | eip155:7777777       |
 | Ethereum Sepolia                                         | eip155:11155111      |
