@@ -191,8 +191,8 @@ variable "one_inch_api_key" {
   sensitive   = true
 }
 
-variable "getblock_api_tokens" {
-  description = "API access tokens for GetBlock in JSON format"
+variable "getblock_access_tokens" {
+  description = "Mapping of API access tokens for GetBlock in JSON format"
   type        = string
   sensitive   = true
 }

@@ -396,7 +396,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_provider::<NearProvider, NearConfig>(NearConfig::default());
     providers.add_provider::<MantleProvider, MantleConfig>(MantleConfig::default());
 
-    if let Some(get_block_api_tokens) = &config.getblock_access_tokens_json {
+    if let Some(get_block_api_tokens) = &config.getblock_access_tokens {
         providers.add_provider::<GetBlockProvider, GetBlockConfig>(GetBlockConfig::new(
             get_block_api_tokens.clone(),
         ));

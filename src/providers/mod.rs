@@ -86,7 +86,8 @@ pub struct ProvidersConfig {
     pub coinbase_api_key: Option<String>,
     pub coinbase_app_id: Option<String>,
     pub one_inch_api_key: Option<String>,
-    pub getblock_access_tokens_json: Option<String>,
+    /// GetBlock provider access tokens in JSON format
+    pub getblock_access_tokens: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
