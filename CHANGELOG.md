@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.41.0 - 2024-03-14
+#### Features
+- **(dev)** updating default env files and .gitignore (#581) - (dddc908) - Max Kalashnikoff
+- **(providers)** adding GetBlock provider (#577) - (55ced19) - Max Kalashnikoff
+
+- - -
+
 ## 0.40.4 - 2024-03-14
 #### Bug Fixes
 - **(providers)** updating providers supported chains (#580) - (f9390be) - Max Kalashnikoff
