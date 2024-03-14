@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.41.1 - 2024-03-14
+#### Bug Fixes
+- **(identity)** handling `0x` RPC response for identity (#582) - (7a59595) - Max Kalashnikoff
+
+- - -
+
 ## 0.41.0 - 2024-03-14
 #### Features
 - **(dev)** updating default env files and .gitignore (#581) - (dddc908) - Max Kalashnikoff
