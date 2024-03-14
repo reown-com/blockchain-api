@@ -327,6 +327,9 @@ pub enum SelfProviderError {
 
     #[error("JsonRpcError: {0:?}")]
     JsonRpcError(JsonRpcError),
+
+    #[error("Generic parameter error: {0}")]
+    GenericParameterError(String),
 }
 
 impl ethers::providers::RpcError for SelfProviderError {
@@ -413,8 +416,11 @@ impl JsonRpcClient for SelfProvider {
                 }
             }
         };
-        let result =
-            serde_json::from_value(result).map_err(SelfProviderError::ProviderBodySerde)?;
+        let result = serde_json::from_value(result).map_err(|_| {
+            SelfProviderError::GenericParameterError(
+                "Caller always provides generic parameter R=Bytes".into(),
+            )
+        })?;
         Ok(result)
     }
 }
