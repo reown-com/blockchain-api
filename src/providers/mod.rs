@@ -249,7 +249,9 @@ impl ProviderRepository {
         match WeightedIndex::new(weights) {
             Ok(dist) => {
                 let random = dist.sample(&mut OsRng);
-                let provider = keys.get(random).unwrap();
+                let provider = keys
+                    .get(random)
+                    .expect("Failed to get random provider: out of index");
 
                 self.ws_providers.get(provider).cloned()
             }
