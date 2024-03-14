@@ -413,8 +413,8 @@ impl JsonRpcClient for SelfProvider {
                 }
             }
         };
-        let result = serde_json::from_value(result)
-            .expect("Caller always provides generic parameter R=Bytes");
+        let result =
+            serde_json::from_value(result).map_err(SelfProviderError::ProviderBodySerde)?;
         Ok(result)
     }
 }
