@@ -398,7 +398,18 @@ impl JsonRpcClient for SelfProvider {
 
         let result = match response {
             JsonRpcResponse::Error(e) => return Err(SelfProviderError::JsonRpcError(e)),
-            JsonRpcResponse::Result(r) => r.result,
+            JsonRpcResponse::Result(r) => {
+                // We shouldn't process with `0x` result because this leads to the ethers-rs
+                // panic when looking for an avatar
+                if r.result == "0x" {
+                    return Err(SelfProviderError::ProviderError {
+                        status: StatusCode::METHOD_NOT_ALLOWED,
+                        body: "JSON-RPC result is `0x`".to_string(),
+                    });
+                } else {
+                    r.result
+                }
+            }
         };
         let result = serde_json::from_value(result)
             .expect("Caller always provides generic parameter R=Bytes");
