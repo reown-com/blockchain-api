@@ -32,6 +32,8 @@ use {
     wc::future::FutureExt,
 };
 
+const EMPTY_RPC_RESPONSE: &str = "0x";
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct IdentityResponse {
@@ -401,10 +403,10 @@ impl JsonRpcClient for SelfProvider {
             JsonRpcResponse::Result(r) => {
                 // We shouldn't process with `0x` result because this leads to the ethers-rs
                 // panic when looking for an avatar
-                if r.result == "0x" {
+                if r.result == EMPTY_RPC_RESPONSE {
                     return Err(SelfProviderError::ProviderError {
                         status: StatusCode::METHOD_NOT_ALLOWED,
-                        body: "JSON-RPC result is `0x`".to_string(),
+                        body: format!("JSON-RPC result is {}", EMPTY_RPC_RESPONSE),
                     });
                 } else {
                     r.result
