@@ -40,6 +40,7 @@ mod aurora;
 mod base;
 mod binance;
 mod coinbase;
+mod getblock;
 mod infura;
 mod mantle;
 mod near;
@@ -56,6 +57,7 @@ pub use {
     aurora::AuroraProvider,
     base::BaseProvider,
     binance::BinanceProvider,
+    getblock::GetBlockProvider,
     infura::{InfuraProvider, InfuraWsProvider},
     mantle::MantleProvider,
     near::NearProvider,
@@ -84,6 +86,8 @@ pub struct ProvidersConfig {
     pub coinbase_api_key: Option<String>,
     pub coinbase_app_id: Option<String>,
     pub one_inch_api_key: Option<String>,
+    /// GetBlock provider access tokens in JSON format
+    pub getblock_access_tokens: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -361,6 +365,7 @@ pub enum ProviderKind {
     Quicknode,
     Near,
     Mantle,
+    GetBlock,
 }
 
 impl Display for ProviderKind {
@@ -379,6 +384,7 @@ impl Display for ProviderKind {
             ProviderKind::Quicknode => "Quicknode",
             ProviderKind::Near => "Near",
             ProviderKind::Mantle => "Mantle",
+            ProviderKind::GetBlock => "GetBlock",
         })
     }
 }
@@ -400,6 +406,7 @@ impl ProviderKind {
             "Quicknode" => Some(Self::Quicknode),
             "Near" => Some(Self::Near),
             "Mantle" => Some(Self::Mantle),
+            "GetBlock" => Some(Self::GetBlock),
             _ => None,
         }
     }

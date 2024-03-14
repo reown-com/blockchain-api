@@ -121,6 +121,12 @@ variable "one_inch_api_key" {
   sensitive   = true
 }
 
+variable "getblock_access_tokens" {
+  description = "Mapping of API access tokens for GetBlock in JSON format"
+  type        = string
+  sensitive   = true
+}
+
 variable "testing_project_id" {
   description = "Project ID used in a testing suite"
   type        = string
