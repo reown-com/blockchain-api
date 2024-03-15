@@ -9,7 +9,10 @@ use {
 pub(crate) mod aurora;
 pub(crate) mod base;
 pub(crate) mod binance;
+pub(crate) mod getblock;
 pub(crate) mod infura;
+pub(crate) mod mantle;
+pub(crate) mod near;
 pub(crate) mod pokt;
 pub(crate) mod publicnode;
 pub(crate) mod quicknode;
@@ -38,7 +41,6 @@ async fn check_if_rpc_is_responding_correctly_for_supported_chain(
     let (status, rpc_response) = send_jsonrpc_request(client, addr, chaind_id, request).await;
 
     match status {
-        StatusCode::BAD_GATEWAY => {}
         StatusCode::OK => {
             // Verify there was no error in rpc
             assert!(rpc_response.error.is_none());
@@ -48,6 +50,76 @@ async fn check_if_rpc_is_responding_correctly_for_supported_chain(
         }
         _ => panic!("Unexpected status code: {}", status),
     };
+}
+
+async fn check_if_rpc_is_responding_correctly_for_near_protocol(
+    ctx: &ServerContext,
+    provider_id: &ProviderKind,
+) {
+    let addr = format!(
+        "{}/v1/?projectId={}&providerId={}&chainId=",
+        ctx.server.public_addr, ctx.server.project_id, provider_id
+    );
+
+    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let request = jsonrpc::Request {
+        method: "EXPERIMENTAL_genesis_config",
+        params: &[],
+        id: serde_json::Value::Number(1.into()),
+        jsonrpc: JSONRPC_VERSION,
+    };
+
+    let (status, rpc_response) = send_jsonrpc_request(client, addr, "near:mainnet", request).await;
+
+    #[derive(serde::Deserialize)]
+    struct GenesisConfig {
+        chain_id: String,
+    }
+
+    match status {
+        StatusCode::OK => {
+            // Verify there was no error in rpc
+            assert!(rpc_response.error.is_none());
+
+            // Check chainId
+            assert_eq!(
+                rpc_response.result::<GenesisConfig>().unwrap().chain_id,
+                "mainnet"
+            )
+        }
+        _ => panic!("Unexpected status code: {}", status),
+    };
+}
+
+async fn check_if_rpc_is_responding_correctly_for_solana(
+    ctx: &ServerContext,
+    chain_id: &str,
+    provider_id: &ProviderKind,
+) {
+    let addr = format!(
+        "{}/v1/?projectId={}&providerId={}&chainId=",
+        ctx.server.public_addr, ctx.server.project_id, provider_id
+    );
+
+    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let request = jsonrpc::Request {
+        method: "getHealth",
+        params: &[],
+        id: serde_json::Value::Number(1.into()),
+        jsonrpc: JSONRPC_VERSION,
+    };
+
+    let (status, rpc_response) =
+        send_jsonrpc_request(client, addr, &format!("solana:{}", chain_id), request).await;
+
+    // Verify that HTTP communication was successful
+    assert_eq!(status, StatusCode::OK);
+
+    // Verify there was no error in rpc
+    assert!(rpc_response.error.is_none());
+
+    // Check chainId
+    assert_eq!(rpc_response.result::<String>().unwrap(), "ok")
 }
 
 #[test_context(ServerContext)]

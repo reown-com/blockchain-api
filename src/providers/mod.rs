@@ -4,6 +4,13 @@ use {
         env::ProviderConfig,
         error::{RpcError, RpcResult},
         handlers::{
+            balance::{self, BalanceQueryParams, BalanceResponseBody},
+            convert::{
+                approve::{ConvertApproveQueryParams, ConvertApproveResponseBody},
+                quotes::{ConvertQuoteQueryParams, ConvertQuoteResponseBody},
+                tokens::{TokensListQueryParams, TokensListResponseBody},
+                transaction::{ConvertTransactionQueryParams, ConvertTransactionResponseBody},
+            },
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
@@ -18,8 +25,9 @@ use {
     axum_tungstenite::WebSocketUpgrade,
     hyper::http::HeaderValue,
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
+    serde::{Deserialize, Serialize},
     std::{
-        collections::HashMap,
+        collections::{HashMap, HashSet},
         fmt::{Debug, Display},
         hash::Hash,
         sync::Arc,
@@ -32,8 +40,11 @@ mod aurora;
 mod base;
 mod binance;
 mod coinbase;
+mod getblock;
 mod infura;
-mod omnia;
+mod mantle;
+mod near;
+mod one_inch;
 mod pokt;
 mod publicnode;
 mod quicknode;
@@ -46,8 +57,11 @@ pub use {
     aurora::AuroraProvider,
     base::BaseProvider,
     binance::BinanceProvider,
+    getblock::GetBlockProvider,
     infura::{InfuraProvider, InfuraWsProvider},
-    omnia::OmniatechProvider,
+    mantle::MantleProvider,
+    near::NearProvider,
+    one_inch::OneInchProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
     quicknode::QuicknodeProvider,
@@ -71,9 +85,20 @@ pub struct ProvidersConfig {
     pub zerion_api_key: Option<String>,
     pub coinbase_api_key: Option<String>,
     pub coinbase_app_id: Option<String>,
+    pub one_inch_api_key: Option<String>,
+    /// GetBlock provider access tokens in JSON format
+    pub getblock_access_tokens: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SupportedChains {
+    pub http: HashSet<String>,
+    pub ws: HashSet<String>,
 }
 
 pub struct ProviderRepository {
+    pub supported_chains: SupportedChains,
+
     providers: HashMap<ProviderKind, Arc<dyn RpcProvider>>,
     ws_providers: HashMap<ProviderKind, Arc<dyn RpcWsProvider>>,
 
@@ -87,6 +112,8 @@ pub struct ProviderRepository {
     pub portfolio_provider: Arc<dyn PortfolioProvider>,
     pub coinbase_pay_provider: Arc<dyn HistoryProvider>,
     pub onramp_provider: Arc<dyn OnRampProvider>,
+    pub balance_provider: Arc<dyn BalanceProvider>,
+    pub conversion_provider: Arc<dyn ConversionProvider>,
 }
 
 impl ProviderRepository {
@@ -128,8 +155,19 @@ impl ProviderRepository {
             .clone()
             .unwrap_or("COINBASE_APP_ID_UNDEFINED".into());
 
-        let history_provider = Arc::new(ZerionProvider::new(zerion_api_key));
-        let portfolio_provider = history_provider.clone();
+        // Don't crash the application if the ONE_INCH_API_KEY is not set
+        // TODO: find a better way to handle this
+        let one_inch_api_key = config
+            .one_inch_api_key
+            .clone()
+            .unwrap_or("ONE_INCH_API_KEY".into());
+
+        let zerion_provider = Arc::new(ZerionProvider::new(zerion_api_key));
+        let history_provider = zerion_provider.clone();
+        let portfolio_provider = zerion_provider.clone();
+        let balance_provider = zerion_provider;
+        let conversion_provider = Arc::new(OneInchProvider::new(one_inch_api_key));
+
         let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
             coinbase_api_key,
             coinbase_app_id,
@@ -137,6 +175,10 @@ impl ProviderRepository {
         ));
 
         Self {
+            supported_chains: SupportedChains {
+                http: HashSet::new(),
+                ws: HashSet::new(),
+            },
             providers: HashMap::new(),
             ws_providers: HashMap::new(),
             weight_resolver: HashMap::new(),
@@ -147,6 +189,8 @@ impl ProviderRepository {
             portfolio_provider,
             coinbase_pay_provider: coinbase_pay_provider.clone(),
             onramp_provider: coinbase_pay_provider,
+            balance_provider,
+            conversion_provider,
         }
     }
 
@@ -235,6 +279,7 @@ impl ProviderRepository {
         supported_ws_chains
             .into_iter()
             .for_each(|(chain_id, (_, weight))| {
+                self.supported_chains.ws.insert(chain_id.clone());
                 self.ws_weight_resolver
                     .entry(chain_id)
                     .or_default()
@@ -258,6 +303,7 @@ impl ProviderRepository {
         supported_chains
             .into_iter()
             .for_each(|(chain_id, (_, weight))| {
+                self.supported_chains.http.insert(chain_id.clone());
                 self.weight_resolver
                     .entry(chain_id)
                     .or_default()
@@ -312,12 +358,14 @@ pub enum ProviderKind {
     Binance,
     ZKSync,
     Publicnode,
-    Omniatech,
     Base,
     Zora,
     Zerion,
     Coinbase,
     Quicknode,
+    Near,
+    Mantle,
+    GetBlock,
 }
 
 impl Display for ProviderKind {
@@ -329,12 +377,14 @@ impl Display for ProviderKind {
             ProviderKind::Binance => "Binance",
             ProviderKind::ZKSync => "zkSync",
             ProviderKind::Publicnode => "Publicnode",
-            ProviderKind::Omniatech => "Omniatech",
             ProviderKind::Base => "Base",
             ProviderKind::Zora => "Zora",
             ProviderKind::Zerion => "Zerion",
             ProviderKind::Coinbase => "Coinbase",
             ProviderKind::Quicknode => "Quicknode",
+            ProviderKind::Near => "Near",
+            ProviderKind::Mantle => "Mantle",
+            ProviderKind::GetBlock => "GetBlock",
         })
     }
 }
@@ -349,12 +399,14 @@ impl ProviderKind {
             "Binance" => Some(Self::Binance),
             "zkSync" => Some(Self::ZKSync),
             "Publicnode" => Some(Self::Publicnode),
-            "Omniatech" => Some(Self::Omniatech),
             "Base" => Some(Self::Base),
             "Zora" => Some(Self::Zora),
             "Zerion" => Some(Self::Zerion),
             "Coinbase" => Some(Self::Coinbase),
             "Quicknode" => Some(Self::Quicknode),
+            "Near" => Some(Self::Near),
+            "Mantle" => Some(Self::Mantle),
+            "GetBlock" => Some(Self::GetBlock),
             _ => None,
         }
     }
@@ -507,4 +559,37 @@ pub trait OnRampProvider: Send + Sync + Debug {
         params: OnRampBuyQuotesParams,
         http_client: reqwest::Client,
     ) -> RpcResult<OnRampBuyQuotesResponse>;
+}
+
+#[async_trait]
+pub trait BalanceProvider: Send + Sync + Debug {
+    async fn get_balance(
+        &self,
+        address: String,
+        params: BalanceQueryParams,
+        http_client: reqwest::Client,
+    ) -> RpcResult<BalanceResponseBody>;
+}
+
+#[async_trait]
+pub trait ConversionProvider: Send + Sync + Debug {
+    async fn get_tokens_list(
+        &self,
+        params: TokensListQueryParams,
+    ) -> RpcResult<TokensListResponseBody>;
+
+    async fn get_convert_quote(
+        &self,
+        params: ConvertQuoteQueryParams,
+    ) -> RpcResult<ConvertQuoteResponseBody>;
+
+    async fn build_approve_tx(
+        &self,
+        params: ConvertApproveQueryParams,
+    ) -> RpcResult<ConvertApproveResponseBody>;
+
+    async fn build_convert_tx(
+        &self,
+        params: ConvertTransactionQueryParams,
+    ) -> RpcResult<ConvertTransactionResponseBody>;
 }

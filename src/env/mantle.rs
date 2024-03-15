@@ -5,11 +5,11 @@ use {
 };
 
 #[derive(Debug)]
-pub struct BaseConfig {
+pub struct MantleConfig {
     pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
-impl Default for BaseConfig {
+impl Default for MantleConfig {
     fn default() -> Self {
         Self {
             supported_chains: default_supported_chains(),
@@ -17,7 +17,7 @@ impl Default for BaseConfig {
     }
 }
 
-impl ProviderConfig for BaseConfig {
+impl ProviderConfig for MantleConfig {
     fn supported_chains(self) -> HashMap<String, (String, Weight)> {
         self.supported_chains
     }
@@ -27,7 +27,7 @@ impl ProviderConfig for BaseConfig {
     }
 
     fn provider_kind(&self) -> crate::providers::ProviderKind {
-        crate::providers::ProviderKind::Base
+        crate::providers::ProviderKind::Mantle
     }
 }
 
@@ -35,20 +35,20 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     // Keep in-sync with SUPPORTED_CHAINS.md
 
     HashMap::from([
-        // Base Mainnet
+        // Mantle mainnet
         (
-            "eip155:8453".into(),
+            "eip155:5000".into(),
             (
-                "https://mainnet.base.org".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                "https://rpc.mantle.xyz".into(),
+                Weight::new(Priority::High).unwrap(),
             ),
         ),
-        // Base Sepolia
+        // Mantle testnet
         (
-            "eip155:84532".into(),
+            "eip155:5001".into(),
             (
-                "https://sepolia.base.org".into(),
-                Weight::new(Priority::Low).unwrap(),
+                "https://rpc.testnet.mantle.xyz".into(),
+                Weight::new(Priority::High).unwrap(),
             ),
         ),
     ])

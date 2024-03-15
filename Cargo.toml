@@ -1,6 +1,6 @@
 [package]
 name = "rpc-proxy"
-version = "0.31.1"
+version = "0.41.1"
 edition = "2021"
 authors = [
     "Derek <derek@walletconnect.com>",
@@ -35,6 +35,8 @@ serde_piecewise_default = "0.2"
 serde-aux = "3.1"
 validator = { version = "0.16", features = ["derive"] }
 num_enum = "0.7"
+strum = "0.26"
+strum_macros = "0.26"
 
 # Storage
 aws-config = "0.56"

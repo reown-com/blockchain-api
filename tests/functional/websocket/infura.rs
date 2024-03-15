@@ -18,11 +18,12 @@ async fn infura_provider_websocket(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:10", "0xa").await;
 
     // Optimism goerli
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:420", "0x1A4").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:11155420", "0xaa37dc")
+        .await;
 
     // Arbitrum mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:42161", "0xa4b1").await;
 
     // Arbitrum goerli
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:421613", "0x66eed").await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, "eip155:421614", "0x66eee").await;
 }

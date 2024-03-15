@@ -2,6 +2,133 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.41.1 - 2024-03-14
+#### Bug Fixes
+- **(identity)** handling `0x` RPC response for identity (#582) - (7a59595) - Max Kalashnikoff
+
+- - -
+
+## 0.41.0 - 2024-03-14
+#### Features
+- **(dev)** updating default env files and .gitignore (#581) - (dddc908) - Max Kalashnikoff
+- **(providers)** adding GetBlock provider (#577) - (55ced19) - Max Kalashnikoff
+
+- - -
+
+## 0.40.4 - 2024-03-14
+#### Bug Fixes
+- **(providers)** updating providers supported chains (#580) - (f9390be) - Max Kalashnikoff
+
+- - -
+
+## 0.40.3 - 2024-03-13
+#### Bug Fixes
+- removing `unwrap` in updating weights (#579) - (08c5b24) - Max Kalashnikoff
+
+- - -
+
+## 0.40.2 - 2024-03-13
+#### Bug Fixes
+- **(providers)** changing the Base testnet to Sepolia (#578) - (cd95039) - Max Kalashnikoff
+
+- - -
+
+## 0.40.1 - 2024-03-12
+#### Bug Fixes
+- **(providers)** removing Omnia provider (#575) - (9d42f41) - Max Kalashnikoff
+
+- - -
+
+## 0.40.0 - 2024-03-11
+#### Bug Fixes
+- supported chains endpoint (#571) - (8d0888d) - Chris Smith
+#### Features
+- **(docs)** adding the footnote for not guaranteed RPC chains (#574) - (f24d882) - Max Kalashnikoff
+
+- - -
+
+## 0.39.0 - 2024-03-08
+#### Features
+- **(conversion)** convert transaction builder endpoint implementation (#572) - (ddec3bb) - Max Kalashnikoff
+
+- - -
+
+## 0.38.0 - 2024-03-08
+#### Features
+- **(conversion)** approve transaction endpoint implementation (#570) - (b78f4fb) - Max Kalashnikoff
+
+- - -
+
+## 0.37.0 - 2024-03-08
+#### Features
+- **(conversion)** conversion quotes endpoint implementation (#568) - (1b798b2) - Max Kalashnikoff
+
+- - -
+
+## 0.36.0 - 2024-03-07
+#### Features
+- **(conversion)** available tokens list endpoint implementation (#567) - (e78f77a) - Max Kalashnikoff
+
+- - -
+
+## 0.35.1 - 2024-03-06
+#### Bug Fixes
+- **(zerion)** allowing HTTP 202 return code to pass (#564) - (8e7dc7b) - Max Kalashnikoff
+
+- - -
+
+## 0.35.0 - 2024-03-05
+#### Features
+- account balance endpoint (#563) - (ef11f08) - Max Kalashnikoff
+
+- - -
+
+## 0.34.0 - 2024-03-05
+#### Bug Fixes
+- **(monitoring)** fixing typo in excluding 503 from availability (#550) - (bfc8e85) - Max Kalashnikoff
+- correct Solana chain ID (#565) - (5bfe565) - Chris Smith
+#### Features
+- sorting supported chains list by the chainid (#562) - (378304e) - Max Kalashnikoff
+
+- - -
+
+## 0.33.1 - 2024-03-01
+#### Bug Fixes
+- **(providers)** changing Near chain id to be CAIP-2 compatible (#547) - (b96bec0) - Max Kalashnikoff
+
+- - -
+
+## 0.33.0 - 2024-03-01
+#### Bug Fixes
+- **(grafana)** adding missed Near provider panels (#542) - (3ea1840) - Max Kalashnikoff
+- **(monitoring)** removing 503 from non-providers errors (#546) - (6d760ec) - Max Kalashnikoff
+- **(monitoring)** increasing CPU alarm threshold (#539) - (9481d93) - Max Kalashnikoff
+- **(monitoring)** using 3 minutes CPU average (#536) - (e3cb34e) - Max Kalashnikoff
+#### Features
+- **(monitoring)** changing to use Prometheus data for the Memory usage (#529) - (6105312) - Max Kalashnikoff
+- **(monitoring)** changing to use Prometheus data for the CPU usage (#528) - (cd66e9c) - Max Kalashnikoff
+- **(providers)** adding Mantle to supported chains (#541) - (a1c15d3) - Max Kalashnikoff
+
+- - -
+
+## 0.32.0 - 2024-02-22
+#### Features
+- adding Holesky to the supported chains (#534) - (8c5fd5d) - Max Kalashnikoff
+
+- - -
+
+## 0.31.3 - 2024-02-22
+#### Bug Fixes
+- **(providers)** adding more Near protocol support (#535) - (4ed8520) - Max Kalashnikoff
+
+- - -
+
+## 0.31.2 - 2024-02-21
+#### Bug Fixes
+- **(errors)** unifying provider reachability errors to the 503 HTTP Error (#531) - (e66ff12) - Max Kalashnikoff
+
+- - -
+
 ## 0.31.1 - 2024-02-20
 #### Bug Fixes
 - increasing keep-alive timeouts (#527) - (b2b4a36) - Max Kalashnikoff

@@ -12,7 +12,7 @@ use {
 #[derive(Debug, Copy, Clone)]
 pub struct Availability(u64, u64);
 
-pub type ParsedWeights = HashMap<String, (HashMap<ChainId, Availability>, Availability)>;
+pub type ParsedWeights = HashMap<ProviderKind, (HashMap<ChainId, Availability>, Availability)>;
 
 #[tracing::instrument(skip_all)]
 pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
@@ -37,10 +37,19 @@ pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
                 warn!("No provider found in metric: {:?}", metric);
                 continue;
             };
+
+            let provider_kind = match ProviderKind::from_str(&provider) {
+                Some(provider_kind) => provider_kind,
+                None => {
+                    warn!("Failed to parse provider kind in metric: {}", provider);
+                    continue;
+                }
+            };
+
             let amount = metrics.sample().value();
 
             let (provider_map, provider_availability) = weights_data
-                .entry(provider)
+                .entry(provider_kind)
                 .or_insert_with(|| (HashMap::new(), Availability(0, 0)));
 
             let chain_availability = provider_map
@@ -128,9 +137,7 @@ pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWei
                 continue;
             };
 
-            let Some(weight) =
-                provider_chain_weight.get(&ProviderKind::from_str(&provider).unwrap())
-            else {
+            let Some(weight) = provider_chain_weight.get(&provider) else {
                 warn!(
                     "Weight for {} not found in weight map: {:?}",
                     &provider, provider_chain_weight

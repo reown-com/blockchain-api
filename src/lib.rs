@@ -20,8 +20,10 @@ use {
         AuroraConfig,
         BaseConfig,
         BinanceConfig,
+        GetBlockConfig,
         InfuraConfig,
-        OmniatechConfig,
+        MantleConfig,
+        NearConfig,
         PoktConfig,
         PublicnodeConfig,
         QuicknodeConfig,
@@ -35,9 +37,11 @@ use {
         AuroraProvider,
         BaseProvider,
         BinanceProvider,
+        GetBlockProvider,
         InfuraProvider,
         InfuraWsProvider,
-        OmniatechProvider,
+        MantleProvider,
+        NearProvider,
         PoktProvider,
         ProviderRepository,
         PublicnodeProvider,
@@ -204,6 +208,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     let app = Router::new()
         .route("/v1", post(handlers::proxy::handler))
         .route("/v1/", post(handlers::proxy::handler))
+        .route("/v1/supported-chains", get(handlers::supported_chains::handler))
         .route("/ws", get(handlers::ws_proxy::handler))
         .route("/v1/identity/:address", get(handlers::identity::handler))
         .route(
@@ -217,6 +222,10 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route(
             "/v1/account/:address/portfolio",
             get(handlers::portfolio::handler),
+        )
+        .route(
+            "/v1/account/:address/balance",
+            get(handlers::balance::handler),
         )
         // Register account name
         .route(
@@ -256,6 +265,23 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route(
             "/v1/onramp/buy/quotes",
             get(handlers::onramp::quotes::handler),
+        )
+        // Conversion
+        .route(
+            "/v1/convert/tokens",
+            get(handlers::convert::tokens::handler),
+        )
+        .route(
+            "/v1/convert/quotes",
+            get(handlers::convert::quotes::handler),
+        )
+        .route(
+            "/v1/convert/build-approve",
+            get(handlers::convert::approve::handler),
+        )
+        .route(
+            "/v1/convert/build-transaction",
+            post(handlers::convert::transaction::handler),
         )
         .route_layer(tracing_and_metrics_layer)
         .route("/health", get(handlers::health::handler))
@@ -358,7 +384,6 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
 
     providers.add_provider::<BaseProvider, BaseConfig>(BaseConfig::default());
     providers.add_provider::<BinanceProvider, BinanceConfig>(BinanceConfig::default());
-    providers.add_provider::<OmniatechProvider, OmniatechConfig>(OmniatechConfig::default());
     providers.add_provider::<ZKSyncProvider, ZKSyncConfig>(ZKSyncConfig::default());
     providers.add_provider::<PublicnodeProvider, PublicnodeConfig>(PublicnodeConfig::default());
     providers.add_provider::<QuicknodeProvider, QuicknodeConfig>(QuicknodeConfig::new(
@@ -368,6 +393,14 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
         config.infura_project_id.clone(),
     ));
     providers.add_provider::<ZoraProvider, ZoraConfig>(ZoraConfig::default());
+    providers.add_provider::<NearProvider, NearConfig>(NearConfig::default());
+    providers.add_provider::<MantleProvider, MantleConfig>(MantleConfig::default());
+
+    if let Some(getblock_access_tokens) = &config.getblock_access_tokens {
+        providers.add_provider::<GetBlockProvider, GetBlockConfig>(GetBlockConfig::new(
+            getblock_access_tokens.clone(),
+        ));
+    };
 
     providers.add_ws_provider::<InfuraWsProvider, InfuraConfig>(InfuraConfig::new(
         config.infura_project_id.clone(),

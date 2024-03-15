@@ -1,5 +1,9 @@
 use {
-    crate::{project::ProjectDataError, storage::error::StorageError},
+    crate::{
+        project::ProjectDataError,
+        storage::error::StorageError,
+        utils::crypto::CryptoUitlsError,
+    },
     axum::{response::IntoResponse, Json},
     cerberus::registry::RegistryError,
     hyper::StatusCode,
@@ -12,6 +16,9 @@ pub type RpcResult<T> = Result<T, RpcError>;
 pub enum RpcError {
     #[error(transparent)]
     EnvyError(#[from] envy::Error),
+
+    #[error(transparent)]
+    CryptoUitlsError(#[from] CryptoUitlsError),
 
     #[error("Invalid configuration: {0}")]
     InvalidConfiguration(String),
@@ -43,9 +50,6 @@ pub enum RpcError {
     #[error("Specified provider is not supported: {0}")]
     UnsupportedProvider(String),
 
-    #[error("Provider is throttling the requests")]
-    Throttled,
-
     #[error("Failed to reach the provider")]
     ProviderError,
 
@@ -54,6 +58,18 @@ pub enum RpcError {
 
     #[error("Failed to reach the portfolio provider")]
     PortfolioProviderError,
+
+    #[error("Failed to reach the balance provider")]
+    BalanceProviderError,
+
+    #[error("Failed to parse balance provider url")]
+    BalanceParseURLError,
+
+    #[error("Failed to reach the conversion provider")]
+    ConversionProviderError,
+
+    #[error("Failed to parse conversion provider url")]
+    ConversionParseURLError,
 
     #[error("Failed to parse onramp provider url")]
     OnRampParseURLError,
@@ -153,6 +169,14 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+            Self::CryptoUitlsError(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "".to_string(),
+                    format!("Crypto utils invalid argument: {}", e),
+                )),
+            )
+                .into_response(),
             Self::ChainTemporarilyUnavailable(chain_id) => (
                 StatusCode::SERVICE_UNAVAILABLE,
                 Json(new_error_response(
@@ -170,7 +194,7 @@ impl IntoResponse for RpcError {
             )
                 .into_response(),
             Self::ProviderError => (
-                StatusCode::BAD_GATEWAY,
+                StatusCode::SERVICE_UNAVAILABLE,
                 Json(new_error_response(
                     "unreachable".to_string(),
                     "We failed to reach the provider for your request".to_string(),
@@ -193,18 +217,8 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
-            Self::Throttled => (
-                StatusCode::BAD_GATEWAY,
-                Json(new_error_response(
-                    "throttled".to_string(),
-                    "Our provider for this chain this chain is currently throttling our requests. \
-                     Please try again."
-                        .to_string(),
-                )),
-            )
-                .into_response(),
             Self::TransportError(_) => (
-                StatusCode::BAD_GATEWAY,
+                StatusCode::SERVICE_UNAVAILABLE,
                 Json(new_error_response(
                     "transport".to_string(),
                     "We failed to reach the provider for your request".to_string(),

@@ -3,6 +3,8 @@ use {
     wc::metrics::TaskMetrics,
 };
 
+pub mod balance;
+pub mod convert;
 pub mod generators;
 pub mod health;
 pub mod history;
@@ -12,6 +14,7 @@ pub mod onramp;
 pub mod portfolio;
 pub mod profile;
 pub mod proxy;
+pub mod supported_chains;
 pub mod ws_proxy;
 
 static HANDLER_TASK_METRICS: TaskMetrics = TaskMetrics::new("handler_task");

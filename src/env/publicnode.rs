@@ -40,11 +40,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:1".into(),
             ("ethereum".into(), Weight::new(Priority::High).unwrap()),
         ),
-        // Ethereum goerli
+        // Ethereum Holesky
         (
-            "eip155:5".into(),
+            "eip155:17000".into(),
             (
-                "ethereum-goerli".into(),
+                "ethereum-holesky-rpc".into(),
                 Weight::new(Priority::High).unwrap(),
             ),
         ),
@@ -91,6 +91,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 "polygon-mumbai-bor".into(),
                 Weight::new(Priority::High).unwrap(),
             ),
+        ),
+        // Mantle mainnet
+        (
+            "eip155:5000".into(),
+            ("mantle-rpc".into(), Weight::new(Priority::High).unwrap()),
         ),
     ])
 }

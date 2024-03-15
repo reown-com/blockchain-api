@@ -8,22 +8,21 @@ use {
 #[test_context(ServerContext)]
 #[tokio::test]
 #[ignore]
-async fn base_provider_eip155_8453_and_84531(ctx: &mut ServerContext) {
-    // Base mainnet
+async fn mantle_provider(ctx: &mut ServerContext) {
+    // Mantle mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
-        &ProviderKind::Base,
-        "eip155:8453",
-        "0x2105",
+        &ProviderKind::Mantle,
+        "eip155:5000",
+        "0x1388",
     )
     .await;
-
-    // Base Sepolia
+    // Mantle testnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
-        &ProviderKind::Base,
-        "eip155:84532",
-        "0x14a34",
+        &ProviderKind::Mantle,
+        "eip155:5001",
+        "0x1389",
     )
-    .await
+    .await;
 }

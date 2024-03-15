@@ -63,12 +63,12 @@ async fn infura_provider(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Optimism goerli
+    // Optimism Sepolia
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &ProviderKind::Infura,
-        "eip155:420",
-        "0x1A4",
+        "eip155:11155420",
+        "0xaa37dc",
     )
     .await;
 
@@ -85,8 +85,8 @@ async fn infura_provider(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &ProviderKind::Infura,
-        "eip155:421613",
-        "0x66eed",
+        "eip155:421614",
+        "0x66eee",
     )
     .await;
 
@@ -98,13 +98,4 @@ async fn infura_provider(ctx: &mut ServerContext) {
         "0xa4ec",
     )
     .await;
-
-    // Base Goerli
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        &ProviderKind::Infura,
-        "eip155:84531",
-        "0x14a33",
-    )
-    .await
 }

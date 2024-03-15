@@ -1,44 +1,46 @@
 local grafana   = import '../../grafonnet-lib/grafana.libsonnet';
 local defaults  = import '../../grafonnet-lib/defaults.libsonnet';
 
-local panels    = grafana.panels;
-local targets   = grafana.targets;
-local overrides = defaults.overrides;
+local panels          = grafana.panels;
+local targets         = grafana.targets;
+local alert           = grafana.alert;
+local alertCondition  = grafana.alertCondition;
+local overrides       = defaults.overrides;
 
 {
   new(ds, vars)::
     panels.timeseries(
       title       = 'CPU Utilization',
-      datasource  = ds.cloudwatch,
+      datasource  = ds.prometheus,
     )
     .configure(overrides.cpu(defaults.configuration.timeseries_resource))
-    .setAlert(defaults.alerts.cpu(
+    .setAlert(alert.new(
       namespace     = 'RPC Proxy',
-      env           = vars.environment,
-      title         = 'ECS',
+      name          = "RPC %s - High CPU usage" % vars.environment,
+      message       = "RPC %s - High CPU usage" % vars.environment,
+      period        = '15m',
+      frequency     = '5m',
+      noDataState   = 'alerting',
       notifications = vars.notifications,
-    ))
-
-    .addTarget(targets.cloudwatch(
-      alias       = 'CPU (Max)',
-      datasource  = ds.cloudwatch,
-      dimensions  = {
-        ServiceName: vars.ecs_service_name
+      alertRuleTags = {
+        'og_priority': 'P3',
       },
-      metricName  = 'CPUUtilization',
-      namespace   = 'AWS/ECS',
-      statistic   = 'Maximum',
-      refId       = 'CPU_Max',
+      conditions  = [
+        alertCondition.new(
+          evaluatorParams = [ 70 ],
+          evaluatorType   = 'gt',
+          operatorType    = 'or',
+          queryRefId      = 'CPU_Avg',
+          queryTimeStart  = '5m',
+          reducerType     = 'max',
+        ),
+      ]
     ))
-    .addTarget(targets.cloudwatch(
-      alias       = 'CPU (Avg)',
-      datasource  = ds.cloudwatch,
-      dimensions  = {
-        ServiceName: vars.ecs_service_name
-      },
-      metricName  = 'CPUUtilization',
-      namespace   = 'AWS/ECS',
-      statistic   = 'Average',
-      refId       = 'CPU_Avg',
+    .addTarget(targets.prometheus(
+      datasource    = ds.prometheus,
+      expr          = 'sum(rate(cpu_usage_sum[$__rate_interval])) / sum(rate(cpu_usage_count[$__rate_interval]))',
+      interval      = '3m',
+      legendFormat  = 'CPU Utilization 3m avg.',
+      refId         = 'CPU_Avg',
     ))
 }

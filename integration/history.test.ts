@@ -4,7 +4,7 @@ describe('Transactions history', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
 
   const fulfilled_address = '0x63755B7B300228254FB7d16321eCD3B87f98ca2a'
-  const empty_history_address = '0x739ff389c8eBd9339E69611d46Eec6212179BB67'
+  const empty_history_address = '0x5b6262592954B925B510651462b63ddEbcc22eaD'
 
   it('fulfilled history', async () => {
     let resp: any = await httpClient.get(

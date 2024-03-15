@@ -1,7 +1,7 @@
 use {
     super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
-        env::OmniatechConfig,
+        env::MantleConfig,
         error::{RpcError, RpcResult},
     },
     async_trait::async_trait,
@@ -9,19 +9,19 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    hyper::{client::HttpConnector, Client, Method, StatusCode},
+    hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
     tracing::info,
 };
 
 #[derive(Debug)]
-pub struct OmniatechProvider {
+pub struct MantleProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
     pub supported_chains: HashMap<String, String>,
 }
 
-impl Provider for OmniatechProvider {
+impl Provider for MantleProvider {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool {
         self.supported_chains.contains_key(chain_id)
     }
@@ -31,30 +31,25 @@ impl Provider for OmniatechProvider {
     }
 
     fn provider_kind(&self) -> ProviderKind {
-        ProviderKind::Omniatech
+        ProviderKind::Mantle
     }
 }
 
 #[async_trait]
-impl RateLimited for OmniatechProvider {
-    async fn is_rate_limited(&self, response: &mut Response) -> bool
-    where
-        Self: Sized,
-    {
-        response.status() == StatusCode::TOO_MANY_REQUESTS
+impl RateLimited for MantleProvider {
+    async fn is_rate_limited(&self, response: &mut Response) -> bool {
+        response.status() == http::StatusCode::TOO_MANY_REQUESTS
     }
 }
 
 #[async_trait]
-impl RpcProvider for OmniatechProvider {
+impl RpcProvider for MantleProvider {
     #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()))]
     async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
-        let chain = self
+        let uri = self
             .supported_chains
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
-
-        let uri = format!("https://endpoints.omniatech.io/v1/{}/mainnet/public", chain);
 
         let hyper_request = hyper::http::Request::builder()
             .method(Method::POST)
@@ -70,7 +65,7 @@ impl RpcProvider for OmniatechProvider {
             if response.error.is_some() && status.is_success() {
                 info!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
-                     Omnia: {response:?}"
+                     Mantle public RPC: {response:?}"
                 );
             }
         }
@@ -83,9 +78,9 @@ impl RpcProvider for OmniatechProvider {
     }
 }
 
-impl RpcProviderFactory<OmniatechConfig> for OmniatechProvider {
+impl RpcProviderFactory<MantleConfig> for MantleProvider {
     #[tracing::instrument]
-    fn new(provider_config: &OmniatechConfig) -> Self {
+    fn new(provider_config: &MantleConfig) -> Self {
         let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
@@ -93,7 +88,7 @@ impl RpcProviderFactory<OmniatechConfig> for OmniatechProvider {
             .map(|(k, v)| (k.clone(), v.0.clone()))
             .collect();
 
-        OmniatechProvider {
+        MantleProvider {
             client: forward_proxy_client,
             supported_chains,
         }

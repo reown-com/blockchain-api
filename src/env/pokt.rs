@@ -40,6 +40,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Solana Mainnet
         (
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp".into(),
+            (
+                "solana-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        (
+            // Incorrect (not CAIP-2), uses block explorer blockhash instead of getGenesisHash RPC
             "solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz".into(),
             (
                 "solana-mainnet".into(),
@@ -70,9 +78,9 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
-        // Base testnet
+        // Base Sepolia
         (
-            "eip155:84531".into(),
+            "eip155:84532".into(),
             (
                 "base-testnet".into(),
                 Weight::new(Priority::Normal).unwrap(),
@@ -83,14 +91,23 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:56".into(),
             ("bsc-mainnet".into(), Weight::new(Priority::Max).unwrap()),
         ),
-        // Ethereum
+        // Ethereum mainnet
         (
             "eip155:1".into(),
             ("eth-mainnet".into(), Weight::new(Priority::Max).unwrap()),
         ),
+        // Ethereum goerli
         (
             "eip155:5".into(),
             ("eth-goerli".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
+        // Ethereum holesky
+        (
+            "eip155:17000".into(),
+            (
+                "holesky-fullnode-testnet".into(),
+                Weight::new(Priority::High).unwrap(),
+            ),
         ),
         // Optimism
         (
@@ -140,6 +157,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:8217".into(),
             (
                 "klaytn-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        // Near protocol
+        (
+            "near:mainnet".into(),
+            (
+                "near-mainnet".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),

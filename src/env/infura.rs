@@ -63,9 +63,9 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ),
         ),
         (
-            "eip155:420".into(),
+            "eip155:11155420".into(),
             (
-                "optimism-goerli".into(),
+                "optimism-sepolia".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
@@ -78,9 +78,9 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ),
         ),
         (
-            "eip155:421613".into(),
+            "eip155:421614".into(),
             (
-                "arbitrum-goerli".into(),
+                "arbitrum-sepolia".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
@@ -106,11 +106,6 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 "celo-mainnet".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
-        ),
-        // Base Goerli
-        (
-            "eip155:84531".into(),
-            ("base-goerli".into(), Weight::new(Priority::Normal).unwrap()),
         ),
     ])
 }
@@ -141,9 +136,9 @@ fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
             ),
         ),
         (
-            "eip155:420".into(),
+            "eip155:11155420".into(),
             (
-                "optimism-goerli".into(),
+                "optimism-sepolia".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
@@ -156,9 +151,9 @@ fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
             ),
         ),
         (
-            "eip155:421613".into(),
+            "eip155:421614".into(),
             (
-                "arbitrum-goerli".into(),
+                "arbitrum-sepolia".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),

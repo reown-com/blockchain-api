@@ -5,11 +5,11 @@ use {
 };
 
 #[derive(Debug)]
-pub struct BaseConfig {
+pub struct NearConfig {
     pub supported_chains: HashMap<String, (String, Weight)>,
 }
 
-impl Default for BaseConfig {
+impl Default for NearConfig {
     fn default() -> Self {
         Self {
             supported_chains: default_supported_chains(),
@@ -17,7 +17,7 @@ impl Default for BaseConfig {
     }
 }
 
-impl ProviderConfig for BaseConfig {
+impl ProviderConfig for NearConfig {
     fn supported_chains(self) -> HashMap<String, (String, Weight)> {
         self.supported_chains
     }
@@ -27,7 +27,7 @@ impl ProviderConfig for BaseConfig {
     }
 
     fn provider_kind(&self) -> crate::providers::ProviderKind {
-        crate::providers::ProviderKind::Base
+        crate::providers::ProviderKind::Near
     }
 }
 
@@ -35,20 +35,12 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     // Keep in-sync with SUPPORTED_CHAINS.md
 
     HashMap::from([
-        // Base Mainnet
+        // Near protocol
         (
-            "eip155:8453".into(),
+            "near:mainnet".into(),
             (
-                "https://mainnet.base.org".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
-        ),
-        // Base Sepolia
-        (
-            "eip155:84532".into(),
-            (
-                "https://sepolia.base.org".into(),
-                Weight::new(Priority::Low).unwrap(),
+                "https://rpc.mainnet.near.org".into(),
+                Weight::new(Priority::High).unwrap(),
             ),
         ),
     ])

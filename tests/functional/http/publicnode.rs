@@ -18,12 +18,12 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Ethereum goerli
+    // Ethereum holesky
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &ProviderKind::Publicnode,
-        "eip155:5",
-        "0x5",
+        "eip155:17000",
+        "0x4268",
     )
     .await;
 
@@ -87,6 +87,15 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
         &ProviderKind::Publicnode,
         "eip155:80001",
         "0x13881",
+    )
+    .await;
+
+    // Mantle mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Publicnode,
+        "eip155:5000",
+        "0x1388",
     )
     .await;
 }
