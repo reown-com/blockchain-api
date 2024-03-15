@@ -32,8 +32,7 @@ permissions:
 jobs:
   paths_filter:
     name: Paths Filter
-    runs-on:
-      group: ${{ vars.RUN_GROUP }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: WalletConnect/actions/github/paths-filter/@2.2.1
@@ -45,7 +44,7 @@ jobs:
   release:
     name: Release
     needs: [ paths_filter ]
-    uses: WalletConnect/ci_workflows/.github/workflows/release.yml@0.2.3
+    uses: WalletConnect/ci_workflows/.github/workflows/release.yml@0.2.7
     secrets: inherit
     with:
       task-name: ${{ vars.TASK_NAME }}

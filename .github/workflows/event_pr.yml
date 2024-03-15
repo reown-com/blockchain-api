@@ -23,8 +23,7 @@ permissions:
 jobs:
   check_pr:
     name: Check PR
-    runs-on:
-      group: ${{ vars.RUN_GROUP }}
+    runs-on: ubuntu-latest
     permissions:
       statuses: write
     steps:
@@ -35,8 +34,7 @@ jobs:
 
   paths-filter:
     name: Paths Filter
-    runs-on:
-      group: ${{ vars.RUN_GROUP }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: WalletConnect/actions/github/paths-filter/@2.2.1
@@ -48,7 +46,7 @@ jobs:
   ci:
     name: CI
     needs: [ paths-filter ]
-    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.3
+    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.7
     secrets: inherit
     with:
       check-app: ${{ needs.paths-filter.outputs.app == 'true' }}
@@ -58,7 +56,6 @@ jobs:
     name: Merge Check
     needs: [ check_pr, ci ]
     if: ${{ always() && !cancelled() && !failure() }}
-    runs-on:
-      group: ${{ vars.RUN_GROUP }}
+    runs-on: ubuntu-latest
     steps:
       - run: echo "CI is successful"
