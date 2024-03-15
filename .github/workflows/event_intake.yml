@@ -11,8 +11,7 @@ jobs:
   add-to-project:
     name: Add issue to board
     if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'accepted'
-    runs-on:
-      group: ${{ vars.RUN_GROUP }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/add-to-project@v0.1.0
         with:
@@ -24,8 +23,7 @@ jobs:
   auto-promote:
     name: auto-promote
     if: github.event.action == 'opened'
-    runs-on:
-      group: ${{ vars.RUN_GROUP }}
+    runs-on: ubuntu-latest
     steps:
       - name: Check Core Team membership
         uses: tspascoal/get-user-teams-membership@v1
