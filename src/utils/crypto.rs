@@ -63,7 +63,7 @@ pub enum ChainId {
     Ethereum = 1,
     Fantom = 250,
     Goerli = 5,
-    Linea = 59160,
+    Linea = 59144,
     Optimism = 10,
     Polygon = 137,
     Scroll = 8508132,

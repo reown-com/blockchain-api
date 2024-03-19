@@ -25,6 +25,9 @@ Chain name with associated `chainId` query param to use.
 | Celo                                                     | eip155:42220         |
 | Avalanche Fuji Testnet <sup>[1](#footnote1)</sup>        | eip155:43113         |
 | Avalanche C-Chain                                        | eip155:43114         |
+| Linea                                                    | eip155:59144         |
+| Linea Goerli                                             | eip155:59140         |
+| Linea Sepolia                                            | eip155:59141         |
 | Polygon Mumbai                                           | eip155:80001         |
 | Base Sepolia                                             | eip155:84532         |
 | Arbitrum Sepolia                                         | eip155:421614        |
