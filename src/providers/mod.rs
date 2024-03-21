@@ -236,10 +236,7 @@ impl ProviderRepository {
 
     #[tracing::instrument(skip(self), level = "debug")]
     pub fn get_ws_provider_for_chain_id(&self, chain_id: &str) -> Option<Arc<dyn RpcWsProvider>> {
-        let Some(providers) = self.ws_weight_resolver.get(chain_id) else {
-            return None;
-        };
-
+        let providers = self.ws_weight_resolver.get(chain_id)?;
         if providers.is_empty() {
             return None;
         }
