@@ -135,6 +135,7 @@ pub struct ZerionFungibleInfoAttribute {
     pub name: String,
     pub symbol: String,
     pub icon: Option<ZerionTransactionURLItem>,
+    pub implementations: Vec<ZerionImplementation>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
@@ -180,6 +181,12 @@ pub struct ZerionTransactionApplicationMetadata {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct ZerionUrlItem {
     pub url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+pub struct ZerionImplementation {
+    pub chain_id: String,
+    pub address: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -432,6 +439,18 @@ impl BalanceProvider for ZerionProvider {
                 name: f.attributes.fungible_info.name,
                 symbol: f.attributes.fungible_info.symbol,
                 chain_id: crypto::ChainId::to_caip2(&f.relationships.chain.data.id),
+                address: {
+                    let formatted_address = f
+                        .attributes
+                        .fungible_info
+                        .implementations
+                        .first()
+                        .and_then(|f| f.address.clone());
+                    formatted_address.map(|address| {
+                        // Token address is always on the mainnet
+                        crypto::format_to_caip10(crypto::CaipNamespaces::Eip155, "1", &address)
+                    })
+                },
                 value: f.attributes.value,
                 price: f.attributes.price,
                 quantity: BalanceQuantity {
