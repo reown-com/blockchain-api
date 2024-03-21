@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.41.4 - 2024-03-21
+#### Bug Fixes
+- **(balance)** using the implementation chain address instead of first (#589) - (43c8eb8) - Max Kalashnikoff
+
+- - -
+
 ## 0.41.3 - 2024-03-21
 #### Bug Fixes
 - **(tests)** fixing address to be undefined and not null (#588) - (b484258) - Max Kalashnikoff
