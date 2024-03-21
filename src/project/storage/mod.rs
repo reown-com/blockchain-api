@@ -10,7 +10,7 @@ use {
         time::{Duration, Instant},
     },
     tap::TapFallible,
-    tracing::warn,
+    tracing::{error, warn},
 };
 
 mod config;
@@ -62,7 +62,13 @@ impl ProjectStorage {
     pub async fn set(&self, id: &str, data: &ProjectDataResult) {
         let cache_key = build_cache_key(id);
 
-        let serialized = crate::storage::serialize(&data).unwrap(); //?;
+        let serialized = match crate::storage::serialize(&data) {
+            Ok(serialized) => serialized,
+            Err(err) => {
+                error!(?err, "failed to serialize cached project data");
+                return;
+            }
+        };
         let cache = self.cache.clone();
         let cache_ttl = self.cache_ttl;
 

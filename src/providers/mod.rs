@@ -236,10 +236,7 @@ impl ProviderRepository {
 
     #[tracing::instrument(skip(self), level = "debug")]
     pub fn get_ws_provider_for_chain_id(&self, chain_id: &str) -> Option<Arc<dyn RpcWsProvider>> {
-        let Some(providers) = self.ws_weight_resolver.get(chain_id) else {
-            return None;
-        };
-
+        let providers = self.ws_weight_resolver.get(chain_id)?;
         if providers.is_empty() {
             return None;
         }
@@ -249,7 +246,9 @@ impl ProviderRepository {
         match WeightedIndex::new(weights) {
             Ok(dist) => {
                 let random = dist.sample(&mut OsRng);
-                let provider = keys.get(random).unwrap();
+                let provider = keys
+                    .get(random)
+                    .expect("Failed to get random provider: out of index");
 
                 self.ws_providers.get(provider).cloned()
             }
