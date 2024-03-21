@@ -440,16 +440,20 @@ impl BalanceProvider for ZerionProvider {
                 symbol: f.attributes.fungible_info.symbol,
                 chain_id: crypto::ChainId::to_caip2(&f.relationships.chain.data.id),
                 address: {
-                    let formatted_address = f
+                    let chain_id_human = f.relationships.chain.data.id;
+                    let chain_address = f
                         .attributes
                         .fungible_info
                         .implementations
-                        .first()
+                        .iter()
+                        .find(|f| f.chain_id == chain_id_human)
                         .and_then(|f| f.address.clone());
-                    formatted_address.map(|address| {
-                        // Token address is always on the mainnet
-                        crypto::format_to_caip10(crypto::CaipNamespaces::Eip155, "1", &address)
-                    })
+                    let chain_id = crypto::ChainId::to_caip2(&chain_id_human);
+                    if let Some(chain_address) = chain_address {
+                        chain_id.map(|chain_id| format!("{}:{}", &chain_id, chain_address))
+                    } else {
+                        None
+                    }
                 },
                 value: f.attributes.value,
                 price: f.attributes.price,
