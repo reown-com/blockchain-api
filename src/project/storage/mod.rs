@@ -10,7 +10,7 @@ use {
         time::{Duration, Instant},
     },
     tap::TapFallible,
-    tracing::warn,
+    tracing::{error, warn},
 };
 
 mod config;
@@ -65,7 +65,7 @@ impl ProjectStorage {
         let serialized = match crate::storage::serialize(&data) {
             Ok(serialized) => serialized,
             Err(err) => {
-                warn!(?err, "failed to serialize cached project data");
+                error!(?err, "failed to serialize cached project data");
                 return;
             }
         };
