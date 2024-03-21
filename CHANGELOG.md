@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.41.3 - 2024-03-21
+#### Bug Fixes
+- **(tests)** fixing address to be undefined and not null (#588) - (b484258) - Max Kalashnikoff
+- removing unwraps for proper handling and error context (#583) - (1b69020) - Max Kalashnikoff
+
+- - -
+
 ## 0.41.2 - 2024-03-21
 #### Bug Fixes
 - **(balance)** adding token contract address (#587) - (abe23d5) - Max Kalashnikoff
