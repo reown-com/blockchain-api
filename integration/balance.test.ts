@@ -19,6 +19,11 @@ describe('Account balance', () => {
       expect(typeof item.name).toBe('string')
       expect(typeof item.symbol).toBe('string')
       expect(item.chainId).toEqual(expect.stringMatching(/^(eip155:)?\d+$/))
+      if (item.address !== null) {
+        expect(item.address).toEqual(expect.stringMatching(/^(eip155:\d+:0x[0-9a-fA-F]{40})$/))
+      } else {
+        expect(item.address).toBeNull()
+      }
       expect(typeof item.price).toBe('number')
       expect(typeof item.quantity).toBe('object')
       expect(typeof item.iconUrl).toBe('string')

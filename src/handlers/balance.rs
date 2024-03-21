@@ -63,7 +63,11 @@ pub struct BalanceResponseBody {
 pub struct BalanceItem {
     pub name: String,
     pub symbol: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub chain_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<f64>,
     pub price: f64,
     pub quantity: BalanceQuantity,
