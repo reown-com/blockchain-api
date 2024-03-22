@@ -17,6 +17,7 @@ local ds    = {
   },
 };
 local vars  = {
+  namespace:        'Notify',
   environment:      std.extVar('environment'),
   notifications:    std.parseJson(std.extVar('notifications')),
 
