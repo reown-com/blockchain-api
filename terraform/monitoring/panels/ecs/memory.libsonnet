@@ -14,7 +14,7 @@ local overrides       = defaults.overrides;
       datasource  = ds.prometheus,
     )
     .configure(defaults.overrides.memory(defaults.configuration.timeseries_resource))
-    .setAlert(alert.new(
+    .setAlert(vars.environment, alert.new(
       namespace     = 'RPC Proxy',
       name          = "RPC %s - High Memory (RAM) usage" % vars.environment,
       message       = "RPC %s - High Memory (RAM) usage" % vars.environment,

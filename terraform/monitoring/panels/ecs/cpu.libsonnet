@@ -14,7 +14,7 @@ local overrides       = defaults.overrides;
       datasource  = ds.prometheus,
     )
     .configure(overrides.cpu(defaults.configuration.timeseries_resource))
-    .setAlert(alert.new(
+    .setAlert(vars.environment, alert.new(
       namespace     = 'RPC Proxy',
       name          = "RPC %s - High CPU usage" % vars.environment,
       message       = "RPC %s - High CPU usage" % vars.environment,

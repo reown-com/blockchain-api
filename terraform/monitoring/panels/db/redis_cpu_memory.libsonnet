@@ -17,7 +17,7 @@ local _configuration  = defaults.overrides.cpu_memory(defaults.configuration.tim
     )
     .configure(defaults.overrides.cpu_memory(defaults.configuration.timeseries_resource))
 
-    .setAlert(defaults.alerts.cpu_mem(
+    .setAlert(vars.environment, defaults.alerts.cpu_mem(
       namespace     = 'RPC Proxy',
       env           = vars.environment,
       notifications = vars.notifications,

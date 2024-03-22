@@ -45,4 +45,13 @@
     requests:             (import 'history/requests.libsonnet'            ).new,
     latency:              (import 'history/latency.libsonnet'             ).new,
   },
+
+  lb: {
+    active_connections:       (import 'lb/active_connections.libsonnet'         ).new,
+    error_4xx:                (import 'lb/error_4xx.libsonnet'                  ).new,
+    error_5xx:                (import 'lb/error_5xx.libsonnet'                  ).new,
+    error_5xx_logs:           (import 'lb/error_5xx_logs.libsonnet'             ).new,
+    healthy_hosts:            (import 'lb/healthy_hosts.libsonnet'              ).new,
+    requests:                 (import 'lb/requests.libsonnet'                   ).new,
+  },
 }

@@ -44,7 +44,7 @@ local error_alert(vars) = alert.new(
           axisSoftMax = 100,
         )
     )
-    .setAlert(error_alert(vars))
+    .setAlert(vars.environment, error_alert(vars))
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
