@@ -119,10 +119,6 @@ dashboard.new(
     panels.proxy.http_codes(ds, vars)                { gridPos: pos.two_thirds },
     panels.proxy.healthy_hosts(ds, vars)             { gridPos: pos._3 },
 
-  row.new('Redis'),
-    panels.redis.cpu(ds, vars)                    { gridPos: pos._2 },
-    panels.redis.memory(ds, vars)                 { gridPos: pos._2 },
-
   row.new('History Metrics'),
     panels.history.requests(ds, vars)               { gridPos: pos_short._3 },
     panels.history.latency(ds, vars)                { gridPos: pos_short._3 },
@@ -134,6 +130,10 @@ dashboard.new(
     panels.identity.latency(ds, vars)                { gridPos: pos_short._2 },
     panels.identity.cache(ds, vars)                  { gridPos: pos_short._2 },
     panels.identity.usage(ds, vars)                  { gridPos: pos_short._2 },
+
+  row.new('Redis'),
+    panels.redis.cpu(ds, vars)                    { gridPos: pos._2 },
+    panels.redis.memory(ds, vars)                 { gridPos: pos._2 },
 
   row.new('Load Balancer'),
     panels.lb.active_connections(ds, vars)        { gridPos: pos._2 },
