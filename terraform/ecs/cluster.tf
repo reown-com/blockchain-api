@@ -21,8 +21,8 @@ locals {
 module "ecs_cpu_mem" {
   source  = "app.terraform.io/wallet-connect/ecs_cpu_mem/aws"
   version = "1.0.0"
-  cpu     = var.task_cpu
-  memory  = var.task_memory
+  cpu     = local.task_cpu
+  memory  = local.task_memory
 }
 
 #-------------------------------------------------------------------------------
@@ -70,8 +70,8 @@ resource "aws_ecs_task_definition" "app_task" {
     {
       name      = module.this.id,
       image     = local.image,
-      cpu       = var.task_cpu - local.otel_cpu - local.prometheus_proxy_cpu,
-      memory    = var.task_memory - local.otel_memory - local.prometheus_proxy_memory,
+      cpu       = local.task_cpu - local.otel_cpu - local.prometheus_proxy_cpu,
+      memory    = local.task_memory - local.otel_memory - local.prometheus_proxy_memory,
       essential = true,
 
       environment = [
