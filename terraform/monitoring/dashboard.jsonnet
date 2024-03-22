@@ -119,8 +119,9 @@ dashboard.new(
     panels.proxy.http_codes(ds, vars)                { gridPos: pos.two_thirds },
     panels.proxy.healthy_hosts(ds, vars)             { gridPos: pos._3 },
 
-  row.new('Database'),
-    panels.db.redis_cpu_memory(ds, vars)             { gridPos: pos._2 },
+  row.new('Redis'),
+    panels.redis.cpu(ds, vars)                    { gridPos: pos._2 },
+    panels.redis.memory(ds, vars)                 { gridPos: pos._2 },
 
   row.new('History Metrics'),
     panels.history.requests(ds, vars)               { gridPos: pos_short._3 },

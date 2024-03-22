@@ -1,3 +1,6 @@
+local panels = (import '../grafonnet-lib/defaults.libsonnet').panels;
+local redis  = panels.aws.redis;
+
 {
   ecs: {
     availability:         (import 'ecs/availability.libsonnet'            ).new,
@@ -28,8 +31,9 @@
     healthy_hosts:          (import 'proxy/healthy_hosts.libsonnet'         ).new,
   },
 
-  db: {
-    redis_cpu_memory:     (import 'db/redis_cpu_memory.libsonnet'         ).new,
+  redis: {
+    cpu(ds, vars):            redis.cpu.panel(ds.cloudwatch, vars.namespace, vars.environment, vars.notifications, vars.redis_cluster_id),
+    memory(ds, vars):         redis.memory.panel(ds.cloudwatch, vars.namespace, vars.environment, vars.notifications, vars.redis_cluster_id),
   },
 
   identity: {
