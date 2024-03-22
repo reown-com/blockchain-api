@@ -56,8 +56,8 @@ dashboard.new(
 
 .addPanels(layout.generate_grid([
   row.new('Application'),
-    panels.app.http_request_rate(ds, vars)          { gridPos: pos._4 },
-    panels.app.http_request_latency(ds, vars)       { gridPos: pos._4 },
+    // panels.app.http_request_rate(ds, vars)          { gridPos: pos._4 },
+    // panels.app.http_request_latency(ds, vars)       { gridPos: pos._4 },
     panels.lb.error_5xx(ds, vars)                   { gridPos: pos._4 },
     panels.lb.error_5xx_logs(ds, vars)              { gridPos: pos._4 },
 
