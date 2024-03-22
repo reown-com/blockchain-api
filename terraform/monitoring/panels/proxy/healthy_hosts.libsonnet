@@ -21,7 +21,7 @@ local _configuration = defaults.configuration.timeseries
     .addTarget(targets.cloudwatch(
       alias           = "eu-central-1",
       datasource      = ds.cloudwatch,
-      metricQueryType = grafana.target.cloudwatch.metricQueryTypes.query,
+      metricQueryType = grafana.target.cloudwatch.queryTypes.Query,
 
       dimensions    = {
         TargetGroup: vars.target_group
