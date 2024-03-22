@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.41.5 - 2024-03-22
+#### Bug Fixes
+- provider-returned non-200s should be 503s & fix autoscaling (#591) - (1dbfe4c) - Chris Smith
+
+- - -
+
 ## 0.41.4 - 2024-03-21
 #### Bug Fixes
 - **(balance)** using the implementation chain address instead of first (#589) - (43c8eb8) - Max Kalashnikoff
