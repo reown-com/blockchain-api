@@ -152,6 +152,7 @@ async fn handler_internal(
                 response.body()
             );
             state.metrics.add_failed_provider_call(provider.borrow());
+            *response.status_mut() = http::StatusCode::SERVICE_UNAVAILABLE;
         }
     };
     Ok(response)
