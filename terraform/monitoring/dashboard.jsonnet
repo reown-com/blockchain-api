@@ -58,11 +58,11 @@ dashboard.new(
   row.new('Application'),
     // panels.app.http_request_rate(ds, vars)          { gridPos: pos._4 },
     // panels.app.http_request_latency(ds, vars)       { gridPos: pos._4 },
-    panels.lb.error_5xx(ds, vars)                   { gridPos: pos._4 },
-    panels.lb.error_5xx_logs(ds, vars)              { gridPos: pos._4 },
+    panels.ecs.availability(ds, vars)                { gridPos: pos._3 },
+    panels.lb.error_5xx(ds, vars)                    { gridPos: pos._3 },
+    panels.lb.error_5xx_logs(ds, vars)               { gridPos: pos._3 },
 
   row.new('ECS'),
-    panels.ecs.availability(ds, vars)                { gridPos: pos._3 },
     panels.ecs.memory(ds, vars)                      { gridPos: pos._3 },
     panels.ecs.cpu(ds, vars)                         { gridPos: pos._3 },
 
