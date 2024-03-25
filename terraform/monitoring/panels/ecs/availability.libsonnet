@@ -7,9 +7,9 @@ local alert          = grafana.alert;
 local alertCondition = grafana.alertCondition;
 
 local error_alert(vars) = alert.new(
-  namespace   = 'RPC',
-  name        = "RPC %s - Availability" % vars.environment,
-  message     = "RPC %s - Availability" % vars.environment,
+  namespace   = 'Blockchain API',
+  name        = "%s - Availability" % vars.environment,
+  message     = "%s - Availability" % vars.environment,
   period      = '5m',
   frequency   = '1m',
   noDataState = 'alerting',

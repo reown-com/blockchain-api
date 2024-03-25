@@ -15,9 +15,9 @@ local overrides       = defaults.overrides;
     )
     .configure(overrides.cpu(defaults.configuration.timeseries_resource))
     .setAlert(vars.environment, alert.new(
-      namespace     = 'RPC Proxy',
-      name          = "RPC %s - High CPU usage" % vars.environment,
-      message       = "RPC %s - High CPU usage" % vars.environment,
+      namespace     = 'Blockchain API',
+      name          = "%s - High CPU usage" % vars.environment,
+      message       = "%s - High CPU usage" % vars.environment,
       period        = '15m',
       frequency     = '5m',
       noDataState   = 'alerting',

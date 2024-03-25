@@ -15,9 +15,9 @@ local overrides       = defaults.overrides;
     )
     .configure(defaults.overrides.memory(defaults.configuration.timeseries_resource))
     .setAlert(vars.environment, alert.new(
-      namespace     = 'RPC Proxy',
-      name          = "RPC %s - High Memory (RAM) usage" % vars.environment,
-      message       = "RPC %s - High Memory (RAM) usage" % vars.environment,
+      namespace     = 'Blockchain APi',
+      name          = "%s - High Memory (RAM) usage" % vars.environment,
+      message       = "%s - High Memory (RAM) usage" % vars.environment,
       period        = '5m',
       frequency     = '1m',
       noDataState   = 'alerting',

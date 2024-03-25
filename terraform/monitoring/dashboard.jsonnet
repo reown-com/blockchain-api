@@ -17,7 +17,7 @@ local ds    = {
   },
 };
 local vars  = {
-  namespace:        'Notify',
+  namespace:        'Blockchain API',
   environment:      std.extVar('environment'),
   notifications:    std.parseJson(std.extVar('notifications')),
 
