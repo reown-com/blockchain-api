@@ -7,7 +7,7 @@ use {
     axum::{response::IntoResponse, Json},
     cerberus::registry::RegistryError,
     hyper::StatusCode,
-    tracing::log::error,
+    tracing::{debug, log::error},
 };
 
 pub type RpcResult<T> = Result<T, RpcError>;
@@ -159,7 +159,7 @@ pub enum RpcError {
 
 impl IntoResponse for RpcError {
     fn into_response(self) -> axum::response::Response {
-        match self {
+        let response =  match &self {
             Self::AxumTungstenite(err) => (StatusCode::GONE, err.to_string()).into_response(),
             Self::UnsupportedChain(chain_id) => (
                 StatusCode::BAD_REQUEST,
@@ -357,15 +357,22 @@ impl IntoResponse for RpcError {
                 .into_response(),
 
             // Any other errors considering as 500
-            e => {
-                error!("Internal server error: {}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal server error".to_string(),
-                )
-                    .into_response()
-            }
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Internal server error".to_string(),
+            )
+                .into_response(),
+        };
+
+        if response.status().is_client_error() {
+            debug!("HTTP client error: {self:?}");
         }
+
+        if response.status().is_server_error() {
+            error!("HTTP server error: {self:?}");
+        }
+
+        response
     }
 }
 

@@ -32,3 +32,13 @@ output "load_balancer_arn_suffix" {
   description = "The ARN suffix of the load balancer"
   value       = aws_lb.load_balancer.arn_suffix
 }
+
+output "log_group_app_name" {
+  description = "The name of the log group for the app"
+  value       = aws_cloudwatch_log_group.cluster.name
+}
+
+output "log_group_app_arn" {
+  description = "The ARN of the log group for the app"
+  value       = aws_cloudwatch_log_group.cluster.arn
+}

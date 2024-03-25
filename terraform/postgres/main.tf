@@ -44,7 +44,7 @@ module "db_cluster" {
   cloudwatch_log_group_retention_in_days = var.cloudwatch_retention_in_days
 
   serverlessv2_scaling_configuration = {
-    min_capacity = var.min_capacity
+    min_capacity = module.this.stage == "prod" ? var.min_capacity : 0.5
     max_capacity = var.max_capacity
   }
 }

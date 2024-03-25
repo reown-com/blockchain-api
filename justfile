@@ -62,7 +62,7 @@ docs target='all': (_check-string-in-set target "all,rust,tf")
   [[ '{{ target }}' == 'all' || '{{ target }}' == 'tf'    ]] && { just tf-docs;   }
 
 # Run linting and tests
-amigood: lint cargo-test-all
+devloop: lint cargo-test-all
 
 ################################################################################
 # Linting recipes

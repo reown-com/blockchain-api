@@ -17,13 +17,17 @@ local ds    = {
   },
 };
 local vars  = {
+  namespace:        'Notify',
   environment:      std.extVar('environment'),
   notifications:    std.parseJson(std.extVar('notifications')),
 
-  ecs_service_name: std.extVar('ecs_service_name'),
-  load_balancer:    std.extVar('load_balancer'),
-  target_group:     std.extVar('target_group'),
-  redis_cluster_id: std.extVar('redis_cluster_id'),
+  ecs_service_name:   std.extVar('ecs_service_name'),
+  load_balancer:      std.extVar('load_balancer'),
+  target_group:       std.extVar('target_group'),
+  redis_cluster_id:   std.extVar('redis_cluster_id'),
+  log_group_app_name: std.extVar('log_group_app_name'),
+  log_group_app_arn:  std.extVar('log_group_app_arn'),
+  aws_account_id:     std.extVar('aws_account_id'),
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,8 +56,14 @@ dashboard.new(
 )
 
 .addPanels(layout.generate_grid([
-  row.new('ECS'),
+  row.new('Application'),
+    // panels.app.http_request_rate(ds, vars)          { gridPos: pos._4 },
+    // panels.app.http_request_latency(ds, vars)       { gridPos: pos._4 },
     panels.ecs.availability(ds, vars)                { gridPos: pos._3 },
+    panels.lb.error_5xx(ds, vars)                    { gridPos: pos._3 },
+    panels.lb.error_5xx_logs(ds, vars)               { gridPos: pos._3 },
+
+  row.new('ECS'),
     panels.ecs.memory(ds, vars)                      { gridPos: pos._3 },
     panels.ecs.cpu(ds, vars)                         { gridPos: pos._3 },
 
@@ -109,9 +119,6 @@ dashboard.new(
     panels.proxy.http_codes(ds, vars)                { gridPos: pos.two_thirds },
     panels.proxy.healthy_hosts(ds, vars)             { gridPos: pos._3 },
 
-  row.new('Database'),
-    panels.db.redis_cpu_memory(ds, vars)             { gridPos: pos._2 },
-
   row.new('History Metrics'),
     panels.history.requests(ds, vars)               { gridPos: pos_short._3 },
     panels.history.latency(ds, vars)                { gridPos: pos_short._3 },
@@ -123,4 +130,15 @@ dashboard.new(
     panels.identity.latency(ds, vars)                { gridPos: pos_short._2 },
     panels.identity.cache(ds, vars)                  { gridPos: pos_short._2 },
     panels.identity.usage(ds, vars)                  { gridPos: pos_short._2 },
+
+  row.new('Redis'),
+    panels.redis.cpu(ds, vars)                    { gridPos: pos._2 },
+    panels.redis.memory(ds, vars)                 { gridPos: pos._2 },
+
+  row.new('Load Balancer'),
+    panels.lb.active_connections(ds, vars)        { gridPos: pos._2 },
+    panels.lb.requests(ds, vars)                  { gridPos: pos._2 },
+
+    panels.lb.healthy_hosts(ds, vars)             { gridPos: pos._3 },
+    panels.lb.error_4xx(ds, vars)                 { gridPos: pos._3 },
 ]))
