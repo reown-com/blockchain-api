@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.41.6 - 2024-03-25
+#### Bug Fixes
+- top-level ELB error metric and logs, downscale to min capacities (#592) - (7cf125d) - Chris Smith
+
+- - -
+
 ## 0.41.5 - 2024-03-22
 #### Bug Fixes
 - provider-returned non-200s should be 503s & fix autoscaling (#591) - (1dbfe4c) - Chris Smith
