@@ -4,7 +4,7 @@ local defaults  = import '../../grafonnet-lib/defaults.libsonnet';
 local panels    = grafana.panels;
 local targets   = grafana.targets;
 
-local threshold = 100; // Reset to 0 after https://github.com/WalletConnect/notify-server/issues/374 is resolved
+local threshold = 10000;
 
 local _configuration = defaults.configuration.timeseries
   .withSoftLimit(
@@ -20,13 +20,13 @@ local _configuration = defaults.configuration.timeseries
 local _alert(namespace, env, notifications) = grafana.alert.new(
   namespace     = namespace,
   name          = "%(env)s - 5XX alert"     % { env: grafana.utils.strings.capitalize(env) },
-  message       = '%(env)s - Notify - 5XX alert'  % { env: grafana.utils.strings.capitalize(env) },
+  message       = '%(env)s - 5XX alert'  % { env: grafana.utils.strings.capitalize(env) },
   notifications = notifications,
   noDataState   = 'no_data',
   period        = '0m',
   conditions    = [
     grafana.alertCondition.new(
-      evaluatorParams = [ 500 ],
+      evaluatorParams = [ 2000 ],
       evaluatorType   = 'gt',
       operatorType    = 'or',
       queryRefId      = 'ELB',
