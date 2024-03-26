@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.41.8 - 2024-03-26
+#### Bug Fixes
+- **(zerion)** handling properly `Polygon` native token address in balance (#597) - (1aa8d7f) - Max Kalashnikoff
+
+- - -
+
 ## 0.41.7 - 2024-03-26
 #### Bug Fixes
 - **(monitoring)** decreasing system metrics sampling interval (#598) - (2efa413) - Max Kalashnikoff
