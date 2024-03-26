@@ -325,7 +325,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     let system_metrics_updater = {
         let state_arc = state_arc.clone();
         async move {
-            let mut interval = tokio::time::interval(Duration::from_secs(60));
+            let mut interval = tokio::time::interval(Duration::from_secs(10));
             loop {
                 interval.tick().await;
                 state_arc.clone().metrics.gather_system_metrics().await;
