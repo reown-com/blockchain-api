@@ -432,6 +432,8 @@ impl BalanceProvider for ZerionProvider {
             .json::<ZerionResponseBody<Vec<ZerionPosition>>>()
             .await?;
 
+        const POLYGON_NATIVE_TOKEN_ADDRESS: &str = "0x0000000000000000000000000000000000001010";
+
         let balances_vec = body
             .data
             .into_iter()
@@ -450,7 +452,15 @@ impl BalanceProvider for ZerionProvider {
                         .and_then(|f| f.address.clone());
                     let chain_id = crypto::ChainId::to_caip2(&chain_id_human);
                     if let Some(chain_address) = chain_address {
-                        chain_id.map(|chain_id| format!("{}:{}", &chain_id, chain_address))
+                        // For Polygon native token (Matic)
+                        // address is returned, but address should be null
+                        // for native tokens
+                        // https://specs.walletconnect.com/2.0/specs/servers/blockchain/blockchain-server-api#success-response-body-4
+                        if chain_address == POLYGON_NATIVE_TOKEN_ADDRESS {
+                            None
+                        } else {
+                            chain_id.map(|chain_id| format!("{}:{}", &chain_id, chain_address))
+                        }
                     } else {
                         None
                     }
