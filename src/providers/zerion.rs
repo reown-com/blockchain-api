@@ -450,7 +450,15 @@ impl BalanceProvider for ZerionProvider {
                         .and_then(|f| f.address.clone());
                     let chain_id = crypto::ChainId::to_caip2(&chain_id_human);
                     if let Some(chain_address) = chain_address {
-                        chain_id.map(|chain_id| format!("{}:{}", &chain_id, chain_address))
+                        // For Polygon native token (Matic)
+                        // `0x0000000000000000000000000000000000001010`
+                        // address is returned, but address should be null
+                        // for native tokens
+                        if chain_address == "0x0000000000000000000000000000000000001010" {
+                            None
+                        } else {
+                            chain_id.map(|chain_id| format!("{}:{}", &chain_id, chain_address))
+                        }
                     } else {
                         None
                     }
