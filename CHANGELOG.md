@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.41.7 - 2024-03-26
+#### Bug Fixes
+- **(monitoring)** decreasing system metrics sampling interval (#598) - (2efa413) - Max Kalashnikoff
+- **(monitoring)** increasing the CPU alarm interval (#596) - (c80d10e) - Max Kalashnikoff
+- alarm config (#595) - (c619f7e) - Chris Smith
+#### Miscellaneous Chores
+- bump version - (28e4854) - Chris Smith
+
+- - -
+
 ## 0.41.6 - 2024-03-25
 #### Bug Fixes
 - top-level ELB error metric and logs, downscale to min capacities (#592) - (7cf125d) - Chris Smith
