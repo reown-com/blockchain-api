@@ -4046,7 +4046,7 @@ dependencies = [
 
 [[package]]
 name = "rpc-proxy"
-version = "0.41.7"
+version = "0.41.8"
 dependencies = [
  "anyhow",
  "async-trait",
