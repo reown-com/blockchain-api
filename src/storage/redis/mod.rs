@@ -103,10 +103,7 @@ impl Redis {
             .map_err(|e| StorageError::Connection(format!("{e}")))?;
 
         let res_fut = if let Some(ttl) = ttl {
-            let ttl = ttl
-                .as_secs()
-                .try_into()
-                .map_err(|_| StorageError::SetExpiry)?;
+            let ttl = ttl.as_secs();
 
             conn.set_ex(key, data, ttl)
         } else {

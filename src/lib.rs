@@ -64,6 +64,7 @@ use {
         ServiceBuilderExt,
     },
     tracing::{info, log::warn, Span},
+    utils::rate_limit::RateLimit,
     wc::{
         geoip::{
             block::{middleware::GeoBlockLayer, BlockingPolicy},
@@ -78,6 +79,11 @@ const SERVICE_TASK_TIMEOUT: Duration = Duration::from_secs(15);
 const KEEPALIVE_IDLE_DURATION: Duration = Duration::from_secs(65);
 const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(65);
 const KEEPALIVE_RETRIES: u32 = 1;
+
+// Rate-limiting configuration
+const RATE_LIMIT_MAX_TOKENS: u32 = 300;
+const RATE_LIMIT_INTERVAL: Duration = Duration::from_secs(1);
+const RATE_LIMIT_REFILL_RATE: u32 = 100;
 
 mod analytics;
 pub mod database;
@@ -103,6 +109,19 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 
     let metrics = Arc::new(Metrics::new());
     let registry = Registry::new(&config.registry, &config.storage)?;
+
+    let rate_limiting = if let Some(redis_addr) = config.storage.rate_limiting_cache_redis_addr() {
+        Some(RateLimit::new(
+            redis_addr.write(),
+            RATE_LIMIT_MAX_TOKENS,
+            chrono::Duration::from_std(RATE_LIMIT_INTERVAL).unwrap(),
+            RATE_LIMIT_REFILL_RATE,
+        ))
+    } else {
+        warn!("Rate limiting is disabled");
+        None
+    };
+
     // TODO refactor encapsulate these details in a lower layer
     let identity_cache = config
         .storage
@@ -153,6 +172,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         identity_cache,
         analytics,
         http_client,
+        rate_limiting,
     );
 
     let port = state.config.server.port;

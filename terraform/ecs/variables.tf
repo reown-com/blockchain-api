@@ -136,6 +136,16 @@ variable "identity_cache_endpoint_write" {
   type        = string
 }
 
+variable "rate_limiting_cache_endpoint_read" {
+  description = "The endpoint of the rate limiting cache (read)"
+  type        = string
+}
+
+variable "rate_limiting_cache_endpoint_write" {
+  description = "The endpoint of the rate limiting cache (write)"
+  type        = string
+}
+
 variable "ofac_blocked_countries" {
   description = "The list of countries under OFAC sanctions"
   type        = string

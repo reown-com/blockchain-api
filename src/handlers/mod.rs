@@ -1,6 +1,10 @@
 use {
+    crate::{state::AppState, utils::network},
+    axum::extract::{ConnectInfo, MatchedPath, State},
+    hyper::HeaderMap,
     serde::{Deserialize, Serialize},
-    wc::metrics::TaskMetrics,
+    std::{net::SocketAddr, sync::Arc},
+    wc::{metrics::TaskMetrics, rate_limit::RateLimitError},
 };
 
 pub mod balance;
@@ -31,4 +35,26 @@ pub struct RpcQueryParams {
 #[derive(Serialize)]
 pub struct SuccessResponse {
     status: String,
+}
+
+/// Checking rate limit for the request in the handler
+pub async fn handle_rate_limit(
+    state: State<Arc<AppState>>,
+    headers: HeaderMap,
+    connect_info: ConnectInfo<SocketAddr>,
+    path: MatchedPath,
+    project_id: Option<&str>,
+) -> Result<(), RateLimitError> {
+    state
+        .rate_limit
+        .as_ref()
+        .unwrap()
+        .is_rate_limited(
+            path.as_str(),
+            &network::get_forwarded_ip(headers.clone())
+                .unwrap_or_else(|| connect_info.0.ip())
+                .to_string(),
+            project_id,
+        )
+        .await
 }

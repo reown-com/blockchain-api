@@ -11,6 +11,8 @@ pub struct Config {
     pub project_data_redis_addr_write: Option<String>,
     pub identity_cache_redis_addr_read: Option<String>,
     pub identity_cache_redis_addr_write: Option<String>,
+    pub rate_limiting_cache_redis_addr_read: Option<String>,
+    pub rate_limiting_cache_redis_addr_write: Option<String>,
 }
 
 impl Default for Config {
@@ -21,6 +23,8 @@ impl Default for Config {
             project_data_redis_addr_write: None,
             identity_cache_redis_addr_read: None,
             identity_cache_redis_addr_write: None,
+            rate_limiting_cache_redis_addr_read: None,
+            rate_limiting_cache_redis_addr_write: None,
         }
     }
 }
@@ -40,6 +44,16 @@ impl Config {
         match (
             &self.identity_cache_redis_addr_read,
             &self.identity_cache_redis_addr_write,
+        ) {
+            (None, None) => None,
+            (addr_read, addr_write) => Some(RedisAddr::from((addr_read, addr_write))),
+        }
+    }
+
+    pub fn rate_limiting_cache_redis_addr(&self) -> Option<RedisAddr> {
+        match (
+            &self.rate_limiting_cache_redis_addr_read,
+            &self.rate_limiting_cache_redis_addr_write,
         ) {
             (None, None) => None,
             (addr_read, addr_write) => Some(RedisAddr::from((addr_read, addr_write))),

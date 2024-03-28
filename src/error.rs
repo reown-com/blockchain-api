@@ -92,6 +92,9 @@ pub enum RpcError {
     #[error(transparent)]
     AxumTungstenite(#[from] axum_tungstenite::Error),
 
+    #[error(transparent)]
+    RateLimitError(#[from] wc::rate_limit::RateLimitError),
+
     #[error("Invalid address")]
     InvalidAddress,
 
@@ -352,6 +355,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "".to_string(),
                     format!("Deserialization error: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::RateLimitError(e) => (
+                StatusCode::TOO_MANY_REQUESTS,
+                Json(new_error_response(
+                    "rate_limit".to_string(),
+                    format!("Rate limit error: {}", e),
                 )),
             )
                 .into_response(),

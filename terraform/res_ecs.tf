@@ -50,14 +50,16 @@ module "ecs" {
   allowed_lb_ingress_cidr_blocks  = module.vpc.vpc_cidr_block
 
   # Application
-  port                          = 8080
-  log_level                     = var.log_level
-  project_cache_endpoint_read   = module.redis.endpoint
-  project_cache_endpoint_write  = module.redis.endpoint
-  identity_cache_endpoint_read  = module.redis.endpoint
-  identity_cache_endpoint_write = module.redis.endpoint
-  ofac_blocked_countries        = var.ofac_blocked_countries
-  postgres_url                  = module.postgres.database_url
+  port                               = 8080
+  log_level                          = var.log_level
+  project_cache_endpoint_read        = module.redis.endpoint
+  project_cache_endpoint_write       = module.redis.endpoint
+  identity_cache_endpoint_read       = module.redis.endpoint
+  identity_cache_endpoint_write      = module.redis.endpoint
+  rate_limiting_cache_endpoint_read  = module.redis.endpoint
+  rate_limiting_cache_endpoint_write = module.redis.endpoint
+  ofac_blocked_countries             = var.ofac_blocked_countries
+  postgres_url                       = module.postgres.database_url
 
   # Providers
   infura_project_id      = var.infura_project_id

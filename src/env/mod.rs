@@ -133,6 +133,14 @@ mod test {
                 "RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_WRITE",
                 "redis://127.0.0.1/identity/write",
             ),
+            (
+                "RPC_PROXY_STORAGE_RATE_LIMITING_CACHE_REDIS_ADDR_READ",
+                "redis://127.0.0.1/rate_limit/read",
+            ),
+            (
+                "RPC_PROXY_STORAGE_RATE_LIMITING_CACHE_REDIS_ADDR_WRITE",
+                "redis://127.0.0.1/rate_limit/write",
+            ),
             // Analytics config.
             ("RPC_PROXY_ANALYTICS_S3_ENDPOINT", "s3://127.0.0.1"),
             ("RPC_PROXY_ANALYTICS_EXPORT_BUCKET", "EXPORT_BUCKET"),
@@ -197,6 +205,12 @@ mod test {
                 identity_cache_redis_addr_read: Some("redis://127.0.0.1/identity/read".to_owned()),
                 identity_cache_redis_addr_write: Some(
                     "redis://127.0.0.1/identity/write".to_owned()
+                ),
+                rate_limiting_cache_redis_addr_read: Some(
+                    "redis://127.0.0.1/rate_limit/read".to_owned()
+                ),
+                rate_limiting_cache_redis_addr_write: Some(
+                    "redis://127.0.0.1/rate_limit/write".to_owned()
                 ),
             },
             postgres: PostgresConfig {
