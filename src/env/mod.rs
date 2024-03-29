@@ -6,6 +6,7 @@ use {
         profiler::ProfilerConfig,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
         providers::{ProviderKind, ProvidersConfig, Weight},
+        utils::rate_limit::RateLimitingConfig,
     },
     serde::de::DeserializeOwned,
     std::{collections::HashMap, fmt::Display},
@@ -57,6 +58,7 @@ pub struct Config {
     pub analytics: AnalyticsConfig,
     pub profiler: ProfilerConfig,
     pub providers: ProvidersConfig,
+    pub rate_limiting: RateLimitingConfig,
 }
 
 impl Config {
@@ -69,6 +71,7 @@ impl Config {
             analytics: from_env("RPC_PROXY_ANALYTICS_")?,
             profiler: from_env("RPC_PROXY_PROFILER_")?,
             providers: from_env("RPC_PROXY_PROVIDER_")?,
+            rate_limiting: from_env("RPC_PROXY_RATE_LIMITING_")?,
         })
     }
 }
@@ -93,6 +96,7 @@ mod test {
             profiler::ProfilerConfig,
             project,
             providers::ProvidersConfig,
+            utils::rate_limit::RateLimitingConfig,
         },
         std::net::Ipv4Addr,
     };
@@ -170,6 +174,10 @@ mod test {
                 "postgres://postgres@localhost:5432/postgres",
             ),
             ("RPC_PROXY_POSTGRES_MAX_CONNECTIONS", "32"),
+            // Rate limiting config.
+            ("RPC_PROXY_RATE_LIMITING_MAX_TOKENS", "100"),
+            ("RPC_PROXY_RATE_LIMITING_REFILL_INTERVAL_SEC", "1"),
+            ("RPC_PROXY_RATE_LIMITING_REFILL_RATE", "10"),
         ];
 
         values.iter().for_each(set_env_var);
@@ -233,6 +241,11 @@ mod test {
                 coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),
                 one_inch_api_key: Some("ONE_INCH_API_KEY".to_owned()),
                 getblock_access_tokens: Some("{}".to_owned()),
+            },
+            rate_limiting: RateLimitingConfig {
+                max_tokens: Some(100),
+                refill_interval_sec: Some(1),
+                refill_rate: Some(10),
             },
         });
 

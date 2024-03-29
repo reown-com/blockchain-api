@@ -2,10 +2,18 @@ use {
     chrono::{Duration, Utc},
     deadpool_redis::Pool,
     moka::future::Cache,
+    serde::Deserialize,
     std::sync::Arc,
     tracing::error,
     wc::rate_limit::{token_bucket, RateLimitError, RateLimitExceeded},
 };
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+pub struct RateLimitingConfig {
+    pub max_tokens: Option<u32>,
+    pub refill_interval_sec: Option<u32>,
+    pub refill_rate: Option<u32>,
+}
 
 pub struct RateLimit {
     mem_cache: Cache<String, u64>,
