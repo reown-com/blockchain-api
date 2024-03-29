@@ -9,7 +9,7 @@ authors = [
 build = "build.rs"
 
 [dependencies]
-wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.7.0", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock"] }
+wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.8.0", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock"] }
 
 # Async
 async-trait = "0.1.57"
@@ -39,8 +39,8 @@ strum = "0.26"
 strum_macros = "0.26"
 
 # Storage
-aws-config = "0.56"
-aws-sdk-s3 = "0.31"
+aws-config = "1.1"
+aws-sdk-s3 = "1.13"
 deadpool-redis = "0.13"
 sqlx = { version = "0.7.3", features = ["runtime-tokio-native-tls", "postgres", "chrono"] }
 

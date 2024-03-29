@@ -412,7 +412,10 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
 
 async fn get_s3_client(config: &Config) -> S3Client {
     let region_provider = RegionProviderChain::first_try(Region::new("eu-central-1"));
-    let shared_config = aws_config::from_env().region(region_provider).load().await;
+    let shared_config = aws_config::defaults(aws_config::BehaviorVersion::latest())
+        .region(region_provider)
+        .load()
+        .await;
 
     let aws_config = if let Some(s3_endpoint) = &config.server.s3_endpoint {
         info!(%s3_endpoint, "initializing custom s3 endpoint");
