@@ -55,6 +55,9 @@ pub struct Metrics {
     pub cpu_usage: Histogram<f64>,
     pub memory_total: Histogram<f64>,
     pub memory_used: Histogram<f64>,
+
+    // Rate limiting
+    pub rate_limited_entries_counter: Histogram<u64>,
 }
 
 impl Metrics {
@@ -212,6 +215,11 @@ impl Metrics {
             .with_description("Used system memory")
             .init();
 
+        let rate_limited_entries_counter = meter
+            .u64_histogram("rate_limited_entries")
+            .with_description("The rate limited entries counter")
+            .init();
+
         Metrics {
             rpc_call_counter,
             http_call_counter,
@@ -243,6 +251,7 @@ impl Metrics {
             cpu_usage,
             memory_total,
             memory_used,
+            rate_limited_entries_counter,
         }
     }
 }
@@ -462,6 +471,11 @@ impl Metrics {
 
     fn add_memory_used(&self, memory: f64) {
         self.memory_used.record(&otel::Context::new(), memory, &[]);
+    }
+
+    pub fn add_rate_limited_entries_count(&self, entry: u64) {
+        self.rate_limited_entries_counter
+            .record(&otel::Context::new(), entry, &[]);
     }
 
     /// Gathering system CPU(s) and Memory usage metrics

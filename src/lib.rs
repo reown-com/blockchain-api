@@ -348,7 +348,14 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             let mut interval = tokio::time::interval(Duration::from_secs(10));
             loop {
                 interval.tick().await;
+                // Gather system metrics (CPU and Memory usage)
                 state_arc.clone().metrics.gather_system_metrics().await;
+                // Gather current rate limited in-memory entries count
+                if let Some(rate_limit) = &state_arc.rate_limit {
+                    state_arc
+                        .metrics
+                        .add_rate_limited_entries_count(rate_limit.get_rate_limited_count().await);
+                }
             }
         }
     };

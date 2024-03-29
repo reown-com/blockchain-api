@@ -54,7 +54,6 @@ impl RateLimit {
         );
         // TODO:
         // * Handle properly when the redis pool is not available (429 always)
-        // * Add metrcis for rate limiting
         // * Add analytics for rate limiting
         token_bucket(
             &self.mem_cache.clone(),
@@ -66,5 +65,11 @@ impl RateLimit {
             Utc::now(),
         )
         .await
+    }
+
+    /// Returns the current rate limited entries count
+    pub async fn get_rate_limited_count(&self) -> u64 {
+        self.mem_cache.run_pending_tasks().await;
+        self.mem_cache.entry_count()
     }
 }
