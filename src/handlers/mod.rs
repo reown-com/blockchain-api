@@ -4,7 +4,7 @@ use {
     hyper::HeaderMap,
     serde::{Deserialize, Serialize},
     std::{net::SocketAddr, sync::Arc},
-    wc::{metrics::TaskMetrics, rate_limit::RateLimitError},
+    wc::{metrics::TaskMetrics, rate_limit::RateLimitExceeded},
 };
 
 pub mod balance;
@@ -44,7 +44,7 @@ pub async fn handle_rate_limit(
     connect_info: ConnectInfo<SocketAddr>,
     path: MatchedPath,
     project_id: Option<&str>,
-) -> Result<(), RateLimitError> {
+) -> Result<(), RateLimitExceeded> {
     state
         .rate_limit
         .as_ref()

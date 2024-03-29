@@ -3,7 +3,8 @@ use {
     deadpool_redis::Pool,
     moka::future::Cache,
     std::sync::Arc,
-    wc::rate_limit::{token_bucket, RateLimitError},
+    tracing::error,
+    wc::rate_limit::{token_bucket, RateLimitError, RateLimitExceeded},
 };
 
 pub struct RateLimit {
@@ -41,21 +42,15 @@ impl RateLimit {
         format!("rate_limit:{}:{}", endpoint, ip)
     }
 
+    /// Checks if the given endpoint, ip and project ID is rate limited
+    #[tracing::instrument(skip(self), level = "debug")]
     pub async fn is_rate_limited(
         &self,
         endpoint: &str,
         ip: &str,
         _project_id: Option<&str>,
-    ) -> Result<(), RateLimitError> {
-        tracing::info!(
-            "Rate limiting check for endpoint: {} and ip: {}",
-            endpoint,
-            ip
-        );
-        // TODO:
-        // * Handle properly when the redis pool is not available (429 always)
-        // * Add analytics for rate limiting
-        token_bucket(
+    ) -> Result<(), RateLimitExceeded> {
+        match token_bucket(
             &self.mem_cache.clone(),
             &self.redis_pool.clone(),
             self.format_key(endpoint, ip),
@@ -65,6 +60,16 @@ impl RateLimit {
             Utc::now(),
         )
         .await
+        {
+            Ok(_) => Ok(()),
+            Err(e) => match e {
+                RateLimitError::RateLimitExceeded(e) => Err(e),
+                RateLimitError::Internal(e) => {
+                    error!("Internal rate limiting error: {:?}", e);
+                    Ok(())
+                }
+            },
+        }
     }
 
     /// Returns the current rate limited entries count
