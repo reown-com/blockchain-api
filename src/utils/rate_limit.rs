@@ -24,12 +24,21 @@ pub struct RateLimit {
 }
 
 impl RateLimit {
-    pub fn new(redis_addr: &str, max_tokens: u32, interval: Duration, refill_rate: u32) -> Self {
-        let redis_pool = Arc::new(
-            deadpool_redis::Config::from_url(redis_addr)
-                .create_pool(Some(deadpool_redis::Runtime::Tokio1))
-                .expect("Failed to create redis pool for rate limiting"),
-        );
+    pub fn new(
+        redis_addr: &str,
+        max_tokens: u32,
+        interval: Duration,
+        refill_rate: u32,
+    ) -> Option<Self> {
+        let redis_pool = match deadpool_redis::Config::from_url(redis_addr)
+            .create_pool(Some(deadpool_redis::Runtime::Tokio1))
+        {
+            Ok(pool) => Arc::new(pool),
+            Err(e) => {
+                error!("Failed to create redis pool for rate limiting: {:?}", e);
+                return None;
+            }
+        };
         let mem_cache = Cache::builder()
             .time_to_live(
                 interval
@@ -37,13 +46,13 @@ impl RateLimit {
                     .expect("Failed to convert duration for rate limiting memory cache"),
             )
             .build();
-        Self {
+        Some(Self {
             mem_cache,
             redis_pool,
             max_tokens,
             interval,
             refill_rate,
-        }
+        })
     }
 
     fn format_key(&self, endpoint: &str, ip: &str) -> String {

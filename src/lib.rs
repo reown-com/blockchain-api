@@ -124,12 +124,12 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
                          max_tokens={}, refill_interval_sec={}, refill_rate={}",
                         max_tokens, refill_interval_sec, refill_rate
                     );
-                    Some(RateLimit::new(
+                    RateLimit::new(
                         redis_addr.write(),
                         max_tokens,
                         chrono::Duration::seconds(refill_interval_sec as i64),
                         refill_rate,
-                    ))
+                    )
                 }
                 _ => {
                     warn!("Rate limiting is disabled (missing env configuration variables)");
