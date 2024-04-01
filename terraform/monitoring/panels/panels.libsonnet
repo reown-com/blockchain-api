@@ -29,7 +29,6 @@ local redis  = panels.aws.redis;
     quota_limited_projects: (import 'proxy/quota_limited_projects.libsonnet').new,
     rate_limited_counter:   (import 'proxy/rate_limited_counter.libsonnet'  ).new,
     http_codes:             (import 'proxy/http_codes.libsonnet'            ).new,
-    healthy_hosts:          (import 'proxy/healthy_hosts.libsonnet'         ).new,
   },
 
   redis: {
