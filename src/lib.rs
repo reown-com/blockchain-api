@@ -1,7 +1,7 @@
 use {
     crate::{
         env::Config,
-        handlers::identity::IdentityResponse,
+        handlers::{identity::IdentityResponse, rate_limit_middleware},
         metrics::Metrics,
         project::Registry,
         providers::ProvidersConfig,
@@ -12,6 +12,7 @@ use {
     aws_sdk_s3::{config::Region, Client as S3Client},
     axum::{
         extract::connect_info::IntoMakeServiceWithConnectInfo,
+        middleware,
         response::Response,
         routing::{get, post},
         Router,
@@ -319,18 +320,28 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/convert/build-transaction",
             post(handlers::convert::transaction::handler),
         )
-        .route_layer(tracing_and_metrics_layer)
         .route("/health", get(handlers::health::handler))
+        .route_layer(tracing_and_metrics_layer)
         .layer(cors);
+
     let app = if let Some(geoblock) = geoblock {
         app.layer(geoblock)
     } else {
         app
     };
+    let app = if state_arc.rate_limit.is_some() {
+        app.route_layer(middleware::from_fn_with_state(
+            state_arc.clone(),
+            rate_limit_middleware,
+        ))
+    } else {
+        app
+    };
+
     let app = app.with_state(state_arc.clone());
 
     info!("v{}", build_version);
-    info!("Running RPC Proxy on port {}", port);
+    info!("Running Blockchain-API server on port {}", port);
     let addr: SocketAddr = format!("{host}:{port}")
         .parse()
         .expect("Invalid socket address");
