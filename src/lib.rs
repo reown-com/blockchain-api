@@ -1,7 +1,7 @@
 use {
     crate::{
         env::Config,
-        handlers::identity::IdentityResponse,
+        handlers::{identity::IdentityResponse, rate_limit_middleware},
         metrics::Metrics,
         project::Registry,
         providers::ProvidersConfig,
@@ -12,6 +12,7 @@ use {
     aws_sdk_s3::{config::Region, Client as S3Client},
     axum::{
         extract::connect_info::IntoMakeServiceWithConnectInfo,
+        middleware,
         response::Response,
         routing::{get, post},
         Router,
@@ -64,6 +65,7 @@ use {
         ServiceBuilderExt,
     },
     tracing::{info, log::warn, Span},
+    utils::rate_limit::RateLimit,
     wc::{
         geoip::{
             block::{middleware::GeoBlockLayer, BlockingPolicy},
@@ -103,6 +105,40 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 
     let metrics = Arc::new(Metrics::new());
     let registry = Registry::new(&config.registry, &config.storage)?;
+
+    // Rate limiting construction
+    let rate_limiting = match config.storage.rate_limiting_cache_redis_addr() {
+        None => {
+            warn!("Rate limiting is disabled (no redis caching endpoint provided)");
+            None
+        }
+        Some(redis_addr) => {
+            match (
+                config.rate_limiting.max_tokens,
+                config.rate_limiting.refill_interval_sec,
+                config.rate_limiting.refill_rate,
+            ) {
+                (Some(max_tokens), Some(refill_interval_sec), Some(refill_rate)) => {
+                    info!(
+                        "Rate limiting is enabled with the following configuration: \
+                         max_tokens={}, refill_interval_sec={}, refill_rate={}",
+                        max_tokens, refill_interval_sec, refill_rate
+                    );
+                    RateLimit::new(
+                        redis_addr.write(),
+                        max_tokens,
+                        chrono::Duration::seconds(refill_interval_sec as i64),
+                        refill_rate,
+                    )
+                }
+                _ => {
+                    warn!("Rate limiting is disabled (missing env configuration variables)");
+                    None
+                }
+            }
+        }
+    };
+
     // TODO refactor encapsulate these details in a lower layer
     let identity_cache = config
         .storage
@@ -153,6 +189,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         identity_cache,
         analytics,
         http_client,
+        rate_limiting,
     );
 
     let port = state.config.server.port;
@@ -283,18 +320,28 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/convert/build-transaction",
             post(handlers::convert::transaction::handler),
         )
-        .route_layer(tracing_and_metrics_layer)
         .route("/health", get(handlers::health::handler))
+        .route_layer(tracing_and_metrics_layer)
         .layer(cors);
+
     let app = if let Some(geoblock) = geoblock {
         app.layer(geoblock)
     } else {
         app
     };
+    let app = if state_arc.rate_limit.is_some() {
+        app.route_layer(middleware::from_fn_with_state(
+            state_arc.clone(),
+            rate_limit_middleware,
+        ))
+    } else {
+        app
+    };
+
     let app = app.with_state(state_arc.clone());
 
     info!("v{}", build_version);
-    info!("Running RPC Proxy on port {}", port);
+    info!("Running Blockchain-API server on port {}", port);
     let addr: SocketAddr = format!("{host}:{port}")
         .parse()
         .expect("Invalid socket address");
@@ -328,7 +375,14 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             let mut interval = tokio::time::interval(Duration::from_secs(10));
             loop {
                 interval.tick().await;
+                // Gather system metrics (CPU and Memory usage)
                 state_arc.clone().metrics.gather_system_metrics().await;
+                // Gather current rate limited in-memory entries count
+                if let Some(rate_limit) = &state_arc.rate_limit {
+                    state_arc
+                        .metrics
+                        .add_rate_limited_entries_count(rate_limit.get_rate_limited_count().await);
+                }
             }
         }
     };

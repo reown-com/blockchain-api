@@ -8,7 +8,7 @@ use {
         project::Registry,
         providers::ProviderRepository,
         storage::KeyValueStorage,
-        utils::build::CompileInfo,
+        utils::{build::CompileInfo, rate_limit::RateLimit},
     },
     cerberus::project::ProjectData,
     sqlx::PgPool,
@@ -30,6 +30,8 @@ pub struct AppState {
     pub uptime: std::time::Instant,
     /// Shared http client
     pub http_client: reqwest::Client,
+    // Rate limiting checks
+    pub rate_limit: Option<RateLimit>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -42,6 +44,7 @@ pub fn new_state(
     identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     analytics: RPCAnalytics,
     http_client: reqwest::Client,
+    rate_limit: Option<RateLimit>,
 ) -> AppState {
     AppState {
         config,
@@ -54,6 +57,7 @@ pub fn new_state(
         compile_info: CompileInfo {},
         uptime: std::time::Instant::now(),
         http_client,
+        rate_limit,
     }
 }
 

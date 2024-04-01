@@ -136,6 +136,16 @@ variable "identity_cache_endpoint_write" {
   type        = string
 }
 
+variable "rate_limiting_cache_endpoint_read" {
+  description = "The endpoint of the rate limiting cache (read)"
+  type        = string
+}
+
+variable "rate_limiting_cache_endpoint_write" {
+  description = "The endpoint of the rate limiting cache (write)"
+  type        = string
+}
+
 variable "ofac_blocked_countries" {
   description = "The list of countries under OFAC sanctions"
   type        = string
@@ -298,4 +308,22 @@ variable "geoip_db_bucket_name" {
 variable "geoip_db_key" {
   description = "The key of the GeoIP database in the S3 bucket"
   type        = string
+}
+
+#-------------------------------------------------------------------------------
+# Rate-limiting (Token bucket) configuration
+
+variable "rate_limiting_max_tokens" {
+  description = "The maximum number of tokens in the bucket"
+  type        = number
+}
+
+variable "rate_limiting_refill_interval" {
+  description = "The interval in seconds to refill the bucket"
+  type        = number
+}
+
+variable "rate_limiting_refill_rate" {
+  description = "The number of tokens to refill the bucket with"
+  type        = number
 }

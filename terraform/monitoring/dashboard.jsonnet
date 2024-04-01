@@ -116,7 +116,8 @@ dashboard.new(
     panels.proxy.errors_provider(ds, vars)           { gridPos: pos._3 },
     panels.proxy.rejected_projects(ds, vars)         { gridPos: pos._3 },
     panels.proxy.quota_limited_projects(ds, vars)    { gridPos: pos._3 },
-    panels.proxy.http_codes(ds, vars)                { gridPos: pos.two_thirds },
+    panels.proxy.rate_limited_counter(ds, vars)      { gridPos: pos._3 },
+    panels.proxy.http_codes(ds, vars)                { gridPos: pos._3 },
     panels.proxy.healthy_hosts(ds, vars)             { gridPos: pos._3 },
 
   row.new('History Metrics'),

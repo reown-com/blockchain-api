@@ -6,6 +6,7 @@ use {
         profiler::ProfilerConfig,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
         providers::{ProviderKind, ProvidersConfig, Weight},
+        utils::rate_limit::RateLimitingConfig,
     },
     serde::de::DeserializeOwned,
     std::{collections::HashMap, fmt::Display},
@@ -57,6 +58,7 @@ pub struct Config {
     pub analytics: AnalyticsConfig,
     pub profiler: ProfilerConfig,
     pub providers: ProvidersConfig,
+    pub rate_limiting: RateLimitingConfig,
 }
 
 impl Config {
@@ -69,6 +71,7 @@ impl Config {
             analytics: from_env("RPC_PROXY_ANALYTICS_")?,
             profiler: from_env("RPC_PROXY_PROFILER_")?,
             providers: from_env("RPC_PROXY_PROVIDER_")?,
+            rate_limiting: from_env("RPC_PROXY_RATE_LIMITING_")?,
         })
     }
 }
@@ -93,6 +96,7 @@ mod test {
             profiler::ProfilerConfig,
             project,
             providers::ProvidersConfig,
+            utils::rate_limit::RateLimitingConfig,
         },
         std::net::Ipv4Addr,
     };
@@ -133,6 +137,14 @@ mod test {
                 "RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_WRITE",
                 "redis://127.0.0.1/identity/write",
             ),
+            (
+                "RPC_PROXY_STORAGE_RATE_LIMITING_CACHE_REDIS_ADDR_READ",
+                "redis://127.0.0.1/rate_limit/read",
+            ),
+            (
+                "RPC_PROXY_STORAGE_RATE_LIMITING_CACHE_REDIS_ADDR_WRITE",
+                "redis://127.0.0.1/rate_limit/write",
+            ),
             // Analytics config.
             ("RPC_PROXY_ANALYTICS_S3_ENDPOINT", "s3://127.0.0.1"),
             ("RPC_PROXY_ANALYTICS_EXPORT_BUCKET", "EXPORT_BUCKET"),
@@ -162,6 +174,10 @@ mod test {
                 "postgres://postgres@localhost:5432/postgres",
             ),
             ("RPC_PROXY_POSTGRES_MAX_CONNECTIONS", "32"),
+            // Rate limiting config.
+            ("RPC_PROXY_RATE_LIMITING_MAX_TOKENS", "100"),
+            ("RPC_PROXY_RATE_LIMITING_REFILL_INTERVAL_SEC", "1"),
+            ("RPC_PROXY_RATE_LIMITING_REFILL_RATE", "10"),
         ];
 
         values.iter().for_each(set_env_var);
@@ -198,6 +214,12 @@ mod test {
                 identity_cache_redis_addr_write: Some(
                     "redis://127.0.0.1/identity/write".to_owned()
                 ),
+                rate_limiting_cache_redis_addr_read: Some(
+                    "redis://127.0.0.1/rate_limit/read".to_owned()
+                ),
+                rate_limiting_cache_redis_addr_write: Some(
+                    "redis://127.0.0.1/rate_limit/write".to_owned()
+                ),
             },
             postgres: PostgresConfig {
                 uri: "postgres://postgres@localhost:5432/postgres".to_owned(),
@@ -219,6 +241,11 @@ mod test {
                 coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),
                 one_inch_api_key: Some("ONE_INCH_API_KEY".to_owned()),
                 getblock_access_tokens: Some("{}".to_owned()),
+            },
+            rate_limiting: RateLimitingConfig {
+                max_tokens: Some(100),
+                refill_interval_sec: Some(1),
+                refill_rate: Some(10),
             },
         });
 
