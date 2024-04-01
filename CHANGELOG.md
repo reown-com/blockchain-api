@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.43.0 - 2024-04-01
+#### Features
+- rate limiting (#600) - (e0a9fe2) - Max Kalashnikoff
+
+- - -
+
 ## 0.42.0 - 2024-03-29
 #### Features
 - **(analytics)** updating to  tag (#599) - (68c3a23) - Max Kalashnikoff
