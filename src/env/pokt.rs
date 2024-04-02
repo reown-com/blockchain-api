@@ -96,11 +96,6 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:1".into(),
             ("eth-mainnet".into(), Weight::new(Priority::Max).unwrap()),
         ),
-        // Ethereum goerli
-        (
-            "eip155:5".into(),
-            ("eth-goerli".into(), Weight::new(Priority::Normal).unwrap()),
-        ),
         // Ethereum holesky
         (
             "eip155:17000".into(),
@@ -108,6 +103,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 "holesky-fullnode-testnet".into(),
                 Weight::new(Priority::High).unwrap(),
             ),
+        ),
+        // Ethereum sepolia
+        (
+            "eip155:11155111".into(),
+            ("sepolia".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Optimism
         (
@@ -129,13 +129,6 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         (
             "eip155:137".into(),
             ("poly-mainnet".into(), Weight::new(Priority::High).unwrap()),
-        ),
-        (
-            "eip155:80001".into(),
-            (
-                "polygon-mumbai".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
         ),
         (
             "eip155:1101".into(),
