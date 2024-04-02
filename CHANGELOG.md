@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.44.1 - 2024-04-02
+#### Bug Fixes
+- **(providers)** removing deprecated endpoints from Grove/Pokt (#603) - (264586a) - Max Kalashnikoff
+
+- - -
+
 ## 0.44.0 - 2024-04-02
 #### Bug Fixes
 - **(monitoring)** adding rate-limiting alert and removing double healthy hosts (#601) - (5f069e9) - Max Kalashnikoff
