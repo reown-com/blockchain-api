@@ -54,16 +54,21 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:1", "0x1")
         .await;
 
-    // Ethereum goerli
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:5", "0x5")
-        .await;
-
     // Ethereum holesky
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &provider,
         "eip155:17000",
         "0x4268",
+    )
+    .await;
+
+    // Ethereum Sepolia
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:11155111",
+        "0xaa36a7",
     )
     .await;
 
@@ -83,15 +88,6 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     // Polygon mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:137", "0x89")
         .await;
-
-    // Polygon mumbai
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        &provider,
-        "eip155:80001",
-        "0x13881",
-    )
-    .await;
 
     // Polygon zkevm
     check_if_rpc_is_responding_correctly_for_supported_chain(
