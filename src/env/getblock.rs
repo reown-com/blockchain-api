@@ -45,24 +45,30 @@ fn extract_supported_chains(access_tokens_json: String) -> HashMap<String, (Stri
     };
 
     // Keep in-sync with SUPPORTED_CHAINS.md
-    let supported_chain_ids = [
-        "eip155:1",
-        "eip155:56",
-        "eip155:137",
-        "eip155:324",
-        "eip155:17000",
-        "eip155:11155111",
-        "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
-    ];
+    let supported_chain_ids = HashMap::from([
+        ("eip155:1", Priority::Low),
+        ("eip155:56", Priority::Low),
+        ("eip155:137", Priority::Normal),
+        ("eip155:324", Priority::Normal),
+        ("eip155:17000", Priority::Normal),
+        ("eip155:11155111", Priority::Normal),
+        ("solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", Priority::Normal),
+    ]);
 
     let access_tokens_with_weights: HashMap<String, (String, Weight)> = supported_chain_ids
         .iter()
-        .filter_map(|&key| {
+        .filter_map(|(&key, &weight)| {
             if let Some(token) = access_tokens.get(key) {
-                Some((
-                    key.to_string(),
-                    (token.to_string(), Weight::new(Priority::Normal).unwrap()),
-                ))
+                match Weight::new(weight) {
+                    Ok(weight) => Some((key.to_string(), (token.to_string(), weight))),
+                    Err(_) => {
+                        error!(
+                            "Failed to create Weight for key {} in GetBlock provider",
+                            key
+                        );
+                        None
+                    }
+                }
             } else {
                 error!(
                     "GetBlock provider API access token for {} is not present, skipping it",
