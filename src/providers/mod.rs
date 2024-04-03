@@ -431,6 +431,7 @@ pub trait RpcWsProvider: Provider {
 
 const MAX_PRIORITY: u64 = 100;
 
+#[derive(Debug, Clone, Copy)]
 pub enum Priority {
     Max,
     High,
