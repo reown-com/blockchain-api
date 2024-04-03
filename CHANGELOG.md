@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.44.2 - 2024-04-03
+#### Bug Fixes
+- **(providers)** varying priority for the GetBlock provider (#602) - (bdff75e) - Max Kalashnikoff
+
+- - -
+
 ## 0.44.1 - 2024-04-02
 #### Bug Fixes
 - **(providers)** removing deprecated endpoints from Grove/Pokt (#603) - (264586a) - Max Kalashnikoff
