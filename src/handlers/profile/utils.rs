@@ -1,13 +1,16 @@
 use {
+    crate::database::helpers::get_name,
     ethers::types::H160,
     once_cell::sync::Lazy,
     regex::Regex,
+    sqlx::{Error as SqlxError, PgPool},
     std::{
         collections::HashMap,
         str::FromStr,
         time::{SystemTime, UNIX_EPOCH},
     },
     tap::TapFallible,
+    tracing::error,
 };
 
 static DOMAIN_FORMAT_REGEX: Lazy<Regex> = Lazy::new(|| {
@@ -87,6 +90,20 @@ pub fn is_name_length_correct(name: &str) -> bool {
         return false;
     }
     name_parts[0].len() >= NAME_MIN_LENGTH && name_parts[0].len() <= NAME_MAX_LENGTH
+}
+
+#[tracing::instrument(skip(postgres), level = "debug")]
+pub async fn is_name_registered(name: String, postgres: &PgPool) -> bool {
+    match get_name(name, postgres).await {
+        Ok(_) => true,
+        Err(e) => match e {
+            SqlxError::RowNotFound => false,
+            _ => {
+                error!("Failed to lookup name: {}", e);
+                false
+            }
+        },
+    }
 }
 
 #[cfg(test)]

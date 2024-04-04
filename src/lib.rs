@@ -289,6 +289,11 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/profile/reverse/:address",
             get(handlers::profile::reverse::handler),
         )
+        // Reverse name lookup
+        .route(
+            "/v1/profile/suggestions/:name",
+            get(handlers::profile::suggestions::handler),
+        )
         // Generators
         .route(
             "/v1/generators/onrampurl",
