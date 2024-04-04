@@ -90,8 +90,8 @@ describe('Account profile names', () => {
   })
 
   it('register with wrong name format (length)', async () => {
-    // Check for the short name (<5 characters)
-    let randomString = Array.from({ length: 4 }, 
+    // Check for the short name (<3 characters)
+    let randomString = Array.from({ length: 2 }, 
       () => (Math.random().toString(36)[2] || '0')).join('')
     const shortNameLengthMessageObject = {
       name: `${randomString}.${zone}`,
