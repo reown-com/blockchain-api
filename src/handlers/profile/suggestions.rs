@@ -4,7 +4,7 @@ use {
         utils::{is_name_format_correct, is_name_registered},
         ALLOWED_ZONES,
     },
-    crate::{error::RpcError, state::AppState},
+    crate::{error::RpcError, state::AppState, utils::suggestions::dictionary_suggestions},
     axum::{
         extract::{Path, State},
         response::{IntoResponse, Response},
@@ -50,13 +50,8 @@ async fn handler_internal(
         return Err(RpcError::InvalidNameFormat(name));
     }
 
-    // Find suggestions in the dictionary
-    let dictionary_contents = include_str!("../../../assets/names_dictionary.txt");
-    let candidates: Vec<&str> = dictionary_contents
-        .lines()
-        .filter(|&suggested_name| suggested_name.starts_with(&name) && suggested_name != name)
-        .collect();
     let mut suggestions = Vec::new();
+    let candidates = dictionary_suggestions(&name);
 
     // Adding the exact match for each of available zones to check if it is
     // registered
