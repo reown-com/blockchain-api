@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.45.2 - 2024-04-04
+#### Bug Fixes
+- **(build)** adding assets as an exemption to gitignore (#607) - (38d9a3a) - Max Kalashnikoff
+
+- - -
+
 ## 0.45.1 - 2024-04-04
 #### Bug Fixes
 - **(names)** decreasing minimum name length to `3` (#606) - (707ed22) - Max Kalashnikoff
