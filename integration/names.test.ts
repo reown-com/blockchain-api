@@ -315,4 +315,19 @@ describe('Account profile names', () => {
     const first = resp.data.addresses[coin_type]
     expect(first.address).toBe(new_address)
   })
+
+  it('name suggestions', async () => {
+    const test_name_suggest = 'max';
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/profile/suggestions/${test_name_suggest}`
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.suggestions).toBe('object')
+    let suggestions = resp.data.suggestions;
+    // Minimum 3 suggestions should be returned
+    expect(suggestions.length).toBeGreaterThan(3)
+    // First suggestion should be the exact match
+    expect(suggestions[0].name).toBe(`${test_name_suggest}.${zone}`)
+    expect(typeof suggestions[0].registered).toBe('boolean')
+  })
 })

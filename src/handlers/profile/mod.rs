@@ -11,6 +11,7 @@ pub mod attributes;
 pub mod lookup;
 pub mod register;
 pub mod reverse;
+pub mod suggestions;
 pub mod utils;
 
 /// List of supported Ethereum chains in ENSIP-11 format
