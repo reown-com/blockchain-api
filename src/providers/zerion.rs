@@ -1,9 +1,10 @@
 use {
-    super::{BalanceProvider, HistoryProvider, PortfolioProvider},
+    super::{BalanceProvider, FungiblePriceProvider, HistoryProvider, PortfolioProvider},
     crate::{
         error::{RpcError, RpcResult},
         handlers::{
             balance::{BalanceQueryParams, BalanceResponseBody},
+            fungible_price::{FungiblePriceItem, PriceCurrencies, PriceResponseBody},
             history::{
                 HistoryQueryParams,
                 HistoryResponseBody,
@@ -201,6 +202,24 @@ pub struct ZerionPositionAttributes {
     pub price: f64,
     pub quantity: ZerionQuantityAttribute,
     pub fungible_info: ZerionFungibleInfoAttribute,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionFungibleAsset {
+    pub attributes: ZerionFungibleAssetAttribute,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionFungibleAssetAttribute {
+    pub name: String,
+    pub symbol: String,
+    pub icon: Option<ZerionTransactionURLItem>,
+    pub market_data: ZerionMarketData,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct ZerionMarketData {
+    pub price: f64,
 }
 
 #[async_trait]
@@ -482,6 +501,60 @@ impl BalanceProvider for ZerionProvider {
 
         let response = BalanceResponseBody {
             balances: balances_vec,
+        };
+
+        Ok(response)
+    }
+}
+
+#[async_trait]
+impl FungiblePriceProvider for ZerionProvider {
+    #[tracing::instrument(skip(self, http_client), fields(provider = "Zerion"))]
+    async fn get_price(
+        &self,
+        address: &str,
+        currency: &PriceCurrencies,
+        http_client: reqwest::Client,
+    ) -> RpcResult<PriceResponseBody> {
+        let base = "https://api.zerion.io/v1/fungibles/?".to_string();
+        let mut url = Url::parse(&base).map_err(|_| RpcError::FungiblePriceParseURLError)?;
+        let currency = format!("{}", currency);
+
+        url.query_pairs_mut().append_pair("currency", &currency);
+        url.query_pairs_mut()
+            .append_pair("filter[implementation_address]", address);
+
+        let response = http_client
+            .get(url)
+            .header("Content-Type", "application/json")
+            .header("authorization", format!("Basic {}", self.api_key))
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            error!(
+                "Error on zerion fungibles price response. Status is not OK: {:?}",
+                response.status(),
+            );
+            return Err(RpcError::FungiblePriceProviderError);
+        }
+        let body = response
+            .json::<ZerionResponseBody<Vec<ZerionFungibleAsset>>>()
+            .await?;
+
+        let fungibles_vec: Vec<FungiblePriceItem> = body
+            .data
+            .into_iter()
+            .map(|f| FungiblePriceItem {
+                name: f.attributes.name,
+                symbol: f.attributes.symbol,
+                icon_url: f.attributes.icon.map(|f| f.url).unwrap_or_default(),
+                price: f.attributes.market_data.price,
+            })
+            .collect();
+
+        let response = PriceResponseBody {
+            fungibles: fungibles_vec,
         };
 
         Ok(response)

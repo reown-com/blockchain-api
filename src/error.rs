@@ -62,8 +62,14 @@ pub enum RpcError {
     #[error("Failed to reach the balance provider")]
     BalanceProviderError,
 
+    #[error("Failed to reach the fungible price provider")]
+    FungiblePriceProviderError,
+
     #[error("Failed to parse balance provider url")]
     BalanceParseURLError,
+
+    #[error("Failed to parse fungible price provider url")]
+    FungiblePriceParseURLError,
 
     #[error("Failed to reach the conversion provider")]
     ConversionProviderError,

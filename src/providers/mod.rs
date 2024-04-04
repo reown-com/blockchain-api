@@ -11,6 +11,7 @@ use {
                 tokens::{TokensListQueryParams, TokensListResponseBody},
                 transaction::{ConvertTransactionQueryParams, ConvertTransactionResponseBody},
             },
+            fungible_price::{PriceCurrencies, PriceResponseBody},
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
@@ -114,6 +115,7 @@ pub struct ProviderRepository {
     pub onramp_provider: Arc<dyn OnRampProvider>,
     pub balance_provider: Arc<dyn BalanceProvider>,
     pub conversion_provider: Arc<dyn ConversionProvider>,
+    pub fungible_price_provider: Arc<dyn FungiblePriceProvider>,
 }
 
 impl ProviderRepository {
@@ -165,7 +167,8 @@ impl ProviderRepository {
         let zerion_provider = Arc::new(ZerionProvider::new(zerion_api_key));
         let history_provider = zerion_provider.clone();
         let portfolio_provider = zerion_provider.clone();
-        let balance_provider = zerion_provider;
+        let balance_provider = zerion_provider.clone();
+        let fungible_price_provider = zerion_provider;
         let conversion_provider = Arc::new(OneInchProvider::new(one_inch_api_key));
 
         let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
@@ -191,6 +194,7 @@ impl ProviderRepository {
             onramp_provider: coinbase_pay_provider,
             balance_provider,
             conversion_provider,
+            fungible_price_provider,
         }
     }
 
@@ -569,6 +573,16 @@ pub trait BalanceProvider: Send + Sync + Debug {
         params: BalanceQueryParams,
         http_client: reqwest::Client,
     ) -> RpcResult<BalanceResponseBody>;
+}
+
+#[async_trait]
+pub trait FungiblePriceProvider: Send + Sync + Debug {
+    async fn get_price(
+        &self,
+        address: &str,
+        currency: &PriceCurrencies,
+        http_client: reqwest::Client,
+    ) -> RpcResult<PriceResponseBody>;
 }
 
 #[async_trait]
