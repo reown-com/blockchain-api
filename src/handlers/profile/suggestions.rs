@@ -58,25 +58,30 @@ async fn handler_internal(
         .collect();
     let mut suggestions = Vec::new();
 
-    // Adding the exact match to check if it is registered
-    let exact_name_with_zone = format!("{}.{}", name, ALLOWED_ZONES[0]);
-    suggestions.push(NameSuggestion {
-        name: exact_name_with_zone.clone(),
-        registered: is_name_registered(exact_name_with_zone, &state.postgres).await,
-    });
+    // Adding the exact match for each of available zones to check if it is
+    // registered
+    for zone in ALLOWED_ZONES.iter() {
+        let exact_name_with_zone = format!("{}.{}", name, zone);
+        suggestions.push(NameSuggestion {
+            name: exact_name_with_zone.clone(),
+            registered: is_name_registered(exact_name_with_zone, &state.postgres).await,
+        });
+    }
 
     // Iterate found dictionary candidates and check if they are registered
     for suggested_name in candidates {
-        let name_with_zone = format!("{}.{}", suggested_name, ALLOWED_ZONES[0]);
-        let is_registered = is_name_registered(name_with_zone.clone(), &state.postgres).await;
+        // Get name suggestion for each of available zones if the name is free
+        for zone in ALLOWED_ZONES.iter() {
+            let name_with_zone = format!("{}.{}", suggested_name, zone);
+            let is_registered = is_name_registered(name_with_zone.clone(), &state.postgres).await;
 
-        if !is_registered {
-            suggestions.push(NameSuggestion {
-                name: name_with_zone,
-                registered: false,
-            });
+            if !is_registered {
+                suggestions.push(NameSuggestion {
+                    name: name_with_zone,
+                    registered: false,
+                });
+            }
         }
-
         if suggestions.len() == SUGGESTION_OPTIONS {
             break;
         }
