@@ -460,7 +460,8 @@ async fn create_server(
                 tower_service.clone().oneshot(request)
             });
 
-            // TODO consider replacing with timeout: https://github.com/tokio-rs/axum/discussions/1383
+            // TODO consider replacing with timeout and switching to simple axum::serve:
+            // https://github.com/tokio-rs/axum/discussions/1383
             let executor = ServiceTaskExecutor::new()
                 .name(Some(name))
                 .timeout(Some(SERVICE_TASK_TIMEOUT));
