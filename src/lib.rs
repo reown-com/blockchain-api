@@ -328,7 +328,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         // Fungible price
         .route(
             "/v1/fungible/price",
-            get(handlers::fungible_price::handler),
+            post(handlers::fungible_price::handler),
         )
         .route("/health", get(handlers::health::handler))
         .route_layer(tracing_and_metrics_layer)

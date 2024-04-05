@@ -2,7 +2,7 @@ use {
     super::HANDLER_TASK_METRICS,
     crate::{error::RpcError, state::AppState, utils::crypto},
     axum::{
-        extract::{Query, State},
+        extract::State,
         response::{IntoResponse, Response},
         Json,
     },
@@ -48,7 +48,7 @@ impl Display for PriceCurrencies {
 pub struct PriceQueryParams {
     pub project_id: String,
     pub currency: PriceCurrencies,
-    pub address: Vec<String>,
+    pub addresses: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -68,7 +68,7 @@ pub struct FungiblePriceItem {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
-    query: Query<PriceQueryParams>,
+    Json(query): Json<PriceQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
         .with_metrics(HANDLER_TASK_METRICS.with_name("fungible_price"))
@@ -78,15 +78,15 @@ pub async fn handler(
 #[tracing::instrument(skip_all)]
 async fn handler_internal(
     state: State<Arc<AppState>>,
-    query: Query<PriceQueryParams>,
+    query: PriceQueryParams,
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
     state.validate_project_access_and_quota(&project_id).await?;
 
-    if query.address.is_empty() && query.address.len() > 1 {
+    if query.addresses.is_empty() && query.addresses.len() > 1 {
         return Err(RpcError::InvalidAddress);
     }
-    let address = if let Some(address) = query.address.first() {
+    let address = if let Some(address) = query.addresses.first() {
         address
     } else {
         return Err(RpcError::InvalidAddress);
