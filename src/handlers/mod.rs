@@ -14,6 +14,7 @@ use {
 
 pub mod balance;
 pub mod convert;
+pub mod fungible_price;
 pub mod generators;
 pub mod health;
 pub mod history;
