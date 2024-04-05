@@ -9,8 +9,7 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    hyper::{client::HttpConnector, http, Client, Method},
-    hyper_tls::HttpsConnector,
+    hyper::http,
     std::collections::HashMap,
     tracing::info,
 };
@@ -18,7 +17,6 @@ use {
 #[derive(Debug)]
 pub struct GetBlockProvider {
     base_api_url: String,
-    client: Client<HttpsConnector<HttpConnector>>,
     supported_chains: HashMap<String, String>,
 }
 
@@ -54,16 +52,15 @@ impl RpcProvider for GetBlockProvider {
 
         let uri = format!("{}/{}", self.base_api_url, access_token_api);
 
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::POST)
-            .uri(uri)
+        let response = reqwest::Client::new()
+            .post(uri)
             .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(body))?;
-
-        let response = self.client.request(hyper_request).await?;
+            .body(body)
+            .send()
+            .await?;
 
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = response.bytes().await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
@@ -85,7 +82,6 @@ impl RpcProvider for GetBlockProvider {
 impl RpcProviderFactory<GetBlockConfig> for GetBlockProvider {
     #[tracing::instrument]
     fn new(provider_config: &GetBlockConfig) -> Self {
-        let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
@@ -95,7 +91,6 @@ impl RpcProviderFactory<GetBlockConfig> for GetBlockProvider {
 
         GetBlockProvider {
             base_api_url,
-            client,
             supported_chains,
         }
     }

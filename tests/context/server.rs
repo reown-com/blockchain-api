@@ -12,7 +12,9 @@ use {
 
 pub struct RpcProxy {
     pub public_addr: String,
+    #[allow(unused)]
     pub public_port: Option<u16>,
+    #[allow(unused)]
     pub private_addr: Option<SocketAddr>,
     pub project_id: String,
 }

@@ -1,8 +1,7 @@
 use {
     crate::{error::RpcError, state::AppState, utils::network},
     axum::{
-        extract::{MatchedPath, State},
-        http::Request,
+        extract::{MatchedPath, Request, State},
         middleware::Next,
         response::{IntoResponse, Response},
     },
@@ -45,10 +44,10 @@ pub struct SuccessResponse {
 
 /// Rate limit middleware that uses `rate_limiting`` token bucket sub crate
 /// from the `utils-rs`. IP address and matched path are used as the token key.
-pub async fn rate_limit_middleware<B>(
+pub async fn rate_limit_middleware(
     State(state): State<Arc<AppState>>,
-    req: Request<B>,
-    next: Next<B>,
+    req: Request,
+    next: Next,
 ) -> Response {
     let headers = req.headers().clone();
     let ip = match network::get_forwarded_ip(headers.clone()) {

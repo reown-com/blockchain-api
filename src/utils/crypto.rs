@@ -175,11 +175,7 @@ pub fn constant_time_eq(a: impl AsRef<[u8]>, b: impl AsRef<[u8]>) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use {
-        super::*,
-        ethers::types::H160,
-        std::{collections::HashMap, str::FromStr},
-    };
+    use {super::*, std::collections::HashMap};
 
     #[test]
     fn test_verify_message_signature_valid() {

@@ -9,23 +9,24 @@ authors = [
 build = "build.rs"
 
 [dependencies]
-wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.9.0", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock", "rate_limit"] }
+wc = { git = "https://github.com/WalletConnect/utils-rs.git", branch = "feat/axum-0.7", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock", "rate_limit"] }
 
 # Async
 async-trait = "0.1.57"
 tokio = { version = "1", features = ["full"] }
 
 # Web
-hyper = "0.14.4"
+hyper = "1.2.0"
+hyper-util = "0.1.3"
 hyper-tls = "0.5.0"
 tap = "1.0"
-axum = { version = "0.6", features = ["json", "tokio", "ws"] }
+axum = { version = "0.7.5", features = ["json", "tokio", "ws"] }
 tower = "0.4.11"
-tower-http = { version = "0.4.0", features = ["cors", "trace", "request-id", "util"] }
+tower-http = { version = "0.5.2", features = ["cors", "trace", "request-id", "util"] }
 jsonrpc = "0.14.0"
-async-tungstenite = { version = "0.20.0", features = ["tokio", "tokio-runtime", "tokio-native-tls"] }
+async-tungstenite = { version = "0.25.1", features = ["tokio", "tokio-runtime", "tokio-native-tls"] }
 url = "2.5"
-reqwest = { version= "0.11", features = ["deflate", "brotli", "gzip"] }
+reqwest = { version= "0.12.2", features = ["deflate", "brotli", "gzip", "json"] }
 
 # Serialization
 rmp-serde = "1.1"
@@ -65,10 +66,10 @@ parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = 
 chrono = { version = "0.4", features = ["serde"] }
 futures-util = "0.3.28"
 tokio-stream = "0.1.12"
-axum-tungstenite = "0.2.0"
+axum-tungstenite = { git = "https://github.com/Astralchroma/axum-tungstenite", rev = "0906fea" } # https://github.com/davidpdrsn/axum-tungstenite/pull/13
 
 rand = "0.8.4"
-prometheus-http-query = "0.6.6"
+prometheus-http-query = "0.8.2"
 ethers = { version = "2.0.11", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
 
 bytes = "1.4.0"

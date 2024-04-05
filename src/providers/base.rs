@@ -9,15 +9,13 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    hyper::{client::HttpConnector, http, Client, Method},
-    hyper_tls::HttpsConnector,
+    hyper::http,
     std::collections::HashMap,
     tracing::info,
 };
 
 #[derive(Debug)]
 pub struct BaseProvider {
-    pub client: Client<HttpsConnector<HttpConnector>>,
     pub supported_chains: HashMap<String, String>,
 }
 
@@ -54,15 +52,15 @@ impl RpcProvider for BaseProvider {
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::POST)
-            .uri(uri)
+        let response = reqwest::Client::new()
+            .post(uri)
             .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(body))?;
+            .body(body)
+            .send()
+            .await?;
 
-        let response = self.client.request(hyper_request).await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = response.bytes().await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
@@ -84,16 +82,12 @@ impl RpcProvider for BaseProvider {
 impl RpcProviderFactory<BaseConfig> for BaseProvider {
     #[tracing::instrument]
     fn new(provider_config: &BaseConfig) -> Self {
-        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
             .map(|(k, v)| (k.clone(), v.0.clone()))
             .collect();
 
-        BaseProvider {
-            client: forward_proxy_client,
-            supported_chains,
-        }
+        BaseProvider { supported_chains }
     }
 }

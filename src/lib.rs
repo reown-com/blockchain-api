@@ -11,7 +11,7 @@ use {
     aws_config::meta::region::RegionProviderChain,
     aws_sdk_s3::{config::Region, Client as S3Client},
     axum::{
-        extract::connect_info::IntoMakeServiceWithConnectInfo,
+        body::Body,
         middleware,
         response::Response,
         routing::{get, post},
@@ -33,7 +33,8 @@ use {
     },
     error::RpcResult,
     http::Request,
-    hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
+    hyper::{body::Incoming, header::HeaderName, http},
+    hyper_util::{rt::TokioIo, server},
     providers::{
         AuroraProvider,
         BaseProvider,
@@ -53,11 +54,13 @@ use {
     },
     sqlx::postgres::PgPoolOptions,
     std::{
+        convert::Infallible,
         net::{IpAddr, Ipv4Addr, SocketAddr},
         sync::Arc,
         time::Duration,
     },
-    tower::ServiceBuilder,
+    tokio::net::TcpListener,
+    tower::{Service, ServiceBuilder, ServiceExt},
     tower_http::{
         cors::{Any, CorsLayer},
         request_id::MakeRequestUuid,
@@ -77,15 +80,14 @@ use {
 };
 
 const SERVICE_TASK_TIMEOUT: Duration = Duration::from_secs(15);
-const KEEPALIVE_IDLE_DURATION: Duration = Duration::from_secs(65);
-const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(65);
-const KEEPALIVE_RETRIES: u32 = 1;
+// const KEEPALIVE_IDLE_DURATION: Duration = Duration::from_secs(65);
+// const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(65);
+// const KEEPALIVE_RETRIES: u32 = 1;
 
 mod analytics;
 pub mod database;
 pub mod env;
 pub mod error;
-mod extractors;
 pub mod handlers;
 mod json_rpc;
 mod metrics;
@@ -365,8 +367,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/metrics", get(handlers::metrics::handler))
         .with_state(state_arc.clone());
 
-    let public_server = create_server("public_server", app, &addr);
-    let private_server = create_server("private_server", private_app, &private_addr);
+    let public_server = create_server("public_server", app, addr);
+    let private_server = create_server("private_server", private_app, private_addr);
 
     let weights_updater = {
         let state_arc = state_arc.clone();
@@ -419,22 +421,65 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     Ok(())
 }
 
-fn create_server(
+async fn create_server(
     name: &'static str,
     app: Router,
-    addr: &SocketAddr,
-) -> Server<AddrIncoming, IntoMakeServiceWithConnectInfo<Router, SocketAddr>, ServiceTaskExecutor> {
-    let executor = ServiceTaskExecutor::new()
-        .name(Some(name))
-        .timeout(Some(SERVICE_TASK_TIMEOUT));
+    addr: SocketAddr,
+) -> Result<(), std::io::Error> {
+    // https://tokio.rs/blog/2023-11-27-announcing-axum-0-7-0#a-new-axumserve-function
+    // https://github.com/tokio-rs/axum/blob/50c035c20b7bf7987b9b9b126574852318e92e2c/examples/serve-with-hyper/src/main.rs#L81
 
-    axum::Server::bind(addr)
-        .executor(executor)
-        .tcp_keepalive(Some(KEEPALIVE_IDLE_DURATION))
-        .tcp_keepalive_interval(Some(KEEPALIVE_INTERVAL))
-        .tcp_keepalive_retries(Some(KEEPALIVE_RETRIES))
-        .tcp_sleep_on_accept_errors(false)
-        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+    let listener = TcpListener::bind(addr).await?;
+
+    // .tcp_keepalive(Some(KEEPALIVE_IDLE_DURATION))
+    // .tcp_keepalive_interval(Some(KEEPALIVE_INTERVAL))
+    // .tcp_keepalive_retries(Some(KEEPALIVE_RETRIES))
+    // .tcp_sleep_on_accept_errors(false)
+
+    // let socket = TcpSocket::new_v4()?;
+    // // option only available in lower-layer socket2 which isn't accessible
+    // socket.set_keepalive(keepalive)
+    // socket.bind(addr)?;
+    // const BACKLOG: u32 = 1024; // copied from
+    // mio::net::tcp::listener::TcpListener::bind() let listener =
+    // socket.listen(BACKLOG)?;
+
+    let mut make_service = app.into_make_service_with_connect_info::<SocketAddr>();
+
+    loop {
+        let (socket, remote_addr) = listener.accept().await.unwrap();
+
+        // We don't need to call `poll_ready` because `IntoMakeServiceWithConnectInfo`
+        // is always ready.
+        let tower_service = unwrap_infallible(make_service.call(remote_addr).await);
+
+        tokio::spawn(async move {
+            let socket = TokioIo::new(socket);
+
+            let hyper_service = hyper::service::service_fn(move |request: Request<Incoming>| {
+                tower_service.clone().oneshot(request)
+            });
+
+            // TODO consider replacing with timeout: https://github.com/tokio-rs/axum/discussions/1383
+            let executor = ServiceTaskExecutor::new()
+                .name(Some(name))
+                .timeout(Some(SERVICE_TASK_TIMEOUT));
+
+            if let Err(err) = server::conn::auto::Builder::new(executor)
+                .serve_connection_with_upgrades(socket, hyper_service)
+                .await
+            {
+                eprintln!("failed to serve connection: {err:#}");
+            }
+        });
+    }
+}
+
+fn unwrap_infallible<T>(result: Result<T, Infallible>) -> T {
+    match result {
+        Ok(value) => value,
+        Err(err) => match err {},
+    }
 }
 
 fn init_providers(config: &ProvidersConfig) -> ProviderRepository {

@@ -319,7 +319,7 @@ impl ProviderRepository {
     pub async fn update_weights(&self, metrics: &crate::Metrics) {
         info!("Updating weights");
 
-        let Ok(header_value) = HeaderValue::from_str(&self.prometheus_workspace_header) else {
+        let Ok(_header_value) = HeaderValue::from_str(&self.prometheus_workspace_header) else {
             warn!(
                 "Failed to parse prometheus workspace header from {}",
                 self.prometheus_workspace_header
@@ -330,7 +330,8 @@ impl ProviderRepository {
         match self
             .prometheus_client
             .query("round(increase(provider_status_code_counter_total[3h]))")
-            .header("host", header_value)
+            // FIXME
+            // .header("host", header_value.to_str().unwrap())
             .get()
             .await
         {

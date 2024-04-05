@@ -27,9 +27,6 @@ use {
     },
     async_trait::async_trait,
     axum::body::Bytes,
-    futures_util::StreamExt,
-    hyper::Client,
-    hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
     tracing::log::error,
     url::Url,
@@ -38,16 +35,11 @@ use {
 #[derive(Debug)]
 pub struct ZerionProvider {
     pub api_key: String,
-    pub http_client: Client<HttpsConnector<hyper::client::HttpConnector>>,
 }
 
 impl ZerionProvider {
     pub fn new(api_key: String) -> Self {
-        let http_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
-        Self {
-            api_key,
-            http_client,
-        }
+        Self { api_key }
     }
 }
 
@@ -366,13 +358,13 @@ impl PortfolioProvider for ZerionProvider {
         url.query_pairs_mut()
             .append_pair("currency", &params.currency.unwrap_or("usd".to_string()));
 
-        let hyper_request = hyper::http::Request::builder()
-            .uri(url.as_str())
+        let response = reqwest::Client::new()
+            .get(url.as_str())
             .header("Content-Type", "application/json")
             .header("authorization", format!("Basic {}", self.api_key))
-            .body(hyper::body::Body::from(body))?;
-
-        let response = self.http_client.request(hyper_request).await?;
+            .body(body)
+            .send()
+            .await?;
 
         if !response.status().is_success() {
             error!(
@@ -382,13 +374,9 @@ impl PortfolioProvider for ZerionProvider {
             return Err(RpcError::PortfolioProviderError);
         }
 
-        let mut body = response.into_body();
-        let mut bytes = Vec::new();
-        while let Some(next) = body.next().await {
-            bytes.extend_from_slice(&next?);
-        }
+        let body = response.bytes().await?;
         let body: ZerionResponseBody<Vec<ZerionPortfolioResponseBody>> =
-            match serde_json::from_slice(&bytes) {
+            match serde_json::from_slice(&body) {
                 Ok(body) => body,
                 Err(e) => {
                     error!("Error on parsing zerion portfolio response: {:?}", e);

@@ -111,8 +111,6 @@ mod tests {
     use {
         super::*,
         crate::handlers::profile::{ATTRIBUTES_VALUE_MAX_LENGTH, SUPPORTED_ATTRIBUTES},
-        ethers::types::H160,
-        std::str::FromStr,
     };
 
     #[test]

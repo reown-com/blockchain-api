@@ -10,6 +10,7 @@ use {
     },
     async_trait::async_trait,
     axum::{
+        body::to_bytes,
         extract::{ConnectInfo, MatchedPath, Path, Query, State},
         response::{IntoResponse, Response},
         Json,
@@ -20,7 +21,7 @@ use {
         providers::{JsonRpcClient, Middleware, Provider, ProviderError},
         types::H160,
     },
-    hyper::{body::to_bytes, HeaderMap, StatusCode},
+    hyper::{HeaderMap, StatusCode},
     serde::{de::DeserializeOwned, Deserialize, Serialize},
     std::{
         net::SocketAddr,
@@ -394,7 +395,8 @@ impl JsonRpcClient for SelfProvider {
             });
         }
 
-        let bytes = to_bytes(response.into_body())
+        const MAX_BODY: usize = 1024 * 1024 * 10; // prolly too big but better than usize::MAX
+        let bytes = to_bytes(response.into_body(), MAX_BODY)
             .await
             .map_err(SelfProviderError::ProviderBody)?;
 
