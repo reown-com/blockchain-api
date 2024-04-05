@@ -3942,12 +3942,11 @@ dependencies = [
 [[package]]
 name = "prometheus-http-query"
 version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0de773a6ba25c9164ed9d86d653a92fac759a6f0e683fd141d56bb96e80fd8b"
+source = "git+https://github.com/WalletConnect/prometheus-http-query?branch=feat/reqwest-v12#82fa7b4d6df30adf39cb9826081cffbca8374bb5"
 dependencies = [
  "enum-as-inner",
  "mime",
- "reqwest 0.11.27",
+ "reqwest 0.12.2",
  "serde",
  "time",
  "url",

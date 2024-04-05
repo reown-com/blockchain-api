@@ -26,7 +26,7 @@ tower-http = { version = "0.5.2", features = ["cors", "trace", "request-id", "ut
 jsonrpc = "0.14.0"
 async-tungstenite = { version = "0.25.1", features = ["tokio", "tokio-runtime", "tokio-native-tls"] }
 url = "2.5"
-reqwest = { version= "0.12.2", features = ["deflate", "brotli", "gzip", "json"] }
+reqwest = { version = "0.12.2", features = ["deflate", "brotli", "gzip", "json"] }
 
 # Serialization
 rmp-serde = "1.1"
@@ -69,7 +69,7 @@ tokio-stream = "0.1.12"
 axum-tungstenite = { git = "https://github.com/Astralchroma/axum-tungstenite", rev = "0906fea" } # https://github.com/davidpdrsn/axum-tungstenite/pull/13
 
 rand = "0.8.4"
-prometheus-http-query = "0.8.2"
+prometheus-http-query = { git = "https://github.com/WalletConnect/prometheus-http-query", branch = "feat/reqwest-v12" }
 ethers = { version = "2.0.11", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
 
 bytes = "1.4.0"
