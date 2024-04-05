@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.46.0 - 2024-04-05
+#### Features
+- **(providers)** fungible price endpoint implementation (#608) - (33aadff) - Max Kalashnikoff
+
+- - -
+
 ## 0.45.2 - 2024-04-04
 #### Bug Fixes
 - **(build)** adding assets as an exemption to gitignore (#607) - (38d9a3a) - Max Kalashnikoff
