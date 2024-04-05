@@ -48,7 +48,7 @@ impl Display for PriceCurrencies {
 pub struct PriceQueryParams {
     pub project_id: String,
     pub currency: PriceCurrencies,
-    pub address: String,
+    pub address: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -83,12 +83,26 @@ async fn handler_internal(
     let project_id = query.project_id.clone();
     state.validate_project_access_and_quota(&project_id).await?;
 
-    let (_, _, address) = crypto::disassemble_caip10(&query.address)?;
+    if query.address.is_empty() && query.address.len() > 1 {
+        return Err(RpcError::InvalidAddress);
+    }
+    let address = if let Some(address) = query.address.first() {
+        address
+    } else {
+        return Err(RpcError::InvalidAddress);
+    };
+
+    let (_, chain_id, address) = crypto::disassemble_caip10(address)?;
 
     let response = state
         .providers
         .fungible_price_provider
-        .get_price(&address, &query.currency, state.http_client.clone())
+        .get_price(
+            &chain_id,
+            &address,
+            &query.currency,
+            state.http_client.clone(),
+        )
         .await
         .tap_err(|e| {
             error!("Failed to call fungible price with {}", e);

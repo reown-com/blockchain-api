@@ -512,6 +512,7 @@ impl FungiblePriceProvider for ZerionProvider {
     #[tracing::instrument(skip(self, http_client), fields(provider = "Zerion"))]
     async fn get_price(
         &self,
+        chain_id: &str,
         address: &str,
         currency: &PriceCurrencies,
         http_client: reqwest::Client,
@@ -521,6 +522,8 @@ impl FungiblePriceProvider for ZerionProvider {
         let currency = format!("{}", currency);
 
         url.query_pairs_mut().append_pair("currency", &currency);
+        url.query_pairs_mut()
+            .append_pair("filter[chain_id]", chain_id);
         url.query_pairs_mut()
             .append_pair("filter[implementation_address]", address);
 

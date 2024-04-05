@@ -579,6 +579,7 @@ pub trait BalanceProvider: Send + Sync + Debug {
 pub trait FungiblePriceProvider: Send + Sync + Debug {
     async fn get_price(
         &self,
+        chain_id: &str,
         address: &str,
         currency: &PriceCurrencies,
         http_client: reqwest::Client,
