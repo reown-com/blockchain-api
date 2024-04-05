@@ -10,12 +10,14 @@ use {
         response::{IntoResponse, Response},
     },
     hyper::http,
+    reqwest::Client,
     std::collections::HashMap,
     tracing::info,
 };
 
 #[derive(Debug)]
 pub struct QuicknodeProvider {
+    pub client: Client,
     pub api_token: String,
     pub supported_chains: HashMap<String, String>,
 }
@@ -55,7 +57,8 @@ impl RpcProvider for QuicknodeProvider {
 
         let uri = format!("https://{}.quiknode.pro/{}", chain, self.api_token);
 
-        let response = reqwest::Client::new()
+        let response = self
+            .client
             .post(uri)
             .header("Content-Type", "application/json")
             .body(body)
@@ -84,7 +87,7 @@ impl RpcProvider for QuicknodeProvider {
 
 impl RpcProviderFactory<QuicknodeConfig> for QuicknodeProvider {
     #[tracing::instrument]
-    fn new(provider_config: &QuicknodeConfig) -> Self {
+    fn new(client: Client, provider_config: &QuicknodeConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
@@ -92,6 +95,7 @@ impl RpcProviderFactory<QuicknodeConfig> for QuicknodeProvider {
             .collect();
 
         QuicknodeProvider {
+            client,
             supported_chains,
             api_token: provider_config.api_token.clone(),
         }

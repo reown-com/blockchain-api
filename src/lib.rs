@@ -158,8 +158,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .await?;
     sqlx::migrate!("./migrations").run(&postgres).await?;
 
-    let http_client = reqwest::Client::new();
-
     let state = state::new_state(
         config.clone(),
         postgres.clone(),
@@ -168,7 +166,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         registry,
         identity_cache,
         analytics,
-        http_client,
         rate_limiting,
     );
 

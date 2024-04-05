@@ -111,7 +111,7 @@ async fn handler_internal(
     let response = state
         .providers
         .balance_provider
-        .get_balance(address, query.0, state.http_client.clone())
+        .get_balance(address, query.0)
         .await
         .tap_err(|e| {
             error!("Failed to call balance with {}", e);

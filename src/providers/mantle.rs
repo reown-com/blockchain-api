@@ -10,12 +10,14 @@ use {
         response::{IntoResponse, Response},
     },
     hyper::http,
+    reqwest::Client,
     std::collections::HashMap,
     tracing::info,
 };
 
 #[derive(Debug)]
 pub struct MantleProvider {
+    pub client: Client,
     pub supported_chains: HashMap<String, String>,
 }
 
@@ -49,7 +51,8 @@ impl RpcProvider for MantleProvider {
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let response = reqwest::Client::new()
+        let response = self
+            .client
             .post(uri)
             .header("Content-Type", "application/json")
             .body(body)
@@ -78,13 +81,16 @@ impl RpcProvider for MantleProvider {
 
 impl RpcProviderFactory<MantleConfig> for MantleProvider {
     #[tracing::instrument]
-    fn new(provider_config: &MantleConfig) -> Self {
+    fn new(client: Client, provider_config: &MantleConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
             .map(|(k, v)| (k.clone(), v.0.clone()))
             .collect();
 
-        MantleProvider { supported_chains }
+        MantleProvider {
+            client,
+            supported_chains,
+        }
     }
 }

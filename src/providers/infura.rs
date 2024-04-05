@@ -15,6 +15,7 @@ use {
     },
     axum_tungstenite::WebSocketUpgrade,
     hyper::{http, StatusCode},
+    reqwest::Client,
     std::collections::HashMap,
     tracing::info,
     wc::future::FutureExt,
@@ -22,6 +23,7 @@ use {
 
 #[derive(Debug)]
 pub struct InfuraProvider {
+    pub client: Client,
     pub project_id: String,
     pub supported_chains: HashMap<String, String>,
 }
@@ -117,7 +119,8 @@ impl RpcProvider for InfuraProvider {
 
         let uri = format!("https://{}.infura.io/v3/{}", chain, self.project_id);
 
-        let response = reqwest::Client::new()
+        let response = self
+            .client
             .post(uri)
             .header("Content-Type", "application/json")
             .body(body)
@@ -151,7 +154,7 @@ impl RpcProvider for InfuraProvider {
 
 impl RpcProviderFactory<InfuraConfig> for InfuraProvider {
     #[tracing::instrument]
-    fn new(provider_config: &InfuraConfig) -> Self {
+    fn new(client: Client, provider_config: &InfuraConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
@@ -159,6 +162,7 @@ impl RpcProviderFactory<InfuraConfig> for InfuraProvider {
             .collect();
 
         InfuraProvider {
+            client,
             supported_chains,
             project_id: provider_config.project_id.clone(),
         }
@@ -167,7 +171,7 @@ impl RpcProviderFactory<InfuraConfig> for InfuraProvider {
 
 impl RpcProviderFactory<InfuraConfig> for InfuraWsProvider {
     #[tracing::instrument]
-    fn new(provider_config: &InfuraConfig) -> Self {
+    fn new(_client: Client, provider_config: &InfuraConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_ws_chains
             .iter()

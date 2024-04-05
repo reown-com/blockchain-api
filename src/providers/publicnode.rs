@@ -10,12 +10,14 @@ use {
         response::{IntoResponse, Response},
     },
     hyper::http,
+    reqwest::Client,
     std::collections::HashMap,
     tracing::info,
 };
 
 #[derive(Debug)]
 pub struct PublicnodeProvider {
+    pub client: Client,
     pub supported_chains: HashMap<String, String>,
 }
 
@@ -51,7 +53,8 @@ impl RpcProvider for PublicnodeProvider {
 
         let uri = format!("https://{}.publicnode.com", chain);
 
-        let response = reqwest::Client::new()
+        let response = self
+            .client
             .post(uri)
             .header("Content-Type", "application/json")
             .body(body)
@@ -80,13 +83,16 @@ impl RpcProvider for PublicnodeProvider {
 
 impl RpcProviderFactory<PublicnodeConfig> for PublicnodeProvider {
     #[tracing::instrument]
-    fn new(provider_config: &PublicnodeConfig) -> Self {
+    fn new(client: Client, provider_config: &PublicnodeConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
             .map(|(k, v)| (k.clone(), v.0.clone()))
             .collect();
 
-        PublicnodeProvider { supported_chains }
+        PublicnodeProvider {
+            client,
+            supported_chains,
+        }
     }
 }

@@ -28,8 +28,6 @@ pub struct AppState {
     pub compile_info: CompileInfo,
     /// Service instance uptime measurement
     pub uptime: std::time::Instant,
-    /// Shared http client
-    pub http_client: reqwest::Client,
     // Rate limiting checks
     pub rate_limit: Option<RateLimit>,
 }
@@ -43,7 +41,6 @@ pub fn new_state(
     registry: Registry,
     identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     analytics: RPCAnalytics,
-    http_client: reqwest::Client,
     rate_limit: Option<RateLimit>,
 ) -> AppState {
     AppState {
@@ -56,7 +53,6 @@ pub fn new_state(
         analytics,
         compile_info: CompileInfo {},
         uptime: std::time::Instant::now(),
-        http_client,
         rate_limit,
     }
 }

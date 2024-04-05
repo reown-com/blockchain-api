@@ -17,6 +17,7 @@ use {
         utils::crypto,
     },
     async_trait::async_trait,
+    reqwest::Client,
     serde::Deserialize,
     std::collections::HashMap,
     tracing::log::error,
@@ -25,19 +26,18 @@ use {
 
 #[derive(Debug)]
 pub struct OneInchProvider {
+    pub client: Client,
     pub api_key: String,
     pub base_api_url: String,
-    pub http_client: reqwest::Client,
 }
 
 impl OneInchProvider {
-    pub fn new(api_key: String) -> Self {
+    pub fn new(client: Client, api_key: String) -> Self {
         let base_api_url = "https://api.1inch.dev/swap/v6.0".to_string();
-        let http_client = reqwest::Client::new();
         Self {
+            client,
             api_key,
             base_api_url,
-            http_client,
         }
     }
 
@@ -114,7 +114,7 @@ impl ConversionProvider for OneInchProvider {
         let base = format!("{}/{}/tokens", &self.base_api_url, evm_chain_id.clone());
         let url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
 
-        let response = self.send_request(url, &self.http_client.clone()).await?;
+        let response = self.send_request(url, &self.client.clone()).await?;
 
         if !response.status().is_success() {
             error!(
@@ -175,7 +175,7 @@ impl ConversionProvider for OneInchProvider {
         url.query_pairs_mut()
             .append_pair("amount", &params.amount.to_string());
 
-        let response = self.send_request(url, &self.http_client.clone()).await?;
+        let response = self.send_request(url, &self.client.clone()).await?;
 
         if !response.status().is_success() {
             error!(
@@ -223,7 +223,7 @@ impl ConversionProvider for OneInchProvider {
         url.query_pairs_mut()
             .append_pair("amount", &params.amount.to_string());
 
-        let response = self.send_request(url, &self.http_client.clone()).await?;
+        let response = self.send_request(url, &self.client.clone()).await?;
 
         if !response.status().is_success() {
             error!(
@@ -287,7 +287,7 @@ impl ConversionProvider for OneInchProvider {
             ));
         }
 
-        let response = self.send_request(url, &self.http_client.clone()).await?;
+        let response = self.send_request(url, &self.client.clone()).await?;
 
         if !response.status().is_success() {
             error!(

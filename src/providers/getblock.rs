@@ -10,12 +10,14 @@ use {
         response::{IntoResponse, Response},
     },
     hyper::http,
+    reqwest::Client,
     std::collections::HashMap,
     tracing::info,
 };
 
 #[derive(Debug)]
 pub struct GetBlockProvider {
+    pub client: Client,
     base_api_url: String,
     supported_chains: HashMap<String, String>,
 }
@@ -52,7 +54,8 @@ impl RpcProvider for GetBlockProvider {
 
         let uri = format!("{}/{}", self.base_api_url, access_token_api);
 
-        let response = reqwest::Client::new()
+        let response = self
+            .client
             .post(uri)
             .header("Content-Type", "application/json")
             .body(body)
@@ -81,7 +84,7 @@ impl RpcProvider for GetBlockProvider {
 
 impl RpcProviderFactory<GetBlockConfig> for GetBlockProvider {
     #[tracing::instrument]
-    fn new(provider_config: &GetBlockConfig) -> Self {
+    fn new(client: Client, provider_config: &GetBlockConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
@@ -90,6 +93,7 @@ impl RpcProviderFactory<GetBlockConfig> for GetBlockProvider {
         let base_api_url = "https://go.getblock.io".to_string();
 
         GetBlockProvider {
+            client,
             base_api_url,
             supported_chains,
         }

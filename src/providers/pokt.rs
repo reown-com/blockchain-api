@@ -10,12 +10,14 @@ use {
         response::{IntoResponse, Response},
     },
     hyper::StatusCode,
+    reqwest::Client,
     std::collections::HashMap,
     tracing::info,
 };
 
 #[derive(Debug)]
 pub struct PoktProvider {
+    pub client: Client,
     pub project_id: String,
     pub supported_chains: HashMap<String, String>,
 }
@@ -76,7 +78,8 @@ impl RpcProvider for PoktProvider {
 
         let uri = format!("https://{}.rpc.grove.city/v1/{}", chain, self.project_id);
 
-        let response = reqwest::Client::new()
+        let response = self
+            .client
             .post(uri)
             .header("Content-Type", "application/json")
             .body(body)
@@ -113,7 +116,7 @@ impl RpcProvider for PoktProvider {
 
 impl RpcProviderFactory<PoktConfig> for PoktProvider {
     #[tracing::instrument]
-    fn new(provider_config: &PoktConfig) -> Self {
+    fn new(client: Client, provider_config: &PoktConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
@@ -121,6 +124,7 @@ impl RpcProviderFactory<PoktConfig> for PoktProvider {
             .collect();
 
         PoktProvider {
+            client,
             supported_chains,
             project_id: provider_config.project_id.clone(),
         }

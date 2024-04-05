@@ -10,12 +10,14 @@ use {
         response::{IntoResponse, Response},
     },
     hyper::http,
+    reqwest::Client,
     std::collections::HashMap,
     tracing::info,
 };
 
 #[derive(Debug)]
 pub struct NearProvider {
+    pub client: Client,
     pub supported_chains: HashMap<String, String>,
 }
 
@@ -49,7 +51,8 @@ impl RpcProvider for NearProvider {
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let response = reqwest::Client::new()
+        let response = self
+            .client
             .post(uri)
             .header("Content-Type", "application/json")
             .body(body)
@@ -78,13 +81,16 @@ impl RpcProvider for NearProvider {
 
 impl RpcProviderFactory<NearConfig> for NearProvider {
     #[tracing::instrument]
-    fn new(provider_config: &NearConfig) -> Self {
+    fn new(client: Client, provider_config: &NearConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
             .map(|(k, v)| (k.clone(), v.0.clone()))
             .collect();
 
-        NearProvider { supported_chains }
+        NearProvider {
+            client,
+            supported_chains,
+        }
     }
 }

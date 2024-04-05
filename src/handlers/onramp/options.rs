@@ -89,7 +89,7 @@ async fn handler_internal(
     let buy_options = state
         .providers
         .onramp_provider
-        .get_buy_options(query.0, state.http_client.clone())
+        .get_buy_options(query.0)
         .await
         .tap_err(|e| {
             error!("Failed to call coinbase buy options with {}", e);

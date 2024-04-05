@@ -15,6 +15,7 @@ use {
     },
     axum_tungstenite::WebSocketUpgrade,
     hyper::http,
+    reqwest::Client,
     std::collections::HashMap,
     tracing::info,
     wc::future::FutureExt,
@@ -22,6 +23,7 @@ use {
 
 #[derive(Debug)]
 pub struct ZoraProvider {
+    pub client: Client,
     pub supported_chains: HashMap<String, String>,
 }
 
@@ -111,7 +113,8 @@ impl RpcProvider for ZoraProvider {
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let response = reqwest::Client::new()
+        let response = self
+            .client
             .post(uri)
             .header("Content-Type", "application/json")
             .body(body)
@@ -140,20 +143,23 @@ impl RpcProvider for ZoraProvider {
 
 impl RpcProviderFactory<ZoraConfig> for ZoraProvider {
     #[tracing::instrument]
-    fn new(provider_config: &ZoraConfig) -> Self {
+    fn new(client: Client, provider_config: &ZoraConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
             .map(|(k, v)| (k.clone(), v.0.clone()))
             .collect();
 
-        ZoraProvider { supported_chains }
+        ZoraProvider {
+            client,
+            supported_chains,
+        }
     }
 }
 
 impl RpcProviderFactory<ZoraConfig> for ZoraWsProvider {
     #[tracing::instrument]
-    fn new(provider_config: &ZoraConfig) -> Self {
+    fn new(_client: Client, provider_config: &ZoraConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_ws_chains
             .iter()

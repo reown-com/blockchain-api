@@ -10,12 +10,14 @@ use {
         response::{IntoResponse, Response},
     },
     hyper::http,
+    reqwest::Client,
     std::collections::HashMap,
     tracing::info,
 };
 
 #[derive(Debug)]
 pub struct AuroraProvider {
+    pub client: Client,
     pub supported_chains: HashMap<String, String>,
 }
 
@@ -52,7 +54,8 @@ impl RpcProvider for AuroraProvider {
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let response = reqwest::Client::new()
+        let response = self
+            .client
             .post(uri)
             .header("Content-Type", "application/json")
             .body(body)
@@ -81,13 +84,16 @@ impl RpcProvider for AuroraProvider {
 
 impl RpcProviderFactory<AuroraConfig> for AuroraProvider {
     #[tracing::instrument]
-    fn new(provider_config: &AuroraConfig) -> Self {
+    fn new(client: Client, provider_config: &AuroraConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
             .map(|(k, v)| (k.clone(), v.0.clone()))
             .collect();
 
-        AuroraProvider { supported_chains }
+        AuroraProvider {
+            client,
+            supported_chains,
+        }
     }
 }

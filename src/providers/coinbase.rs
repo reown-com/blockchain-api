@@ -16,6 +16,7 @@ use {
         utils::crypto::ChainId,
     },
     async_trait::async_trait,
+    reqwest::Client,
     serde::{Deserialize, Serialize},
     tracing::log::error,
     url::Url,
@@ -23,14 +24,16 @@ use {
 
 #[derive(Debug)]
 pub struct CoinbaseProvider {
+    pub client: Client,
     pub api_key: String,
     pub app_id: String,
     pub base_api_url: String,
 }
 
 impl CoinbaseProvider {
-    pub fn new(api_key: String, app_id: String, base_api_url: String) -> Self {
+    pub fn new(client: Client, api_key: String, app_id: String, base_api_url: String) -> Self {
         Self {
+            client,
             api_key,
             app_id,
             base_api_url,
@@ -68,7 +71,6 @@ impl HistoryProvider for CoinbaseProvider {
         &self,
         address: String,
         params: HistoryQueryParams,
-        http_client: reqwest::Client,
     ) -> RpcResult<HistoryResponseBody> {
         let base = format!("{}/buy/user/{}/transactions", &self.base_api_url, &address);
 
@@ -79,7 +81,8 @@ impl HistoryProvider for CoinbaseProvider {
             url.query_pairs_mut().append_pair("page_key", &cursor);
         }
 
-        let response = http_client
+        let response = self
+            .client
             .get(url)
             .header("Content-Type", "application/json")
             .header("CBPAY-APP-ID", self.app_id.clone())
@@ -143,7 +146,6 @@ impl OnRampProvider for CoinbaseProvider {
     async fn get_buy_options(
         &self,
         params: OnRampBuyOptionsParams,
-        http_client: reqwest::Client,
     ) -> RpcResult<OnRampBuyOptionsResponse> {
         let base = format!("{}/buy/options", &self.base_api_url);
         let mut url = Url::parse(&base).map_err(|_| RpcError::OnRampParseURLError)?;
@@ -154,7 +156,8 @@ impl OnRampProvider for CoinbaseProvider {
                 .append_pair("subdivision", &subdivision);
         }
 
-        let response = http_client
+        let response = self
+            .client
             .get(url)
             .header("Content-Type", "application/json")
             .header("CBPAY-APP-ID", self.app_id.clone())
@@ -176,12 +179,12 @@ impl OnRampProvider for CoinbaseProvider {
     async fn get_buy_quotes(
         &self,
         params: OnRampBuyQuotesParams,
-        http_client: reqwest::Client,
     ) -> RpcResult<OnRampBuyQuotesResponse> {
         let base = format!("{}/buy/quote", &self.base_api_url);
         let url = Url::parse(&base).map_err(|_| RpcError::OnRampParseURLError)?;
 
-        let response = http_client
+        let response = self
+            .client
             .post(url)
             .json(&params)
             .header("Content-Type", "application/json")

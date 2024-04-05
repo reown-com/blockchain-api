@@ -20,6 +20,7 @@ use {
     },
     async_trait::async_trait,
     axum::body::Bytes,
+    reqwest::Client,
     serde::{Deserialize, Serialize},
     tracing::log::error,
     url::Url,
@@ -27,12 +28,13 @@ use {
 
 #[derive(Debug)]
 pub struct ZerionProvider {
+    pub client: Client,
     pub api_key: String,
 }
 
 impl ZerionProvider {
-    pub fn new(api_key: String) -> Self {
-        Self { api_key }
+    pub fn new(client: Client, api_key: String) -> Self {
+        Self { client, api_key }
     }
 }
 
@@ -214,7 +216,6 @@ impl HistoryProvider for ZerionProvider {
         &self,
         address: String,
         params: HistoryQueryParams,
-        http_client: reqwest::Client,
     ) -> RpcResult<HistoryResponseBody> {
         let base = format!(
             "https://api.zerion.io/v1/wallets/{}/transactions/?",
@@ -228,7 +229,8 @@ impl HistoryProvider for ZerionProvider {
             url.query_pairs_mut().append_pair("page[after]", &cursor);
         }
 
-        let response = http_client
+        let response = self
+            .client
             .get(url)
             .header("Content-Type", "application/json")
             .header("authorization", format!("Basic {}", self.api_key))
@@ -351,7 +353,8 @@ impl PortfolioProvider for ZerionProvider {
         url.query_pairs_mut()
             .append_pair("currency", &params.currency.unwrap_or("usd".to_string()));
 
-        let response = reqwest::Client::new()
+        let response = self
+            .client
             .get(url.as_str())
             .header("Content-Type", "application/json")
             .header("authorization", format!("Basic {}", self.api_key))
@@ -398,7 +401,6 @@ impl BalanceProvider for ZerionProvider {
         &self,
         address: String,
         params: BalanceQueryParams,
-        http_client: reqwest::Client,
     ) -> RpcResult<BalanceResponseBody> {
         let base = format!("https://api.zerion.io/v1/wallets/{}/positions/?", &address);
         let mut url = Url::parse(&base).map_err(|_| RpcError::BalanceParseURLError)?;
@@ -414,7 +416,8 @@ impl BalanceProvider for ZerionProvider {
                 .append_pair("filter[chain_ids]", &chain_name);
         }
 
-        let response = http_client
+        let response = self
+            .client
             .get(url)
             .header("Content-Type", "application/json")
             .header("authorization", format!("Basic {}", self.api_key))
@@ -490,13 +493,12 @@ impl BalanceProvider for ZerionProvider {
 
 #[async_trait]
 impl FungiblePriceProvider for ZerionProvider {
-    #[tracing::instrument(skip(self, http_client), fields(provider = "Zerion"))]
+    #[tracing::instrument(skip(self), fields(provider = "Zerion"))]
     async fn get_price(
         &self,
         chain_id: &str,
         address: &str,
         currency: &PriceCurrencies,
-        http_client: reqwest::Client,
     ) -> RpcResult<PriceResponseBody> {
         let base = "https://api.zerion.io/v1/fungibles/?".to_string();
         let mut url = Url::parse(&base).map_err(|_| RpcError::FungiblePriceParseURLError)?;
@@ -508,7 +510,8 @@ impl FungiblePriceProvider for ZerionProvider {
         url.query_pairs_mut()
             .append_pair("filter[implementation_address]", address);
 
-        let response = http_client
+        let response = self
+            .client
             .get(url)
             .header("Content-Type", "application/json")
             .header("authorization", format!("Basic {}", self.api_key))

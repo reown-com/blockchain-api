@@ -154,7 +154,7 @@ async fn handler_internal(
             state
                 .providers
                 .coinbase_pay_provider
-                .get_transactions(address.clone(), query.clone().0, state.http_client.clone())
+                .get_transactions(address.clone(), query.clone().0)
                 .await
                 .tap_err(|e| {
                     error!("Failed to call coinbase transactions history with {}", e);
@@ -168,7 +168,7 @@ async fn handler_internal(
         state
             .providers
             .history_provider
-            .get_transactions(address.clone(), query.0.clone(), state.http_client.clone())
+            .get_transactions(address.clone(), query.0.clone())
             .await
             .tap_err(|e| {
                 error!("Failed to call transactions history with {}", e);

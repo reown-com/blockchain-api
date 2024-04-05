@@ -26,6 +26,7 @@ use {
     axum_tungstenite::WebSocketUpgrade,
     hyper::http::HeaderValue,
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
+    reqwest::Client,
     serde::{Deserialize, Serialize},
     std::{
         collections::{HashMap, HashSet},
@@ -98,6 +99,8 @@ pub struct SupportedChains {
 }
 
 pub struct ProviderRepository {
+    pub client: Client,
+
     pub supported_chains: SupportedChains,
 
     providers: HashMap<ProviderKind, Arc<dyn RpcProvider>>,
@@ -164,20 +167,24 @@ impl ProviderRepository {
             .clone()
             .unwrap_or("ONE_INCH_API_KEY".into());
 
-        let zerion_provider = Arc::new(ZerionProvider::new(zerion_api_key));
+        let client = Client::new();
+
+        let zerion_provider = Arc::new(ZerionProvider::new(client.clone(), zerion_api_key));
         let history_provider = zerion_provider.clone();
         let portfolio_provider = zerion_provider.clone();
         let balance_provider = zerion_provider.clone();
         let fungible_price_provider = zerion_provider;
-        let conversion_provider = Arc::new(OneInchProvider::new(one_inch_api_key));
+        let conversion_provider = Arc::new(OneInchProvider::new(client.clone(), one_inch_api_key));
 
         let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
+            client.clone(),
             coinbase_api_key,
             coinbase_app_id,
             "https://pay.coinbase.com/api/v1".into(),
         ));
 
         Self {
+            client,
             supported_chains: SupportedChains {
                 http: HashSet::new(),
                 ws: HashSet::new(),
@@ -270,7 +277,7 @@ impl ProviderRepository {
         &mut self,
         provider_config: C,
     ) {
-        let ws_provider = T::new(&provider_config);
+        let ws_provider = T::new(self.client.clone(), &provider_config);
         let arc_ws_provider = Arc::new(ws_provider);
 
         self.ws_providers
@@ -294,7 +301,7 @@ impl ProviderRepository {
         &mut self,
         provider_config: C,
     ) {
-        let provider = T::new(&provider_config);
+        let provider = T::new(self.client.clone(), &provider_config);
         let arc_provider = Arc::new(provider);
 
         self.providers
@@ -425,7 +432,7 @@ pub trait RpcProvider: Provider {
 }
 
 pub trait RpcProviderFactory<T: ProviderConfig>: Provider {
-    fn new(provider_config: &T) -> Self;
+    fn new(client: Client, provider_config: &T) -> Self;
 }
 
 #[async_trait]
@@ -540,7 +547,6 @@ pub trait HistoryProvider: Send + Sync + Debug {
         &self,
         address: String,
         params: HistoryQueryParams,
-        http_client: reqwest::Client,
     ) -> RpcResult<HistoryResponseBody>;
 }
 
@@ -559,13 +565,11 @@ pub trait OnRampProvider: Send + Sync + Debug {
     async fn get_buy_options(
         &self,
         params: OnRampBuyOptionsParams,
-        http_client: reqwest::Client,
     ) -> RpcResult<OnRampBuyOptionsResponse>;
 
     async fn get_buy_quotes(
         &self,
         params: OnRampBuyQuotesParams,
-        http_client: reqwest::Client,
     ) -> RpcResult<OnRampBuyQuotesResponse>;
 }
 
@@ -575,7 +579,6 @@ pub trait BalanceProvider: Send + Sync + Debug {
         &self,
         address: String,
         params: BalanceQueryParams,
-        http_client: reqwest::Client,
     ) -> RpcResult<BalanceResponseBody>;
 }
 
@@ -586,7 +589,6 @@ pub trait FungiblePriceProvider: Send + Sync + Debug {
         chain_id: &str,
         address: &str,
         currency: &PriceCurrencies,
-        http_client: reqwest::Client,
     ) -> RpcResult<PriceResponseBody>;
 }
 
