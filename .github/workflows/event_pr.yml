@@ -46,7 +46,7 @@ jobs:
   ci:
     name: CI
     needs: [ paths-filter ]
-    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.8
+    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@fix/udeps-build
     secrets: inherit
     with:
       check-app: ${{ needs.paths-filter.outputs.app == 'true' }}

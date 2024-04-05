@@ -25,7 +25,7 @@ permissions:
 jobs:
   ci:
     name: CI
-    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.8
+    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@fix/udeps-build
     secrets: inherit
     with:
       check-infra: false
@@ -33,7 +33,7 @@ jobs:
 
   release:
     name: Release
-    uses: WalletConnect/ci_workflows/.github/workflows/release.yml@0.2.8
+    uses: WalletConnect/ci_workflows/.github/workflows/release.yml@fix/udeps-build
     secrets: inherit
     with:
       infra-changed: false

@@ -49,7 +49,7 @@ jobs:
     name: Lookup deployed version
     if: ${{ inputs.version-type == 'current' }}
     secrets: inherit
-    uses: WalletConnect/ci_workflows/.github/workflows/release-get_deployed_version.yml@0.2.8
+    uses: WalletConnect/ci_workflows/.github/workflows/release-get_deployed_version.yml@fix/udeps-build
     with:
       task-name-stage: prod
       task-name: ${{ vars.TASK_NAME }}

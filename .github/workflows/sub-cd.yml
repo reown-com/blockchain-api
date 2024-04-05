@@ -31,7 +31,7 @@ jobs:
   cd-staging:
     name: Staging
     secrets: inherit
-    uses: WalletConnect/ci_workflows/.github/workflows/cd.yml@0.2.8
+    uses: WalletConnect/ci_workflows/.github/workflows/cd.yml@fix/udeps-build
     with:
       deploy-infra: ${{ inputs.deploy-infra }}
       deploy-app: ${{ inputs.deploy-app && !inputs.deploy-infra }}
@@ -57,7 +57,7 @@ jobs:
     needs: [ validate-staging ]
     if: ${{ inputs.deploy-prod }}
     secrets: inherit
-    uses: WalletConnect/ci_workflows/.github/workflows/cd.yml@0.2.8
+    uses: WalletConnect/ci_workflows/.github/workflows/cd.yml@fix/udeps-build
     with:
       deploy-infra: ${{ inputs.deploy-infra }}
       deploy-app: ${{ inputs.deploy-app && !inputs.deploy-infra }}

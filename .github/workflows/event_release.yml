@@ -44,7 +44,7 @@ jobs:
   release:
     name: Release
     needs: [ paths_filter ]
-    uses: WalletConnect/ci_workflows/.github/workflows/release.yml@0.2.8
+    uses: WalletConnect/ci_workflows/.github/workflows/release.yml@fix/udeps-build
     secrets: inherit
     with:
       task-name: ${{ vars.TASK_NAME }}
