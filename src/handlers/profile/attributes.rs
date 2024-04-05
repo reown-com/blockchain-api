@@ -2,9 +2,7 @@ use {
     super::{
         super::HANDLER_TASK_METRICS,
         utils::{check_attributes, is_timestamp_within_interval},
-        Eip155SupportedChains,
-        RegisterRequest,
-        UpdateAttributesPayload,
+        Eip155SupportedChains, RegisterRequest, UpdateAttributesPayload,
         UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{

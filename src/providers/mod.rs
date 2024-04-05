@@ -373,22 +373,26 @@ pub enum ProviderKind {
 
 impl Display for ProviderKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            ProviderKind::Aurora => "Aurora",
-            ProviderKind::Infura => "Infura",
-            ProviderKind::Pokt => "Pokt",
-            ProviderKind::Binance => "Binance",
-            ProviderKind::ZKSync => "zkSync",
-            ProviderKind::Publicnode => "Publicnode",
-            ProviderKind::Base => "Base",
-            ProviderKind::Zora => "Zora",
-            ProviderKind::Zerion => "Zerion",
-            ProviderKind::Coinbase => "Coinbase",
-            ProviderKind::Quicknode => "Quicknode",
-            ProviderKind::Near => "Near",
-            ProviderKind::Mantle => "Mantle",
-            ProviderKind::GetBlock => "GetBlock",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                ProviderKind::Aurora => "Aurora",
+                ProviderKind::Infura => "Infura",
+                ProviderKind::Pokt => "Pokt",
+                ProviderKind::Binance => "Binance",
+                ProviderKind::ZKSync => "zkSync",
+                ProviderKind::Publicnode => "Publicnode",
+                ProviderKind::Base => "Base",
+                ProviderKind::Zora => "Zora",
+                ProviderKind::Zerion => "Zerion",
+                ProviderKind::Coinbase => "Coinbase",
+                ProviderKind::Quicknode => "Quicknode",
+                ProviderKind::Near => "Near",
+                ProviderKind::Mantle => "Mantle",
+                ProviderKind::GetBlock => "GetBlock",
+            }
+        )
     }
 }
 

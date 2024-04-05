@@ -39,20 +39,12 @@ alias clean     := cargo-clean
 alias check     := cargo-check
 alias clippy    := cargo-clippy
 alias udeps     := cargo-udeps
-alias checkfmt  := cargo-checkfmt
 
 alias tfsec     := tf-tfsec
 alias tflint    := tf-tflint
 
 ################################################################################
 # Meta recipes
-
-# Format the project code
-fmt target='all': (_check-string-in-set target "all,rust,tf")
-  #!/bin/bash
-  set -euo pipefail
-  [[ '{{ target }}' == 'all' || '{{ target }}' == 'rust'  ]] && { just cargo-fmt; }
-  [[ '{{ target }}' == 'all' || '{{ target }}' == 'tf'    ]] && { just tf-fmt;   }
 
 # Update project documentation
 docs target='all': (_check-string-in-set target "all,rust,tf")
@@ -62,7 +54,7 @@ docs target='all': (_check-string-in-set target "all,rust,tf")
   [[ '{{ target }}' == 'all' || '{{ target }}' == 'tf'    ]] && { just tf-docs;   }
 
 # Run linting and tests
-devloop: lint cargo-test-all
+devloop: lint cargo-test-all fmt-imports
 
 ################################################################################
 # Linting recipes
@@ -76,7 +68,7 @@ lint target='all': (_check-string-in-set target "all,rust,tf")
 
 
 # Lint the rust project for any quality issues
-lint-rust: cargo-check cargo-clippy cargo-udeps cargo-checkfmt
+lint-rust: cargo-clippy fmt cargo-udeps
 
 # Lint the terrafrom project for any quality issues
 lint-tf: tf-checkfmt tf-validate tf-tfsec tf-tflint
@@ -116,7 +108,6 @@ cargo target='' sub-target='': (_check-string-in-set target "open-docs,build-doc
   [[ '{{ target }}' == 'check'      ]] && { just cargo-check;                 }
   [[ '{{ target }}' == 'clippy'     ]] && { just cargo-clippy;                }
   [[ '{{ target }}' == 'udeps'      ]] && { just cargo-udeps;                 }
-  [[ '{{ target }}' == 'checkfmt'   ]] && { just cargo-checkfmt;              }
 
 # Open rust project documentation in your local browser
 cargo-open-docs: (_cargo-build-docs "open" "nodeps")
@@ -129,10 +120,27 @@ cargo-build-docs: (_cargo-build-docs "" "nodeps")
   echo "==> Building project documentation @$JUST_ROOT/target/doc"
   cargo doc --all-features --document-private-items ${nodeps:+--no-deps} ${open:+--open}
 
-# Format the application code
-@cargo-fmt: _check-cmd-cargo-fmt
-  printf '==> Running {{ color-cmd }}rustfmt{{ nocolor }}\n'
-  cargo +nightly fmt
+fmt:
+  #!/bin/bash
+  set -euo pipefail
+
+  if command -v cargo-fmt >/dev/null; then
+    echo '==> Running rustfmt'
+    cargo fmt
+  else
+    echo '==> rustfmt not found in PATH, skipping'
+  fi
+
+fmt-imports:
+  #!/bin/bash
+  set -euo pipefail
+
+  if command -v cargo-fmt >/dev/null; then
+    echo '==> Running rustfmt'
+    cargo +nightly fmt -- --config group_imports=StdExternalCrate,imports_granularity=One
+  else
+    echo '==> rustfmt not found in PATH, skipping'
+  fi
 
 # Build service for development
 cargo-build: _check-cmd-cargo
@@ -190,11 +198,6 @@ cargo-clippy: _check-cmd-cargo-clippy
 cargo-udeps: _check-cmd-cargo-udeps
   @printf '==> Running {{ color-cmd }}udeps{{ nocolor }}\n'
   cargo +nightly udeps
-
-# Check the rust code formatting
-cargo-checkfmt: _check-cmd-cargo-fmt
-  @printf '==> Running {{ color-cmd }}rustfmt{{ nocolor }} --check\n'
-  cargo +nightly fmt --check
 
 ################################################################################
 # Terraform recipes

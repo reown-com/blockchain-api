@@ -1,11 +1,7 @@
 use {
     super::{
-        super::HANDLER_TASK_METRICS,
-        utils::is_timestamp_within_interval,
-        Eip155SupportedChains,
-        RegisterRequest,
-        UpdateAddressPayload,
-        UNIXTIMESTAMP_SYNC_THRESHOLD,
+        super::HANDLER_TASK_METRICS, utils::is_timestamp_within_interval, Eip155SupportedChains,
+        RegisterRequest, UpdateAddressPayload, UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{
         database::{

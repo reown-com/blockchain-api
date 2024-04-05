@@ -3,17 +3,13 @@ use {
         error::{RpcError, RpcResult},
         handlers::convert::{
             approve::{
-                ConvertApproveQueryParams,
-                ConvertApproveResponseBody,
-                ConvertApproveTx,
+                ConvertApproveQueryParams, ConvertApproveResponseBody, ConvertApproveTx,
                 ConvertApproveTxEip155,
             },
             quotes::{ConvertQuoteQueryParams, ConvertQuoteResponseBody, QuoteItem},
             tokens::{TokenItem, TokensListQueryParams, TokensListResponseBody},
             transaction::{
-                ConvertTransactionQueryParams,
-                ConvertTransactionResponseBody,
-                ConvertTx,
+                ConvertTransactionQueryParams, ConvertTransactionResponseBody, ConvertTx,
                 ConvertTxEip155,
             },
         },

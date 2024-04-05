@@ -1,13 +1,7 @@
 use {
     super::{
-        Provider,
-        ProviderKind,
-        RateLimited,
-        RpcProvider,
-        RpcProviderFactory,
-        RpcQueryParams,
-        RpcWsProvider,
-        WS_PROXY_TASK_METRICS,
+        Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams,
+        RpcWsProvider, WS_PROXY_TASK_METRICS,
     },
     crate::{
         env::InfuraConfig,
