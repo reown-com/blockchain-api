@@ -44,7 +44,7 @@ pub struct IdentityResponse {
 pub async fn handler(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
-    query: Query<RpcQueryParams>,
+    query: Query<IdentityQueryParams>,
     path: MatchedPath,
     headers: HeaderMap,
     address: Path<String>,
@@ -58,7 +58,7 @@ pub async fn handler(
 async fn handler_internal(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
-    query: Query<RpcQueryParams>,
+    query: Query<IdentityQueryParams>,
     path: MatchedPath,
     headers: HeaderMap,
     Path(address): Path<String>,
@@ -139,12 +139,18 @@ impl IdentityLookupSource {
     }
 }
 
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct IdentityQueryParams {
+    pub project_id: String,
+}
+
 #[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_identity(
     address: H160,
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
-    Query(query): Query<RpcQueryParams>,
+    Query(query): Query<IdentityQueryParams>,
     path: MatchedPath,
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
