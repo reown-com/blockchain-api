@@ -144,7 +144,7 @@ async fn lookup_identity(
     address: H160,
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
-    query: Query<RpcQueryParams>,
+    Query(query): Query<RpcQueryParams>,
     path: MatchedPath,
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
@@ -159,8 +159,15 @@ async fn lookup_identity(
         }
     }
 
-    let res =
-        lookup_identity_rpc(address, state.clone(), connect_info, query, path, headers).await?;
+    let res = lookup_identity_rpc(
+        address,
+        state.clone(),
+        connect_info,
+        query.project_id,
+        path,
+        headers,
+    )
+    .await?;
 
     if let Some(cache) = &state.identity_cache {
         debug!("Saving to cache");
@@ -188,14 +195,18 @@ async fn lookup_identity_rpc(
     address: H160,
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
-    query: Query<RpcQueryParams>,
+    project_id: String,
     path: MatchedPath,
     headers: HeaderMap,
 ) -> Result<IdentityResponse, RpcError> {
     let provider = Provider::new(SelfProvider {
         state: state.clone(),
         connect_info,
-        query,
+        query: Query(RpcQueryParams {
+            project_id,
+            chain_id: "1".to_string(),
+            provider_id: None,
+        }),
         path,
         headers,
     });
