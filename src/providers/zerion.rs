@@ -31,6 +31,7 @@ use {
     hyper::Client,
     hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
+    tap::TapFallible,
     tracing::log::error,
     url::Url,
 };
@@ -235,7 +236,10 @@ impl HistoryProvider for ZerionProvider {
             "https://api.zerion.io/v1/wallets/{}/transactions/?",
             &address
         );
-        let mut url = Url::parse(&base).map_err(|_| RpcError::HistoryParseCursorError)?;
+        let mut url = Url::parse(&base).map_err(|e| {
+            error!("Error on parsing zerion history url with {}", e);
+            RpcError::HistoryParseCursorError
+        })?;
         url.query_pairs_mut()
             .append_pair("currency", &params.currency.unwrap_or("usd".to_string()));
 
@@ -248,7 +252,10 @@ impl HistoryProvider for ZerionProvider {
             .header("Content-Type", "application/json")
             .header("authorization", format!("Basic {}", self.api_key))
             .send()
-            .await?;
+            .await
+            .tap_err(|e| {
+                error!("Error on request to zerion history endpoint with {}", e);
+            })?;
 
         if !response.status().is_success() {
             error!(
@@ -259,11 +266,17 @@ impl HistoryProvider for ZerionProvider {
         }
         let body = response
             .json::<ZerionResponseBody<Vec<ZerionTransactionsReponseBody>>>()
-            .await?;
+            .await
+            .tap_err(|e| {
+                error!("Error on parsing zerion history body with {}", e);
+            })?;
 
         let next: Option<String> = match body.links.next {
             Some(url) => {
-                let url = Url::parse(&url).map_err(|_| RpcError::HistoryParseCursorError)?;
+                let url = Url::parse(&url).map_err(|e| {
+                    error!("Error on parsing zerion history next url with {}", e);
+                    RpcError::HistoryParseCursorError
+                })?;
                 // Get the "after" query parameter
                 if let Some(after_param) = url.query_pairs().find(|(key, _)| key == "page[after]") {
                     let after_value = after_param.1;
