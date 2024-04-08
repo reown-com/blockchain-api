@@ -68,20 +68,20 @@ impl AppState {
 
     #[tracing::instrument(skip(self), level = "debug")]
     async fn get_project_data_validated(&self, id: &str) -> Result<ProjectData, RpcError> {
-        let project = self
-            .registry
-            .project_data(id)
-            .await
-            .tap_err(|_| self.metrics.add_rejected_project())?;
+        let project = self.registry.project_data(id).await.tap_err(|e| {
+            info!("Denied access for project: {id}, with reason: {e}");
+            self.metrics.add_rejected_project();
+        })?;
 
         project.validate_access(id, None).tap_err(|e| {
-            self.metrics.add_rejected_project();
             info!("Denied access for project: {id}, with reason: {e}");
+            self.metrics.add_rejected_project();
         })?;
 
         Ok(project)
     }
 
+    #[tracing::instrument(skip(self), level = "debug")]
     pub async fn validate_project_access(&self, id: &str) -> Result<(), RpcError> {
         if !self.config.server.validate_project_id {
             return Ok(());
@@ -98,18 +98,20 @@ impl AppState {
 
         let project = self.get_project_data_validated(id).await?;
 
-        validate_project_quota(&project).tap_err(|_| {
-            self.metrics.add_quota_limited_project();
+        validate_project_quota(&project).tap_err(|e| {
             info!(
                 project_id = id,
                 max = project.quota.max,
                 current = project.quota.current,
+                error = ?e,
                 "Quota limit reached"
             );
+            self.metrics.add_quota_limited_project();
         })
     }
 }
 
+#[tracing::instrument(level = "debug")]
 fn validate_project_quota(project_data: &ProjectData) -> Result<(), RpcError> {
     if project_data.quota.is_valid {
         Ok(())

@@ -287,11 +287,13 @@ impl Metrics {
             )])
     }
 
+    #[tracing::instrument(skip(self), level = "debug")]
     pub fn add_rejected_project(&self) {
         self.rejected_project_counter
             .add(&otel::Context::new(), 1, &[])
     }
 
+    #[tracing::instrument(skip(self), level = "debug")]
     pub fn add_quota_limited_project(&self) {
         self.quota_limited_project_counter
             .add(&otel::Context::new(), 1, &[])
