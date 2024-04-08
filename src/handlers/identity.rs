@@ -196,6 +196,8 @@ async fn lookup_identity(
     Ok((IdentityLookupSource::Rpc, res))
 }
 
+pub const ETHEREUM_MAINNET: &str = "1";
+
 #[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_identity_rpc(
     address: H160,
@@ -210,7 +212,8 @@ async fn lookup_identity_rpc(
         connect_info,
         query: Query(RpcQueryParams {
             project_id,
-            chain_id: "1".to_string(),
+            // ENS registry contract is only deployed on mainnet
+            chain_id: ETHEREUM_MAINNET.to_owned(),
             provider_id: None,
         }),
         path,

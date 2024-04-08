@@ -1,5 +1,5 @@
 use {
-    crate::handlers::identity::{IdentityLookupSource, IdentityQueryParams},
+    crate::handlers::identity::{IdentityLookupSource, IdentityQueryParams, ETHEREUM_MAINNET},
     ethers::types::H160,
     parquet_derive::ParquetRecordWriter,
     serde::Serialize,
@@ -51,7 +51,7 @@ impl IdentityLookupInfo {
             latency_secs: latency.as_secs_f64(),
 
             project_id: query_params.project_id.to_owned(),
-            chain_id: "1".to_string(),
+            chain_id: ETHEREUM_MAINNET.to_owned(),
 
             origin,
 
