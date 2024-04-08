@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.48.0 - 2024-04-08
+#### Features
+- **(logging)** improving logging in the transactions history (#613) - (3aaca98) - Max Kalashnikoff
+
+- - -
+
 ## 0.47.0 - 2024-04-08
 #### Features
 - **(logging)** adding additional tracing on project id validation (#612) - (dd7ee6c) - Max Kalashnikoff
