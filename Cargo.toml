@@ -69,7 +69,7 @@ tokio-stream = "0.1.12"
 axum-tungstenite = { git = "https://github.com/Astralchroma/axum-tungstenite", rev = "0906fea" } # https://github.com/davidpdrsn/axum-tungstenite/pull/13
 
 rand = "0.8.4"
-prometheus-http-query = { git = "https://github.com/WalletConnect/prometheus-http-query", branch = "feat/reqwest-v12" } # https://github.com/puetzp/prometheus-http-query/pull/13
+prometheus-http-query = "0.8.3"
 ethers = { version = "2.0.11", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
 
 bytes = "1.4.0"

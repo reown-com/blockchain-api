@@ -3941,8 +3941,9 @@ dependencies = [
 
 [[package]]
 name = "prometheus-http-query"
-version = "0.8.2"
-source = "git+https://github.com/WalletConnect/prometheus-http-query?branch=feat/reqwest-v12#82fa7b4d6df30adf39cb9826081cffbca8374bb5"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fcebfa99f03ae51220778316b37d24981e36322c82c24848f48c5bd0f64cbdb"
 dependencies = [
  "enum-as-inner",
  "mime",
