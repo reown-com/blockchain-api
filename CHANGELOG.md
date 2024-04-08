@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.47.0 - 2024-04-08
+#### Features
+- **(logging)** adding additional tracing on project id validation (#612) - (dd7ee6c) - Max Kalashnikoff
+
+- - -
+
 ## 0.46.0 - 2024-04-05
 #### Features
 - **(providers)** fungible price endpoint implementation (#608) - (33aadff) - Max Kalashnikoff
