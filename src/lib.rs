@@ -79,7 +79,7 @@ use {
 const SERVICE_TASK_TIMEOUT: Duration = Duration::from_secs(15);
 const KEEPALIVE_IDLE_DURATION: Duration = Duration::from_secs(60);
 const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(10);
-const KEEPALIVE_RETRIES: u32 = 1;
+const KEEPALIVE_RETRIES: u32 = 5;
 
 mod analytics;
 pub mod database;
@@ -433,7 +433,8 @@ fn create_server(
         .tcp_keepalive(Some(KEEPALIVE_IDLE_DURATION))
         .tcp_keepalive_interval(Some(KEEPALIVE_INTERVAL))
         .tcp_keepalive_retries(Some(KEEPALIVE_RETRIES))
-        .tcp_sleep_on_accept_errors(false)
+        .tcp_sleep_on_accept_errors(true)
+        .tcp_nodelay(true)
         .serve(app.into_make_service_with_connect_info::<SocketAddr>())
 }
 
