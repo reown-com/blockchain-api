@@ -77,7 +77,7 @@ ENV                 RPC_PROXY_HOST=0.0.0.0
 WORKDIR             /app
 COPY --from=build   /app/target/${binpath:-debug}/rpc-proxy /usr/local/bin/rpc-proxy
 RUN                 apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates libssl-dev \
+    && apt-get install -y --no-install-recommends ca-certificates libssl-dev curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
