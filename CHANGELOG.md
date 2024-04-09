@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.49.0 - 2024-04-09
+#### Bug Fixes
+- **(server)** decreasing keep-alive ping interval (#616) - (c938b92) - Max Kalashnikoff
+#### Features
+- **(monitoring)** using 3 minutes period for 5xx alerts (#614) - (f12cdda) - Max Kalashnikoff
+
+- - -
+
 ## 0.48.0 - 2024-04-08
 #### Features
 - **(logging)** improving logging in the transactions history (#613) - (3aaca98) - Max Kalashnikoff
