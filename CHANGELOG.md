@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.49.1 - 2024-04-09
+#### Bug Fixes
+- **(server)** enabling tcp_nodelay and tcp_sleep_on_accept_errors (#617) - (c875075) - Max Kalashnikoff
+
+- - -
+
 ## 0.49.0 - 2024-04-09
 #### Bug Fixes
 - **(server)** decreasing keep-alive ping interval (#616) - (c938b92) - Max Kalashnikoff
