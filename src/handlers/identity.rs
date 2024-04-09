@@ -45,7 +45,7 @@ pub struct IdentityResponse {
 pub async fn handler(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
-    query: Query<RpcQueryParams>,
+    query: Query<IdentityQueryParams>,
     path: MatchedPath,
     headers: HeaderMap,
     address: Path<String>,
@@ -59,7 +59,7 @@ pub async fn handler(
 async fn handler_internal(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
-    query: Query<RpcQueryParams>,
+    query: Query<IdentityQueryParams>,
     path: MatchedPath,
     headers: HeaderMap,
     Path(address): Path<String>,
@@ -140,12 +140,18 @@ impl IdentityLookupSource {
     }
 }
 
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct IdentityQueryParams {
+    pub project_id: String,
+}
+
 #[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_identity(
     address: H160,
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
-    query: Query<RpcQueryParams>,
+    Query(query): Query<IdentityQueryParams>,
     path: MatchedPath,
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
@@ -184,8 +190,15 @@ async fn lookup_identity(
         }
     }
 
-    let res =
-        lookup_identity_rpc(address, state.clone(), connect_info, query, path, headers).await?;
+    let res = lookup_identity_rpc(
+        address,
+        state.clone(),
+        connect_info,
+        query.project_id,
+        path,
+        headers,
+    )
+    .await?;
 
     if enable_cache {
         if let Some(cache) = &state.identity_cache {
@@ -210,19 +223,26 @@ async fn lookup_identity(
     Ok((IdentityLookupSource::Rpc, res))
 }
 
+pub const ETHEREUM_MAINNET: &str = "1";
+
 #[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_identity_rpc(
     address: H160,
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
-    query: Query<RpcQueryParams>,
+    project_id: String,
     path: MatchedPath,
     headers: HeaderMap,
 ) -> Result<IdentityResponse, RpcError> {
     let provider = Provider::new(SelfProvider {
         state: state.clone(),
         connect_info,
-        query,
+        query: Query(RpcQueryParams {
+            project_id,
+            // ENS registry contract is only deployed on mainnet
+            chain_id: ETHEREUM_MAINNET.to_owned(),
+            provider_id: None,
+        }),
         path,
         headers,
     });
