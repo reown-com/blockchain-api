@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.49.2 - 2024-04-09
+#### Bug Fixes
+- **(Docker)** adding curl to the Docker runtime image (#615) - (c35246b) - Max Kalashnikoff
+- hardcode mainnet (#610) - (d8ed82d) - Chris Smith
+
+- - -
+
 ## 0.49.1 - 2024-04-09
 #### Bug Fixes
 - **(server)** enabling tcp_nodelay and tcp_sleep_on_accept_errors (#617) - (c875075) - Max Kalashnikoff
