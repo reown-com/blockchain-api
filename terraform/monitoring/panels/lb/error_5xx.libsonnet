@@ -23,14 +23,14 @@ local _alert(namespace, env, notifications) = grafana.alert.new(
   message       = '%(env)s - 5XX alert'  % { env: grafana.utils.strings.capitalize(env) },
   notifications = notifications,
   noDataState   = 'no_data',
-  period        = '0m',
+  period        = '3m',
   conditions    = [
     grafana.alertCondition.new(
-      evaluatorParams = [ 2000 ],
+      evaluatorParams = [ 1000 ],
       evaluatorType   = 'gt',
       operatorType    = 'or',
       queryRefId      = 'ELB',
-      queryTimeStart  = '5m',
+      queryTimeStart  = '15m',
       queryTimeEnd    = 'now',
       reducerType     = grafana.alert_reducers.Avg
     ),
@@ -39,7 +39,7 @@ local _alert(namespace, env, notifications) = grafana.alert.new(
       evaluatorType   = 'gt',
       operatorType    = 'or',
       queryRefId      = 'Target',
-      queryTimeStart  = '5m',
+      queryTimeStart  = '15m',
       queryTimeEnd    = 'now',
       reducerType     = grafana.alert_reducers.Avg
     ),
