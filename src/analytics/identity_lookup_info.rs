@@ -1,5 +1,5 @@
 use {
-    crate::handlers::{identity::IdentityLookupSource, RpcQueryParams},
+    crate::handlers::identity::{IdentityLookupSource, IdentityQueryParams, ETHEREUM_MAINNET},
     ethers::types::H160,
     parquet_derive::ParquetRecordWriter,
     serde::Serialize,
@@ -30,7 +30,7 @@ pub struct IdentityLookupInfo {
 impl IdentityLookupInfo {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        query_params: &RpcQueryParams,
+        query_params: &IdentityQueryParams,
         address: H160,
         name_present: bool,
         avatar_present: bool,
@@ -51,7 +51,7 @@ impl IdentityLookupInfo {
             latency_secs: latency.as_secs_f64(),
 
             project_id: query_params.project_id.to_owned(),
-            chain_id: query_params.chain_id.to_lowercase(),
+            chain_id: ETHEREUM_MAINNET.to_owned(),
 
             origin,
 
