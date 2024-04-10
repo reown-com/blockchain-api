@@ -150,9 +150,23 @@ async fn lookup_identity(
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
     let cache_key = format!("{}", address);
 
-    let enable_cache = if let Some(ref testing_project_id) = state.config.server.testing_project_id
-    {
-        !crypto::constant_time_eq(testing_project_id, &query.project_id)
+    // Check if we should enable cache control for allow listed Project ID
+    // The cache is enabled by default
+    let enable_cache = if let Some(use_cache) = query.use_cache {
+        if let Some(ref testing_project_id) = state.config.server.testing_project_id {
+            if crypto::constant_time_eq(testing_project_id, &query.project_id) {
+                use_cache
+            } else {
+                return Err(RpcError::InvalidParameter(format!(
+                    "The project ID {} is not allowed to use `use_cache` parameter",
+                    query.project_id
+                )));
+            }
+        } else {
+            return Err(RpcError::InvalidParameter(
+                "Use of `use_cache` parameter is disabled".into(),
+            ));
+        }
     } else {
         true
     };
