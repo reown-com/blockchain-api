@@ -125,6 +125,12 @@ pub enum RpcError {
     #[error("invalid parameter: {0}")]
     InvalidParameter(String),
 
+    #[error("contract execution reverted")]
+    ContractExecutionReverted,
+
+    #[error("method not allowed: {0}")]
+    MethodNotAllowed(String),
+
     // Profile names errors
     #[error("Name is already registered: {0}")]
     NameAlreadyRegistered(String),
@@ -252,6 +258,22 @@ impl IntoResponse for RpcError {
                 .into_response(),
             Self::InvalidParameter(e) => (
                 StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "".to_string(),
+                    format!("Invalid parameter: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::ContractExecutionReverted => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Contract returned execution reverted".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::MethodNotAllowed(e) => (
+                StatusCode::METHOD_NOT_ALLOWED,
                 Json(new_error_response(
                     "".to_string(),
                     format!("Invalid parameter: {}", e),
