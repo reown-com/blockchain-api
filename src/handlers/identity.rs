@@ -172,22 +172,24 @@ async fn lookup_identity(
     let res =
         lookup_identity_rpc(address, state.clone(), connect_info, query, path, headers).await?;
 
-    if let Some(cache) = &state.identity_cache {
-        debug!("Saving to cache");
-        let cache = cache.clone();
-        let res = res.clone();
-        let cache_ttl = Duration::from_secs(60 * 60 * 24);
-        // Do not block on cache write.
-        tokio::spawn(async move {
-            cache
-                .set(&cache_key, &res, Some(cache_ttl))
-                .await
-                .tap_err(|err| {
-                    warn!("failed to cache identity lookup (cache_key:{cache_key}): {err:?}")
-                })
-                .ok();
-            debug!("Setting cache success");
-        });
+    if enable_cache {
+        if let Some(cache) = &state.identity_cache {
+            debug!("Saving to cache");
+            let cache = cache.clone();
+            let res = res.clone();
+            let cache_ttl = Duration::from_secs(60 * 60 * 24);
+            // Do not block on cache write.
+            tokio::spawn(async move {
+                cache
+                    .set(&cache_key, &res, Some(cache_ttl))
+                    .await
+                    .tap_err(|err| {
+                        warn!("failed to cache identity lookup (cache_key:{cache_key}): {err:?}")
+                    })
+                    .ok();
+                debug!("Setting cache success");
+            });
+        }
     }
 
     Ok((IdentityLookupSource::Rpc, res))
