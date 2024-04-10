@@ -253,18 +253,12 @@ async fn lookup_name(
                     Err(RpcError::QuotaLimitReached)
                 } else if error_detail.contains("503 Service Unavailable") {
                     Err(RpcError::ProviderError)
-                } else if error_detail.contains("405 Method Not Allowed JSON-RPC result is 0x") {
-                    Err(RpcError::MethodNotAllowed(
-                        "JSON-RPC result is 0x".to_string(),
-                    ))
-                } else if error_detail.contains("execution reverted") {
-                    Err(RpcError::ContractExecutionReverted)
                 } else {
                     Err(RpcError::NameLookup(error_detail.to_string()))
                 }
             }
             ProviderError::CustomError(e) => {
-                debug!("Error while looking up name: {:?}", e);
+                debug!("Custom error while looking up name: {:?}", e);
                 Ok(None)
             }
             _ => {
