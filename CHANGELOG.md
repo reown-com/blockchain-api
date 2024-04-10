@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.49.3 - 2024-04-10
+#### Bug Fixes
+- **(revert)** hardcode mainnet (#610) (#618) - (1bde8e5) - Max Kalashnikoff
+
+- - -
+
 ## 0.49.2 - 2024-04-09
 #### Bug Fixes
 - **(Docker)** adding curl to the Docker runtime image (#615) - (c35246b) - Max Kalashnikoff
