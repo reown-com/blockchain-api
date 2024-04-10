@@ -6,7 +6,7 @@ use {
         json_rpc::{JsonRpcError, JsonRpcResponse},
         project::ProjectDataError,
         state::AppState,
-        utils::network,
+        utils::{crypto, network},
     },
     async_trait::async_trait,
     axum::{
@@ -149,13 +149,23 @@ async fn lookup_identity(
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
     let cache_key = format!("{}", address);
-    if let Some(cache) = &state.identity_cache {
-        debug!("Checking cache for identity");
-        let cache_start = SystemTime::now();
-        let value = cache.get(&cache_key).await?;
-        state.metrics.add_identity_lookup_cache_latency(cache_start);
-        if let Some(response) = value {
-            return Ok((IdentityLookupSource::Cache, response));
+
+    let enable_cache = if let Some(ref testing_project_id) = state.config.server.testing_project_id
+    {
+        !crypto::constant_time_eq(testing_project_id, &query.project_id)
+    } else {
+        true
+    };
+
+    if enable_cache {
+        if let Some(cache) = &state.identity_cache {
+            debug!("Checking cache for identity");
+            let cache_start = SystemTime::now();
+            let value = cache.get(&cache_key).await?;
+            state.metrics.add_identity_lookup_cache_latency(cache_start);
+            if let Some(response) = value {
+                return Ok((IdentityLookupSource::Cache, response));
+            }
         }
     }
 
