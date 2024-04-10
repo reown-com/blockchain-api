@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.49.4 - 2024-04-10
+#### Bug Fixes
+- **(identity)** handling properly errors in RPC call response (#620) - (7c41c6f) - Max Kalashnikoff
+
+- - -
+
 ## 0.49.3 - 2024-04-10
 #### Bug Fixes
 - **(revert)** hardcode mainnet (#610) (#618) - (1bde8e5) - Max Kalashnikoff
