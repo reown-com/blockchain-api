@@ -243,17 +243,29 @@ async fn lookup_name(
     address: Address,
 ) -> Result<Option<String>, RpcError> {
     provider.lookup_address(address).await.map_or_else(
-        |e| match e {
-            ProviderError::CustomError(e)
-                if &e == "SelfProviderError: RpcError: ProjectDataError(NotFound)" =>
-            {
-                Err(RpcError::ProjectDataError(ProjectDataError::NotFound))
+        |error| match error {
+            ProviderError::CustomError(e) if e.starts_with(SELF_PROVIDER_ERROR_PREFIX) => {
+                let error_detail = e.trim_start_matches(SELF_PROVIDER_ERROR_PREFIX);
+                // Exceptions for the detailed HTTP error return on RPC call
+                if error_detail.contains("ProjectDataError(NotFound)") {
+                    Err(RpcError::ProjectDataError(ProjectDataError::NotFound))
+                } else if error_detail.contains("QuotaLimitReached") {
+                    Err(RpcError::QuotaLimitReached)
+                } else if error_detail.contains("503 Service Unavailable") {
+                    Err(RpcError::ProviderError)
+                } else {
+                    Err(RpcError::NameLookup(error_detail.to_string()))
+                }
             }
-            ProviderError::CustomError(e) if e.starts_with(SELF_PROVIDER_ERROR_PREFIX) => Err(
-                RpcError::NameLookup(e[SELF_PROVIDER_ERROR_PREFIX.len()..].to_string()),
-            ),
-            e => {
-                debug!("Error while looking up name: {e:?}");
+            ProviderError::CustomError(e) => {
+                debug!("Custom error while looking up name: {:?}", e);
+                Ok(None)
+            }
+            _ => {
+                debug!(
+                    "Non-matching provider error while looking up name: {:?}",
+                    error
+                );
                 Ok(None)
             }
         },
