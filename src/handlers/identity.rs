@@ -6,7 +6,7 @@ use {
         json_rpc::{JsonRpcError, JsonRpcResponse},
         project::ProjectDataError,
         state::AppState,
-        utils::network,
+        utils::{crypto, network},
     },
     async_trait::async_trait,
     axum::{
@@ -150,35 +150,61 @@ async fn lookup_identity(
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
     let cache_key = format!("{}", address);
-    if let Some(cache) = &state.identity_cache {
-        debug!("Checking cache for identity");
-        let cache_start = SystemTime::now();
-        let value = cache.get(&cache_key).await?;
-        state.metrics.add_identity_lookup_cache_latency(cache_start);
-        if let Some(response) = value {
-            return Ok((IdentityLookupSource::Cache, response));
+
+    // Check if we should enable cache control for allow listed Project ID
+    // The cache is enabled by default
+    let enable_cache = if let Some(use_cache) = query.use_cache {
+        if let Some(ref testing_project_id) = state.config.server.testing_project_id {
+            if crypto::constant_time_eq(testing_project_id, &query.project_id) {
+                use_cache
+            } else {
+                return Err(RpcError::InvalidParameter(format!(
+                    "The project ID {} is not allowed to use `use_cache` parameter",
+                    query.project_id
+                )));
+            }
+        } else {
+            return Err(RpcError::InvalidParameter(
+                "Use of `use_cache` parameter is disabled".into(),
+            ));
+        }
+    } else {
+        true
+    };
+
+    if enable_cache {
+        if let Some(cache) = &state.identity_cache {
+            debug!("Checking cache for identity");
+            let cache_start = SystemTime::now();
+            let value = cache.get(&cache_key).await?;
+            state.metrics.add_identity_lookup_cache_latency(cache_start);
+            if let Some(response) = value {
+                return Ok((IdentityLookupSource::Cache, response));
+            }
         }
     }
 
     let res =
         lookup_identity_rpc(address, state.clone(), connect_info, query, path, headers).await?;
 
-    if let Some(cache) = &state.identity_cache {
-        debug!("Saving to cache");
-        let cache = cache.clone();
-        let res = res.clone();
-        let cache_ttl = Duration::from_secs(60 * 60 * 24);
-        // Do not block on cache write.
-        tokio::spawn(async move {
-            cache
-                .set(&cache_key, &res, Some(cache_ttl))
-                .await
-                .tap_err(|err| {
-                    warn!("failed to cache identity lookup (cache_key:{cache_key}): {err:?}")
-                })
-                .ok();
-            debug!("Setting cache success");
-        });
+    if enable_cache {
+        if let Some(cache) = &state.identity_cache {
+            debug!("Saving to cache");
+            let cache = cache.clone();
+            let res = res.clone();
+            let cache_ttl = Duration::from_secs(60 * 60 * 24);
+            // Do not block on cache write.
+            tokio::spawn(async move {
+                cache
+                    .set(&cache_key, &res, Some(cache_ttl))
+                    .await
+                    .tap_err(|err| {
+                        warn!("failed to cache identity lookup (cache_key:{cache_key}): {err:?}")
+                    })
+                    .ok();
+                debug!("Setting cache success");
+            });
+        }
     }
 
     Ok((IdentityLookupSource::Rpc, res))
