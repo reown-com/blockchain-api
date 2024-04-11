@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.49.6 - 2024-04-11
+#### Bug Fixes
+- disable cache for testing project ID (#619) - (4001ff5) - Chris Smith
+
+- - -
+
 ## 0.49.5 - 2024-04-11
 #### Bug Fixes
 - **(identity)** proper rpc errors handling in avatar lookup (#621) - (3df2e41) - Max Kalashnikoff
