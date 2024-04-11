@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.49.7 - 2024-04-11
+#### Bug Fixes
+- **(identity)** hardcode ethereum mainnet (#622) - (378b28c) - Max Kalashnikoff
+
+- - -
+
 ## 0.49.6 - 2024-04-11
 #### Bug Fixes
 - disable cache for testing project ID (#619) - (4001ff5) - Chris Smith
