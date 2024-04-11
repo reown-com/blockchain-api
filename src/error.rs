@@ -107,11 +107,8 @@ pub enum RpcError {
     #[error("Failed to parse provider cursor")]
     HistoryParseCursorError,
 
-    #[error("Name lookup error: {0}")]
-    NameLookup(String),
-
-    #[error("Avatar lookup error: {0}")]
-    AvatarLookup(String),
+    #[error("Identity lookup error: {0}")]
+    IdentityLookup(String),
 
     #[error("Quota limit reached")]
     QuotaLimitReached,
