@@ -145,6 +145,9 @@ impl IdentityLookupSource {
 #[serde(rename_all = "camelCase")]
 pub struct IdentityQueryParams {
     pub project_id: String,
+    /// Optional flag to control the cache to fetch the data from the provider
+    /// or serve from the cache where applicable
+    pub use_cache: Option<bool>,
 }
 
 #[tracing::instrument(skip_all, level = "debug")]
