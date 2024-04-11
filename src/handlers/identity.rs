@@ -34,6 +34,7 @@ use {
 
 const SELF_PROVIDER_ERROR_PREFIX: &str = "SelfProviderError: ";
 const EMPTY_RPC_RESPONSE: &str = "0x";
+pub const ETHEREUM_MAINNET: &str = "eip155:1";
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -222,8 +223,6 @@ async fn lookup_identity(
 
     Ok((IdentityLookupSource::Rpc, res))
 }
-
-pub const ETHEREUM_MAINNET: &str = "1";
 
 #[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_identity_rpc(
