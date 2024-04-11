@@ -32,6 +32,7 @@ use {
     wc::future::FutureExt,
 };
 
+const SELF_PROVIDER_ERROR_PREFIX: &str = "SelfProviderError: ";
 const EMPTY_RPC_RESPONSE: &str = "0x";
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
@@ -235,7 +236,35 @@ async fn lookup_identity_rpc(
     Ok(IdentityResponse { name, avatar })
 }
 
-const SELF_PROVIDER_ERROR_PREFIX: &str = "SelfProviderError: ";
+#[tracing::instrument(level = "debug")]
+pub fn handle_rpc_error(error: ProviderError) -> Result<(), RpcError> {
+    match error {
+        ProviderError::CustomError(e) if e.starts_with(SELF_PROVIDER_ERROR_PREFIX) => {
+            let error_detail = e.trim_start_matches(SELF_PROVIDER_ERROR_PREFIX);
+            // Exceptions for the detailed HTTP error return on RPC call
+            if error_detail.contains("ProjectDataError(NotFound)") {
+                Err(RpcError::ProjectDataError(ProjectDataError::NotFound))
+            } else if error_detail.contains("QuotaLimitReached") {
+                Err(RpcError::QuotaLimitReached)
+            } else if error_detail.contains("503 Service Unavailable") {
+                Err(RpcError::ProviderError)
+            } else {
+                Err(RpcError::IdentityLookup(error_detail.to_string()))
+            }
+        }
+        ProviderError::CustomError(e) => {
+            debug!("Custom error while looking up identity: {:?}", e);
+            Ok(())
+        }
+        _ => {
+            debug!(
+                "Non-matching provider error while looking up identity: {:?}",
+                error
+            );
+            Ok(())
+        }
+    }
+}
 
 #[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_name(
@@ -243,31 +272,9 @@ async fn lookup_name(
     address: Address,
 ) -> Result<Option<String>, RpcError> {
     provider.lookup_address(address).await.map_or_else(
-        |error| match error {
-            ProviderError::CustomError(e) if e.starts_with(SELF_PROVIDER_ERROR_PREFIX) => {
-                let error_detail = e.trim_start_matches(SELF_PROVIDER_ERROR_PREFIX);
-                // Exceptions for the detailed HTTP error return on RPC call
-                if error_detail.contains("ProjectDataError(NotFound)") {
-                    Err(RpcError::ProjectDataError(ProjectDataError::NotFound))
-                } else if error_detail.contains("QuotaLimitReached") {
-                    Err(RpcError::QuotaLimitReached)
-                } else if error_detail.contains("503 Service Unavailable") {
-                    Err(RpcError::ProviderError)
-                } else {
-                    Err(RpcError::NameLookup(error_detail.to_string()))
-                }
-            }
-            ProviderError::CustomError(e) => {
-                debug!("Custom error while looking up name: {:?}", e);
-                Ok(None)
-            }
-            _ => {
-                debug!(
-                    "Non-matching provider error while looking up name: {:?}",
-                    error
-                );
-                Ok(None)
-            }
+        |error| match handle_rpc_error(error) {
+            Ok(_) => Ok(None),
+            Err(e) => Err(e),
         },
         |name| Ok(Some(name)),
     )
@@ -283,19 +290,9 @@ async fn lookup_avatar(
         .await
         .map(|url| url.to_string())
         .map_or_else(
-            |e| match e {
-                ProviderError::CustomError(e)
-                    if &e == "SelfProviderError: RpcError: ProjectDataError(NotFound)" =>
-                {
-                    Err(RpcError::ProjectDataError(ProjectDataError::NotFound))
-                }
-                ProviderError::CustomError(e) if e.starts_with(SELF_PROVIDER_ERROR_PREFIX) => Err(
-                    RpcError::AvatarLookup(e[SELF_PROVIDER_ERROR_PREFIX.len()..].to_string()),
-                ),
-                e => {
-                    debug!("Error while looking up avatar: {e:?}");
-                    Ok(None)
-                }
+            |error| match handle_rpc_error(error) {
+                Ok(_) => Ok(None),
+                Err(e) => Err(e),
             },
             |avatar| Ok(Some(avatar)),
         )
