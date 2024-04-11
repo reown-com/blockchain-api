@@ -7,7 +7,7 @@ describe('Identity', () => {
 
   it('known ens with the cache enabled (default)', async () => {
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/identity/${knownAddress}?chainId=eip155%3A1&projectId=${projectId}`,
+      `${baseUrl}/v1/identity/${knownAddress}?projectId=${projectId}`,
     )
     expect(resp.status).toBe(200)
     expect(resp.data.name).toBe('cyberdrk.eth')
@@ -29,7 +29,7 @@ describe('Identity', () => {
   })
   it('unknown ens', async () => {
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/identity/${unknownAddress}?chainId=eip155%3A1&projectId=${projectId}`,
+      `${baseUrl}/v1/identity/${unknownAddress}?projectId=${projectId}`,
     )
     expect(resp.status).toBe(200)
     expect(resp.data.name).toBe(null)

@@ -36,9 +36,6 @@ pub struct RpcQueryParams {
     pub project_id: String,
     /// Optional provider ID for the exact provider request
     pub provider_id: Option<String>,
-    /// Optional flag to control the cache to fetch the data from the provider
-    /// or serve from the cache where applicable
-    pub use_cache: Option<bool>,
 }
 
 #[derive(Serialize)]
