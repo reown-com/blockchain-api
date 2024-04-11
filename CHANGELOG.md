@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.49.5 - 2024-04-11
+#### Bug Fixes
+- **(identity)** proper rpc errors handling in avatar lookup (#621) - (3df2e41) - Max Kalashnikoff
+
+- - -
+
 ## 0.49.4 - 2024-04-10
 #### Bug Fixes
 - **(identity)** handling properly errors in RPC call response (#620) - (7c41c6f) - Max Kalashnikoff
