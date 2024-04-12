@@ -202,7 +202,8 @@ impl ProviderRepository {
     pub fn get_provider_for_chain_id(
         &self,
         chain_id: &str,
-    ) -> Result<Arc<dyn RpcProvider>, RpcError> {
+        max_providers: usize,
+    ) -> Result<Vec<Arc<dyn RpcProvider>>, RpcError> {
         let Some(providers) = self.weight_resolver.get(chain_id) else {
             return Err(RpcError::UnsupportedChain(chain_id.to_string()));
         };
@@ -213,29 +214,43 @@ impl ProviderRepository {
 
         let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.value()).collect();
         let keys = providers.keys().cloned().collect::<Vec<_>>();
+
+        let mut providers_result = vec![];
+
+        let providers_to_iterate = if max_providers > providers.len() {
+            providers.len()
+        } else {
+            max_providers
+        };
+
         match WeightedIndex::new(weights) {
             Ok(dist) => {
-                let random = dist.sample(&mut OsRng);
-                let provider = keys.get(random).ok_or_else(|| {
-                    error!("Failed to get random provider for chain_id: {}", chain_id);
-                    RpcError::UnsupportedChain(chain_id.to_string())
-                })?;
+                for _ in 0..providers_to_iterate {
+                    let provider = keys.get(dist.sample(&mut OsRng)).ok_or_else(|| {
+                        error!("Failed to get random provider for chain_id: {}", chain_id);
+                        RpcError::UnsupportedChain(chain_id.to_string())
+                    })?;
 
-                self.providers.get(provider).cloned().ok_or_else(|| {
-                    error!(
-                        "Provider not found during the weighted index check: {}",
-                        provider
-                    );
-                    RpcError::UnsupportedProvider(provider.to_string())
-                })
+                    providers_result.push(self.providers.get(provider).cloned().ok_or_else(
+                        || {
+                            error!(
+                                "Provider not found during the weighted index check: {}",
+                                provider
+                            );
+                            RpcError::UnsupportedProvider(provider.to_string())
+                        },
+                    )?);
+                }
             }
             Err(e) => {
                 // Respond with temporarily unavailable when all weights are 0 for
                 // a chain providers
                 warn!("Failed to create weighted index: {}", e);
-                Err(RpcError::ChainTemporarilyUnavailable(chain_id.to_string()))
+                return Err(RpcError::ChainTemporarilyUnavailable(chain_id.to_string()));
             }
-        }
+        };
+
+        Ok(providers_result)
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
