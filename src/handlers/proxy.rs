@@ -86,7 +86,7 @@ async fn handler_internal(
             .get_provider_for_chain_id(&chain_id, RPC_MAX_RETRIES)?,
     };
 
-    for provider in providers {
+    for (i, provider) in providers.iter().enumerate() {
         let response = rpc_call(
             state.clone(),
             addr,
@@ -109,9 +109,11 @@ async fn handler_internal(
                     );
                     continue;
                 }
+                state.metrics.add_rpc_call_retries(i as u64, chain_id);
                 return Ok(response);
             }
             Err(e) => {
+                state.metrics.add_rpc_call_retries(i as u64, chain_id);
                 return Err(e);
             }
         }

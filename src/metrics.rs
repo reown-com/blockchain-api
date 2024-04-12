@@ -24,6 +24,7 @@ use {
 #[derive(Debug)]
 pub struct Metrics {
     pub rpc_call_counter: Counter<u64>,
+    pub rpc_call_retries: Histogram<u64>,
     pub http_call_counter: Counter<u64>,
     pub provider_finished_call_counter: Counter<u64>,
     pub provider_failed_call_counter: Counter<u64>,
@@ -68,6 +69,11 @@ impl Metrics {
         let rpc_call_counter = meter
             .u64_counter("rpc_call_counter")
             .with_description("The number of rpc calls served")
+            .init();
+
+        let rpc_call_retries = meter
+            .u64_histogram("rpc_call_retries")
+            .with_description("Retries per RPC call")
             .init();
 
         let http_call_counter = meter
@@ -222,6 +228,7 @@ impl Metrics {
 
         Metrics {
             rpc_call_counter,
+            rpc_call_retries,
             http_call_counter,
             http_external_latency_tracker,
             http_latency_tracker,
@@ -262,6 +269,13 @@ impl Metrics {
             .add(&otel::Context::new(), 1, &[otel::KeyValue::new(
                 "chain.id", chain_id,
             )]);
+    }
+
+    pub fn add_rpc_call_retries(&self, retires_count: u64, chain_id: String) {
+        self.rpc_call_retries
+            .record(&otel::Context::new(), retires_count, &[
+                otel::KeyValue::new("chain_id", chain_id),
+            ])
     }
 
     pub fn add_http_call(&self, code: u16, route: String) {
