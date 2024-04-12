@@ -4,7 +4,6 @@ use {
         analytics::IdentityLookupInfo,
         error::RpcError,
         json_rpc::{JsonRpcError, JsonRpcResponse},
-        project::ProjectDataError,
         state::AppState,
         utils::{crypto, network},
     },
@@ -65,8 +64,11 @@ async fn handler_internal(
     headers: HeaderMap,
     Path(address): Path<String>,
 ) -> Result<Response, RpcError> {
-    let start = SystemTime::now();
+    state
+        .validate_project_access_and_quota(&query.project_id)
+        .await?;
 
+    let start = SystemTime::now();
     let address = address
         .parse::<Address>()
         .map_err(|_| RpcError::InvalidAddress)?;
@@ -290,11 +292,7 @@ pub fn handle_rpc_error(error: ProviderError) -> Result<(), RpcError> {
         ProviderError::CustomError(e) if e.starts_with(SELF_PROVIDER_ERROR_PREFIX) => {
             let error_detail = e.trim_start_matches(SELF_PROVIDER_ERROR_PREFIX);
             // Exceptions for the detailed HTTP error return on RPC call
-            if error_detail.contains("ProjectDataError(NotFound)") {
-                Err(RpcError::ProjectDataError(ProjectDataError::NotFound))
-            } else if error_detail.contains("QuotaLimitReached") {
-                Err(RpcError::QuotaLimitReached)
-            } else if error_detail.contains("503 Service Unavailable") {
+            if error_detail.contains("503 Service Unavailable") {
                 Err(RpcError::ProviderError)
             } else {
                 Err(RpcError::IdentityLookup(error_detail.to_string()))
