@@ -47,10 +47,6 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ("mainnet".into(), Weight::new(Priority::Max).unwrap()),
         ),
         (
-            "eip155:5".into(),
-            ("goerli".into(), Weight::new(Priority::Normal).unwrap()),
-        ),
-        (
             "eip155:11155111".into(),
             ("sepolia".into(), Weight::new(Priority::Normal).unwrap()),
         ),
@@ -92,13 +88,6 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::High).unwrap(),
             ),
         ),
-        (
-            "eip155:80001".into(),
-            (
-                "polygon-mumbai".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
-        ),
         // Celo
         (
             "eip155:42220".into(),
@@ -118,10 +107,6 @@ fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
         (
             "eip155:1".into(),
             ("mainnet".into(), Weight::new(Priority::Normal).unwrap()),
-        ),
-        (
-            "eip155:5".into(),
-            ("goerli".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         (
             "eip155:11155111".into(),
