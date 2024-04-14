@@ -96,6 +96,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Linea Mainnet
+        (
+            "eip155:59144".into(),
+            (
+                "linea-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
     ])
 }
 
