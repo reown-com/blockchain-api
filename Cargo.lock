@@ -64,7 +64,7 @@ dependencies = [
 [[package]]
 name = "alloc"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?branch=feat/axum-0.7#05eab9f9baa88fa5da22c02e79aba44a537e8004"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
 dependencies = [
  "metrics",
  "serde",
@@ -98,7 +98,7 @@ checksum = "0942ffc6dcaadf03badf6e6a2d0228460359d5e34b57ccdc720b7382dfbd5ec5"
 [[package]]
 name = "analytics"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?branch=feat/axum-0.7#05eab9f9baa88fa5da22c02e79aba44a537e8004"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2079,7 +2079,7 @@ checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 [[package]]
 name = "future"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?branch=feat/axum-0.7#05eab9f9baa88fa5da22c02e79aba44a537e8004"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
 dependencies = [
  "metrics",
  "pin-project",
@@ -2231,7 +2231,7 @@ dependencies = [
 [[package]]
 name = "geoip"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?branch=feat/axum-0.7#05eab9f9baa88fa5da22c02e79aba44a537e8004"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
 dependencies = [
  "aws-sdk-s3",
  "axum-client-ip",
@@ -2452,7 +2452,7 @@ dependencies = [
 [[package]]
 name = "http"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?branch=feat/axum-0.7#05eab9f9baa88fa5da22c02e79aba44a537e8004"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
 dependencies = [
  "future",
  "hyper 1.2.0",
@@ -3053,7 +3053,7 @@ checksum = "6c8640c5d730cb13ebd907d8d04b52f55ac9a2eec55b440c8892f40d56c76c1d"
 [[package]]
 name = "metrics"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?branch=feat/axum-0.7#05eab9f9baa88fa5da22c02e79aba44a537e8004"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
 dependencies = [
  "once_cell",
  "opentelemetry",
@@ -4067,7 +4067,7 @@ dependencies = [
 [[package]]
 name = "rate_limit"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?branch=feat/axum-0.7#05eab9f9baa88fa5da22c02e79aba44a537e8004"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
 dependencies = [
  "chrono",
  "deadpool-redis",
@@ -6229,7 +6229,7 @@ checksum = "af190c94f2773fdb3729c55b007a722abb5384da03bc0986df4c289bf5567e96"
 [[package]]
 name = "wc"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?branch=feat/axum-0.7#05eab9f9baa88fa5da22c02e79aba44a537e8004"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
 dependencies = [
  "alloc",
  "analytics",
