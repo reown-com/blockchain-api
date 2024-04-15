@@ -1,5 +1,5 @@
 use {
-    super::{RpcQueryParams, HANDLER_TASK_METRICS},
+    super::{proxy::rpc_call, RpcQueryParams, HANDLER_TASK_METRICS},
     crate::{
         analytics::IdentityLookupInfo,
         error::RpcError,
@@ -9,7 +9,7 @@ use {
     },
     async_trait::async_trait,
     axum::{
-        extract::{ConnectInfo, MatchedPath, Path, Query, State},
+        extract::{ConnectInfo, Path, Query, State},
         response::{IntoResponse, Response},
         Json,
     },
@@ -46,11 +46,10 @@ pub async fn handler(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
     query: Query<IdentityQueryParams>,
-    path: MatchedPath,
     headers: HeaderMap,
     address: Path<String>,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, connect_info, query, path, headers, address)
+    handler_internal(state, connect_info, query, headers, address)
         .with_metrics(HANDLER_TASK_METRICS.with_name("identity"))
         .await
 }
@@ -60,7 +59,6 @@ async fn handler_internal(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
     query: Query<IdentityQueryParams>,
-    path: MatchedPath,
     headers: HeaderMap,
     Path(address): Path<String>,
 ) -> Result<Response, RpcError> {
@@ -78,7 +76,6 @@ async fn handler_internal(
         state.clone(),
         connect_info,
         query.clone(),
-        path,
         headers.clone(),
     )
     .await;
@@ -155,10 +152,9 @@ pub struct IdentityQueryParams {
 #[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_identity(
     address: H160,
-    state: State<Arc<AppState>>,
-    connect_info: ConnectInfo<SocketAddr>,
+    State(state): State<Arc<AppState>>,
+    ConnectInfo(connect_info): ConnectInfo<SocketAddr>,
     Query(query): Query<IdentityQueryParams>,
-    path: MatchedPath,
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
     let cache_key = format!("{}", address);
@@ -201,7 +197,6 @@ async fn lookup_identity(
         state.clone(),
         connect_info,
         query.project_id,
-        path,
         headers,
     )
     .await?;
@@ -232,22 +227,20 @@ async fn lookup_identity(
 #[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_identity_rpc(
     address: H160,
-    state: State<Arc<AppState>>,
-    connect_info: ConnectInfo<SocketAddr>,
+    state: Arc<AppState>,
+    connect_info: SocketAddr,
     project_id: String,
-    path: MatchedPath,
     headers: HeaderMap,
 ) -> Result<IdentityResponse, RpcError> {
     let provider = Provider::new(SelfProvider {
         state: state.clone(),
         connect_info,
-        query: Query(RpcQueryParams {
+        query: RpcQueryParams {
             project_id,
             // ENS registry contract is only deployed on mainnet
             chain_id: ETHEREUM_MAINNET.to_owned(),
             provider_id: None,
-        }),
-        path,
+        },
         headers,
     });
 
@@ -345,10 +338,9 @@ async fn lookup_avatar(
 }
 
 struct SelfProvider {
-    state: State<Arc<AppState>>,
-    connect_info: ConnectInfo<SocketAddr>,
-    query: Query<RpcQueryParams>,
-    path: MatchedPath,
+    state: Arc<AppState>,
+    connect_info: SocketAddr,
+    query: RpcQueryParams,
     headers: HeaderMap,
 }
 
@@ -424,11 +416,10 @@ impl JsonRpcClient for SelfProvider {
             .as_millis()
             .to_string();
 
-        let response = super::proxy::handler(
+        let response = rpc_call(
             self.state.clone(),
             self.connect_info,
             self.query.clone(),
-            self.path.clone(),
             self.headers.clone(),
             serde_json::to_vec(&JsonRpcRequest {
                 id,
