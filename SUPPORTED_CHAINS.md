@@ -12,7 +12,7 @@ Chain name with associated `chainId` query param to use.
 | Binance Smart Chain Testnet <sup>[1](#footnote1)</sup>   | eip155:97            |
 | Gnosis Chain                                             | eip155:100           |
 | Polygon                                                  | eip155:137           |
-| zkSync Era Testnet <sup>[1](#footnote1)</sup>            | eip155:280           |
+| zkSync Era Sepolia Testnet <sup>[1](#footnote1)</sup>    | eip155:300           |
 | zkSync Era                                               | eip155:324           |
 | Polygon Zkevm                                            | eip155:1101          |
 | Mantle <sup>[1](#footnote1)</sup>                        | eip155:5000          |

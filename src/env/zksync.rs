@@ -35,11 +35,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     // Keep in-sync with SUPPORTED_CHAINS.md
 
     HashMap::from([
-        // zkSync Testnet
+        // zkSync Sepolia Testnet
         (
-            "eip155:280".into(),
+            "eip155:300".into(),
             (
-                "https://zksync2-testnet.zksync.dev".into(),
+                "https://sepolia.era.zksync.dev".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
