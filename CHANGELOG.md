@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.51.2 - 2024-04-15
+#### Bug Fixes
+- **(providers)** removing zkSync Goerli testnet, adding Sepolia instead (#627) - (7c34fcc) - Max Kalashnikoff
+
+- - -
+
 ## 0.51.1 - 2024-04-15
 #### Bug Fixes
 - **(weights)** excluding zero weight providers from iteration (#628) - (f9a219d) - Max Kalashnikoff
