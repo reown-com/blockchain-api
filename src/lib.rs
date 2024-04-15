@@ -207,6 +207,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         http::header::ACCESS_CONTROL_REQUEST_HEADERS,
         HeaderName::from_static("solana-client"),
         HeaderName::from_static("sec-fetch-mode"),
+        HeaderName::from_static("x-sdk-type"),
+        HeaderName::from_static("x-sdk-version"),
     ]);
 
     let proxy_state = state_arc.clone();
