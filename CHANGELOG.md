@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.50.0 - 2024-04-15
+#### Features
+- **(providers)** adding Linea mainnet to supported chains (#626) - (0ef85ae) - Max Kalashnikoff
+
+- - -
+
 ## 0.49.8 - 2024-04-15
 #### Bug Fixes
 - **(providers)** removing Goerli and Mumbai chains (#625) - (dfd07c1) - Max Kalashnikoff
