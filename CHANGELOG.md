@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.51.0 - 2024-04-15
+#### Features
+- **(rpc)** adding rpc call retrying (#624) - (f0a1f7e) - Max Kalashnikoff
+
+- - -
+
 ## 0.50.0 - 2024-04-15
 #### Features
 - **(providers)** adding Linea mainnet to supported chains (#626) - (0ef85ae) - Max Kalashnikoff
