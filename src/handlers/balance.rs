@@ -7,6 +7,7 @@ use {
         Json,
     },
     ethers::abi::Address,
+    hyper::HeaderMap,
     serde::{Deserialize, Serialize},
     std::{fmt::Display, sync::Arc},
     tap::TapFallible,
@@ -84,9 +85,10 @@ pub struct BalanceQuantity {
 pub async fn handler(
     state: State<Arc<AppState>>,
     query: Query<BalanceQueryParams>,
+    headers: HeaderMap,
     address: Path<String>,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, query, address)
+    handler_internal(state, query, headers, address)
         .with_metrics(HANDLER_TASK_METRICS.with_name("balance"))
         .await
 }
@@ -95,6 +97,7 @@ pub async fn handler(
 async fn handler_internal(
     state: State<Arc<AppState>>,
     query: Query<BalanceQueryParams>,
+    headers: HeaderMap,
     Path(address): Path<String>,
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
@@ -103,6 +106,13 @@ async fn handler_internal(
         .map_err(|_| RpcError::InvalidAddress)?;
 
     state.validate_project_access_and_quota(&project_id).await?;
+
+    // if headers not contains `x-sdk-version` then respond with an empty balance
+    // array to fix the issue of redundant calls in sdk versions <= 4.1.8
+    // https://github.com/WalletConnect/web3modal/pull/2157
+    if !headers.contains_key("x-sdk-version") {
+        return Ok(Json(BalanceResponseBody { balances: vec![] }).into_response());
+    }
 
     let response = state
         .providers
