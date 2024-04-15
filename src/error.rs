@@ -161,6 +161,9 @@ pub enum RpcError {
 
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
+
+    #[error("Weighted providers index error: {0}")]
+    WeightedProvidersIndex(String),
 }
 
 impl IntoResponse for RpcError {

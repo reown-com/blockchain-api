@@ -33,7 +33,7 @@ use {
         hash::Hash,
         sync::Arc,
     },
-    tracing::{error, info, log::warn},
+    tracing::{info, log::warn},
     wc::metrics::TaskMetrics,
 };
 
@@ -202,7 +202,8 @@ impl ProviderRepository {
     pub fn get_provider_for_chain_id(
         &self,
         chain_id: &str,
-    ) -> Result<Arc<dyn RpcProvider>, RpcError> {
+        max_providers: usize,
+    ) -> Result<Vec<Arc<dyn RpcProvider>>, RpcError> {
         let Some(providers) = self.weight_resolver.get(chain_id) else {
             return Err(RpcError::UnsupportedChain(chain_id.to_string()));
         };
@@ -213,21 +214,41 @@ impl ProviderRepository {
 
         let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.value()).collect();
         let keys = providers.keys().cloned().collect::<Vec<_>>();
-        match WeightedIndex::new(weights) {
-            Ok(dist) => {
-                let random = dist.sample(&mut OsRng);
-                let provider = keys.get(random).ok_or_else(|| {
-                    error!("Failed to get random provider for chain_id: {}", chain_id);
-                    RpcError::UnsupportedChain(chain_id.to_string())
-                })?;
 
-                self.providers.get(provider).cloned().ok_or_else(|| {
-                    error!(
-                        "Provider not found during the weighted index check: {}",
-                        provider
-                    );
-                    RpcError::UnsupportedProvider(provider.to_string())
-                })
+        match WeightedIndex::new(weights) {
+            Ok(mut dist) => {
+                let providers_to_iterate = std::cmp::min(max_providers, providers.len());
+                let providers_result = (0..providers_to_iterate)
+                    .map(|i| {
+                        let dist_key = dist.sample(&mut OsRng);
+                        let provider = keys.get(dist_key).ok_or_else(|| {
+                            RpcError::WeightedProvidersIndex(format!(
+                                "Failed to get random provider for chain_id: {}",
+                                chain_id
+                            ))
+                        })?;
+
+                        // Update the weight of the provider to 0 to remove it from the next
+                        // sampling, as updating weights returns an error if
+                        // all weights are zero
+                        if i < providers_to_iterate - 1 {
+                            if let Err(e) = dist.update_weights(&[(dist_key, &0)]) {
+                                return Err(RpcError::WeightedProvidersIndex(format!(
+                                    "Failed to update weight in sampling iteration: {}",
+                                    e
+                                )));
+                            }
+                        };
+
+                        self.providers.get(provider).cloned().ok_or_else(|| {
+                            RpcError::WeightedProvidersIndex(format!(
+                                "Provider not found during the weighted index check: {}",
+                                provider
+                            ))
+                        })
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(providers_result)
             }
             Err(e) => {
                 // Respond with temporarily unavailable when all weights are 0 for

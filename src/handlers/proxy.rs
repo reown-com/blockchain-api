@@ -20,11 +20,13 @@ use {
     },
     tap::TapFallible,
     tracing::{
-        log::{error, warn},
+        log::{debug, error, warn},
         Span,
     },
     wc::future::FutureExt,
 };
+
+const RPC_MAX_RETRIES: usize = 3;
 
 pub async fn handler(
     state: State<Arc<AppState>>,
@@ -56,12 +58,12 @@ async fn handler_internal(
 
     // Exact provider proxy request for testing suite
     // This request is allowed only for the RPC_PROXY_TESTING_PROJECT_ID
-    let provider = match query_params.provider_id.clone() {
+    let providers = match query_params.provider_id.clone() {
         Some(provider_id) => {
-            let provider = state
+            let provider = vec![state
                 .providers
                 .get_provider_by_provider_id(&provider_id)
-                .ok_or_else(|| RpcError::UnsupportedProvider(provider_id.clone()))?;
+                .ok_or_else(|| RpcError::UnsupportedProvider(provider_id.clone()))?];
 
             if let Some(ref testing_project_id) = state.config.server.testing_project_id {
                 if !crypto::constant_time_eq(testing_project_id, &query_params.project_id) {
@@ -79,9 +81,57 @@ async fn handler_internal(
 
             provider
         }
-        None => state.providers.get_provider_for_chain_id(&chain_id)?,
+        None => state
+            .providers
+            .get_provider_for_chain_id(&chain_id, RPC_MAX_RETRIES)?,
     };
 
+    for (i, provider) in providers.iter().enumerate() {
+        let response = rpc_call(
+            state.clone(),
+            addr,
+            query_params.clone(),
+            headers.clone(),
+            body.clone(),
+            chain_id.clone(),
+            provider.clone(),
+        )
+        .await;
+
+        match response {
+            Ok(response) => {
+                // If the response is a 503 (we are rate-limited) we should try the next
+                // provider
+                if response.status() == http::StatusCode::SERVICE_UNAVAILABLE {
+                    debug!(
+                        "Provider '{}' returned a 503, trying the next provider",
+                        provider.provider_kind()
+                    );
+                    continue;
+                }
+                state.metrics.add_rpc_call_retries(i as u64, chain_id);
+                return Ok(response);
+            }
+            Err(e) => {
+                state.metrics.add_rpc_call_retries(i as u64, chain_id);
+                return Err(e);
+            }
+        }
+    }
+    debug!("All providers failed for chain_id: {}", chain_id);
+    Err(RpcError::ChainTemporarilyUnavailable(chain_id))
+}
+
+#[tracing::instrument(skip(state), level = "debug")]
+pub async fn rpc_call(
+    state: Arc<AppState>,
+    addr: SocketAddr,
+    query_params: RpcQueryParams,
+    headers: HeaderMap,
+    body: Bytes,
+    chain_id: String,
+    provider: Arc<dyn crate::providers::RpcProvider>,
+) -> Result<Response, RpcError> {
     Span::current().record("provider", &provider.provider_kind().to_string());
 
     state.metrics.add_rpc_call(chain_id.clone());
