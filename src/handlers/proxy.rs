@@ -51,11 +51,20 @@ async fn handler_internal(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     state
-        .validate_project_access_and_quota(&query_params.project_id)
+        .validate_project_access_and_quota(&query_params.project_id.clone())
         .await?;
+    rpc_call(state, addr, query_params, headers, body).await
+}
 
+#[tracing::instrument(skip(state), level = "debug")]
+pub async fn rpc_call(
+    state: Arc<AppState>,
+    addr: SocketAddr,
+    query_params: RpcQueryParams,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Response, RpcError> {
     let chain_id = query_params.chain_id.clone();
-
     // Exact provider proxy request for testing suite
     // This request is allowed only for the RPC_PROXY_TESTING_PROJECT_ID
     let providers = match query_params.provider_id.clone() {
@@ -87,13 +96,12 @@ async fn handler_internal(
     };
 
     for (i, provider) in providers.iter().enumerate() {
-        let response = rpc_call(
+        let response = rpc_provider_call(
             state.clone(),
             addr,
             query_params.clone(),
             headers.clone(),
             body.clone(),
-            chain_id.clone(),
             provider.clone(),
         )
         .await;
@@ -123,23 +131,21 @@ async fn handler_internal(
 }
 
 #[tracing::instrument(skip(state), level = "debug")]
-pub async fn rpc_call(
+pub async fn rpc_provider_call(
     state: Arc<AppState>,
     addr: SocketAddr,
     query_params: RpcQueryParams,
     headers: HeaderMap,
     body: Bytes,
-    chain_id: String,
     provider: Arc<dyn crate::providers::RpcProvider>,
 ) -> Result<Response, RpcError> {
     Span::current().record("provider", &provider.provider_kind().to_string());
-
-    state.metrics.add_rpc_call(chain_id.clone());
-
+    let chain_id = query_params.chain_id.clone();
     let origin = headers
         .get("origin")
         .map(|v| v.to_str().unwrap_or("invalid_header").to_string());
 
+    state.metrics.add_rpc_call(chain_id.clone());
     if let Ok(rpc_request) = serde_json::from_slice(&body) {
         let (country, continent, region) = state
             .analytics

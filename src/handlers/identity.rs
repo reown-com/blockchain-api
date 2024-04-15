@@ -1,16 +1,15 @@
 use {
-    super::{RpcQueryParams, HANDLER_TASK_METRICS},
+    super::{proxy::rpc_call, RpcQueryParams, HANDLER_TASK_METRICS},
     crate::{
         analytics::IdentityLookupInfo,
         error::RpcError,
         json_rpc::{JsonRpcError, JsonRpcResponse},
-        project::ProjectDataError,
         state::AppState,
         utils::{crypto, network},
     },
     async_trait::async_trait,
     axum::{
-        extract::{ConnectInfo, MatchedPath, Path, Query, State},
+        extract::{ConnectInfo, Path, Query, State},
         response::{IntoResponse, Response},
         Json,
     },
@@ -47,11 +46,10 @@ pub async fn handler(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
     query: Query<IdentityQueryParams>,
-    path: MatchedPath,
     headers: HeaderMap,
     address: Path<String>,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, connect_info, query, path, headers, address)
+    handler_internal(state, connect_info, query, headers, address)
         .with_metrics(HANDLER_TASK_METRICS.with_name("identity"))
         .await
 }
@@ -61,12 +59,14 @@ async fn handler_internal(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
     query: Query<IdentityQueryParams>,
-    path: MatchedPath,
     headers: HeaderMap,
     Path(address): Path<String>,
 ) -> Result<Response, RpcError> {
-    let start = SystemTime::now();
+    state
+        .validate_project_access_and_quota(&query.project_id)
+        .await?;
 
+    let start = SystemTime::now();
     let address = address
         .parse::<Address>()
         .map_err(|_| RpcError::InvalidAddress)?;
@@ -76,7 +76,6 @@ async fn handler_internal(
         state.clone(),
         connect_info,
         query.clone(),
-        path,
         headers.clone(),
     )
     .await;
@@ -153,10 +152,9 @@ pub struct IdentityQueryParams {
 #[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_identity(
     address: H160,
-    state: State<Arc<AppState>>,
-    connect_info: ConnectInfo<SocketAddr>,
+    State(state): State<Arc<AppState>>,
+    ConnectInfo(connect_info): ConnectInfo<SocketAddr>,
     Query(query): Query<IdentityQueryParams>,
-    path: MatchedPath,
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
     let cache_key = format!("{}", address);
@@ -199,7 +197,6 @@ async fn lookup_identity(
         state.clone(),
         connect_info,
         query.project_id,
-        path,
         headers,
     )
     .await?;
@@ -230,22 +227,20 @@ async fn lookup_identity(
 #[tracing::instrument(skip_all, level = "debug")]
 async fn lookup_identity_rpc(
     address: H160,
-    state: State<Arc<AppState>>,
-    connect_info: ConnectInfo<SocketAddr>,
+    state: Arc<AppState>,
+    connect_info: SocketAddr,
     project_id: String,
-    path: MatchedPath,
     headers: HeaderMap,
 ) -> Result<IdentityResponse, RpcError> {
     let provider = Provider::new(SelfProvider {
         state: state.clone(),
         connect_info,
-        query: Query(RpcQueryParams {
+        query: RpcQueryParams {
             project_id,
             // ENS registry contract is only deployed on mainnet
             chain_id: ETHEREUM_MAINNET.to_owned(),
             provider_id: None,
-        }),
-        path,
+        },
         headers,
     });
 
@@ -290,11 +285,7 @@ pub fn handle_rpc_error(error: ProviderError) -> Result<(), RpcError> {
         ProviderError::CustomError(e) if e.starts_with(SELF_PROVIDER_ERROR_PREFIX) => {
             let error_detail = e.trim_start_matches(SELF_PROVIDER_ERROR_PREFIX);
             // Exceptions for the detailed HTTP error return on RPC call
-            if error_detail.contains("ProjectDataError(NotFound)") {
-                Err(RpcError::ProjectDataError(ProjectDataError::NotFound))
-            } else if error_detail.contains("QuotaLimitReached") {
-                Err(RpcError::QuotaLimitReached)
-            } else if error_detail.contains("503 Service Unavailable") {
+            if error_detail.contains("503 Service Unavailable") {
                 Err(RpcError::ProviderError)
             } else {
                 Err(RpcError::IdentityLookup(error_detail.to_string()))
@@ -347,10 +338,9 @@ async fn lookup_avatar(
 }
 
 struct SelfProvider {
-    state: State<Arc<AppState>>,
-    connect_info: ConnectInfo<SocketAddr>,
-    query: Query<RpcQueryParams>,
-    path: MatchedPath,
+    state: Arc<AppState>,
+    connect_info: SocketAddr,
+    query: RpcQueryParams,
     headers: HeaderMap,
 }
 
@@ -426,11 +416,10 @@ impl JsonRpcClient for SelfProvider {
             .as_millis()
             .to_string();
 
-        let response = super::proxy::handler(
+        let response = rpc_call(
             self.state.clone(),
             self.connect_info,
             self.query.clone(),
-            self.path.clone(),
             self.headers.clone(),
             serde_json::to_vec(&JsonRpcRequest {
                 id,
