@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.51.1 - 2024-04-15
+#### Bug Fixes
+- **(weights)** excluding zero weight providers from iteration (#628) - (f9a219d) - Max Kalashnikoff
+
+- - -
+
 ## 0.51.0 - 2024-04-15
 #### Features
 - **(rpc)** adding rpc call retrying (#624) - (f0a1f7e) - Max Kalashnikoff
