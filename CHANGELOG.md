@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.51.3 - 2024-04-15
+#### Bug Fixes
+- **(identity)** adding project ID validation first in the handler (#623) - (71a314f) - Max Kalashnikoff
+
+- - -
+
 ## 0.51.2 - 2024-04-15
 #### Bug Fixes
 - **(providers)** removing zkSync Goerli testnet, adding Sepolia instead (#627) - (7c34fcc) - Max Kalashnikoff
