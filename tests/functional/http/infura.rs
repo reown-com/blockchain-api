@@ -18,15 +18,6 @@ async fn infura_provider(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Ethereum Goerli
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        &ProviderKind::Infura,
-        "eip155:5",
-        "0x5",
-    )
-    .await;
-
     // Ethereum Sepolia
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
@@ -42,15 +33,6 @@ async fn infura_provider(ctx: &mut ServerContext) {
         &ProviderKind::Infura,
         "eip155:137",
         "0x89",
-    )
-    .await;
-
-    // Polygon mumbai
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        &ProviderKind::Infura,
-        "eip155:80001",
-        "0x13881",
     )
     .await;
 
@@ -81,7 +63,7 @@ async fn infura_provider(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Arbitrum goerli
+    // Arbitrum Sepolia
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &ProviderKind::Infura,

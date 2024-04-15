@@ -7,7 +7,6 @@ Chain name with associated `chainId` query param to use.
 | Network                                                  | Chain ID             |
 |----------------------------------------------------------|----------------------|
 | Ethereum                                                 | eip155:1             |
-| Ethereum Goerli                                          | eip155:5             |
 | Optimism                                                 | eip155:10            |
 | Binance Smart Chain                                      | eip155:56            |
 | Binance Smart Chain Testnet <sup>[1](#footnote1)</sup>   | eip155:97            |
@@ -25,7 +24,6 @@ Chain name with associated `chainId` query param to use.
 | Celo                                                     | eip155:42220         |
 | Avalanche Fuji Testnet <sup>[1](#footnote1)</sup>        | eip155:43113         |
 | Avalanche C-Chain                                        | eip155:43114         |
-| Polygon Mumbai                                           | eip155:80001         |
 | Base Sepolia                                             | eip155:84532         |
 | Arbitrum Sepolia                                         | eip155:421614        |
 | Zora <sup>[1](#footnote1)</sup>                          | eip155:7777777       |
@@ -46,7 +44,6 @@ WebSocket RPC **is not recommended for production use**, and may be removed in t
 | Network            | Chain ID        |
 |--------------------|-----------------|
 | Ethereum           | eip155:1        |
-| Ethereum Goerli    | eip155:5        |
 | Optimism           | eip155:10       |
 | Arbitrum           | eip155:42161    |
 | Arbitrum Sepolia   | eip155:421614   |
