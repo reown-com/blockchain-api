@@ -213,11 +213,12 @@ impl ProviderRepository {
         }
 
         let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.value()).collect();
+        let non_zero_weight_providers = weights.iter().filter(|&x| *x > 0).count();
         let keys = providers.keys().cloned().collect::<Vec<_>>();
 
         match WeightedIndex::new(weights) {
             Ok(mut dist) => {
-                let providers_to_iterate = std::cmp::min(max_providers, providers.len());
+                let providers_to_iterate = std::cmp::min(max_providers, non_zero_weight_providers);
                 let providers_result = (0..providers_to_iterate)
                     .map(|i| {
                         let dist_key = dist.sample(&mut OsRng);
