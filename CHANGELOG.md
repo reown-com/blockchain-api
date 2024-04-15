@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.52.0 - 2024-04-15
+#### Bug Fixes
+- **(tests)** fixing error code in identity test with wrong project ID (#629) - (311a5eb) - Max Kalashnikoff
+#### Features
+- adding sdk type and version to CORS allowed headers (#630) - (7d52a4b) - Max Kalashnikoff
+
+- - -
+
 ## 0.51.3 - 2024-04-15
 #### Bug Fixes
 - **(identity)** adding project ID validation first in the handler (#623) - (71a314f) - Max Kalashnikoff
