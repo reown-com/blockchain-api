@@ -25,7 +25,7 @@ describe('Identity', () => {
     resp = await httpClient.get(
       `${baseUrl}/v1/identity/${knownAddress}?chainId=eip155%3A1&projectId=${notAllowedProjectId}&useCache=false`,
     )
-    expect(resp.status).toBe(400)
+    expect(resp.status).toBe(401)
   })
   it('unknown ens', async () => {
     let resp: any = await httpClient.get(
