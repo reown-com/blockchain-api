@@ -23,6 +23,7 @@ use {
     },
 };
 pub use {
+    balance_lookup_info::BalanceLookupInfo,
     config::Config,
     history_lookup_info::HistoryLookupInfo,
     identity_lookup_info::IdentityLookupInfo,
@@ -30,6 +31,7 @@ pub use {
     onramp_history_lookup_info::OnrampHistoryLookupInfo,
 };
 
+mod balance_lookup_info;
 mod config;
 mod history_lookup_info;
 mod identity_lookup_info;
@@ -45,6 +47,7 @@ enum DataKind {
     IdentityLookups,
     HistoryLookups,
     OnrampHistoryLookups,
+    BalanceLookups,
 }
 
 impl DataKind {
@@ -55,6 +58,7 @@ impl DataKind {
             Self::IdentityLookups => "identity_lookups",
             Self::HistoryLookups => "history_lookups",
             Self::OnrampHistoryLookups => "onramp_history_lookups",
+            Self::BalanceLookups => "balance_lookups",
         }
     }
 
@@ -156,6 +160,7 @@ pub struct RPCAnalytics {
     identity_lookups: ArcCollector<IdentityLookupInfo>,
     history_lookups: ArcCollector<HistoryLookupInfo>,
     onramp_history_lookups: ArcCollector<OnrampHistoryLookupInfo>,
+    balance_lookups: ArcCollector<BalanceLookupInfo>,
     geoip_resolver: Option<Arc<MaxMindResolver>>,
 }
 
@@ -183,6 +188,7 @@ impl RPCAnalytics {
             identity_lookups: analytics::noop_collector().boxed_shared(),
             history_lookups: analytics::noop_collector().boxed_shared(),
             onramp_history_lookups: analytics::noop_collector().boxed_shared(),
+            balance_lookups: analytics::noop_collector().boxed_shared(),
             geoip_resolver: None,
         }
     }
@@ -269,6 +275,27 @@ impl RPCAnalytics {
                 node_addr,
                 file_extension: "parquet".to_owned(),
                 bucket_name: export_bucket.to_owned(),
+                s3_client: s3_client.clone(),
+                upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
+            })
+            .with_observer(observer),
+        )
+        .with_observer(observer)
+        .boxed_shared();
+
+        let observer = Observer(DataKind::BalanceLookups);
+        let balance_lookups = BatchCollector::new(
+            CollectorConfig {
+                data_queue_capacity: DATA_QUEUE_CAPACITY,
+                ..Default::default()
+            },
+            ParquetBatchFactory::new(Default::default()).with_observer(observer),
+            AwsExporter::new(AwsConfig {
+                export_prefix: "blockchain-api/balance-lookups".to_owned(),
+                export_name: "balance_lookups".to_owned(),
+                node_addr,
+                file_extension: "parquet".to_owned(),
+                bucket_name: export_bucket.to_owned(),
                 s3_client,
                 upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
             })
@@ -282,6 +309,7 @@ impl RPCAnalytics {
             identity_lookups,
             history_lookups,
             onramp_history_lookups,
+            balance_lookups,
             geoip_resolver,
         })
     }
@@ -321,6 +349,16 @@ impl RPCAnalytics {
             tracing::warn!(
                 ?err,
                 data_kind = DataKind::OnrampHistoryLookups.as_str(),
+                "failed to collect analytics"
+            );
+        }
+    }
+
+    pub fn balance_lookup(&self, data: BalanceLookupInfo) {
+        if let Err(err) = self.balance_lookups.collect(data) {
+            tracing::warn!(
+                ?err,
+                data_kind = DataKind::BalanceLookups.as_str(),
                 "failed to collect analytics"
             );
         }
