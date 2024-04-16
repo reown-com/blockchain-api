@@ -6,10 +6,16 @@ describe('Account balance', () => {
   const fulfilled_address = '0xf3ea39310011333095CFCcCc7c4Ad74034CABA63'
   const empty_address = '0x5b6262592954B925B510651462b63ddEbcc22eaD'
   const currency = 'usd'
+  const sdk_version = '4.1.9'
 
-  it('fulfilled balance', async () => {
+  it('fulfilled balance address', async () => {
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/account/${fulfilled_address}/balance?projectId=${projectId}&currency=${currency}`
+      `${baseUrl}/v1/account/${fulfilled_address}/balance?projectId=${projectId}&currency=${currency}`,
+      {
+        headers: {
+            'x-sdk-version': sdk_version,
+        }
+      }
     )
     expect(resp.status).toBe(200)
     expect(typeof resp.data.balances).toBe('object')
@@ -30,9 +36,25 @@ describe('Account balance', () => {
     }
   })
 
-  it('empty balance', async () => {
+  it('fulfilled balance address no version header', async () => {
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/account/${empty_address}/balance?projectId=${projectId}&currency=${currency}`
+      `${baseUrl}/v1/account/${fulfilled_address}/balance?projectId=${projectId}&currency=${currency}`
+    )
+    // We should expect the empty balance response for the sdk version prior to 4.1.9
+    // that doesn't send the x-sdk-version header due to the bug in the SDK
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.balances).toBe('object')
+    expect(resp.data.balances).toHaveLength(0)
+  })
+
+  it('empty balance address', async () => {
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/account/${empty_address}/balance?projectId=${projectId}&currency=${currency}`,
+      {
+        headers: {
+            'x-sdk-version': sdk_version,
+        }
+      }
     )
     expect(resp.status).toBe(200)
     expect(typeof resp.data.balances).toBe('object')
