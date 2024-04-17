@@ -6,6 +6,8 @@ use {
     tracing::warn,
 };
 
+const ENSIP11_MAINNET_COIN_TYPE: u32 = 60;
+
 #[derive(thiserror::Error, Debug)]
 pub enum CryptoUitlsError {
     #[error("Namespace is not supported: {0}")]
@@ -35,7 +37,7 @@ pub fn verify_message_signature(
 pub fn convert_evm_chain_id_to_coin_type(chain_id: u32) -> u32 {
     // Exemption for the mainnet in ENSIP-11 format
     if chain_id == 1 {
-        return 60;
+        return ENSIP11_MAINNET_COIN_TYPE;
     }
 
     0x80000000 | chain_id
@@ -45,7 +47,7 @@ pub fn convert_evm_chain_id_to_coin_type(chain_id: u32) -> u32 {
 #[tracing::instrument]
 pub fn convert_coin_type_to_evm_chain_id(coin_type: u32) -> u32 {
     // Exemption for the mainnet in ENSIP-11 format
-    if coin_type == 60 {
+    if coin_type == ENSIP11_MAINNET_COIN_TYPE {
         return 1;
     }
 
@@ -245,7 +247,7 @@ mod tests {
     #[test]
     fn test_is_coin_type_supported() {
         // Ethereum mainnet in ENSIP-11 format
-        let coin_type_eth_mainnet = 60;
+        let coin_type_eth_mainnet = ENSIP11_MAINNET_COIN_TYPE;
         // Polygon in ENSIP-11 format
         let coin_type_polygon = 2147483785;
         // Not supported chain id
