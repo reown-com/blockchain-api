@@ -2,7 +2,6 @@ use {
     super::{
         super::HANDLER_TASK_METRICS,
         utils::{check_attributes, is_timestamp_within_interval},
-        Eip155SupportedChains,
         RegisterRequest,
         UpdateAttributesPayload,
         UNIXTIMESTAMP_SYNC_THRESHOLD,
@@ -11,7 +10,7 @@ use {
         database::helpers::{get_name_and_addresses_by_name, update_name_attributes},
         error::RpcError,
         state::AppState,
-        utils::crypto::{constant_time_eq, verify_message_signature},
+        utils::crypto::{constant_time_eq, is_coin_type_supported, verify_message_signature},
     },
     axum::{
         extract::{Path, State},
@@ -19,9 +18,8 @@ use {
         Json,
     },
     hyper::StatusCode,
-    num_enum::TryFromPrimitive,
     std::{str::FromStr, sync::Arc},
-    tracing::log::{error, info},
+    tracing::log::error,
     wc::future::FutureExt,
 };
 
@@ -48,7 +46,7 @@ pub async fn handler_internal(
     };
 
     // Check for the supported ENSIP-11 coin type
-    if Eip155SupportedChains::try_from_primitive(request_payload.coin_type).is_err() {
+    if !is_coin_type_supported(request_payload.coin_type) {
         return Err(RpcError::UnsupportedCoinType(request_payload.coin_type));
     }
 
@@ -86,24 +84,21 @@ pub async fn handler_internal(
     }
 
     // Check for the name address ownership and address from the signed payload
-    let name_owner = match name_addresses
-        .addresses
-        .get(&Eip155SupportedChains::EthereumMainnet.into())
-    {
-        Some(address_entry) => match ethers::types::H160::from_str(&address_entry.address) {
-            Ok(owner) => owner,
-            Err(_) => return Err(RpcError::InvalidAddress),
-        },
-        None => {
-            info!("Address entry not found for key 60");
-            return Ok((
-                StatusCode::BAD_REQUEST,
-                "Address entry not found for key 60",
-            )
-                .into_response());
+    let mut address_is_authorized = false;
+    for (coint_type, address) in name_addresses.addresses.iter() {
+        if coint_type == &request_payload.coin_type {
+            let name_owner = match ethers::types::H160::from_str(&address.address) {
+                Ok(owner) => owner,
+                Err(_) => return Err(RpcError::InvalidAddress),
+            };
+            if !constant_time_eq(payload_owner, name_owner) {
+                return Err(RpcError::NameOwnerValidationError);
+            } else {
+                address_is_authorized = true;
+            }
         }
-    };
-    if !constant_time_eq(payload_owner, name_owner) {
+    }
+    if !address_is_authorized {
         return Err(RpcError::NameOwnerValidationError);
     }
 

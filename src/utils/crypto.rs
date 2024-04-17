@@ -6,6 +6,8 @@ use {
     tracing::warn,
 };
 
+const ENSIP11_MAINNET_COIN_TYPE: u32 = 60;
+
 #[derive(thiserror::Error, Debug)]
 pub enum CryptoUitlsError {
     #[error("Namespace is not supported: {0}")]
@@ -33,13 +35,30 @@ pub fn verify_message_signature(
 /// Convert EVM chain ID to coin type ENSIP-11
 #[tracing::instrument]
 pub fn convert_evm_chain_id_to_coin_type(chain_id: u32) -> u32 {
+    // Exemption for the mainnet in ENSIP-11 format
+    if chain_id == 1 {
+        return ENSIP11_MAINNET_COIN_TYPE;
+    }
+
     0x80000000 | chain_id
 }
 
 /// Convert coin type ENSIP-11 to EVM chain ID
 #[tracing::instrument]
 pub fn convert_coin_type_to_evm_chain_id(coin_type: u32) -> u32 {
+    // Exemption for the mainnet in ENSIP-11 format
+    if coin_type == ENSIP11_MAINNET_COIN_TYPE {
+        return 1;
+    }
+
     0x7FFFFFFF & coin_type
+}
+
+/// Check if the coin type is in the supported list
+#[tracing::instrument]
+pub fn is_coin_type_supported(coin_type: u32) -> bool {
+    let evm_chain_id = convert_coin_type_to_evm_chain_id(coin_type);
+    ChainId::iter().any(|x| x as u64 == evm_chain_id as u64)
 }
 
 /// Human readable chain ids to CAIP-2 chain ids
@@ -67,6 +86,7 @@ pub enum ChainId {
     Optimism = 10,
     Polygon = 137,
     Scroll = 8508132,
+    Sepolia = 11155111,
     #[strum(
         to_string = "xdai",
         serialize = "gnosis",
@@ -222,6 +242,20 @@ mod tests {
         let coin_type = 2147483785;
         assert_eq!(convert_evm_chain_id_to_coin_type(chain_id), coin_type);
         assert_eq!(convert_coin_type_to_evm_chain_id(coin_type), chain_id);
+    }
+
+    #[test]
+    fn test_is_coin_type_supported() {
+        // Ethereum mainnet in ENSIP-11 format
+        let coin_type_eth_mainnet = ENSIP11_MAINNET_COIN_TYPE;
+        // Polygon in ENSIP-11 format
+        let coin_type_polygon = 2147483785;
+        // Not supported chain id
+        let coin_type_not_supported = 2147483786;
+
+        assert!(is_coin_type_supported(coin_type_eth_mainnet));
+        assert!(is_coin_type_supported(coin_type_polygon));
+        assert!(!is_coin_type_supported(coin_type_not_supported));
     }
 
     #[test]
