@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.53.0 - 2024-04-17
+#### Features
+- **(conversion)** passing through error message in case of wrong parameter (#635) - (ff6f993) - Max Kalashnikoff
+
+- - -
+
 ## 0.52.3 - 2024-04-17
 #### Bug Fixes
 - **(conversion)** changing amounts to be String (#634) - (16981a6) - Max Kalashnikoff
