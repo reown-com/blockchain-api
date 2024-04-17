@@ -7,6 +7,7 @@ use {
             balance::{self, BalanceQueryParams, BalanceResponseBody},
             convert::{
                 approve::{ConvertApproveQueryParams, ConvertApproveResponseBody},
+                gas_price::{GasPriceQueryParams, GasPriceQueryResponseBody},
                 quotes::{ConvertQuoteQueryParams, ConvertQuoteResponseBody},
                 tokens::{TokensListQueryParams, TokensListResponseBody},
                 transaction::{ConvertTransactionQueryParams, ConvertTransactionResponseBody},
@@ -629,4 +630,9 @@ pub trait ConversionProvider: Send + Sync + Debug {
         &self,
         params: ConvertTransactionQueryParams,
     ) -> RpcResult<ConvertTransactionResponseBody>;
+
+    async fn get_gas_price(
+        &self,
+        params: GasPriceQueryParams,
+    ) -> RpcResult<GasPriceQueryResponseBody>;
 }

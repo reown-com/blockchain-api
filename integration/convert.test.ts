@@ -116,4 +116,25 @@ describe('Token conversion (single chain)', () => {
     expect(typeof resp.data.reasons).toBe('object')
     expect(typeof resp.data.reasons[0].description).toBe('string')
   })
+
+  it('get gas price', async () => {
+    // Check for the Ethereum mainnet chain
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/convert/gas-price?projectId=${projectId}&chainId=${caip2_chain_id}`
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.standard).toBe('string')
+    expect(typeof resp.data.fast).toBe('string')
+    expect(typeof resp.data.instant).toBe('string')
+
+    // Check for the BSC Chain as it's not support EIP1559
+    resp = await httpClient.get(
+      `${baseUrl}/v1/convert/gas-price?projectId=${projectId}&chainId=eip155:56`
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.standard).toBe('string')
+    expect(typeof resp.data.fast).toBe('string')
+    expect(typeof resp.data.instant).toBe('string')
+
+  })
 })
