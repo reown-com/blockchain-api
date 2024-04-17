@@ -107,9 +107,21 @@ struct OneInchTxTransaction {
     gas_price: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OneInchErrorResponse {
+    error: OneInchErrorItem,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OneInchErrorItem {
+    description: String,
+}
+
 #[async_trait]
 impl ConversionProvider for OneInchProvider {
-    #[tracing::instrument(skip(self, params), fields(provider = "1inch"))]
+    #[tracing::instrument(skip(self), fields(provider = "1inch"), level = "debug")]
     async fn get_tokens_list(
         &self,
         params: TokensListQueryParams,
@@ -121,6 +133,15 @@ impl ConversionProvider for OneInchProvider {
         let response = self.send_request(url, &self.http_client.clone()).await?;
 
         if !response.status().is_success() {
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = response.json::<OneInchErrorResponse>().await?;
+                return Err(RpcError::ConversionInvalidParameter(
+                    response_error.error.description,
+                ));
+            }
+
             error!(
                 "Error on getting tokens list for conversion from 1inch provider. Status is not \
                  OK: {:?}",
@@ -156,6 +177,7 @@ impl ConversionProvider for OneInchProvider {
         Ok(response)
     }
 
+    #[tracing::instrument(skip(self), fields(provider = "1inch"), level = "debug")]
     async fn get_convert_quote(
         &self,
         params: ConvertQuoteQueryParams,
@@ -181,6 +203,15 @@ impl ConversionProvider for OneInchProvider {
         let response = self.send_request(url, &self.http_client.clone()).await?;
 
         if !response.status().is_success() {
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = response.json::<OneInchErrorResponse>().await?;
+                return Err(RpcError::ConversionInvalidParameter(
+                    response_error.error.description,
+                ));
+            }
+
             error!(
                 "Error on getting quotes for conversion from 1inch provider. Status is not OK: \
                  {:?}",
@@ -203,6 +234,7 @@ impl ConversionProvider for OneInchProvider {
         Ok(response)
     }
 
+    #[tracing::instrument(skip(self), fields(provider = "1inch"), level = "debug")]
     async fn build_approve_tx(
         &self,
         params: ConvertApproveQueryParams,
@@ -228,6 +260,15 @@ impl ConversionProvider for OneInchProvider {
         let response = self.send_request(url, &self.http_client.clone()).await?;
 
         if !response.status().is_success() {
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = response.json::<OneInchErrorResponse>().await?;
+                return Err(RpcError::ConversionInvalidParameter(
+                    response_error.error.description,
+                ));
+            }
+
             error!(
                 "Error on building approval tx for conversion from 1inch provider. Status is not \
                  OK: {:?}",
@@ -252,6 +293,7 @@ impl ConversionProvider for OneInchProvider {
         Ok(response)
     }
 
+    #[tracing::instrument(skip(self), fields(provider = "1inch"), level = "debug")]
     async fn build_convert_tx(
         &self,
         params: ConvertTransactionQueryParams,
@@ -291,6 +333,15 @@ impl ConversionProvider for OneInchProvider {
         let response = self.send_request(url, &self.http_client.clone()).await?;
 
         if !response.status().is_success() {
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = response.json::<OneInchErrorResponse>().await?;
+                return Err(RpcError::ConversionInvalidParameter(
+                    response_error.error.description,
+                ));
+            }
+
             error!(
                 "Error on building convert tx from 1inch provider. Status is not OK: {:?}",
                 response.status(),
