@@ -8,7 +8,6 @@ use {
             is_name_length_correct,
             is_timestamp_within_interval,
         },
-        Eip155SupportedChains,
         RegisterPayload,
         RegisterRequest,
         ALLOWED_ZONES,
@@ -21,7 +20,7 @@ use {
         },
         error::RpcError,
         state::AppState,
-        utils::crypto::verify_message_signature,
+        utils::crypto::{is_coin_type_supported, verify_message_signature},
     },
     axum::{
         extract::State,
@@ -29,7 +28,6 @@ use {
         Json,
     },
     hyper::StatusCode,
-    num_enum::TryFromPrimitive,
     sqlx::Error as SqlxError,
     std::{collections::HashMap, str::FromStr, sync::Arc},
     tracing::log::error,
@@ -72,7 +70,7 @@ pub async fn handler_internal(
     }
 
     // Check for the supported ENSIP-11 coin type
-    if Eip155SupportedChains::try_from_primitive(register_request.coin_type).is_err() {
+    if !is_coin_type_supported(register_request.coin_type) {
         return Err(RpcError::UnsupportedCoinType(register_request.coin_type));
     }
 
