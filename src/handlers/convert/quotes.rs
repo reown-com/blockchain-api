@@ -17,7 +17,7 @@ use {
 #[serde(rename_all = "camelCase")]
 pub struct ConvertQuoteQueryParams {
     pub project_id: String,
-    pub amount: usize,
+    pub amount: String,
     pub from: String,
     pub to: String,
 }
