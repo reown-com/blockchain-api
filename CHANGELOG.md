@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.52.2 - 2024-04-17
+#### Bug Fixes
+- **(names)** removing of eth mainnet addresses only (#633) - (a1b18bb) - Max Kalashnikoff
+
+- - -
+
 ## 0.52.1 - 2024-04-16
 #### Bug Fixes
 - **(balance)** respond with an empty balance for sdk version <= 4.1.8 (#631) - (2d5c73f) - Max Kalashnikoff
