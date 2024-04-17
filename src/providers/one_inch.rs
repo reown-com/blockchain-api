@@ -176,8 +176,7 @@ impl ConversionProvider for OneInchProvider {
 
         url.query_pairs_mut().append_pair("src", &src_address);
         url.query_pairs_mut().append_pair("dst", &dst_address);
-        url.query_pairs_mut()
-            .append_pair("amount", &params.amount.to_string());
+        url.query_pairs_mut().append_pair("amount", &params.amount);
 
         let response = self.send_request(url, &self.http_client.clone()).await?;
 
@@ -194,7 +193,7 @@ impl ConversionProvider for OneInchProvider {
         let response = ConvertQuoteResponseBody {
             quotes: vec![QuoteItem {
                 id: None,
-                from_amount: params.amount.to_string(),
+                from_amount: params.amount,
                 from_account: params.from,
                 to_amount: body.dst_amount,
                 to_account: params.to,
@@ -224,8 +223,7 @@ impl ConversionProvider for OneInchProvider {
 
         url.query_pairs_mut()
             .append_pair("tokenAddress", &dst_address);
-        url.query_pairs_mut()
-            .append_pair("amount", &params.amount.to_string());
+        url.query_pairs_mut().append_pair("amount", &params.amount);
 
         let response = self.send_request(url, &self.http_client.clone()).await?;
 
@@ -275,8 +273,7 @@ impl ConversionProvider for OneInchProvider {
 
         url.query_pairs_mut().append_pair("src", &src_address);
         url.query_pairs_mut().append_pair("dst", &dst_address);
-        url.query_pairs_mut()
-            .append_pair("amount", &params.amount.to_string());
+        url.query_pairs_mut().append_pair("amount", &params.amount);
         url.query_pairs_mut().append_pair("from", &user_address);
 
         if let Some(eip155) = &params.eip155 {
