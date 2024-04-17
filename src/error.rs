@@ -71,12 +71,6 @@ pub enum RpcError {
     #[error("Failed to parse fungible price provider url")]
     FungiblePriceParseURLError,
 
-    #[error("Failed to reach the conversion provider")]
-    ConversionProviderError,
-
-    #[error("Failed to parse conversion provider url")]
-    ConversionParseURLError,
-
     #[error("Failed to parse onramp provider url")]
     OnRampParseURLError,
 
@@ -121,6 +115,16 @@ pub enum RpcError {
 
     #[error("invalid parameter: {0}")]
     InvalidParameter(String),
+
+    // Conversion errors
+    #[error("Failed to reach the conversion provider")]
+    ConversionProviderError,
+
+    #[error("Failed to parse conversion provider url")]
+    ConversionParseURLError,
+
+    #[error("Invalid conversion parameter: {0}")]
+    ConversionInvalidParameter(String),
 
     // Profile names errors
     #[error("Name is already registered: {0}")]
@@ -284,6 +288,14 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+            Self::ConversionInvalidParameter(e) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(new_error_response(
+                        "".to_string(),
+                        format!("Conversion parameter error: {}", e),
+                    )),
+                )
+                    .into_response(),
             Self::UnsupportedCoinType(e) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(

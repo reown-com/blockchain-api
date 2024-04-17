@@ -94,4 +94,26 @@ describe('Token conversion (single chain)', () => {
     expect(eip155.gas).toEqual(expect.stringMatching(/[0-9].*/));
     expect(eip155.gasPrice).toEqual(expect.stringMatching(/[0-9].*/));
   })
+
+  it('handling invalid parameter', async () => {
+    const payload = {
+      projectId,
+      amount: "100000",
+      from: srcAsset,
+      to: destAsset,
+      userAddress: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      eip155: {
+        slippage: 1,
+      }
+    };
+
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/convert/build-transaction`,
+      payload
+    )
+    
+    expect(resp.status).toBe(400)
+    expect(typeof resp.data.reasons).toBe('object')
+    expect(typeof resp.data.reasons[0].description).toBe('string')
+  })
 })
