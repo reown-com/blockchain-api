@@ -432,9 +432,18 @@ impl ConversionProvider for OneInchProvider {
 
         if !response.status().is_success() {
             error!(
-                "Error on getting gas price from 1inch provider. Status is not OK: {:?}",
+                "Error on getting gas price for conversion from 1inch provider. Status is not OK: \
+                 {:?}",
                 response.status(),
             );
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = response.json::<OneInchErrorResponse>().await?;
+                return Err(RpcError::ConversionInvalidParameter(
+                    response_error.error.description,
+                ));
+            }
             return Err(RpcError::ConversionProviderError);
         }
         let body = response.json::<OneInchGasPriceResponse>().await?;
