@@ -6,6 +6,7 @@ use {
         handlers::{
             balance::{self, BalanceQueryParams, BalanceResponseBody},
             convert::{
+                allowance::{AllowanceQueryParams, AllowanceResponseBody},
                 approve::{ConvertApproveQueryParams, ConvertApproveResponseBody},
                 gas_price::{GasPriceQueryParams, GasPriceQueryResponseBody},
                 quotes::{ConvertQuoteQueryParams, ConvertQuoteResponseBody},
@@ -635,4 +636,7 @@ pub trait ConversionProvider: Send + Sync + Debug {
         &self,
         params: GasPriceQueryParams,
     ) -> RpcResult<GasPriceQueryResponseBody>;
+
+    async fn get_allowance(&self, params: AllowanceQueryParams)
+        -> RpcResult<AllowanceResponseBody>;
 }

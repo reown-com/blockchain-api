@@ -2,6 +2,7 @@ use {
     crate::{
         error::{RpcError, RpcResult},
         handlers::convert::{
+            allowance::{AllowanceQueryParams, AllowanceResponseBody},
             approve::{
                 ConvertApproveQueryParams,
                 ConvertApproveResponseBody,
@@ -147,6 +148,11 @@ struct OneInchGasPrice {
     standard: String,
     fast: String,
     instant: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct OneInchAllowanceResponse {
+    allowance: String,
 }
 
 #[async_trait]
@@ -460,5 +466,47 @@ impl ConversionProvider for OneInchProvider {
                 instant: gas_price.instant.max_fee_per_gas,
             }),
         }
+    }
+
+    #[tracing::instrument(skip(self), fields(provider = "1inch"), level = "debug")]
+    async fn get_allowance(
+        &self,
+        params: AllowanceQueryParams,
+    ) -> RpcResult<AllowanceResponseBody> {
+        let (_, evm_chain_id, token_address) = crypto::disassemble_caip10(&params.token_address)?;
+        let wallet_address = crypto::disassemble_caip10(&params.user_address)?.2;
+        let base = format!(
+            "{}/swap/v6.0/{}/approve/allowance",
+            &self.base_api_url,
+            evm_chain_id.clone()
+        );
+        let mut url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
+        url.query_pairs_mut()
+            .append_pair("tokenAddress", &token_address);
+        url.query_pairs_mut()
+            .append_pair("walletAddress", &wallet_address);
+
+        let response = self.send_request(url, &self.http_client.clone()).await?;
+
+        if !response.status().is_success() {
+            error!(
+                "Error on getting allowance for conversion from 1inch provider. Status is not OK: \
+                 {:?}",
+                response.status(),
+            );
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = response.json::<OneInchErrorResponse>().await?;
+                return Err(RpcError::ConversionInvalidParameter(
+                    response_error.error.description,
+                ));
+            }
+            return Err(RpcError::ConversionProviderError);
+        }
+        let body = response.json::<OneInchAllowanceResponse>().await?;
+        Ok(AllowanceResponseBody {
+            allowance: body.allowance,
+        })
     }
 }
