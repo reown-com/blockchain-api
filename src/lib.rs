@@ -331,6 +331,10 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/convert/gas-price",
             get(handlers::convert::gas_price::handler),
         )
+        .route(
+            "/v1/convert/allowance",
+            get(handlers::convert::allowance::handler),
+        )
         // Fungible price
         .route(
             "/v1/fungible/price",

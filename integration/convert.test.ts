@@ -137,4 +137,16 @@ describe('Token conversion (single chain)', () => {
     expect(typeof resp.data.instant).toBe('string')
 
   })
+
+  it('get allowance', async () => {
+    const tokenAddress = '0x111111111117dc0aa78b770fa6a738034120c302';
+    const token = `${namespace}:${chainId}:${tokenAddress}`;
+    const wallet = userAddress;
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/convert/allowance?projectId=${projectId}&token=${token}&wallet=${wallet}`
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.allowance).toBe('string')
+
+  })
 })
