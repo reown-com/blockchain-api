@@ -8,6 +8,7 @@ use {
                 ConvertApproveTx,
                 ConvertApproveTxEip155,
             },
+            gas_price::{GasPriceQueryParams, GasPriceQueryResponseBody},
             quotes::{ConvertQuoteQueryParams, ConvertQuoteResponseBody, QuoteItem},
             tokens::{TokenItem, TokensListQueryParams, TokensListResponseBody},
             transaction::{
@@ -36,7 +37,7 @@ pub struct OneInchProvider {
 
 impl OneInchProvider {
     pub fn new(api_key: String) -> Self {
-        let base_api_url = "https://api.1inch.dev/swap/v6.0".to_string();
+        let base_api_url = "https://api.1inch.dev".to_string();
         let http_client = reqwest::Client::new();
         Self {
             api_key,
@@ -119,6 +120,35 @@ struct OneInchErrorItem {
     description: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum OneInchGasPriceResponse {
+    NonEip1559(OneInchGasPrice),
+    Eip1559(OneInchGasPriceEip1559),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OneInchGasPriceEip1559 {
+    medium: OneInchGasPriceEip1559Item,
+    high: OneInchGasPriceEip1559Item,
+    instant: OneInchGasPriceEip1559Item,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OneInchGasPriceEip1559Item {
+    max_fee_per_gas: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OneInchGasPrice {
+    standard: String,
+    fast: String,
+    instant: String,
+}
+
 #[async_trait]
 impl ConversionProvider for OneInchProvider {
     #[tracing::instrument(skip(self), fields(provider = "1inch"), level = "debug")]
@@ -127,7 +157,11 @@ impl ConversionProvider for OneInchProvider {
         params: TokensListQueryParams,
     ) -> RpcResult<TokensListResponseBody> {
         let evm_chain_id = crypto::disassemble_caip2(&params.chain_id)?.1;
-        let base = format!("{}/{}/tokens", &self.base_api_url, evm_chain_id.clone());
+        let base = format!(
+            "{}/swap/v6.0/{}/tokens",
+            &self.base_api_url,
+            evm_chain_id.clone()
+        );
         let url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
 
         let response = self.send_request(url, &self.http_client.clone()).await?;
@@ -193,7 +227,11 @@ impl ConversionProvider for OneInchProvider {
             ));
         }
 
-        let base = format!("{}/{}/quote", &self.base_api_url, chain_id.clone());
+        let base = format!(
+            "{}/swap/v6.0/{}/quote",
+            &self.base_api_url,
+            chain_id.clone()
+        );
         let mut url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
 
         url.query_pairs_mut().append_pair("src", &src_address);
@@ -250,7 +288,10 @@ impl ConversionProvider for OneInchProvider {
             ));
         }
 
-        let base = format!("{}/{}/approve/transaction", &self.base_api_url, chain_id);
+        let base = format!(
+            "{}/swap/v6.0/{}/approve/transaction",
+            &self.base_api_url, chain_id
+        );
         let mut url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
 
         url.query_pairs_mut()
@@ -310,7 +351,7 @@ impl ConversionProvider for OneInchProvider {
             ));
         }
 
-        let base = format!("{}/{}/swap", &self.base_api_url, chain_id);
+        let base = format!("{}/swap/v6.0/{}/swap", &self.base_api_url, chain_id);
         let mut url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
 
         url.query_pairs_mut().append_pair("src", &src_address);
@@ -372,5 +413,52 @@ impl ConversionProvider for OneInchProvider {
         };
 
         Ok(response)
+    }
+
+    #[tracing::instrument(skip(self, params), fields(provider = "1inch"))]
+    async fn get_gas_price(
+        &self,
+        params: GasPriceQueryParams,
+    ) -> RpcResult<GasPriceQueryResponseBody> {
+        let evm_chain_id = crypto::disassemble_caip2(&params.chain_id)?.1;
+        let base = format!(
+            "{}/gas-price/v1.5/{}",
+            &self.base_api_url,
+            evm_chain_id.clone()
+        );
+        let url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
+
+        let response = self.send_request(url, &self.http_client.clone()).await?;
+
+        if !response.status().is_success() {
+            error!(
+                "Error on getting gas price for conversion from 1inch provider. Status is not OK: \
+                 {:?}",
+                response.status(),
+            );
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = response.json::<OneInchErrorResponse>().await?;
+                return Err(RpcError::ConversionInvalidParameter(
+                    response_error.error.description,
+                ));
+            }
+            return Err(RpcError::ConversionProviderError);
+        }
+        let body = response.json::<OneInchGasPriceResponse>().await?;
+
+        match body {
+            OneInchGasPriceResponse::NonEip1559(gas_price) => Ok(GasPriceQueryResponseBody {
+                standard: gas_price.standard,
+                fast: gas_price.fast,
+                instant: gas_price.instant,
+            }),
+            OneInchGasPriceResponse::Eip1559(gas_price) => Ok(GasPriceQueryResponseBody {
+                standard: gas_price.medium.max_fee_per_gas,
+                fast: gas_price.high.max_fee_per_gas,
+                instant: gas_price.instant.max_fee_per_gas,
+            }),
+        }
     }
 }
