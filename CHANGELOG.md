@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.55.0 - 2024-04-18
+#### Features
+- **(conversion)** allowance endpoint (#637) - (68fc5bf) - Max Kalashnikoff
+
+- - -
+
 ## 0.54.0 - 2024-04-18
 #### Features
 - **(conversion)** implementing gas price endpoint (#636) - (e97c8e8) - Max Kalashnikoff
