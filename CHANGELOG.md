@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.55.1 - 2024-04-18
+#### Bug Fixes
+- **(conversion)** making `amount` optional in approval (#638) - (5f90aa4) - Max Kalashnikoff
+
+- - -
+
 ## 0.55.0 - 2024-04-18
 #### Features
 - **(conversion)** allowance endpoint (#637) - (68fc5bf) - Max Kalashnikoff
