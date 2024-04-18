@@ -302,7 +302,9 @@ impl ConversionProvider for OneInchProvider {
 
         url.query_pairs_mut()
             .append_pair("tokenAddress", &dst_address);
-        url.query_pairs_mut().append_pair("amount", &params.amount);
+        if let Some(amount) = &params.amount {
+            url.query_pairs_mut().append_pair("amount", amount);
+        }
 
         let response = self.send_request(url, &self.http_client.clone()).await?;
 

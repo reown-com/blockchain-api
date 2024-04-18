@@ -17,9 +17,9 @@ use {
 #[serde(rename_all = "camelCase")]
 pub struct ConvertApproveQueryParams {
     pub project_id: String,
-    pub amount: String,
     pub from: String,
     pub to: String,
+    pub amount: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
