@@ -17,8 +17,8 @@ use {
 #[serde(rename_all = "camelCase")]
 pub struct AllowanceQueryParams {
     pub project_id: String,
-    pub token: String,
-    pub wallet: String,
+    pub token_address: String,
+    pub user_address: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

@@ -140,10 +140,9 @@ describe('Token conversion (single chain)', () => {
 
   it('get allowance', async () => {
     const tokenAddress = '0x111111111117dc0aa78b770fa6a738034120c302';
-    const token = `${namespace}:${chainId}:${tokenAddress}`;
-    const wallet = userAddress;
+    const tokenCaip10 = `${namespace}:${chainId}:${tokenAddress}`;
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/convert/allowance?projectId=${projectId}&token=${token}&wallet=${wallet}`
+      `${baseUrl}/v1/convert/allowance?projectId=${projectId}&tokenAddress=${tokenCaip10}&userAddress=${userAddress}`
     )
     expect(resp.status).toBe(200)
     expect(typeof resp.data.allowance).toBe('string')

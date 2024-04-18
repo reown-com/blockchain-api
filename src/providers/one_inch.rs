@@ -473,8 +473,8 @@ impl ConversionProvider for OneInchProvider {
         &self,
         params: AllowanceQueryParams,
     ) -> RpcResult<AllowanceResponseBody> {
-        let (_, evm_chain_id, token_address) = crypto::disassemble_caip10(&params.token)?;
-        let wallet_address = crypto::disassemble_caip10(&params.wallet)?.2;
+        let (_, evm_chain_id, token_address) = crypto::disassemble_caip10(&params.token_address)?;
+        let wallet_address = crypto::disassemble_caip10(&params.user_address)?.2;
         let base = format!(
             "{}/swap/v6.0/{}/approve/allowance",
             &self.base_api_url,
@@ -489,6 +489,11 @@ impl ConversionProvider for OneInchProvider {
         let response = self.send_request(url, &self.http_client.clone()).await?;
 
         if !response.status().is_success() {
+            error!(
+                "Error on getting allowance for conversion from 1inch provider. Status is not OK: \
+                 {:?}",
+                response.status(),
+            );
             // Passing through error description for the error context
             // if user parameter is invalid (got 400 status code from the provider)
             if response.status() == reqwest::StatusCode::BAD_REQUEST {
@@ -497,12 +502,6 @@ impl ConversionProvider for OneInchProvider {
                     response_error.error.description,
                 ));
             }
-
-            error!(
-                "Error on getting allowance for conversion from 1inch provider. Status is not OK: \
-                 {:?}",
-                response.status(),
-            );
             return Err(RpcError::ConversionProviderError);
         }
         let body = response.json::<OneInchAllowanceResponse>().await?;
