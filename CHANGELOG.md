@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.55.2 - 2024-04-19
+#### Bug Fixes
+- **(fungibles)** adding eth token address representation (#639) - (fc69496) - Max Kalashnikoff
+
+- - -
+
 ## 0.55.1 - 2024-04-18
 #### Bug Fixes
 - **(conversion)** making `amount` optional in approval (#638) - (5f90aa4) - Max Kalashnikoff
