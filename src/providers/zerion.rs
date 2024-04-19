@@ -220,7 +220,7 @@ pub struct ZerionFungibleAssetAttribute {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct ZerionMarketData {
-    pub price: f64,
+    pub price: Option<f64>,
 }
 
 #[async_trait]
@@ -622,7 +622,7 @@ impl FungiblePriceProvider for ZerionProvider {
                 name: f.attributes.name,
                 symbol: f.attributes.symbol,
                 icon_url: f.attributes.icon.map(|f| f.url).unwrap_or_default(),
-                price: f.attributes.market_data.price,
+                price: f.attributes.market_data.price.unwrap_or_default(),
             })
             .collect();
 
