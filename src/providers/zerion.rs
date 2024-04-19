@@ -538,12 +538,60 @@ impl FungiblePriceProvider for ZerionProvider {
         url.query_pairs_mut()
             .append_pair("filter[chain_id]", chain_id);
 
-        // Exception for the Ethereum native token since Zerion contract address for it
-        // is `null` we should filter it by the token name
+        // We are using `0xeee...` for the native token address to be consistent withing
+        // all endpoints
         const NATIVE_TOKEN_ADDRESS: &str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+
+        // Exceptions for native tokens since Zerion contract address for them
+        // are `null` or `0x000` we should filter them by ids
         if address == NATIVE_TOKEN_ADDRESS {
-            url.query_pairs_mut()
-                .append_pair("filter[fungible_ids]", "eth");
+            match chain_id {
+                // Ethereum ETH
+                "1" => {
+                    url.query_pairs_mut()
+                        .append_pair("filter[fungible_ids]", "eth");
+                }
+                // BNB
+                "56" => {
+                    url.query_pairs_mut().append_pair(
+                        "filter[fungible_ids]",
+                        "0xb8c77482e45f1f44de1745f52c74426c631bdd52",
+                    );
+                }
+                // xDAI
+                "100" => {
+                    url.query_pairs_mut().append_pair(
+                        "filter[fungible_ids]",
+                        "b99ea659-0ab1-4832-bf44-3bf1cc1acac7",
+                    );
+                }
+                // Matic
+                "137" => {
+                    url.query_pairs_mut().append_pair(
+                        "filter[fungible_ids]",
+                        "0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0",
+                    );
+                }
+                // FTM
+                "250" => {
+                    url.query_pairs_mut().append_pair(
+                        "filter[fungible_ids]",
+                        "0x4e15361fd6b4bb609fa63c81a2be19d873717870",
+                    );
+                }
+                // Avax
+                "43114" => {
+                    url.query_pairs_mut().append_pair(
+                        "filter[fungible_ids]",
+                        "43e05303-bf43-48df-be45-352d7567ff39",
+                    );
+                }
+                _ => {
+                    error!("Unsupported chain id for native token address");
+                    url.query_pairs_mut()
+                        .append_pair("filter[implementation_address]", address);
+                }
+            }
         } else {
             url.query_pairs_mut()
                 .append_pair("filter[implementation_address]", address);
