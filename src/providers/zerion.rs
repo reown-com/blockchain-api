@@ -242,6 +242,9 @@ impl HistoryProvider for ZerionProvider {
         })?;
         url.query_pairs_mut()
             .append_pair("currency", &params.currency.unwrap_or("usd".to_string()));
+        // Return only non-spam transactions
+        url.query_pairs_mut()
+            .append_pair("filter[trash]", "only_non_trash");
 
         if let Some(cursor) = params.cursor {
             url.query_pairs_mut().append_pair("page[after]", &cursor);
@@ -438,6 +441,9 @@ impl BalanceProvider for ZerionProvider {
             .append_pair("currency", &params.currency.to_string());
         url.query_pairs_mut()
             .append_pair("filter[position_types]", "wallet");
+        // Return only non-spam transactions
+        url.query_pairs_mut()
+            .append_pair("filter[trash]", "only_non_trash");
 
         if let Some(chain_id) = params.chain_id {
             let chain_name = crypto::ChainId::from_caip2(&chain_id)
