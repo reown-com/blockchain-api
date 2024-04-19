@@ -537,8 +537,17 @@ impl FungiblePriceProvider for ZerionProvider {
         url.query_pairs_mut().append_pair("currency", &currency);
         url.query_pairs_mut()
             .append_pair("filter[chain_id]", chain_id);
-        url.query_pairs_mut()
-            .append_pair("filter[implementation_address]", address);
+
+        // Exception for the Ethereum native token since Zerion contract address for it
+        // is `null` we should filter it by the token name
+        const NATIVE_TOKEN_ADDRESS: &str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+        if address == NATIVE_TOKEN_ADDRESS {
+            url.query_pairs_mut()
+                .append_pair("filter[fungible_ids]", "eth");
+        } else {
+            url.query_pairs_mut()
+                .append_pair("filter[implementation_address]", address);
+        };
 
         let response = http_client
             .get(url)
