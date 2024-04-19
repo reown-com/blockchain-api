@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.55.3 - 2024-04-19
+#### Bug Fixes
+- **(fungibles)** adding more exception to native tokens (#640) - (809e041) - Max Kalashnikoff
+
+- - -
+
 ## 0.55.2 - 2024-04-19
 #### Bug Fixes
 - **(fungibles)** adding eth token address representation (#639) - (fc69496) - Max Kalashnikoff
