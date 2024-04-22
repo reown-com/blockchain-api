@@ -223,6 +223,11 @@ pub struct ZerionMarketData {
     pub price: Option<f64>,
 }
 
+fn add_filter_non_trash_only(url: &mut Url) {
+    url.query_pairs_mut()
+        .append_pair("filter[trash]", "only_non_trash");
+}
+
 #[async_trait]
 impl HistoryProvider for ZerionProvider {
     #[tracing::instrument(skip(self, params), fields(provider = "Zerion"))]
@@ -243,8 +248,7 @@ impl HistoryProvider for ZerionProvider {
         url.query_pairs_mut()
             .append_pair("currency", &params.currency.unwrap_or("usd".to_string()));
         // Return only non-spam transactions
-        url.query_pairs_mut()
-            .append_pair("filter[trash]", "only_non_trash");
+        add_filter_non_trash_only(&mut url);
 
         if let Some(cursor) = params.cursor {
             url.query_pairs_mut().append_pair("page[after]", &cursor);
@@ -442,8 +446,7 @@ impl BalanceProvider for ZerionProvider {
         url.query_pairs_mut()
             .append_pair("filter[position_types]", "wallet");
         // Return only non-spam transactions
-        url.query_pairs_mut()
-            .append_pair("filter[trash]", "only_non_trash");
+        add_filter_non_trash_only(&mut url);
 
         if let Some(chain_id) = params.chain_id {
             let chain_name = crypto::ChainId::from_caip2(&chain_id)
