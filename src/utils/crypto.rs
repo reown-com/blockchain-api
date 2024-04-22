@@ -12,6 +12,10 @@ const ENSIP11_MAINNET_COIN_TYPE: u32 = 60;
 pub enum CryptoUitlsError {
     #[error("Namespace is not supported: {0}")]
     WrongNamespace(String),
+    #[error("Wrong CAIP-2 format: {0}")]
+    WrongCaip2Format(String),
+    #[error("Wrong CAIP-10 format: {0}")]
+    WrongCaip10Format(String),
 }
 
 /// Veryfy message signature signed by the keccak256
@@ -153,9 +157,15 @@ pub fn format_to_caip10(namespace: CaipNamespaces, chain_id: &str, address: &str
 /// Disassemble CAIP-2 to namespace and chainId
 pub fn disassemble_caip2(caip2: &str) -> Result<(CaipNamespaces, String), CryptoUitlsError> {
     let parts = caip2.split(':').collect::<Vec<&str>>();
-    let namespace = match parts[0].parse::<CaipNamespaces>() {
-        Ok(namespace) => namespace,
-        Err(_) => return Err(CryptoUitlsError::WrongNamespace(caip2.into())),
+    if parts.len() != 2 {
+        return Err(CryptoUitlsError::WrongCaip2Format(caip2.into()));
+    };
+    let namespace = match parts.first() {
+        Some(namespace) => match namespace.parse::<CaipNamespaces>() {
+            Ok(namespace) => namespace,
+            Err(_) => return Err(CryptoUitlsError::WrongNamespace(caip2.into())),
+        },
+        None => return Err(CryptoUitlsError::WrongNamespace(caip2.into())),
     };
     let chain_id = parts[1].to_string();
     Ok((namespace, chain_id))
@@ -166,9 +176,15 @@ pub fn disassemble_caip10(
     caip10: &str,
 ) -> Result<(CaipNamespaces, String, String), CryptoUitlsError> {
     let parts = caip10.split(':').collect::<Vec<&str>>();
-    let namespace = match parts[0].parse::<CaipNamespaces>() {
-        Ok(namespace) => namespace,
-        Err(_) => return Err(CryptoUitlsError::WrongNamespace(caip10.into())),
+    if parts.len() != 3 {
+        return Err(CryptoUitlsError::WrongCaip10Format(caip10.into()));
+    };
+    let namespace = match parts.first() {
+        Some(namespace) => match namespace.parse::<CaipNamespaces>() {
+            Ok(namespace) => namespace,
+            Err(_) => return Err(CryptoUitlsError::WrongNamespace(caip10.into())),
+        },
+        None => return Err(CryptoUitlsError::WrongNamespace(caip10.into())),
     };
     let chain_id = parts[1].to_string();
     let address = parts[2].to_string();
@@ -318,6 +334,10 @@ mod tests {
         let result = disassemble_caip2(caip2).unwrap();
         assert_eq!(result.0, CaipNamespaces::Eip155);
         assert_eq!(result.1, "1".to_string());
+
+        let malformed_caip2 = "eip1551";
+        let error_result = disassemble_caip2(malformed_caip2);
+        assert!(error_result.is_err());
     }
 
     #[test]
@@ -327,5 +347,9 @@ mod tests {
         assert_eq!(result.0, CaipNamespaces::Eip155);
         assert_eq!(result.1, "1".to_string());
         assert_eq!(result.2, "0xtest".to_string());
+
+        let malformed_caip10 = "eip15510xtest";
+        let error_result = disassemble_caip10(malformed_caip10);
+        assert!(error_result.is_err());
     }
 }
