@@ -15,6 +15,7 @@ pub struct BalanceLookupInfo {
     pub quantity: String,
     pub value: f64,
     pub price: f64,
+    pub currency: String,
 
     pub address: String,
     pub project_id: String,
@@ -34,6 +35,7 @@ impl BalanceLookupInfo {
         quantity: String,
         value: f64,
         price: f64,
+        currency: String,
         address: String,
         project_id: String,
         origin: Option<String>,
@@ -49,6 +51,7 @@ impl BalanceLookupInfo {
             quantity,
             value,
             price,
+            currency,
             address,
             project_id,
             origin,
