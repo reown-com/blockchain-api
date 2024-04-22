@@ -12,10 +12,10 @@ const ENSIP11_MAINNET_COIN_TYPE: u32 = 60;
 pub enum CryptoUitlsError {
     #[error("Namespace is not supported: {0}")]
     WrongNamespace(String),
-    #[error("No Chain ID found in the address: {0}")]
-    NoChainId(String),
-    #[error("No address found in the CAIP-10 address: {0}")]
-    NoAddress(String),
+    #[error("Wrong CAIP-2 format: {0}")]
+    WrongCaip2Format(String),
+    #[error("Wrong CAIP-10 format: {0}")]
+    WrongCaip10Format(String),
 }
 
 /// Veryfy message signature signed by the keccak256
@@ -157,6 +157,9 @@ pub fn format_to_caip10(namespace: CaipNamespaces, chain_id: &str, address: &str
 /// Disassemble CAIP-2 to namespace and chainId
 pub fn disassemble_caip2(caip2: &str) -> Result<(CaipNamespaces, String), CryptoUitlsError> {
     let parts = caip2.split(':').collect::<Vec<&str>>();
+    if parts.len() != 2 {
+        return Err(CryptoUitlsError::WrongCaip2Format(caip2.into()));
+    };
     let namespace = match parts.first() {
         Some(namespace) => match namespace.parse::<CaipNamespaces>() {
             Ok(namespace) => namespace,
@@ -164,10 +167,7 @@ pub fn disassemble_caip2(caip2: &str) -> Result<(CaipNamespaces, String), Crypto
         },
         None => return Err(CryptoUitlsError::WrongNamespace(caip2.into())),
     };
-    let chain_id = match parts.get(1) {
-        Some(chain_id) => chain_id.to_string(),
-        None => return Err(CryptoUitlsError::NoChainId(caip2.into())),
-    };
+    let chain_id = parts[1].to_string();
     Ok((namespace, chain_id))
 }
 
@@ -176,6 +176,9 @@ pub fn disassemble_caip10(
     caip10: &str,
 ) -> Result<(CaipNamespaces, String, String), CryptoUitlsError> {
     let parts = caip10.split(':').collect::<Vec<&str>>();
+    if parts.len() != 3 {
+        return Err(CryptoUitlsError::WrongCaip10Format(caip10.into()));
+    };
     let namespace = match parts.first() {
         Some(namespace) => match namespace.parse::<CaipNamespaces>() {
             Ok(namespace) => namespace,
@@ -183,14 +186,8 @@ pub fn disassemble_caip10(
         },
         None => return Err(CryptoUitlsError::WrongNamespace(caip10.into())),
     };
-    let chain_id = match parts.get(1) {
-        Some(chain_id) => chain_id.to_string(),
-        None => return Err(CryptoUitlsError::NoChainId(caip10.into())),
-    };
-    let address = match parts.get(2) {
-        Some(address) => address.to_string(),
-        None => return Err(CryptoUitlsError::NoAddress(caip10.into())),
-    };
+    let chain_id = parts[1].to_string();
+    let address = parts[2].to_string();
     Ok((namespace, chain_id, address))
 }
 
