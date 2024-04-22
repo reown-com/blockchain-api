@@ -335,8 +335,8 @@ mod tests {
         assert_eq!(result.0, CaipNamespaces::Eip155);
         assert_eq!(result.1, "1".to_string());
 
-        let malformaed_caip2 = "eip1551";
-        let error_result = disassemble_caip2(malformaed_caip2);
+        let malformed_caip2 = "eip1551";
+        let error_result = disassemble_caip2(malformed_caip2);
         assert!(error_result.is_err());
     }
 
@@ -348,8 +348,8 @@ mod tests {
         assert_eq!(result.1, "1".to_string());
         assert_eq!(result.2, "0xtest".to_string());
 
-        let malformaed_caip10 = "eip15510xtest";
-        let error_result = disassemble_caip10(malformaed_caip10);
+        let malformed_caip10 = "eip15510xtest";
+        let error_result = disassemble_caip10(malformed_caip10);
         assert!(error_result.is_err());
     }
 }
