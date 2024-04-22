@@ -11,7 +11,10 @@ pub struct BalanceLookupInfo {
     pub latency_secs: f64,
 
     pub symbol: String,
+    pub implementation_chain_id: String,
     pub quantity: String,
+    pub value: f64,
+    pub price: f64,
 
     pub address: String,
     pub project_id: String,
@@ -27,7 +30,10 @@ impl BalanceLookupInfo {
     pub fn new(
         latency: Duration,
         symbol: String,
+        implementation_chain_id: String,
         quantity: String,
+        value: f64,
+        price: f64,
         address: String,
         project_id: String,
         origin: Option<String>,
@@ -39,7 +45,10 @@ impl BalanceLookupInfo {
             timestamp: wc::analytics::time::now(),
             latency_secs: latency.as_secs_f64(),
             symbol,
+            implementation_chain_id,
             quantity,
+            value,
+            price,
             address,
             project_id,
             origin,

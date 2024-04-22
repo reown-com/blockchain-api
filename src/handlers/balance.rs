@@ -148,7 +148,10 @@ async fn handler_internal(
             state.analytics.balance_lookup(BalanceLookupInfo::new(
                 latency,
                 balance.symbol.clone(),
+                balance.chain_id.clone().unwrap_or_default(),
                 balance.quantity.numeric.clone(),
+                balance.value.unwrap_or(0 as f64),
+                balance.price,
                 address.clone(),
                 project_id.clone(),
                 origin.clone(),
