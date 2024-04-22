@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.55.5 - 2024-04-22
+#### Bug Fixes
+- **(Zerion)** return only non-spam items (#642) - (e5d99ba) - Max Kalashnikoff
+
+- - -
+
 ## 0.55.4 - 2024-04-19
 #### Bug Fixes
 - **(Zerion)** handling of null price response (#641) - (6706f1c) - Max Kalashnikoff
