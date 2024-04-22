@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.55.6 - 2024-04-22
+#### Bug Fixes
+- **(utils)** properly handling of malformed CAIP-2 and 10 (#643) - (29c4018) - Max Kalashnikoff
+
+- - -
+
 ## 0.55.5 - 2024-04-22
 #### Bug Fixes
 - **(Zerion)** return only non-spam items (#642) - (e5d99ba) - Max Kalashnikoff
