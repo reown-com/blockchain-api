@@ -1,15 +1,20 @@
 use {
     super::HANDLER_TASK_METRICS,
-    crate::{error::RpcError, state::AppState},
+    crate::{analytics::BalanceLookupInfo, error::RpcError, state::AppState, utils::network},
     axum::{
-        extract::{Path, Query, State},
+        extract::{ConnectInfo, Path, Query, State},
         response::{IntoResponse, Response},
         Json,
     },
     ethers::abi::Address,
     hyper::HeaderMap,
     serde::{Deserialize, Serialize},
-    std::{fmt::Display, sync::Arc},
+    std::{
+        fmt::Display,
+        net::SocketAddr,
+        sync::Arc,
+        time::{Duration, SystemTime},
+    },
     tap::TapFallible,
     tracing::log::error,
     wc::future::FutureExt,
@@ -85,10 +90,11 @@ pub struct BalanceQuantity {
 pub async fn handler(
     state: State<Arc<AppState>>,
     query: Query<BalanceQueryParams>,
+    connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     address: Path<String>,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, query, headers, address)
+    handler_internal(state, query, connect_info, headers, address)
         .with_metrics(HANDLER_TASK_METRICS.with_name("balance"))
         .await
 }
@@ -97,6 +103,7 @@ pub async fn handler(
 async fn handler_internal(
     state: State<Arc<AppState>>,
     query: Query<BalanceQueryParams>,
+    connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     Path(address): Path<String>,
 ) -> Result<Response, RpcError> {
@@ -114,14 +121,47 @@ async fn handler_internal(
         return Ok(Json(BalanceResponseBody { balances: vec![] }).into_response());
     }
 
+    let start = SystemTime::now();
     let response = state
         .providers
         .balance_provider
-        .get_balance(address, query.0, state.http_client.clone())
+        .get_balance(address.clone(), query.clone().0, state.http_client.clone())
         .await
         .tap_err(|e| {
             error!("Failed to call balance with {}", e);
         })?;
+    let latency = start.elapsed().unwrap_or(Duration::from_secs(0));
+
+    {
+        let origin = headers
+            .get("origin")
+            .map(|v| v.to_str().unwrap_or("invalid_header").to_string());
+
+        let (country, continent, region) = state
+            .analytics
+            .lookup_geo_data(
+                network::get_forwarded_ip(headers).unwrap_or_else(|| connect_info.0.ip()),
+            )
+            .map(|geo| (geo.country, geo.continent, geo.region))
+            .unwrap_or((None, None, None));
+        for balance in &response.balances {
+            state.analytics.balance_lookup(BalanceLookupInfo::new(
+                latency,
+                balance.symbol.clone(),
+                balance.chain_id.clone().unwrap_or_default(),
+                balance.quantity.numeric.clone(),
+                balance.value.unwrap_or(0 as f64),
+                balance.price,
+                query.currency.to_string(),
+                address.clone(),
+                project_id.clone(),
+                origin.clone(),
+                region.clone(),
+                country.clone(),
+                continent.clone(),
+            ));
+        }
+    }
 
     Ok(Json(response).into_response())
 }
