@@ -1,11 +1,17 @@
 use {
-    ethers::types::H160,
+    alloy_primitives::Address,
+    ethers::{
+        prelude::*,
+        types::{H160, H256},
+    },
     once_cell::sync::Lazy,
     regex::Regex,
+    relay_rpc::auth::cacao::signature::eip1271::verify_eip1271,
     std::str::FromStr,
     strum::IntoEnumIterator,
     strum_macros::{Display, EnumIter, EnumString},
     tracing::warn,
+    url::Url,
 };
 
 const ENSIP11_MAINNET_COIN_TYPE: u32 = 60;
@@ -28,24 +34,120 @@ pub enum CryptoUitlsError {
     WrongCaip2Format(String),
     #[error("Wrong CAIP-10 format: {0}")]
     WrongCaip10Format(String),
+    #[error("Contract call error: {0}")]
+    ContractCallError(String),
+    #[error("Wrong address format: {0}")]
+    AddressFormat(String),
+    #[error("Wrong signature format: {0}")]
+    SignatureFormat(String),
+    #[error("Wrong address checksum: {0}")]
+    AddressChecksum(String),
+    #[error("Failed to parse RPC url: {0}")]
+    RpcUrlParseError(String),
+}
+
+pub fn add_eip191(message: &str) -> String {
+    format!("\x19Ethereum Signed Message:\n{}{}", message.len(), message)
+}
+
+/// Returns the keccak256 EIP-191 hash of the message
+pub fn get_message_hash(message: &str) -> H256 {
+    let prefixed_message = add_eip191(message);
+    let message_hash = ethers::core::utils::keccak256(prefixed_message.clone());
+    ethers::types::H256::from_slice(&message_hash)
+}
+
+pub async fn verify_message_signature(
+    message: &str,
+    signature: &str,
+    address: &str,
+    chain_id: &str,
+    rpc_project_id: &str,
+) -> Result<bool, CryptoUitlsError> {
+    let address_parsed =
+        H160::from_str(address).map_err(|_| CryptoUitlsError::AddressFormat(address.into()))?;
+
+    // Proceed with the EIP-1271 verification if the address has a contract code
+    // or ecrecover verification if not (EOA)
+    if is_address_has_code(address_parsed, chain_id, rpc_project_id).await? {
+        verify_eip1271_message_signature(message, signature, chain_id, address, rpc_project_id)
+            .await
+    } else {
+        verify_eoa_message_signature(message, signature, &address_parsed)
+    }
 }
 
 /// Veryfy message signature signed by the keccak256
 #[tracing::instrument]
-pub fn verify_message_signature(
+pub fn verify_eoa_message_signature(
     message: &str,
     signature: &str,
-    owner: &H160,
-) -> Result<bool, Box<dyn std::error::Error>> {
-    let prefixed_message = format!("\x19Ethereum Signed Message:\n{}{}", message.len(), message);
-    let message_hash = ethers::core::utils::keccak256(prefixed_message.clone());
-    let message_hash = ethers::types::H256::from_slice(&message_hash);
+    address: &H160,
+) -> Result<bool, CryptoUitlsError> {
+    let message_hash = get_message_hash(message);
 
-    let sign = ethers::types::Signature::from_str(signature)?;
-    match sign.verify(message_hash, *owner) {
+    let sign = ethers::types::Signature::from_str(signature).map_err(|e| {
+        CryptoUitlsError::SignatureFormat(format!("Failed to parse signature: {}", e))
+    })?;
+    match sign.verify(message_hash, *address) {
         Ok(_) => Ok(true),
         Err(_) => Ok(false),
     }
+}
+
+/// Veryfy message signature for eip1271 contract
+#[tracing::instrument]
+pub async fn is_address_has_code(
+    address: H160,
+    chain_id: &str,
+    rpc_project_id: &str,
+) -> Result<bool, CryptoUitlsError> {
+    let provider = Provider::<Http>::try_from(format!(
+        "https://rpc.walletconnect.com/v1?chainId={}&projectId={}",
+        chain_id, rpc_project_id
+    ))
+    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
+    let code = provider.get_code(address, None).await.map_err(|e| {
+        CryptoUitlsError::ContractCallError(format!(
+            "Failed to get code for address {}: {}",
+            address, e
+        ))
+    })?;
+    Ok(!code.is_empty())
+}
+
+/// Veryfy message signature for eip1271 contract
+#[tracing::instrument]
+pub async fn verify_eip1271_message_signature(
+    message: &str,
+    signature: &str,
+    chain_id: &str,
+    address: &str,
+    rpc_project_id: &str,
+) -> Result<bool, CryptoUitlsError> {
+    let message_hash: [u8; 32] = get_message_hash(message).into();
+    let address = Address::parse_checksummed(address, None)
+        .map_err(|_| CryptoUitlsError::AddressChecksum(address.into()))?;
+    let provider_uri = format!(
+        "https://rpc.walletconnect.com/v1?chainId={}&projectId={}",
+        chain_id, rpc_project_id
+    );
+    let provider = Url::parse(&provider_uri).map_err(|e| {
+        CryptoUitlsError::RpcUrlParseError(format!(
+            "Failed to parse RPC url {}: {}",
+            provider_uri, e
+        ))
+    })?;
+
+    let result = verify_eip1271(signature.into(), address, &message_hash, provider)
+        .await
+        .map_err(|e| {
+            CryptoUitlsError::ContractCallError(format!(
+                "Failed to verify EIP-1271 signature: {}",
+                e
+            ))
+        })?;
+    Ok(result)
 }
 
 /// Convert EVM chain ID to coin type ENSIP-11
@@ -242,37 +344,90 @@ mod tests {
     };
 
     #[test]
-    fn test_verify_message_signature_valid() {
+    fn test_verify_eoa_message_signature_valid() {
         let message = "test message signature";
         let signature = "0x660739ee06920c5f55fbaf0da4f435faaa9c55e2c9da303c50c4b3865191d67e5002a0b10eb0f89bae66823f7f07415ea9d5bbb607ee61ac98b7f2a0a44fcb5c1b";
         let owner = H160::from_str("0xAff392551773CCb2574fAE23195CC3aFDBe98d18").unwrap();
 
-        let result = verify_message_signature(message, signature, &owner);
+        let result = verify_eoa_message_signature(message, signature, &owner);
         assert!(result.is_ok());
         assert!(result.unwrap());
     }
 
     #[test]
-    fn test_verify_message_signature_json() {
+    fn test_verify_eoa_message_signature_json() {
         let message = r#"{\"test\":\"some my text\"}"#;
         let signature = "0x2fe0b640b4036c9c97911e6f22c72a2c934f1d67db02948055c0e0c84dbf4f2b33c2f8c4b000642735dbf5d1c96ba48ccd2a998324c9e4cb7bb776f0c95ee2fc1b";
         let owner = H160::from_str("0xAff392551773CCb2574fAE23195CC3aFDBe98d18").unwrap();
 
-        let result = verify_message_signature(message, signature, &owner);
+        let result = verify_eoa_message_signature(message, signature, &owner);
         assert!(result.is_ok());
         println!("result: {:?}", result);
         assert!(result.unwrap());
     }
 
     #[test]
-    fn test_verify_message_signature_invalid() {
+    fn test_verify_eoa_message_signature_invalid() {
         let message = "wrong message signature";
         let signature = "0x660739ee06920c5f55fbaf0da4f435faaa9c55e2c9da303c50c4b3865191d67e5002a0b10eb0f89bae66823f7f07415ea9d5bbb607ee61ac98b7f2a0a44fcb5c1b"; // The signature of the message
         let owner = H160::from_str("0xAff392551773CCb2574fAE23195CC3aFDBe98d18").unwrap(); // The Ethereum address of the signer
 
-        let result = verify_message_signature(message, signature, &owner);
+        let result = verify_eoa_message_signature(message, signature, &owner);
         assert!(result.is_ok());
         assert!(!result.unwrap());
+    }
+
+    #[tokio::test]
+    #[ignore]
+    /// Manual testing of the EIP1271 signature verification
+    async fn manual_test_verify_eip1271_message_signature() {
+        let message = "xxx";
+        let valid_signature = "0x";
+        let address = "0x";
+        let chain_id = "eip155:11155111";
+        let rpc_project_id = "project_id";
+        let result = verify_eip1271_message_signature(
+            message,
+            valid_signature,
+            chain_id,
+            address,
+            rpc_project_id,
+        )
+        .await
+        .unwrap();
+        assert!(result);
+
+        let invalid_signature = "0x";
+        let result = verify_eip1271_message_signature(
+            message,
+            invalid_signature,
+            chain_id,
+            address,
+            rpc_project_id,
+        )
+        .await
+        .unwrap();
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    #[ignore]
+    /// Manual testing of the code presence verification
+    async fn test_is_address_has_code() {
+        let chain_id = "eip155:11155111";
+        let project_id = "project_id";
+        let contract_address =
+            H160::from_str("0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf").unwrap();
+        let non_contract_address =
+            H160::from_str("0x739ff389c8eBd9339E69611d46Eec6212179BB67").unwrap();
+        assert!(
+            !is_address_has_code(non_contract_address, chain_id, project_id)
+                .await
+                .unwrap()
+        );
+        assert!(is_address_has_code(contract_address, chain_id, project_id)
+            .await
+            .unwrap());
     }
 
     #[test]

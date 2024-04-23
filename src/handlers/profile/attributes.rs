@@ -10,7 +10,12 @@ use {
         database::helpers::{get_name_and_addresses_by_name, update_name_attributes},
         error::RpcError,
         state::AppState,
-        utils::crypto::{constant_time_eq, is_coin_type_supported, verify_message_signature},
+        utils::crypto::{
+            constant_time_eq,
+            convert_coin_type_to_evm_chain_id,
+            is_coin_type_supported,
+            verify_message_signature,
+        },
     },
     axum::{
         extract::{Path, State},
@@ -68,15 +73,36 @@ pub async fn handler_internal(
     };
 
     // Check the signature
-    let sinature_check =
-        match verify_message_signature(raw_payload, &request_payload.signature, &payload_owner) {
-            Ok(sinature_check) => sinature_check,
-            Err(_) => {
-                return Err(RpcError::SignatureValidationError(
-                    "Invalid signature".into(),
-                ))
-            }
-        };
+    let chain_id_caip2 = format!(
+        "eip155:{}",
+        convert_coin_type_to_evm_chain_id(request_payload.coin_type) as u64
+    );
+    let rpc_project_id = state
+        .config
+        .server
+        .testing_project_id
+        .as_ref()
+        .ok_or_else(|| {
+            RpcError::InvalidConfiguration(
+                "Missing testing project id in the configuration for eip1271 lookups".to_string(),
+            )
+        })?;
+    let sinature_check = match verify_message_signature(
+        raw_payload,
+        &request_payload.signature,
+        &request_payload.address,
+        &chain_id_caip2,
+        rpc_project_id,
+    )
+    .await
+    {
+        Ok(sinature_check) => sinature_check,
+        Err(_) => {
+            return Err(RpcError::SignatureValidationError(
+                "Invalid signature".into(),
+            ))
+        }
+    };
     if !sinature_check {
         return Err(RpcError::SignatureValidationError(
             "Signature verification error".into(),
