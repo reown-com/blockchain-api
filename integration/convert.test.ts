@@ -36,6 +36,14 @@ describe('Token conversion (single chain)', () => {
     }
   })
 
+  it('unsupported chain', async () => {
+    const unsupportedChainId = 'eip155:92374624';
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/convert/tokens?projectId=${projectId}&chainId=${unsupportedChainId}`
+    )
+    expect(resp.status).toBe(400)
+  })
+
   it('get conversion quote', async () => {
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/convert/quotes?projectId=${projectId}&amount=${amount}&from=${srcAsset}&to=${destAsset}`
