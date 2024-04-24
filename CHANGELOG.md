@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.57.0 - 2024-04-24
+#### Features
+- **(1inch)** handling of the unsupported chain ID (#646) - (73f0ba4) - Max Kalashnikoff
+
+- - -
+
 ## 0.56.0 - 2024-04-23
 #### Features
 - **(analytics)** adding analytics for balance lookups (#632) - (53d5d62) - Max Kalashnikoff
