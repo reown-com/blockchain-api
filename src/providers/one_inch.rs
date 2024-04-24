@@ -181,6 +181,13 @@ impl ConversionProvider for OneInchProvider {
                     response_error.error.description,
                 ));
             }
+            // 404 response is expected when the chain ID is not supported
+            if response.status() == reqwest::StatusCode::NOT_FOUND {
+                return Err(RpcError::ConversionInvalidParameter(format!(
+                    "Chain ID {} is not supported",
+                    params.chain_id
+                )));
+            };
 
             error!(
                 "Error on getting tokens list for conversion from 1inch provider. Status is not \
