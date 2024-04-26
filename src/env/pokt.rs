@@ -137,6 +137,13 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::High).unwrap(),
             ),
         ),
+        (
+            "eip155:80002".into(),
+            (
+                "amoy-testnet-archival".into(),
+                Weight::new(Priority::High).unwrap(),
+            ),
+        ),
         // Celo
         (
             "eip155:42220".into(),
