@@ -98,6 +98,15 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     )
     .await;
 
+    // Polygon Amoy
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:80002",
+        "0x13882",
+    )
+    .await;
+
     // Polygon celo
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
