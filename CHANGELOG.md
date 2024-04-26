@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.58.0 - 2024-04-26
+#### Features
+- **(providers)** adding Polygon Amoy testnet (#647) - (2159ebd) - Max Kalashnikoff
+
+- - -
+
 ## 0.57.0 - 2024-04-24
 #### Features
 - **(1inch)** handling of the unsupported chain ID (#646) - (73f0ba4) - Max Kalashnikoff
