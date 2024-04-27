@@ -6,7 +6,7 @@ use {
     },
     once_cell::sync::Lazy,
     regex::Regex,
-    relay_rpc::auth::cacao::signature::eip1271::verify_eip1271,
+    relay_rpc::auth::cacao::{signature::eip6492::verify_eip6492, CacaoError},
     std::str::FromStr,
     strum::IntoEnumIterator,
     strum_macros::{Display, EnumIter, EnumString},
@@ -67,14 +67,7 @@ pub async fn verify_message_signature(
     let address_parsed =
         H160::from_str(address).map_err(|_| CryptoUitlsError::AddressFormat(address.into()))?;
 
-    // Proceed with the EIP-1271 verification if the address has a contract code
-    // or ecrecover verification if not (EOA)
-    if is_address_has_code(address_parsed, chain_id, rpc_project_id).await? {
-        verify_eip1271_message_signature(message, signature, chain_id, address, rpc_project_id)
-            .await
-    } else {
-        verify_eoa_message_signature(message, signature, &address_parsed)
-    }
+    verify_eip6492_message_signature(message, signature, address, chain_id, rpc_project_id).await
 }
 
 /// Veryfy message signature signed by the keccak256
@@ -116,9 +109,9 @@ pub async fn is_address_has_code(
     Ok(!code.is_empty())
 }
 
-/// Veryfy message signature for eip1271 contract
+/// Veryfy message signature for eip6492 contract
 #[tracing::instrument]
-pub async fn verify_eip1271_message_signature(
+pub async fn verify_eip6492_message_signature(
     message: &str,
     signature: &str,
     chain_id: &str,
@@ -139,15 +132,14 @@ pub async fn verify_eip1271_message_signature(
         ))
     })?;
 
-    let result = verify_eip1271(signature.into(), address, &message_hash, provider)
-        .await
-        .map_err(|e| {
-            CryptoUitlsError::ContractCallError(format!(
-                "Failed to verify EIP-1271 signature: {}",
-                e
-            ))
-        })?;
-    Ok(result)
+    match verify_eip6492(signature.into(), address, &message_hash, provider).await {
+        Ok(_) => Ok(true),
+        Err(CacaoError::Verification) => Ok(false),
+        Err(e) => Err(CryptoUitlsError::ContractCallError(format!(
+            "Failed to verify EIP-6492 signature: {}",
+            e
+        ))),
+    }
 }
 
 /// Convert EVM chain ID to coin type ENSIP-11
@@ -343,15 +335,17 @@ mod tests {
         std::{collections::HashMap, str::FromStr},
     };
 
-    #[test]
-    fn test_verify_eoa_message_signature_valid() {
+    #[tokio::test]
+    async fn test_verify_eoa_message_signature_valid() {
         let message = "test message signature";
         let signature = "0x660739ee06920c5f55fbaf0da4f435faaa9c55e2c9da303c50c4b3865191d67e5002a0b10eb0f89bae66823f7f07415ea9d5bbb607ee61ac98b7f2a0a44fcb5c1b";
-        let owner = H160::from_str("0xAff392551773CCb2574fAE23195CC3aFDBe98d18").unwrap();
+        let address = "0xAff392551773CCb2574fAE23195CC3aFDBe98d18";
 
-        let result = verify_eoa_message_signature(message, signature, &owner);
-        assert!(result.is_ok());
-        assert!(result.unwrap());
+        let result_6492 =
+            verify_eip6492_message_signature(message, signature, "eip155:11155111", address, "")
+                .await;
+        assert!(result_6492.is_ok());
+        assert!(result_6492.unwrap());
     }
 
     #[test]
@@ -366,27 +360,29 @@ mod tests {
         assert!(result.unwrap());
     }
 
-    #[test]
-    fn test_verify_eoa_message_signature_invalid() {
+    #[tokio::test]
+    async fn test_verify_eoa_message_signature_invalid() {
         let message = "wrong message signature";
-        let signature = "0x660739ee06920c5f55fbaf0da4f435faaa9c55e2c9da303c50c4b3865191d67e5002a0b10eb0f89bae66823f7f07415ea9d5bbb607ee61ac98b7f2a0a44fcb5c1b"; // The signature of the message
-        let owner = H160::from_str("0xAff392551773CCb2574fAE23195CC3aFDBe98d18").unwrap(); // The Ethereum address of the signer
+        let signature = "0x660739ee06920c5f55fbaf0da4f435faaa9c55e2c9da303c50c4b3865191d67e5002a0b10eb0f89bae66823f7f07415ea9d5bbb607ee61ac98b7f2a0a44fcb5c1b";
+        let address = "0xAff392551773CCb2574fAE23195CC3aFDBe98d18";
 
-        let result = verify_eoa_message_signature(message, signature, &owner);
-        assert!(result.is_ok());
-        assert!(!result.unwrap());
+        let result_6492 =
+            verify_eip6492_message_signature(message, signature, "eip155:11155111", address, "")
+                .await;
+        assert!(result_6492.is_ok());
+        assert!(!result_6492.unwrap());
     }
 
     #[tokio::test]
     #[ignore]
-    /// Manual testing of the EIP1271 signature verification
-    async fn manual_test_verify_eip1271_message_signature() {
+    /// Manual testing of the eip6492 signature verification
+    async fn manual_test_verify_eip6492_message_signature() {
         let message = "xxx";
         let valid_signature = "0x";
         let address = "0x";
         let chain_id = "eip155:11155111";
         let rpc_project_id = "project_id";
-        let result = verify_eip1271_message_signature(
+        let result = verify_eip6492_message_signature(
             message,
             valid_signature,
             chain_id,
@@ -398,7 +394,7 @@ mod tests {
         assert!(result);
 
         let invalid_signature = "0x";
-        let result = verify_eip1271_message_signature(
+        let result = verify_eip6492_message_signature(
             message,
             invalid_signature,
             chain_id,
