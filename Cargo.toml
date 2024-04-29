@@ -38,6 +38,7 @@ validator = { version = "0.16", features = ["derive"] }
 num_enum = "0.7"
 strum = "0.26"
 strum_macros = "0.26"
+hex = "0.4"
 
 # Storage
 aws-config = "1.1"
