@@ -97,12 +97,7 @@ async fn handler_internal(
     let response = state
         .providers
         .fungible_price_provider
-        .get_price(
-            &chain_id,
-            &address,
-            &query.currency,
-            state.http_client.clone(),
-        )
+        .get_price(&chain_id, &address, &query.currency)
         .await
         .tap_err(|e| {
             error!("Failed to call fungible price with {}", e);

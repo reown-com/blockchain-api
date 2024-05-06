@@ -1,25 +1,33 @@
 use {
     crate::{
         error::{RpcError, RpcResult},
-        handlers::convert::{
-            allowance::{AllowanceQueryParams, AllowanceResponseBody},
-            approve::{
-                ConvertApproveQueryParams,
-                ConvertApproveResponseBody,
-                ConvertApproveTx,
-                ConvertApproveTxEip155,
+        handlers::{
+            convert::{
+                allowance::{AllowanceQueryParams, AllowanceResponseBody},
+                approve::{
+                    ConvertApproveQueryParams,
+                    ConvertApproveResponseBody,
+                    ConvertApproveTx,
+                    ConvertApproveTxEip155,
+                },
+                gas_price::{GasPriceQueryParams, GasPriceQueryResponseBody},
+                quotes::{ConvertQuoteQueryParams, ConvertQuoteResponseBody, QuoteItem},
+                tokens::{TokenItem, TokensListQueryParams, TokensListResponseBody},
+                transaction::{
+                    ConvertTransactionQueryParams,
+                    ConvertTransactionResponseBody,
+                    ConvertTx,
+                    ConvertTxEip155,
+                },
             },
-            gas_price::{GasPriceQueryParams, GasPriceQueryResponseBody},
-            quotes::{ConvertQuoteQueryParams, ConvertQuoteResponseBody, QuoteItem},
-            tokens::{TokenItem, TokensListQueryParams, TokensListResponseBody},
-            transaction::{
-                ConvertTransactionQueryParams,
-                ConvertTransactionResponseBody,
-                ConvertTx,
-                ConvertTxEip155,
-            },
+            fungible_price::FungiblePriceItem,
         },
-        providers::ConversionProvider,
+        providers::{
+            ConversionProvider,
+            FungiblePriceProvider,
+            PriceCurrencies,
+            PriceResponseBody,
+        },
         utils::crypto,
     },
     async_trait::async_trait,
@@ -58,6 +66,79 @@ impl OneInchProvider {
             .header("Authorization", format!("Bearer {}", self.api_key))
             .send()
             .await
+    }
+
+    async fn get_token_price(
+        &self,
+        chain_id: &str,
+        address: &str,
+        currency: &PriceCurrencies,
+    ) -> Result<String, RpcError> {
+        let base = format!("{}/price/v1.1/{}/{}", &self.base_api_url, chain_id, address);
+        let mut url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
+        url.query_pairs_mut()
+            .append_pair("currency", &currency.to_string());
+
+        let price_response = self.send_request(url, &self.http_client.clone()).await?;
+
+        if !price_response.status().is_success() {
+            error!(
+                "Error on getting fungible price from 1inch provider. Status is not OK: {:?}",
+                price_response.status(),
+            );
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if price_response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = price_response.json::<OneInchErrorResponse>().await?;
+                return Err(RpcError::ConversionInvalidParameter(
+                    response_error.error.description,
+                ));
+            }
+            return Err(RpcError::ConversionProviderError);
+        }
+        let price_body = price_response.json::<HashMap<String, String>>().await?;
+        price_body.get(address).map_or(
+            {
+                error!(
+                    "Error on getting fungible price from 1inch provider. Price not found for the \
+                     address"
+                );
+                Err(RpcError::ConversionProviderError)
+            },
+            |price| Ok(price.clone()),
+        )
+    }
+
+    async fn get_token_info(
+        &self,
+        chain_id: &str,
+        address: &str,
+    ) -> Result<OneInchTokenItem, RpcError> {
+        let base = format!(
+            "{}/token/v1.2/{}/custom/{}",
+            &self.base_api_url, chain_id, address
+        );
+        let url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
+
+        let response = self.send_request(url, &self.http_client.clone()).await?;
+
+        if !response.status().is_success() {
+            error!(
+                "Error on getting token info from 1inch provider. Status is not OK: {:?}",
+                response.status(),
+            );
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = response.json::<OneInchErrorResponse>().await?;
+                return Err(RpcError::ConversionInvalidParameter(
+                    response_error.error.description,
+                ));
+            }
+            return Err(RpcError::ConversionProviderError);
+        }
+        let body = response.json::<OneInchTokenItem>().await?;
+        Ok(body)
     }
 }
 
@@ -517,5 +598,30 @@ impl ConversionProvider for OneInchProvider {
         Ok(AllowanceResponseBody {
             allowance: body.allowance,
         })
+    }
+}
+
+#[async_trait]
+impl FungiblePriceProvider for OneInchProvider {
+    #[tracing::instrument(skip(self), fields(provider = "1inch"), level = "debug")]
+    async fn get_price(
+        &self,
+        chain_id: &str,
+        address: &str,
+        currency: &PriceCurrencies,
+    ) -> RpcResult<PriceResponseBody> {
+        let price = self.get_token_price(chain_id, address, currency).await?;
+        let info = self.get_token_info(chain_id, address).await?;
+
+        let response = PriceResponseBody {
+            fungibles: vec![FungiblePriceItem {
+                name: info.name,
+                symbol: info.symbol,
+                icon_url: info.logo_uri.unwrap_or_default(),
+                price: price.parse().unwrap_or(0.0),
+            }],
+        };
+
+        Ok(response)
     }
 }
