@@ -74,8 +74,10 @@ impl OneInchProvider {
         address: &str,
         currency: &PriceCurrencies,
     ) -> Result<String, RpcError> {
-        let base = format!("{}/price/v1.1/{}/{}", &self.base_api_url, chain_id, address);
-        let mut url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
+        let mut url = Url::parse(
+            format!("{}/price/v1.1/{}/{}", &self.base_api_url, chain_id, address).as_str(),
+        )
+        .map_err(|_| RpcError::ConversionParseURLError)?;
         url.query_pairs_mut()
             .append_pair("currency", &currency.to_string());
 
@@ -114,11 +116,14 @@ impl OneInchProvider {
         chain_id: &str,
         address: &str,
     ) -> Result<OneInchTokenItem, RpcError> {
-        let base = format!(
-            "{}/token/v1.2/{}/custom/{}",
-            &self.base_api_url, chain_id, address
-        );
-        let url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
+        let url = Url::parse(
+            format!(
+                "{}/token/v1.2/{}/custom/{}",
+                &self.base_api_url, chain_id, address
+            )
+            .as_str(),
+        )
+        .map_err(|_| RpcError::ConversionParseURLError)?;
 
         let response = self.send_request(url, &self.http_client.clone()).await?;
 
