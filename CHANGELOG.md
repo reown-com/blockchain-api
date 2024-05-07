@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.60.0 - 2024-05-07
+#### Features
+- **(names)** adding `eip1271` and `erc6492` support (#644) - (b07e572) - Max Kalashnikoff
+
+- - -
+
 ## 0.59.0 - 2024-05-07
 #### Features
 - **(providers)** using 1Inch instead of Zerion for fungible prices (#648) - (8123b70) - Max Kalashnikoff
