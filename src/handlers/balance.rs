@@ -36,17 +36,21 @@ pub enum BalanceCurrencies {
 
 impl Display for BalanceCurrencies {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            BalanceCurrencies::BTC => "btc",
-            BalanceCurrencies::ETH => "eth",
-            BalanceCurrencies::USD => "usd",
-            BalanceCurrencies::EUR => "eur",
-            BalanceCurrencies::GBP => "gbp",
-            BalanceCurrencies::AUD => "aud",
-            BalanceCurrencies::CAD => "cad",
-            BalanceCurrencies::INR => "inr",
-            BalanceCurrencies::JPY => "jpy",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                BalanceCurrencies::BTC => "btc",
+                BalanceCurrencies::ETH => "eth",
+                BalanceCurrencies::USD => "usd",
+                BalanceCurrencies::EUR => "eur",
+                BalanceCurrencies::GBP => "gbp",
+                BalanceCurrencies::AUD => "aud",
+                BalanceCurrencies::CAD => "cad",
+                BalanceCurrencies::INR => "inr",
+                BalanceCurrencies::JPY => "jpy",
+            }
+        )
     }
 }
 

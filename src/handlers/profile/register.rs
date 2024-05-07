@@ -2,16 +2,10 @@ use {
     super::{
         super::HANDLER_TASK_METRICS,
         utils::{
-            check_attributes,
-            is_name_format_correct,
-            is_name_in_allowed_zones,
-            is_name_length_correct,
-            is_timestamp_within_interval,
+            check_attributes, is_name_format_correct, is_name_in_allowed_zones,
+            is_name_length_correct, is_timestamp_within_interval,
         },
-        RegisterPayload,
-        RegisterRequest,
-        ALLOWED_ZONES,
-        UNIXTIMESTAMP_SYNC_THRESHOLD,
+        RegisterPayload, RegisterRequest, ALLOWED_ZONES, UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{
         database::{
@@ -21,9 +15,7 @@ use {
         error::RpcError,
         state::AppState,
         utils::crypto::{
-            convert_coin_type_to_evm_chain_id,
-            is_coin_type_supported,
-            verify_message_signature,
+            convert_coin_type_to_evm_chain_id, is_coin_type_supported, verify_message_signature,
         },
     },
     axum::{
@@ -140,10 +132,13 @@ pub async fn handler_internal(
     }
 
     // Register (insert) a new domain with address
-    let addresses: ENSIP11AddressesMap = HashMap::from([(register_request.coin_type, Address {
-        address: register_request.address,
-        created_at: None,
-    })]);
+    let addresses: ENSIP11AddressesMap = HashMap::from([(
+        register_request.coin_type,
+        Address {
+            address: register_request.address,
+            created_at: None,
+        },
+    )]);
 
     let insert_result = insert_name(
         payload.name.clone(),
