@@ -25,7 +25,7 @@ permissions:
 jobs:
   ci:
     name: CI
-    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.9
+    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@fix/disable-udeps
     secrets: inherit
     with:
       check-infra: false

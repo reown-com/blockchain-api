@@ -1,9 +1,6 @@
 use {
     alloy_primitives::Address,
-    ethers::{
-        prelude::*,
-        types::{H160, H256},
-    },
+    ethers::types::H256,
     once_cell::sync::Lazy,
     regex::Regex,
     relay_rpc::auth::cacao::{signature::eip6492::verify_eip6492, CacaoError},
