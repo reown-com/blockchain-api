@@ -33,7 +33,7 @@ describe('Fungible price', () => {
     const native_tokens = [
       { chainId: 1, symbol: 'ETH' },
       { chainId: 56, symbol: 'BNB' },
-      { chainId: 100, symbol: 'XDAI' },
+      { chainId: 100, symbol: 'xDAI' },
       { chainId: 137, symbol: 'MATIC' },
       { chainId: 250, symbol: 'FTM' },
       { chainId: 43114, symbol: 'AVAX' },

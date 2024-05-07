@@ -167,11 +167,10 @@ impl ProviderRepository {
             .unwrap_or("ONE_INCH_API_KEY".into());
 
         let zerion_provider = Arc::new(ZerionProvider::new(zerion_api_key));
+        let one_inch_provider = Arc::new(OneInchProvider::new(one_inch_api_key));
         let history_provider = zerion_provider.clone();
         let portfolio_provider = zerion_provider.clone();
         let balance_provider = zerion_provider.clone();
-        let fungible_price_provider = zerion_provider;
-        let conversion_provider = Arc::new(OneInchProvider::new(one_inch_api_key));
 
         let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
             coinbase_api_key,
@@ -195,8 +194,8 @@ impl ProviderRepository {
             coinbase_pay_provider: coinbase_pay_provider.clone(),
             onramp_provider: coinbase_pay_provider,
             balance_provider,
-            conversion_provider,
-            fungible_price_provider,
+            conversion_provider: one_inch_provider.clone(),
+            fungible_price_provider: one_inch_provider.clone(),
         }
     }
 
@@ -606,7 +605,6 @@ pub trait FungiblePriceProvider: Send + Sync + Debug {
         chain_id: &str,
         address: &str,
         currency: &PriceCurrencies,
-        http_client: reqwest::Client,
     ) -> RpcResult<PriceResponseBody>;
 }
 
