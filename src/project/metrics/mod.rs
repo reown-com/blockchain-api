@@ -59,10 +59,11 @@ impl ProjectDataMetrics {
     }
 
     pub fn request(&self, time: Duration, source: ResponseSource, resp: &ProjectDataResult) {
-        self.requests_total.add(&otel::Context::new(), 1, &[
-            source_tag(source),
-            response_tag(resp),
-        ]);
+        self.requests_total.add(
+            &otel::Context::new(),
+            1,
+            &[source_tag(source), response_tag(resp)],
+        );
         self.total_time
             .record(&otel::Context::new(), duration_ms(time), &[]);
     }

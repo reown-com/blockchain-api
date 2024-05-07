@@ -2,16 +2,10 @@ use {
     super::{
         super::HANDLER_TASK_METRICS,
         utils::{
-            check_attributes,
-            is_name_format_correct,
-            is_name_in_allowed_zones,
-            is_name_length_correct,
-            is_timestamp_within_interval,
+            check_attributes, is_name_format_correct, is_name_in_allowed_zones,
+            is_name_length_correct, is_timestamp_within_interval,
         },
-        RegisterPayload,
-        RegisterRequest,
-        ALLOWED_ZONES,
-        UNIXTIMESTAMP_SYNC_THRESHOLD,
+        RegisterPayload, RegisterRequest, ALLOWED_ZONES, UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{
         database::{
@@ -20,7 +14,9 @@ use {
         },
         error::RpcError,
         state::AppState,
-        utils::crypto::{is_coin_type_supported, verify_message_signature},
+        utils::crypto::{
+            convert_coin_type_to_evm_chain_id, is_coin_type_supported, verify_message_signature,
+        },
     },
     axum::{
         extract::State,
@@ -29,7 +25,7 @@ use {
     },
     hyper::StatusCode,
     sqlx::Error as SqlxError,
-    std::{collections::HashMap, str::FromStr, sync::Arc},
+    std::{collections::HashMap, sync::Arc},
     tracing::log::error,
     wc::future::FutureExt,
 };
@@ -87,11 +83,6 @@ pub async fn handler_internal(
         return Err(RpcError::ExpiredTimestamp(payload.timestamp));
     }
 
-    let owner = match ethers::types::H160::from_str(&register_request.address) {
-        Ok(owner) => owner,
-        Err(_) => return Err(RpcError::InvalidAddress),
-    };
-
     // Check for supported attributes
     if let Some(attributes) = payload.attributes.clone() {
         if !check_attributes(
@@ -104,15 +95,36 @@ pub async fn handler_internal(
     }
 
     // Check the signature
-    let sinature_check =
-        match verify_message_signature(raw_payload, &register_request.signature, &owner) {
-            Ok(sinature_check) => sinature_check,
-            Err(_) => {
-                return Err(RpcError::SignatureValidationError(
-                    "Invalid signature".into(),
-                ))
-            }
-        };
+    let chain_id_caip2 = format!(
+        "eip155:{}",
+        convert_coin_type_to_evm_chain_id(register_request.coin_type) as u64
+    );
+    let rpc_project_id = state
+        .config
+        .server
+        .testing_project_id
+        .as_ref()
+        .ok_or_else(|| {
+            RpcError::InvalidConfiguration(
+                "Missing testing project id in the configuration for eip1271 lookups".to_string(),
+            )
+        })?;
+    let sinature_check = match verify_message_signature(
+        raw_payload,
+        &register_request.signature,
+        &register_request.address,
+        &chain_id_caip2,
+        rpc_project_id,
+    )
+    .await
+    {
+        Ok(sinature_check) => sinature_check,
+        Err(_) => {
+            return Err(RpcError::SignatureValidationError(
+                "Invalid signature".into(),
+            ))
+        }
+    };
     if !sinature_check {
         return Err(RpcError::SignatureValidationError(
             "Signature verification error".into(),
@@ -120,10 +132,13 @@ pub async fn handler_internal(
     }
 
     // Register (insert) a new domain with address
-    let addresses: ENSIP11AddressesMap = HashMap::from([(register_request.coin_type, Address {
-        address: register_request.address,
-        created_at: None,
-    })]);
+    let addresses: ENSIP11AddressesMap = HashMap::from([(
+        register_request.coin_type,
+        Address {
+            address: register_request.address,
+            created_at: None,
+        },
+    )]);
 
     let insert_result = insert_name(
         payload.name.clone(),

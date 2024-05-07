@@ -1,6 +1,5 @@
 use {
-    crate::storage::redis::Addr as RedisAddr,
-    serde::Deserialize,
+    crate::storage::redis::Addr as RedisAddr, serde::Deserialize,
     serde_piecewise_default::DeserializePiecewiseDefault,
 };
 

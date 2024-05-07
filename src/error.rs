@@ -1,8 +1,6 @@
 use {
     crate::{
-        project::ProjectDataError,
-        storage::error::StorageError,
-        utils::crypto::CryptoUitlsError,
+        project::ProjectDataError, storage::error::StorageError, utils::crypto::CryptoUitlsError,
     },
     axum::{response::IntoResponse, Json},
     cerberus::registry::RegistryError,

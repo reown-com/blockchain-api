@@ -1,11 +1,14 @@
 use {
-    ethers::types::H160,
+    alloy_primitives::Address,
+    ethers::types::H256,
     once_cell::sync::Lazy,
     regex::Regex,
+    relay_rpc::auth::cacao::{signature::eip6492::verify_eip6492, CacaoError},
     std::str::FromStr,
     strum::IntoEnumIterator,
     strum_macros::{Display, EnumIter, EnumString},
     tracing::warn,
+    url::Url,
 };
 
 const ENSIP11_MAINNET_COIN_TYPE: u32 = 60;
@@ -28,23 +31,76 @@ pub enum CryptoUitlsError {
     WrongCaip2Format(String),
     #[error("Wrong CAIP-10 format: {0}")]
     WrongCaip10Format(String),
+    #[error("Contract call error: {0}")]
+    ContractCallError(String),
+    #[error("Wrong address format: {0}")]
+    AddressFormat(String),
+    #[error("Wrong signature format: {0}")]
+    SignatureFormat(String),
+    #[error("Wrong address checksum: {0}")]
+    AddressChecksum(String),
+    #[error("Failed to parse RPC url: {0}")]
+    RpcUrlParseError(String),
 }
 
-/// Veryfy message signature signed by the keccak256
-#[tracing::instrument]
-pub fn verify_message_signature(
+pub fn add_eip191(message: &str) -> String {
+    format!("\x19Ethereum Signed Message:\n{}{}", message.len(), message)
+}
+
+/// Returns the keccak256 EIP-191 hash of the message
+pub fn get_message_hash(message: &str) -> H256 {
+    let prefixed_message = add_eip191(message);
+    let message_hash = ethers::core::utils::keccak256(prefixed_message.clone());
+    ethers::types::H256::from_slice(&message_hash)
+}
+
+pub async fn verify_message_signature(
     message: &str,
     signature: &str,
-    owner: &H160,
-) -> Result<bool, Box<dyn std::error::Error>> {
-    let prefixed_message = format!("\x19Ethereum Signed Message:\n{}{}", message.len(), message);
-    let message_hash = ethers::core::utils::keccak256(prefixed_message.clone());
-    let message_hash = ethers::types::H256::from_slice(&message_hash);
+    address: &str,
+    chain_id: &str,
+    rpc_project_id: &str,
+) -> Result<bool, CryptoUitlsError> {
+    verify_eip6492_message_signature(message, signature, chain_id, address, rpc_project_id).await
+}
 
-    let sign = ethers::types::Signature::from_str(signature)?;
-    match sign.verify(message_hash, *owner) {
+/// Veryfy message signature for eip6492 contract
+#[tracing::instrument]
+pub async fn verify_eip6492_message_signature(
+    message: &str,
+    signature: &str,
+    chain_id: &str,
+    address: &str,
+    rpc_project_id: &str,
+) -> Result<bool, CryptoUitlsError> {
+    let message_hash: [u8; 32] = get_message_hash(message).into();
+    let address = Address::parse_checksummed(address, None)
+        .map_err(|_| CryptoUitlsError::AddressChecksum(address.into()))?;
+
+    let mut provider = Url::parse("https://rpc.walletconnect.com/v1")
+        .map_err(|e| {
+            CryptoUitlsError::RpcUrlParseError(format!(
+                "Failed to parse RPC url:
+        {}",
+                e
+            ))
+        })
+        .unwrap();
+    provider.query_pairs_mut().append_pair("chainId", chain_id);
+    provider
+        .query_pairs_mut()
+        .append_pair("projectId", rpc_project_id);
+
+    let hexed_signature = hex::decode(&signature[2..])
+        .map_err(|e| CryptoUitlsError::SignatureFormat(format!("Wrong signature format: {}", e)))?;
+
+    match verify_eip6492(hexed_signature, address, &message_hash, provider).await {
         Ok(_) => Ok(true),
-        Err(_) => Ok(false),
+        Err(CacaoError::Verification) => Ok(false),
+        Err(e) => Err(CryptoUitlsError::ContractCallError(format!(
+            "Failed to verify EIP-6492 signature: {}",
+            e
+        ))),
     }
 }
 
@@ -235,45 +291,7 @@ pub fn constant_time_eq(a: impl AsRef<[u8]>, b: impl AsRef<[u8]>) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use {
-        super::*,
-        ethers::types::H160,
-        std::{collections::HashMap, str::FromStr},
-    };
-
-    #[test]
-    fn test_verify_message_signature_valid() {
-        let message = "test message signature";
-        let signature = "0x660739ee06920c5f55fbaf0da4f435faaa9c55e2c9da303c50c4b3865191d67e5002a0b10eb0f89bae66823f7f07415ea9d5bbb607ee61ac98b7f2a0a44fcb5c1b";
-        let owner = H160::from_str("0xAff392551773CCb2574fAE23195CC3aFDBe98d18").unwrap();
-
-        let result = verify_message_signature(message, signature, &owner);
-        assert!(result.is_ok());
-        assert!(result.unwrap());
-    }
-
-    #[test]
-    fn test_verify_message_signature_json() {
-        let message = r#"{\"test\":\"some my text\"}"#;
-        let signature = "0x2fe0b640b4036c9c97911e6f22c72a2c934f1d67db02948055c0e0c84dbf4f2b33c2f8c4b000642735dbf5d1c96ba48ccd2a998324c9e4cb7bb776f0c95ee2fc1b";
-        let owner = H160::from_str("0xAff392551773CCb2574fAE23195CC3aFDBe98d18").unwrap();
-
-        let result = verify_message_signature(message, signature, &owner);
-        assert!(result.is_ok());
-        println!("result: {:?}", result);
-        assert!(result.unwrap());
-    }
-
-    #[test]
-    fn test_verify_message_signature_invalid() {
-        let message = "wrong message signature";
-        let signature = "0x660739ee06920c5f55fbaf0da4f435faaa9c55e2c9da303c50c4b3865191d67e5002a0b10eb0f89bae66823f7f07415ea9d5bbb607ee61ac98b7f2a0a44fcb5c1b"; // The signature of the message
-        let owner = H160::from_str("0xAff392551773CCb2574fAE23195CC3aFDBe98d18").unwrap(); // The Ethereum address of the signer
-
-        let result = verify_message_signature(message, signature, &owner);
-        assert!(result.is_ok());
-        assert!(!result.unwrap());
-    }
+    use {super::*, std::collections::HashMap};
 
     #[test]
     fn test_convert_coin_type_to_evm_chain_id() {

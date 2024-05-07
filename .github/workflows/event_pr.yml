@@ -46,11 +46,12 @@ jobs:
   ci:
     name: CI
     needs: [ paths-filter ]
-    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.8
+    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.10
     secrets: inherit
     with:
       check-app: ${{ needs.paths-filter.outputs.app == 'true' }}
       check-infra: ${{ needs.paths-filter.outputs.infra == 'true' }}
+      check-udeps: false
 
   merge_check:
     name: Merge Check

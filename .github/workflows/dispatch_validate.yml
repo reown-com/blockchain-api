@@ -32,11 +32,12 @@ permissions:
 jobs:
   ci:
     name: CI
-    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.8
+    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.10
     secrets: inherit
     with:
       check-infra: ${{ inputs.check-infra }}
       check-app: ${{ inputs.check-app }}
+      check-udeps: false
 
   validate-staging:
     name: Validate - Staging

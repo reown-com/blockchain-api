@@ -3,8 +3,7 @@ use {
     async_trait::async_trait,
     deadpool_redis::{
         redis::{AsyncCommands, Value},
-        Config,
-        Pool,
+        Config, Pool,
     },
     serde::{de::DeserializeOwned, Serialize},
     std::{fmt::Debug, time::Duration},
