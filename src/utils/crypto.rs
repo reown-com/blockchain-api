@@ -1,5 +1,7 @@
 use {
     ethers::types::H160,
+    once_cell::sync::Lazy,
+    regex::Regex,
     std::str::FromStr,
     strum::IntoEnumIterator,
     strum_macros::{Display, EnumIter, EnumString},
@@ -7,11 +9,21 @@ use {
 };
 
 const ENSIP11_MAINNET_COIN_TYPE: u32 = 60;
+static CAIP_CHAIN_ID_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"[-a-zA-Z0-9]{1,32}").expect("Failed to initialize regexp for the chain ID format")
+});
+static CAIP_ADDRESS_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"[-a-zA-Z0-9]{1,63}").expect("Failed to initialize regexp for the address format")
+});
 
 #[derive(thiserror::Error, Debug)]
 pub enum CryptoUitlsError {
     #[error("Namespace is not supported: {0}")]
     WrongNamespace(String),
+    #[error("Chain ID format is not supported: {0}")]
+    WrongChainIdFormat(String),
+    #[error("Address format is not supported: {0}")]
+    WrongAddressFormat(String),
     #[error("Wrong CAIP-2 format: {0}")]
     WrongCaip2Format(String),
     #[error("Wrong CAIP-10 format: {0}")]
@@ -167,7 +179,11 @@ pub fn disassemble_caip2(caip2: &str) -> Result<(CaipNamespaces, String), Crypto
         },
         None => return Err(CryptoUitlsError::WrongNamespace(caip2.into())),
     };
+
     let chain_id = parts[1].to_string();
+    CAIP_CHAIN_ID_REGEX
+        .captures(&chain_id)
+        .ok_or(CryptoUitlsError::WrongChainIdFormat(chain_id.clone()))?;
     Ok((namespace, chain_id))
 }
 
@@ -186,8 +202,16 @@ pub fn disassemble_caip10(
         },
         None => return Err(CryptoUitlsError::WrongNamespace(caip10.into())),
     };
+
     let chain_id = parts[1].to_string();
+    CAIP_CHAIN_ID_REGEX
+        .captures(&chain_id)
+        .ok_or(CryptoUitlsError::WrongChainIdFormat(chain_id.clone()))?;
+
     let address = parts[2].to_string();
+    CAIP_ADDRESS_REGEX
+        .captures(&address)
+        .ok_or(CryptoUitlsError::WrongAddressFormat(address.clone()))?;
     Ok((namespace, chain_id, address))
 }
 
