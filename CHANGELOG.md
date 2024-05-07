@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.59.0 - 2024-05-07
+#### Features
+- **(providers)** using 1Inch instead of Zerion for fungible prices (#648) - (8123b70) - Max Kalashnikoff
+
+- - -
+
 ## 0.58.0 - 2024-04-26
 #### Features
 - **(providers)** adding Polygon Amoy testnet (#647) - (2159ebd) - Max Kalashnikoff
