@@ -3,8 +3,8 @@
 # Build args
 #
 ################################################################################
-ARG                 base="rust:buster"
-ARG                 runtime="debian:buster-slim"
+ARG                 base="rust:bookworm"
+ARG                 runtime="debian:bookworm-slim"
 ARG                 bin="rpc-proxy"
 ARG                 version="unknown"
 ARG                 sha="unknown"
@@ -19,7 +19,7 @@ ARG                 WORK_DIR="/app"
 ################################################################################
 FROM                ${base} AS chef
 
-WORKDIR             ${WORK_DIR} 
+WORKDIR             ${WORK_DIR}
 RUN                 cargo install cargo-chef --locked
 
 ################################################################################
