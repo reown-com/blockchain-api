@@ -132,7 +132,7 @@ cargo-build-docs: (_cargo-build-docs "" "nodeps")
 # Format the application code
 @cargo-fmt: _check-cmd-cargo-fmt
   printf '==> Running {{ color-cmd }}rustfmt{{ nocolor }}\n'
-  cargo +nightly fmt
+  cargo fmt
 
 # Build service for development
 cargo-build: _check-cmd-cargo
@@ -164,7 +164,7 @@ cargo-test-default: _check-cmd-cargo
 # Run project tests with all features activated
 cargo-test-all: _check-cmd-cargo
   @printf '==> Testing project ({{ light-green }}all features{{ nocolor }})\n'
-  cargo +nightly test --all-features
+  cargo test --all-features
 
 # Run tests from project documentation
 cargo-test-doc: _check-cmd-cargo
@@ -184,7 +184,7 @@ cargo-check: _check-cmd-cargo
 # Check rust project with clippy
 cargo-clippy: _check-cmd-cargo-clippy
   @printf '==> Running {{ color-cmd }}clippy{{ nocolor }}\n'
-  cargo +nightly clippy --all-features --tests -- -D clippy::all
+  cargo clippy --all-features --tests -- -D clippy::all
 
 # Check unused dependencies
 cargo-udeps: _check-cmd-cargo-udeps
@@ -194,7 +194,7 @@ cargo-udeps: _check-cmd-cargo-udeps
 # Check the rust code formatting
 cargo-checkfmt: _check-cmd-cargo-fmt
   @printf '==> Running {{ color-cmd }}rustfmt{{ nocolor }} --check\n'
-  cargo +nightly fmt --check
+  cargo fmt --check
 
 ################################################################################
 # Terraform recipes

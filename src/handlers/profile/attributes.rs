@@ -11,9 +11,7 @@ use {
         state::AppState,
         utils::{
             crypto::{
-                constant_time_eq,
-                convert_coin_type_to_evm_chain_id,
-                is_coin_type_supported,
+                constant_time_eq, convert_coin_type_to_evm_chain_id, is_coin_type_supported,
                 verify_message_signature,
             },
             self_transport::SelfTransport,
