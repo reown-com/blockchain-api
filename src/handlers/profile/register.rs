@@ -13,28 +13,36 @@ use {
             types::{Address, ENSIP11AddressesMap, SupportedNamespaces},
         },
         error::RpcError,
+        handlers::RpcQueryParams,
         state::AppState,
-        utils::crypto::{
-            convert_coin_type_to_evm_chain_id, is_coin_type_supported, verify_message_signature,
+        utils::{
+            crypto::{
+                convert_coin_type_to_evm_chain_id,
+                is_coin_type_supported,
+                verify_message_signature,
+            },
+            self_transport::SelfTransport,
         },
     },
     axum::{
-        extract::State,
+        extract::{ConnectInfo, State},
         response::{IntoResponse, Response},
         Json,
     },
-    hyper::StatusCode,
+    hyper::{HeaderMap, StatusCode},
     sqlx::Error as SqlxError,
-    std::{collections::HashMap, sync::Arc},
+    std::{collections::HashMap, net::SocketAddr, sync::Arc},
     tracing::log::error,
     wc::future::FutureExt,
 };
 
 pub async fn handler(
     state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     Json(register_request): Json<RegisterRequest>,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, register_request)
+    handler_internal(state, connect_info, headers, register_request)
         .with_metrics(HANDLER_TASK_METRICS.with_name("profile_register"))
         .await
 }
@@ -42,6 +50,8 @@ pub async fn handler(
 #[tracing::instrument(skip(state))]
 pub async fn handler_internal(
     state: State<Arc<AppState>>,
+    ConnectInfo(connect_info): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     register_request: RegisterRequest,
 ) -> Result<Response, RpcError> {
     let raw_payload = &register_request.message;
@@ -103,7 +113,7 @@ pub async fn handler_internal(
         .config
         .server
         .testing_project_id
-        .as_ref()
+        .clone()
         .ok_or_else(|| {
             RpcError::InvalidConfiguration(
                 "Missing testing project id in the configuration for eip1271 lookups".to_string(),
@@ -113,8 +123,16 @@ pub async fn handler_internal(
         raw_payload,
         &register_request.signature,
         &register_request.address,
-        &chain_id_caip2,
-        rpc_project_id,
+        SelfTransport {
+            state: state.0.clone(),
+            connect_info,
+            headers,
+            query: RpcQueryParams {
+                chain_id: chain_id_caip2,
+                project_id: rpc_project_id,
+                provider_id: None,
+            },
+        },
     )
     .await
     {

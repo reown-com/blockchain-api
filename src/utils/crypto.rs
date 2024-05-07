@@ -1,14 +1,15 @@
 use {
+    super::self_transport::SelfTransport,
     alloy_primitives::Address,
+    alloy_provider::RootProvider,
+    alloy_rpc_client::RpcClient,
     ethers::types::H256,
     once_cell::sync::Lazy,
     regex::Regex,
-    relay_rpc::auth::cacao::{signature::eip6492::verify_eip6492, CacaoError},
     std::str::FromStr,
     strum::IntoEnumIterator,
     strum_macros::{Display, EnumIter, EnumString},
     tracing::warn,
-    url::Url,
 };
 
 const ENSIP11_MAINNET_COIN_TYPE: u32 = 60;
@@ -58,45 +59,30 @@ pub async fn verify_message_signature(
     message: &str,
     signature: &str,
     address: &str,
-    chain_id: &str,
-    rpc_project_id: &str,
+    self_transport: SelfTransport,
 ) -> Result<bool, CryptoUitlsError> {
-    verify_eip6492_message_signature(message, signature, chain_id, address, rpc_project_id).await
+    verify_eip6492_message_signature(message, signature, address, self_transport).await
 }
 
 /// Veryfy message signature for eip6492 contract
-#[tracing::instrument]
+#[tracing::instrument(skip(self_transport))]
 pub async fn verify_eip6492_message_signature(
     message: &str,
     signature: &str,
-    chain_id: &str,
     address: &str,
-    rpc_project_id: &str,
+    self_transport: SelfTransport,
 ) -> Result<bool, CryptoUitlsError> {
     let message_hash: [u8; 32] = get_message_hash(message).into();
     let address = Address::parse_checksummed(address, None)
         .map_err(|_| CryptoUitlsError::AddressChecksum(address.into()))?;
 
-    let mut provider = Url::parse("https://rpc.walletconnect.com/v1")
-        .map_err(|e| {
-            CryptoUitlsError::RpcUrlParseError(format!(
-                "Failed to parse RPC url:
-        {}",
-                e
-            ))
-        })
-        .unwrap();
-    provider.query_pairs_mut().append_pair("chainId", chain_id);
-    provider
-        .query_pairs_mut()
-        .append_pair("projectId", rpc_project_id);
-
     let hexed_signature = hex::decode(&signature[2..])
         .map_err(|e| CryptoUitlsError::SignatureFormat(format!("Wrong signature format: {}", e)))?;
 
-    match verify_eip6492(hexed_signature, address, &message_hash, provider).await {
-        Ok(_) => Ok(true),
-        Err(CacaoError::Verification) => Ok(false),
+    let provider = RootProvider::new(RpcClient::new(self_transport, false));
+
+    match erc6492::verify_signature(hexed_signature, address, &message_hash, provider).await {
+        Ok(verification) => Ok(verification.is_valid()),
         Err(e) => Err(CryptoUitlsError::ContractCallError(format!(
             "Failed to verify EIP-6492 signature: {}",
             e

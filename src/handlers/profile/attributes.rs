@@ -7,19 +7,25 @@ use {
     crate::{
         database::helpers::{get_name_and_addresses_by_name, update_name_attributes},
         error::RpcError,
+        handlers::RpcQueryParams,
         state::AppState,
-        utils::crypto::{
-            constant_time_eq, convert_coin_type_to_evm_chain_id, is_coin_type_supported,
-            verify_message_signature,
+        utils::{
+            crypto::{
+                constant_time_eq,
+                convert_coin_type_to_evm_chain_id,
+                is_coin_type_supported,
+                verify_message_signature,
+            },
+            self_transport::SelfTransport,
         },
     },
     axum::{
-        extract::{Path, State},
+        extract::{ConnectInfo, Path, State},
         response::{IntoResponse, Response},
         Json,
     },
-    hyper::StatusCode,
-    std::{str::FromStr, sync::Arc},
+    hyper::{HeaderMap, StatusCode},
+    std::{net::SocketAddr, str::FromStr, sync::Arc},
     tracing::log::error,
     wc::future::FutureExt,
 };
@@ -27,9 +33,11 @@ use {
 pub async fn handler(
     state: State<Arc<AppState>>,
     name: Path<String>,
+    connect_info: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     Json(request_payload): Json<RegisterRequest>,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, name, request_payload)
+    handler_internal(state, name, connect_info, headers, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("profile_attributes_update"))
         .await
 }
@@ -38,6 +46,8 @@ pub async fn handler(
 pub async fn handler_internal(
     state: State<Arc<AppState>>,
     Path(name): Path<String>,
+    ConnectInfo(connect_info): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     request_payload: RegisterRequest,
 ) -> Result<Response, RpcError> {
     let raw_payload = &request_payload.message;
@@ -77,7 +87,7 @@ pub async fn handler_internal(
         .config
         .server
         .testing_project_id
-        .as_ref()
+        .clone()
         .ok_or_else(|| {
             RpcError::InvalidConfiguration(
                 "Missing testing project id in the configuration for eip1271 lookups".to_string(),
@@ -87,8 +97,16 @@ pub async fn handler_internal(
         raw_payload,
         &request_payload.signature,
         &request_payload.address,
-        &chain_id_caip2,
-        rpc_project_id,
+        SelfTransport {
+            state: state.0.clone(),
+            connect_info,
+            headers,
+            query: RpcQueryParams {
+                chain_id: chain_id_caip2,
+                project_id: rpc_project_id,
+                provider_id: None,
+            },
+        },
     )
     .await
     {
