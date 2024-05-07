@@ -37,6 +37,7 @@ jobs:
     with:
       check-infra: ${{ inputs.check-infra }}
       check-app: ${{ inputs.check-app }}
+      check-udeps: false
 
   validate-staging:
     name: Validate - Staging

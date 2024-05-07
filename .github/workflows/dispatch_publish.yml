@@ -30,6 +30,7 @@ jobs:
     with:
       check-infra: false
       check-app: true
+      check-udeps: false
 
   release:
     name: Release

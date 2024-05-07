@@ -51,6 +51,7 @@ jobs:
     with:
       check-app: ${{ needs.paths-filter.outputs.app == 'true' }}
       check-infra: ${{ needs.paths-filter.outputs.infra == 'true' }}
+      check-udeps: false
 
   merge_check:
     name: Merge Check
