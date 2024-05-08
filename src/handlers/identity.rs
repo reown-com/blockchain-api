@@ -2,6 +2,7 @@ use {
     super::{proxy::rpc_call, RpcQueryParams, HANDLER_TASK_METRICS},
     crate::{
         analytics::IdentityLookupInfo,
+        database::helpers::get_names_by_address,
         error::RpcError,
         json_rpc::{JsonRpcError, JsonRpcResponse},
         state::AppState,
@@ -18,6 +19,7 @@ use {
         abi::Address,
         providers::{JsonRpcClient, Middleware, Provider, ProviderError},
         types::H160,
+        utils::to_checksum,
     },
     hyper::{body::to_bytes, HeaderMap, StatusCode},
     serde::{de::DeserializeOwned, Deserialize, Serialize},
@@ -27,7 +29,7 @@ use {
         time::{Duration, SystemTime, UNIX_EPOCH},
     },
     tap::TapFallible,
-    tracing::{debug, warn},
+    tracing::{debug, error, warn},
     wc::future::FutureExt,
 };
 
@@ -127,8 +129,12 @@ async fn handler_internal(
 
 #[derive(Serialize, Clone)]
 pub enum IdentityLookupSource {
+    /// Redis cached results
     Cache,
+    /// ENS contract name resolution
     Rpc,
+    /// Local name resolver
+    Local,
 }
 
 impl IdentityLookupSource {
@@ -136,6 +142,7 @@ impl IdentityLookupSource {
         match self {
             Self::Cache => "cache",
             Self::Rpc => "rpc",
+            Self::Local => "local",
         }
     }
 }
@@ -157,7 +164,7 @@ async fn lookup_identity(
     Query(query): Query<IdentityQueryParams>,
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
-    let cache_key = format!("{}", address);
+    let address_with_checksum = to_checksum(&address, None);
 
     // Check if we should enable cache control for allow listed Project ID
     // The cache is enabled by default
@@ -184,7 +191,7 @@ async fn lookup_identity(
         if let Some(cache) = &state.identity_cache {
             debug!("Checking cache for identity");
             let cache_start = SystemTime::now();
-            let value = cache.get(&cache_key).await?;
+            let value = cache.get(&address_with_checksum).await?;
             state.metrics.add_identity_lookup_cache_latency(cache_start);
             if let Some(response) = value {
                 return Ok((IdentityLookupSource::Cache, response));
@@ -192,7 +199,9 @@ async fn lookup_identity(
         }
     }
 
-    let res = lookup_identity_rpc(
+    // Lookup for the name in ENS first
+    let mut resolved_by = IdentityLookupSource::Rpc;
+    let mut res = lookup_identity_rpc(
         address,
         state.clone(),
         connect_info,
@@ -200,6 +209,30 @@ async fn lookup_identity(
         headers,
     )
     .await?;
+
+    // Lookup for the name in local name resolver if no ENS found
+    if res.name.is_none() {
+        match get_names_by_address(address_with_checksum.clone(), &state.postgres).await {
+            Ok(names) => {
+                // Our API v1 support only one name per address, using the first name
+                if let Some(name_first) = names.first() {
+                    let avatar = name_first
+                        .attributes
+                        .as_ref()
+                        .and_then(|attributes| attributes.get("avatar"))
+                        .map(|v| v.to_string());
+
+                    resolved_by = IdentityLookupSource::Local;
+                    res.name = Some(name_first.name.clone());
+                    res.avatar = avatar;
+                }
+            }
+            Err(e) => {
+                error!("Error on local name resolution: {}", e);
+                return Err(RpcError::InternalNameResolverError);
+            }
+        }
+    }
 
     if enable_cache {
         if let Some(cache) = &state.identity_cache {
@@ -210,10 +243,13 @@ async fn lookup_identity(
             // Do not block on cache write.
             tokio::spawn(async move {
                 cache
-                    .set(&cache_key, &res, Some(cache_ttl))
+                    .set(&address_with_checksum, &res, Some(cache_ttl))
                     .await
                     .tap_err(|err| {
-                        warn!("failed to cache identity lookup (cache_key:{cache_key}): {err:?}")
+                        warn!(
+                            "failed to cache identity lookup (cache_key:{address_with_checksum}): \
+                             {err:?}"
+                        )
                     })
                     .ok();
                 debug!("Setting cache success");
@@ -221,7 +257,7 @@ async fn lookup_identity(
         }
     }
 
-    Ok((IdentityLookupSource::Rpc, res))
+    Ok((resolved_by, res))
 }
 
 #[tracing::instrument(skip_all, level = "debug")]
