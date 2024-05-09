@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.61.0 - 2024-05-09
+#### Features
+- **(Docker)** bumping rust image to bookworm (#650) - (802d0e3) - Max Kalashnikoff
+- **(identity)** adding local names resolution (#651) - (f3646a8) - Max Kalashnikoff
+
+- - -
+
 ## 0.60.0 - 2024-05-07
 #### Features
 - **(names)** adding `eip1271` and `erc6492` support (#644) - (b07e572) - Max Kalashnikoff
