@@ -160,6 +160,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // zkSync
+        (
+            "eip155:324".into(),
+            ("zksync-era".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Near protocol
         (
             "near:mainnet".into(),
