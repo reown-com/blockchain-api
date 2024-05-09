@@ -244,6 +244,15 @@ describe('Account profile names', () => {
     expect(first_address.address).toBe(address)
   })
 
+  it('name reverse lookup (identity endpoint)', async () => {
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/identity/${address}?projectId=${projectId}`
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data).toBe('object')
+    expect(resp.data.name).toBe(name)
+  })
+
   it('update name attributes', async () => {
     // Prepare updated attributes payload
     const randomBioString = Array.from({ length: 24 }, 

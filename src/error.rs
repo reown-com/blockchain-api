@@ -137,6 +137,9 @@ pub enum RpcError {
     #[error("No name is found for address")]
     NameByAddressNotFound,
 
+    #[error("Internal name resolver error")]
+    InternalNameResolverError,
+
     #[error("Invalid name format: {0}")]
     InvalidNameFormat(String),
 
