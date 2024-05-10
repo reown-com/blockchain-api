@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.62.0 - 2024-05-10
+#### Features
+- **(providers)** adding zkSync support to Pokt (#652) - (53f6377) - Max Kalashnikoff
+
+- - -
+
 ## 0.61.0 - 2024-05-09
 #### Features
 - **(Docker)** bumping rust image to bookworm (#650) - (802d0e3) - Max Kalashnikoff
