@@ -89,6 +89,7 @@ pub struct ProvidersConfig {
     pub coinbase_api_key: Option<String>,
     pub coinbase_app_id: Option<String>,
     pub one_inch_api_key: Option<String>,
+    pub one_inch_referrer: Option<String>,
     /// GetBlock provider access tokens in JSON format
     pub getblock_access_tokens: Option<String>,
 }
@@ -165,9 +166,10 @@ impl ProviderRepository {
             .one_inch_api_key
             .clone()
             .unwrap_or("ONE_INCH_API_KEY".into());
+        let one_inch_referrer = config.one_inch_referrer.clone();
 
         let zerion_provider = Arc::new(ZerionProvider::new(zerion_api_key));
-        let one_inch_provider = Arc::new(OneInchProvider::new(one_inch_api_key));
+        let one_inch_provider = Arc::new(OneInchProvider::new(one_inch_api_key, one_inch_referrer));
         let history_provider = zerion_provider.clone();
         let portfolio_provider = zerion_provider.clone();
         let balance_provider = zerion_provider.clone();

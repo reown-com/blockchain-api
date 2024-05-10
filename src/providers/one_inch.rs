@@ -33,16 +33,18 @@ use {
 #[derive(Debug)]
 pub struct OneInchProvider {
     pub api_key: String,
+    pub referrer: Option<String>,
     pub base_api_url: String,
     pub http_client: reqwest::Client,
 }
 
 impl OneInchProvider {
-    pub fn new(api_key: String) -> Self {
+    pub fn new(api_key: String, referrer: Option<String>) -> Self {
         let base_api_url = "https://api.1inch.dev".to_string();
         let http_client = reqwest::Client::new();
         Self {
             api_key,
+            referrer,
             base_api_url,
             http_client,
         }
@@ -329,6 +331,9 @@ impl ConversionProvider for OneInchProvider {
         url.query_pairs_mut().append_pair("src", &src_address);
         url.query_pairs_mut().append_pair("dst", &dst_address);
         url.query_pairs_mut().append_pair("amount", &params.amount);
+        if let Some(referrer) = &self.referrer {
+            url.query_pairs_mut().append_pair("referrer", referrer);
+        }
 
         let response = self.send_request(url, &self.http_client.clone()).await?;
 
@@ -452,6 +457,9 @@ impl ConversionProvider for OneInchProvider {
         url.query_pairs_mut().append_pair("dst", &dst_address);
         url.query_pairs_mut().append_pair("amount", &params.amount);
         url.query_pairs_mut().append_pair("from", &user_address);
+        if let Some(referrer) = &self.referrer {
+            url.query_pairs_mut().append_pair("referrer", referrer);
+        }
 
         if let Some(eip155) = &params.eip155 {
             url.query_pairs_mut()
