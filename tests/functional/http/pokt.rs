@@ -124,6 +124,10 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
         "0x2019",
     )
     .await;
+
+    // zkSync era
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:324", "0x144")
+        .await;
 }
 
 #[test_context(ServerContext)]
