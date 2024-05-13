@@ -14,7 +14,7 @@ pub mod suggestions;
 pub mod utils;
 
 /// List of allowed name zones
-pub const ALLOWED_ZONES: [&str; 1] = ["wc.ink"];
+pub const ALLOWED_ZONES: [&str; 1] = ["wcn.id"];
 
 pub const UNIXTIMESTAMP_SYNC_THRESHOLD: u64 = 10;
 
