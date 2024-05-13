@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.63.0 - 2024-05-13
+#### Features
+- **(names)** adding wcn.id root zone (#654) - (07047f1) - Max Kalashnikoff
+
+- - -
+
 ## 0.62.0 - 2024-05-10
 #### Features
 - **(providers)** adding zkSync support to Pokt (#652) - (53f6377) - Max Kalashnikoff
