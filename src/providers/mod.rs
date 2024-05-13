@@ -167,6 +167,9 @@ impl ProviderRepository {
             .clone()
             .unwrap_or("ONE_INCH_API_KEY".into());
         let one_inch_referrer = config.one_inch_referrer.clone();
+        if one_inch_referrer.is_none() {
+            warn!("ONE_INCH_REFERRER is not set");
+        }
 
         let zerion_provider = Arc::new(ZerionProvider::new(zerion_api_key));
         let one_inch_provider = Arc::new(OneInchProvider::new(one_inch_api_key, one_inch_referrer));
