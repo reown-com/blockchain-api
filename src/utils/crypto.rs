@@ -1,10 +1,14 @@
 use {
     alloy_primitives::Address,
-    ethers::types::H256,
+    ethers::{
+        prelude::abigen,
+        providers::{Http, Provider},
+        types::{H160, H256, U256},
+    },
     once_cell::sync::Lazy,
     regex::Regex,
     relay_rpc::auth::cacao::{signature::eip6492::verify_eip6492, CacaoError},
-    std::str::FromStr,
+    std::{str::FromStr, sync::Arc},
     strum::IntoEnumIterator,
     strum_macros::{Display, EnumIter, EnumString},
     tracing::warn,
@@ -102,6 +106,39 @@ pub async fn verify_eip6492_message_signature(
             e
         ))),
     }
+}
+
+/// Get the balance of the ERC20 token
+#[tracing::instrument]
+pub async fn get_erc20_balance(
+    chain_id: &str,
+    contract: H160,
+    wallet: H160,
+    rpc_project_id: &str,
+) -> Result<U256, CryptoUitlsError> {
+    abigen!(
+        ERC20Contract,
+        r#"[
+            function balanceOf(address account) external view returns (uint256)
+        ]"#,
+    );
+
+    let provider = Provider::<Http>::try_from(format!(
+        "https://rpc.walletconnect.com/v1?chainId={}&projectId={}",
+        chain_id, rpc_project_id
+    ))
+    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
+    let provider = Arc::new(provider);
+
+    let contract = ERC20Contract::new(contract, provider);
+    let balance = contract.balance_of(wallet).call().await.map_err(|e| {
+        CryptoUitlsError::ContractCallError(format!(
+            "Failed to call ERC20 contract for the balance: {}",
+            e
+        ))
+    })?;
+
+    Ok(balance)
 }
 
 /// Convert EVM chain ID to coin type ENSIP-11
@@ -287,6 +324,23 @@ pub fn constant_time_eq(a: impl AsRef<[u8]>, b: impl AsRef<[u8]>) -> bool {
     }
 
     result == 0
+}
+
+/// Format token amount to human readable format according to the token decimals
+pub fn format_token_amount(amount: U256, decimals: u32) -> String {
+    let amount_str = amount.to_string();
+    let decimals_usize = decimals as usize;
+
+    // Handle cases where the total digits are less than or equal to the decimals
+    if amount_str.len() <= decimals_usize {
+        let required_zeros = decimals_usize - amount_str.len() + 1;
+        let zeros = "0".repeat(required_zeros);
+        return format!("0.{}{}", zeros, amount_str);
+    }
+
+    // Insert the decimal point at the correct position
+    let (integer_part, decimal_part) = amount_str.split_at(amount_str.len() - decimals_usize);
+    format!("{}.{}", integer_part, decimal_part)
 }
 
 #[cfg(test)]
