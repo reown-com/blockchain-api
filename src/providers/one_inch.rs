@@ -30,6 +30,8 @@ use {
     url::Url,
 };
 
+const ONEINCH_FEE: f64 = 0.85;
+
 #[derive(Debug)]
 pub struct OneInchProvider {
     pub api_key: String,
@@ -333,6 +335,8 @@ impl ConversionProvider for OneInchProvider {
         url.query_pairs_mut().append_pair("amount", &params.amount);
         if let Some(referrer) = &self.referrer {
             url.query_pairs_mut().append_pair("referrer", referrer);
+            url.query_pairs_mut()
+                .append_pair("fee", ONEINCH_FEE.to_string().as_str());
         }
 
         let response = self.send_request(url, &self.http_client.clone()).await?;
@@ -459,6 +463,8 @@ impl ConversionProvider for OneInchProvider {
         url.query_pairs_mut().append_pair("from", &user_address);
         if let Some(referrer) = &self.referrer {
             url.query_pairs_mut().append_pair("referrer", referrer);
+            url.query_pairs_mut()
+                .append_pair("fee", ONEINCH_FEE.to_string().as_str());
         }
 
         if let Some(eip155) = &params.eip155 {
@@ -474,7 +480,6 @@ impl ConversionProvider for OneInchProvider {
         }
 
         let response = self.send_request(url, &self.http_client.clone()).await?;
-
         if !response.status().is_success() {
             // Passing through error description for the error context
             // if user parameter is invalid (got 400 status code from the provider)
