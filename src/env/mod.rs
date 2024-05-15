@@ -148,6 +148,7 @@ mod test {
             ("RPC_PROXY_PROVIDER_COINBASE_API_KEY", "COINBASE_API_KEY"),
             ("RPC_PROXY_PROVIDER_COINBASE_APP_ID", "COINBASE_APP_ID"),
             ("RPC_PROXY_PROVIDER_ONE_INCH_API_KEY", "ONE_INCH_API_KEY"),
+            ("RPC_PROXY_PROVIDER_ONE_INCH_REFERRER", "ONE_INCH_REFERRER"),
             ("RPC_PROXY_PROVIDER_GETBLOCK_ACCESS_TOKENS", "{}"),
             (
                 "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL",
@@ -233,6 +234,7 @@ mod test {
                     coinbase_api_key: Some("COINBASE_API_KEY".to_owned()),
                     coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),
                     one_inch_api_key: Some("ONE_INCH_API_KEY".to_owned()),
+                    one_inch_referrer: Some("ONE_INCH_REFERRER".to_owned()),
                     getblock_access_tokens: Some("{}".to_owned()),
                 },
                 rate_limiting: RateLimitingConfig {

@@ -201,6 +201,12 @@ variable "one_inch_api_key" {
   sensitive   = true
 }
 
+variable "one_inch_referrer" {
+  description = "The referrer address for 1inch"
+  type        = string
+  sensitive   = true
+}
+
 variable "getblock_access_tokens" {
   description = "Mapping of API access tokens for GetBlock in JSON format"
   type        = string

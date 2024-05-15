@@ -69,6 +69,7 @@ module "ecs" {
   coinbase_api_key       = var.coinbase_api_key
   coinbase_app_id        = var.coinbase_app_id
   one_inch_api_key       = var.one_inch_api_key
+  one_inch_referrer      = var.one_inch_referrer
   getblock_access_tokens = var.getblock_access_tokens
 
   # Project Registry
