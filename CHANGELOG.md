@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.64.0 - 2024-05-15
+#### Features
+- **(convert)** adding `referrer` to 1Inch provider (#653) - (322ef49) - Max Kalashnikoff
+
+- - -
+
 ## 0.63.0 - 2024-05-13
 #### Features
 - **(names)** adding wcn.id root zone (#654) - (07047f1) - Max Kalashnikoff
