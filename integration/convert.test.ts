@@ -45,8 +45,11 @@ describe('Token conversion (single chain)', () => {
   })
 
   it('get conversion quote', async () => {
+    // Optional gas price
+    const gasPrice = "1000000000";
+    
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/convert/quotes?projectId=${projectId}&amount=${amount}&from=${srcAsset}&to=${destAsset}`
+      `${baseUrl}/v1/convert/quotes?projectId=${projectId}&amount=${amount}&from=${srcAsset}&to=${destAsset}&gasPrice=${gasPrice}`
     )
     expect(resp.status).toBe(200)
     expect(typeof resp.data.quotes).toBe('object')
