@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.65.0 - 2024-05-17
+#### Features
+- **(convertion)** adding optional `gasPrice` to the quote endpoint (#657) - (bd92739) - Max Kalashnikoff
+
+- - -
+
 ## 0.64.1 - 2024-05-15
 #### Bug Fixes
 - **(one_inch)** adding `fee` argument to quotes and swap (#656) - (0a587d2) - Max Kalashnikoff
