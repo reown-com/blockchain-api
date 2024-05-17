@@ -338,6 +338,9 @@ impl ConversionProvider for OneInchProvider {
             url.query_pairs_mut()
                 .append_pair("fee", ONEINCH_FEE.to_string().as_str());
         }
+        if let Some(gas_price) = &params.gas_price {
+            url.query_pairs_mut().append_pair("gasPrice", gas_price);
+        }
 
         let response = self.send_request(url, &self.http_client.clone()).await?;
 

@@ -20,6 +20,7 @@ pub struct ConvertQuoteQueryParams {
     pub amount: String,
     pub from: String,
     pub to: String,
+    pub gas_price: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
