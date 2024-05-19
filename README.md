@@ -13,7 +13,7 @@ Endpoint: `https://rpc.walletconnect.com/v1?chainId=eip155:1&projectId=<your-pro
 For example:
 
 ```bash
-curl -X POST "https://rpc.walletconnect.com/v1?chainId=eip155:1&projectId=<your-project-id>" --data '{"id":"1","jsonrpc":"2.0","method":"eth_chainId","params":[]}'
+curl -H "Content-Type: application/json" -X POST "https://rpc.walletconnect.com/v1?chainId=eip155:1&projectId=<your-project-id>" --data '{"id":"1","jsonrpc":"2.0","method":"eth_chainId","params":[]}'
 ```
 
 Obtain a `projectId` from <https://cloud.walletconnect.com>
@@ -41,7 +41,7 @@ just run
 
 ```bash
 # projectId is not validated under default .env.example configuration
-curl -X POST "http://localhost:3000/v1?chainId=eip155:1&projectId=someid" --data '{"id":"1","jsonrpc":"2.0","method":"eth_chainId","params":[]}'
+curl -H "Content-Type: application/json" -X POST "http://localhost:3000/v1?chainId=eip155:1&projectId=someid" --data '{"id":"1","jsonrpc":"2.0","method":"eth_chainId","params":[]}'
 ```
 
 ## Testing

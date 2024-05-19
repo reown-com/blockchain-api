@@ -10,7 +10,11 @@ build = "build.rs"
 
 [dependencies]
 wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.9.0", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock", "rate_limit"] }
-relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", tag = "v0.30.0", features = ["cacao"] }
+erc6492 = { git = "https://github.com/WalletConnect/erc6492.git" }
+alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "d68a6b7" }
+alloy-transport = { git = "https://github.com/alloy-rs/alloy.git", rev = "d68a6b7" }
+alloy-rpc-client = { git = "https://github.com/alloy-rs/alloy.git", rev = "d68a6b7" }
+alloy-json-rpc = { git = "https://github.com/alloy-rs/alloy.git", rev = "d68a6b7" }
 
 # Async
 async-trait = "0.1.57"
@@ -31,7 +35,7 @@ reqwest = { version= "0.11", features = ["deflate", "brotli", "gzip"] }
 # Serialization
 rmp-serde = "1.1"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde_json = { version = "1.0", features = ["raw_value"] }
 serde_piecewise_default = "0.2"
 serde-aux = "3.1"
 validator = { version = "0.16", features = ["derive"] }
