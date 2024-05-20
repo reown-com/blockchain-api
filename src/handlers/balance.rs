@@ -11,7 +11,7 @@ use {
         response::{IntoResponse, Response},
         Json,
     },
-    ethers::abi::Address,
+    ethers::{abi::Address, types::H160},
     hyper::HeaderMap,
     serde::{Deserialize, Serialize},
     std::{
@@ -200,8 +200,9 @@ async fn handler_internal(
             let contract_address = contract_address
                 .parse::<Address>()
                 .map_err(|_| RpcError::InvalidAddress)?;
+            let caip2_chain_id = format!("{}:{}", namespace, chain_id);
             let rpc_balance = crypto::get_erc20_balance(
-                format!("{}:{}", namespace, chain_id).as_str(),
+                &caip2_chain_id,
                 contract_address,
                 parsed_address,
                 rpc_project_id,
@@ -216,6 +217,30 @@ async fn handler_internal(
                     rpc_balance,
                     balance.quantity.decimals.parse::<u32>().unwrap_or(0),
                 );
+                // Recalculating the value with the latest balance
+                balance.value = Some(crypto::convert_token_amount_to_value(
+                    rpc_balance,
+                    balance.price,
+                    balance.quantity.decimals.parse::<u32>().unwrap_or(0),
+                ));
+            }
+            if contract_address == H160::repeat_byte(0xee) {
+                if let Some(balance) = response
+                    .balances
+                    .iter_mut()
+                    .find(|b| b.address.is_none() && b.chain_id == Some(caip2_chain_id.clone()))
+                {
+                    balance.quantity.numeric = crypto::format_token_amount(
+                        rpc_balance,
+                        balance.quantity.decimals.parse::<u32>().unwrap_or(0),
+                    );
+                    // Recalculate the value with the latest balance
+                    balance.value = Some(crypto::convert_token_amount_to_value(
+                        rpc_balance,
+                        balance.price,
+                        balance.quantity.decimals.parse::<u32>().unwrap_or(0),
+                    ));
+                }
             }
         }
     }

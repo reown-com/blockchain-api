@@ -61,9 +61,39 @@ describe('Account balance', () => {
     expect(resp.data.balances).toHaveLength(0)
   })
 
-  it('force update balance for the token', async () => {
+  it('force update balance for the ERC20 token', async () => {
     // USDC token contract address on Base
     const token_contract_address = 'eip155:8453:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
+    const endpoint = `/v1/account/${fulfilled_address}/balance`;
+    const queryParams = `?projectId=${projectId}&currency=${currency}&forceUpdate=${token_contract_address}`;
+    const url = `${baseUrl}${endpoint}${queryParams}`;
+    const headers = {
+        'x-sdk-version': sdk_version,
+    };
+    let resp = await httpClient.get(url, { headers });
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.balances).toBe('object')
+    expect(resp.data.balances.length).toBeGreaterThan(1)
+
+    for (const item of resp.data.balances) {
+      expect(typeof item.name).toBe('string')
+      expect(typeof item.symbol).toBe('string')
+      expect(item.chainId).toEqual(expect.stringMatching(/^(eip155:)?\d+$/))
+      if (item.address !== undefined) {
+        expect(item.address).toEqual(expect.stringMatching(/^(eip155:\d+:0x[0-9a-fA-F]{40})$/))
+      } else {
+        expect(item.address).toBeUndefined()
+      }
+      expect(typeof item.price).toBe('number')
+      expect(typeof item.quantity).toBe('object')
+      expect(typeof item.iconUrl).toBe('string')
+    }
+  })
+
+  it('force update balance for the native token', async () => {
+    // ETH token
+    // We are using `0xe...` as a contract address for native tokens
+    const token_contract_address = 'eip155:1:0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
     const endpoint = `/v1/account/${fulfilled_address}/balance`;
     const queryParams = `?projectId=${projectId}&currency=${currency}&forceUpdate=${token_contract_address}`;
     const url = `${baseUrl}${endpoint}${queryParams}`;

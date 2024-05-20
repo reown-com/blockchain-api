@@ -2,7 +2,7 @@ use {
     alloy_primitives::Address,
     ethers::{
         prelude::abigen,
-        providers::{Http, Provider},
+        providers::{Http, Middleware, Provider},
         types::{H160, H256, U256},
     },
     once_cell::sync::Lazy,
@@ -35,6 +35,8 @@ pub enum CryptoUitlsError {
     WrongCaip2Format(String),
     #[error("Wrong CAIP-10 format: {0}")]
     WrongCaip10Format(String),
+    #[error("Provider call error: {0}")]
+    ProviderError(String),
     #[error("Contract call error: {0}")]
     ContractCallError(String),
     #[error("Wrong address format: {0}")]
@@ -116,6 +118,25 @@ pub async fn get_erc20_balance(
     wallet: H160,
     rpc_project_id: &str,
 ) -> Result<U256, CryptoUitlsError> {
+    // Use JSON-RPC call for the balance of the native ERC20 tokens
+    // or call the contract for the custom ERC20 tokens
+    let balance = if contract == H160::repeat_byte(0xee) {
+        get_erc20_jsonrpc_balance(chain_id, wallet, rpc_project_id).await?
+    } else {
+        get_erc20_contract_balance(chain_id, contract, wallet, rpc_project_id).await?
+    };
+
+    Ok(balance)
+}
+
+/// Get the balance of ERC20 token by calling the contract address
+#[tracing::instrument]
+async fn get_erc20_contract_balance(
+    chain_id: &str,
+    contract: H160,
+    wallet: H160,
+    rpc_project_id: &str,
+) -> Result<U256, CryptoUitlsError> {
     abigen!(
         ERC20Contract,
         r#"[
@@ -137,7 +158,27 @@ pub async fn get_erc20_balance(
             e
         ))
     })?;
+    Ok(balance)
+}
 
+/// Get the balance of ERC20 token using JSON-RPC call
+#[tracing::instrument]
+async fn get_erc20_jsonrpc_balance(
+    chain_id: &str,
+    wallet: H160,
+    rpc_project_id: &str,
+) -> Result<U256, CryptoUitlsError> {
+    let provider = Provider::<Http>::try_from(format!(
+        "https://rpc.walletconnect.com/v1?chainId={}&projectId={}",
+        chain_id, rpc_project_id
+    ))
+    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
+    let provider = Arc::new(provider);
+
+    let balance = provider
+        .get_balance(wallet, None)
+        .await
+        .map_err(|e| CryptoUitlsError::ProviderError(format!("{}", e)))?;
     Ok(balance)
 }
 
@@ -333,7 +374,7 @@ pub fn format_token_amount(amount: U256, decimals: u32) -> String {
 
     // Handle cases where the total digits are less than or equal to the decimals
     if amount_str.len() <= decimals_usize {
-        let required_zeros = decimals_usize - amount_str.len() + 1;
+        let required_zeros = decimals_usize - amount_str.len();
         let zeros = "0".repeat(required_zeros);
         return format!("0.{}{}", zeros, amount_str);
     }
@@ -341,6 +382,14 @@ pub fn format_token_amount(amount: U256, decimals: u32) -> String {
     // Insert the decimal point at the correct position
     let (integer_part, decimal_part) = amount_str.split_at(amount_str.len() - decimals_usize);
     format!("{}.{}", integer_part, decimal_part)
+}
+
+/// Convert token amount to value depending on the token price and decimals
+pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u32) -> f64 {
+    let decimals_usize = decimals as usize;
+    let scaling_factor = 10_u64.pow(decimals_usize as u32) as f64;
+    let balance_f64 = balance.as_u64() as f64 / scaling_factor;
+    balance_f64 * price
 }
 
 #[cfg(test)]
@@ -447,5 +496,32 @@ mod tests {
         let malformed_caip10 = "eip15510xtest";
         let error_result = disassemble_caip10(malformed_caip10);
         assert!(error_result.is_err());
+    }
+
+    #[test]
+    fn test_format_token_amount() {
+        // Test case for ethereum 18 decimals
+        let amount_18 = U256::from_dec_str("959694527317077690").unwrap();
+        let decimals_18 = 18;
+        assert_eq!(
+            format_token_amount(amount_18, decimals_18),
+            "0.959694527317077690"
+        );
+
+        // Test case for polygon usdc 6 decimals
+        let amount_6 = U256::from_dec_str("125320550").unwrap();
+        let decimals_6 = 6;
+        assert_eq!(format_token_amount(amount_6, decimals_6), "125.320550");
+    }
+
+    #[test]
+    fn test_convert_token_amount_to_value() {
+        let balance = U256::from_dec_str("959694527317077690").unwrap();
+        let price = 10000.05;
+        let decimals = 18;
+        assert_eq!(
+            convert_token_amount_to_value(balance, price, decimals),
+            0.959_694_527_317_077_7 * price
+        );
     }
 }
