@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.66.0 - 2024-05-20
+#### Features
+- **(balance)** adding forced balance update by the contract address (#655) - (e4f1168) - Max Kalashnikoff
+
+- - -
+
 ## 0.65.0 - 2024-05-17
 #### Features
 - **(convertion)** adding optional `gasPrice` to the quote endpoint (#657) - (bd92739) - Max Kalashnikoff
