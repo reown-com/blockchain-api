@@ -1,12 +1,17 @@
 use {
     super::HANDLER_TASK_METRICS,
-    crate::{analytics::BalanceLookupInfo, error::RpcError, state::AppState, utils::network},
+    crate::{
+        analytics::BalanceLookupInfo,
+        error::RpcError,
+        state::AppState,
+        utils::{crypto, network},
+    },
     axum::{
         extract::{ConnectInfo, Path, Query, State},
         response::{IntoResponse, Response},
         Json,
     },
-    ethers::abi::Address,
+    ethers::{abi::Address, types::H160},
     hyper::HeaderMap,
     serde::{Deserialize, Serialize},
     std::{
@@ -16,7 +21,7 @@ use {
         time::{Duration, SystemTime},
     },
     tap::TapFallible,
-    tracing::log::error,
+    tracing::log::{debug, error},
     wc::future::FutureExt,
 };
 
@@ -60,6 +65,8 @@ pub struct BalanceQueryParams {
     pub project_id: String,
     pub currency: BalanceCurrencies,
     pub chain_id: Option<String>,
+    /// Comma separated list of CAIP-10 contract addresses to force update the balance
+    pub force_update: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -112,7 +119,7 @@ async fn handler_internal(
     Path(address): Path<String>,
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
-    address
+    let parsed_address = address
         .parse::<Address>()
         .map_err(|_| RpcError::InvalidAddress)?;
 
@@ -126,7 +133,7 @@ async fn handler_internal(
     }
 
     let start = SystemTime::now();
-    let response = state
+    let mut response = state
         .providers
         .balance_provider
         .get_balance(address.clone(), query.clone().0, state.http_client.clone())
@@ -164,6 +171,77 @@ async fn handler_internal(
                 country.clone(),
                 continent.clone(),
             ));
+        }
+    }
+
+    // Check for the cache invalidation for the certain token contract addresses and
+    // update/override balance results for the token from the RPC call
+    if let Some(force_update) = &query.force_update {
+        let rpc_project_id = state
+            .config
+            .server
+            .testing_project_id
+            .as_ref()
+            .ok_or_else(|| {
+                RpcError::InvalidConfiguration(
+                    "Missing testing project id in the configuration for the balance RPC lookups"
+                        .to_string(),
+                )
+            })?;
+        let force_update: Vec<&str> = force_update.split(',').collect();
+        for caip_contract_address in force_update {
+            debug!(
+                "Forcing balance update for the contract address: {}",
+                caip_contract_address
+            );
+            let (namespace, chain_id, contract_address) =
+                crypto::disassemble_caip10(caip_contract_address)
+                    .map_err(|_| RpcError::InvalidAddress)?;
+            let contract_address = contract_address
+                .parse::<Address>()
+                .map_err(|_| RpcError::InvalidAddress)?;
+            let caip2_chain_id = format!("{}:{}", namespace, chain_id);
+            let rpc_balance = crypto::get_erc20_balance(
+                &caip2_chain_id,
+                contract_address,
+                parsed_address,
+                rpc_project_id,
+            )
+            .await?;
+            if let Some(balance) = response
+                .balances
+                .iter_mut()
+                .find(|b| b.address == Some(caip_contract_address.to_string()))
+            {
+                balance.quantity.numeric = crypto::format_token_amount(
+                    rpc_balance,
+                    balance.quantity.decimals.parse::<u32>().unwrap_or(0),
+                );
+                // Recalculating the value with the latest balance
+                balance.value = Some(crypto::convert_token_amount_to_value(
+                    rpc_balance,
+                    balance.price,
+                    balance.quantity.decimals.parse::<u32>().unwrap_or(0),
+                ));
+            }
+            if contract_address == H160::repeat_byte(0xee) {
+                if let Some(balance) = response
+                    .balances
+                    .iter_mut()
+                    .find(|b| b.address.is_none() && b.chain_id == Some(caip2_chain_id.clone()))
+                {
+                    balance.quantity.numeric = crypto::format_token_amount(
+                        rpc_balance,
+                        balance.quantity.decimals.parse::<u32>().unwrap_or(0),
+                    );
+                    // Recalculate the value with the latest balance
+                    balance.value = Some(crypto::convert_token_amount_to_value(
+                        rpc_balance,
+                        balance.price,
+                        balance.quantity.decimals.parse::<u32>().unwrap_or(0),
+                    ));
+                }
+            }
         }
     }
 
