@@ -217,6 +217,24 @@ describe('Account profile names', () => {
     expect(resp.status).toBe(400)
   })
 
+  it('try register already registered name with different coin_type', async () => {
+    // Sign the message
+    const signature = await wallet.signMessage(registerMessage);
+    const coin_type = 2147483748; // ENSIP-11 xdai
+
+    const payload = {
+      message: registerMessage,
+      signature,
+      coin_type,
+      address,
+    };
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account`,
+      payload
+    )
+    expect(resp.status).toBe(400)
+  })
+
   it('name forward lookup', async () => {
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/profile/account/${name}`
