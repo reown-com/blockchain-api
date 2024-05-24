@@ -1,5 +1,5 @@
 use {
-    super::HANDLER_TASK_METRICS,
+    super::{SupportedCurrencies, HANDLER_TASK_METRICS},
     crate::{error::RpcError, state::AppState, utils::crypto},
     axum::{
         extract::State,
@@ -7,51 +7,17 @@ use {
         Json,
     },
     serde::{Deserialize, Serialize},
-    std::{fmt::Display, sync::Arc},
+    std::sync::Arc,
     tap::TapFallible,
     tracing::log::error,
     wc::future::FutureExt,
 };
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "lowercase")]
-pub enum PriceCurrencies {
-    BTC,
-    ETH,
-    USD,
-    EUR,
-    GBP,
-    AUD,
-    CAD,
-    INR,
-    JPY,
-}
-
-impl Display for PriceCurrencies {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                PriceCurrencies::BTC => "btc",
-                PriceCurrencies::ETH => "eth",
-                PriceCurrencies::USD => "usd",
-                PriceCurrencies::EUR => "eur",
-                PriceCurrencies::GBP => "gbp",
-                PriceCurrencies::AUD => "aud",
-                PriceCurrencies::CAD => "cad",
-                PriceCurrencies::INR => "inr",
-                PriceCurrencies::JPY => "jpy",
-            }
-        )
-    }
-}
-
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PriceQueryParams {
     pub project_id: String,
-    pub currency: PriceCurrencies,
+    pub currency: SupportedCurrencies,
     pub addresses: Vec<String>,
 }
 
@@ -68,6 +34,7 @@ pub struct FungiblePriceItem {
     pub symbol: String,
     pub icon_url: String,
     pub price: f64,
+    pub decimals: u32,
 }
 
 pub async fn handler(

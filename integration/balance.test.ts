@@ -90,6 +90,36 @@ describe('Account balance', () => {
     }
   })
 
+  it('force update balance for the ERC20 token (injected)', async () => {
+    // Test for injected token balance if it's not in the response
+    // due to the zero balance
+
+    // Getting the empty balance without forcing balance update
+    const zero_balance_address = '0x5b6262592954B925B510651462b63ddEbcc22eaD'
+    const token_contract_address = 'eip155:8453:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
+    const endpoint = `/v1/account/${zero_balance_address}/balance`;
+    let queryParams = `?projectId=${projectId}&currency=${currency}`;
+    let url = `${baseUrl}${endpoint}${queryParams}`;
+    const headers = {
+        'x-sdk-version': sdk_version,
+    };
+    let resp = await httpClient.get(url, { headers });
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.balances).toBe('object')
+    expect(resp.data.balances.length).toBe(0)
+
+    // Forcing update and checking injected balance in response
+    queryParams = `${queryParams}&forceUpdate=${token_contract_address}`;
+    url = `${baseUrl}${endpoint}${queryParams}`;
+    resp = await httpClient.get(url, { headers });
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.balances).toBe('object')
+    expect(resp.data.balances.length).toBe(1)
+    const firstItem = resp.data.balances[0]
+    expect(firstItem.symbol).toBe('USDC')
+    expect(firstItem.address).toBe(token_contract_address)
+  })
+
   it('force update balance for the native token', async () => {
     // ETH token
     // We are using `0xe...` as a contract address for native tokens

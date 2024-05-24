@@ -13,14 +13,14 @@ use {
                 tokens::{TokensListQueryParams, TokensListResponseBody},
                 transaction::{ConvertTransactionQueryParams, ConvertTransactionResponseBody},
             },
-            fungible_price::{PriceCurrencies, PriceResponseBody},
+            fungible_price::PriceResponseBody,
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
                 quotes::{OnRampBuyQuotesParams, OnRampBuyQuotesResponse},
             },
             portfolio::{PortfolioQueryParams, PortfolioResponseBody},
-            RpcQueryParams,
+            RpcQueryParams, SupportedCurrencies,
         },
     },
     async_trait::async_trait,
@@ -613,7 +613,7 @@ pub trait FungiblePriceProvider: Send + Sync + Debug {
         &self,
         chain_id: &str,
         address: &str,
-        currency: &PriceCurrencies,
+        currency: &SupportedCurrencies,
     ) -> RpcResult<PriceResponseBody>;
 }
 
