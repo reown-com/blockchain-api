@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.66.1 - 2024-05-24
+#### Bug Fixes
+- **(tests)** adding integration test for registering name with different coin type (#658) - (8a10ca2) - Max Kalashnikoff
+- removing excessive json header (#660) - (843b509) - Max Kalashnikoff
+
+- - -
+
 ## 0.66.0 - 2024-05-20
 #### Features
 - **(balance)** adding forced balance update by the contract address (#655) - (e4f1168) - Max Kalashnikoff
