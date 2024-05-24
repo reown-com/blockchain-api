@@ -189,7 +189,6 @@ impl OnRampProvider for CoinbaseProvider {
         let response = http_client
             .post(url)
             .json(&params)
-            .header("Content-Type", "application/json")
             .header("CBPAY-APP-ID", self.app_id.clone())
             .header("CBPAY-API-KEY", self.api_key.clone())
             .send()
