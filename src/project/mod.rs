@@ -8,7 +8,7 @@ use {
         storage::{error::StorageError, redis},
     },
     cerberus::{
-        project::{ProjectData, ProjectKey, Quota},
+        project::{ProjectData, ProjectDataWithQuota, ProjectKey, Quota},
         registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult},
     },
     std::{sync::Arc, time::Instant},
@@ -77,7 +77,7 @@ impl Registry {
         })
     }
 
-    pub async fn project_data(&self, id: &str) -> RpcResult<ProjectData> {
+    pub async fn project_data(&self, id: &str) -> RpcResult<ProjectDataWithQuota> {
         let time = Instant::now();
         let (source, data) = self.project_data_internal(id).await?;
         self.metrics.request(time.elapsed(), source, &data);
@@ -117,25 +117,29 @@ impl Registry {
         Ok((ResponseSource::Registry, data))
     }
 
-    async fn fetch_registry(&self, id: &str) -> RegistryResult<Option<ProjectData>> {
+    async fn fetch_registry(&self, id: &str) -> RegistryResult<Option<ProjectDataWithQuota>> {
         let time = Instant::now();
         let data = if let Some(client) = &self.client {
-            client.project_data(id).await
+            client.project_data_with_quota(id).await
         } else {
-            Ok(Some(ProjectData {
-                uuid: "".to_owned(),
-                creator: "".to_owned(),
-                name: "".to_owned(),
-                push_url: None,
-                keys: vec![ProjectKey {
-                    value: id.to_owned(),
-                    is_valid: true,
-                }],
-                is_enabled: true,
-                is_verify_enabled: false,
-                is_rate_limited: false,
-                allowed_origins: vec![],
-                verified_domains: vec![],
+            Ok(Some(ProjectDataWithQuota {
+                project_data: ProjectData {
+                    uuid: "".to_owned(),
+                    creator: "".to_owned(),
+                    name: "".to_owned(),
+                    push_url: None,
+                    keys: vec![ProjectKey {
+                        value: id.to_owned(),
+                        is_valid: true,
+                    }],
+                    is_enabled: true,
+                    is_verify_enabled: false,
+                    is_rate_limited: false,
+                    allowed_origins: vec![],
+                    verified_domains: vec![],
+                    bundle_ids: vec![],
+                    package_names: vec![],
+                },
                 quota: Quota {
                     current: 0,
                     max: 0,

@@ -61,7 +61,7 @@ pnet_datalink = "0.31"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "ansi"] }
 
-cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.10.0" }
+cerberus = { git = "https://github.com/WalletConnect/cerberus.git", branch = "feat/project-quotas-optional" }
 parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3", default-features = false, features = ["flate2"] }
 parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3" }
 chrono = { version = "0.4", features = ["serde"] }

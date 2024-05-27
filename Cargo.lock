@@ -1501,14 +1501,16 @@ dependencies = [
 [[package]]
 name = "cerberus"
 version = "0.2.0"
-source = "git+https://github.com/WalletConnect/cerberus.git?tag=v0.10.0#1ee5d26d3dffb7e5b07c71ff87f6edad12edec98"
+source = "git+https://github.com/WalletConnect/cerberus.git?branch=feat/project-quotas-optional#fc67e8e241a7f79e8ba434ff8ff12917bad8715b"
 dependencies = [
  "async-trait",
+ "bitflags 2.5.0",
  "once_cell",
  "regex",
  "reqwest 0.11.27",
  "serde",
  "thiserror",
+ "url",
 ]
 
 [[package]]

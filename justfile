@@ -39,7 +39,7 @@ alias clean     := cargo-clean
 alias check     := cargo-check
 alias clippy    := cargo-clippy
 alias udeps     := cargo-udeps
-alias checkfmt  := cargo-checkfmt
+alias checkfmt  := cargo-fmt
 
 alias tfsec     := tf-tfsec
 alias tflint    := tf-tflint
@@ -76,7 +76,7 @@ lint target='all': (_check-string-in-set target "all,rust,tf")
 
 
 # Lint the rust project for any quality issues
-lint-rust: cargo-check cargo-clippy cargo-udeps cargo-checkfmt
+lint-rust: cargo-check cargo-clippy cargo-udeps cargo-fmt
 
 # Lint the terrafrom project for any quality issues
 lint-tf: tf-checkfmt tf-validate tf-tfsec tf-tflint
@@ -116,7 +116,7 @@ cargo target='' sub-target='': (_check-string-in-set target "open-docs,build-doc
   [[ '{{ target }}' == 'check'      ]] && { just cargo-check;                 }
   [[ '{{ target }}' == 'clippy'     ]] && { just cargo-clippy;                }
   [[ '{{ target }}' == 'udeps'      ]] && { just cargo-udeps;                 }
-  [[ '{{ target }}' == 'checkfmt'   ]] && { just cargo-checkfmt;              }
+  [[ '{{ target }}' == 'checkfmt'   ]] && { just cargo-fmt;              }
 
 # Open rust project documentation in your local browser
 cargo-open-docs: (_cargo-build-docs "open" "nodeps")
@@ -128,11 +128,6 @@ cargo-build-docs: (_cargo-build-docs "" "nodeps")
 @_cargo-build-docs $open="" $nodeps="":  _check-cmd-cargo
   echo "==> Building project documentation @$JUST_ROOT/target/doc"
   cargo doc --all-features --document-private-items ${nodeps:+--no-deps} ${open:+--open}
-
-# Format the application code
-@cargo-fmt: _check-cmd-cargo-fmt
-  printf '==> Running {{ color-cmd }}rustfmt{{ nocolor }}\n'
-  cargo +nightly fmt
 
 # Build service for development
 cargo-build: _check-cmd-cargo
@@ -191,10 +186,10 @@ cargo-udeps: _check-cmd-cargo-udeps
   @printf '==> Running {{ color-cmd }}udeps{{ nocolor }}\n'
   cargo +nightly udeps
 
-# Check the rust code formatting
-cargo-checkfmt: _check-cmd-cargo-fmt
-  @printf '==> Running {{ color-cmd }}rustfmt{{ nocolor }} --check\n'
-  cargo +nightly fmt --check
+# Rust format
+cargo-fmt: _check-cmd-cargo-fmt
+  @printf '==> Running {{ color-cmd }}rustfmt{{ nocolor }}\n'
+  cargo fmt
 
 ################################################################################
 # Terraform recipes

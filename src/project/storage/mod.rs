@@ -4,7 +4,7 @@ use {
         project::{error::ProjectDataError, metrics::ProjectDataMetrics},
         storage::{error::StorageError, KeyValueStorage, StorageResult},
     },
-    cerberus::project::ProjectData,
+    cerberus::project::ProjectDataWithQuota,
     std::{
         sync::Arc,
         time::{Duration, Instant},
@@ -15,7 +15,7 @@ use {
 
 mod config;
 
-pub type ProjectDataResult = Result<ProjectData, ProjectDataError>;
+pub type ProjectDataResult = Result<ProjectDataWithQuota, ProjectDataError>;
 
 #[derive(Clone, Debug)]
 pub struct ProjectStorage {
