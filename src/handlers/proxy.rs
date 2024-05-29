@@ -20,11 +20,13 @@ use {
     },
     tap::TapFallible,
     tracing::{
-        log::{error, warn},
+        log::{debug, error, warn},
         Span,
     },
     wc::future::FutureExt,
 };
+
+const RPC_MAX_RETRIES: usize = 3;
 
 pub async fn handler(
     state: State<Arc<AppState>>,
@@ -49,25 +51,28 @@ async fn handler_internal(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     state
-        .validate_project_access_and_quota(&query_params.project_id)
+        .validate_project_access_and_quota(&query_params.project_id.clone())
         .await?;
+    rpc_call(state, addr, query_params, headers, body).await
+}
 
-    // TODO: Remove the `solana-mainnet` chain_id alias for
-    // `solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz` when ready
-    let chain_id = if query_params.chain_id.to_lowercase() == "solana-mainnet" {
-        "solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz".to_string()
-    } else {
-        query_params.chain_id.to_lowercase()
-    };
-
+#[tracing::instrument(skip(state), level = "debug")]
+pub async fn rpc_call(
+    state: Arc<AppState>,
+    addr: SocketAddr,
+    query_params: RpcQueryParams,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Response, RpcError> {
+    let chain_id = query_params.chain_id.clone();
     // Exact provider proxy request for testing suite
     // This request is allowed only for the RPC_PROXY_TESTING_PROJECT_ID
-    let provider = match query_params.provider_id.clone() {
+    let providers = match query_params.provider_id.clone() {
         Some(provider_id) => {
-            let provider = state
+            let provider = vec![state
                 .providers
                 .get_provider_by_provider_id(&provider_id)
-                .ok_or_else(|| RpcError::UnsupportedProvider(provider_id.clone()))?;
+                .ok_or_else(|| RpcError::UnsupportedProvider(provider_id.clone()))?];
 
             if let Some(ref testing_project_id) = state.config.server.testing_project_id {
                 if !crypto::constant_time_eq(testing_project_id, &query_params.project_id) {
@@ -85,17 +90,62 @@ async fn handler_internal(
 
             provider
         }
-        None => state.providers.get_provider_for_chain_id(&chain_id)?,
+        None => state
+            .providers
+            .get_provider_for_chain_id(&chain_id, RPC_MAX_RETRIES)?,
     };
 
+    for (i, provider) in providers.iter().enumerate() {
+        let response = rpc_provider_call(
+            state.clone(),
+            addr,
+            query_params.clone(),
+            headers.clone(),
+            body.clone(),
+            provider.clone(),
+        )
+        .await;
+
+        match response {
+            Ok(response) => {
+                // If the response is a 503 (we are rate-limited) we should try the next
+                // provider
+                if response.status() == http::StatusCode::SERVICE_UNAVAILABLE {
+                    debug!(
+                        "Provider '{}' returned a 503, trying the next provider",
+                        provider.provider_kind()
+                    );
+                    continue;
+                }
+                state.metrics.add_rpc_call_retries(i as u64, chain_id);
+                return Ok(response);
+            }
+            Err(e) => {
+                state.metrics.add_rpc_call_retries(i as u64, chain_id);
+                return Err(e);
+            }
+        }
+    }
+    debug!("All providers failed for chain_id: {}", chain_id);
+    Err(RpcError::ChainTemporarilyUnavailable(chain_id))
+}
+
+#[tracing::instrument(skip(state), level = "debug")]
+pub async fn rpc_provider_call(
+    state: Arc<AppState>,
+    addr: SocketAddr,
+    query_params: RpcQueryParams,
+    headers: HeaderMap,
+    body: Bytes,
+    provider: Arc<dyn crate::providers::RpcProvider>,
+) -> Result<Response, RpcError> {
     Span::current().record("provider", &provider.provider_kind().to_string());
-
-    state.metrics.add_rpc_call(chain_id.clone());
-
+    let chain_id = query_params.chain_id.clone();
     let origin = headers
         .get("origin")
         .map(|v| v.to_str().unwrap_or("invalid_header").to_string());
 
+    state.metrics.add_rpc_call(chain_id.clone());
     if let Ok(rpc_request) = serde_json::from_slice(&body) {
         let (country, continent, region) = state
             .analytics
@@ -158,6 +208,7 @@ async fn handler_internal(
                 response.body()
             );
             state.metrics.add_failed_provider_call(provider.borrow());
+            *response.status_mut() = http::StatusCode::SERVICE_UNAVAILABLE;
         }
     };
     Ok(response)

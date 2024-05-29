@@ -15,7 +15,7 @@ describe('Account profile names', () => {
   // Generate a random name
   const randomString = Array.from({ length: 10 }, 
     () => (Math.random().toString(36)[2] || '0')).join('')
-  const zone = 'wc.ink';
+  const zone = 'wcn.id';
   const name = `integration-test-${randomString}.${zone}`;
 
   // Create a message to sign
@@ -90,8 +90,8 @@ describe('Account profile names', () => {
   })
 
   it('register with wrong name format (length)', async () => {
-    // Check for the short name (<5 characters)
-    let randomString = Array.from({ length: 4 }, 
+    // Check for the short name (<3 characters)
+    let randomString = Array.from({ length: 2 }, 
       () => (Math.random().toString(36)[2] || '0')).join('')
     const shortNameLengthMessageObject = {
       name: `${randomString}.${zone}`,
@@ -217,6 +217,24 @@ describe('Account profile names', () => {
     expect(resp.status).toBe(400)
   })
 
+  it('try register already registered name with different coin_type', async () => {
+    // Sign the message
+    const signature = await wallet.signMessage(registerMessage);
+    const coin_type = 2147483748; // ENSIP-11 xdai
+
+    const payload = {
+      message: registerMessage,
+      signature,
+      coin_type,
+      address,
+    };
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account`,
+      payload
+    )
+    expect(resp.status).toBe(400)
+  })
+
   it('name forward lookup', async () => {
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/profile/account/${name}`
@@ -242,6 +260,15 @@ describe('Account profile names', () => {
     // ENSIP-11 using the 60 for the Ethereum mainnet
     const first_address = first_name.addresses[coin_type]
     expect(first_address.address).toBe(address)
+  })
+
+  it('name reverse lookup (identity endpoint)', async () => {
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/identity/${address}?projectId=${projectId}`
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data).toBe('object')
+    expect(resp.data.name).toBe(name)
   })
 
   it('update name attributes', async () => {
@@ -314,5 +341,20 @@ describe('Account profile names', () => {
     expect(typeof resp.data.addresses).toBe('object')
     const first = resp.data.addresses[coin_type]
     expect(first.address).toBe(new_address)
+  })
+
+  it('name suggestions', async () => {
+    const test_name_suggest = 'max';
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/profile/suggestions/${test_name_suggest}`
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.suggestions).toBe('object')
+    let suggestions = resp.data.suggestions;
+    // Minimum 3 suggestions should be returned
+    expect(suggestions.length).toBeGreaterThan(3)
+    // First suggestion should be the exact match
+    expect(suggestions[0].name).toBe(`${test_name_suggest}.${zone}`)
+    expect(typeof suggestions[0].registered).toBe('boolean')
   })
 })

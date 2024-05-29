@@ -1,8 +1,5 @@
 use {
-    axum::response::IntoResponse,
-    hyper::StatusCode,
-    tracing::error,
-    wc::metrics::ServiceMetrics,
+    axum::response::IntoResponse, hyper::StatusCode, tracing::error, wc::metrics::ServiceMetrics,
 };
 
 pub async fn handler() -> impl IntoResponse {

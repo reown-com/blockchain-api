@@ -40,6 +40,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     HashMap::from([
         // Solana Mainnet
         (
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp".into(),
+            (
+                "solana-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        (
+            // Incorrect (not CAIP-2), uses block explorer blockhash instead of getGenesisHash RPC
             "solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz".into(),
             (
                 "solana-mainnet".into(),
@@ -70,9 +78,9 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
-        // Base testnet
+        // Base Sepolia
         (
-            "eip155:84531".into(),
+            "eip155:84532".into(),
             (
                 "base-testnet".into(),
                 Weight::new(Priority::Normal).unwrap(),
@@ -88,11 +96,6 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:1".into(),
             ("eth-mainnet".into(), Weight::new(Priority::Max).unwrap()),
         ),
-        // Ethereum goerli
-        (
-            "eip155:5".into(),
-            ("eth-goerli".into(), Weight::new(Priority::Normal).unwrap()),
-        ),
         // Ethereum holesky
         (
             "eip155:17000".into(),
@@ -100,6 +103,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 "holesky-fullnode-testnet".into(),
                 Weight::new(Priority::High).unwrap(),
             ),
+        ),
+        // Ethereum sepolia
+        (
+            "eip155:11155111".into(),
+            ("sepolia".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Optimism
         (
@@ -123,16 +131,16 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ("poly-mainnet".into(), Weight::new(Priority::High).unwrap()),
         ),
         (
-            "eip155:80001".into(),
-            (
-                "polygon-mumbai".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
-        ),
-        (
             "eip155:1101".into(),
             (
                 "polygon-zkevm-mainnet".into(),
+                Weight::new(Priority::High).unwrap(),
+            ),
+        ),
+        (
+            "eip155:80002".into(),
+            (
+                "amoy-testnet-archival".into(),
                 Weight::new(Priority::High).unwrap(),
             ),
         ),
@@ -151,6 +159,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 "klaytn-mainnet".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
+        ),
+        // zkSync
+        (
+            "eip155:324".into(),
+            ("zksync-era".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Near protocol
         (

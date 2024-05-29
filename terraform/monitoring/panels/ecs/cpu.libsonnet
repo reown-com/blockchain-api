@@ -14,11 +14,11 @@ local overrides       = defaults.overrides;
       datasource  = ds.prometheus,
     )
     .configure(overrides.cpu(defaults.configuration.timeseries_resource))
-    .setAlert(alert.new(
-      namespace     = 'RPC Proxy',
-      name          = "RPC %s - High CPU usage" % vars.environment,
-      message       = "RPC %s - High CPU usage" % vars.environment,
-      period        = '15m',
+    .setAlert(vars.environment, alert.new(
+      namespace     = 'Blockchain API',
+      name          = "%s - High CPU usage" % vars.environment,
+      message       = "%s - High CPU usage" % vars.environment,
+      period        = '20m',
       frequency     = '5m',
       noDataState   = 'alerting',
       notifications = vars.notifications,
@@ -39,8 +39,8 @@ local overrides       = defaults.overrides;
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
       expr          = 'sum(rate(cpu_usage_sum[$__rate_interval])) / sum(rate(cpu_usage_count[$__rate_interval]))',
-      interval      = '3m',
-      legendFormat  = 'CPU Utilization 3m avg.',
+      interval      = '5m',
+      legendFormat  = 'CPU Utilization 5m avg.',
       refId         = 'CPU_Avg',
     ))
 }

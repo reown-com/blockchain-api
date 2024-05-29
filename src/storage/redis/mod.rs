@@ -3,8 +3,7 @@ use {
     async_trait::async_trait,
     deadpool_redis::{
         redis::{AsyncCommands, Value},
-        Config,
-        Pool,
+        Config, Pool,
     },
     serde::{de::DeserializeOwned, Serialize},
     std::{fmt::Debug, time::Duration},
@@ -103,10 +102,7 @@ impl Redis {
             .map_err(|e| StorageError::Connection(format!("{e}")))?;
 
         let res_fut = if let Some(ttl) = ttl {
-            let ttl = ttl
-                .as_secs()
-                .try_into()
-                .map_err(|_| StorageError::SetExpiry)?;
+            let ttl = ttl.as_secs();
 
             conn.set_ex(key, data, ttl)
         } else {

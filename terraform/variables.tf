@@ -34,19 +34,19 @@ variable "log_level" {
 variable "app_autoscaling_desired_count" {
   description = "The desired number of tasks to run"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "app_autoscaling_min_capacity" {
   description = "The minimum number of tasks to run when autoscaling"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "app_autoscaling_max_capacity" {
   description = "The maximum number of tasks to run when autoscaling"
   type        = number
-  default     = 1
+  default     = 8
 }
 
 variable "ofac_blocked_countries" {
@@ -115,6 +115,24 @@ variable "coinbase_app_id" {
   sensitive   = true
 }
 
+variable "one_inch_api_key" {
+  description = "The API key for 1inch"
+  type        = string
+  sensitive   = true
+}
+
+variable "one_inch_referrer" {
+  description = "The referrer address for 1inch"
+  type        = string
+  sensitive   = true
+}
+
+variable "getblock_access_tokens" {
+  description = "Mapping of API access tokens for GetBlock in JSON format"
+  type        = string
+  sensitive   = true
+}
+
 variable "testing_project_id" {
   description = "Project ID used in a testing suite"
   type        = string
@@ -148,4 +166,25 @@ variable "webhook_prometheus_p2" {
   description = "The webhook to send Prometheus P2 alerts to"
   type        = string
   default     = ""
+}
+
+#-------------------------------------------------------------------------------
+# Rate-limiting (Token bucket) configuration
+
+variable "rate_limiting_max_tokens" {
+  description = "The maximum number of tokens in the bucket"
+  type        = number
+  default     = 100
+}
+
+variable "rate_limiting_refill_interval" {
+  description = "The interval in seconds to refill the bucket"
+  type        = number
+  default     = 1
+}
+
+variable "rate_limiting_refill_rate" {
+  description = "The number of tokens to refill the bucket with"
+  type        = number
+  default     = 2
 }

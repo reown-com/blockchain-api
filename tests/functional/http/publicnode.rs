@@ -1,8 +1,6 @@
 use {
-    super::check_if_rpc_is_responding_correctly_for_supported_chain,
-    crate::context::ServerContext,
-    rpc_proxy::providers::ProviderKind,
-    test_context::test_context,
+    super::check_if_rpc_is_responding_correctly_for_supported_chain, crate::context::ServerContext,
+    rpc_proxy::providers::ProviderKind, test_context::test_context,
 };
 
 #[test_context(ServerContext)]
@@ -15,15 +13,6 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
         &ProviderKind::Publicnode,
         "eip155:1",
         "0x1",
-    )
-    .await;
-
-    // Ethereum goerli
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        &ProviderKind::Publicnode,
-        "eip155:5",
-        "0x5",
     )
     .await;
 
@@ -87,15 +76,6 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
         &ProviderKind::Publicnode,
         "eip155:137",
         "0x89",
-    )
-    .await;
-
-    // Polygon mumbai
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        &ProviderKind::Publicnode,
-        "eip155:80001",
-        "0x13881",
     )
     .await;
 

@@ -8,9 +8,9 @@ use {
         project::Registry,
         providers::ProviderRepository,
         storage::KeyValueStorage,
-        utils::build::CompileInfo,
+        utils::{build::CompileInfo, rate_limit::RateLimit},
     },
-    cerberus::project::ProjectData,
+    cerberus::project::ProjectDataWithQuota,
     sqlx::PgPool,
     std::sync::Arc,
     tap::TapFallible,
@@ -30,6 +30,8 @@ pub struct AppState {
     pub uptime: std::time::Instant,
     /// Shared http client
     pub http_client: reqwest::Client,
+    // Rate limiting checks
+    pub rate_limit: Option<RateLimit>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -42,6 +44,7 @@ pub fn new_state(
     identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     analytics: RPCAnalytics,
     http_client: reqwest::Client,
+    rate_limit: Option<RateLimit>,
 ) -> AppState {
     AppState {
         config,
@@ -54,6 +57,7 @@ pub fn new_state(
         compile_info: CompileInfo {},
         uptime: std::time::Instant::now(),
         http_client,
+        rate_limit,
     }
 }
 
@@ -63,21 +67,24 @@ impl AppState {
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
-    async fn get_project_data_validated(&self, id: &str) -> Result<ProjectData, RpcError> {
-        let project = self
-            .registry
-            .project_data(id)
-            .await
-            .tap_err(|_| self.metrics.add_rejected_project())?;
-
-        project.validate_access(id, None).tap_err(|e| {
-            self.metrics.add_rejected_project();
+    async fn get_project_data_validated(&self, id: &str) -> Result<ProjectDataWithQuota, RpcError> {
+        let project = self.registry.project_data(id).await.tap_err(|e| {
             info!("Denied access for project: {id}, with reason: {e}");
+            self.metrics.add_rejected_project();
         })?;
+
+        project
+            .project_data
+            .validate_access(id, None)
+            .tap_err(|e| {
+                info!("Denied access for project: {id}, with reason: {e}");
+                self.metrics.add_rejected_project();
+            })?;
 
         Ok(project)
     }
 
+    #[tracing::instrument(skip(self), level = "debug")]
     pub async fn validate_project_access(&self, id: &str) -> Result<(), RpcError> {
         if !self.config.server.validate_project_id {
             return Ok(());
@@ -94,19 +101,21 @@ impl AppState {
 
         let project = self.get_project_data_validated(id).await?;
 
-        validate_project_quota(&project).tap_err(|_| {
-            self.metrics.add_quota_limited_project();
+        validate_project_quota(&project).tap_err(|e| {
             info!(
                 project_id = id,
                 max = project.quota.max,
                 current = project.quota.current,
+                error = ?e,
                 "Quota limit reached"
             );
+            self.metrics.add_quota_limited_project();
         })
     }
 }
 
-fn validate_project_quota(project_data: &ProjectData) -> Result<(), RpcError> {
+#[tracing::instrument(level = "debug")]
+fn validate_project_quota(project_data: &ProjectDataWithQuota) -> Result<(), RpcError> {
     if project_data.quota.is_valid {
         Ok(())
     } else {
@@ -117,24 +126,28 @@ fn validate_project_quota(project_data: &ProjectData) -> Result<(), RpcError> {
 #[cfg(test)]
 mod test {
     use {
-        super::{ProjectData, RpcError},
-        cerberus::project::Quota,
+        super::{ProjectDataWithQuota, RpcError},
+        cerberus::project::{ProjectData, Quota},
     };
 
     #[test]
     fn validate_project_quota() {
         // TODO: Handle this in some stub implementation of "Registry" abstraction.
-        let mut project = ProjectData {
-            uuid: "".to_owned(),
-            creator: "".to_owned(),
-            name: "".to_owned(),
-            push_url: None,
-            keys: vec![],
-            is_enabled: true,
-            is_verify_enabled: false,
-            is_rate_limited: false,
-            allowed_origins: vec![],
-            verified_domains: vec![],
+        let mut project = ProjectDataWithQuota {
+            project_data: ProjectData {
+                uuid: "".to_owned(),
+                creator: "".to_owned(),
+                name: "".to_owned(),
+                push_url: None,
+                keys: vec![],
+                is_enabled: true,
+                is_verify_enabled: false,
+                is_rate_limited: false,
+                allowed_origins: vec![],
+                verified_domains: vec![],
+                bundle_ids: vec![],
+                package_names: vec![],
+            },
             quota: Quota {
                 current: 0,
                 max: 0,

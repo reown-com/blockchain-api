@@ -1,6 +1,6 @@
 [package]
 name = "rpc-proxy"
-version = "0.33.1"
+version = "0.66.3"
 edition = "2021"
 authors = [
     "Derek <derek@walletconnect.com>",
@@ -9,7 +9,8 @@ authors = [
 build = "build.rs"
 
 [dependencies]
-wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.7.0", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock"] }
+wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.9.0", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock", "rate_limit"] }
+relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", tag = "v0.30.0", features = ["cacao"] }
 
 # Async
 async-trait = "0.1.57"
@@ -35,11 +36,15 @@ serde_piecewise_default = "0.2"
 serde-aux = "3.1"
 validator = { version = "0.16", features = ["derive"] }
 num_enum = "0.7"
+strum = "0.26"
+strum_macros = "0.26"
+hex = "0.4"
 
 # Storage
-aws-config = "0.56"
-aws-sdk-s3 = "0.31"
-deadpool-redis = "0.13"
+aws-config = "1.1"
+aws-sdk-s3 = "1.13"
+deadpool-redis = "0.14"
+moka = "0.12"
 sqlx = { version = "0.7.3", features = ["runtime-tokio-native-tls", "postgres", "chrono"] }
 
 dotenv = "0.15.0"
@@ -56,7 +61,7 @@ pnet_datalink = "0.31"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "ansi"] }
 
-cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.10.0" }
+cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.13.1" }
 parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3", default-features = false, features = ["flate2"] }
 parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3" }
 chrono = { version = "0.4", features = ["serde"] }
@@ -67,6 +72,7 @@ axum-tungstenite = "0.2.0"
 rand = "0.8.4"
 prometheus-http-query = "0.6.6"
 ethers = { version = "2.0.11", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
+alloy-primitives = "0.7"
 
 bytes = "1.4.0"
 regex = "1.10"

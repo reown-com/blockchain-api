@@ -25,8 +25,7 @@ on:
 jobs:
   providers-list:
     name: "Preparing providers list"
-    runs-on:
-      group: ${{ vars.RUN_GROUP }}
+    runs-on: ubuntu-latest
     outputs:
       providers: ${{ steps.set-matrix.outputs.providers }}
     steps:
@@ -65,8 +64,7 @@ jobs:
   providers-test:
     name: "Run provider tests"
     needs: providers-list
-    runs-on:
-      group: ${{ vars.RUN_GROUP }}
+    runs-on: ubuntu-latest
     if: needs.providers-list.outputs.providers != '[]'
     strategy:
       fail-fast: false

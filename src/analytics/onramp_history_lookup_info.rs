@@ -7,6 +7,7 @@ use {
 #[derive(Debug, Clone, Serialize, ParquetRecordWriter)]
 pub struct OnrampHistoryLookupInfo {
     pub timestamp: chrono::NaiveDateTime,
+    pub transaction_id: String,
     pub latency_secs: f64,
 
     pub lookup_address: String,
@@ -26,6 +27,7 @@ pub struct OnrampHistoryLookupInfo {
 impl OnrampHistoryLookupInfo {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
+        transaction_id: String,
         latency: Duration,
         lookup_address: String,
         project_id: String,
@@ -40,6 +42,7 @@ impl OnrampHistoryLookupInfo {
         purchase_amount: String,
     ) -> Self {
         OnrampHistoryLookupInfo {
+            transaction_id,
             timestamp: wc::analytics::time::now(),
             latency_secs: latency.as_secs_f64(),
             lookup_address,

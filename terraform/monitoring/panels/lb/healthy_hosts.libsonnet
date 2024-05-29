@@ -19,19 +19,18 @@ local _configuration = defaults.configuration.timeseries
     .configure(_configuration)
 
     .addTarget(targets.cloudwatch(
-      alias           = "eu-central-1",
       datasource      = ds.cloudwatch,
-      metricQueryType = grafana.target.cloudwatch.metricQueryTypes.query,
+      metricQueryType = grafana.target.cloudwatch.queryTypes.Query,
 
       dimensions    = {
         TargetGroup: vars.target_group
       },
       metricName    = 'HealthyHostCount',
-      namespace     = 'AWS/NetworkELB',
+      namespace     = 'AWS/ApplicationELB',
       sql           = {
         from: {
           property: {
-            name: "AWS/NetworkELB",
+            name: "AWS/ApplicationELB",
             type: "string"
           },
           type: "property"
@@ -63,7 +62,7 @@ local _configuration = defaults.configuration.timeseries
           type: "and"
         }
       },
-      sqlExpression = "SELECT MAX(HealthyHostCount) FROM \"AWS/NetworkELB\" WHERE LoadBalancer = '%s'" % [vars.load_balancer],
+      sqlExpression = "SELECT MAX(HealthyHostCount) FROM \"AWS/ApplicationELB\" WHERE LoadBalancer = '%s'" % [vars.load_balancer],
       statistic     = 'Maximum',
     ))
 }

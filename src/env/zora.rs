@@ -45,11 +45,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
-        // Zora Goerli
+        // Zora Sepolia
         (
-            "eip155:999".into(),
+            "eip155:999999999".into(),
             (
-                "https://testnet.rpc.zora.energy".into(),
+                "https://sepolia.rpc.zora.energy".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),

@@ -1,8 +1,6 @@
 use {
-    super::check_if_rpc_is_responding_correctly_for_supported_chain,
-    crate::context::ServerContext,
-    rpc_proxy::providers::ProviderKind,
-    test_context::test_context,
+    super::check_if_rpc_is_responding_correctly_for_supported_chain, crate::context::ServerContext,
+    rpc_proxy::providers::ProviderKind, test_context::test_context,
 };
 
 #[test_context(ServerContext)]
@@ -18,12 +16,12 @@ async fn zora_provider_eip155_7777777_and_999(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Zora Goerli
+    // Zora Sepolia
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &ProviderKind::Zora,
-        "eip155:999",
-        "0x3e7",
+        "eip155:999999999",
+        "0x3b9ac9ff",
     )
     .await
 }

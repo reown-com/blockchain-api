@@ -2,16 +2,16 @@ use {
     super::{
         super::HANDLER_TASK_METRICS,
         utils::{check_attributes, is_timestamp_within_interval},
-        Eip155SupportedChains,
-        RegisterRequest,
-        UpdateAttributesPayload,
-        UNIXTIMESTAMP_SYNC_THRESHOLD,
+        RegisterRequest, UpdateAttributesPayload, UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{
         database::helpers::{get_name_and_addresses_by_name, update_name_attributes},
         error::RpcError,
         state::AppState,
-        utils::crypto::{constant_time_eq, verify_message_signature},
+        utils::crypto::{
+            constant_time_eq, convert_coin_type_to_evm_chain_id, is_coin_type_supported,
+            verify_message_signature,
+        },
     },
     axum::{
         extract::{Path, State},
@@ -19,9 +19,8 @@ use {
         Json,
     },
     hyper::StatusCode,
-    num_enum::TryFromPrimitive,
     std::{str::FromStr, sync::Arc},
-    tracing::log::{error, info},
+    tracing::log::error,
     wc::future::FutureExt,
 };
 
@@ -48,7 +47,7 @@ pub async fn handler_internal(
     };
 
     // Check for the supported ENSIP-11 coin type
-    if Eip155SupportedChains::try_from_primitive(request_payload.coin_type).is_err() {
+    if !is_coin_type_supported(request_payload.coin_type) {
         return Err(RpcError::UnsupportedCoinType(request_payload.coin_type));
     }
 
@@ -70,15 +69,36 @@ pub async fn handler_internal(
     };
 
     // Check the signature
-    let sinature_check =
-        match verify_message_signature(raw_payload, &request_payload.signature, &payload_owner) {
-            Ok(sinature_check) => sinature_check,
-            Err(_) => {
-                return Err(RpcError::SignatureValidationError(
-                    "Invalid signature".into(),
-                ))
-            }
-        };
+    let chain_id_caip2 = format!(
+        "eip155:{}",
+        convert_coin_type_to_evm_chain_id(request_payload.coin_type) as u64
+    );
+    let rpc_project_id = state
+        .config
+        .server
+        .testing_project_id
+        .as_ref()
+        .ok_or_else(|| {
+            RpcError::InvalidConfiguration(
+                "Missing testing project id in the configuration for eip1271 lookups".to_string(),
+            )
+        })?;
+    let sinature_check = match verify_message_signature(
+        raw_payload,
+        &request_payload.signature,
+        &request_payload.address,
+        &chain_id_caip2,
+        rpc_project_id,
+    )
+    .await
+    {
+        Ok(sinature_check) => sinature_check,
+        Err(_) => {
+            return Err(RpcError::SignatureValidationError(
+                "Invalid signature".into(),
+            ))
+        }
+    };
     if !sinature_check {
         return Err(RpcError::SignatureValidationError(
             "Signature verification error".into(),
@@ -86,24 +106,21 @@ pub async fn handler_internal(
     }
 
     // Check for the name address ownership and address from the signed payload
-    let name_owner = match name_addresses
-        .addresses
-        .get(&Eip155SupportedChains::EthereumMainnet.into())
-    {
-        Some(address_entry) => match ethers::types::H160::from_str(&address_entry.address) {
-            Ok(owner) => owner,
-            Err(_) => return Err(RpcError::InvalidAddress),
-        },
-        None => {
-            info!("Address entry not found for key 60");
-            return Ok((
-                StatusCode::BAD_REQUEST,
-                "Address entry not found for key 60",
-            )
-                .into_response());
+    let mut address_is_authorized = false;
+    for (coint_type, address) in name_addresses.addresses.iter() {
+        if coint_type == &request_payload.coin_type {
+            let name_owner = match ethers::types::H160::from_str(&address.address) {
+                Ok(owner) => owner,
+                Err(_) => return Err(RpcError::InvalidAddress),
+            };
+            if !constant_time_eq(payload_owner, name_owner) {
+                return Err(RpcError::NameOwnerValidationError);
+            } else {
+                address_is_authorized = true;
+            }
         }
-    };
-    if !constant_time_eq(payload_owner, name_owner) {
+    }
+    if !address_is_authorized {
         return Err(RpcError::NameOwnerValidationError);
     }
 

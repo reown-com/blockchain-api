@@ -1,5 +1,4 @@
 use {
-    num_enum::{IntoPrimitive, TryFromPrimitive},
     once_cell::sync::Lazy,
     regex::Regex,
     serde::{Deserialize, Serialize},
@@ -11,17 +10,11 @@ pub mod attributes;
 pub mod lookup;
 pub mod register;
 pub mod reverse;
+pub mod suggestions;
 pub mod utils;
 
-/// List of supported Ethereum chains in ENSIP-11 format
-#[repr(u32)]
-#[derive(Debug, Clone, PartialEq, Eq, IntoPrimitive, TryFromPrimitive)]
-enum Eip155SupportedChains {
-    EthereumMainnet = 60,
-}
-
 /// List of allowed name zones
-pub const ALLOWED_ZONES: [&str; 1] = ["wc.ink"];
+pub const ALLOWED_ZONES: [&str; 1] = ["wcn.id"];
 
 pub const UNIXTIMESTAMP_SYNC_THRESHOLD: u64 = 10;
 

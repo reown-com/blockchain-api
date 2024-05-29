@@ -7,9 +7,9 @@ local alert          = grafana.alert;
 local alertCondition = grafana.alertCondition;
 
 local error_alert(vars) = alert.new(
-  namespace   = 'RPC',
-  name        = "RPC %s - Availability" % vars.environment,
-  message     = "RPC %s - Availability" % vars.environment,
+  namespace   = 'Blockchain API',
+  name        = "%s - Availability" % vars.environment,
+  message     = "%s - Availability" % vars.environment,
   period      = '5m',
   frequency   = '1m',
   noDataState = 'alerting',
@@ -44,11 +44,11 @@ local error_alert(vars) = alert.new(
           axisSoftMax = 100,
         )
     )
-    .setAlert(error_alert(vars))
+    .setAlert(vars.environment, error_alert(vars))
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = '(1-(sum(rate(http_call_counter_total{code=~"5[0-24-9][0-9]"}[5m])) or vector(0))/(sum(rate(http_call_counter_total{}[5m]))))*100',
+      expr        = '(1-(sum(rate(http_call_counter_total{code=~"5[0-9][0-24-9]"}[5m])) or vector(0))/(sum(rate(http_call_counter_total{}[5m]))))*100',
       refId       = "availability",
       exemplar    = false,
     ))

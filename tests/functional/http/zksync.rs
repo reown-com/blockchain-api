@@ -1,8 +1,6 @@
 use {
-    super::check_if_rpc_is_responding_correctly_for_supported_chain,
-    crate::context::ServerContext,
-    rpc_proxy::providers::ProviderKind,
-    test_context::test_context,
+    super::check_if_rpc_is_responding_correctly_for_supported_chain, crate::context::ServerContext,
+    rpc_proxy::providers::ProviderKind, test_context::test_context,
 };
 
 #[test_context(ServerContext)]
@@ -18,12 +16,12 @@ async fn zksync_provider_eip155_324_and_280(ctx: &mut ServerContext) {
     )
     .await;
 
-    // ZkSync testnet
+    // ZkSync Sepolia testnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &ProviderKind::ZKSync,
-        "eip155:280",
-        "0x118",
+        "eip155:300",
+        "0x12c",
     )
     .await
 }

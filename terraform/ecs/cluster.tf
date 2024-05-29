@@ -1,13 +1,18 @@
 locals {
   image = "${var.ecr_repository_url}:${var.image_version}"
 
+  desired_count = module.this.stage == "prod" ? var.autoscaling_desired_count : 1
+
+  task_cpu    = module.this.stage == "prod" ? var.task_cpu : 256
+  task_memory = module.this.stage == "prod" ? var.task_memory : 512
+
   otel_port   = var.port + 1
-  otel_cpu    = 128
-  otel_memory = 128
+  otel_cpu    = module.this.stage == "prod" ? 128 : 64
+  otel_memory = module.this.stage == "prod" ? 128 : 64
 
   prometheus_proxy_port   = var.port + 2
-  prometheus_proxy_cpu    = 128
-  prometheus_proxy_memory = 128
+  prometheus_proxy_cpu    = module.this.stage == "prod" ? 128 : 64
+  prometheus_proxy_memory = module.this.stage == "prod" ? 128 : 64
 
   file_descriptor_soft_limit = pow(2, 18)
   file_descriptor_hard_limit = local.file_descriptor_soft_limit * 2
@@ -16,8 +21,8 @@ locals {
 module "ecs_cpu_mem" {
   source  = "app.terraform.io/wallet-connect/ecs_cpu_mem/aws"
   version = "1.0.0"
-  cpu     = var.task_cpu + local.otel_cpu + local.prometheus_proxy_cpu
-  memory  = var.task_memory + local.otel_memory + local.prometheus_proxy_memory
+  cpu     = local.task_cpu
+  memory  = local.task_memory
 }
 
 #-------------------------------------------------------------------------------
@@ -38,9 +43,10 @@ resource "aws_ecs_cluster" "app_cluster" {
   }
 
   # Exposes metrics such as the number of running tasks in CloudWatch
+  # Should be disabled because we use Prometheus for CPU and Memory monitoring
   setting {
     name  = "containerInsights"
-    value = "enabled"
+    value = "disabled"
   }
 }
 
@@ -65,8 +71,8 @@ resource "aws_ecs_task_definition" "app_task" {
     {
       name      = module.this.id,
       image     = local.image,
-      cpu       = var.task_cpu,
-      memory    = var.task_memory,
+      cpu       = local.task_cpu - local.otel_cpu - local.prometheus_proxy_cpu,
+      memory    = local.task_memory - local.otel_memory - local.prometheus_proxy_memory,
       essential = true,
 
       environment = [
@@ -85,6 +91,10 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_PROVIDER_ZERION_API_KEY", value = var.zerion_api_key },
         { name = "RPC_PROXY_PROVIDER_COINBASE_API_KEY", value = var.coinbase_api_key },
         { name = "RPC_PROXY_PROVIDER_COINBASE_APP_ID", value = var.coinbase_app_id },
+        { name = "RPC_PROXY_PROVIDER_ONE_INCH_API_KEY", value = var.one_inch_api_key },
+        { name = "RPC_PROXY_PROVIDER_ONE_INCH_REFERRER", value = var.one_inch_referrer },
+        { name = "RPC_PROXY_PROVIDER_GETBLOCK_ACCESS_TOKENS", value = var.getblock_access_tokens },
+
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL", value = "http://127.0.0.1:${local.prometheus_proxy_port}/workspaces/${var.prometheus_workspace_id}" },
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_WORKSPACE_HEADER", value = "aps-workspaces.${module.this.region}.amazonaws.com" },
 
@@ -97,6 +107,12 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_STORAGE_PROJECT_DATA_REDIS_ADDR_WRITE", value = "redis://${var.project_cache_endpoint_write}/0" },
         { name = "RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_READ", value = "redis://${var.identity_cache_endpoint_read}/1" },
         { name = "RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_WRITE", value = "redis://${var.identity_cache_endpoint_write}/1" },
+        { name = "RPC_PROXY_STORAGE_RATE_LIMITING_CACHE_REDIS_ADDR_READ", value = "redis://${var.rate_limiting_cache_endpoint_read}/2" },
+        { name = "RPC_PROXY_STORAGE_RATE_LIMITING_CACHE_REDIS_ADDR_WRITE", value = "redis://${var.rate_limiting_cache_endpoint_write}/2" },
+
+        { name = "RPC_PROXY_RATE_LIMITING_MAX_TOKENS", value = tostring(var.rate_limiting_max_tokens) },
+        { name = "RPC_PROXY_RATE_LIMITING_REFILL_INTERVAL_SEC", value = tostring(var.rate_limiting_refill_interval) },
+        { name = "RPC_PROXY_RATE_LIMITING_REFILL_RATE", value = tostring(var.rate_limiting_refill_rate) },
 
         { name = "RPC_PROXY_POSTGRES_URI", value = var.postgres_url },
 
@@ -203,7 +219,7 @@ resource "aws_ecs_service" "app_service" {
   cluster         = aws_ecs_cluster.app_cluster.id
   task_definition = aws_ecs_task_definition.app_task.arn
   launch_type     = "FARGATE"
-  desired_count   = var.autoscaling_desired_count
+  desired_count   = local.desired_count
   propagate_tags  = "TASK_DEFINITION"
 
   # Wait for the service deployment to succeed

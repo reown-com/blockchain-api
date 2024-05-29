@@ -1,7 +1,7 @@
 use {
     super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
-        env::OmniatechConfig,
+        env::GetBlockConfig,
         error::{RpcError, RpcResult},
     },
     async_trait::async_trait,
@@ -9,19 +9,20 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    hyper::{client::HttpConnector, Client, Method, StatusCode},
+    hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
     tracing::info,
 };
 
 #[derive(Debug)]
-pub struct OmniatechProvider {
-    pub client: Client<HttpsConnector<HttpConnector>>,
-    pub supported_chains: HashMap<String, String>,
+pub struct GetBlockProvider {
+    base_api_url: String,
+    client: Client<HttpsConnector<HttpConnector>>,
+    supported_chains: HashMap<String, String>,
 }
 
-impl Provider for OmniatechProvider {
+impl Provider for GetBlockProvider {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool {
         self.supported_chains.contains_key(chain_id)
     }
@@ -31,30 +32,27 @@ impl Provider for OmniatechProvider {
     }
 
     fn provider_kind(&self) -> ProviderKind {
-        ProviderKind::Omniatech
+        ProviderKind::GetBlock
     }
 }
 
 #[async_trait]
-impl RateLimited for OmniatechProvider {
-    async fn is_rate_limited(&self, response: &mut Response) -> bool
-    where
-        Self: Sized,
-    {
-        response.status() == StatusCode::TOO_MANY_REQUESTS
+impl RateLimited for GetBlockProvider {
+    async fn is_rate_limited(&self, response: &mut Response) -> bool {
+        response.status() == http::StatusCode::TOO_MANY_REQUESTS
     }
 }
 
 #[async_trait]
-impl RpcProvider for OmniatechProvider {
+impl RpcProvider for GetBlockProvider {
     #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()))]
     async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
-        let chain = self
+        let access_token_api = self
             .supported_chains
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let uri = format!("https://endpoints.omniatech.io/v1/{}/mainnet/public", chain);
+        let uri = format!("{}/{}", self.base_api_url, access_token_api);
 
         let hyper_request = hyper::http::Request::builder()
             .method(Method::POST)
@@ -63,6 +61,7 @@ impl RpcProvider for OmniatechProvider {
             .body(hyper::body::Body::from(body))?;
 
         let response = self.client.request(hyper_request).await?;
+
         let status = response.status();
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
@@ -70,7 +69,7 @@ impl RpcProvider for OmniatechProvider {
             if response.error.is_some() && status.is_success() {
                 info!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
-                     Omnia: {response:?}"
+                     GetBlock RPC: {response:?}"
                 );
             }
         }
@@ -83,18 +82,20 @@ impl RpcProvider for OmniatechProvider {
     }
 }
 
-impl RpcProviderFactory<OmniatechConfig> for OmniatechProvider {
+impl RpcProviderFactory<GetBlockConfig> for GetBlockProvider {
     #[tracing::instrument]
-    fn new(provider_config: &OmniatechConfig) -> Self {
-        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    fn new(provider_config: &GetBlockConfig) -> Self {
+        let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
             .map(|(k, v)| (k.clone(), v.0.clone()))
             .collect();
+        let base_api_url = "https://go.getblock.io".to_string();
 
-        OmniatechProvider {
-            client: forward_proxy_client,
+        GetBlockProvider {
+            base_api_url,
+            client,
             supported_chains,
         }
     }

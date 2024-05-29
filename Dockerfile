@@ -3,8 +3,8 @@
 # Build args
 #
 ################################################################################
-ARG                 base="rust:buster"
-ARG                 runtime="debian:buster-slim"
+ARG                 base="rust:bookworm"
+ARG                 runtime="debian:bookworm-slim"
 ARG                 bin="rpc-proxy"
 ARG                 version="unknown"
 ARG                 sha="unknown"
@@ -19,7 +19,7 @@ ARG                 WORK_DIR="/app"
 ################################################################################
 FROM                ${base} AS chef
 
-WORKDIR             ${WORK_DIR} 
+WORKDIR             ${WORK_DIR}
 RUN                 cargo install cargo-chef --locked
 
 ################################################################################
@@ -77,7 +77,7 @@ ENV                 RPC_PROXY_HOST=0.0.0.0
 WORKDIR             /app
 COPY --from=build   /app/target/${binpath:-debug}/rpc-proxy /usr/local/bin/rpc-proxy
 RUN                 apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates libssl-dev \
+    && apt-get install -y --no-install-recommends ca-certificates libssl-dev curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

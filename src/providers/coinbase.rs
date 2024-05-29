@@ -4,20 +4,16 @@ use {
         error::{RpcError, RpcResult},
         handlers::{
             history::{
-                HistoryQueryParams,
-                HistoryResponseBody,
-                HistoryTransaction,
-                HistoryTransactionFungibleInfo,
-                HistoryTransactionMetadata,
-                HistoryTransactionTransfer,
-                HistoryTransactionTransferQuantity,
+                HistoryQueryParams, HistoryResponseBody, HistoryTransaction,
+                HistoryTransactionFungibleInfo, HistoryTransactionMetadata,
+                HistoryTransactionTransfer, HistoryTransactionTransferQuantity,
             },
             onramp::{
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
                 quotes::{OnRampBuyQuotesParams, OnRampBuyQuotesResponse},
             },
         },
-        utils::crypto::string_chain_id_to_caip2_format,
+        utils::crypto::ChainId,
     },
     async_trait::async_trait,
     hyper::Client,
@@ -120,7 +116,7 @@ impl HistoryProvider for CoinbaseProvider {
                     sent_to: address.clone(),
                     status: f.status,
                     application: None,
-                    chain: string_chain_id_to_caip2_format(&f.purchase_network).ok(),
+                    chain: ChainId::to_caip2(&f.purchase_network),
                 },
                 transfers: Some(vec![HistoryTransactionTransfer {
                     fungible_info: Some(HistoryTransactionFungibleInfo {
@@ -193,7 +189,6 @@ impl OnRampProvider for CoinbaseProvider {
         let response = http_client
             .post(url)
             .json(&params)
-            .header("Content-Type", "application/json")
             .header("CBPAY-APP-ID", self.app_id.clone())
             .header("CBPAY-API-KEY", self.api_key.clone())
             .send()

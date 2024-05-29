@@ -6,32 +6,22 @@ use {
         profiler::ProfilerConfig,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
         providers::{ProviderKind, ProvidersConfig, Weight},
+        utils::rate_limit::RateLimitingConfig,
     },
     serde::de::DeserializeOwned,
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
-    aurora::*,
-    base::*,
-    binance::*,
-    infura::*,
-    mantle::*,
-    near::*,
-    omnia::*,
-    pokt::*,
-    publicnode::*,
-    quicknode::*,
-    server::*,
-    zksync::*,
-    zora::*,
+    aurora::*, base::*, binance::*, getblock::*, infura::*, mantle::*, near::*, pokt::*,
+    publicnode::*, quicknode::*, server::*, zksync::*, zora::*,
 };
 mod aurora;
 mod base;
 mod binance;
+mod getblock;
 mod infura;
 mod mantle;
 mod near;
-mod omnia;
 mod pokt;
 mod publicnode;
 mod quicknode;
@@ -57,6 +47,7 @@ pub struct Config {
     pub analytics: AnalyticsConfig,
     pub profiler: ProfilerConfig,
     pub providers: ProvidersConfig,
+    pub rate_limiting: RateLimitingConfig,
 }
 
 impl Config {
@@ -69,6 +60,7 @@ impl Config {
             analytics: from_env("RPC_PROXY_ANALYTICS_")?,
             profiler: from_env("RPC_PROXY_PROFILER_")?,
             providers: from_env("RPC_PROXY_PROVIDER_")?,
+            rate_limiting: from_env("RPC_PROXY_RATE_LIMITING_")?,
         })
     }
 }
@@ -93,6 +85,7 @@ mod test {
             profiler::ProfilerConfig,
             project,
             providers::ProvidersConfig,
+            utils::rate_limit::RateLimitingConfig,
         },
         std::net::Ipv4Addr,
     };
@@ -133,6 +126,14 @@ mod test {
                 "RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_WRITE",
                 "redis://127.0.0.1/identity/write",
             ),
+            (
+                "RPC_PROXY_STORAGE_RATE_LIMITING_CACHE_REDIS_ADDR_READ",
+                "redis://127.0.0.1/rate_limit/read",
+            ),
+            (
+                "RPC_PROXY_STORAGE_RATE_LIMITING_CACHE_REDIS_ADDR_WRITE",
+                "redis://127.0.0.1/rate_limit/write",
+            ),
             // Analytics config.
             ("RPC_PROXY_ANALYTICS_S3_ENDPOINT", "s3://127.0.0.1"),
             ("RPC_PROXY_ANALYTICS_EXPORT_BUCKET", "EXPORT_BUCKET"),
@@ -146,6 +147,9 @@ mod test {
             ),
             ("RPC_PROXY_PROVIDER_COINBASE_API_KEY", "COINBASE_API_KEY"),
             ("RPC_PROXY_PROVIDER_COINBASE_APP_ID", "COINBASE_APP_ID"),
+            ("RPC_PROXY_PROVIDER_ONE_INCH_API_KEY", "ONE_INCH_API_KEY"),
+            ("RPC_PROXY_PROVIDER_ONE_INCH_REFERRER", "ONE_INCH_REFERRER"),
+            ("RPC_PROXY_PROVIDER_GETBLOCK_ACCESS_TOKENS", "{}"),
             (
                 "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL",
                 "PROMETHEUS_QUERY_URL",
@@ -160,63 +164,86 @@ mod test {
                 "postgres://postgres@localhost:5432/postgres",
             ),
             ("RPC_PROXY_POSTGRES_MAX_CONNECTIONS", "32"),
+            // Rate limiting config.
+            ("RPC_PROXY_RATE_LIMITING_MAX_TOKENS", "100"),
+            ("RPC_PROXY_RATE_LIMITING_REFILL_INTERVAL_SEC", "1"),
+            ("RPC_PROXY_RATE_LIMITING_REFILL_RATE", "10"),
         ];
 
         values.iter().for_each(set_env_var);
 
-        assert_eq!(Config::from_env().unwrap(), Config {
-            server: ServerConfig {
-                host: "1.2.3.4".to_owned(),
-                port: 123,
-                prometheus_port: 234,
-                log_level: "TRACE".to_owned(),
-                external_ip: Some(Ipv4Addr::new(2, 3, 4, 5).into()),
-                blocked_countries: vec![
-                    "KP".to_owned(),
-                    "IR".to_owned(),
-                    "CU".to_owned(),
-                    "SY".to_owned(),
-                ],
-                s3_endpoint: None,
-                geoip_db_bucket: Some("GEOIP_DB_BUCKET".to_owned()),
-                geoip_db_key: Some("GEOIP_DB_KEY".to_owned()),
-                testing_project_id: Some("TESTING_PROJECT_ID".to_owned()),
-                validate_project_id: true,
-            },
-            registry: project::Config {
-                api_url: Some("API_URL".to_owned()),
-                api_auth_token: Some("API_AUTH_TOKEN".to_owned()),
-                project_data_cache_ttl: 345,
-            },
-            storage: project::storage::Config {
-                redis_max_connections: 456,
-                project_data_redis_addr_read: Some("redis://127.0.0.1/data/read".to_owned()),
-                project_data_redis_addr_write: Some("redis://127.0.0.1/data/write".to_owned()),
-                identity_cache_redis_addr_read: Some("redis://127.0.0.1/identity/read".to_owned()),
-                identity_cache_redis_addr_write: Some(
-                    "redis://127.0.0.1/identity/write".to_owned()
-                ),
-            },
-            postgres: PostgresConfig {
-                uri: "postgres://postgres@localhost:5432/postgres".to_owned(),
-                max_connections: 32,
-            },
-            analytics: analytics::Config {
-                s3_endpoint: Some("s3://127.0.0.1".to_owned()),
-                export_bucket: Some("EXPORT_BUCKET".to_owned()),
-            },
-            profiler: ProfilerConfig {},
-            providers: ProvidersConfig {
-                prometheus_query_url: Some("PROMETHEUS_QUERY_URL".to_owned()),
-                prometheus_workspace_header: Some("PROMETHEUS_WORKSPACE_HEADER".to_owned()),
-                infura_project_id: "INFURA_PROJECT_ID".to_string(),
-                pokt_project_id: "POKT_PROJECT_ID".to_string(),
-                quicknode_api_token: "QUICKNODE_API_TOKEN".to_string(),
-                zerion_api_key: Some("ZERION_API_KEY".to_owned()),
-                coinbase_api_key: Some("COINBASE_API_KEY".to_owned()),
-                coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),
-            },
-        });
+        assert_eq!(
+            Config::from_env().unwrap(),
+            Config {
+                server: ServerConfig {
+                    host: "1.2.3.4".to_owned(),
+                    port: 123,
+                    prometheus_port: 234,
+                    log_level: "TRACE".to_owned(),
+                    external_ip: Some(Ipv4Addr::new(2, 3, 4, 5).into()),
+                    blocked_countries: vec![
+                        "KP".to_owned(),
+                        "IR".to_owned(),
+                        "CU".to_owned(),
+                        "SY".to_owned(),
+                    ],
+                    s3_endpoint: None,
+                    geoip_db_bucket: Some("GEOIP_DB_BUCKET".to_owned()),
+                    geoip_db_key: Some("GEOIP_DB_KEY".to_owned()),
+                    testing_project_id: Some("TESTING_PROJECT_ID".to_owned()),
+                    validate_project_id: true,
+                },
+                registry: project::Config {
+                    api_url: Some("API_URL".to_owned()),
+                    api_auth_token: Some("API_AUTH_TOKEN".to_owned()),
+                    project_data_cache_ttl: 345,
+                },
+                storage: project::storage::Config {
+                    redis_max_connections: 456,
+                    project_data_redis_addr_read: Some("redis://127.0.0.1/data/read".to_owned()),
+                    project_data_redis_addr_write: Some("redis://127.0.0.1/data/write".to_owned()),
+                    identity_cache_redis_addr_read: Some(
+                        "redis://127.0.0.1/identity/read".to_owned()
+                    ),
+                    identity_cache_redis_addr_write: Some(
+                        "redis://127.0.0.1/identity/write".to_owned()
+                    ),
+                    rate_limiting_cache_redis_addr_read: Some(
+                        "redis://127.0.0.1/rate_limit/read".to_owned()
+                    ),
+                    rate_limiting_cache_redis_addr_write: Some(
+                        "redis://127.0.0.1/rate_limit/write".to_owned()
+                    ),
+                },
+                postgres: PostgresConfig {
+                    uri: "postgres://postgres@localhost:5432/postgres".to_owned(),
+                    max_connections: 32,
+                },
+                analytics: analytics::Config {
+                    s3_endpoint: Some("s3://127.0.0.1".to_owned()),
+                    export_bucket: Some("EXPORT_BUCKET".to_owned()),
+                },
+                profiler: ProfilerConfig {},
+                providers: ProvidersConfig {
+                    prometheus_query_url: Some("PROMETHEUS_QUERY_URL".to_owned()),
+                    prometheus_workspace_header: Some("PROMETHEUS_WORKSPACE_HEADER".to_owned()),
+                    infura_project_id: "INFURA_PROJECT_ID".to_string(),
+                    pokt_project_id: "POKT_PROJECT_ID".to_string(),
+                    quicknode_api_token: "QUICKNODE_API_TOKEN".to_string(),
+                    zerion_api_key: Some("ZERION_API_KEY".to_owned()),
+                    coinbase_api_key: Some("COINBASE_API_KEY".to_owned()),
+                    coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),
+                    one_inch_api_key: Some("ONE_INCH_API_KEY".to_owned()),
+                    one_inch_referrer: Some("ONE_INCH_REFERRER".to_owned()),
+                    getblock_access_tokens: Some("{}".to_owned()),
+                },
+                rate_limiting: RateLimitingConfig {
+                    max_tokens: Some(100),
+                    refill_interval_sec: Some(1),
+                    refill_rate: Some(10),
+                },
+            }
+        );
 
         values.iter().for_each(reset_env_var);
     }

@@ -2,6 +2,467 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.66.3 - 2024-05-29
+#### Bug Fixes
+- relax paths-ignore (#665) - (fad03f0) - Chris Smith
+- quotas query param name (#664) - (3f4ec66) - Chris Smith
+
+- - -
+
+## 0.66.2 - 2024-05-29
+#### Bug Fixes
+- keep requesting quotas (#662) - (007e051) - Chris Smith
+
+- - -
+
+## 0.66.1 - 2024-05-24
+#### Bug Fixes
+- **(tests)** adding integration test for registering name with different coin type (#658) - (8a10ca2) - Max Kalashnikoff
+- removing excessive json header (#660) - (843b509) - Max Kalashnikoff
+
+- - -
+
+## 0.66.0 - 2024-05-20
+#### Features
+- **(balance)** adding forced balance update by the contract address (#655) - (e4f1168) - Max Kalashnikoff
+
+- - -
+
+## 0.65.0 - 2024-05-17
+#### Features
+- **(convertion)** adding optional `gasPrice` to the quote endpoint (#657) - (bd92739) - Max Kalashnikoff
+
+- - -
+
+## 0.64.1 - 2024-05-15
+#### Bug Fixes
+- **(one_inch)** adding `fee` argument to quotes and swap (#656) - (0a587d2) - Max Kalashnikoff
+
+- - -
+
+## 0.64.0 - 2024-05-15
+#### Features
+- **(convert)** adding `referrer` to 1Inch provider (#653) - (322ef49) - Max Kalashnikoff
+
+- - -
+
+## 0.63.0 - 2024-05-13
+#### Features
+- **(names)** adding wcn.id root zone (#654) - (07047f1) - Max Kalashnikoff
+
+- - -
+
+## 0.62.0 - 2024-05-10
+#### Features
+- **(providers)** adding zkSync support to Pokt (#652) - (53f6377) - Max Kalashnikoff
+
+- - -
+
+## 0.61.0 - 2024-05-09
+#### Features
+- **(Docker)** bumping rust image to bookworm (#650) - (802d0e3) - Max Kalashnikoff
+- **(identity)** adding local names resolution (#651) - (f3646a8) - Max Kalashnikoff
+
+- - -
+
+## 0.60.0 - 2024-05-07
+#### Features
+- **(names)** adding `eip1271` and `erc6492` support (#644) - (b07e572) - Max Kalashnikoff
+
+- - -
+
+## 0.59.0 - 2024-05-07
+#### Features
+- **(providers)** using 1Inch instead of Zerion for fungible prices (#648) - (8123b70) - Max Kalashnikoff
+
+- - -
+
+## 0.58.0 - 2024-04-26
+#### Features
+- **(providers)** adding Polygon Amoy testnet (#647) - (2159ebd) - Max Kalashnikoff
+
+- - -
+
+## 0.57.0 - 2024-04-24
+#### Features
+- **(1inch)** handling of the unsupported chain ID (#646) - (73f0ba4) - Max Kalashnikoff
+
+- - -
+
+## 0.56.0 - 2024-04-23
+#### Features
+- **(analytics)** adding analytics for balance lookups (#632) - (53d5d62) - Max Kalashnikoff
+
+- - -
+
+## 0.55.6 - 2024-04-22
+#### Bug Fixes
+- **(utils)** properly handling of malformed CAIP-2 and 10 (#643) - (29c4018) - Max Kalashnikoff
+
+- - -
+
+## 0.55.5 - 2024-04-22
+#### Bug Fixes
+- **(Zerion)** return only non-spam items (#642) - (e5d99ba) - Max Kalashnikoff
+
+- - -
+
+## 0.55.4 - 2024-04-19
+#### Bug Fixes
+- **(Zerion)** handling of null price response (#641) - (6706f1c) - Max Kalashnikoff
+
+- - -
+
+## 0.55.3 - 2024-04-19
+#### Bug Fixes
+- **(fungibles)** adding more exception to native tokens (#640) - (809e041) - Max Kalashnikoff
+
+- - -
+
+## 0.55.2 - 2024-04-19
+#### Bug Fixes
+- **(fungibles)** adding eth token address representation (#639) - (fc69496) - Max Kalashnikoff
+
+- - -
+
+## 0.55.1 - 2024-04-18
+#### Bug Fixes
+- **(conversion)** making `amount` optional in approval (#638) - (5f90aa4) - Max Kalashnikoff
+
+- - -
+
+## 0.55.0 - 2024-04-18
+#### Features
+- **(conversion)** allowance endpoint (#637) - (68fc5bf) - Max Kalashnikoff
+
+- - -
+
+## 0.54.0 - 2024-04-18
+#### Features
+- **(conversion)** implementing gas price endpoint (#636) - (e97c8e8) - Max Kalashnikoff
+
+- - -
+
+## 0.53.0 - 2024-04-17
+#### Features
+- **(conversion)** passing through error message in case of wrong parameter (#635) - (ff6f993) - Max Kalashnikoff
+
+- - -
+
+## 0.52.3 - 2024-04-17
+#### Bug Fixes
+- **(conversion)** changing amounts to be String (#634) - (16981a6) - Max Kalashnikoff
+
+- - -
+
+## 0.52.2 - 2024-04-17
+#### Bug Fixes
+- **(names)** removing of eth mainnet addresses only (#633) - (a1b18bb) - Max Kalashnikoff
+
+- - -
+
+## 0.52.1 - 2024-04-16
+#### Bug Fixes
+- **(balance)** respond with an empty balance for sdk version <= 4.1.8 (#631) - (2d5c73f) - Max Kalashnikoff
+
+- - -
+
+## 0.52.0 - 2024-04-15
+#### Bug Fixes
+- **(tests)** fixing error code in identity test with wrong project ID (#629) - (311a5eb) - Max Kalashnikoff
+#### Features
+- adding sdk type and version to CORS allowed headers (#630) - (7d52a4b) - Max Kalashnikoff
+
+- - -
+
+## 0.51.3 - 2024-04-15
+#### Bug Fixes
+- **(identity)** adding project ID validation first in the handler (#623) - (71a314f) - Max Kalashnikoff
+
+- - -
+
+## 0.51.2 - 2024-04-15
+#### Bug Fixes
+- **(providers)** removing zkSync Goerli testnet, adding Sepolia instead (#627) - (7c34fcc) - Max Kalashnikoff
+
+- - -
+
+## 0.51.1 - 2024-04-15
+#### Bug Fixes
+- **(weights)** excluding zero weight providers from iteration (#628) - (f9a219d) - Max Kalashnikoff
+
+- - -
+
+## 0.51.0 - 2024-04-15
+#### Features
+- **(rpc)** adding rpc call retrying (#624) - (f0a1f7e) - Max Kalashnikoff
+
+- - -
+
+## 0.50.0 - 2024-04-15
+#### Features
+- **(providers)** adding Linea mainnet to supported chains (#626) - (0ef85ae) - Max Kalashnikoff
+
+- - -
+
+## 0.49.8 - 2024-04-15
+#### Bug Fixes
+- **(providers)** removing Goerli and Mumbai chains (#625) - (dfd07c1) - Max Kalashnikoff
+
+- - -
+
+## 0.49.7 - 2024-04-11
+#### Bug Fixes
+- **(identity)** hardcode ethereum mainnet (#622) - (378b28c) - Max Kalashnikoff
+
+- - -
+
+## 0.49.6 - 2024-04-11
+#### Bug Fixes
+- disable cache for testing project ID (#619) - (4001ff5) - Chris Smith
+
+- - -
+
+## 0.49.5 - 2024-04-11
+#### Bug Fixes
+- **(identity)** proper rpc errors handling in avatar lookup (#621) - (3df2e41) - Max Kalashnikoff
+
+- - -
+
+## 0.49.4 - 2024-04-10
+#### Bug Fixes
+- **(identity)** handling properly errors in RPC call response (#620) - (7c41c6f) - Max Kalashnikoff
+
+- - -
+
+## 0.49.3 - 2024-04-10
+#### Bug Fixes
+- **(revert)** hardcode mainnet (#610) (#618) - (1bde8e5) - Max Kalashnikoff
+
+- - -
+
+## 0.49.2 - 2024-04-09
+#### Bug Fixes
+- **(Docker)** adding curl to the Docker runtime image (#615) - (c35246b) - Max Kalashnikoff
+- hardcode mainnet (#610) - (d8ed82d) - Chris Smith
+
+- - -
+
+## 0.49.1 - 2024-04-09
+#### Bug Fixes
+- **(server)** enabling tcp_nodelay and tcp_sleep_on_accept_errors (#617) - (c875075) - Max Kalashnikoff
+
+- - -
+
+## 0.49.0 - 2024-04-09
+#### Bug Fixes
+- **(server)** decreasing keep-alive ping interval (#616) - (c938b92) - Max Kalashnikoff
+#### Features
+- **(monitoring)** using 3 minutes period for 5xx alerts (#614) - (f12cdda) - Max Kalashnikoff
+
+- - -
+
+## 0.48.0 - 2024-04-08
+#### Features
+- **(logging)** improving logging in the transactions history (#613) - (3aaca98) - Max Kalashnikoff
+
+- - -
+
+## 0.47.0 - 2024-04-08
+#### Features
+- **(logging)** adding additional tracing on project id validation (#612) - (dd7ee6c) - Max Kalashnikoff
+
+- - -
+
+## 0.46.0 - 2024-04-05
+#### Features
+- **(providers)** fungible price endpoint implementation (#608) - (33aadff) - Max Kalashnikoff
+
+- - -
+
+## 0.45.2 - 2024-04-04
+#### Bug Fixes
+- **(build)** adding assets as an exemption to gitignore (#607) - (38d9a3a) - Max Kalashnikoff
+
+- - -
+
+## 0.45.1 - 2024-04-04
+#### Bug Fixes
+- **(names)** decreasing minimum name length to `3` (#606) - (707ed22) - Max Kalashnikoff
+
+- - -
+
+## 0.44.2 - 2024-04-03
+#### Bug Fixes
+- **(providers)** varying priority for the GetBlock provider (#602) - (bdff75e) - Max Kalashnikoff
+
+- - -
+
+## 0.44.1 - 2024-04-02
+#### Bug Fixes
+- **(providers)** removing deprecated endpoints from Grove/Pokt (#603) - (264586a) - Max Kalashnikoff
+
+- - -
+
+## 0.44.0 - 2024-04-02
+#### Bug Fixes
+- **(monitoring)** adding rate-limiting alert and removing double healthy hosts (#601) - (5f069e9) - Max Kalashnikoff
+#### Features
+- **(analytics)** adding transaction ID to the onramp analytics (#604) - (0da4f7e) - Max Kalashnikoff
+
+- - -
+
+## 0.43.0 - 2024-04-01
+#### Features
+- rate limiting (#600) - (e0a9fe2) - Max Kalashnikoff
+
+- - -
+
+## 0.42.0 - 2024-03-29
+#### Features
+- **(analytics)** updating to  tag (#599) - (68c3a23) - Max Kalashnikoff
+
+- - -
+
+## 0.41.8 - 2024-03-26
+#### Bug Fixes
+- **(zerion)** handling properly `Polygon` native token address in balance (#597) - (1aa8d7f) - Max Kalashnikoff
+
+- - -
+
+## 0.41.7 - 2024-03-26
+#### Bug Fixes
+- **(monitoring)** decreasing system metrics sampling interval (#598) - (2efa413) - Max Kalashnikoff
+- **(monitoring)** increasing the CPU alarm interval (#596) - (c80d10e) - Max Kalashnikoff
+- alarm config (#595) - (c619f7e) - Chris Smith
+#### Miscellaneous Chores
+- bump version - (28e4854) - Chris Smith
+
+- - -
+
+## 0.41.6 - 2024-03-25
+#### Bug Fixes
+- top-level ELB error metric and logs, downscale to min capacities (#592) - (7cf125d) - Chris Smith
+
+- - -
+
+## 0.41.5 - 2024-03-22
+#### Bug Fixes
+- provider-returned non-200s should be 503s & fix autoscaling (#591) - (1dbfe4c) - Chris Smith
+
+- - -
+
+## 0.41.4 - 2024-03-21
+#### Bug Fixes
+- **(balance)** using the implementation chain address instead of first (#589) - (43c8eb8) - Max Kalashnikoff
+
+- - -
+
+## 0.41.3 - 2024-03-21
+#### Bug Fixes
+- **(tests)** fixing address to be undefined and not null (#588) - (b484258) - Max Kalashnikoff
+- removing unwraps for proper handling and error context (#583) - (1b69020) - Max Kalashnikoff
+
+- - -
+
+## 0.41.2 - 2024-03-21
+#### Bug Fixes
+- **(balance)** adding token contract address (#587) - (abe23d5) - Max Kalashnikoff
+#### Miscellaneous Chores
+- downgrade runner (#584) - (3d004b6) - Chris Smith
+
+- - -
+
+## 0.41.1 - 2024-03-14
+#### Bug Fixes
+- **(identity)** handling `0x` RPC response for identity (#582) - (7a59595) - Max Kalashnikoff
+
+- - -
+
+## 0.41.0 - 2024-03-14
+#### Features
+- **(dev)** updating default env files and .gitignore (#581) - (dddc908) - Max Kalashnikoff
+- **(providers)** adding GetBlock provider (#577) - (55ced19) - Max Kalashnikoff
+
+- - -
+
+## 0.40.4 - 2024-03-14
+#### Bug Fixes
+- **(providers)** updating providers supported chains (#580) - (f9390be) - Max Kalashnikoff
+
+- - -
+
+## 0.40.3 - 2024-03-13
+#### Bug Fixes
+- removing `unwrap` in updating weights (#579) - (08c5b24) - Max Kalashnikoff
+
+- - -
+
+## 0.40.2 - 2024-03-13
+#### Bug Fixes
+- **(providers)** changing the Base testnet to Sepolia (#578) - (cd95039) - Max Kalashnikoff
+
+- - -
+
+## 0.40.1 - 2024-03-12
+#### Bug Fixes
+- **(providers)** removing Omnia provider (#575) - (9d42f41) - Max Kalashnikoff
+
+- - -
+
+## 0.40.0 - 2024-03-11
+#### Bug Fixes
+- supported chains endpoint (#571) - (8d0888d) - Chris Smith
+#### Features
+- **(docs)** adding the footnote for not guaranteed RPC chains (#574) - (f24d882) - Max Kalashnikoff
+
+- - -
+
+## 0.39.0 - 2024-03-08
+#### Features
+- **(conversion)** convert transaction builder endpoint implementation (#572) - (ddec3bb) - Max Kalashnikoff
+
+- - -
+
+## 0.38.0 - 2024-03-08
+#### Features
+- **(conversion)** approve transaction endpoint implementation (#570) - (b78f4fb) - Max Kalashnikoff
+
+- - -
+
+## 0.37.0 - 2024-03-08
+#### Features
+- **(conversion)** conversion quotes endpoint implementation (#568) - (1b798b2) - Max Kalashnikoff
+
+- - -
+
+## 0.36.0 - 2024-03-07
+#### Features
+- **(conversion)** available tokens list endpoint implementation (#567) - (e78f77a) - Max Kalashnikoff
+
+- - -
+
+## 0.35.1 - 2024-03-06
+#### Bug Fixes
+- **(zerion)** allowing HTTP 202 return code to pass (#564) - (8e7dc7b) - Max Kalashnikoff
+
+- - -
+
+## 0.35.0 - 2024-03-05
+#### Features
+- account balance endpoint (#563) - (ef11f08) - Max Kalashnikoff
+
+- - -
+
+## 0.34.0 - 2024-03-05
+#### Bug Fixes
+- **(monitoring)** fixing typo in excluding 503 from availability (#550) - (bfc8e85) - Max Kalashnikoff
+- correct Solana chain ID (#565) - (5bfe565) - Chris Smith
+#### Features
+- sorting supported chains list by the chainid (#562) - (378304e) - Max Kalashnikoff
+
+- - -
+
 ## 0.33.1 - 2024-03-01
 #### Bug Fixes
 - **(providers)** changing Near chain id to be CAIP-2 compatible (#547) - (b96bec0) - Max Kalashnikoff

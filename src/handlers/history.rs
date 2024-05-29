@@ -244,6 +244,7 @@ async fn handler_internal(
                 state
                     .analytics
                     .onramp_history_lookup(OnrampHistoryLookupInfo::new(
+                        transaction.id,
                         latency_tracker,
                         address.clone(),
                         project_id.clone(),

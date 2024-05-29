@@ -11,6 +11,8 @@
 
 .direnv
 .envrc
+.env
+.env.terraform
 .actrc
 
 #---------------------------------------

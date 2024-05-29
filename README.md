@@ -47,7 +47,7 @@ curl -X POST "http://localhost:3000/v1?chainId=eip155:1&projectId=someid" --data
 ## Testing
 
 ```bash
-just amigood
+just devloop
 ```
 
 ### Docker

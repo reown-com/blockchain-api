@@ -19,7 +19,10 @@ exceptions = [{ name = "unicode-ident", allow = ["Unicode-DFS-2016"] }]
 ignore = true
 
 # TODO We should be able to remove `ignore-sources` once we add `publish = false` to all the crates sourced from here.
-ignore-sources = ["https://github.com/WalletConnect/utils-rs.git"]
+ignore-sources = [
+    "https://github.com/WalletConnect/utils-rs.git", 
+    "https://github.com/WalletConnect/WalletConnectRust.git"
+]
 
 [[licenses.clarify]]
 name = "ring"

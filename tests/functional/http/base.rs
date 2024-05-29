@@ -1,8 +1,6 @@
 use {
-    super::check_if_rpc_is_responding_correctly_for_supported_chain,
-    crate::context::ServerContext,
-    rpc_proxy::providers::ProviderKind,
-    test_context::test_context,
+    super::check_if_rpc_is_responding_correctly_for_supported_chain, crate::context::ServerContext,
+    rpc_proxy::providers::ProviderKind, test_context::test_context,
 };
 
 #[test_context(ServerContext)]
@@ -18,12 +16,12 @@ async fn base_provider_eip155_8453_and_84531(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Base Goerli
+    // Base Sepolia
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &ProviderKind::Base,
-        "eip155:84531",
-        "0x14a33",
+        "eip155:84532",
+        "0x14a34",
     )
     .await
 }

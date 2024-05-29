@@ -136,6 +136,16 @@ variable "identity_cache_endpoint_write" {
   type        = string
 }
 
+variable "rate_limiting_cache_endpoint_read" {
+  description = "The endpoint of the rate limiting cache (read)"
+  type        = string
+}
+
+variable "rate_limiting_cache_endpoint_write" {
+  description = "The endpoint of the rate limiting cache (write)"
+  type        = string
+}
+
 variable "ofac_blocked_countries" {
   description = "The list of countries under OFAC sanctions"
   type        = string
@@ -181,6 +191,24 @@ variable "coinbase_api_key" {
 
 variable "coinbase_app_id" {
   description = "The APP-ID for Coinbase Pay SDK"
+  type        = string
+  sensitive   = true
+}
+
+variable "one_inch_api_key" {
+  description = "The API key for 1inch"
+  type        = string
+  sensitive   = true
+}
+
+variable "one_inch_referrer" {
+  description = "The referrer address for 1inch"
+  type        = string
+  sensitive   = true
+}
+
+variable "getblock_access_tokens" {
+  description = "Mapping of API access tokens for GetBlock in JSON format"
   type        = string
   sensitive   = true
 }
@@ -286,4 +314,22 @@ variable "geoip_db_bucket_name" {
 variable "geoip_db_key" {
   description = "The key of the GeoIP database in the S3 bucket"
   type        = string
+}
+
+#-------------------------------------------------------------------------------
+# Rate-limiting (Token bucket) configuration
+
+variable "rate_limiting_max_tokens" {
+  description = "The maximum number of tokens in the bucket"
+  type        = number
+}
+
+variable "rate_limiting_refill_interval" {
+  description = "The interval in seconds to refill the bucket"
+  type        = number
+}
+
+variable "rate_limiting_refill_rate" {
+  description = "The number of tokens to refill the bucket with"
+  type        = number
 }

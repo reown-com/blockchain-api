@@ -1,8 +1,6 @@
 use {
-    super::check_if_rpc_is_responding_correctly_for_supported_chain,
-    crate::context::ServerContext,
-    rpc_proxy::providers::ProviderKind,
-    test_context::test_context,
+    super::check_if_rpc_is_responding_correctly_for_supported_chain, crate::context::ServerContext,
+    rpc_proxy::providers::ProviderKind, test_context::test_context,
 };
 
 #[test_context(ServerContext)]
@@ -15,15 +13,6 @@ async fn infura_provider(ctx: &mut ServerContext) {
         &ProviderKind::Infura,
         "eip155:1",
         "0x1",
-    )
-    .await;
-
-    // Ethereum Goerli
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        &ProviderKind::Infura,
-        "eip155:5",
-        "0x5",
     )
     .await;
 
@@ -45,15 +34,6 @@ async fn infura_provider(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Polygon mumbai
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        &ProviderKind::Infura,
-        "eip155:80001",
-        "0x13881",
-    )
-    .await;
-
     // Optimism mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
@@ -63,12 +43,12 @@ async fn infura_provider(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Optimism goerli
+    // Optimism Sepolia
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &ProviderKind::Infura,
-        "eip155:420",
-        "0x1A4",
+        "eip155:11155420",
+        "0xaa37dc",
     )
     .await;
 
@@ -81,12 +61,12 @@ async fn infura_provider(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Arbitrum goerli
+    // Arbitrum Sepolia
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &ProviderKind::Infura,
-        "eip155:421613",
-        "0x66eed",
+        "eip155:421614",
+        "0x66eee",
     )
     .await;
 
@@ -99,12 +79,12 @@ async fn infura_provider(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Base Goerli
+    // Linea Mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &ProviderKind::Infura,
-        "eip155:84531",
-        "0x14a33",
+        "eip155:59144",
+        "0xe708",
     )
-    .await
+    .await;
 }
