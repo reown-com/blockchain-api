@@ -10,7 +10,7 @@ use {
         storage::KeyValueStorage,
         utils::{build::CompileInfo, rate_limit::RateLimit},
     },
-    cerberus::project::ProjectDataWithQuota,
+    cerberus::project::ProjectData,
     sqlx::PgPool,
     std::sync::Arc,
     tap::TapFallible,
@@ -67,19 +67,16 @@ impl AppState {
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
-    async fn get_project_data_validated(&self, id: &str) -> Result<ProjectDataWithQuota, RpcError> {
+    async fn get_project_data_validated(&self, id: &str) -> Result<ProjectData, RpcError> {
         let project = self.registry.project_data(id).await.tap_err(|e| {
             info!("Denied access for project: {id}, with reason: {e}");
             self.metrics.add_rejected_project();
         })?;
 
-        project
-            .project_data
-            .validate_access(id, None)
-            .tap_err(|e| {
-                info!("Denied access for project: {id}, with reason: {e}");
-                self.metrics.add_rejected_project();
-            })?;
+        project.validate_access(id, None).tap_err(|e| {
+            info!("Denied access for project: {id}, with reason: {e}");
+            self.metrics.add_rejected_project();
+        })?;
 
         Ok(project)
     }
@@ -115,7 +112,7 @@ impl AppState {
 }
 
 #[tracing::instrument(level = "debug")]
-fn validate_project_quota(project_data: &ProjectDataWithQuota) -> Result<(), RpcError> {
+fn validate_project_quota(project_data: &ProjectData) -> Result<(), RpcError> {
     if project_data.quota.is_valid {
         Ok(())
     } else {
@@ -126,28 +123,24 @@ fn validate_project_quota(project_data: &ProjectDataWithQuota) -> Result<(), Rpc
 #[cfg(test)]
 mod test {
     use {
-        super::{ProjectDataWithQuota, RpcError},
-        cerberus::project::{ProjectData, Quota},
+        super::{ProjectData, RpcError},
+        cerberus::project::Quota,
     };
 
     #[test]
     fn validate_project_quota() {
         // TODO: Handle this in some stub implementation of "Registry" abstraction.
-        let mut project = ProjectDataWithQuota {
-            project_data: ProjectData {
-                uuid: "".to_owned(),
-                creator: "".to_owned(),
-                name: "".to_owned(),
-                push_url: None,
-                keys: vec![],
-                is_enabled: true,
-                is_verify_enabled: false,
-                is_rate_limited: false,
-                allowed_origins: vec![],
-                verified_domains: vec![],
-                bundle_ids: vec![],
-                package_names: vec![],
-            },
+        let mut project = ProjectData {
+            uuid: "".to_owned(),
+            creator: "".to_owned(),
+            name: "".to_owned(),
+            push_url: None,
+            keys: vec![],
+            is_enabled: true,
+            is_verify_enabled: false,
+            is_rate_limited: false,
+            allowed_origins: vec![],
+            verified_domains: vec![],
             quota: Quota {
                 current: 0,
                 max: 0,
