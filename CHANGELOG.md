@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.66.2 - 2024-05-29
+#### Bug Fixes
+- keep requesting quotas (#662) - (007e051) - Chris Smith
+
+- - -
+
 ## 0.66.1 - 2024-05-24
 #### Bug Fixes
 - **(tests)** adding integration test for registering name with different coin type (#658) - (8a10ca2) - Max Kalashnikoff
