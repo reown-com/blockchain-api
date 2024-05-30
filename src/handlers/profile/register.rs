@@ -115,6 +115,7 @@ pub async fn handler_internal(
         &register_request.address,
         &chain_id_caip2,
         rpc_project_id,
+        "profile_register_sig_validate",
     )
     .await
     {

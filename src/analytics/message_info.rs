@@ -13,6 +13,7 @@ pub struct MessageInfo {
     pub project_id: String,
     pub chain_id: String,
     pub method: Arc<str>,
+    pub source: String,
 
     pub origin: Option<String>,
     pub provider: String,
@@ -38,6 +39,10 @@ impl MessageInfo {
             project_id: query_params.project_id.to_owned(),
             chain_id: query_params.chain_id.to_lowercase(),
             method: request.method.clone(),
+            source: query_params
+                .source
+                .clone()
+                .unwrap_or_else(|| "rpc".to_owned()),
 
             origin,
             provider: provider.to_string(),

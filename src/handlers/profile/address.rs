@@ -113,6 +113,7 @@ pub async fn handler_internal(
         &request_payload.address,
         &chain_id_caip2,
         rpc_project_id,
+        "profile_address_sig_validate",
     )
     .await
     {

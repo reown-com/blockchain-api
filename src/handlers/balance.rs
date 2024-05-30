@@ -206,6 +206,7 @@ async fn handler_internal(
                 contract_address,
                 parsed_address,
                 rpc_project_id,
+                "balance",
             )
             .await?;
             if let Some(balance) = response
