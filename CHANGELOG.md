@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.66.4 - 2024-05-31
+#### Bug Fixes
+- **(balance)** injecting forced balance update to the zero balance token response (#661) - (e94d33a) - Max Kalashnikoff
+
+- - -
+
 ## 0.66.3 - 2024-05-29
 #### Bug Fixes
 - relax paths-ignore (#665) - (fad03f0) - Chris Smith
