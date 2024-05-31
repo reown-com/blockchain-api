@@ -142,6 +142,7 @@ async fn handler_internal(
     // Check for the cache invalidation for the certain token contract addresses and
     // update/override balance results for the token from the RPC call
     if let Some(force_update) = &query.force_update {
+        const H160_EMPTY_ADDRESS: H160 = H160::repeat_byte(0xee);
         let rpc_project_id = state
             .config
             .server
@@ -190,7 +191,7 @@ async fn handler_internal(
                 ));
                 continue;
             }
-            if contract_address == H160::repeat_byte(0xee) {
+            if contract_address == H160_EMPTY_ADDRESS {
                 if let Some(balance) = response
                     .balances
                     .iter_mut()
@@ -235,7 +236,7 @@ async fn handler_internal(
                 name: token_info.name.clone(),
                 symbol: token_info.symbol.clone(),
                 chain_id: Some(caip2_chain_id.clone()),
-                address: if contract_address == H160::repeat_byte(0xee) {
+                address: if contract_address == H160_EMPTY_ADDRESS {
                     None
                 } else {
                     Some(caip_contract_address.to_string())
