@@ -7,7 +7,7 @@ use {
         response::{IntoResponse, Response},
     },
     serde::{Deserialize, Serialize},
-    std::sync::Arc,
+    std::{fmt::Display, sync::Arc},
     tracing::error,
     wc::metrics::TaskMetrics,
 };
@@ -41,6 +41,40 @@ pub struct RpcQueryParams {
 #[derive(Serialize)]
 pub struct SuccessResponse {
     status: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum SupportedCurrencies {
+    BTC,
+    ETH,
+    USD,
+    EUR,
+    GBP,
+    AUD,
+    CAD,
+    INR,
+    JPY,
+}
+
+impl Display for SupportedCurrencies {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                SupportedCurrencies::BTC => "btc",
+                SupportedCurrencies::ETH => "eth",
+                SupportedCurrencies::USD => "usd",
+                SupportedCurrencies::EUR => "eur",
+                SupportedCurrencies::GBP => "gbp",
+                SupportedCurrencies::AUD => "aud",
+                SupportedCurrencies::CAD => "cad",
+                SupportedCurrencies::INR => "inr",
+                SupportedCurrencies::JPY => "jpy",
+            }
+        )
+    }
 }
 
 /// Rate limit middleware that uses `rate_limiting`` token bucket sub crate

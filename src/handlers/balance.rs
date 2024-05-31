@@ -1,5 +1,5 @@
 use {
-    super::HANDLER_TASK_METRICS,
+    super::{SupportedCurrencies, HANDLER_TASK_METRICS},
     crate::{
         analytics::BalanceLookupInfo,
         error::RpcError,
@@ -15,7 +15,6 @@ use {
     hyper::HeaderMap,
     serde::{Deserialize, Serialize},
     std::{
-        fmt::Display,
         net::SocketAddr,
         sync::Arc,
         time::{Duration, SystemTime},
@@ -25,45 +24,11 @@ use {
     wc::future::FutureExt,
 };
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "lowercase")]
-pub enum BalanceCurrencies {
-    BTC,
-    ETH,
-    USD,
-    EUR,
-    GBP,
-    AUD,
-    CAD,
-    INR,
-    JPY,
-}
-
-impl Display for BalanceCurrencies {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                BalanceCurrencies::BTC => "btc",
-                BalanceCurrencies::ETH => "eth",
-                BalanceCurrencies::USD => "usd",
-                BalanceCurrencies::EUR => "eur",
-                BalanceCurrencies::GBP => "gbp",
-                BalanceCurrencies::AUD => "aud",
-                BalanceCurrencies::CAD => "cad",
-                BalanceCurrencies::INR => "inr",
-                BalanceCurrencies::JPY => "jpy",
-            }
-        )
-    }
-}
-
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BalanceQueryParams {
     pub project_id: String,
-    pub currency: BalanceCurrencies,
+    pub currency: SupportedCurrencies,
     pub chain_id: Option<String>,
     /// Comma separated list of CAIP-10 contract addresses to force update the balance
     pub force_update: Option<String>,
@@ -177,6 +142,7 @@ async fn handler_internal(
     // Check for the cache invalidation for the certain token contract addresses and
     // update/override balance results for the token from the RPC call
     if let Some(force_update) = &query.force_update {
+        const H160_EMPTY_ADDRESS: H160 = H160::repeat_byte(0xee);
         let rpc_project_id = state
             .config
             .server
@@ -223,8 +189,9 @@ async fn handler_internal(
                     balance.price,
                     balance.quantity.decimals.parse::<u32>().unwrap_or(0),
                 ));
+                continue;
             }
-            if contract_address == H160::repeat_byte(0xee) {
+            if contract_address == H160_EMPTY_ADDRESS {
                 if let Some(balance) = response
                     .balances
                     .iter_mut()
@@ -240,8 +207,52 @@ async fn handler_internal(
                         balance.price,
                         balance.quantity.decimals.parse::<u32>().unwrap_or(0),
                     ));
+                    continue;
                 }
             }
+            // Appending the token item to the response if it's not in
+            // the balance response due to the zero balance
+            let get_price_info = state
+                .providers
+                .fungible_price_provider
+                .get_price(
+                    &chain_id.clone(),
+                    format!("{:#x}", contract_address).as_str(),
+                    &query.currency,
+                )
+                .await
+                .tap_err(|e| {
+                    error!("Failed to call fungible get_price with {}", e);
+                })?;
+            let token_info = get_price_info.fungibles.first().ok_or_else(|| {
+                error!(
+                    "Empty tokens list result from get_price for address: {:#x}",
+                    contract_address
+                );
+                RpcError::BalanceProviderError
+            })?;
+
+            response.balances.push(BalanceItem {
+                name: token_info.name.clone(),
+                symbol: token_info.symbol.clone(),
+                chain_id: Some(caip2_chain_id.clone()),
+                address: if contract_address == H160_EMPTY_ADDRESS {
+                    None
+                } else {
+                    Some(caip_contract_address.to_string())
+                },
+                value: Some(crypto::convert_token_amount_to_value(
+                    rpc_balance,
+                    token_info.price,
+                    token_info.decimals,
+                )),
+                price: token_info.price,
+                quantity: BalanceQuantity {
+                    decimals: token_info.decimals.to_string(),
+                    numeric: crypto::format_token_amount(rpc_balance, token_info.decimals),
+                },
+                icon_url: token_info.icon_url.clone(),
+            });
         }
     }
 

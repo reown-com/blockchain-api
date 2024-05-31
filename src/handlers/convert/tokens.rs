@@ -18,6 +18,8 @@ use {
 pub struct TokensListQueryParams {
     pub project_id: String,
     pub chain_id: String,
+    /// Filter tokens by the implementation address
+    pub address: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -32,7 +34,7 @@ pub struct TokenItem {
     pub name: String,
     pub symbol: String,
     pub address: String,
-    pub decimals: u8,
+    pub decimals: u32,
     pub logo_uri: Option<String>,
     pub eip2612: Option<bool>,
 }

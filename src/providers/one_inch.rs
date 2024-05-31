@@ -17,10 +17,9 @@ use {
                 },
             },
             fungible_price::FungiblePriceItem,
+            SupportedCurrencies,
         },
-        providers::{
-            ConversionProvider, FungiblePriceProvider, PriceCurrencies, PriceResponseBody,
-        },
+        providers::{ConversionProvider, FungiblePriceProvider, PriceResponseBody},
         utils::crypto,
     },
     async_trait::async_trait,
@@ -65,11 +64,11 @@ impl OneInchProvider {
             .await
     }
 
-    async fn get_token_price(
+    pub async fn get_token_price(
         &self,
         chain_id: &str,
         address: &str,
-        currency: &PriceCurrencies,
+        currency: &SupportedCurrencies,
     ) -> Result<String, RpcError> {
         let mut url = Url::parse(
             format!("{}/price/v1.1/{}/{}", &self.base_api_url, chain_id, address).as_str(),
@@ -154,7 +153,7 @@ struct OneInchTokenItem {
     symbol: String,
     name: String,
     address: String,
-    decimals: u8,
+    decimals: u32,
     #[serde(alias = "logoURI")]
     logo_uri: Option<String>,
     eip2612: Option<bool>,
@@ -285,6 +284,13 @@ impl ConversionProvider for OneInchProvider {
             tokens: body
                 .tokens
                 .into_values()
+                .filter(|token| {
+                    if let Some(address) = &params.address {
+                        token.address == *address
+                    } else {
+                        true
+                    }
+                })
                 .map(|token| TokenItem {
                     name: token.name,
                     symbol: token.symbol,
@@ -622,7 +628,7 @@ impl FungiblePriceProvider for OneInchProvider {
         &self,
         chain_id: &str,
         address: &str,
-        currency: &PriceCurrencies,
+        currency: &SupportedCurrencies,
     ) -> RpcResult<PriceResponseBody> {
         let price = self.get_token_price(chain_id, address, currency).await?;
         let info = self.get_token_info(chain_id, address).await?;
@@ -633,6 +639,7 @@ impl FungiblePriceProvider for OneInchProvider {
                 symbol: info.symbol,
                 icon_url: info.logo_uri.unwrap_or_default(),
                 price: price.parse().unwrap_or(0.0),
+                decimals: info.decimals,
             }],
         };
 
