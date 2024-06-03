@@ -1,4 +1,5 @@
 use {
+    crate::analytics::MessageSource,
     alloy_primitives::Address,
     ethers::{
         prelude::abigen,
@@ -66,7 +67,7 @@ pub async fn verify_message_signature(
     address: &str,
     chain_id: &str,
     rpc_project_id: &str,
-    source: &str,
+    source: MessageSource,
 ) -> Result<bool, CryptoUitlsError> {
     verify_eip6492_message_signature(
         message,
@@ -87,7 +88,7 @@ pub async fn verify_eip6492_message_signature(
     chain_id: &str,
     address: &str,
     rpc_project_id: &str,
-    source: &str,
+    source: MessageSource,
 ) -> Result<bool, CryptoUitlsError> {
     let message_hash: [u8; 32] = get_message_hash(message).into();
     let address = Address::parse_checksummed(address, None)
@@ -106,7 +107,9 @@ pub async fn verify_eip6492_message_signature(
     provider
         .query_pairs_mut()
         .append_pair("projectId", rpc_project_id);
-    provider.query_pairs_mut().append_pair("source", source);
+    provider
+        .query_pairs_mut()
+        .append_pair("source", &source.to_string());
 
     let hexed_signature = hex::decode(&signature[2..])
         .map_err(|e| CryptoUitlsError::SignatureFormat(format!("Wrong signature format: {}", e)))?;
@@ -128,7 +131,7 @@ pub async fn get_erc20_balance(
     contract: H160,
     wallet: H160,
     rpc_project_id: &str,
-    source: &str,
+    source: MessageSource,
 ) -> Result<U256, CryptoUitlsError> {
     // Use JSON-RPC call for the balance of the native ERC20 tokens
     // or call the contract for the custom ERC20 tokens
@@ -148,7 +151,7 @@ async fn get_erc20_contract_balance(
     contract: H160,
     wallet: H160,
     rpc_project_id: &str,
-    source: &str,
+    source: MessageSource,
 ) -> Result<U256, CryptoUitlsError> {
     abigen!(
         ERC20Contract,
@@ -180,7 +183,7 @@ async fn get_balance(
     chain_id: &str,
     wallet: H160,
     rpc_project_id: &str,
-    source: &str,
+    source: MessageSource,
 ) -> Result<U256, CryptoUitlsError> {
     let provider = Provider::<Http>::try_from(format!(
         "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",

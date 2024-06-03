@@ -8,6 +8,7 @@ use {
         RegisterPayload, RegisterRequest, ALLOWED_ZONES, UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{
+        analytics::MessageSource,
         database::{
             helpers::{get_name_and_addresses_by_name, insert_name},
             types::{Address, ENSIP11AddressesMap, SupportedNamespaces},
@@ -115,7 +116,7 @@ pub async fn handler_internal(
         &register_request.address,
         &chain_id_caip2,
         rpc_project_id,
-        "profile_register_sig_validate",
+        MessageSource::ProfileRegisterSigValidate,
     )
     .await
     {
