@@ -15,7 +15,7 @@ use {
 };
 pub use {
     balance_lookup_info::BalanceLookupInfo, config::Config, history_lookup_info::HistoryLookupInfo,
-    identity_lookup_info::IdentityLookupInfo, message_info::MessageInfo,
+    identity_lookup_info::IdentityLookupInfo, message_info::*,
     onramp_history_lookup_info::OnrampHistoryLookupInfo,
 };
 

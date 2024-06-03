@@ -1,7 +1,7 @@
 use {
     super::{SupportedCurrencies, HANDLER_TASK_METRICS},
     crate::{
-        analytics::BalanceLookupInfo,
+        analytics::{BalanceLookupInfo, MessageSource},
         error::RpcError,
         state::AppState,
         utils::{crypto, network},
@@ -172,6 +172,7 @@ async fn handler_internal(
                 contract_address,
                 parsed_address,
                 rpc_project_id,
+                MessageSource::Balance,
             )
             .await?;
             if let Some(balance) = response

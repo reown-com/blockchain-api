@@ -276,6 +276,7 @@ async fn lookup_identity_rpc(
             // ENS registry contract is only deployed on mainnet
             chain_id: ETHEREUM_MAINNET.to_owned(),
             provider_id: None,
+            source: Some(crate::analytics::MessageSource::Identity),
         },
         headers,
     });

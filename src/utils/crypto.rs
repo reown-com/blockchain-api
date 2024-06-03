@@ -1,4 +1,5 @@
 use {
+    crate::analytics::MessageSource,
     alloy_primitives::Address,
     ethers::{
         prelude::abigen,
@@ -66,8 +67,17 @@ pub async fn verify_message_signature(
     address: &str,
     chain_id: &str,
     rpc_project_id: &str,
+    source: MessageSource,
 ) -> Result<bool, CryptoUitlsError> {
-    verify_eip6492_message_signature(message, signature, chain_id, address, rpc_project_id).await
+    verify_eip6492_message_signature(
+        message,
+        signature,
+        chain_id,
+        address,
+        rpc_project_id,
+        source,
+    )
+    .await
 }
 
 /// Veryfy message signature for eip6492 contract
@@ -78,6 +88,7 @@ pub async fn verify_eip6492_message_signature(
     chain_id: &str,
     address: &str,
     rpc_project_id: &str,
+    source: MessageSource,
 ) -> Result<bool, CryptoUitlsError> {
     let message_hash: [u8; 32] = get_message_hash(message).into();
     let address = Address::parse_checksummed(address, None)
@@ -96,6 +107,9 @@ pub async fn verify_eip6492_message_signature(
     provider
         .query_pairs_mut()
         .append_pair("projectId", rpc_project_id);
+    provider
+        .query_pairs_mut()
+        .append_pair("source", &source.to_string());
 
     let hexed_signature = hex::decode(&signature[2..])
         .map_err(|e| CryptoUitlsError::SignatureFormat(format!("Wrong signature format: {}", e)))?;
@@ -117,13 +131,14 @@ pub async fn get_erc20_balance(
     contract: H160,
     wallet: H160,
     rpc_project_id: &str,
+    source: MessageSource,
 ) -> Result<U256, CryptoUitlsError> {
     // Use JSON-RPC call for the balance of the native ERC20 tokens
     // or call the contract for the custom ERC20 tokens
     let balance = if contract == H160::repeat_byte(0xee) {
-        get_erc20_jsonrpc_balance(chain_id, wallet, rpc_project_id).await?
+        get_balance(chain_id, wallet, rpc_project_id, source).await?
     } else {
-        get_erc20_contract_balance(chain_id, contract, wallet, rpc_project_id).await?
+        get_erc20_contract_balance(chain_id, contract, wallet, rpc_project_id, source).await?
     };
 
     Ok(balance)
@@ -136,6 +151,7 @@ async fn get_erc20_contract_balance(
     contract: H160,
     wallet: H160,
     rpc_project_id: &str,
+    source: MessageSource,
 ) -> Result<U256, CryptoUitlsError> {
     abigen!(
         ERC20Contract,
@@ -145,8 +161,8 @@ async fn get_erc20_contract_balance(
     );
 
     let provider = Provider::<Http>::try_from(format!(
-        "https://rpc.walletconnect.com/v1?chainId={}&projectId={}",
-        chain_id, rpc_project_id
+        "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",
+        chain_id, rpc_project_id, source
     ))
     .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
     let provider = Arc::new(provider);
@@ -161,16 +177,17 @@ async fn get_erc20_contract_balance(
     Ok(balance)
 }
 
-/// Get the balance of ERC20 token using JSON-RPC call
+/// Get the balance of the native coin
 #[tracing::instrument]
-async fn get_erc20_jsonrpc_balance(
+async fn get_balance(
     chain_id: &str,
     wallet: H160,
     rpc_project_id: &str,
+    source: MessageSource,
 ) -> Result<U256, CryptoUitlsError> {
     let provider = Provider::<Http>::try_from(format!(
-        "https://rpc.walletconnect.com/v1?chainId={}&projectId={}",
-        chain_id, rpc_project_id
+        "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",
+        chain_id, rpc_project_id, source
     ))
     .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
     let provider = Arc::new(provider);

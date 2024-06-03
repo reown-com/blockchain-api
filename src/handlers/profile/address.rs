@@ -4,6 +4,7 @@ use {
         UpdateAddressPayload, UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{
+        analytics::MessageSource,
         database::{
             helpers::{get_name_and_addresses_by_name, insert_or_update_address},
             types::SupportedNamespaces,
@@ -113,6 +114,7 @@ pub async fn handler_internal(
         &request_payload.address,
         &chain_id_caip2,
         rpc_project_id,
+        MessageSource::ProfileAddressSigValidate,
     )
     .await
     {
