@@ -13,11 +13,31 @@ local alertCondition  = grafana.alertCondition;
       datasource  = ds.prometheus,
     )
     .configure(defaults.configuration.timeseries)
+    .setAlert(grafana.alert.new(
+      namespace     = vars.namespace,
+      name          = "%(env)s - Non-Provider Errors alert"     % { env: grafana.utils.strings.capitalize(vars.environment) },
+      message       = '%(env)s - Non-Provider Errors alert'  % { env: grafana.utils.strings.capitalize(vars.environment) },
+      notifications = vars.notifications,
+      noDataState   = 'no_data',
+      period        = '0m',
+      conditions    = [
+        grafana.alertCondition.new(
+          evaluatorParams = [ 0 ],
+          evaluatorType   = 'gt',
+          operatorType    = 'or',
+          queryRefId      = 'NonProviderErrors',
+          queryTimeStart  = '15m',
+          queryTimeEnd    = 'now',
+          reducerType     = grafana.alert_reducers.Avg
+        ),
+      ],
+    ))
 
     .addTarget(targets.prometheus(
-      datasource  = ds.prometheus,
-      expr        = 'round(sum(increase(http_call_counter_total{code=~"50[0-1]|50[5-9]|5[1-9][0-9]"}[5m])))',
-      refId       = "non_provider_errors",
-      exemplar    = true,
+      datasource   = ds.prometheus,
+      expr         = 'sum by(code) (rate(http_call_counter_total{code=~"5[0-9][0-24-9]"}[$__rate_interval]))',
+      refId        = "NonProviderErrors",
+      exemplar     = true,
+      legendFormat = '__auto',
     )) 
 }
