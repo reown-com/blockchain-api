@@ -49,12 +49,10 @@ use {
             block::{middleware::GeoBlockLayer, BlockingPolicy},
             MaxMindResolver,
         },
-        http::ServiceTaskExecutor,
         metrics::ServiceMetrics,
     },
 };
 
-const SERVICE_TASK_TIMEOUT: Duration = Duration::from_secs(15);
 const KEEPALIVE_IDLE_DURATION: Duration = Duration::from_secs(60);
 const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(10);
 const KEEPALIVE_RETRIES: u32 = 5;
@@ -353,8 +351,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/metrics", get(handlers::metrics::handler))
         .with_state(state_arc.clone());
 
-    let public_server = create_server("public_server", app, &addr);
-    let private_server = create_server("private_server", private_app, &private_addr);
+    let public_server = create_server(app, &addr);
+    let private_server = create_server(private_app, &private_addr);
 
     let weights_updater = {
         let state_arc = state_arc.clone();
@@ -408,16 +406,10 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 }
 
 fn create_server(
-    name: &'static str,
     app: Router,
     addr: &SocketAddr,
-) -> Server<AddrIncoming, IntoMakeServiceWithConnectInfo<Router, SocketAddr>, ServiceTaskExecutor> {
-    let executor = ServiceTaskExecutor::new()
-        .name(Some(name))
-        .timeout(Some(SERVICE_TASK_TIMEOUT));
-
+) -> Server<AddrIncoming, IntoMakeServiceWithConnectInfo<Router, SocketAddr>> {
     axum::Server::bind(addr)
-        .executor(executor)
         .tcp_keepalive(Some(KEEPALIVE_IDLE_DURATION))
         .tcp_keepalive_interval(Some(KEEPALIVE_INTERVAL))
         .tcp_keepalive_retries(Some(KEEPALIVE_RETRIES))

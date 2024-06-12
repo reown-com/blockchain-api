@@ -50,7 +50,7 @@ local _alert(namespace, env, notifications) = grafana.alert.new(
       refId       = 'ELB',
     ))
     .addTarget(targets.cloudwatch(
-      alias       = 'ELB',
+      alias       = 'ELB 500',
       datasource  = ds.cloudwatch,
       namespace   = 'AWS/ApplicationELB',
       metricName  = 'HTTPCode_ELB_500_Count',
@@ -62,7 +62,7 @@ local _alert(namespace, env, notifications) = grafana.alert.new(
       refId       = 'ELB500',
     ))
     .addTarget(targets.cloudwatch(
-      alias       = 'ELB',
+      alias       = 'ELB 502',
       datasource  = ds.cloudwatch,
       namespace   = 'AWS/ApplicationELB',
       metricName  = 'HTTPCode_ELB_502_Count',
@@ -74,7 +74,7 @@ local _alert(namespace, env, notifications) = grafana.alert.new(
       refId       = 'ELB502',
     ))
     .addTarget(targets.cloudwatch(
-      alias       = 'ELB',
+      alias       = 'ELB 503',
       datasource  = ds.cloudwatch,
       namespace   = 'AWS/ApplicationELB',
       metricName  = 'HTTPCode_ELB_503_Count',
@@ -86,7 +86,7 @@ local _alert(namespace, env, notifications) = grafana.alert.new(
       refId       = 'ELB503',
     ))
     .addTarget(targets.cloudwatch(
-      alias       = 'ELB',
+      alias       = 'ELB 504',
       datasource  = ds.cloudwatch,
       namespace   = 'AWS/ApplicationELB',
       metricName  = 'HTTPCode_ELB_504_Count',
