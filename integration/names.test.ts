@@ -198,11 +198,24 @@ describe('Account profile names', () => {
       payload
     )
     expect(resp.status).toBe(200)
+    expect(resp.data.name).toBe(name)
+    expect(typeof resp.data.addresses).toBe('object')
+    const mainnet_address = resp.data.addresses[coin_type]
+    expect(mainnet_address.address).toBe(address)
   })
 
   it('register new name with not Mainnet coin type', async () => {
     // If the user registering new name with not Mainnet coin type
     // it should be added automatically to the addresses list
+    const randomString = Array.from({ length: 10 }, 
+      () => (Math.random().toString(36)[2] || '0')).join('')
+    const name = `integration-test-${randomString}.${zone}`;
+    const registerMessageObject = {
+        name,
+        attributes,
+        timestamp: Math.round(Date.now() / 1000)
+    };
+    const registerMessage = JSON.stringify(registerMessageObject);
     const signature = await wallet.signMessage(registerMessage);
 
     const payload = {
