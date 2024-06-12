@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.68.0 - 2024-06-12
+#### Features
+- **(names)** adding mainnet cointype `60` address by default (#669) - (8e48d57) - Max Kalashnikoff
+
+- - -
+
 ## 0.67.2 - 2024-06-12
 #### Bug Fixes
 - remove service executor (#671) - (23cd4a8) - Chris Smith
