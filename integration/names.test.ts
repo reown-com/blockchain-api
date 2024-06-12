@@ -200,6 +200,30 @@ describe('Account profile names', () => {
     expect(resp.status).toBe(200)
   })
 
+  it('register new name with not Mainnet coin type', async () => {
+    // If the user registering new name with not Mainnet coin type
+    // it should be added automatically to the addresses list
+    const signature = await wallet.signMessage(registerMessage);
+
+    const payload = {
+      message: registerMessage,
+      signature,
+      coin_type: 2147483748, // ENSIP-11 xdai
+      address,
+    };
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account`,
+      payload
+    )
+    expect(resp.status).toBe(200)
+    expect(resp.data.name).toBe(name)
+    expect(typeof resp.data.addresses).toBe('object')
+    const mainnet_address = resp.data.addresses[60]
+    expect(mainnet_address.address).toBe(address)
+    const xdai_address = resp.data.addresses[2147483748]
+    expect(xdai_address.address).toBe(address)
+  })
+
   it('try register already registered name', async () => {
     // Sign the message
     const signature = await wallet.signMessage(registerMessage);
