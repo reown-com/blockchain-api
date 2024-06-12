@@ -4,41 +4,19 @@ local defaults  = import '../../grafonnet-lib/defaults.libsonnet';
 local panels    = grafana.panels;
 local targets   = grafana.targets;
 
-local threshold = 10000;
-
-local _configuration = defaults.configuration.timeseries
-  .withSoftLimit(
-    axisSoftMin = 0,
-    axisSoftMax = threshold * 1.2,
-  )
-  .withThresholdStyle(grafana.fieldConfig.thresholdStyle.Dashed)
-  .addThreshold({
-    color : defaults.values.colors.critical,
-    value : threshold,
-  });
-
 local _alert(namespace, env, notifications) = grafana.alert.new(
   namespace     = namespace,
   name          = "%(env)s - 5XX alert"     % { env: grafana.utils.strings.capitalize(env) },
   message       = '%(env)s - 5XX alert'  % { env: grafana.utils.strings.capitalize(env) },
   notifications = notifications,
   noDataState   = 'no_data',
-  period        = '3m',
+  period        = '0m',
   conditions    = [
     grafana.alertCondition.new(
-      evaluatorParams = [ 1000 ],
+      evaluatorParams = [ 0 ],
       evaluatorType   = 'gt',
       operatorType    = 'or',
       queryRefId      = 'ELB',
-      queryTimeStart  = '15m',
-      queryTimeEnd    = 'now',
-      reducerType     = grafana.alert_reducers.Avg
-    ),
-    grafana.alertCondition.new(
-      evaluatorParams = [ threshold ],
-      evaluatorType   = 'gt',
-      operatorType    = 'or',
-      queryRefId      = 'Target',
       queryTimeStart  = '15m',
       queryTimeEnd    = 'now',
       reducerType     = grafana.alert_reducers.Avg
@@ -52,11 +30,7 @@ local _alert(namespace, env, notifications) = grafana.alert.new(
       title       = 'HTTP 5xx Rate',
       datasource  = ds.cloudwatch,
     )
-    .configure(_configuration)
-    .addPanelThreshold(
-      op    = 'gt',
-      value = threshold,
-    )
+    .configure(defaults.configuration.timeseries)
 
     .setAlert(
       vars.environment,
@@ -71,9 +45,59 @@ local _alert(namespace, env, notifications) = grafana.alert.new(
       dimensions  = {
         LoadBalancer: vars.load_balancer
       },
+      matchExact  = true,
       statistic   = 'Sum',
       refId       = 'ELB',
     ))
+    .addTarget(targets.cloudwatch(
+      alias       = 'ELB',
+      datasource  = ds.cloudwatch,
+      namespace   = 'AWS/ApplicationELB',
+      metricName  = 'HTTPCode_ELB_500_Count',
+      dimensions  = {
+        LoadBalancer: vars.load_balancer
+      },
+      matchExact  = true,
+      statistic   = 'Sum',
+      refId       = 'ELB500',
+    ))
+    .addTarget(targets.cloudwatch(
+      alias       = 'ELB',
+      datasource  = ds.cloudwatch,
+      namespace   = 'AWS/ApplicationELB',
+      metricName  = 'HTTPCode_ELB_502_Count',
+      dimensions  = {
+        LoadBalancer: vars.load_balancer
+      },
+      matchExact  = true,
+      statistic   = 'Sum',
+      refId       = 'ELB502',
+    ))
+    .addTarget(targets.cloudwatch(
+      alias       = 'ELB',
+      datasource  = ds.cloudwatch,
+      namespace   = 'AWS/ApplicationELB',
+      metricName  = 'HTTPCode_ELB_503_Count',
+      dimensions  = {
+        LoadBalancer: vars.load_balancer
+      },
+      matchExact  = true,
+      statistic   = 'Sum',
+      refId       = 'ELB503',
+    ))
+    .addTarget(targets.cloudwatch(
+      alias       = 'ELB',
+      datasource  = ds.cloudwatch,
+      namespace   = 'AWS/ApplicationELB',
+      metricName  = 'HTTPCode_ELB_504_Count',
+      dimensions  = {
+        LoadBalancer: vars.load_balancer
+      },
+      matchExact  = true,
+      statistic   = 'Sum',
+      refId       = 'ELB504',
+    ))
+
     .addTarget(targets.cloudwatch(
       alias       = 'Target',
       datasource  = ds.cloudwatch,
@@ -82,6 +106,7 @@ local _alert(namespace, env, notifications) = grafana.alert.new(
       dimensions  = {
         LoadBalancer: vars.load_balancer
       },
+      matchExact  = true,
       statistic   = 'Sum',
       refId       = 'Target',
     ))
