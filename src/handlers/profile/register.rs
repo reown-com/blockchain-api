@@ -134,13 +134,22 @@ pub async fn handler_internal(
     }
 
     // Register (insert) a new domain with address
-    let addresses: ENSIP11AddressesMap = HashMap::from([(
+    let mut addresses: ENSIP11AddressesMap = HashMap::from([(
         register_request.coin_type,
         Address {
-            address: register_request.address,
+            address: register_request.address.clone(),
             created_at: None,
         },
     )]);
+
+    // Adding address with cointype 60 (Mainnet) by default
+    // if it was not provided during the registration
+    if let std::collections::hash_map::Entry::Vacant(e) = addresses.entry(60) {
+        e.insert(Address {
+            address: register_request.address,
+            created_at: None,
+        });
+    }
 
     let insert_result = insert_name(
         payload.name.clone(),
