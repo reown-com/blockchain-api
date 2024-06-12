@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.67.1 - 2024-06-12
+#### Bug Fixes
+- reduce logging (#670) - (4a96c1e) - Chris Smith
+- error on all non-provider errors (#668) - (83c402d) - Chris Smith
+
+- - -
+
 ## 0.67.0 - 2024-06-03
 #### Features
 - rpc source analytics (#666) - (74c2e04) - Chris Smith
