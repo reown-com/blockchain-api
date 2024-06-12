@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.67.2 - 2024-06-12
+#### Bug Fixes
+- remove service executor (#671) - (23cd4a8) - Chris Smith
+
+- - -
+
 ## 0.67.1 - 2024-06-12
 #### Bug Fixes
 - reduce logging (#670) - (4a96c1e) - Chris Smith
