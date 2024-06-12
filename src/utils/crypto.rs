@@ -81,7 +81,7 @@ pub async fn verify_message_signature(
 }
 
 /// Veryfy message signature for eip6492 contract
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 pub async fn verify_eip6492_message_signature(
     message: &str,
     signature: &str,
@@ -125,7 +125,7 @@ pub async fn verify_eip6492_message_signature(
 }
 
 /// Get the balance of the ERC20 token
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 pub async fn get_erc20_balance(
     chain_id: &str,
     contract: H160,
@@ -145,7 +145,7 @@ pub async fn get_erc20_balance(
 }
 
 /// Get the balance of ERC20 token by calling the contract address
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 async fn get_erc20_contract_balance(
     chain_id: &str,
     contract: H160,
@@ -178,7 +178,7 @@ async fn get_erc20_contract_balance(
 }
 
 /// Get the balance of the native coin
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 async fn get_balance(
     chain_id: &str,
     wallet: H160,
@@ -200,7 +200,7 @@ async fn get_balance(
 }
 
 /// Convert EVM chain ID to coin type ENSIP-11
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 pub fn convert_evm_chain_id_to_coin_type(chain_id: u32) -> u32 {
     // Exemption for the mainnet in ENSIP-11 format
     if chain_id == 1 {
@@ -211,7 +211,7 @@ pub fn convert_evm_chain_id_to_coin_type(chain_id: u32) -> u32 {
 }
 
 /// Convert coin type ENSIP-11 to EVM chain ID
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 pub fn convert_coin_type_to_evm_chain_id(coin_type: u32) -> u32 {
     // Exemption for the mainnet in ENSIP-11 format
     if coin_type == ENSIP11_MAINNET_COIN_TYPE {
@@ -222,7 +222,7 @@ pub fn convert_coin_type_to_evm_chain_id(coin_type: u32) -> u32 {
 }
 
 /// Check if the coin type is in the supported list
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 pub fn is_coin_type_supported(coin_type: u32) -> bool {
     let evm_chain_id = convert_coin_type_to_evm_chain_id(coin_type);
     ChainId::iter().any(|x| x as u64 == evm_chain_id as u64)

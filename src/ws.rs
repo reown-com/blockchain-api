@@ -1,10 +1,10 @@
 use {
     async_tungstenite::{tokio::ConnectStream, WebSocketStream},
     futures_util::{select, StreamExt},
-    tracing::log::info,
+    tracing::log::debug,
 };
 
-#[tracing::instrument(skip(client_ws, provider_ws))]
+#[tracing::instrument(skip(client_ws, provider_ws), level = "debug")]
 pub async fn proxy(
     project_id: String,
     client_ws: axum_tungstenite::WebSocket,
@@ -16,7 +16,7 @@ pub async fn proxy(
     let mut write = client_ws_receiver.forward(provider_ws_sender);
     let mut read = provider_ws_receiver.forward(client_ws_sender);
     select! {
-        _ = read => info!("WebSocket relaying messages to the provider for client {project_id} died.") ,
-        _ = write => info!("WebSocket relaying messages from the provider to the client {project_id} died.") ,
+        _ = read => debug!("WebSocket relaying messages to the provider for client {project_id} died.") ,
+        _ = write => debug!("WebSocket relaying messages from the provider to the client {project_id} died.") ,
     }
 }

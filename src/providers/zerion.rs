@@ -222,7 +222,7 @@ fn add_filter_non_trash_only(url: &mut Url) {
 
 #[async_trait]
 impl HistoryProvider for ZerionProvider {
-    #[tracing::instrument(skip(self, params), fields(provider = "Zerion"))]
+    #[tracing::instrument(skip(self, params), fields(provider = "Zerion"), level = "debug")]
     async fn get_transactions(
         &self,
         address: String,
@@ -366,7 +366,7 @@ impl HistoryProvider for ZerionProvider {
 
 #[async_trait]
 impl PortfolioProvider for ZerionProvider {
-    #[tracing::instrument(skip(self, body, params), fields(provider = "Zerion"))]
+    #[tracing::instrument(skip(self, body, params), fields(provider = "Zerion"), level = "debug")]
     async fn get_portfolio(
         &self,
         address: String,
@@ -424,7 +424,7 @@ impl PortfolioProvider for ZerionProvider {
 
 #[async_trait]
 impl BalanceProvider for ZerionProvider {
-    #[tracing::instrument(skip(self, params), fields(provider = "Zerion"))]
+    #[tracing::instrument(skip(self, params), fields(provider = "Zerion"), level = "debug")]
     async fn get_balance(
         &self,
         address: String,

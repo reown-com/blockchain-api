@@ -12,7 +12,7 @@ use {
     hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
-    tracing::info,
+    tracing::debug,
 };
 
 #[derive(Debug)]
@@ -45,7 +45,7 @@ impl RateLimited for GetBlockProvider {
 
 #[async_trait]
 impl RpcProvider for GetBlockProvider {
-    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()))]
+    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
     async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
         let access_token_api = self
             .supported_chains
@@ -67,7 +67,7 @@ impl RpcProvider for GetBlockProvider {
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
-                info!(
+                debug!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
                      GetBlock RPC: {response:?}"
                 );
@@ -83,7 +83,7 @@ impl RpcProvider for GetBlockProvider {
 }
 
 impl RpcProviderFactory<GetBlockConfig> for GetBlockProvider {
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn new(provider_config: &GetBlockConfig) -> Self {
         let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let supported_chains: HashMap<String, String> = provider_config

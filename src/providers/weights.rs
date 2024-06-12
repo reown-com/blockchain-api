@@ -14,7 +14,7 @@ pub struct Availability(u64, u64);
 
 pub type ParsedWeights = HashMap<ProviderKind, (HashMap<ChainId, Availability>, Availability)>;
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
     let mut weights_data = HashMap::new();
     // fill weights with pair of ProviderKind -> HashMap<ChainId, Availability>
@@ -70,7 +70,7 @@ pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
 
 const PERFECT_RATIO: f64 = 1.0;
 
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 fn calculate_chain_weight(
     provider_availability: Availability,
     chain_availability: Availability,
@@ -122,7 +122,7 @@ fn calculate_chain_weight(
     weight as u64
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWeights) {
     for (provider, (chain_availabilities, provider_availability)) in parsed_weights {
         for (chain_id, chain_availability) in chain_availabilities {

@@ -35,7 +35,7 @@ use {
         hash::Hash,
         sync::Arc,
     },
-    tracing::{info, log::warn},
+    tracing::{debug, log::warn},
     wc::metrics::TaskMetrics,
 };
 
@@ -340,12 +340,12 @@ impl ProviderRepository {
                     .or_default()
                     .insert(provider_kind, weight);
             });
-        info!("Added provider: {}", provider_kind);
+        debug!("Added provider: {}", provider_kind);
     }
 
-    #[tracing::instrument(skip_all)]
+    #[tracing::instrument(skip_all, level = "debug")]
     pub async fn update_weights(&self, metrics: &crate::Metrics) {
-        info!("Updating weights");
+        debug!("Updating weights");
 
         let Ok(header_value) = HeaderValue::from_str(&self.prometheus_workspace_header) else {
             warn!(

@@ -130,7 +130,7 @@ pub async fn handler(
         .await
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
