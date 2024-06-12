@@ -35,7 +35,7 @@ pub async fn handler(
         .await
 }
 
-#[tracing::instrument(skip(state))]
+#[tracing::instrument(skip(state), level = "debug")]
 pub async fn handler_internal(
     state: State<Arc<AppState>>,
     Path(name): Path<String>,

@@ -2,7 +2,7 @@ use {
     aws_sdk_s3::Client as S3Client,
     std::{net::IpAddr, sync::Arc, time::Duration},
     tap::TapFallible,
-    tracing::info,
+    tracing::{debug, info},
     wc::{
         analytics::{
             self, AnalyticsExt, ArcCollector, AwsConfig, AwsExporter, BatchCollector,
@@ -84,7 +84,7 @@ where
                 "failed to serialize analytics batch"
             );
         } else {
-            tracing::info!(
+            tracing::debug!(
                 size,
                 elapsed,
                 data_kind = self.0.as_str(),
@@ -136,7 +136,7 @@ where
                 "analytics export failed"
             );
         } else {
-            tracing::info!(
+            tracing::error!(
                 elapsed,
                 data_kind = self.0.as_str(),
                 "analytics export failed"
@@ -363,7 +363,7 @@ impl RPCAnalytics {
         self.geoip_resolver
             .as_ref()?
             .lookup_geo_data(addr)
-            .tap_err(|err| info!(?err, "failed to lookup geoip data"))
+            .tap_err(|err| debug!(?err, "failed to lookup geoip data"))
             .ok()
     }
 }

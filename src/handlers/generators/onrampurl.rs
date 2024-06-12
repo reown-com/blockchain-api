@@ -13,7 +13,7 @@ use {
     hyper::{HeaderMap, StatusCode},
     serde::{Deserialize, Serialize},
     std::{fmt, net::SocketAddr, sync::Arc},
-    tracing::log::{error, info},
+    tracing::log::{debug, error},
     url::Url,
     validator::Validate,
     wc::future::FutureExt,
@@ -110,7 +110,7 @@ async fn handler_internal(
     let mut parameters = match serde_json::from_slice::<OnRampURLRequest>(&body) {
         Ok(parameters) => parameters,
         Err(e) => {
-            info!("Error deserializing request body: {}", e);
+            debug!("Error deserializing request body: {}", e);
             return Ok((
                 StatusCode::BAD_REQUEST,
                 "Error deserializing request body: {}",

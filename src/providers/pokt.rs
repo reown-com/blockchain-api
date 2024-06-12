@@ -12,7 +12,7 @@ use {
     hyper::{self, client::HttpConnector, Client, Method, StatusCode},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
-    tracing::info,
+    tracing::debug,
 };
 
 #[derive(Debug)]
@@ -69,7 +69,7 @@ impl RateLimited for PoktProvider {
 
 #[async_trait]
 impl RpcProvider for PoktProvider {
-    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()))]
+    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
     async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
         let chain = &self
             .supported_chains
@@ -91,7 +91,7 @@ impl RpcProvider for PoktProvider {
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if let Some(error) = &response.error {
                 if status.is_success() {
-                    info!(
+                    debug!(
                         "Strange: provider returned JSON RPC error, but status {status} is \
                          success: Pokt: {response:?}"
                     );
@@ -114,7 +114,7 @@ impl RpcProvider for PoktProvider {
 }
 
 impl RpcProviderFactory<PoktConfig> for PoktProvider {
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn new(provider_config: &PoktConfig) -> Self {
         let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let supported_chains: HashMap<String, String> = provider_config

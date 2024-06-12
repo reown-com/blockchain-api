@@ -14,7 +14,7 @@ use {
     sqlx::PgPool,
     std::sync::Arc,
     tap::TapFallible,
-    tracing::info,
+    tracing::debug,
 };
 
 pub struct AppState {
@@ -69,7 +69,7 @@ impl AppState {
     #[tracing::instrument(skip(self), level = "debug")]
     async fn get_project_data_validated(&self, id: &str) -> Result<ProjectDataWithQuota, RpcError> {
         let project = self.registry.project_data(id).await.tap_err(|e| {
-            info!("Denied access for project: {id}, with reason: {e}");
+            debug!("Denied access for project: {id}, with reason: {e}");
             self.metrics.add_rejected_project();
         })?;
 
@@ -77,7 +77,7 @@ impl AppState {
             .project_data
             .validate_access(id, None)
             .tap_err(|e| {
-                info!("Denied access for project: {id}, with reason: {e}");
+                debug!("Denied access for project: {id}, with reason: {e}");
                 self.metrics.add_rejected_project();
             })?;
 
@@ -102,7 +102,7 @@ impl AppState {
         let project = self.get_project_data_validated(id).await?;
 
         validate_project_quota(&project).tap_err(|e| {
-            info!(
+            debug!(
                 project_id = id,
                 max = project.quota.max,
                 current = project.quota.current,

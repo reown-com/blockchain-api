@@ -68,7 +68,7 @@ pub struct CoinbasePurchaseAmount {
 
 #[async_trait]
 impl HistoryProvider for CoinbaseProvider {
-    #[tracing::instrument(skip(self, params), fields(provider = "Coinbase"))]
+    #[tracing::instrument(skip(self, params), fields(provider = "Coinbase"), level = "debug")]
     async fn get_transactions(
         &self,
         address: String,
@@ -144,7 +144,7 @@ impl HistoryProvider for CoinbaseProvider {
 
 #[async_trait]
 impl OnRampProvider for CoinbaseProvider {
-    #[tracing::instrument(skip(self), fields(provider = "Coinbase"))]
+    #[tracing::instrument(skip(self), fields(provider = "Coinbase"), level = "debug")]
     async fn get_buy_options(
         &self,
         params: OnRampBuyOptionsParams,

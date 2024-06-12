@@ -531,7 +531,7 @@ impl ConversionProvider for OneInchProvider {
         Ok(response)
     }
 
-    #[tracing::instrument(skip(self, params), fields(provider = "1inch"))]
+    #[tracing::instrument(skip(self, params), fields(provider = "1inch"), level = "debug")]
     async fn get_gas_price(
         &self,
         params: GasPriceQueryParams,

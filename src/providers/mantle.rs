@@ -12,7 +12,7 @@ use {
     hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
-    tracing::info,
+    tracing::debug,
 };
 
 #[derive(Debug)]
@@ -44,7 +44,7 @@ impl RateLimited for MantleProvider {
 
 #[async_trait]
 impl RpcProvider for MantleProvider {
-    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()))]
+    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
     async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
         let uri = self
             .supported_chains
@@ -63,7 +63,7 @@ impl RpcProvider for MantleProvider {
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
-                info!(
+                debug!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
                      Mantle public RPC: {response:?}"
                 );
@@ -79,7 +79,7 @@ impl RpcProvider for MantleProvider {
 }
 
 impl RpcProviderFactory<MantleConfig> for MantleProvider {
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn new(provider_config: &MantleConfig) -> Self {
         let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let supported_chains: HashMap<String, String> = provider_config
