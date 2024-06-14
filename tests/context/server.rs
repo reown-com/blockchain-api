@@ -10,25 +10,23 @@ use {
     tokio::{runtime::Handle, time::sleep},
 };
 
+#[cfg(feature = "test-localhost")]
 pub struct RpcProxy {
     pub public_addr: String,
-    pub public_port: Option<u16>,
-    pub private_addr: Option<SocketAddr>,
     pub project_id: String,
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {}
 
+#[cfg(feature = "test-localhost")]
 impl RpcProxy {
-    #[cfg(feature = "test-localhost")]
     pub async fn start() -> Self {
         let public_port = get_random_port();
         let prometheus_port = get_random_port();
         let hostname = Ipv4Addr::UNSPECIFIED;
         let rt = Handle::current();
         let public_addr = SocketAddr::new(IpAddr::V4(hostname), public_port);
-        let private_addr = SocketAddr::new(IpAddr::V4(hostname), prometheus_port);
 
         let project_id =
             env::var("TEST_RPC_PROXY_PROJECT_ID").expect("TEST_RPC_PROXY_PROJECT_ID must be set");
@@ -56,8 +54,6 @@ impl RpcProxy {
         Self {
             public_addr: format!("http://{public_addr}"),
             project_id,
-            private_addr: Some(private_addr),
-            public_port: Some(public_port),
         }
     }
 }

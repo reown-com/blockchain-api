@@ -16,8 +16,6 @@ use {
         utils::crypto::ChainId,
     },
     async_trait::async_trait,
-    hyper::Client,
-    hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
     tracing::log::error,
     url::Url,
@@ -27,17 +25,14 @@ use {
 pub struct CoinbaseProvider {
     pub api_key: String,
     pub app_id: String,
-    pub http_client: Client<HttpsConnector<hyper::client::HttpConnector>>,
     pub base_api_url: String,
 }
 
 impl CoinbaseProvider {
     pub fn new(api_key: String, app_id: String, base_api_url: String) -> Self {
-        let http_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         Self {
             api_key,
             app_id,
-            http_client,
             base_api_url,
         }
     }
