@@ -2,7 +2,7 @@ use {
     crate::utils::{generate_random_string, get_postgres_pool},
     rpc_proxy::database::{
         helpers::{
-            delete_address, delete_name, get_addresses_by_name, get_name,
+            delete_address, delete_name, get_account_names_stats, get_addresses_by_name, get_name,
             get_name_and_addresses_by_name, get_names_by_address,
             get_names_by_address_and_namespace, insert_name, insert_or_update_address,
             update_name_attributes,
@@ -335,4 +335,43 @@ async fn insert_delete_two_addresses() {
     // Cleanup
     let delete_result = delete_name(name, &pg_pool).await;
     assert!(delete_result.is_ok(), "Deleting name should succeed");
+}
+
+#[tokio::test]
+async fn insert_and_check_names_count() {
+    let pg_pool = get_postgres_pool().await;
+
+    // Check the count of names BEFORE inserting
+    let stats_before_insert = get_account_names_stats(&pg_pool).await.unwrap().count;
+
+    // Insert a new name
+    let name = format!("{}.test.id", generate_random_string(10));
+    let address = format!("0x{}", generate_random_string(16));
+    let namespace = types::SupportedNamespaces::Eip155;
+    let expected_ensip11_coin_type = 60;
+    let addresses = HashMap::from([(
+        expected_ensip11_coin_type,
+        types::Address {
+            address: address.clone(),
+            created_at: None,
+        },
+    )]);
+    let attributes: HashMap<String, String> = HashMap::from_iter([(
+        "avatar".to_string(),
+        "http://test.url/avatar.png".to_string(),
+    )]);
+    let insert_result = insert_name(
+        name.clone(),
+        attributes.clone(),
+        namespace,
+        addresses,
+        &pg_pool,
+    )
+    .await;
+    assert!(insert_result.is_ok(), "Inserting a new name should succeed");
+
+    // Check the count of names AFTER inserting
+    let stats_after_insert = get_account_names_stats(&pg_pool).await.unwrap().count;
+
+    assert!(stats_after_insert > stats_before_insert);
 }
