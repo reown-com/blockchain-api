@@ -61,7 +61,6 @@ mod analytics;
 pub mod database;
 pub mod env;
 pub mod error;
-mod extractors;
 pub mod handlers;
 mod json_rpc;
 mod metrics;
