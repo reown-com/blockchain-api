@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.68.1 - 2024-06-17
+#### Bug Fixes
+- **(clippy)** fixing clippy errors (#673) - (80405fb) - Max Kalashnikoff
+
+- - -
+
 ## 0.68.0 - 2024-06-12
 #### Features
 - **(names)** adding mainnet cointype `60` address by default (#669) - (8e48d57) - Max Kalashnikoff
