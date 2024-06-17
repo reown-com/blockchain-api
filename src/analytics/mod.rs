@@ -1,3 +1,9 @@
+pub use {
+    account_names_info::AccountNameRegistration, balance_lookup_info::BalanceLookupInfo,
+    config::Config, history_lookup_info::HistoryLookupInfo,
+    identity_lookup_info::IdentityLookupInfo, message_info::*,
+    onramp_history_lookup_info::OnrampHistoryLookupInfo,
+};
 use {
     aws_sdk_s3::Client as S3Client,
     std::{net::IpAddr, sync::Arc, time::Duration},
@@ -13,12 +19,8 @@ use {
         metrics::otel,
     },
 };
-pub use {
-    balance_lookup_info::BalanceLookupInfo, config::Config, history_lookup_info::HistoryLookupInfo,
-    identity_lookup_info::IdentityLookupInfo, message_info::*,
-    onramp_history_lookup_info::OnrampHistoryLookupInfo,
-};
 
+mod account_names_info;
 mod balance_lookup_info;
 mod config;
 mod history_lookup_info;
@@ -36,6 +38,7 @@ enum DataKind {
     HistoryLookups,
     OnrampHistoryLookups,
     BalanceLookups,
+    NameRegistrations,
 }
 
 impl DataKind {
@@ -47,6 +50,7 @@ impl DataKind {
             Self::HistoryLookups => "history_lookups",
             Self::OnrampHistoryLookups => "onramp_history_lookups",
             Self::BalanceLookups => "balance_lookups",
+            Self::NameRegistrations => "name_registrations",
         }
     }
 
@@ -152,6 +156,7 @@ pub struct RPCAnalytics {
     history_lookups: ArcCollector<HistoryLookupInfo>,
     onramp_history_lookups: ArcCollector<OnrampHistoryLookupInfo>,
     balance_lookups: ArcCollector<BalanceLookupInfo>,
+    name_registrations: ArcCollector<AccountNameRegistration>,
     geoip_resolver: Option<Arc<MaxMindResolver>>,
 }
 
@@ -180,6 +185,7 @@ impl RPCAnalytics {
             history_lookups: analytics::noop_collector().boxed_shared(),
             onramp_history_lookups: analytics::noop_collector().boxed_shared(),
             balance_lookups: analytics::noop_collector().boxed_shared(),
+            name_registrations: analytics::noop_collector().boxed_shared(),
             geoip_resolver: None,
         }
     }
@@ -287,6 +293,27 @@ impl RPCAnalytics {
                 node_addr,
                 file_extension: "parquet".to_owned(),
                 bucket_name: export_bucket.to_owned(),
+                s3_client: s3_client.clone(),
+                upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
+            })
+            .with_observer(observer),
+        )
+        .with_observer(observer)
+        .boxed_shared();
+
+        let observer = Observer(DataKind::NameRegistrations);
+        let name_registrations = BatchCollector::new(
+            CollectorConfig {
+                data_queue_capacity: DATA_QUEUE_CAPACITY,
+                ..Default::default()
+            },
+            ParquetBatchFactory::new(Default::default()).with_observer(observer),
+            AwsExporter::new(AwsConfig {
+                export_prefix: "blockchain-api/name-requests".to_owned(),
+                export_name: "name_registrations".to_owned(),
+                node_addr,
+                file_extension: "parquet".to_owned(),
+                bucket_name: export_bucket.to_owned(),
                 s3_client,
                 upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
             })
@@ -301,6 +328,7 @@ impl RPCAnalytics {
             history_lookups,
             onramp_history_lookups,
             balance_lookups,
+            name_registrations,
             geoip_resolver,
         })
     }
@@ -350,6 +378,16 @@ impl RPCAnalytics {
             tracing::warn!(
                 ?err,
                 data_kind = DataKind::BalanceLookups.as_str(),
+                "failed to collect analytics"
+            );
+        }
+    }
+
+    pub fn name_registration(&self, data: AccountNameRegistration) {
+        if let Err(err) = self.name_registrations.collect(data) {
+            tracing::warn!(
+                ?err,
+                data_kind = DataKind::NameRegistrations.as_str(),
                 "failed to collect analytics"
             );
         }
