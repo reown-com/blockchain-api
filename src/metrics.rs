@@ -551,7 +551,7 @@ impl Metrics {
     }
 
     /// Update the account names count from database
-    #[instrument(skip_all)]
+    #[instrument(skip_all, level = "debug")]
     pub async fn update_account_names_count(&self, postgres: &PgPool) {
         let names_stats = get_account_names_stats(postgres).await;
         match names_stats {

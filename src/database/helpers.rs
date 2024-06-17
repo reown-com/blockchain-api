@@ -284,7 +284,7 @@ pub async fn insert_or_update_address<'e>(
     Ok(result_map)
 }
 
-#[instrument(skip(postgres))]
+#[instrument(skip(postgres), level = "debug")]
 pub async fn get_account_names_stats(
     postgres: &PgPool,
 ) -> std::result::Result<AccountNamesStats, sqlx::error::Error> {
