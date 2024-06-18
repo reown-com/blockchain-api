@@ -70,6 +70,6 @@ pub fn get_forwarded_ip(headers: HeaderMap) -> Option<IpAddr> {
     headers
         .get("X-Forwarded-For")
         .and_then(|header| header.to_str().ok())
-        .and_then(|header| header.split(',').next())
+        .and_then(|header| header.split(',').last())
         .and_then(|client_ip| client_ip.trim().parse::<IpAddr>().ok())
 }
