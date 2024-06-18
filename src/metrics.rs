@@ -1,17 +1,20 @@
 use {
     crate::{
+        database::helpers::get_account_names_stats,
         handlers::identity::IdentityLookupSource,
         providers::{ProviderKind, RpcProvider},
     },
     hyper::http,
+    sqlx::PgPool,
     std::time::{Duration, SystemTime},
     sysinfo::{
         CpuRefreshKind, MemoryRefreshKind, RefreshKind, System, MINIMUM_CPU_UPDATE_INTERVAL,
     },
+    tracing::{error, instrument},
     wc::metrics::{
         otel::{
             self,
-            metrics::{Counter, Histogram},
+            metrics::{Counter, Histogram, ObservableGauge},
         },
         ServiceMetrics,
     },
@@ -55,6 +58,9 @@ pub struct Metrics {
 
     // Rate limiting
     pub rate_limited_entries_counter: Histogram<u64>,
+
+    // Account names
+    pub account_names_count: ObservableGauge<u64>,
 }
 
 impl Metrics {
@@ -222,6 +228,11 @@ impl Metrics {
             .with_description("The rate limited entries counter")
             .init();
 
+        let account_names_count = meter
+            .u64_observable_gauge("account_names_count")
+            .with_description("Registered account names count")
+            .init();
+
         Metrics {
             rpc_call_counter,
             rpc_call_retries,
@@ -255,6 +266,7 @@ impl Metrics {
             memory_total,
             memory_used,
             rate_limited_entries_counter,
+            account_names_count,
         }
     }
 }
@@ -536,5 +548,26 @@ impl Metrics {
 
         self.add_memory_total(system.total_memory() as f64);
         self.add_memory_used(system.used_memory() as f64);
+    }
+
+    /// Update the account names count from database
+    #[instrument(skip_all, level = "debug")]
+    pub async fn update_account_names_count(&self, postgres: &PgPool) {
+        let names_stats = get_account_names_stats(postgres).await;
+        match names_stats {
+            Ok(names_stats) => {
+                self.account_names_count.observe(
+                    &otel::Context::new(),
+                    names_stats.count as u64,
+                    &[],
+                );
+            }
+            Err(e) => {
+                error!(
+                    "Error on getting account names stats from database: {:?}",
+                    e
+                );
+            }
+        }
     }
 }

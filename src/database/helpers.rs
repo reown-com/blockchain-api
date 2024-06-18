@@ -1,7 +1,7 @@
 use {
     crate::database::{error::DatabaseError, types, utils},
     chrono::{DateTime, Utc},
-    sqlx::{PgPool, Postgres, Row},
+    sqlx::{FromRow, PgPool, Postgres, Row},
     std::collections::HashMap,
     tracing::{error, instrument},
 };
@@ -12,6 +12,11 @@ struct RowAddress {
     chain_id: String,
     address: String,
     created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, FromRow)]
+pub struct AccountNamesStats {
+    pub count: i64,
 }
 
 /// Initial name registration insert
@@ -277,4 +282,15 @@ pub async fn insert_or_update_address<'e>(
     );
 
     Ok(result_map)
+}
+
+#[instrument(skip(postgres), level = "debug")]
+pub async fn get_account_names_stats(
+    postgres: &PgPool,
+) -> std::result::Result<AccountNamesStats, sqlx::error::Error> {
+    let query = "SELECT COUNT(*) FROM names AS count";
+    let stats = sqlx::query_as::<Postgres, AccountNamesStats>(query)
+        .fetch_one(postgres)
+        .await?;
+    Ok(stats)
 }

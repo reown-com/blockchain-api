@@ -56,6 +56,7 @@ use {
 const KEEPALIVE_IDLE_DURATION: Duration = Duration::from_secs(60);
 const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(10);
 const KEEPALIVE_RETRIES: u32 = 5;
+const DB_STATS_POLLING_INTERVAL: Duration = Duration::from_secs(3600);
 
 mod analytics;
 pub mod database;
@@ -395,6 +396,17 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         tokio::spawn(weights_updater),
         tokio::spawn(system_metrics_updater),
         tokio::spawn(profiler),
+        // Spawning a new task to observe metrics from the database by interval polling
+        tokio::spawn({
+            let postgres = state_arc.postgres.clone();
+            async move {
+                let mut interval = tokio::time::interval(DB_STATS_POLLING_INTERVAL);
+                loop {
+                    interval.tick().await;
+                    metrics.update_account_names_count(&postgres).await;
+                }
+            }
+        }),
     ];
 
     if let Err(e) = futures_util::future::select_all(services).await.0 {
