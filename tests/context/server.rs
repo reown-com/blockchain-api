@@ -1,3 +1,4 @@
+#[cfg(feature = "test-localhost")]
 use std::net::SocketAddr;
 
 #[cfg(feature = "test-localhost")]
@@ -10,7 +11,6 @@ use {
     tokio::{runtime::Handle, time::sleep},
 };
 
-#[cfg(feature = "test-localhost")]
 pub struct RpcProxy {
     pub public_addr: String,
     pub project_id: String,
