@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.69.1 - 2024-06-18
+#### Bug Fixes
+- **(network)** using the last forwarded IP from the list (#678) - (907e783) - Max Kalashnikoff
+- **(tests)** fixing providers integration tests compilation (#677) - (f46fea7) - Max Kalashnikoff
+
+- - -
+
 ## 0.69.0 - 2024-06-18
 #### Features
 - **(metrics)** implementing account names count metrics watcher (#672) - (64e1b32) - Max Kalashnikoff
