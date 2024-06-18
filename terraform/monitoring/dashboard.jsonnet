@@ -124,12 +124,15 @@ dashboard.new(
     panels.history.latency(ds, vars)                { gridPos: pos_short._3 },
     panels.history.availability(ds, vars)           { gridPos: pos_short._3 },
 
-  row.new('Identity (ENS) Metrics'),
+  row.new('Identity resolver (ENS resolver) Metrics'),
     panels.identity.requests(ds, vars)               { gridPos: pos_short._2 },
     panels.identity.availability(ds, vars)           { gridPos: pos_short._2 },
     panels.identity.latency(ds, vars)                { gridPos: pos_short._2 },
     panels.identity.cache(ds, vars)                  { gridPos: pos_short._2 },
     panels.identity.usage(ds, vars)                  { gridPos: pos_short._2 },
+
+  row.new('Account names (ENS gateway) Metrics'),
+    panels.names.registered(ds, vars)                { gridPos: pos_short._3 },
 
   row.new('Redis'),
     panels.redis.cpu(ds, vars)                    { gridPos: pos._2 },

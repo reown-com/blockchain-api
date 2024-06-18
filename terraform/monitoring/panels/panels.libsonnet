@@ -44,6 +44,10 @@ local redis  = panels.aws.redis;
     usage:                (import 'identity/usage.libsonnet'              ).new,
   },
 
+  names: {
+    registered:           (import 'names/registered.libsonnet'            ).new,
+  },
+
   history: {
     availability:         (import 'history/availability.libsonnet'        ).new,
     requests:             (import 'history/requests.libsonnet'            ).new,
