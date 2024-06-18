@@ -288,7 +288,7 @@ pub async fn insert_or_update_address<'e>(
 pub async fn get_account_names_stats(
     postgres: &PgPool,
 ) -> std::result::Result<AccountNamesStats, sqlx::error::Error> {
-    let query = "SELECT COUNT(name) FROM names AS count";
+    let query = "SELECT COUNT(*) FROM names AS count";
     let stats = sqlx::query_as::<Postgres, AccountNamesStats>(query)
         .fetch_one(postgres)
         .await?;
