@@ -73,3 +73,30 @@ pub fn get_forwarded_ip(headers: HeaderMap) -> Option<IpAddr> {
         .and_then(|header| header.split(',').last())
         .and_then(|client_ip| client_ip.trim().parse::<IpAddr>().ok())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_forwarded_ip() {
+        // Singe IP
+        let mut headers_single = HeaderMap::new();
+        headers_single.insert("X-Forwarded-For", "10.128.128.1".parse().unwrap());
+        assert_eq!(
+            get_forwarded_ip(headers_single).unwrap(),
+            "10.128.128.1".parse::<IpAddr>().unwrap()
+        );
+
+        // Muplitple IPs appended by ALB
+        let mut headers_multiple = HeaderMap::new();
+        headers_multiple.insert(
+            "X-Forwarded-For",
+            "10.128.128.1, 10.128.128.2".parse().unwrap(),
+        );
+        assert_eq!(
+            get_forwarded_ip(headers_multiple).unwrap(),
+            "10.128.128.2".parse::<IpAddr>().unwrap()
+        );
+    }
+}
