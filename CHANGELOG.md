@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.69.0 - 2024-06-18
+#### Features
+- **(metrics)** implementing account names count metrics watcher (#672) - (64e1b32) - Max Kalashnikoff
+
+- - -
+
 ## 0.68.1 - 2024-06-17
 #### Bug Fixes
 - **(clippy)** fixing clippy errors (#673) - (80405fb) - Max Kalashnikoff
