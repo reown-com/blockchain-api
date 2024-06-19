@@ -309,7 +309,7 @@ impl RPCAnalytics {
             },
             ParquetBatchFactory::new(Default::default()).with_observer(observer),
             AwsExporter::new(AwsConfig {
-                export_prefix: "blockchain-api/name-requests".to_owned(),
+                export_prefix: "blockchain-api/name-registrations".to_owned(),
                 export_name: "name_registrations".to_owned(),
                 node_addr,
                 file_extension: "parquet".to_owned(),
