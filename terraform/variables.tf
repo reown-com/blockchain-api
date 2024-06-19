@@ -174,7 +174,7 @@ variable "webhook_prometheus_p2" {
 variable "rate_limiting_max_tokens" {
   description = "The maximum number of tokens in the bucket"
   type        = number
-  default     = 100
+  default     = 30
 }
 
 variable "rate_limiting_refill_interval" {
@@ -186,5 +186,5 @@ variable "rate_limiting_refill_interval" {
 variable "rate_limiting_refill_rate" {
   description = "The number of tokens to refill the bucket with"
   type        = number
-  default     = 2
+  default     = 3
 }
