@@ -8,34 +8,39 @@ use {
         RegisterPayload, RegisterRequest, ALLOWED_ZONES, UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{
-        analytics::MessageSource,
+        analytics::{AccountNameRegistration, MessageSource},
         database::{
             helpers::{get_name_and_addresses_by_name, insert_name},
             types::{Address, ENSIP11AddressesMap, SupportedNamespaces},
         },
         error::RpcError,
         state::AppState,
-        utils::crypto::{
-            convert_coin_type_to_evm_chain_id, is_coin_type_supported, verify_message_signature,
+        utils::{
+            crypto::{
+                convert_coin_type_to_evm_chain_id, is_coin_type_supported, verify_message_signature,
+            },
+            network,
         },
     },
     axum::{
-        extract::State,
+        extract::{ConnectInfo, State},
         response::{IntoResponse, Response},
         Json,
     },
-    hyper::StatusCode,
+    hyper::{HeaderMap, StatusCode},
     sqlx::Error as SqlxError,
-    std::{collections::HashMap, sync::Arc},
+    std::{collections::HashMap, net::SocketAddr, sync::Arc},
     tracing::log::error,
     wc::future::FutureExt,
 };
 
 pub async fn handler(
     state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     Json(register_request): Json<RegisterRequest>,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, register_request)
+    handler_internal(state, connect_info, headers, register_request)
         .with_metrics(HANDLER_TASK_METRICS.with_name("profile_register"))
         .await
 }
@@ -43,6 +48,8 @@ pub async fn handler(
 #[tracing::instrument(skip(state), level = "debug")]
 pub async fn handler_internal(
     state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     register_request: RegisterRequest,
 ) -> Result<Response, RpcError> {
     let raw_payload = &register_request.message;
@@ -146,7 +153,7 @@ pub async fn handler_internal(
     // if it was not provided during the registration
     if let std::collections::hash_map::Entry::Vacant(e) = addresses.entry(60) {
         e.insert(Address {
-            address: register_request.address,
+            address: register_request.address.clone(),
             created_at: None,
         });
     }
@@ -162,6 +169,31 @@ pub async fn handler_internal(
     if let Err(e) = insert_result {
         error!("Failed to insert new name: {}", e);
         return Ok((StatusCode::INTERNAL_SERVER_ERROR, "").into_response());
+    }
+
+    // Name registration analytics
+    {
+        let origin = headers
+            .get("origin")
+            .map(|v| v.to_str().unwrap_or("invalid_header").to_string());
+        let (country, continent, region) = state
+            .analytics
+            .lookup_geo_data(
+                network::get_forwarded_ip(headers).unwrap_or_else(|| connect_info.0.ip()),
+            )
+            .map(|geo| (geo.country, geo.continent, geo.region))
+            .unwrap_or((None, None, None));
+        state
+            .analytics
+            .name_registration(AccountNameRegistration::new(
+                payload.name.clone(),
+                register_request.address.clone(),
+                chain_id_caip2,
+                origin,
+                region,
+                country,
+                continent,
+            ));
     }
 
     // Return the registered name and addresses
