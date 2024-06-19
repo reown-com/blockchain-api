@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.70.0 - 2024-06-19
+#### Features
+- **(analytics)** adding names registrations analytics (#676) - (692ffd2) - Max Kalashnikoff
+- **(grafana)** adding account names counter dashboard (#674) - (0767dca) - Max Kalashnikoff
+
+- - -
+
 ## 0.69.1 - 2024-06-18
 #### Bug Fixes
 - **(network)** using the last forwarded IP from the list (#678) - (907e783) - Max Kalashnikoff
