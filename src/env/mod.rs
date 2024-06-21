@@ -6,6 +6,7 @@ use {
         profiler::ProfilerConfig,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
         providers::{ProviderKind, ProvidersConfig, Weight},
+        storage::irn::Config as IRNConfig,
         utils::rate_limit::RateLimitingConfig,
     },
     serde::de::DeserializeOwned,
@@ -48,6 +49,7 @@ pub struct Config {
     pub profiler: ProfilerConfig,
     pub providers: ProvidersConfig,
     pub rate_limiting: RateLimitingConfig,
+    pub irn: IRNConfig,
 }
 
 impl Config {
@@ -61,6 +63,7 @@ impl Config {
             profiler: from_env("RPC_PROXY_PROFILER_")?,
             providers: from_env("RPC_PROXY_PROVIDER_")?,
             rate_limiting: from_env("RPC_PROXY_RATE_LIMITING_")?,
+            irn: from_env("RPC_PROXY_IRN_")?,
         })
     }
 }
@@ -85,6 +88,7 @@ mod test {
             profiler::ProfilerConfig,
             project,
             providers::ProvidersConfig,
+            storage::irn::Config as IRNConfig,
             utils::rate_limit::RateLimitingConfig,
         },
         std::net::Ipv4Addr,
@@ -168,6 +172,11 @@ mod test {
             ("RPC_PROXY_RATE_LIMITING_MAX_TOKENS", "100"),
             ("RPC_PROXY_RATE_LIMITING_REFILL_INTERVAL_SEC", "1"),
             ("RPC_PROXY_RATE_LIMITING_REFILL_RATE", "10"),
+            // IRN config.
+            ("RPC_PROXY_IRN_NODE", "node"),
+            ("RPC_PROXY_IRN_KEY", "key"),
+            ("RPC_PROXY_IRN_NAMESPACE", "namespace"),
+            ("RPC_PROXY_IRN_NAMESPACE_SECRET", "namespace"),
         ];
 
         values.iter().for_each(set_env_var);
@@ -241,6 +250,12 @@ mod test {
                     max_tokens: Some(100),
                     refill_interval_sec: Some(1),
                     refill_rate: Some(10),
+                },
+                irn: IRNConfig {
+                    node: Some("node".to_owned()),
+                    key: Some("key".to_owned()),
+                    namespace: Some("namespace".to_owned()),
+                    namespace_secret: Some("namespace".to_owned()),
                 },
             }
         );

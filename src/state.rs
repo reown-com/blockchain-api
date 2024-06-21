@@ -7,6 +7,7 @@ use {
         metrics::Metrics,
         project::Registry,
         providers::ProviderRepository,
+        storage::irn::Irn,
         storage::KeyValueStorage,
         utils::{build::CompileInfo, rate_limit::RateLimit},
     },
@@ -32,6 +33,8 @@ pub struct AppState {
     pub http_client: reqwest::Client,
     // Rate limiting checks
     pub rate_limit: Option<RateLimit>,
+    // IRN client
+    pub irn: Option<Irn>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -45,6 +48,7 @@ pub fn new_state(
     analytics: RPCAnalytics,
     http_client: reqwest::Client,
     rate_limit: Option<RateLimit>,
+    irn: Option<Irn>,
 ) -> AppState {
     AppState {
         config,
@@ -58,6 +62,7 @@ pub fn new_state(
         uptime: std::time::Instant::now(),
         http_client,
         rate_limit,
+        irn,
     }
 }
 

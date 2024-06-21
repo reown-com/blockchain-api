@@ -6,6 +6,7 @@ use {
 };
 
 pub mod error;
+pub mod irn;
 pub mod redis;
 
 /// The Result type returned by Storage functions

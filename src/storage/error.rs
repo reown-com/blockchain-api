@@ -17,6 +17,15 @@ pub enum StorageError {
     /// Error on establishing a connection with the storage
     #[error("error on open connection")]
     Connection(String),
+    /// Wrong argument passed to the function
+    #[error("wrong argument: {0}")]
+    WrongArgument(String),
+    /// Wrong credentials format provided
+    #[error("wrong argument: {0}")]
+    WrongCredentialsFormat(String),
+    /// IRN network errors
+    #[error("IRN network error: {0}")]
+    IrnNetworkError(#[from] irn_network::Error),
     /// An unexpected error occurred
     #[error("{0:?}")]
     Other(String),
