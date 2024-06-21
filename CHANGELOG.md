@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.70.1 - 2024-06-21
+#### Bug Fixes
+- **(ratelimiting)** tuning token bucket settings (#675) - (452c49d) - Max Kalashnikoff
+- **(tests)** tuning rate-limiting integration test (#679) - (05fe586) - Max Kalashnikoff | maksy.eth
+- updating Cargo.lock and yarn.lock (#680) - (611c9ef) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.70.0 - 2024-06-19
 #### Features
 - **(analytics)** adding names registrations analytics (#676) - (692ffd2) - Max Kalashnikoff
