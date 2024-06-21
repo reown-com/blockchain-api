@@ -38,6 +38,22 @@ module "vpc" {
   vpc_flow_log_tags         = module.this.tags
 }
 
+resource "aws_vpc_peering_connection" "irn" {
+  count = var.irn_vpc_id != null ? 1 : 0
+
+  vpc_id      = module.vpc.vpc_id
+  peer_vpc_id = var.irn_vpc_id
+  auto_accept = true
+}
+
+resource "aws_route" "irn" {
+  count = var.irn_vpc_id != null ? length(module.vpc.private_route_table_ids) : 0
+
+  route_table_id            = module.vpc.private_route_table_ids[count.index]
+  vpc_peering_connection_id = aws_vpc_peering_connection.irn[0].id
+  destination_cidr_block    = var.irn_vpc_cidr
+}
+
 module "vpc_endpoints" {
   source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
   version = "5.1"

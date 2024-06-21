@@ -188,3 +188,16 @@ variable "rate_limiting_refill_rate" {
   type        = number
   default     = 3
 }
+
+#-------------------------------------------------------------------------------
+# IRN VPC peering
+
+variable "irn_vpc_id" {
+  type    = string
+  default = null
+}
+
+variable "irn_vpc_cidr" {
+  type    = string
+  default = null
+}
