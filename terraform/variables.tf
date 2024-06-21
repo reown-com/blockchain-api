@@ -194,12 +194,12 @@ variable "rate_limiting_refill_rate" {
 
 variable "irn_vpc_id" {
   description = "ID of the IRN VPC"
-  type    = string
-  default = null
+  type        = string
+  default     = null
 }
 
 variable "irn_vpc_cidr" {
   description = "CIDR block of the IRN VPC"
-  type    = string
-  default = null
+  type        = string
+  default     = null
 }
