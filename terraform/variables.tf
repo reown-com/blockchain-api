@@ -193,11 +193,13 @@ variable "rate_limiting_refill_rate" {
 # IRN VPC peering
 
 variable "irn_vpc_id" {
+  description = "ID of the IRN VPC"
   type    = string
   default = null
 }
 
 variable "irn_vpc_cidr" {
+  description = "CIDR block of the IRN VPC"
   type    = string
   default = null
 }
