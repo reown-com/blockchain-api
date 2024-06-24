@@ -195,11 +195,14 @@ variable "rate_limiting_refill_rate" {
 variable "irn_vpc_id" {
   description = "ID of the IRN VPC"
   type        = string
-  default     = null
 }
 
 variable "irn_vpc_cidr" {
   description = "CIDR block of the IRN VPC"
   type        = string
-  default     = null
+}
+
+variable "irn_aws_account_id" {
+  description = "ID of the AWS account in IRN is being deployed"
+  type        = string
 }
