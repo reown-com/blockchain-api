@@ -206,3 +206,26 @@ variable "irn_aws_account_id" {
   description = "ID of the AWS account in IRN is being deployed"
   type        = string
 }
+
+#-------------------------------------------------------------------------------
+# IRN client configuration
+
+variable "irn_node" {
+  description = "IRN node address in Address:Socket format"
+  type        = string
+}
+
+variable "irn_key" {
+  description = "IRN client key in base64 format"
+  type        = string
+}
+
+variable "irn_namespace" {
+  description = "IRN storage namespace"
+  type        = string
+}
+
+variable "irn_namespace_secret" {
+  description = "IRN storage namespace secret key"
+  type        = string
+}

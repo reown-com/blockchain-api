@@ -333,3 +333,26 @@ variable "rate_limiting_refill_rate" {
   description = "The number of tokens to refill the bucket with"
   type        = number
 }
+
+#-------------------------------------------------------------------------------
+# IRN client configuration
+
+variable "irn_node" {
+  description = "IRN node address in Address:Socket format"
+  type        = string
+}
+
+variable "irn_key" {
+  description = "IRN client key in base64 format"
+  type        = string
+}
+
+variable "irn_namespace" {
+  description = "IRN storage namespace"
+  type        = string
+}
+
+variable "irn_namespace_secret" {
+  description = "IRN storage namespace secret key"
+  type        = string
+}
