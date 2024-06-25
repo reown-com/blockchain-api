@@ -41,9 +41,8 @@ impl Irn {
             irn_api::auth::Encoding::Base64,
         )
         .map_err(|_| StorageError::WrongKey(key_base64))?;
-        // IRN connection error Network(ConnectionHandler(NoAvailablePeers)) when using
-        // existing keypair, so generate a new keypair for peer_id
-        // let peer_id = irn_api::auth::peer_id(&key.verifying_key());
+        // Generating peer_id. This should be replaced by the actual peer_id
+        // in a future
         let peer_id = irn_network::Keypair::generate_ed25519()
             .public()
             .to_peer_id();
@@ -113,6 +112,77 @@ impl Irn {
             Err(e) => Err(e.into()),
         }
     }
+
+    /// Delete a value from the storage
+    pub async fn delete(&self, key: String) -> Result<(), StorageError> {
+        self.client
+            .del(self.key(key.as_bytes().into()))
+            .await
+            .map_err(StorageError::IrnClientError)
+    }
+
+    /// Set the hasmap value in the storage
+    pub async fn hset(
+        &self,
+        key: String,
+        field: String,
+        value: Vec<u8>,
+    ) -> Result<(), StorageError> {
+        self.client
+            .hset(
+                self.key(key.as_bytes().into()),
+                field.as_bytes().into(),
+                value,
+                Some(self.calculate_ttl()),
+            )
+            .await
+            .map_err(StorageError::IrnClientError)
+    }
+
+    /// Get the hashmap value from the storage
+    pub async fn hget(&self, key: String, field: String) -> Result<Option<String>, StorageError> {
+        let result = self
+            .client
+            .hget(self.key(key.as_bytes().into()), field.as_bytes().into())
+            .await;
+
+        match result {
+            Ok(Some(data)) => match String::from_utf8(data) {
+                Ok(string) => Ok(Some(string)),
+                Err(e) => Err(StorageError::Utf8Error(e)),
+            },
+            Ok(None) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    /// Delete the hashmap value from the storage
+    pub async fn hdel(&self, key: String, field: String) -> Result<(), StorageError> {
+        self.client
+            .hdel(self.key(key.as_bytes().into()), field.as_bytes().into())
+            .await
+            .map_err(StorageError::IrnClientError)
+    }
+
+    /// Get all the hashmap fields from the storage
+    pub async fn hfields(&self, key: String) -> Result<Vec<String>, StorageError> {
+        let result = self.client.hfields(self.key(key.as_bytes().into())).await?;
+        let fields = result
+            .into_iter()
+            .map(String::from_utf8)
+            .collect::<Result<Vec<String>, _>>()?;
+        Ok(fields)
+    }
+
+    /// Get all the hashmap values from the storage
+    pub async fn hvals(&self, key: String) -> Result<Vec<String>, StorageError> {
+        let result = self.client.hvals(self.key(key.as_bytes().into())).await?;
+        let fields = result
+            .into_iter()
+            .map(String::from_utf8)
+            .collect::<Result<Vec<String>, _>>()?;
+        Ok(fields)
+    }
 }
 
 #[cfg(test)]
@@ -121,7 +191,7 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[tokio::test]
-    async fn test_calculate_ttl() {
+    async fn test_irn_client_calculate_ttl() {
         let irn = Irn::new(
             "127.0.0.1:1".into(),
             "2SjlbfXx6md6337H63KjOEFlv4XP5g2dl7Qam6ot84o=".into(),
@@ -140,9 +210,10 @@ mod tests {
         assert_eq!(ttl, now + RECORDS_TTL.as_secs());
     }
 
-    #[tokio::test]
+    /// Ignoring this test by default to use it for local cluster testing only
     #[ignore]
-    async fn test_set_get() {
+    #[tokio::test]
+    async fn test_irn_client_set_get_del() {
         let irn = Irn::new(
             "127.0.0.1:3011".into(),
             "2SjlbfXx6md6337H63KjOEFlv4XP5g2dl7Qam6ot84o=".into(),
@@ -154,7 +225,65 @@ mod tests {
         let key = "test_key".to_string();
         let value = "test_value".to_string().into_bytes();
         irn.set(key.clone(), value.clone()).await.unwrap();
+
+        // Get the value from the correct key
         let result = irn.get(key.clone()).await.unwrap().unwrap();
         assert_eq!(value, result.into_bytes());
+
+        // Get the value from the wrong key
+        let result = irn.get("wrong_key".into()).await.unwrap();
+        assert_eq!(None, result);
+
+        // Delete the value
+        irn.delete(key.clone()).await.unwrap();
+
+        // Get the value after deletion
+        let result = irn.get(key.clone()).await.unwrap();
+        assert_eq!(None, result);
+    }
+
+    /// Ignoring this test by default to use it for local cluster testing only
+    #[ignore]
+    #[tokio::test]
+    async fn test_irn_client_hashmap() {
+        let irn = Irn::new(
+            "127.0.0.1:3011".into(),
+            "2SjlbfXx6md6337H63KjOEFlv4XP5g2dl7Qam6ot84o=".into(),
+            "test_namespace".into(),
+            "namespace_secret".into(),
+        )
+        .unwrap();
+
+        let key = "test_key".to_string();
+        let field = "test_field".to_string();
+        let value = "test_value".to_string().into_bytes();
+
+        // Set and get the hashmap field value
+        irn.hset(key.clone(), field.clone(), value.clone())
+            .await
+            .unwrap();
+        let result = irn.hget(key.clone(), field.clone()).await.unwrap().unwrap();
+        assert_eq!(value, result.into_bytes());
+
+        // Get hasmap fields list
+        let fields = irn.hfields(key.clone()).await.unwrap();
+        assert_eq!(vec![field.clone()], fields);
+
+        // Get hasmap values list
+        let values = irn.hvals(key.clone()).await.unwrap();
+        assert_eq!(
+            vec![value.clone()],
+            values
+                .iter()
+                .map(|v| v.clone().into_bytes())
+                .collect::<Vec<Vec<u8>>>()
+        );
+
+        // Delete the hashmap field
+        irn.hdel(key.clone(), field.clone()).await.unwrap();
+        let result = irn.hget(key.clone(), field.clone()).await.unwrap();
+        assert_eq!(None, result);
+        let fields = irn.hfields(key.clone()).await.unwrap();
+        assert_eq!(Vec::<String>::new(), fields);
     }
 }
