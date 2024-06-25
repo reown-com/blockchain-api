@@ -82,6 +82,12 @@ module "ecs" {
   rate_limiting_refill_interval = var.rate_limiting_refill_interval
   rate_limiting_refill_rate     = var.rate_limiting_refill_rate
 
+  # IRN Client
+  irn_node             = var.irn_node
+  irn_key              = var.irn_key
+  irn_namespace        = var.irn_namespace
+  irn_namespace_secret = var.irn_namespace_secret
+
   # Analytics
   analytics_datalake_bucket_name = data.terraform_remote_state.datalake.outputs.datalake_bucket_id
   analytics_datalake_kms_key_arn = data.terraform_remote_state.datalake.outputs.datalake_kms_key_arn

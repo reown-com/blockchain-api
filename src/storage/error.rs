@@ -17,6 +17,24 @@ pub enum StorageError {
     /// Error on establishing a connection with the storage
     #[error("error on open connection")]
     Connection(String),
+    /// Wrong node address
+    #[error("wrong node address format: {0}")]
+    WrongNodeAddress(String),
+    /// Wrong key provided
+    #[error("wrong key format: {0}")]
+    WrongKey(String),
+    /// Wrong namespace provided
+    #[error("wrong namespace: {0}")]
+    WrongNamespace(String),
+    /// Wrong UTF8 encoding
+    #[error("wrong UTF8 encoding")]
+    Utf8Error(#[from] std::string::FromUtf8Error),
+    /// IRN network errors
+    #[error("IRN network error: {0}")]
+    IrnNetworkError(#[from] irn_network::Error),
+    /// IRN client errors
+    #[error("IRN client error: {0}")]
+    IrnClientError(#[from] irn_api::client::Error),
     /// An unexpected error occurred
     #[error("{0:?}")]
     Other(String),

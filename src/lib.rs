@@ -5,7 +5,7 @@ use {
         metrics::Metrics,
         project::Registry,
         providers::ProvidersConfig,
-        storage::{redis, KeyValueStorage},
+        storage::{irn, redis, KeyValueStorage},
     },
     anyhow::Context,
     aws_config::meta::region::RegionProviderChain,
@@ -155,6 +155,23 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     sqlx::migrate!("./migrations").run(&postgres).await?;
 
     let http_client = reqwest::Client::new();
+    let irn_client =
+        if let (Some(node_addr), Some(key_base64), Some(namespace), Some(namespace_secret)) = (
+            config.irn.node.clone(),
+            config.irn.key.clone(),
+            config.irn.namespace.clone(),
+            config.irn.namespace_secret.clone(),
+        ) {
+            Some(irn::Irn::new(
+                node_addr,
+                key_base64,
+                namespace,
+                namespace_secret,
+            )?)
+        } else {
+            warn!("IRN client is disabled (missing env configuration variables)");
+            None
+        };
 
     let state = state::new_state(
         config.clone(),
@@ -166,6 +183,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         analytics,
         http_client,
         rate_limiting,
+        irn_client,
     );
 
     let port = state.config.server.port;
