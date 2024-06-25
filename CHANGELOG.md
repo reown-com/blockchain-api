@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.72.0 - 2024-06-25
+#### Bug Fixes
+- **(ci)** bumping shared ci_workflows version (#687) - (5d3dd38) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(sessions)** implementing session create, list and get handlers (#686) - (6328c73) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.71.0 - 2024-06-25
 #### Features
 - **(ci)** bumping the shared ci_workflow version to 0.2.11 (#683) - (32de202) - Max Kalashnikoff | maksy.eth
