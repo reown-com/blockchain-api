@@ -334,6 +334,11 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/fungible/price",
             post(handlers::fungible_price::handler),
         )
+        // Sessions
+        .route("/v1/sessions/:address", post(handlers::sessions::create::handler))
+        .route("/v1/sessions/:address", get(handlers::sessions::list::handler))
+        .route("/v1/sessions/:address/:pci", get(handlers::sessions::get::handler))
+        // Health
         .route("/health", get(handlers::health::handler))
         .route_layer(tracing_and_metrics_layer)
         .layer(cors);

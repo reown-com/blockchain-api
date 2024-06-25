@@ -74,13 +74,17 @@ tokio-stream = "0.1.12"
 axum-tungstenite = "0.2.0"
 
 rand = "0.8.4"
+rand_core = "0.6"
 prometheus-http-query = "0.6.6"
 ethers = { version = "2.0.11", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
 alloy-primitives = "0.7"
 
 bytes = "1.4.0"
+base64 = "0.22"
 regex = "1.10"
 sha256 = "1.2.2"
+p256 = "0.13"
+uuid = "1.9"
 
 # System CPU and Memory metrics
 sysinfo = "0.30"
