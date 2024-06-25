@@ -169,6 +169,12 @@ pub enum RpcError {
 
     #[error("Weighted providers index error: {0}")]
     WeightedProvidersIndex(String),
+
+    #[error("IRN client is not configured")]
+    IrnNotConfigured,
+
+    #[error("Permission for PCI is not found: {0}")]
+    PermissionNotFound(String),
 }
 
 impl IntoResponse for RpcError {
@@ -382,6 +388,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "rate_limit".to_string(),
                     format!("Rate limited: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::PermissionNotFound(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "pci".to_string(),
+                    format!("Permission for PCI is not found: {}", e),
                 )),
             )
                 .into_response(),
