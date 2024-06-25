@@ -12,7 +12,7 @@ use {
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(1);
 const MAX_OPERATION_TIME: Duration = Duration::from_secs(3);
 const CONNECTION_TIMEOUT: Duration = Duration::from_secs(3);
-const RECORDS_TTL: Duration = Duration::from_secs(60 * 60 * 24 * 90); // 90 days
+const RECORDS_TTL: Duration = Duration::from_secs(60 * 60 * 24 * 30); // 30 days
 const UDP_SOCKET_COUNT: usize = 1;
 
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
