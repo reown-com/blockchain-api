@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.71.0 - 2024-06-25
+#### Features
+- **(ci)** bumping the shared ci_workflow version to 0.2.11 (#683) - (32de202) - Max Kalashnikoff | maksy.eth
+- **(sessions)** irn client scaffolding (#681) - (f5626e8) - Max Kalashnikoff | maksy.eth
+- **(terraform)** IRN VPC Peering (#682) - (85fe272) - xDarksome
+
+- - -
+
 ## 0.70.1 - 2024-06-21
 #### Bug Fixes
 - **(ratelimiting)** tuning token bucket settings (#675) - (452c49d) - Max Kalashnikoff
