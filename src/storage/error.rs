@@ -26,9 +26,15 @@ pub enum StorageError {
     /// Wrong namespace provided
     #[error("wrong namespace: {0}")]
     WrongNamespace(String),
+    /// Wrong UTF8 encoding
+    #[error("wrong UTF8 encoding")]
+    Utf8Error(#[from] std::string::FromUtf8Error),
     /// IRN network errors
     #[error("IRN network error: {0}")]
     IrnNetworkError(#[from] irn_network::Error),
+    /// IRN client errors
+    #[error("IRN client error: {0}")]
+    IrnClientError(#[from] irn_api::client::Error),
     /// An unexpected error occurred
     #[error("{0:?}")]
     Other(String),
