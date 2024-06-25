@@ -36,16 +36,15 @@ impl Irn {
             key_base64.as_bytes(),
             irn_api::auth::Encoding::Base64,
         )
-        .map_err(|_| StorageError::WrongCredentialsFormat("wrong key is provided".to_string()))?;
+        .map_err(|_| StorageError::WrongKey(key_base64))?;
         let peer_id = irn_api::auth::peer_id(&key.verifying_key());
-        let node_addr = node_addr.parse::<SocketAddr>().map_err(|_| {
-            StorageError::WrongArgument("node_addr is not in socket address format".to_string())
-        })?;
+        let node_addr = node_addr
+            .parse::<SocketAddr>()
+            .map_err(|_| StorageError::WrongNodeAddress(node_addr))?;
         let address = (peer_id, irn_network::socketaddr_to_multiaddr(node_addr));
         let namespaces = vec![
-            Auth::from_secret(namespace_secret.as_bytes(), namespace.as_bytes()).map_err(|_| {
-                StorageError::WrongCredentialsFormat("namespace secret is not valid".to_string())
-            })?,
+            Auth::from_secret(namespace_secret.as_bytes(), namespace.as_bytes())
+                .map_err(|_| StorageError::WrongNamespace(namespace))?,
         ];
 
         let client = Client::new(irn_api::client::Config {

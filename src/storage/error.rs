@@ -17,12 +17,15 @@ pub enum StorageError {
     /// Error on establishing a connection with the storage
     #[error("error on open connection")]
     Connection(String),
-    /// Wrong argument passed to the function
-    #[error("wrong argument: {0}")]
-    WrongArgument(String),
-    /// Wrong credentials format provided
-    #[error("wrong argument: {0}")]
-    WrongCredentialsFormat(String),
+    /// Wrong node address
+    #[error("wrong node address format: {0}")]
+    WrongNodeAddress(String),
+    /// Wrong key provided
+    #[error("wrong key format: {0}")]
+    WrongKey(String),
+    /// Wrong namespace provided
+    #[error("wrong namespace: {0}")]
+    WrongNamespace(String),
     /// IRN network errors
     #[error("IRN network error: {0}")]
     IrnNetworkError(#[from] irn_network::Error),
