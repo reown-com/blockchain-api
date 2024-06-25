@@ -1,6 +1,6 @@
 use {
     super::super::HANDLER_TASK_METRICS,
-    crate::{error::RpcError, state::AppState},
+    crate::{error::RpcError, state::AppState, utils::crypto::disassemble_caip10},
     axum::{
         extract::{Path, State},
         response::{IntoResponse, Response},
@@ -32,8 +32,11 @@ async fn handler_internal(
 ) -> Result<Response, RpcError> {
     let irn_client = state.irn.as_ref().ok_or(RpcError::IrnNotConfigured)?;
 
+    // Checking the CAIP-10 address format
+    disassemble_caip10(&address)?;
+
     // get all permission control identifiers for the address
-    let pci = irn_client.hfields(address.clone()).await?;
+    let pci = irn_client.hfields(address).await?;
     let response = ListPermissionResponse { pci };
 
     Ok(Json(response).into_response())

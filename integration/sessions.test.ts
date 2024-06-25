@@ -3,10 +3,10 @@ import { ethers } from "ethers"
 
 describe('Sessions/Permissions', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
-  const address = ethers.Wallet.createRandom().address;
+  const address = `eip155:1:${ethers.Wallet.createRandom().address}`;
   // Session payload
   const payload = {
-    permissions: {
+    permission: {
       permissionType: "exampleType",
       data: "exampleData",
       required: true,
@@ -42,9 +42,9 @@ describe('Sessions/Permissions', () => {
       `${baseUrl}/v1/sessions/${address}/${new_pci}`
     )
     expect(resp.status).toBe(200)
-    expect(resp.data.permissionType).toBe(payload.permissions.permissionType)
-    expect(resp.data.data).toBe(payload.permissions.data)
-    expect(resp.data.required).toBe(payload.permissions.required)
-    expect(resp.data.onChainValidated).toBe(payload.permissions.onChainValidated)
+    expect(resp.data.permissionType).toBe(payload.permission.permissionType)
+    expect(resp.data.data).toBe(payload.permission.data)
+    expect(resp.data.required).toBe(payload.permission.required)
+    expect(resp.data.onChainValidated).toBe(payload.permission.onChainValidated)
   })
 })

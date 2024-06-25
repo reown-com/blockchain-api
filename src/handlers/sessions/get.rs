@@ -1,8 +1,6 @@
 use {
-    super::{
-        super::HANDLER_TASK_METRICS, GetPermissionsRequest, PermissionItem, StoragePermissionsItem,
-    },
-    crate::{error::RpcError, state::AppState},
+    super::{super::HANDLER_TASK_METRICS, GetPermissionsRequest, StoragePermissionsItem},
+    crate::{error::RpcError, state::AppState, utils::crypto::disassemble_caip10},
     axum::{
         extract::{Path, State},
         response::{IntoResponse, Response},
@@ -28,22 +26,15 @@ async fn handler_internal(
 ) -> Result<Response, RpcError> {
     let irn_client = state.irn.as_ref().ok_or(RpcError::IrnNotConfigured)?;
 
-    let storage_permissions_item = match irn_client
+    // Checking the CAIP-10 address format
+    disassemble_caip10(&request.address)?;
+
+    let storage_permissions_item = irn_client
         .hget(request.address.clone(), request.pci.clone())
         .await?
-    {
-        Some(storage_permissions_item) => storage_permissions_item,
-        None => return Err(RpcError::PermissionNotFound(request.pci)),
-    };
-    let storage_permissions_item: StoragePermissionsItem =
-        serde_json::from_str(&storage_permissions_item)?;
+        .ok_or_else(|| RpcError::PermissionNotFound(request.pci))?;
+    let storage_permissions_item =
+        serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
 
-    let response = PermissionItem {
-        permission_type: storage_permissions_item.permissions.permission_type,
-        data: storage_permissions_item.permissions.data,
-        required: storage_permissions_item.permissions.required,
-        on_chain_validated: storage_permissions_item.permissions.on_chain_validated,
-    };
-
-    Ok(Json(response).into_response())
+    Ok(Json(storage_permissions_item.permissions).into_response())
 }

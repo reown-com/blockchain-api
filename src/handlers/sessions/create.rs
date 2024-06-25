@@ -1,6 +1,6 @@
 use {
     super::{super::HANDLER_TASK_METRICS, NewPermissionPayload, StoragePermissionsItem},
-    crate::{error::RpcError, state::AppState},
+    crate::{error::RpcError, state::AppState, utils::crypto::disassemble_caip10},
     axum::{
         extract::{Path, State},
         response::{IntoResponse, Response},
@@ -38,6 +38,9 @@ async fn handler_internal(
 ) -> Result<Response, RpcError> {
     let irn_client = state.irn.as_ref().ok_or(RpcError::IrnNotConfigured)?;
 
+    // Checking the CAIP-10 address format
+    disassemble_caip10(&address)?;
+
     // generate a unique permission control identifier
     let pci = uuid::Uuid::new_v4().to_string();
 
@@ -49,7 +52,7 @@ async fn handler_internal(
 
     // store the permission item in the IRN database
     let storage_permissions_item = StoragePermissionsItem {
-        permissions: request_payload.permissions,
+        permissions: request_payload.permission,
         verification_key: verifying_key_base64,
     };
     irn_client

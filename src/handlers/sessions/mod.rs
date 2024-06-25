@@ -7,7 +7,7 @@ pub mod list;
 /// Payload to create a new permission
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NewPermissionPayload {
-    pub permissions: PermissionItem,
+    pub permission: PermissionItem,
 }
 
 // Payload to get permission by PCI
