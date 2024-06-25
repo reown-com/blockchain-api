@@ -6,7 +6,7 @@ use {
         profiler::ProfilerConfig,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
         providers::{ProviderKind, ProvidersConfig, Weight},
-        storage::irn::Config as IRNConfig,
+        storage::irn::Config as IrnConfig,
         utils::rate_limit::RateLimitingConfig,
     },
     serde::de::DeserializeOwned,
@@ -49,7 +49,7 @@ pub struct Config {
     pub profiler: ProfilerConfig,
     pub providers: ProvidersConfig,
     pub rate_limiting: RateLimitingConfig,
-    pub irn: IRNConfig,
+    pub irn: IrnConfig,
 }
 
 impl Config {
@@ -88,7 +88,7 @@ mod test {
             profiler::ProfilerConfig,
             project,
             providers::ProvidersConfig,
-            storage::irn::Config as IRNConfig,
+            storage::irn::Config as IrnConfig,
             utils::rate_limit::RateLimitingConfig,
         },
         std::net::Ipv4Addr,
@@ -251,7 +251,7 @@ mod test {
                     refill_interval_sec: Some(1),
                     refill_rate: Some(10),
                 },
-                irn: IRNConfig {
+                irn: IrnConfig {
                     node: Some("node".to_owned()),
                     key: Some("key".to_owned()),
                     namespace: Some("namespace".to_owned()),
