@@ -48,9 +48,9 @@ ARG                 BUILD_PROFILE="--profile ${PROFILE}"
 WORKDIR             /app
 # Cache dependancies
 COPY --from=plan    /app/recipe.json recipe.json
+COPY                . .
 RUN                 cargo chef cook ${BUILD_PROFILE} --recipe-path recipe.json 
 # Build the local binary
-COPY                . .
 RUN                 cargo build --bin rpc-proxy ${RELEASE}
 
 ################################################################################
