@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.72.1 - 2024-06-26
+#### Bug Fixes
+- **(Dockerfile)** moving copy before the `chef cook` (#688) - (36eb4c7) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.72.0 - 2024-06-25
 #### Bug Fixes
 - **(ci)** bumping shared ci_workflows version (#687) - (5d3dd38) - Max Kalashnikoff | maksy.eth
