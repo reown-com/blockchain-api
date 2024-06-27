@@ -7,7 +7,7 @@ use {
         Json,
     },
     serde::{Deserialize, Serialize},
-    std::sync::Arc,
+    std::{sync::Arc, time::SystemTime},
     wc::future::FutureExt,
 };
 
@@ -36,7 +36,11 @@ async fn handler_internal(
     disassemble_caip10(&address)?;
 
     // get all permission control identifiers for the address
+    let irn_call_start = SystemTime::now();
     let pci = irn_client.hfields(address).await?;
+    state
+        .metrics
+        .add_irn_latency(irn_call_start, "hfields".into());
     let response = ListPermissionResponse { pci };
 
     Ok(Json(response).into_response())
