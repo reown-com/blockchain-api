@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.73.0 - 2024-06-28
+#### Bug Fixes
+- **(ci)** bumping ci_workflows to 0.2.13 version (#689) - (1dd79ef) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(metrics)** adding IRN client latency metrics (#691) - (23b952a) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.72.1 - 2024-06-26
 #### Bug Fixes
 - **(Dockerfile)** moving copy before the `chef cook` (#688) - (36eb4c7) - Max Kalashnikoff | maksy.eth
