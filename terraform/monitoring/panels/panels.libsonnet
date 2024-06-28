@@ -62,4 +62,8 @@ local redis  = panels.aws.redis;
     healthy_hosts:            (import 'lb/healthy_hosts.libsonnet'              ).new,
     requests:                 (import 'lb/requests.libsonnet'                   ).new,
   },
+
+  irn: {
+    latency: (import 'irn/latency.libsonnet').new,
+  },
 }
