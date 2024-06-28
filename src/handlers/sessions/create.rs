@@ -10,7 +10,7 @@ use {
     p256::ecdsa::{SigningKey, VerifyingKey},
     rand_core::OsRng,
     serde::{Deserialize, Serialize},
-    std::sync::Arc,
+    std::{sync::Arc, time::SystemTime},
     wc::future::FutureExt,
 };
 
@@ -55,6 +55,8 @@ async fn handler_internal(
         permissions: request_payload.permission,
         verification_key: verifying_key_base64,
     };
+
+    let irn_call_start = SystemTime::now();
     irn_client
         .hset(
             address.clone(),
@@ -62,6 +64,7 @@ async fn handler_internal(
             serde_json::to_string(&storage_permissions_item)?.into(),
         )
         .await?;
+    state.metrics.add_irn_latency(irn_call_start, "hset".into());
 
     let response = NewPermissionResponse {
         pci,

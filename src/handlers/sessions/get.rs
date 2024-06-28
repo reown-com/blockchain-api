@@ -6,7 +6,7 @@ use {
         response::{IntoResponse, Response},
         Json,
     },
-    std::sync::Arc,
+    std::{sync::Arc, time::SystemTime},
     wc::future::FutureExt,
 };
 
@@ -29,10 +29,12 @@ async fn handler_internal(
     // Checking the CAIP-10 address format
     disassemble_caip10(&request.address)?;
 
+    let irn_call_start = SystemTime::now();
     let storage_permissions_item = irn_client
         .hget(request.address.clone(), request.pci.clone())
         .await?
         .ok_or_else(|| RpcError::PermissionNotFound(request.pci))?;
+    state.metrics.add_irn_latency(irn_call_start, "hget".into());
     let storage_permissions_item =
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
 

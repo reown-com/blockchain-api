@@ -61,6 +61,9 @@ pub struct Metrics {
 
     // Account names
     pub account_names_count: ObservableGauge<u64>,
+
+    // IRN client
+    pub irn_latency_tracker: Histogram<f64>,
 }
 
 impl Metrics {
@@ -233,6 +236,11 @@ impl Metrics {
             .with_description("Registered account names count")
             .init();
 
+        let irn_latency_tracker = meter
+            .f64_histogram("irn_latency_tracker")
+            .with_description("The latency of IRN client calls")
+            .init();
+
         Metrics {
             rpc_call_counter,
             rpc_call_retries,
@@ -267,6 +275,7 @@ impl Metrics {
             memory_used,
             rate_limited_entries_counter,
             account_names_count,
+            irn_latency_tracker,
         }
     }
 }
@@ -526,6 +535,17 @@ impl Metrics {
     pub fn add_rate_limited_entries_count(&self, entry: u64) {
         self.rate_limited_entries_counter
             .record(&otel::Context::new(), entry, &[]);
+    }
+
+    pub fn add_irn_latency(&self, start: SystemTime, operation: String) {
+        self.irn_latency_tracker.record(
+            &otel::Context::new(),
+            start
+                .elapsed()
+                .unwrap_or(Duration::from_secs(0))
+                .as_secs_f64(),
+            &[otel::KeyValue::new("operation", operation)],
+        );
     }
 
     /// Gathering system CPU(s) and Memory usage metrics
