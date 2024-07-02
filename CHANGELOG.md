@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.74.0 - 2024-07-02
+#### Bug Fixes
+- **(one_inch)** using non-checksum address only (#692) - (2c49e18) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(grafana)** adding panel and alert for IRN client latency (#693) - (f16b974) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.73.0 - 2024-06-28
 #### Bug Fixes
 - **(ci)** bumping ci_workflows to 0.2.13 version (#689) - (1dd79ef) - Max Kalashnikoff | maksy.eth
