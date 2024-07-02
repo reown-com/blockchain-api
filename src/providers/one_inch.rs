@@ -70,6 +70,7 @@ impl OneInchProvider {
         address: &str,
         currency: &SupportedCurrencies,
     ) -> Result<String, RpcError> {
+        let address = address.to_lowercase();
         let mut url = Url::parse(
             format!("{}/price/v1.1/{}/{}", &self.base_api_url, chain_id, address).as_str(),
         )
@@ -95,7 +96,7 @@ impl OneInchProvider {
             return Err(RpcError::ConversionProviderError);
         }
         let price_body = price_response.json::<HashMap<String, String>>().await?;
-        price_body.get(address).map_or(
+        price_body.get(&address).map_or(
             {
                 error!(
                     "Error on getting fungible price from 1inch provider. Price not found for the \
@@ -112,6 +113,7 @@ impl OneInchProvider {
         chain_id: &str,
         address: &str,
     ) -> Result<OneInchTokenItem, RpcError> {
+        let address = address.to_lowercase();
         let url = Url::parse(
             format!(
                 "{}/token/v1.2/{}/custom/{}",
@@ -336,8 +338,10 @@ impl ConversionProvider for OneInchProvider {
         );
         let mut url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
 
-        url.query_pairs_mut().append_pair("src", &src_address);
-        url.query_pairs_mut().append_pair("dst", &dst_address);
+        url.query_pairs_mut()
+            .append_pair("src", &src_address.to_lowercase());
+        url.query_pairs_mut()
+            .append_pair("dst", &dst_address.to_lowercase());
         url.query_pairs_mut().append_pair("amount", &params.amount);
         if let Some(referrer) = &self.referrer {
             url.query_pairs_mut().append_pair("referrer", referrer);
@@ -405,7 +409,7 @@ impl ConversionProvider for OneInchProvider {
         let mut url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
 
         url.query_pairs_mut()
-            .append_pair("tokenAddress", &dst_address);
+            .append_pair("tokenAddress", &dst_address.to_lowercase());
         if let Some(amount) = &params.amount {
             url.query_pairs_mut().append_pair("amount", amount);
         }
@@ -466,10 +470,13 @@ impl ConversionProvider for OneInchProvider {
         let base = format!("{}/swap/v6.0/{}/swap", &self.base_api_url, chain_id);
         let mut url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
 
-        url.query_pairs_mut().append_pair("src", &src_address);
-        url.query_pairs_mut().append_pair("dst", &dst_address);
+        url.query_pairs_mut()
+            .append_pair("src", &src_address.to_lowercase());
+        url.query_pairs_mut()
+            .append_pair("dst", &dst_address.to_lowercase());
         url.query_pairs_mut().append_pair("amount", &params.amount);
-        url.query_pairs_mut().append_pair("from", &user_address);
+        url.query_pairs_mut()
+            .append_pair("from", &user_address.to_lowercase());
         if let Some(referrer) = &self.referrer {
             url.query_pairs_mut().append_pair("referrer", referrer);
             url.query_pairs_mut()
@@ -592,9 +599,9 @@ impl ConversionProvider for OneInchProvider {
         );
         let mut url = Url::parse(&base).map_err(|_| RpcError::ConversionParseURLError)?;
         url.query_pairs_mut()
-            .append_pair("tokenAddress", &token_address);
+            .append_pair("tokenAddress", &token_address.to_lowercase());
         url.query_pairs_mut()
-            .append_pair("walletAddress", &wallet_address);
+            .append_pair("walletAddress", &wallet_address.to_lowercase());
 
         let response = self.send_request(url, &self.http_client.clone()).await?;
 
