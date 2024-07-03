@@ -50,7 +50,10 @@ jobs:
       url: ${{ inputs.stage-url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PRIVATE_SUBMODULE_ACCESS_TOKEN || github.token }}
+          submodules: recursive
 
       - name: "Install Rust ${{ vars.RUST_VERSION }}"
         uses: WalletConnect/actions-rs/toolchain@1.0.0
@@ -83,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v3
