@@ -73,6 +73,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PRIVATE_SUBMODULE_ACCESS_TOKEN || github.token }}
+          submodules: recursive
 
       - name: "Install Rust ${{ vars.RUST_VERSION }}"
         uses: WalletConnect/actions-rs/toolchain@1.0.0
