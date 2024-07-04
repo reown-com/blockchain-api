@@ -1,14 +1,19 @@
 use {
-    crate::analytics::MessageSource,
+    crate::{analytics::MessageSource, error::RpcError},
     alloy_primitives::Address,
+    base64::prelude::*,
     ethers::{
         prelude::abigen,
         providers::{Http, Middleware, Provider},
         types::{H160, H256, U256},
     },
+    olpc_cjson::CanonicalFormatter,
     once_cell::sync::Lazy,
+    p256::ecdsa::{signature::Verifier, Signature, VerifyingKey},
     regex::Regex,
     relay_rpc::auth::cacao::{signature::eip6492::verify_eip6492, CacaoError},
+    serde::Serialize,
+    serde_json::Value,
     std::{str::FromStr, sync::Arc},
     strum::IntoEnumIterator,
     strum_macros::{Display, EnumIter, EnumString},
@@ -59,6 +64,14 @@ pub fn get_message_hash(message: &str) -> H256 {
     let prefixed_message = add_eip191(message);
     let message_hash = ethers::core::utils::keccak256(prefixed_message.clone());
     ethers::types::H256::from_slice(&message_hash)
+}
+
+/// Serialize JSON to canonical format
+pub fn json_canonicalize(json: Value) -> Result<Vec<u8>, serde_json::Error> {
+    let mut buf = Vec::new();
+    let mut ser = serde_json::Serializer::with_formatter(&mut buf, CanonicalFormatter::new());
+    json.serialize(&mut ser)?;
+    Ok(buf)
 }
 
 pub async fn verify_message_signature(
@@ -122,6 +135,34 @@ pub async fn verify_eip6492_message_signature(
             e
         ))),
     }
+}
+
+/// Verify ECDSA message signature using the verification key
+#[tracing::instrument(level = "debug")]
+pub fn verify_ecdsa_signature(
+    message: &str,
+    signature: &str,
+    verification_key: &str,
+) -> Result<(), RpcError> {
+    let verifying_key = VerifyingKey::from_sec1_bytes(
+        &BASE64_STANDARD
+            .decode(verification_key)
+            .map_err(|_| RpcError::WrongBase64Format(verification_key.to_string()))?,
+    )
+    .map_err(|e| RpcError::KeyFormatError(e.to_string()))?;
+
+    let signature = Signature::from_slice(
+        &BASE64_STANDARD
+            .decode(signature)
+            .map_err(|_| RpcError::WrongBase64Format(signature.to_string()))?,
+    )
+    .map_err(|e| RpcError::SignatureFormatError(e.to_string()))?;
+
+    verifying_key
+        .verify(message.as_bytes(), &signature)
+        .map_err(|e| RpcError::SignatureValidationError(e.to_string()))?;
+
+    Ok(())
 }
 
 /// Get the balance of the ERC20 token
@@ -411,7 +452,13 @@ pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u32) -
 
 #[cfg(test)]
 mod tests {
-    use {super::*, std::collections::HashMap};
+    use {
+        super::*,
+        p256::ecdsa::{signature::Signer, SigningKey, VerifyingKey},
+        rand_core::OsRng,
+        serde_json::json,
+        std::collections::HashMap,
+    };
 
     #[test]
     fn test_convert_coin_type_to_evm_chain_id() {
@@ -540,5 +587,40 @@ mod tests {
             convert_token_amount_to_value(balance, price, decimals),
             0.959_694_527_317_077_7 * price
         );
+    }
+
+    #[test]
+    fn test_json_canonicalize() {
+        let json = json!({
+            "key1": "value1",
+            "key2": "value2"
+        });
+
+        let result = json_canonicalize(json).unwrap();
+        assert_eq!(result, b"{\"key1\":\"value1\",\"key2\":\"value2\"}");
+    }
+
+    #[test]
+    fn test_verify_ecdsa_signature() {
+        let message = "test message";
+        // Generate ECDSA key pair
+        let signing_key = SigningKey::random(&mut OsRng);
+        let verifying_key = VerifyingKey::from(&signing_key);
+        let verifying_key_base64 = BASE64_STANDARD.encode(verifying_key.to_sec1_bytes());
+
+        // Sign the message
+        let signature: Signature = signing_key.sign(message.as_bytes());
+        let signature_base64 = BASE64_STANDARD.encode(signature.to_bytes());
+
+        // Correct signature and message
+        assert!(verify_ecdsa_signature(message, &signature_base64, &verifying_key_base64).is_ok());
+
+        // Incorrect message
+        assert!(verify_ecdsa_signature(
+            "wrong message signature",
+            &signature_base64,
+            &verifying_key_base64
+        )
+        .is_err());
     }
 }

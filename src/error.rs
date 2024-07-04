@@ -175,6 +175,15 @@ pub enum RpcError {
 
     #[error("Permission for PCI is not found: {0}")]
     PermissionNotFound(String),
+
+    #[error("Wrong Base64 format: {0}")]
+    WrongBase64Format(String),
+
+    #[error("Key format error: {0}")]
+    KeyFormatError(String),
+
+    #[error("Signature format error: {0}")]
+    SignatureFormatError(String),
 }
 
 impl IntoResponse for RpcError {
@@ -396,6 +405,30 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "pci".to_string(),
                     format!("Permission for PCI is not found: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::WrongBase64Format(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "".to_string(),
+                    format!("Wrong Base64 format: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::KeyFormatError(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "key".to_string(),
+                    format!("Invalid key format: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::SignatureFormatError(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "signature".to_string(),
+                    format!("Invalid signature format: {}", e),
                 )),
             )
                 .into_response(),

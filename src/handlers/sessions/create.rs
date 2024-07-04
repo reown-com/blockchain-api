@@ -53,6 +53,7 @@ async fn handler_internal(
     // store the permission item in the IRN database
     let storage_permissions_item = StoragePermissionsItem {
         permissions: request_payload.permission,
+        context: None,
         verification_key: verifying_key_base64,
     };
 
