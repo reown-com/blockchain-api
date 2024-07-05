@@ -1,5 +1,8 @@
 import { getTestSetup } from './init';
 import { ethers } from "ethers"
+import { canonicalize} from 'json-canonicalize';
+import { ec as EC } from 'elliptic';
+import { SHA256 } from 'crypto-js';
 
 describe('Sessions/Permissions', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
@@ -14,6 +17,7 @@ describe('Sessions/Permissions', () => {
     }
   }
   let new_pci: string;
+  let signing_key: string;
   
   it('create new session', async () => {
     let resp: any = await httpClient.post(
@@ -26,6 +30,7 @@ describe('Sessions/Permissions', () => {
     expect(typeof resp.data.key).toBe('string')
     // check key is base64 encoded
     expect(Buffer.from(resp.data.key, 'base64').toString('base64')).toBe(resp.data.key)
+    signing_key = resp.data.key
   })
 
   it('list PCIs for address', async () => {
@@ -46,5 +51,45 @@ describe('Sessions/Permissions', () => {
     expect(resp.data.data).toBe(payload.permission.data)
     expect(resp.data.required).toBe(payload.permission.required)
     expect(resp.data.onChainValidated).toBe(payload.permission.onChainValidated)
+  })
+
+  
+  it('update PCI permission context', async () => {
+    const context = {
+      expiry: 1234567890,
+      factory: "exampleFactory",
+      factoryData: "exampleFactoryData",
+      permissionsContext: "examplePermissionsContext",
+      signer: {
+        permissionType: "exampleType",
+        ids: ["exampleId1", "exampleId2"], 
+      },
+      signerData:{
+        userOpBuilder: "exampleUserOpBuilder",
+      }
+    }
+   
+    // Canonize JSON of `context` object and make a keccak256 hash
+    // then sign it using the signing key from the session creation step
+    let json_canonicalize = canonicalize(context);
+    let keccak256 = ethers.keccak256(Buffer.from(json_canonicalize));
+    let signature = Buffer.from(keccak256).toString('base64');
+    let ecdsa = new EC('secp256k1');
+    let key = ecdsa.keyFromPrivate(Buffer.from(signing_key, 'base64'));
+    let sig = key.sign(signature);
+    // convert signature to base64 format
+    let signature_base64 = Buffer.from(sig.toDER('hex')).toString('base64');
+
+    const payload = {
+      pci: new_pci,
+      signature: signature_base64,
+      context
+    }
+    
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/sessions/${address}/context`,
+      payload
+    )
+    expect(resp.status).toBe(200)
   })
 })
