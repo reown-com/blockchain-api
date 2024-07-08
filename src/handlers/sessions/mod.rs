@@ -4,6 +4,7 @@ pub mod context;
 pub mod create;
 pub mod get;
 pub mod list;
+pub mod revoke;
 
 /// Payload to create a new permission
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -74,4 +75,12 @@ pub struct StoragePermissionsItem {
     permissions: PermissionItem,
     context: Option<PermissionContextItem>,
     verification_key: String,
+}
+
+/// Permission revoke request schema
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PermissionRevokeRequest {
+    pci: String,
+    signature: String,
 }
