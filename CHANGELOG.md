@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.75.0 - 2024-07-08
+#### Bug Fixes
+- **(ci)** temporary ignoring integration sessions tests for staging (#696) - (eb0163a) - Max Kalashnikoff | maksy.eth
+- **(ci)** adding submodule secret for providers and integration tests (#695) - (133c674) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(analytics)** ading unhashed address to the identity lookups (#694) - (bcc4dae) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.74.0 - 2024-07-02
 #### Bug Fixes
 - **(one_inch)** using non-checksum address only (#692) - (2c49e18) - Max Kalashnikoff | maksy.eth
