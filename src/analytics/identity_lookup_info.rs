@@ -12,6 +12,7 @@ pub struct IdentityLookupInfo {
     pub timestamp: chrono::NaiveDateTime,
 
     pub address_hash: String,
+    pub address: String,
     pub name_present: bool,
     pub avatar_present: bool,
     pub source: String,
@@ -45,6 +46,7 @@ impl IdentityLookupInfo {
             timestamp: wc::analytics::time::now(),
 
             address_hash: sha256::digest(address.as_ref()),
+            address: format!("{:#x}", address),
             name_present,
             avatar_present,
             source: source.as_str().to_string(),
