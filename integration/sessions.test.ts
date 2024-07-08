@@ -1,8 +1,7 @@
 import { getTestSetup } from './init';
 import { ethers } from "ethers"
-import { canonicalize} from 'json-canonicalize';
-import { ec as EC } from 'elliptic';
-import { SHA256 } from 'crypto-js';
+import { canonicalize } from 'json-canonicalize';
+import { createSign, createPrivateKey } from 'crypto';
 
 describe('Sessions/Permissions', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
@@ -53,7 +52,6 @@ describe('Sessions/Permissions', () => {
     expect(resp.data.onChainValidated).toBe(payload.permission.onChainValidated)
   })
 
-  
   it('update PCI permission context', async () => {
     const context = {
       expiry: 1234567890,
@@ -68,21 +66,24 @@ describe('Sessions/Permissions', () => {
         userOpBuilder: "exampleUserOpBuilder",
       }
     }
-   
-    // Canonize JSON of `context` object and make a keccak256 hash
-    // then sign it using the signing key from the session creation step
+    
+    // Canonicalize context JSON object
     let json_canonicalize = canonicalize(context);
-    let keccak256 = ethers.keccak256(Buffer.from(json_canonicalize));
-    let signature = Buffer.from(keccak256).toString('base64');
-    let ecdsa = new EC('secp256k1');
-    let key = ecdsa.keyFromPrivate(Buffer.from(signing_key, 'base64'));
-    let sig = key.sign(signature);
-    // convert signature to base64 format
-    let signature_base64 = Buffer.from(sig.toDER('hex')).toString('base64');
+    const privateKey = createPrivateKey({
+      key: Buffer.from(signing_key, 'base64'),
+      format: 'der',
+      type: 'sec1',
+    });
+
+    // Create a signature
+    const sign = createSign('SHA256');
+    sign.update(json_canonicalize);
+    sign.end();
+    const signature = sign.sign(privateKey, 'base64');
 
     const payload = {
       pci: new_pci,
-      signature: signature_base64,
+      signature: signature,
       context
     }
     

@@ -9,7 +9,7 @@ use {
     },
     olpc_cjson::CanonicalFormatter,
     once_cell::sync::Lazy,
-    p256::ecdsa::{signature::Verifier, Signature, VerifyingKey},
+    p256::ecdsa::{signature::Verifier, DerSignature, VerifyingKey},
     regex::Regex,
     relay_rpc::auth::cacao::{signature::eip6492::verify_eip6492, CacaoError},
     serde::Serialize,
@@ -151,7 +151,7 @@ pub fn verify_ecdsa_signature(
     )
     .map_err(|e| RpcError::KeyFormatError(e.to_string()))?;
 
-    let signature = Signature::from_slice(
+    let signature = DerSignature::from_bytes(
         &BASE64_STANDARD
             .decode(signature)
             .map_err(|_| RpcError::WrongBase64Format(signature.to_string()))?,
@@ -609,7 +609,7 @@ mod tests {
         let verifying_key_base64 = BASE64_STANDARD.encode(verifying_key.to_sec1_bytes());
 
         // Sign the message
-        let signature: Signature = signing_key.sign(message.as_bytes());
+        let signature: DerSignature = signing_key.sign(message.as_bytes());
         let signature_base64 = BASE64_STANDARD.encode(signature.to_bytes());
 
         // Correct signature and message

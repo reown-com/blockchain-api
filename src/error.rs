@@ -184,6 +184,9 @@ pub enum RpcError {
 
     #[error("Signature format error: {0}")]
     SignatureFormatError(String),
+
+    #[error("ECDSA error: {0}")]
+    EcdsaError(String),
 }
 
 impl IntoResponse for RpcError {

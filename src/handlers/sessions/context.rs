@@ -10,7 +10,6 @@ use {
         response::{IntoResponse, Response},
         Json,
     },
-    base64::prelude::*,
     std::{sync::Arc, time::SystemTime},
     wc::future::FutureExt,
 };
@@ -48,9 +47,9 @@ async fn handler_internal(
 
     // Check the signature
     let json_canonicalized = json_canonicalize(serde_json::to_value(&request_payload.context)?)?;
-    let keccak256_hash = BASE64_STANDARD.encode(ethers::core::utils::keccak256(json_canonicalized));
     verify_ecdsa_signature(
-        &keccak256_hash,
+        &String::from_utf8(json_canonicalized.clone())
+            .map_err(|e| RpcError::InvalidParameter(e.to_string()))?,
         &request_payload.signature,
         &storage_permissions_item.verification_key,
     )?;

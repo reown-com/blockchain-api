@@ -21,8 +21,6 @@
     "@typescript-eslint/eslint-plugin": "^4.16.1",
     "@typescript-eslint/parser": "^4.16.1",
     "axios": "^0.27.2",
-    "crypto-js": "^4.2.0",
-    "elliptic": "^6.5.5",
     "eslint": "^7.21.0",
     "eslint-config-prettier": "^8.1.0",
     "eslint-config-typescript": "^3.0.0",
