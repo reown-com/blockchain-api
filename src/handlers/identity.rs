@@ -136,7 +136,7 @@ async fn handler_internal(
         // Only happens during initial rollout when `resolved_at` is None, so we don't need to go overboard on the cache
         .unwrap_or(TimeDelta::hours(1))
         .num_seconds();
-    let cache_control = format!("max-age={ttl_secs} s-maxage={ttl_secs}");
+    let cache_control = format!("public, max-age={ttl_secs}, s-maxage={ttl_secs}");
 
     Ok(([(CACHE_CONTROL, cache_control)], Json(res)).into_response())
 }
