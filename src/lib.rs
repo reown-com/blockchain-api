@@ -467,7 +467,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_provider::<ZKSyncProvider, ZKSyncConfig>(ZKSyncConfig::default());
     providers.add_provider::<PublicnodeProvider, PublicnodeConfig>(PublicnodeConfig::default());
     providers.add_provider::<QuicknodeProvider, QuicknodeConfig>(QuicknodeConfig::new(
-        config.quicknode_api_token.clone(),
+        config.quicknode_api_tokens.clone(),
     ));
     providers.add_provider::<InfuraProvider, InfuraConfig>(InfuraConfig::new(
         config.infura_project_id.clone(),

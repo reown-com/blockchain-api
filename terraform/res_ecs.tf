@@ -64,7 +64,7 @@ module "ecs" {
   # Providers
   infura_project_id      = var.infura_project_id
   pokt_project_id        = var.pokt_project_id
-  quicknode_api_token    = var.quicknode_api_token
+  quicknode_api_tokens   = var.quicknode_api_tokens
   zerion_api_key         = var.zerion_api_key
   coinbase_api_key       = var.coinbase_api_key
   coinbase_app_id        = var.coinbase_app_id

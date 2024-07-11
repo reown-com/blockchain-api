@@ -18,8 +18,8 @@ use {
 #[derive(Debug)]
 pub struct QuicknodeProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
-    pub api_token: String,
     pub supported_chains: HashMap<String, String>,
+    pub chain_subdomains: HashMap<String, String>,
 }
 
 impl Provider for QuicknodeProvider {
@@ -50,12 +50,20 @@ impl RateLimited for QuicknodeProvider {
 impl RpcProvider for QuicknodeProvider {
     #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
     async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
-        let chain = &self
+        let token = &self
             .supported_chains
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let uri = format!("https://{}.quiknode.pro/{}", chain, self.api_token);
+        // Get the chain subdomain
+        let chain_subdomain =
+            self.chain_subdomains
+                .get(chain_id)
+                .ok_or(RpcError::InvalidConfiguration(format!(
+                    "Quicknode subdomain not found for chainId: {}",
+                    chain_id
+                )))?;
+        let uri = format!("https://{}.quiknode.pro/{}", chain_subdomain, token);
 
         let hyper_request = hyper::http::Request::builder()
             .method(Method::POST)
@@ -97,7 +105,7 @@ impl RpcProviderFactory<QuicknodeConfig> for QuicknodeProvider {
         QuicknodeProvider {
             client: forward_proxy_client,
             supported_chains,
-            api_token: provider_config.api_token.clone(),
+            chain_subdomains: provider_config.chain_subdomains.clone(),
         }
     }
 }
