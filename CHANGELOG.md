@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.77.0 - 2024-07-11
+#### Features
+- **(identity)** enable browser caching (#704) - (c54ecec) - Chris Smith
+
+- - -
+
 ## 0.76.0 - 2024-07-11
 #### Features
 - **(sessions)** implement permissions context update endpoint (#697) - (4f231f6) - Max Kalashnikoff | maksy.eth
