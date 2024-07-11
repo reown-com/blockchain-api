@@ -260,7 +260,7 @@ async fn lookup_identity(
             let res = res.clone();
             // Do not block on cache write.
             tokio::spawn(async move {
-                let cache_ttl = CACHE_TTL.to_std().expect("valid duration");
+                let cache_ttl = CACHE_TTL.to_std().expect("invalid duration");
                 cache
                     .set(&address_with_checksum, &res, Some(cache_ttl))
                     .await
