@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.76.0 - 2024-07-11
+#### Features
+- **(sessions)** implement permissions context update endpoint (#697) - (4f231f6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.75.0 - 2024-07-08
 #### Bug Fixes
 - **(ci)** temporary ignoring integration sessions tests for staging (#696) - (eb0163a) - Max Kalashnikoff | maksy.eth
