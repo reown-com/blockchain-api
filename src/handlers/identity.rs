@@ -14,6 +14,7 @@ use {
         response::{IntoResponse, Response},
         Json,
     },
+    chrono::{DateTime, TimeDelta, Utc},
     core::fmt,
     ethers::{
         abi::Address,
@@ -21,7 +22,7 @@ use {
         types::H160,
         utils::to_checksum,
     },
-    hyper::{body::to_bytes, HeaderMap, StatusCode},
+    hyper::{body::to_bytes, header::CACHE_CONTROL, HeaderMap, StatusCode},
     serde::{de::DeserializeOwned, Deserialize, Serialize},
     std::{
         net::SocketAddr,
@@ -33,6 +34,7 @@ use {
     wc::future::FutureExt,
 };
 
+const CACHE_TTL: TimeDelta = TimeDelta::seconds(60 * 60 * 24);
 const SELF_PROVIDER_ERROR_PREFIX: &str = "SelfProviderError: ";
 const EMPTY_RPC_RESPONSE: &str = "0x";
 pub const ETHEREUM_MAINNET: &str = "eip155:1";
@@ -42,6 +44,10 @@ pub const ETHEREUM_MAINNET: &str = "eip155:1";
 pub struct IdentityResponse {
     name: Option<String>,
     avatar: Option<String>,
+    // Preferred saving the resolved_at time instead of relying on Redis cache TTL because
+    // getting the current TTL requires a second command & round trip to Redis
+    // Optional to support DB migration, can switch to required in the future
+    resolved_at: Option<DateTime<Utc>>,
 }
 
 pub async fn handler(
@@ -124,7 +130,20 @@ async fn handler_internal(
         ));
     }
 
-    Ok(Json(res).into_response())
+    let now = Utc::now();
+    let ttl_secs = res.resolved_at
+        .map(|resolved_at| ttl_from_resolved_at(resolved_at, now))
+        // Only happens during initial rollout when `resolved_at` is None, so we don't need to go overboard on the cache
+        .unwrap_or(TimeDelta::hours(1))
+        .num_seconds();
+    let cache_control = format!("public, max-age={ttl_secs}, s-maxage={ttl_secs}");
+
+    Ok(([(CACHE_CONTROL, cache_control)], Json(res)).into_response())
+}
+
+fn ttl_from_resolved_at(resolved_at: DateTime<Utc>, now: DateTime<Utc>) -> TimeDelta {
+    let expires = resolved_at + CACHE_TTL;
+    (expires - now).max(TimeDelta::zero())
 }
 
 #[derive(Serialize, Clone)]
@@ -239,9 +258,9 @@ async fn lookup_identity(
             debug!("Saving to cache");
             let cache = cache.clone();
             let res = res.clone();
-            let cache_ttl = Duration::from_secs(60 * 60 * 24);
             // Do not block on cache write.
             tokio::spawn(async move {
+                let cache_ttl = CACHE_TTL.to_std().expect("invalid duration");
                 cache
                     .set(&address_with_checksum, &res, Some(cache_ttl))
                     .await
@@ -313,7 +332,11 @@ async fn lookup_identity_rpc(
         None
     };
 
-    Ok(IdentityResponse { name, avatar })
+    Ok(IdentityResponse {
+        name,
+        avatar,
+        resolved_at: Some(Utc::now()),
+    })
 }
 
 #[tracing::instrument(level = "debug")]
@@ -505,5 +528,45 @@ impl JsonRpcClient for SelfProvider {
             )
         })?;
         Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn full_ttl_when_resolved_now() {
+        let now = Utc::now();
+        assert_eq!(ttl_from_resolved_at(now, now), CACHE_TTL);
+    }
+
+    #[test]
+    fn expires_now() {
+        let now = Utc::now();
+        assert_eq!(
+            ttl_from_resolved_at(now - CACHE_TTL, now),
+            TimeDelta::zero()
+        );
+    }
+
+    #[test]
+    fn expires_past() {
+        let now = Utc::now();
+        assert_eq!(
+            ttl_from_resolved_at(now - CACHE_TTL - TimeDelta::days(1), now),
+            TimeDelta::zero()
+        );
+    }
+
+    #[test]
+    fn deserialize_identity_response_with_no_resolved_at() {
+        serde_json::from_value::<IdentityResponse>(json!({
+            "name": "name",
+            "avatar": "avatar"
+        }))
+        .unwrap();
     }
 }
