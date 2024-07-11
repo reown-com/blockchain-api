@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+pub mod context;
 pub mod create;
 pub mod get;
 pub mod list;
@@ -27,10 +28,50 @@ pub struct PermissionItem {
     on_chain_validated: bool,
 }
 
+/// Permissions Context item schema
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PermissionContextItem {
+    pci: String,
+    signature: String,
+    context: PermissionSubContext,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PermissionSubContext {
+    signer: PermissionContextSigner,
+    expiry: usize,
+    signer_data: PermissionSubContextSignerData,
+    factory: String,
+    factory_data: String,
+    permissions_context: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PermissionContextSigner {
+    r#type: String,
+    data: PermissionContextSignerData,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PermissionContextSignerData {
+    ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PermissionSubContextSignerData {
+    user_op_builder: String,
+}
+
 /// Serialized permission item schema to store it in the IRN database
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StoragePermissionsItem {
     permissions: PermissionItem,
+    context: Option<PermissionContextItem>,
     verification_key: String,
 }
