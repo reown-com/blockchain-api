@@ -42,7 +42,7 @@ pub struct PermissionContextItem {
 pub struct PermissionSubContext {
     signer: PermissionContextSigner,
     expiry: usize,
-    signer_data: PermissionContextSignerData,
+    signer_data: PermissionSubContextSignerData,
     factory: String,
     factory_data: String,
     permissions_context: String,
@@ -51,13 +51,19 @@ pub struct PermissionSubContext {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PermissionContextSigner {
-    permission_type: String,
-    ids: Vec<String>,
+    r#type: String,
+    data: PermissionContextSignerData,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PermissionContextSignerData {
+    ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PermissionSubContextSignerData {
     user_op_builder: String,
 }
 

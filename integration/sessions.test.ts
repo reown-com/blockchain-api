@@ -59,8 +59,10 @@ describe('Sessions/Permissions', () => {
       factoryData: "exampleFactoryData",
       permissionsContext: "examplePermissionsContext",
       signer: {
-        permissionType: "exampleType",
-        ids: ["exampleId1", "exampleId2"], 
+        type: "exampleType",
+        data:{
+          ids: ["exampleId1", "exampleId2"]
+        }, 
       },
       signerData:{
         userOpBuilder: "exampleUserOpBuilder",
