@@ -184,7 +184,7 @@ async fn lookup_identity(
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
     let address_with_checksum = to_checksum(&address, None);
-    let cache_record_key = format!("{}-v1", address_with_checksum.clone());
+    let cache_record_key = format!("{}-v1", address_with_checksum);
 
     // Check if we should enable cache control for allow listed Project ID
     // The cache is enabled by default
