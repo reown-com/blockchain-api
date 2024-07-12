@@ -12,8 +12,9 @@ use {
     p256::ecdsa::{signature::Verifier, DerSignature, VerifyingKey},
     regex::Regex,
     relay_rpc::auth::cacao::{signature::eip6492::verify_eip6492, CacaoError},
-    serde::Serialize,
-    serde_json::Value,
+    reqwest::Client,
+    serde::{Deserialize, Serialize},
+    serde_json::{json, Value},
     std::{str::FromStr, sync::Arc},
     strum::IntoEnumIterator,
     strum_macros::{Display, EnumIter, EnumString},
@@ -53,6 +54,23 @@ pub enum CryptoUitlsError {
     AddressChecksum(String),
     #[error("Failed to parse RPC url: {0}")]
     RpcUrlParseError(String),
+}
+
+/// ERC-4337 bundler userOperation schema
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserOperation {
+    pub sender: String,
+    pub nonce: usize,
+    pub init_code: String,
+    pub call_data: String,
+    pub call_gas_limit: usize,
+    pub verification_gas_limit: usize,
+    pub pre_verification_gas: usize,
+    pub max_fee_per_gas: usize,
+    pub max_priority_fee_per_gas: usize,
+    pub paymaster_and_data: String,
+    pub signature: String,
 }
 
 pub fn add_eip191(message: &str) -> String {
@@ -448,6 +466,57 @@ pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u32) -
     let scaling_factor = 10_u64.pow(decimals_usize as u32) as f64;
     let balance_f64 = balance.as_u64() as f64 / scaling_factor;
     balance_f64 * price
+}
+
+/// Function to send UserOperation to the bundler and return receipt
+pub async fn send_user_operation_to_bundler(
+    user_op: &UserOperation,
+    bundler_url: &str,
+    entry_point: &str,
+    simulation_type: &str,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let bundler_client = Client::new();
+
+    // Send the UserOperation to the bundler
+    let response: serde_json::Value = bundler_client
+        .post(bundler_url)
+        .json(&json!({
+            "jsonrpc": "2.0",
+            "method": "eth_sendUserOperation",
+            "params": [user_op, entry_point, {"simulation_type": simulation_type}],
+            "id": 1,
+        }))
+        .send()
+        .await?
+        .json()
+        .await?;
+
+    // Check if there was an error in the response
+    if response.get("error").is_some() {
+        return Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            response["error"].to_string(),
+        )));
+    }
+
+    // Get the transaction hash from the response
+    let tx_hash = response["result"].as_str().ok_or("No result in response")?;
+
+    // Get the transaction receipt
+    let receipt: serde_json::Value = bundler_client
+        .post(bundler_url)
+        .json(&json!({
+            "jsonrpc": "2.0",
+            "method": "eth_getTransactionReceipt",
+            "params": [tx_hash],
+            "id": 1,
+        }))
+        .send()
+        .await?
+        .json()
+        .await?;
+
+    Ok(receipt)
 }
 
 #[cfg(test)]

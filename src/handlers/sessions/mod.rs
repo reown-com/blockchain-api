@@ -1,6 +1,10 @@
-use serde::{Deserialize, Serialize};
+use {
+    crate::utils::crypto::UserOperation,
+    serde::{Deserialize, Serialize},
+};
 
 pub mod context;
+pub mod cosign;
 pub mod create;
 pub mod get;
 pub mod list;
@@ -84,4 +88,12 @@ pub struct StoragePermissionsItem {
 pub struct PermissionRevokeRequest {
     pci: String,
     signature: String,
+}
+
+/// Co-sign request schema
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CoSignRequest {
+    pci: String,
+    user_op: UserOperation,
 }

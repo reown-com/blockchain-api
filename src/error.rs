@@ -1,6 +1,7 @@
 use {
     crate::{
-        project::ProjectDataError, storage::error::StorageError, utils::crypto::CryptoUitlsError,
+        project::ProjectDataError, storage::error::StorageError, utils::crypto::CaipNamespaces,
+        utils::crypto::CryptoUitlsError,
     },
     axum::{response::IntoResponse, Json},
     cerberus::registry::RegistryError,
@@ -152,6 +153,9 @@ pub enum RpcError {
     #[error("Unsupported coin type: {0}")]
     UnsupportedCoinType(u32),
 
+    #[error("Unsupported namespace: {0}")]
+    UnsupportedNamespace(CaipNamespaces),
+
     #[error("Unsupported name attribute")]
     UnsupportedNameAttribute,
 
@@ -187,6 +191,9 @@ pub enum RpcError {
 
     #[error("ECDSA error: {0}")]
     EcdsaError(String),
+
+    #[error("Bundler error: {0}")]
+    BundlerError(String),
 }
 
 impl IntoResponse for RpcError {
@@ -323,6 +330,14 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+                Self::UnsupportedNamespace(e) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(new_error_response(
+                        "address".to_string(),
+                        format!("Unsupported namespace: {}", e),
+                    )),
+                )
+                    .into_response(),
             Self::UnsupportedNameAttribute => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
