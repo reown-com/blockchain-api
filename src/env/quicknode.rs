@@ -13,9 +13,11 @@ pub struct QuicknodeConfig {
 
 impl QuicknodeConfig {
     pub fn new(api_tokens_json: String) -> Self {
+        let (supported_chains, chain_subdomains) =
+            extract_supported_chains_and_subdomains(api_tokens_json);
         Self {
-            supported_chains: extract_supported_chains(api_tokens_json),
-            chain_subdomains: default_chain_subdomains(),
+            supported_chains,
+            chain_subdomains,
         }
     }
 }
@@ -34,7 +36,9 @@ impl ProviderConfig for QuicknodeConfig {
     }
 }
 
-fn extract_supported_chains(access_tokens_json: String) -> HashMap<String, (String, Weight)> {
+fn extract_supported_chains_and_subdomains(
+    access_tokens_json: String,
+) -> (HashMap<String, (String, Weight)>, HashMap<String, String>) {
     let access_tokens: HashMap<String, String> = match serde_json::from_str(&access_tokens_json) {
         Ok(tokens) => tokens,
         Err(_) => {
@@ -42,21 +46,34 @@ fn extract_supported_chains(access_tokens_json: String) -> HashMap<String, (Stri
                 "Failed to parse JSON with API access tokens for QuickNode provider. Using empty \
                  tokens."
             );
-            return HashMap::new();
+            return (HashMap::new(), HashMap::new());
         }
     };
 
     // Keep in-sync with SUPPORTED_CHAINS.md
+    // Supported chains list format: chain ID, subdomain, priority
     let supported_chain_ids = HashMap::from([
-        ("eip155:324", Priority::High),
-        ("solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", Priority::Normal),
-        ("solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1", Priority::Normal),
-        ("solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z", Priority::Normal),
+        (
+            "eip155:324",
+            ("snowy-chaotic-hill.zksync-mainnet", Priority::High),
+        ),
+        (
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            ("indulgent-thrumming-bush.solana-mainnet", Priority::Normal),
+        ),
+        (
+            "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
+            ("wild-palpable-rain.solana-devnet", Priority::Normal),
+        ),
+        (
+            "solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z",
+            ("winter-flashy-glade.solana-testnet", Priority::Normal),
+        ),
     ]);
 
     let access_tokens_with_weights: HashMap<String, (String, Weight)> = supported_chain_ids
         .iter()
-        .filter_map(|(&key, weight)| {
+        .filter_map(|(&key, (_, weight))| {
             if let Some(token) = access_tokens.get(key) {
                 match Weight::new(*weight) {
                     Ok(weight) => Some((key.to_string(), (token.to_string(), weight))),
@@ -77,31 +94,10 @@ fn extract_supported_chains(access_tokens_json: String) -> HashMap<String, (Stri
             }
         })
         .collect();
+    let chain_ids_subdomains: HashMap<String, String> = supported_chain_ids
+        .iter()
+        .map(|(&key, (subdomain, _))| (key.to_string(), subdomain.to_string()))
+        .collect();
 
-    access_tokens_with_weights
-}
-
-fn default_chain_subdomains() -> HashMap<String, String> {
-    HashMap::from([
-        // zkSync
-        (
-            "eip155:324".into(),
-            "snowy-chaotic-hill.zksync-mainnet".into(),
-        ),
-        // Solana Mainnet
-        (
-            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp".into(),
-            "indulgent-thrumming-bush.solana-mainnet".into(),
-        ),
-        // Solana Devnet
-        (
-            "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1".into(),
-            "wild-palpable-rain.solana-devnet".into(),
-        ),
-        // Solana Testnet
-        (
-            "solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z".into(),
-            "winter-flashy-glade.solana-testnet".into(),
-        ),
-    ])
+    (access_tokens_with_weights, chain_ids_subdomains)
 }
