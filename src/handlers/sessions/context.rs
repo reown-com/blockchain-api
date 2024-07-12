@@ -3,6 +3,7 @@ use {
     crate::{
         error::RpcError,
         state::AppState,
+        storage::irn::OperationType,
         utils::crypto::{disassemble_caip10, json_canonicalize, verify_ecdsa_signature},
     },
     axum::{
@@ -41,7 +42,9 @@ async fn handler_internal(
         .hget(address.clone(), request_payload.pci.clone())
         .await?
         .ok_or_else(|| RpcError::PermissionNotFound(request_payload.pci.clone()))?;
-    state.metrics.add_irn_latency(irn_call_start, "hget".into());
+    state
+        .metrics
+        .add_irn_latency(irn_call_start, OperationType::Hget.into());
     let mut storage_permissions_item =
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
 
@@ -66,7 +69,9 @@ async fn handler_internal(
             serde_json::to_string(&storage_permissions_item)?.into(),
         )
         .await?;
-    state.metrics.add_irn_latency(irn_call_start, "hset".into());
+    state
+        .metrics
+        .add_irn_latency(irn_call_start, OperationType::Hset.into());
 
     Ok(Json(storage_permissions_item).into_response())
 }

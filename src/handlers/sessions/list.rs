@@ -1,6 +1,9 @@
 use {
     super::super::HANDLER_TASK_METRICS,
-    crate::{error::RpcError, state::AppState, utils::crypto::disassemble_caip10},
+    crate::{
+        error::RpcError, state::AppState, storage::irn::OperationType,
+        utils::crypto::disassemble_caip10,
+    },
     axum::{
         extract::{Path, State},
         response::{IntoResponse, Response},
@@ -40,7 +43,7 @@ async fn handler_internal(
     let pci = irn_client.hfields(address).await?;
     state
         .metrics
-        .add_irn_latency(irn_call_start, "hfields".into());
+        .add_irn_latency(irn_call_start, OperationType::Hfields.into());
     let response = ListPermissionResponse { pci };
 
     Ok(Json(response).into_response())

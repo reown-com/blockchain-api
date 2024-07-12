@@ -15,6 +15,32 @@ const CONNECTION_TIMEOUT: Duration = Duration::from_secs(3);
 const RECORDS_TTL: Duration = Duration::from_secs(60 * 60 * 24 * 30); // 30 days
 const UDP_SOCKET_COUNT: usize = 1;
 
+/// IRN storage operation type
+#[derive(Debug)]
+pub enum OperationType {
+    Hset,
+    Hget,
+    Hfields,
+    Hdel,
+}
+
+impl OperationType {
+    fn as_str(&self) -> &'static str {
+        match self {
+            OperationType::Hset => "hset",
+            OperationType::Hget => "hget",
+            OperationType::Hfields => "hfields",
+            OperationType::Hdel => "hdel",
+        }
+    }
+}
+
+impl From<OperationType> for String {
+    fn from(value: OperationType) -> Self {
+        value.as_str().to_string()
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
 pub struct Config {
     pub node: Option<String>,

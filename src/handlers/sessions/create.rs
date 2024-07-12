@@ -1,6 +1,9 @@
 use {
     super::{super::HANDLER_TASK_METRICS, NewPermissionPayload, StoragePermissionsItem},
-    crate::{error::RpcError, state::AppState, utils::crypto::disassemble_caip10},
+    crate::{
+        error::RpcError, state::AppState, storage::irn::OperationType,
+        utils::crypto::disassemble_caip10,
+    },
     axum::{
         extract::{Path, State},
         response::{IntoResponse, Response},
@@ -81,7 +84,9 @@ async fn handler_internal(
             serde_json::to_string(&storage_permissions_item)?.into(),
         )
         .await?;
-    state.metrics.add_irn_latency(irn_call_start, "hset".into());
+    state
+        .metrics
+        .add_irn_latency(irn_call_start, OperationType::Hset.into());
 
     let response = NewPermissionResponse {
         pci,

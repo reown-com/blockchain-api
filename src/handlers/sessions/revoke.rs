@@ -3,6 +3,7 @@ use {
     crate::{
         error::RpcError,
         state::AppState,
+        storage::irn::OperationType,
         utils::crypto::{disassemble_caip10, verify_ecdsa_signature},
     },
     axum::{
@@ -41,7 +42,9 @@ async fn handler_internal(
         .hget(address.clone(), request_payload.pci.clone())
         .await?
         .ok_or_else(|| RpcError::PermissionNotFound(request_payload.pci.clone()))?;
-    state.metrics.add_irn_latency(irn_call_start, "hget".into());
+    state
+        .metrics
+        .add_irn_latency(irn_call_start, OperationType::Hget.into());
     let storage_permissions_item =
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
 
@@ -55,7 +58,9 @@ async fn handler_internal(
     // Remove the session/permission item from the IRN
     let irn_call_start = SystemTime::now();
     irn_client.hdel(address, request_payload.pci).await?;
-    state.metrics.add_irn_latency(irn_call_start, "hdel".into());
+    state
+        .metrics
+        .add_irn_latency(irn_call_start, OperationType::Hdel.into());
 
     Ok(Response::default())
 }
