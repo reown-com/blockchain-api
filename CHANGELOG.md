@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.78.0 - 2024-07-12
+#### Features
+- **(providers)** adding Solana devnet and testnet to supported chains (#703) - (eecde89) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.77.1 - 2024-07-12
 #### Bug Fixes
 - **(identity)** adding version to the cache key format (#705) - (b86bb3d) - Max Kalashnikoff | maksy.eth
