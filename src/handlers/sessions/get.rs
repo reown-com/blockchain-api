@@ -1,6 +1,9 @@
 use {
     super::{super::HANDLER_TASK_METRICS, GetPermissionsRequest, StoragePermissionsItem},
-    crate::{error::RpcError, state::AppState, utils::crypto::disassemble_caip10},
+    crate::{
+        error::RpcError, state::AppState, storage::irn::OperationType,
+        utils::crypto::disassemble_caip10,
+    },
     axum::{
         extract::{Path, State},
         response::{IntoResponse, Response},
@@ -34,7 +37,9 @@ async fn handler_internal(
         .hget(request.address.clone(), request.pci.clone())
         .await?
         .ok_or_else(|| RpcError::PermissionNotFound(request.pci))?;
-    state.metrics.add_irn_latency(irn_call_start, "hget".into());
+    state
+        .metrics
+        .add_irn_latency(irn_call_start, OperationType::Hget);
     let storage_permissions_item =
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
 

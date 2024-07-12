@@ -3,6 +3,7 @@ use {
         database::helpers::get_account_names_stats,
         handlers::identity::IdentityLookupSource,
         providers::{ProviderKind, RpcProvider},
+        storage::irn::OperationType,
     },
     hyper::http,
     sqlx::PgPool,
@@ -537,14 +538,14 @@ impl Metrics {
             .record(&otel::Context::new(), entry, &[]);
     }
 
-    pub fn add_irn_latency(&self, start: SystemTime, operation: String) {
+    pub fn add_irn_latency(&self, start: SystemTime, operation: OperationType) {
         self.irn_latency_tracker.record(
             &otel::Context::new(),
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
                 .as_secs_f64(),
-            &[otel::KeyValue::new("operation", operation)],
+            &[otel::KeyValue::new("operation", operation.as_str())],
         );
     }
 

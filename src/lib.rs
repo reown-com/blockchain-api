@@ -339,6 +339,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/v1/sessions/:address", get(handlers::sessions::list::handler))
         .route("/v1/sessions/:address/:pci", get(handlers::sessions::get::handler))
         .route("/v1/sessions/:address/context", post(handlers::sessions::context::handler))
+        .route("/v1/sessions/:address/revoke", post(handlers::sessions::revoke::handler))
         // Health
         .route("/health", get(handlers::health::handler))
         .route_layer(tracing_and_metrics_layer)

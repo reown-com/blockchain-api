@@ -15,7 +15,9 @@ describe('Sessions/Permissions', () => {
       onChainValidated: false
     }
   }
+  // New session PCI
   let new_pci: string;
+  // New session signing (private) key
   let signing_key: string;
   
   it('create new session', async () => {
@@ -94,5 +96,61 @@ describe('Sessions/Permissions', () => {
       payload
     )
     expect(resp.status).toBe(200)
+  })
+
+  it('revoke PCI permission', async () => {
+    // Check PCI is exists
+    let resp = await httpClient.get(
+      `${baseUrl}/v1/sessions/${address}`
+    )
+    expect(resp.status).toBe(200)
+    expect(resp.data.pci.length).toBe(1)
+    expect(resp.data.pci[0]).toBe(new_pci)
+
+    // Create a signature
+    const privateKey = createPrivateKey({
+      key: Buffer.from(signing_key, 'base64'),
+      format: 'der',
+      type: 'sec1',
+    });
+
+    // Create a bad signature and try to revoke PCI
+    let bad_signature = createSign('SHA256');
+    bad_signature.update('bad_pci');
+    bad_signature.end();
+    let signature = bad_signature.sign(privateKey, 'base64');
+    let payload = {
+      pci: new_pci,
+      signature,
+    }
+    resp = await httpClient.post(
+      `${baseUrl}/v1/sessions/${address}/revoke`,
+      payload
+    )
+    expect(resp.status).toBe(401)
+
+    // Create a good signature and try to revoke PCI
+    const good_signature = createSign('SHA256');
+    good_signature.update(new_pci);
+    good_signature.end();
+    signature = good_signature.sign(privateKey, 'base64');
+    payload = {
+      pci: new_pci,
+      signature,
+    }
+    
+    // Revoke PCI
+    resp = await httpClient.post(
+      `${baseUrl}/v1/sessions/${address}/revoke`,
+      payload
+    )
+    expect(resp.status).toBe(200)
+
+    // check PCI is revoked
+    resp = await httpClient.get(
+      `${baseUrl}/v1/sessions/${address}`
+    )
+    expect(resp.status).toBe(200)
+    expect(resp.data.pci.length).toBe(0)
   })
 })
