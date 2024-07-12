@@ -184,6 +184,7 @@ async fn lookup_identity(
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
     let address_with_checksum = to_checksum(&address, None);
+    let cache_record_key = format!("{}-v1", address_with_checksum.clone());
 
     // Check if we should enable cache control for allow listed Project ID
     // The cache is enabled by default
@@ -210,7 +211,7 @@ async fn lookup_identity(
         if let Some(cache) = &state.identity_cache {
             debug!("Checking cache for identity");
             let cache_start = SystemTime::now();
-            let value = cache.get(&address_with_checksum).await?;
+            let value = cache.get(&cache_record_key).await?;
             state.metrics.add_identity_lookup_cache_latency(cache_start);
             if let Some(response) = value {
                 return Ok((IdentityLookupSource::Cache, response));
@@ -262,11 +263,11 @@ async fn lookup_identity(
             tokio::spawn(async move {
                 let cache_ttl = CACHE_TTL.to_std().expect("invalid duration");
                 cache
-                    .set(&address_with_checksum, &res, Some(cache_ttl))
+                    .set(&cache_record_key, &res, Some(cache_ttl))
                     .await
                     .tap_err(|err| {
                         warn!(
-                            "failed to cache identity lookup (cache_key:{address_with_checksum}): \
+                            "failed to cache identity lookup (cache_key:{cache_record_key}): \
                              {err:?}"
                         )
                     })
