@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.80.0 - 2024-07-12
+#### Features
+- **(sessions)** storing the signing key during permission creation (#701) - (e80de0d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.79.0 - 2024-07-12
 #### Features
 - **(sessions)** implementing permission revoking (#699) - (b502eb6) - Max Kalashnikoff | maksy.eth
