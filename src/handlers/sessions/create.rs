@@ -74,6 +74,7 @@ async fn handler_internal(
         permissions: request_payload.permission,
         context: None,
         verification_key: verifying_key_base64,
+        signing_key: signing_key_der_base64.clone(),
     };
 
     let irn_call_start = SystemTime::now();
