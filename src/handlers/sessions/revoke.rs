@@ -12,6 +12,7 @@ use {
         Json,
     },
     std::{sync::Arc, time::SystemTime},
+    tracing::warn,
     wc::future::FutureExt,
 };
 
@@ -38,13 +39,23 @@ async fn handler_internal(
 
     // Get the PCI object from the IRN
     let irn_call_start = SystemTime::now();
-    let storage_permissions_item = irn_client
+    let irn_client_result = irn_client
         .hget(address.clone(), request_payload.pci.clone())
-        .await?
-        .ok_or_else(|| RpcError::PermissionNotFound(request_payload.pci.clone()))?;
+        .await?;
     state
         .metrics
         .add_irn_latency(irn_call_start, OperationType::Hget.into());
+    let storage_permissions_item = match irn_client_result {
+        Some(item) => item,
+        // Return Success if the item is not found for idempotency
+        None => {
+            warn!(
+                "Permission item not found in the storage for address: {} and PCI: {}",
+                address, request_payload.pci
+            );
+            return Ok(Response::default());
+        }
+    };
     let storage_permissions_item =
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
 
