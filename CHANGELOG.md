@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.79.0 - 2024-07-12
+#### Features
+- **(sessions)** implementing permission revoking (#699) - (b502eb6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.78.0 - 2024-07-12
 #### Features
 - **(providers)** adding Solana devnet and testnet to supported chains (#703) - (eecde89) - Max Kalashnikoff | maksy.eth
