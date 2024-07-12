@@ -92,6 +92,8 @@ pub struct ProvidersConfig {
     pub one_inch_referrer: Option<String>,
     /// GetBlock provider access tokens in JSON format
     pub getblock_access_tokens: Option<String>,
+    /// Biconomy bundler API key
+    pub biconomy_bundler_token: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

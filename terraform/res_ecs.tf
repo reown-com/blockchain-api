@@ -71,6 +71,7 @@ module "ecs" {
   one_inch_api_key       = var.one_inch_api_key
   one_inch_referrer      = var.one_inch_referrer
   getblock_access_tokens = var.getblock_access_tokens
+  biconomy_bundler_token = var.biconomy_bundler_token
 
   # Project Registry
   registry_api_endpoint   = var.registry_api_endpoint
