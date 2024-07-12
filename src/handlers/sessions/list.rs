@@ -43,7 +43,7 @@ async fn handler_internal(
     let pci = irn_client.hfields(address).await?;
     state
         .metrics
-        .add_irn_latency(irn_call_start, OperationType::Hfields.into());
+        .add_irn_latency(irn_call_start, OperationType::Hfields);
     let response = ListPermissionResponse { pci };
 
     Ok(Json(response).into_response())

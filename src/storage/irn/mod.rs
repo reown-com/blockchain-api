@@ -25,7 +25,7 @@ pub enum OperationType {
 }
 
 impl OperationType {
-    fn as_str(&self) -> &'static str {
+    pub fn as_str(&self) -> &'static str {
         match self {
             OperationType::Hset => "hset",
             OperationType::Hget => "hget",

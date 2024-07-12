@@ -86,7 +86,7 @@ async fn handler_internal(
         .await?;
     state
         .metrics
-        .add_irn_latency(irn_call_start, OperationType::Hset.into());
+        .add_irn_latency(irn_call_start, OperationType::Hset);
 
     let response = NewPermissionResponse {
         pci,

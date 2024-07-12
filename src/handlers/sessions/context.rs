@@ -44,7 +44,7 @@ async fn handler_internal(
         .ok_or_else(|| RpcError::PermissionNotFound(request_payload.pci.clone()))?;
     state
         .metrics
-        .add_irn_latency(irn_call_start, OperationType::Hget.into());
+        .add_irn_latency(irn_call_start, OperationType::Hget);
     let mut storage_permissions_item =
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
 
@@ -71,7 +71,7 @@ async fn handler_internal(
         .await?;
     state
         .metrics
-        .add_irn_latency(irn_call_start, OperationType::Hset.into());
+        .add_irn_latency(irn_call_start, OperationType::Hset);
 
     Ok(Json(storage_permissions_item).into_response())
 }

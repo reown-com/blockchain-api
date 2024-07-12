@@ -44,7 +44,7 @@ async fn handler_internal(
         .await?;
     state
         .metrics
-        .add_irn_latency(irn_call_start, OperationType::Hget.into());
+        .add_irn_latency(irn_call_start, OperationType::Hget);
     let storage_permissions_item = match irn_client_result {
         Some(item) => item,
         // Return Success if the item is not found for idempotency
@@ -71,7 +71,7 @@ async fn handler_internal(
     irn_client.hdel(address, request_payload.pci).await?;
     state
         .metrics
-        .add_irn_latency(irn_call_start, OperationType::Hdel.into());
+        .add_irn_latency(irn_call_start, OperationType::Hdel);
 
     Ok(Response::default())
 }

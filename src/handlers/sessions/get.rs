@@ -39,7 +39,7 @@ async fn handler_internal(
         .ok_or_else(|| RpcError::PermissionNotFound(request.pci))?;
     state
         .metrics
-        .add_irn_latency(irn_call_start, OperationType::Hget.into());
+        .add_irn_latency(irn_call_start, OperationType::Hget);
     let storage_permissions_item =
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
 
