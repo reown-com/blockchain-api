@@ -97,8 +97,8 @@ variable "zerion_api_key" {
   sensitive   = true
 }
 
-variable "quicknode_api_token" {
-  description = "The API key for Quicknode"
+variable "quicknode_api_tokens" {
+  description = "API keys for Quicknode in JSON format"
   type        = string
   sensitive   = true
 }

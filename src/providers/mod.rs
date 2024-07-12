@@ -83,7 +83,7 @@ pub struct ProvidersConfig {
 
     pub infura_project_id: String,
     pub pokt_project_id: String,
-    pub quicknode_api_token: String,
+    pub quicknode_api_tokens: String,
 
     pub zerion_api_key: Option<String>,
     pub coinbase_api_key: Option<String>,

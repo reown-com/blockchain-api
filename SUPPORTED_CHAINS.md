@@ -36,6 +36,8 @@ Chain name with associated `chainId` query param to use.
 | Aurora Testnet <sup>[1](#footnote1)</sup>                | eip155:1313161555    |
 | Near Mainnet                                             | near:mainnet         |
 | Solana Mainnet                                           | solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp |
+| Solana Devnet                                            | solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1 |
+| Solana Testnet                                           | solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z |
 
 <a id="footnote1"><sup>1</sup></a> The availability of this chain in our RPC is not guaranteed.
 
