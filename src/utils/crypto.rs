@@ -56,6 +56,15 @@ pub enum CryptoUitlsError {
     RpcUrlParseError(String),
 }
 
+/// JSON-RPC request schema
+#[derive(Serialize)]
+pub struct JsonRpcRequest<T: Serialize + Send + Sync> {
+    pub id: String,
+    pub jsonrpc: String,
+    pub method: String,
+    pub params: T,
+}
+
 /// ERC-4337 bundler userOperation schema
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -472,14 +481,15 @@ pub async fn send_user_operation_to_bundler(
     let bundler_client = Client::new();
 
     // Send the UserOperation to the bundler
+    let jsonrpc_send_userop_request = JsonRpcRequest {
+        id: "1".to_string(),
+        jsonrpc: "2.0".to_string(),
+        method: "eth_sendUserOperation".to_string(),
+        params: json!([user_op, entry_point, {"simulation_type": simulation_type}]),
+    };
     let response: serde_json::Value = bundler_client
         .post(bundler_url)
-        .json(&json!({
-            "jsonrpc": "2.0",
-            "method": "eth_sendUserOperation",
-            "params": [user_op, entry_point, {"simulation_type": simulation_type}],
-            "id": 1,
-        }))
+        .json(&jsonrpc_send_userop_request)
         .send()
         .await?
         .json()
@@ -497,14 +507,15 @@ pub async fn send_user_operation_to_bundler(
     let tx_hash = response["result"].as_str().ok_or("No result in response")?;
 
     // Get the transaction receipt
+    let jsonrpc_get_receipt_request = JsonRpcRequest {
+        id: "1".to_string(),
+        jsonrpc: "2.0".to_string(),
+        method: "eth_getTransactionReceipt".to_string(),
+        params: vec![tx_hash],
+    };
     let receipt: serde_json::Value = bundler_client
         .post(bundler_url)
-        .json(&json!({
-            "jsonrpc": "2.0",
-            "method": "eth_getTransactionReceipt",
-            "params": [tx_hash],
-            "id": 1,
-        }))
+        .json(&jsonrpc_get_receipt_request)
         .send()
         .await?
         .json()
