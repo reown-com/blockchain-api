@@ -61,6 +61,8 @@ The following environment variables are expected to be passed:
 If you want to run certain test from the suite you can pass `-t` with the name of the
 test or test suite to run.
 
+For passing `Exact provider request` and disabled cache tests you need to provide a valid `RPC_PROXY_TESTING_PROJECT_ID`.
+
 ### Docker
 
 ```console
