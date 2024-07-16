@@ -50,6 +50,19 @@ curl -X POST "http://localhost:3000/v1?chainId=eip155:1&projectId=someid" --data
 just devloop
 ```
 
+### Manual integrations test run
+
+You can run manual integration tests by invoking the `yarn integration` command. 
+The following environment variables are expected to be passed:
+
+* `RPC_URL` - URL of the server to test. Use `http://localhost:3000` for the local testing.
+* `PROJECT_ID` - Unique project identifier.
+
+If you want to run certain test from the suite you can pass `-t` with the name of the
+test or test suite to run.
+
+For passing `Exact provider request` and disabled cache tests you need to provide a valid `RPC_PROXY_TESTING_PROJECT_ID`.
+
 ### Docker
 
 ```console
