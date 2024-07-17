@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.81.0 - 2024-07-17
+#### Bug Fixes
+- **(sessions)** changing to use secp256k1, removing signatures from context update and revoking (#709) - (6dc2636) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(readme)** adding manual integration tests run description (#706) - (ec43864) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.80.0 - 2024-07-12
 #### Features
 - **(sessions)** storing the signing key during permission creation (#701) - (e80de0d) - Max Kalashnikoff | maksy.eth
