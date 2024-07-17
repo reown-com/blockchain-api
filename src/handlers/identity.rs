@@ -411,14 +411,6 @@ impl fmt::Debug for SelfProvider {
     }
 }
 
-#[derive(Serialize)]
-struct JsonRpcRequest<T: Serialize + Send + Sync> {
-    id: String,
-    jsonrpc: String,
-    method: String,
-    params: T,
-}
-
 #[derive(Debug, thiserror::Error)]
 pub enum SelfProviderError {
     #[error("RpcError: {0:?}")]
@@ -482,10 +474,10 @@ impl JsonRpcClient for SelfProvider {
             self.connect_info,
             self.query.clone(),
             self.headers.clone(),
-            serde_json::to_vec(&JsonRpcRequest {
+            serde_json::to_vec(&crypto::JsonRpcRequest {
                 id,
-                jsonrpc: "2.0".to_string(),
-                method: method.to_owned(),
+                jsonrpc: crypto::JSON_RPC_VERSION.clone(),
+                method: method.to_owned().into(),
                 params,
             })
             .expect("Should be able to serialize a JsonRpcRequest")

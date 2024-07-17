@@ -1,5 +1,5 @@
 use {
-    crate::{analytics::MessageSource, error::RpcError},
+    crate::{analytics::MessageSource, error::RpcError, utils::generate_random_string},
     alloy_primitives::Address,
     base64::prelude::*,
     ethers::{
@@ -12,6 +12,8 @@ use {
     once_cell::sync::Lazy,
     regex::Regex,
     relay_rpc::auth::cacao::{signature::eip6492::verify_eip6492, CacaoError},
+    reqwest::Client,
+    serde::{Deserialize, Serialize},
     std::{str::FromStr, sync::Arc},
     strum::IntoEnumIterator,
     strum_macros::{Display, EnumIter, EnumString},
@@ -26,6 +28,18 @@ static CAIP_CHAIN_ID_REGEX: Lazy<Regex> = Lazy::new(|| {
 static CAIP_ADDRESS_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"[-a-zA-Z0-9]{1,63}").expect("Failed to initialize regexp for the address format")
 });
+
+pub const JSON_RPC_VERSION_STR: &str = "2.0";
+pub static JSON_RPC_VERSION: once_cell::sync::Lazy<Arc<str>> =
+    once_cell::sync::Lazy::new(|| Arc::from(JSON_RPC_VERSION_STR));
+
+pub const JSON_RPC_BUNDLER_METHOD_STR: &str = "eth_sendUserOperation";
+pub static JSON_RPC_BUNDLER_METHOD: once_cell::sync::Lazy<Arc<str>> =
+    once_cell::sync::Lazy::new(|| Arc::from(JSON_RPC_BUNDLER_METHOD_STR));
+
+pub const JSON_RPC_GET_RECEIPT_METHOD_STR: &str = "eth_getTransactionReceipt";
+pub static JSON_RPC_GET_RECEIPT_METHOD: once_cell::sync::Lazy<Arc<str>> =
+    once_cell::sync::Lazy::new(|| Arc::from(JSON_RPC_GET_RECEIPT_METHOD_STR));
 
 #[derive(thiserror::Error, Debug)]
 pub enum CryptoUitlsError {
@@ -51,6 +65,50 @@ pub enum CryptoUitlsError {
     AddressChecksum(String),
     #[error("Failed to parse RPC url: {0}")]
     RpcUrlParseError(String),
+    #[error("HTTP request failed: {0}")]
+    HttpRequest(#[from] reqwest::Error),
+    #[error("No result JSON-RPC call response")]
+    NoResultInRpcResponse,
+    #[error("Error in JSON-RPC call response: {0}")]
+    RpcResponseError(String),
+}
+
+/// JSON-RPC request schema
+#[derive(Serialize)]
+pub struct JsonRpcRequest<T: Serialize + Send + Sync> {
+    pub id: String,
+    pub jsonrpc: Arc<str>,
+    pub method: Arc<str>,
+    pub params: T,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct BundlerJsonRpcParams {
+    user_op: UserOperation,
+    entry_point: String,
+    simulation_type: BundlerSimulationType,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct BundlerSimulationType {
+    simulation_type: String,
+}
+
+/// ERC-4337 bundler userOperation schema
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserOperation {
+    pub sender: String,
+    pub nonce: usize,
+    pub init_code: String,
+    pub call_data: String,
+    pub call_gas_limit: usize,
+    pub verification_gas_limit: usize,
+    pub pre_verification_gas: usize,
+    pub max_fee_per_gas: usize,
+    pub max_priority_fee_per_gas: usize,
+    pub paymaster_and_data: String,
+    pub signature: String,
 }
 
 pub fn add_eip191(message: &str) -> String {
@@ -440,6 +498,63 @@ pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u32) -
     let scaling_factor = 10_u64.pow(decimals_usize as u32) as f64;
     let balance_f64 = balance.as_u64() as f64 / scaling_factor;
     balance_f64 * price
+}
+
+/// Function to send UserOperation to the bundler and return receipt
+pub async fn send_user_operation_to_bundler(
+    user_op: &UserOperation,
+    bundler_url: &str,
+    entry_point: &str,
+    simulation_type: &str,
+    http_client: &Client,
+) -> Result<serde_json::Value, CryptoUitlsError> {
+    // Send the UserOperation to the bundler
+    let jsonrpc_send_userop_request = JsonRpcRequest {
+        id: generate_random_string(10),
+        jsonrpc: JSON_RPC_VERSION.clone(),
+        method: JSON_RPC_BUNDLER_METHOD.clone(),
+        params: vec![BundlerJsonRpcParams {
+            user_op: user_op.clone(),
+            entry_point: entry_point.into(),
+            simulation_type: BundlerSimulationType {
+                simulation_type: simulation_type.into(),
+            },
+        }],
+    };
+    let response: serde_json::Value = http_client
+        .post(bundler_url)
+        .json(&jsonrpc_send_userop_request)
+        .send()
+        .await?
+        .json()
+        .await?;
+
+    // Check if there was an error in the response
+    if let Some(error) = response.get("error") {
+        return Err(CryptoUitlsError::RpcResponseError(error.to_string()));
+    }
+
+    // Get the transaction hash from the response
+    let tx_hash = response
+        .get("result")
+        .ok_or(CryptoUitlsError::NoResultInRpcResponse)?;
+
+    // Get the transaction receipt
+    let jsonrpc_get_receipt_request = JsonRpcRequest {
+        id: generate_random_string(10),
+        jsonrpc: JSON_RPC_VERSION.clone(),
+        method: JSON_RPC_GET_RECEIPT_METHOD.clone(),
+        params: vec![tx_hash],
+    };
+    let receipt: serde_json::Value = http_client
+        .post(bundler_url)
+        .json(&jsonrpc_get_receipt_request)
+        .send()
+        .await?
+        .json()
+        .await?;
+
+    Ok(receipt)
 }
 
 #[cfg(test)]

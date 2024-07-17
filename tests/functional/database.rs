@@ -1,23 +1,34 @@
 use {
-    crate::utils::{generate_random_string, get_postgres_pool},
-    rpc_proxy::database::{
-        helpers::{
-            delete_address, delete_name, get_account_names_stats, get_addresses_by_name, get_name,
-            get_name_and_addresses_by_name, get_names_by_address,
-            get_names_by_address_and_namespace, insert_name, insert_or_update_address,
-            update_name_attributes,
+    crate::utils::get_postgres_pool,
+    rpc_proxy::{
+        database::{
+            helpers::{
+                delete_address, delete_name, get_account_names_stats, get_addresses_by_name,
+                get_name, get_name_and_addresses_by_name, get_names_by_address,
+                get_names_by_address_and_namespace, insert_name, insert_or_update_address,
+                update_name_attributes,
+            },
+            types,
         },
-        types,
+        utils::generate_random_string,
     },
     std::collections::HashMap,
 };
+
+fn generate_random_name() -> String {
+    format!("{}.connect.id", generate_random_string(10).to_lowercase())
+}
+
+fn generate_random_address() -> String {
+    format!("0x{}", generate_random_string(16).to_lowercase())
+}
 
 #[tokio::test]
 async fn insert_and_get_name_by_name() {
     let pg_pool = get_postgres_pool().await;
 
-    let name = format!("{}.connect.id", generate_random_string(10));
-    let address = format!("0x{}", generate_random_string(16));
+    let name = generate_random_name();
+    let address = generate_random_address();
     let chain_id = 1;
     let addresses = HashMap::from([(
         chain_id,
@@ -71,8 +82,8 @@ async fn insert_and_get_name_by_name() {
 async fn insert_and_get_names_by_address() {
     let pg_pool = get_postgres_pool().await;
 
-    let name = format!("{}.connect.id", generate_random_string(10));
-    let address = format!("0x{}", generate_random_string(16));
+    let name = generate_random_name();
+    let address = generate_random_address();
     let chain_id = 1;
     let addresses = HashMap::from([(
         chain_id,
@@ -110,8 +121,8 @@ async fn insert_and_get_names_by_address() {
 async fn insert_and_get_names_by_address_and_namespace() {
     let pg_pool = get_postgres_pool().await;
 
-    let name = format!("{}.connect.id", generate_random_string(10));
-    let address = format!("0x{}", generate_random_string(16));
+    let name = generate_random_name();
+    let address = generate_random_address();
     let namespace = types::SupportedNamespaces::Eip155;
     let chain_id = 1;
     let addresses = HashMap::from([(
@@ -150,8 +161,8 @@ async fn insert_and_get_names_by_address_and_namespace() {
 async fn insert_and_get_name_and_addresses() {
     let pg_pool = get_postgres_pool().await;
 
-    let name = format!("{}.connect.id", generate_random_string(10));
-    let address = format!("0x{}", generate_random_string(16));
+    let name = generate_random_name();
+    let address = generate_random_address();
     let namespace = types::SupportedNamespaces::Eip155;
     let expected_ensip11_coin_type = 60;
     let addresses = HashMap::from([(
@@ -204,8 +215,8 @@ async fn insert_and_get_name_and_addresses() {
 async fn insert_and_update_name_attributes() {
     let pg_pool = get_postgres_pool().await;
 
-    let name = format!("{}.connect.id", generate_random_string(10));
-    let address = format!("0x{}", generate_random_string(16));
+    let name = generate_random_name();
+    let address = generate_random_address();
     let chain_id = 1;
     let addresses = HashMap::from([(
         chain_id,
@@ -270,8 +281,8 @@ async fn insert_and_update_name_attributes() {
 async fn insert_delete_two_addresses() {
     let pg_pool = get_postgres_pool().await;
 
-    let name = format!("{}.connect.id", generate_random_string(10));
-    let address = format!("0x{}", generate_random_string(16));
+    let name = generate_random_name();
+    let address = generate_random_address();
     let mut chain_id = 1;
     let addresses = HashMap::from([(
         chain_id,
@@ -304,7 +315,7 @@ async fn insert_delete_two_addresses() {
 
     // Inserting a new address
     chain_id = 137;
-    let new_address = format!("0x{}", generate_random_string(16));
+    let new_address = generate_random_address();
     let insert_address_result = insert_or_update_address(
         name.clone(),
         types::SupportedNamespaces::Eip155,
@@ -345,8 +356,8 @@ async fn insert_and_check_names_count() {
     let stats_before_insert = get_account_names_stats(&pg_pool).await.unwrap().count;
 
     // Insert a new name
-    let name = format!("{}.test.id", generate_random_string(10));
-    let address = format!("0x{}", generate_random_string(16));
+    let name = generate_random_name();
+    let address = generate_random_address();
     let namespace = types::SupportedNamespaces::Eip155;
     let expected_ensip11_coin_type = 60;
     let addresses = HashMap::from([(
