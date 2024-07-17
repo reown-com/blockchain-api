@@ -138,13 +138,13 @@ pub fn verify_secp256k1_signature(
     let verifying_key = VerifyingKey::from_sec1_bytes(
         &BASE64_STANDARD
             .decode(verification_key)
-            .map_err(|_| RpcError::WrongBase64Format(verification_key.to_string()))?,
+            .map_err(|e| RpcError::WrongBase64Format(e.to_string()))?,
     )
     .map_err(|e| RpcError::KeyFormatError(e.to_string()))?;
 
     let signature_bytes = &BASE64_STANDARD
         .decode(signature)
-        .map_err(|_| RpcError::WrongBase64Format(signature.to_string()))?;
+        .map_err(|e| RpcError::WrongBase64Format(e.to_string()))?;
     let signature = Signature::from_der(signature_bytes)
         .map_err(|e| RpcError::SignatureFormatError(e.to_string()))?;
 
