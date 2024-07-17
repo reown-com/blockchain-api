@@ -71,23 +71,8 @@ describe('Sessions/Permissions', () => {
       }
     }
     
-    // Canonicalize context JSON object
-    let json_canonicalize = canonicalize(context);
-    const privateKey = createPrivateKey({
-      key: Buffer.from(signing_key, 'base64'),
-      format: 'der',
-      type: 'sec1',
-    });
-
-    // Create a signature
-    const sign = createSign('SHA256');
-    sign.update(json_canonicalize);
-    sign.end();
-    const signature = sign.sign(privateKey, 'base64');
-
     const payload = {
       pci: new_pci,
-      signature: signature,
       context
     }
     
@@ -107,36 +92,8 @@ describe('Sessions/Permissions', () => {
     expect(resp.data.pci.length).toBe(1)
     expect(resp.data.pci[0]).toBe(new_pci)
 
-    // Create a signature
-    const privateKey = createPrivateKey({
-      key: Buffer.from(signing_key, 'base64'),
-      format: 'der',
-      type: 'sec1',
-    });
-
-    // Create a bad signature and try to revoke PCI
-    let bad_signature = createSign('SHA256');
-    bad_signature.update('bad_pci');
-    bad_signature.end();
-    let signature = bad_signature.sign(privateKey, 'base64');
     let payload = {
       pci: new_pci,
-      signature,
-    }
-    resp = await httpClient.post(
-      `${baseUrl}/v1/sessions/${address}/revoke`,
-      payload
-    )
-    expect(resp.status).toBe(401)
-
-    // Create a good signature and try to revoke PCI
-    const good_signature = createSign('SHA256');
-    good_signature.update(new_pci);
-    good_signature.end();
-    signature = good_signature.sign(privateKey, 'base64');
-    payload = {
-      pci: new_pci,
-      signature,
     }
     
     // Revoke PCI

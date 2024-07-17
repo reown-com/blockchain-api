@@ -34,7 +34,6 @@ pub struct PermissionItem {
 #[serde(rename_all = "camelCase")]
 pub struct PermissionContextItem {
     pci: String,
-    signature: String,
     context: PermissionSubContext,
 }
 
@@ -83,5 +82,4 @@ pub struct StoragePermissionsItem {
 #[serde(rename_all = "camelCase")]
 pub struct PermissionRevokeRequest {
     pci: String,
-    signature: String,
 }
