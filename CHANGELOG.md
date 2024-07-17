@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.82.0 - 2024-07-17
+#### Features
+- **(sessions)** co-signer endpoint implementation (#707) - (bb927d8) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.81.0 - 2024-07-17
 #### Bug Fixes
 - **(sessions)** changing to use secp256k1, removing signatures from context update and revoking (#709) - (6dc2636) - Max Kalashnikoff | maksy.eth
