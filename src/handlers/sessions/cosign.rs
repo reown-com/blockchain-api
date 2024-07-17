@@ -144,9 +144,14 @@ async fn handler_internal(
     );
 
     // Send the userOperation to the bundler and get the receipt
-    let receipt =
-        send_user_operation_to_bundler(&user_op, &bundler_url, entry_point, simulation_type)
-            .await?;
+    let receipt = send_user_operation_to_bundler(
+        &user_op,
+        &bundler_url,
+        entry_point,
+        simulation_type,
+        &state.http_client,
+    )
+    .await?;
 
     Ok(Json(receipt).into_response())
 }

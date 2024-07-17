@@ -506,9 +506,8 @@ pub async fn send_user_operation_to_bundler(
     bundler_url: &str,
     entry_point: &str,
     simulation_type: &str,
+    http_client: &Client,
 ) -> Result<serde_json::Value, CryptoUitlsError> {
-    let bundler_client = Client::new();
-
     // Send the UserOperation to the bundler
     let jsonrpc_send_userop_request = JsonRpcRequest {
         id: generate_random_string(10),
@@ -522,7 +521,7 @@ pub async fn send_user_operation_to_bundler(
             },
         }],
     };
-    let response: serde_json::Value = bundler_client
+    let response: serde_json::Value = http_client
         .post(bundler_url)
         .json(&jsonrpc_send_userop_request)
         .send()
@@ -547,7 +546,7 @@ pub async fn send_user_operation_to_bundler(
         method: JSON_RPC_GET_RECEIPT_METHOD.clone(),
         params: vec![tx_hash],
     };
-    let receipt: serde_json::Value = bundler_client
+    let receipt: serde_json::Value = http_client
         .post(bundler_url)
         .json(&jsonrpc_get_receipt_request)
         .send()
