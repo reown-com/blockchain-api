@@ -1,13 +1,16 @@
 use {
-    crate::utils::{generate_random_string, get_postgres_pool},
-    rpc_proxy::database::{
-        helpers::{
-            delete_address, delete_name, get_account_names_stats, get_addresses_by_name, get_name,
-            get_name_and_addresses_by_name, get_names_by_address,
-            get_names_by_address_and_namespace, insert_name, insert_or_update_address,
-            update_name_attributes,
+    crate::utils::get_postgres_pool,
+    rpc_proxy::{
+        database::{
+            helpers::{
+                delete_address, delete_name, get_account_names_stats, get_addresses_by_name,
+                get_name, get_name_and_addresses_by_name, get_names_by_address,
+                get_names_by_address_and_namespace, insert_name, insert_or_update_address,
+                update_name_attributes,
+            },
+            types,
         },
-        types,
+        utils::generate_random_string,
     },
     std::collections::HashMap,
 };

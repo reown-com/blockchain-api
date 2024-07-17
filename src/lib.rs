@@ -70,7 +70,7 @@ mod project;
 pub mod providers;
 mod state;
 mod storage;
-mod utils;
+pub mod utils;
 mod ws;
 
 pub async fn bootstrap(config: Config) -> RpcResult<()> {

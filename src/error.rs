@@ -189,11 +189,8 @@ pub enum RpcError {
     #[error("Signature format error: {0}")]
     SignatureFormatError(String),
 
-    #[error("ECDSA error: {0}")]
-    EcdsaError(String),
-
-    #[error("Bundler error: {0}")]
-    BundlerError(String),
+    #[error("Pkcs8 error: {0}")]
+    Pkcs8Error(#[from] ethers::core::k256::pkcs8::Error),
 }
 
 impl IntoResponse for RpcError {

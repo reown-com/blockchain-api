@@ -16,10 +16,12 @@ use {
         Json,
     },
     base64::prelude::*,
-    ethers::utils::keccak256,
-    p256::{
-        ecdsa::{signature::Signer, DerSignature, SigningKey},
-        pkcs8::DecodePrivateKey,
+    ethers::{
+        core::k256::{
+            ecdsa::{signature::Signer, Signature, SigningKey},
+            pkcs8::DecodePrivateKey,
+        },
+        utils::keccak256,
     },
     serde::{Deserialize, Serialize},
     std::{sync::Arc, time::SystemTime},
@@ -114,17 +116,12 @@ async fn handler_internal(
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
 
     // Sign the user operation with the permission signing key
-    let signing_key = BASE64_STANDARD
+    let signing_key_bytes = BASE64_STANDARD
         .decode(storage_permissions_item.signing_key)
         .map_err(|e| RpcError::WrongBase64Format(e.to_string()))?;
-    let signer = SigningKey::from_pkcs8_der(&signing_key).map_err(|e| {
-        RpcError::EcdsaError(format!(
-            "Error during conversion signing key to pkcs8 DER format: {:?}",
-            e
-        ))
-    })?;
-    let signature: DerSignature = signer.sign(user_op_hash.as_bytes());
-    let signature_hex = hex::encode(signature.as_bytes());
+    let signer = SigningKey::from_pkcs8_der(&signing_key_bytes)?;
+    let signature: Signature = signer.sign(user_op_hash.as_bytes());
+    let signature_hex = hex::encode(signature.to_der().as_bytes());
 
     // Concat permission and user signature, update the userOperation signature
     let concatenated_signature = format!("{}{}", signature_hex, request_payload.user_op.signature);
@@ -149,13 +146,7 @@ async fn handler_internal(
     // Send the userOperation to the bundler and get the receipt
     let receipt =
         send_user_operation_to_bundler(&user_op, &bundler_url, entry_point, simulation_type)
-            .await
-            .map_err(|e| {
-                RpcError::BundlerError(format!(
-                    "Error during sending the user operation to the bundler: {:?}",
-                    e
-                ))
-            })?;
+            .await?;
 
     Ok(Json(receipt).into_response())
 }

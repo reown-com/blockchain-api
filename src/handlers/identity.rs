@@ -476,8 +476,8 @@ impl JsonRpcClient for SelfProvider {
             self.headers.clone(),
             serde_json::to_vec(&crypto::JsonRpcRequest {
                 id,
-                jsonrpc: "2.0".to_string(),
-                method: method.to_owned(),
+                jsonrpc: crypto::JSON_RPC_VERSION.clone(),
+                method: method.to_owned().into(),
                 params,
             })
             .expect("Should be able to serialize a JsonRpcRequest")
