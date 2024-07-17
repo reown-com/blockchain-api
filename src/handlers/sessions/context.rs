@@ -1,10 +1,8 @@
 use {
     super::{super::HANDLER_TASK_METRICS, PermissionContextItem, StoragePermissionsItem},
     crate::{
-        error::RpcError,
-        state::AppState,
-        storage::irn::OperationType,
-        utils::crypto::{disassemble_caip10, json_canonicalize, verify_ecdsa_signature},
+        error::RpcError, state::AppState, storage::irn::OperationType,
+        utils::crypto::disassemble_caip10,
     },
     axum::{
         extract::{Path, State},
@@ -47,15 +45,6 @@ async fn handler_internal(
         .add_irn_latency(irn_call_start, OperationType::Hget);
     let mut storage_permissions_item =
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
-
-    // Check the signature
-    let json_canonicalized = json_canonicalize(serde_json::to_value(&request_payload.context)?)?;
-    verify_ecdsa_signature(
-        &String::from_utf8(json_canonicalized.clone())
-            .map_err(|e| RpcError::InvalidParameter(e.to_string()))?,
-        &request_payload.signature,
-        &storage_permissions_item.verification_key,
-    )?;
 
     // Update the context
     storage_permissions_item.context = Some(request_payload.clone());

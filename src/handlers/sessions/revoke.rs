@@ -1,10 +1,8 @@
 use {
-    super::{super::HANDLER_TASK_METRICS, PermissionRevokeRequest, StoragePermissionsItem},
+    super::{super::HANDLER_TASK_METRICS, PermissionRevokeRequest},
     crate::{
-        error::RpcError,
-        state::AppState,
-        storage::irn::OperationType,
-        utils::crypto::{disassemble_caip10, verify_ecdsa_signature},
+        error::RpcError, state::AppState, storage::irn::OperationType,
+        utils::crypto::disassemble_caip10,
     },
     axum::{
         extract::{Path, State},
@@ -12,7 +10,6 @@ use {
         Json,
     },
     std::{sync::Arc, time::SystemTime},
-    tracing::warn,
     wc::future::FutureExt,
 };
 
@@ -36,35 +33,6 @@ async fn handler_internal(
 
     // Checking the CAIP-10 address format
     disassemble_caip10(&address)?;
-
-    // Get the PCI object from the IRN
-    let irn_call_start = SystemTime::now();
-    let irn_client_result = irn_client
-        .hget(address.clone(), request_payload.pci.clone())
-        .await?;
-    state
-        .metrics
-        .add_irn_latency(irn_call_start, OperationType::Hget);
-    let storage_permissions_item = match irn_client_result {
-        Some(item) => item,
-        // Return Success if the item is not found for idempotency
-        None => {
-            warn!(
-                "Permission item not found in the storage for address: {} and PCI: {}",
-                address, request_payload.pci
-            );
-            return Ok(Response::default());
-        }
-    };
-    let storage_permissions_item =
-        serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
-
-    // Check the signature
-    verify_ecdsa_signature(
-        &request_payload.pci,
-        &request_payload.signature,
-        &storage_permissions_item.verification_key,
-    )?;
 
     // Remove the session/permission item from the IRN
     let irn_call_start = SystemTime::now();

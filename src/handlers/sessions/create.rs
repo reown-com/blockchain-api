@@ -10,14 +10,10 @@ use {
         Json,
     },
     base64::prelude::*,
-    p256::{
-        ecdsa::{SigningKey, VerifyingKey},
-        pkcs8::EncodePrivateKey,
-    },
+    ethers::core::k256::ecdsa::{SigningKey, VerifyingKey},
     rand_core::OsRng,
     serde::{Deserialize, Serialize},
     std::{sync::Arc, time::SystemTime},
-    tracing::error,
     wc::future::FutureExt,
 };
 
@@ -51,30 +47,20 @@ async fn handler_internal(
     // Generate a unique permission control identifier
     let pci = uuid::Uuid::new_v4().to_string();
 
-    // Generate ECDSA key pair
+    // Generate a secp256k1 keys and export to DER Base64 format
     let signing_key = SigningKey::random(&mut OsRng);
     let verifying_key = VerifyingKey::from(&signing_key);
-    let verifying_key_base64 = BASE64_STANDARD.encode(verifying_key.to_sec1_bytes());
-    // Signing key as DER in sec1 format
-    let signing_key_der_base64 = BASE64_STANDARD.encode(
-        signing_key
-            .to_pkcs8_der()
-            .map_err(|e| {
-                error!(
-                    "Error during conversion signing key to pkcs8 DER format: {:?}",
-                    e
-                );
-                RpcError::EcdsaError(e.to_string())
-            })?
-            .as_bytes(),
-    );
+    let private_key_der = signing_key.to_bytes();
+    let private_key_der_base64 = BASE64_STANDARD.encode(private_key_der);
+    let public_key_der = verifying_key.to_encoded_point(false).as_bytes().to_vec();
+    let public_key_der_base64 = BASE64_STANDARD.encode(&public_key_der);
 
     // Store the permission item in the IRN database
     let storage_permissions_item = StoragePermissionsItem {
         permissions: request_payload.permission,
         context: None,
-        verification_key: verifying_key_base64,
-        signing_key: signing_key_der_base64.clone(),
+        verification_key: public_key_der_base64.clone(),
+        signing_key: private_key_der_base64,
     };
 
     let irn_call_start = SystemTime::now();
@@ -91,7 +77,7 @@ async fn handler_internal(
 
     let response = NewPermissionResponse {
         pci,
-        key: signing_key_der_base64,
+        key: public_key_der_base64,
     };
 
     Ok(Json(response).into_response())
