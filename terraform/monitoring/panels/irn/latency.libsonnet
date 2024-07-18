@@ -19,7 +19,7 @@ local error_alert(vars) = alert.new(
   message     = "%s - IRN Client latency" % vars.environment,
   period      = '5m',
   frequency   = '1m',
-  noDataState = 'alerting',
+  noDataState = 'no_data',
   notifications = vars.notifications,
   alertRuleTags = {
     'og_priority': 'P3',
