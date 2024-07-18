@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.82.1 - 2024-07-18
+#### Bug Fixes
+- **(sessions)** change numbers to strings in userOperation (#710) - (51f43a4) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.82.0 - 2024-07-17
 #### Features
 - **(sessions)** co-signer endpoint implementation (#707) - (bb927d8) - Max Kalashnikoff | maksy.eth
