@@ -99,14 +99,14 @@ struct BundlerSimulationType {
 #[serde(rename_all = "camelCase")]
 pub struct UserOperation {
     pub sender: String,
-    pub nonce: usize,
+    pub nonce: String,
     pub init_code: String,
     pub call_data: String,
-    pub call_gas_limit: usize,
-    pub verification_gas_limit: usize,
-    pub pre_verification_gas: usize,
-    pub max_fee_per_gas: usize,
-    pub max_priority_fee_per_gas: usize,
+    pub call_gas_limit: String,
+    pub verification_gas_limit: String,
+    pub pre_verification_gas: String,
+    pub max_fee_per_gas: String,
+    pub max_priority_fee_per_gas: String,
     pub paymaster_and_data: String,
     pub signature: String,
 }
