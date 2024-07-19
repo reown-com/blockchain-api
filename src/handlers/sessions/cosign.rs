@@ -27,6 +27,8 @@ use {
     wc::future::FutureExt,
 };
 
+const ENTRY_POINT_V07_CONTRACT_ADDRESS: &str = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
+
 /// Co-sign response schema
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CoSignResponse {
@@ -68,14 +70,13 @@ async fn handler_internal(
         .as_ref()
         .ok_or_else(|| {
             RpcError::InvalidConfiguration(
-                "Missing testing project id in the configuration for the balance RPC lookups"
+                "Missing testing project id in the configuration for the cosigner RPC calls"
                     .to_string(),
             )
         })?;
 
     // Get the userOp hash
-    // Entrypoint v07 contract address
-    let contract_address = "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
+    let contract_address = ENTRY_POINT_V07_CONTRACT_ADDRESS
         .parse::<H160>()
         .map_err(|_| RpcError::InvalidAddress)?;
     let user_op_hash = call_get_user_op_hash(

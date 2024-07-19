@@ -893,6 +893,8 @@ mod tests {
         .is_err());
     }
 
+    // Ignoring this test until the RPC project ID is provided by the CI workflow
+    // The test can be run manually by providing the project ID
     #[ignore]
     #[tokio::test]
     async fn test_call_get_user_op_hash() {
@@ -948,6 +950,8 @@ mod tests {
         Bytes::from(context)
     }
 
+    // Ignoring this test until the RPC project ID is provided by the CI workflow
+    // The test can be run manually by providing the project ID
     #[ignore]
     #[tokio::test]
     async fn test_call_get_signature() {
