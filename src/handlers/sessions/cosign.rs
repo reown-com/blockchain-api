@@ -1,13 +1,12 @@
 use {
     super::{super::HANDLER_TASK_METRICS, CoSignRequest, StoragePermissionsItem},
     crate::{
-        analytics::MessageSource,
         error::RpcError,
         state::AppState,
         storage::irn::OperationType,
         utils::crypto::{
-            disassemble_caip10, send_user_operation_to_bundler, verify_message_signature,
-            CaipNamespaces,
+            abi_encode_two_bytes_arrays, call_get_signature, call_get_user_op_hash,
+            disassemble_caip10, send_user_operation_to_bundler, CaipNamespaces,
         },
     },
     axum::{
@@ -21,7 +20,7 @@ use {
             ecdsa::{signature::Signer, Signature, SigningKey},
             pkcs8::DecodePrivateKey,
         },
-        utils::keccak256,
+        types::{Bytes, H160},
     },
     serde::{Deserialize, Serialize},
     std::{sync::Arc, time::SystemTime},
@@ -55,28 +54,13 @@ async fn handler_internal(
     if namespace != CaipNamespaces::Eip155 {
         return Err(RpcError::UnsupportedNamespace(namespace));
     }
+    let h160_address = address
+        .parse::<H160>()
+        .map_err(|_| RpcError::InvalidAddress)?;
     let chain_id_caip2 = format!("{}:{}", namespace, chain_id);
-
-    // Verify the user signature
     let mut user_op = request_payload.user_op.clone();
-    let user_op_hash = keccak256(
-        format!(
-            "{}{}{}{}{}{}{}{}{}{}{}",
-            user_op.sender,
-            user_op.nonce,
-            user_op.init_code,
-            user_op.call_data,
-            user_op.call_data,
-            user_op.call_gas_limit,
-            user_op.verification_gas_limit,
-            user_op.pre_verification_gas,
-            user_op.max_fee_per_gas,
-            user_op.max_priority_fee_per_gas,
-            user_op.paymaster_and_data
-        )
-        .as_bytes(),
-    );
-    let user_op_hash = hex::encode(user_op_hash);
+
+    // Project ID for internal json-rpc calls
     let rpc_project_id = state
         .config
         .server
@@ -84,23 +68,23 @@ async fn handler_internal(
         .as_ref()
         .ok_or_else(|| {
             RpcError::InvalidConfiguration(
-                "Missing testing project id in the configuration for eip1271 lookups".to_string(),
+                "Missing testing project id in the configuration for the balance RPC lookups"
+                    .to_string(),
             )
         })?;
-    let sinature_check = verify_message_signature(
-        &user_op_hash,
-        &request_payload.user_op.signature.clone(),
-        &address,
-        &chain_id_caip2,
+
+    // Get the userOp hash
+    // Entrypoint v07 contract address
+    let contract_address = "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
+        .parse::<H160>()
+        .map_err(|_| RpcError::InvalidAddress)?;
+    let user_op_hash = call_get_user_op_hash(
         rpc_project_id,
-        MessageSource::SessionCoSignSigValidate,
+        &chain_id_caip2,
+        contract_address,
+        user_op.clone(),
     )
     .await?;
-    if !sinature_check {
-        return Err(RpcError::SignatureValidationError(
-            "Signature verification error".into(),
-        ));
-    }
 
     // Get the PCI object from the IRN
     let irn_client = state.irn.as_ref().ok_or(RpcError::IrnNotConfigured)?;
@@ -115,17 +99,50 @@ async fn handler_internal(
     let storage_permissions_item =
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
 
-    // Sign the user operation with the permission signing key
+    // Check and get the permission context if it's updated
+    let permission_context_item = storage_permissions_item
+        .context
+        .clone()
+        .ok_or_else(|| RpcError::PermissionContextNotUpdated(request_payload.pci.clone()))?;
+    let permission_context = hex::decode(permission_context_item.context.permissions_context)
+        .map_err(|e| RpcError::WrongHexFormat(e.to_string()))?;
+
+    // Sign the userOp hash with the permission signing key
     let signing_key_bytes = BASE64_STANDARD
         .decode(storage_permissions_item.signing_key)
         .map_err(|e| RpcError::WrongBase64Format(e.to_string()))?;
     let signer = SigningKey::from_pkcs8_der(&signing_key_bytes)?;
-    let signature: Signature = signer.sign(user_op_hash.as_bytes());
-    let signature_hex = hex::encode(signature.to_der().as_bytes());
+    let signature: Signature = signer.sign(&user_op_hash);
 
-    // Concat permission and user signature, update the userOperation signature
-    let concatenated_signature = format!("{}{}", signature_hex, request_payload.user_op.signature);
+    // ABI encode the signatures
+    let concatenated_signature = abi_encode_two_bytes_arrays(
+        &Bytes::from(signature.to_der().as_bytes().to_vec()),
+        &user_op.signature,
+    );
+
+    // Update the userOp with the signature
     user_op.signature = concatenated_signature;
+
+    // Get the Signature
+    // UserOpBuilder contract address
+    let user_op_builder_contract_address = permission_context_item
+        .context
+        .signer_data
+        .user_op_builder
+        .parse::<H160>()
+        .map_err(|_| RpcError::InvalidAddress)?;
+    let get_signature_result = call_get_signature(
+        rpc_project_id,
+        &chain_id_caip2,
+        user_op_builder_contract_address,
+        h160_address,
+        user_op.clone(),
+        permission_context.into(),
+    )
+    .await?;
+
+    // Update the userOp with the signature
+    user_op.signature = get_signature_result;
 
     // Using the Biconomy bundler to send the userOperation
     let entry_point = "0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789";

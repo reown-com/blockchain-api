@@ -183,6 +183,9 @@ pub enum RpcError {
     #[error("Wrong Base64 format: {0}")]
     WrongBase64Format(String),
 
+    #[error("Wrong Hex format: {0}")]
+    WrongHexFormat(String),
+
     #[error("Key format error: {0}")]
     KeyFormatError(String),
 
@@ -191,6 +194,9 @@ pub enum RpcError {
 
     #[error("Pkcs8 error: {0}")]
     Pkcs8Error(#[from] ethers::core::k256::pkcs8::Error),
+
+    #[error("Permission context was not updated yet: {0}")]
+    PermissionContextNotUpdated(String),
 }
 
 impl IntoResponse for RpcError {

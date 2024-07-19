@@ -3,10 +3,11 @@ use {
     alloy_primitives::Address,
     base64::prelude::*,
     ethers::{
+        abi::Token,
         core::k256::ecdsa::{signature::Verifier, Signature, VerifyingKey},
-        prelude::abigen,
+        prelude::{abigen, EthAbiCodec, EthAbiType},
         providers::{Http, Middleware, Provider},
-        types::{H160, H256, U256},
+        types::{Address as EthersAddress, Bytes, H160, H256, U256},
         utils::keccak256,
     },
     once_cell::sync::Lazy,
@@ -17,7 +18,7 @@ use {
     std::{str::FromStr, sync::Arc},
     strum::IntoEnumIterator,
     strum_macros::{Display, EnumIter, EnumString},
-    tracing::warn,
+    tracing::{error, warn},
     url::Url,
 };
 
@@ -95,24 +96,82 @@ struct BundlerSimulationType {
 }
 
 /// ERC-4337 bundler userOperation schema
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, EthAbiCodec, EthAbiType)]
 #[serde(rename_all = "camelCase")]
 pub struct UserOperation {
-    pub sender: String,
-    pub nonce: String,
-    pub init_code: String,
-    pub call_data: String,
-    pub call_gas_limit: String,
-    pub verification_gas_limit: String,
-    pub pre_verification_gas: String,
-    pub max_fee_per_gas: String,
-    pub max_priority_fee_per_gas: String,
-    pub paymaster_and_data: String,
-    pub signature: String,
+    pub sender: EthersAddress,
+    pub nonce: U256,
+    pub init_code: Bytes,
+    pub call_data: Bytes,
+    pub call_gas_limit: U256,
+    pub verification_gas_limit: U256,
+    pub pre_verification_gas: U256,
+    pub max_fee_per_gas: U256,
+    pub max_priority_fee_per_gas: U256,
+    pub paymaster_and_data: Bytes,
+    pub signature: Bytes,
+}
+
+/// ERC-4337 bundler Packed userOperation schema for v07
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, EthAbiCodec, EthAbiType)]
+#[serde(rename_all = "camelCase")]
+pub struct PackedUserOperation {
+    pub sender: EthersAddress,
+    pub nonce: U256,
+    pub init_code: Bytes,
+    pub call_data: Bytes,
+    pub account_gas_limits: [u8; 32],
+    pub pre_verification_gas: U256,
+    pub gas_fees: [u8; 32],
+    pub paymaster_and_data: Bytes,
+    pub signature: Bytes,
+}
+
+impl UserOperation {
+    pub fn get_packed(&self) -> PackedUserOperation {
+        let account_gas_limits = concat_128(
+            self.verification_gas_limit.low_u128().to_be_bytes(),
+            self.call_gas_limit.low_u128().to_be_bytes(),
+        );
+
+        let gas_fees = concat_128(
+            self.max_priority_fee_per_gas.low_u128().to_be_bytes(),
+            self.max_fee_per_gas.low_u128().to_be_bytes(),
+        );
+
+        PackedUserOperation {
+            sender: self.sender,
+            nonce: self.nonce,
+            init_code: self.init_code.clone(),
+            call_data: self.call_data.clone(),
+            account_gas_limits,
+            pre_verification_gas: self.pre_verification_gas,
+            gas_fees,
+            paymaster_and_data: self.paymaster_and_data.clone(),
+            signature: self.signature.clone(),
+        }
+    }
+}
+
+fn concat_128(a: [u8; 16], b: [u8; 16]) -> [u8; 32] {
+    std::array::from_fn(|i| {
+        if let Some(i) = i.checked_sub(a.len()) {
+            b[i]
+        } else {
+            a[i]
+        }
+    })
 }
 
 pub fn add_eip191(message: &str) -> String {
     format!("\x19Ethereum Signed Message:\n{}{}", message.len(), message)
+}
+
+// Encode two bytes array into a single ABI encoded bytes
+pub fn abi_encode_two_bytes_arrays(bytes1: &Bytes, bytes2: &Bytes) -> Bytes {
+    let tokens = vec![Token::Bytes(bytes1.to_vec()), Token::Bytes(bytes2.to_vec())];
+
+    Bytes::from(ethers::abi::encode(&tokens))
 }
 
 /// Returns the keccak256 EIP-191 hash of the message
@@ -288,6 +347,111 @@ async fn get_balance(
         .await
         .map_err(|e| CryptoUitlsError::ProviderError(format!("{}", e)))?;
     Ok(balance)
+}
+
+/// Call entry point v07 getUserOpHash contract and get the userOperation hash
+#[tracing::instrument(level = "debug")]
+pub async fn call_get_user_op_hash(
+    rpc_project_id: &str,
+    chain_id: &str,
+    contract_address: H160,
+    user_operation: UserOperation,
+) -> Result<[u8; 32], CryptoUitlsError> {
+    abigen!(
+        EntryPoint,
+        r#"[
+            struct v07UserOperation { address sender; uint256 nonce; bytes initCode; bytes callData; bytes32 accountGasLimits; uint256 preVerificationGas; bytes32 gasFees; bytes paymasterAndData; bytes signature}
+            function getUserOpHash(v07UserOperation calldata userOp) public view returns (bytes32)
+        ]"#,
+    );
+
+    let provider = Provider::<Http>::try_from(format!(
+        "https://rpc.walletconnect.com/v1?chainId={}&projectId={}",
+        chain_id, rpc_project_id
+    ))
+    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
+    let provider = Arc::new(provider);
+
+    let contract = EntryPoint::new(contract_address, provider);
+
+    let packed_user_op = user_operation.get_packed();
+    let user_op = v07UserOperation {
+        sender: packed_user_op.sender,
+        nonce: packed_user_op.nonce,
+        init_code: packed_user_op.init_code,
+        call_data: packed_user_op.call_data,
+        account_gas_limits: packed_user_op.account_gas_limits,
+        pre_verification_gas: packed_user_op.pre_verification_gas,
+        gas_fees: packed_user_op.gas_fees,
+        paymaster_and_data: packed_user_op.paymaster_and_data,
+        signature: packed_user_op.signature,
+    };
+
+    let hash = contract
+        .get_user_op_hash(user_op)
+        .call()
+        .await
+        .map_err(|e| {
+            CryptoUitlsError::ContractCallError(format!(
+                "Failed to call getUserOpHash in EntryPoint contract: {}",
+                e
+            ))
+        })?;
+
+    Ok(hash)
+}
+
+/// Call getSignature on  ERC-7579 userOperationBuilder contract
+#[tracing::instrument(level = "debug")]
+pub async fn call_get_signature(
+    rpc_project_id: &str,
+    chain_id: &str,
+    contract_address: H160,
+    smart_account_address: H160,
+    user_operation: UserOperation,
+    context: Bytes,
+) -> Result<Bytes, CryptoUitlsError> {
+    abigen!(
+        Safe7579UserOperationBuilder,
+        r#"[
+            struct v07UserOperation { address sender; uint256 nonce; bytes initCode; bytes callData; bytes32 accountGasLimits; uint256 preVerificationGas; bytes32 gasFees; bytes paymasterAndData; bytes signature}
+            function getSignature(address smartAccount, v07UserOperation calldata userOperation, bytes calldata context) public view returns (bytes)
+        ]"#,
+    );
+
+    let provider = Provider::<Http>::try_from(format!(
+        "https://rpc.walletconnect.com/v1?chainId={}&projectId={}",
+        chain_id, rpc_project_id
+    ))
+    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
+    let provider = Arc::new(provider);
+    let contract = Safe7579UserOperationBuilder::new(contract_address, provider);
+
+    let packed_user_op = user_operation.get_packed();
+    let user_op = v07UserOperation {
+        sender: packed_user_op.sender,
+        nonce: packed_user_op.nonce,
+        init_code: packed_user_op.init_code,
+        call_data: packed_user_op.call_data,
+        account_gas_limits: packed_user_op.account_gas_limits,
+        pre_verification_gas: packed_user_op.pre_verification_gas,
+        gas_fees: packed_user_op.gas_fees,
+        paymaster_and_data: packed_user_op.paymaster_and_data,
+        signature: packed_user_op.signature,
+    };
+
+    let signature = contract
+        .get_signature(smart_account_address, user_op, context)
+        .call()
+        .await
+        .map_err(|e| {
+            CryptoUitlsError::ContractCallError(format!(
+                "Failed to call getSignature in Safe7579UserOperationBuilder contract: {}",
+                e
+            ))
+        })?;
+
+    Ok(signature)
 }
 
 /// Convert EVM chain ID to coin type ENSIP-11
@@ -727,5 +891,102 @@ mod tests {
             &public_key_der_base64
         )
         .is_err());
+    }
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_call_get_user_op_hash() {
+        let rpc_project_id = ""; // Fill the project ID
+        let chain_id = "eip155:11155111";
+        // Entrypoint v07 contract address
+        let contract_address = "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
+            .parse::<H160>()
+            .unwrap();
+        // Dummy sender address
+        let sender_address = "0x1234567890123456789012345678901234567890"
+            .parse::<H160>()
+            .unwrap();
+        // Dummy user operation
+        let user_op = UserOperation {
+            sender: sender_address,
+            nonce: U256::zero(),
+            init_code: Bytes::from(vec![0x01, 0x02, 0x03]),
+            call_data: Bytes::from(vec![0x04, 0x05, 0x06]),
+            call_gas_limit: U256::zero(),
+            verification_gas_limit: U256::zero(),
+            pre_verification_gas: U256::zero(),
+            max_fee_per_gas: U256::zero(),
+            max_priority_fee_per_gas: U256::zero(),
+            paymaster_and_data: Bytes::from(vec![0x07, 0x08, 0x09]),
+            signature: Bytes::from(vec![0x0a, 0x0b, 0x0c]),
+        };
+
+        let result = call_get_user_op_hash(rpc_project_id, chain_id, contract_address, user_op)
+            .await
+            .unwrap();
+
+        assert_eq!(
+            hex::encode(result),
+            "133f6ac5944a128b3d4c4d69ac927b2d320fdde0b35b48962c48e1b71a977c28"
+        );
+    }
+
+    /// Creating a dummy context for the UserOperationBuilder contract
+    fn create_dummy_context_for_op_builder() -> Bytes {
+        let validator_address = hex::decode("1234567890123456789012345678901234567890").unwrap();
+        // Assuming mode is SmartSessionMode.USE (1)
+        let mode = vec![1];
+        let signer_id =
+            hex::decode("abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef")
+                .unwrap();
+
+        let mut context = Vec::new();
+        context.extend_from_slice(&validator_address);
+        context.extend_from_slice(&mode);
+        context.extend_from_slice(&signer_id);
+
+        Bytes::from(context)
+    }
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_call_get_signature() {
+        let rpc_project_id = ""; // Fill the project ID
+        let chain_id = "eip155:11155111";
+        // UserOpBuilder contract address
+        let contract_address = "0xCd67aCD5d31969e2c368d6A1cfE1911932C744b1"
+            .parse::<H160>()
+            .unwrap();
+        // Dummy smart account address
+        let sa_address = "0x1234567890123456789012345678901234567890"
+            .parse::<H160>()
+            .unwrap();
+        let user_operation = UserOperation {
+            sender: sa_address,
+            nonce: U256::zero(),
+            init_code: Bytes::from(vec![0x01, 0x02, 0x03]),
+            call_data: Bytes::from(vec![0x04, 0x05, 0x06]),
+            call_gas_limit: U256::zero(),
+            verification_gas_limit: U256::zero(),
+            pre_verification_gas: U256::zero(),
+            max_fee_per_gas: U256::zero(),
+            max_priority_fee_per_gas: U256::zero(),
+            paymaster_and_data: Bytes::from(vec![0x07, 0x08, 0x09]),
+            signature: Bytes::from(vec![0x0a, 0x0b, 0x0c]),
+        };
+
+        let result = call_get_signature(
+            rpc_project_id,
+            chain_id,
+            contract_address,
+            sa_address,
+            user_operation,
+            create_dummy_context_for_op_builder(),
+        )
+        .await
+        .unwrap();
+
+        // Expect an empty signature because of dummy parameters
+        assert_eq!(hex::encode(result), "");
     }
 }
