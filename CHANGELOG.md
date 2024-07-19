@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.83.0 - 2024-07-19
+#### Bug Fixes
+- **(grafana)** fixing no data irn latency alert and registered names counter (#711) - (e461f82) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(sessions)** implementing additional cosigner steps (#713) - (6dea98a) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.82.1 - 2024-07-18
 #### Bug Fixes
 - **(sessions)** change numbers to strings in userOperation (#710) - (51f43a4) - Max Kalashnikoff | maksy.eth
