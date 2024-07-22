@@ -1,13 +1,16 @@
 use {
-    crate::{analytics::MessageSource, error::RpcError, utils::generate_random_string},
+    crate::{analytics::MessageSource, error::RpcError},
     alloy_primitives::Address,
     base64::prelude::*,
     ethers::{
         abi::Token,
-        core::k256::ecdsa::{signature::Verifier, Signature, VerifyingKey},
+        core::{
+            k256::ecdsa::{signature::Verifier, Signature, VerifyingKey},
+            types::Signature as EthSignature,
+        },
         prelude::{abigen, EthAbiCodec, EthAbiType},
         providers::{Http, Middleware, Provider},
-        types::{Address as EthersAddress, Bytes, H160, H256, U256},
+        types::{Address as EthersAddress, Bytes, H160, H256, U128, U256},
         utils::keccak256,
     },
     once_cell::sync::Lazy,
@@ -42,6 +45,8 @@ pub const JSON_RPC_GET_RECEIPT_METHOD_STR: &str = "eth_getTransactionReceipt";
 pub static JSON_RPC_GET_RECEIPT_METHOD: once_cell::sync::Lazy<Arc<str>> =
     once_cell::sync::Lazy::new(|| Arc::from(JSON_RPC_GET_RECEIPT_METHOD_STR));
 
+const BUNDLER_API_URL: &str = "https://api.pimlico.io/v2";
+
 #[derive(thiserror::Error, Debug)]
 pub enum CryptoUitlsError {
     #[error("Namespace is not supported: {0}")]
@@ -75,9 +80,9 @@ pub enum CryptoUitlsError {
 }
 
 /// JSON-RPC request schema
-#[derive(Serialize)]
+#[derive(Serialize, Clone, Debug)]
 pub struct JsonRpcRequest<T: Serialize + Send + Sync> {
-    pub id: String,
+    pub id: u64,
     pub jsonrpc: Arc<str>,
     pub method: Arc<str>,
     pub params: T,
@@ -87,48 +92,47 @@ pub struct JsonRpcRequest<T: Serialize + Send + Sync> {
 struct BundlerJsonRpcParams {
     user_op: UserOperation,
     entry_point: String,
-    simulation_type: BundlerSimulationType,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct BundlerSimulationType {
-    simulation_type: String,
-}
-
-/// ERC-4337 bundler userOperation schema
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, EthAbiCodec, EthAbiType)]
+/// ERC-4337 bundler userOperation schema v0.7
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserOperation {
     pub sender: EthersAddress,
+    /// The first 192 bits are the nonce key, the last 64 bits are the nonce value
     pub nonce: U256,
-    pub init_code: Bytes,
     pub call_data: Bytes,
-    pub call_gas_limit: U256,
-    pub verification_gas_limit: U256,
+    pub call_gas_limit: U128,
+    pub verification_gas_limit: U128,
     pub pre_verification_gas: U256,
-    pub max_fee_per_gas: U256,
-    pub max_priority_fee_per_gas: U256,
-    pub paymaster_and_data: Bytes,
+    pub max_priority_fee_per_gas: U128,
+    pub max_fee_per_gas: U128,
     pub signature: Bytes,
-}
-
-/// ERC-4337 bundler Packed userOperation schema for v07
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, EthAbiCodec, EthAbiType)]
-#[serde(rename_all = "camelCase")]
-pub struct PackedUserOperation {
-    pub sender: EthersAddress,
-    pub nonce: U256,
-    pub init_code: Bytes,
-    pub call_data: Bytes,
-    pub account_gas_limits: [u8; 32],
-    pub pre_verification_gas: U256,
-    pub gas_fees: [u8; 32],
-    pub paymaster_and_data: Bytes,
-    pub signature: Bytes,
+    /*
+     * Optional fields
+     */
+    /// Factory and data, are populated if deploying a new sender contract
+    pub factory: Option<EthersAddress>,
+    pub factory_data: Option<Bytes>,
+    /// Paymaster and related fields are populated if using a paymaster
+    pub paymaster: Option<EthersAddress>,
+    pub paymaster_verification_gas_limit: Option<U128>,
+    pub paymaster_post_op_gas_limit: Option<U128>,
+    pub paymaster_data: Option<Bytes>,
 }
 
 impl UserOperation {
+    /// Create a packed UserOperation v07 structure
     pub fn get_packed(&self) -> PackedUserOperation {
+        let init_code = match (self.factory, self.factory_data.as_ref()) {
+            (Some(factory), Some(factory_data)) => {
+                let mut init_code = factory.as_bytes().to_vec();
+                init_code.extend_from_slice(factory_data);
+                Bytes::from(init_code)
+            }
+            _ => Bytes::new(),
+        };
+
         let account_gas_limits = concat_128(
             self.verification_gas_limit.low_u128().to_be_bytes(),
             self.call_gas_limit.low_u128().to_be_bytes(),
@@ -139,18 +143,56 @@ impl UserOperation {
             self.max_fee_per_gas.low_u128().to_be_bytes(),
         );
 
+        let paymaster_and_data = match (
+            self.paymaster,
+            self.paymaster_verification_gas_limit,
+            self.paymaster_post_op_gas_limit,
+            self.paymaster_data.as_ref(),
+        ) {
+            (
+                Some(paymaster),
+                Some(paymaster_verification_gas_limit),
+                Some(paymaster_post_op_gas_limit),
+                Some(paymaster_data),
+            ) => {
+                let mut paymaster_and_data = paymaster.as_bytes().to_vec();
+                paymaster_and_data
+                    .extend_from_slice(&paymaster_verification_gas_limit.low_u128().to_be_bytes());
+                paymaster_and_data
+                    .extend_from_slice(&paymaster_post_op_gas_limit.low_u128().to_be_bytes());
+                paymaster_and_data.extend_from_slice(paymaster_data);
+                Bytes::from(paymaster_and_data)
+            }
+            _ => Bytes::new(),
+        };
+
         PackedUserOperation {
             sender: self.sender,
             nonce: self.nonce,
-            init_code: self.init_code.clone(),
+            init_code,
             call_data: self.call_data.clone(),
-            account_gas_limits,
+            account_gas_limits: H256::from_slice(&account_gas_limits),
             pre_verification_gas: self.pre_verification_gas,
-            gas_fees,
-            paymaster_and_data: self.paymaster_and_data.clone(),
+            gas_fees: H256::from_slice(&gas_fees),
+            paymaster_and_data,
             signature: self.signature.clone(),
         }
     }
+}
+
+/// ERC-4337 bundler Packed userOperation schema for v07
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, EthAbiCodec, EthAbiType)]
+#[serde(rename_all = "camelCase")]
+pub struct PackedUserOperation {
+    pub sender: EthersAddress,
+    pub nonce: U256,
+    pub init_code: Bytes,
+    pub call_data: Bytes,
+    pub account_gas_limits: H256,
+    pub pre_verification_gas: U256,
+    pub gas_fees: H256,
+    pub paymaster_and_data: Bytes,
+    pub signature: Bytes,
 }
 
 fn concat_128(a: [u8; 16], b: [u8; 16]) -> [u8; 32] {
@@ -163,11 +205,34 @@ fn concat_128(a: [u8; 16], b: [u8; 16]) -> [u8; 32] {
     })
 }
 
-pub fn add_eip191(message: &str) -> String {
-    format!("\x19Ethereum Signed Message:\n{}{}", message.len(), message)
+/// Convert message to EIP-191 compatible format
+pub fn to_eip191_message(message: &[u8]) -> Vec<u8> {
+    let prefix = format!("\x19Ethereum Signed Message:\n{}", message.len());
+    let mut eip191_message = Vec::with_capacity(prefix.len() + message.len());
+    eip191_message.extend_from_slice(prefix.as_bytes());
+    eip191_message.extend_from_slice(message);
+    eip191_message
 }
 
-// Encode two bytes array into a single ABI encoded bytes
+/// Pack signature into a single byte array to Ethereum compatible format
+pub fn pack_signature(unpacked: &EthSignature) -> Bytes {
+    // Extract r, s, and v from the signature
+    let r = unpacked.r;
+    let s = unpacked.s;
+    let v = if unpacked.v == 27 { 0x1b } else { 0x1c };
+    let mut r_bytes = [0u8; 32];
+    let mut s_bytes = [0u8; 32];
+    r.to_big_endian(&mut r_bytes);
+    s.to_big_endian(&mut s_bytes);
+    // Pack r, s, and v into a single byte array
+    let mut packed_signature = Vec::with_capacity(65);
+    packed_signature.extend_from_slice(&r_bytes);
+    packed_signature.extend_from_slice(&s_bytes);
+    packed_signature.push(v);
+    Bytes::from(packed_signature)
+}
+
+/// Encode two bytes array into a single ABI encoded bytes
 pub fn abi_encode_two_bytes_arrays(bytes1: &Bytes, bytes2: &Bytes) -> Bytes {
     let tokens = vec![Token::Bytes(bytes1.to_vec()), Token::Bytes(bytes2.to_vec())];
 
@@ -176,7 +241,7 @@ pub fn abi_encode_two_bytes_arrays(bytes1: &Bytes, bytes2: &Bytes) -> Bytes {
 
 /// Returns the keccak256 EIP-191 hash of the message
 pub fn get_message_hash(message: &str) -> H256 {
-    let prefixed_message = add_eip191(message);
+    let prefixed_message = to_eip191_message(message.as_bytes());
     let message_hash = ethers::core::utils::keccak256(prefixed_message.clone());
     ethers::types::H256::from_slice(&message_hash)
 }
@@ -380,9 +445,9 @@ pub async fn call_get_user_op_hash(
         nonce: packed_user_op.nonce,
         init_code: packed_user_op.init_code,
         call_data: packed_user_op.call_data,
-        account_gas_limits: packed_user_op.account_gas_limits,
+        account_gas_limits: packed_user_op.account_gas_limits.into(),
         pre_verification_gas: packed_user_op.pre_verification_gas,
-        gas_fees: packed_user_op.gas_fees,
+        gas_fees: packed_user_op.gas_fees.into(),
         paymaster_and_data: packed_user_op.paymaster_and_data,
         signature: packed_user_op.signature,
     };
@@ -433,9 +498,9 @@ pub async fn call_get_signature(
         nonce: packed_user_op.nonce,
         init_code: packed_user_op.init_code,
         call_data: packed_user_op.call_data,
-        account_gas_limits: packed_user_op.account_gas_limits,
+        account_gas_limits: packed_user_op.account_gas_limits.into(),
         pre_verification_gas: packed_user_op.pre_verification_gas,
-        gas_fees: packed_user_op.gas_fees,
+        gas_fees: packed_user_op.gas_fees.into(),
         paymaster_and_data: packed_user_op.paymaster_and_data,
         signature: packed_user_op.signature,
     };
@@ -560,6 +625,11 @@ impl ChainId {
             }
         }
     }
+
+    /// Is ChainID is supported
+    pub fn is_supported(chain_id: u64) -> bool {
+        ChainId::iter().any(|x| x as u64 == chain_id)
+    }
 }
 
 #[derive(Clone, Copy, Debug, EnumString, EnumIter, Display, Eq, PartialEq)]
@@ -664,29 +734,28 @@ pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u32) -
     balance_f64 * price
 }
 
-/// Function to send UserOperation to the bundler and return receipt
+/// Function to send UserOperation to the bundler and return the receipt
+#[tracing::instrument(skip(http_client), level = "debug")]
 pub async fn send_user_operation_to_bundler(
     user_op: &UserOperation,
-    bundler_url: &str,
+    chain_id: &str,
+    bundler_api_token: &str,
     entry_point: &str,
-    simulation_type: &str,
     http_client: &Client,
 ) -> Result<serde_json::Value, CryptoUitlsError> {
     // Send the UserOperation to the bundler
     let jsonrpc_send_userop_request = JsonRpcRequest {
-        id: generate_random_string(10),
+        id: 1,
         jsonrpc: JSON_RPC_VERSION.clone(),
         method: JSON_RPC_BUNDLER_METHOD.clone(),
-        params: vec![BundlerJsonRpcParams {
-            user_op: user_op.clone(),
-            entry_point: entry_point.into(),
-            simulation_type: BundlerSimulationType {
-                simulation_type: simulation_type.into(),
-            },
-        }],
+        params: serde_json::json!([user_op.clone(), entry_point]),
     };
+    let bundler_url = format!(
+        "{}/{}/rpc?apikey={}",
+        BUNDLER_API_URL, chain_id, bundler_api_token
+    );
     let response: serde_json::Value = http_client
-        .post(bundler_url)
+        .post(bundler_url.clone())
         .json(&jsonrpc_send_userop_request)
         .send()
         .await?
@@ -705,7 +774,7 @@ pub async fn send_user_operation_to_bundler(
 
     // Get the transaction receipt
     let jsonrpc_get_receipt_request = JsonRpcRequest {
-        id: generate_random_string(10),
+        id: 1,
         jsonrpc: JSON_RPC_VERSION.clone(),
         method: JSON_RPC_GET_RECEIPT_METHOD.clone(),
         params: vec![tx_hash],
@@ -912,15 +981,19 @@ mod tests {
         let user_op = UserOperation {
             sender: sender_address,
             nonce: U256::zero(),
-            init_code: Bytes::from(vec![0x01, 0x02, 0x03]),
             call_data: Bytes::from(vec![0x04, 0x05, 0x06]),
-            call_gas_limit: U256::zero(),
-            verification_gas_limit: U256::zero(),
+            call_gas_limit: U128::zero(),
+            verification_gas_limit: U128::zero(),
             pre_verification_gas: U256::zero(),
-            max_fee_per_gas: U256::zero(),
-            max_priority_fee_per_gas: U256::zero(),
-            paymaster_and_data: Bytes::from(vec![0x07, 0x08, 0x09]),
+            max_fee_per_gas: U128::zero(),
+            max_priority_fee_per_gas: U128::zero(),
             signature: Bytes::from(vec![0x0a, 0x0b, 0x0c]),
+            factory: None,
+            factory_data: None,
+            paymaster: None,
+            paymaster_data: None,
+            paymaster_post_op_gas_limit: None,
+            paymaster_verification_gas_limit: None,
         };
 
         let result = call_get_user_op_hash(rpc_project_id, chain_id, contract_address, user_op)
@@ -929,7 +1002,7 @@ mod tests {
 
         assert_eq!(
             hex::encode(result),
-            "133f6ac5944a128b3d4c4d69ac927b2d320fdde0b35b48962c48e1b71a977c28"
+            "a5e787e98d421a0e62b2457e525bc8a4b1bde14cc71d48c0cf139b0b1fadb1cc"
         );
     }
 
@@ -968,15 +1041,19 @@ mod tests {
         let user_operation = UserOperation {
             sender: sa_address,
             nonce: U256::zero(),
-            init_code: Bytes::from(vec![0x01, 0x02, 0x03]),
             call_data: Bytes::from(vec![0x04, 0x05, 0x06]),
-            call_gas_limit: U256::zero(),
-            verification_gas_limit: U256::zero(),
+            call_gas_limit: U128::zero(),
+            verification_gas_limit: U128::zero(),
             pre_verification_gas: U256::zero(),
-            max_fee_per_gas: U256::zero(),
-            max_priority_fee_per_gas: U256::zero(),
-            paymaster_and_data: Bytes::from(vec![0x07, 0x08, 0x09]),
+            max_fee_per_gas: U128::zero(),
+            max_priority_fee_per_gas: U128::zero(),
             signature: Bytes::from(vec![0x0a, 0x0b, 0x0c]),
+            factory: None,
+            factory_data: None,
+            paymaster: None,
+            paymaster_data: None,
+            paymaster_post_op_gas_limit: None,
+            paymaster_verification_gas_limit: None,
         };
 
         let result = call_get_signature(

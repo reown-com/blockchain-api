@@ -466,8 +466,7 @@ impl JsonRpcClient for SelfProvider {
         let id = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Time should't go backwards")
-            .as_millis()
-            .to_string();
+            .as_secs();
 
         let response = rpc_call(
             self.state.clone(),

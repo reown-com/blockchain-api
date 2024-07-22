@@ -6,7 +6,8 @@ use {
         storage::irn::OperationType,
         utils::crypto::{
             abi_encode_two_bytes_arrays, call_get_signature, call_get_user_op_hash,
-            disassemble_caip10, send_user_operation_to_bundler, CaipNamespaces,
+            disassemble_caip10, pack_signature, send_user_operation_to_bundler, to_eip191_message,
+            CaipNamespaces, ChainId,
         },
     },
     axum::{
@@ -16,14 +17,14 @@ use {
     },
     base64::prelude::*,
     ethers::{
-        core::k256::{
-            ecdsa::{signature::Signer, Signature, SigningKey},
-            pkcs8::DecodePrivateKey,
-        },
-        types::{Bytes, H160},
+        core::k256::ecdsa::SigningKey,
+        signers::LocalWallet,
+        types::{H160, H256},
+        utils::keccak256,
     },
     serde::{Deserialize, Serialize},
     std::{sync::Arc, time::SystemTime},
+    tracing::info,
     wc::future::FutureExt,
 };
 
@@ -48,14 +49,23 @@ pub async fn handler(
 #[tracing::instrument(skip(state), level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
-    Path(address): Path<String>,
+    Path(caip10_address): Path<String>,
     request_payload: CoSignRequest,
 ) -> Result<Response, RpcError> {
     // Checking the CAIP-10 address format
-    let (namespace, chain_id, address) = disassemble_caip10(&address)?;
+    let (namespace, chain_id, address) = disassemble_caip10(&caip10_address)?;
     if namespace != CaipNamespaces::Eip155 {
         return Err(RpcError::UnsupportedNamespace(namespace));
     }
+
+    // ChainID validation
+    let chain_id_uint = chain_id
+        .parse::<u64>()
+        .map_err(|_| RpcError::InvalidChainIdFormat(chain_id.clone()))?;
+    if !ChainId::is_supported(chain_id_uint) {
+        return Err(RpcError::UnsupportedChain(chain_id.clone()));
+    }
+
     let h160_address = address
         .parse::<H160>()
         .map_err(|_| RpcError::InvalidAddress)?;
@@ -86,12 +96,13 @@ async fn handler_internal(
         user_op.clone(),
     )
     .await?;
+    let eip191_user_op_hash = to_eip191_message(&user_op_hash);
 
     // Get the PCI object from the IRN
     let irn_client = state.irn.as_ref().ok_or(RpcError::IrnNotConfigured)?;
     let irn_call_start = SystemTime::now();
     let storage_permissions_item = irn_client
-        .hget(address.clone(), request_payload.pci.clone())
+        .hget(caip10_address.clone(), request_payload.pci.clone())
         .await?
         .ok_or_else(|| RpcError::PermissionNotFound(request_payload.pci.clone()))?;
     state
@@ -105,27 +116,42 @@ async fn handler_internal(
         .context
         .clone()
         .ok_or_else(|| RpcError::PermissionContextNotUpdated(request_payload.pci.clone()))?;
-    let permission_context = hex::decode(permission_context_item.context.permissions_context)
-        .map_err(|e| RpcError::WrongHexFormat(e.to_string()))?;
+    let permission_context = hex::decode(
+        permission_context_item
+            .context
+            .permissions_context
+            .clone()
+            .trim_start_matches("0x"),
+    )
+    .map_err(|e| {
+        RpcError::WrongHexFormat(format!(
+            "error:{:?} permission_context:{}",
+            e.to_string(),
+            permission_context_item.context.permissions_context
+        ))
+    })?;
 
     // Sign the userOp hash with the permission signing key
     let signing_key_bytes = BASE64_STANDARD
         .decode(storage_permissions_item.signing_key)
         .map_err(|e| RpcError::WrongBase64Format(e.to_string()))?;
-    let signer = SigningKey::from_pkcs8_der(&signing_key_bytes)?;
-    let signature: Signature = signer.sign(&user_op_hash);
+    let signer = SigningKey::from_bytes(signing_key_bytes.as_slice().into())
+        .map_err(|e| RpcError::KeyFormatError(e.to_string()))?;
+
+    // Create a LocalWallet for signing and signing the hashed message
+    let wallet = LocalWallet::from(signer);
+    let signature = wallet
+        .sign_hash(H256::from(&keccak256(eip191_user_op_hash.clone())))
+        .unwrap();
+    let packed_signature = pack_signature(&signature);
 
     // ABI encode the signatures
-    let concatenated_signature = abi_encode_two_bytes_arrays(
-        &Bytes::from(signature.to_der().as_bytes().to_vec()),
-        &user_op.signature,
-    );
+    let concatenated_signature = abi_encode_two_bytes_arrays(&packed_signature, &user_op.signature);
 
     // Update the userOp with the signature
     user_op.signature = concatenated_signature;
 
-    // Get the Signature
-    // UserOpBuilder contract address
+    // Get the Signature from the UserOpBuilder
     let user_op_builder_contract_address = permission_context_item
         .context
         .signer_data
@@ -142,31 +168,26 @@ async fn handler_internal(
     )
     .await?;
 
-    // Update the userOp with the signature
-    user_op.signature = get_signature_result;
+    // Todo: remove this debug line before production stage
+    info!("UserOpPacked final JSON: {:?}", serde_json::json!(user_op));
 
-    // Using the Biconomy bundler to send the userOperation
-    let entry_point = "0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789";
-    let simulation_type = "validation_and_execution";
-    let bundler_url = format!(
-        "https://bundler.biconomy.io/api/v2/{}/{}",
-        chain_id,
+    // Update the userOp with the signature,
+    // send the userOperation to the bundler and get the receipt
+    user_op.signature = get_signature_result;
+    let bundler_api_token =
         state
             .config
             .providers
-            .biconomy_bundler_token
+            .bundler_token
             .clone()
             .ok_or(RpcError::InvalidConfiguration(
-                "Missing biconomy bundler token".to_string()
-            ))?
-    );
-
-    // Send the userOperation to the bundler and get the receipt
+                "Missing bundler API token".to_string(),
+            ))?;
     let receipt = send_user_operation_to_bundler(
         &user_op,
-        &bundler_url,
-        entry_point,
-        simulation_type,
+        &chain_id,
+        &bundler_api_token,
+        ENTRY_POINT_V07_CONTRACT_ADDRESS,
         &state.http_client,
     )
     .await?;

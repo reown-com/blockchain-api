@@ -154,10 +154,7 @@ mod test {
             ("RPC_PROXY_PROVIDER_ONE_INCH_API_KEY", "ONE_INCH_API_KEY"),
             ("RPC_PROXY_PROVIDER_ONE_INCH_REFERRER", "ONE_INCH_REFERRER"),
             ("RPC_PROXY_PROVIDER_GETBLOCK_ACCESS_TOKENS", "{}"),
-            (
-                "RPC_PROXY_PROVIDER_BICONOMY_BUNDLER_TOKEN",
-                "BICONOMY_TOKEN",
-            ),
+            ("RPC_PROXY_PROVIDER_BUNDLER_TOKEN", "BUNDLER_TOKEN"),
             (
                 "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL",
                 "PROMETHEUS_QUERY_URL",
@@ -249,7 +246,7 @@ mod test {
                     one_inch_api_key: Some("ONE_INCH_API_KEY".to_owned()),
                     one_inch_referrer: Some("ONE_INCH_REFERRER".to_owned()),
                     getblock_access_tokens: Some("{}".to_owned()),
-                    biconomy_bundler_token: Some("BICONOMY_TOKEN".to_owned()),
+                    bundler_token: Some("BUNDLER_TOKEN".to_owned()),
                 },
                 rate_limiting: RateLimitingConfig {
                     max_tokens: Some(100),

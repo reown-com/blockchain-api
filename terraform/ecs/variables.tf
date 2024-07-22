@@ -213,8 +213,8 @@ variable "getblock_access_tokens" {
   sensitive   = true
 }
 
-variable "biconomy_bundler_token" {
-  description = "The API key for Biconomy"
+variable "bundler_token" {
+  description = "Bundler API token"
   type        = string
   sensitive   = true
 }
