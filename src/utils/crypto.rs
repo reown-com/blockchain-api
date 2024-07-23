@@ -225,7 +225,7 @@ pub fn pack_signature(unpacked: &EthSignature) -> Bytes {
     r.to_big_endian(&mut r_bytes);
     s.to_big_endian(&mut s_bytes);
     // Pack r, s, and v into a single byte array
-    let mut packed_signature = Vec::with_capacity(65);
+    let mut packed_signature = Vec::with_capacity(r_bytes.len() + s_bytes.len() + 1);
     packed_signature.extend_from_slice(&r_bytes);
     packed_signature.extend_from_slice(&s_bytes);
     packed_signature.push(v);
