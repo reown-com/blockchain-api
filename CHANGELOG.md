@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.84.0 - 2024-07-23
+#### Features
+- **(sessions)** updating the cosign signing and the bundler (#715) - (d91a40f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.83.0 - 2024-07-19
 #### Bug Fixes
 - **(grafana)** fixing no data irn latency alert and registered names counter (#711) - (e461f82) - Max Kalashnikoff | maksy.eth
