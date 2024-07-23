@@ -50,7 +50,7 @@ async fn handler_internal(
     // Generate a secp256k1 keys and export to DER Base64 format
     let signing_key = SigningKey::random(&mut OsRng);
     let verifying_key = VerifyingKey::from(&signing_key);
-    let private_key_der = signing_key.to_bytes();
+    let private_key_der = signing_key.to_bytes().to_vec();
     let private_key_der_base64 = BASE64_STANDARD.encode(private_key_der);
     let public_key_der = verifying_key.to_encoded_point(false).as_bytes().to_vec();
     let public_key_der_base64 = BASE64_STANDARD.encode(&public_key_der);

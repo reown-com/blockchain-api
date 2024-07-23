@@ -46,6 +46,9 @@ pub enum RpcError {
     #[error("Requested chain provider is temporarily unavailable: {0}")]
     ChainTemporarilyUnavailable(String),
 
+    #[error("Invalid chainId format for the requested namespace: {0}")]
+    InvalidChainIdFormat(String),
+
     #[error("Specified provider is not supported: {0}")]
     UnsupportedProvider(String),
 
@@ -215,7 +218,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "".to_string(),
-                    format!("Crypto utils invalid argument: {}", e),
+                    format!("Crypto utils error: {}", e),
                 )),
             )
                 .into_response(),
@@ -227,6 +230,14 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+            Self::InvalidChainIdFormat(chain_id) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(new_error_response(
+                        "chainId".to_string(),
+                        format!("Requested {chain_id} has invalid format for the requested namespace"),
+                    )),
+                )
+                    .into_response(),
             Self::UnsupportedProvider(provider) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
