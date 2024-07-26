@@ -39,9 +39,9 @@ pub async fn insert_name(
         VALUES ($1, $2::hstore)
     ";
     sqlx::query::<Postgres>(insert_name_query)
-        .bind(&name.clone())
+        .bind(name.clone())
         // Convert JSON to String for hstore update
-        .bind(&utils::hashmap_to_hstore(&attributes))
+        .bind(utils::hashmap_to_hstore(&attributes))
         .execute(&mut *transaction)
         .await?;
 
@@ -85,7 +85,7 @@ pub async fn update_name_attributes(
     ";
     let row = sqlx::query(update_attributes_query)
         .bind(&name)
-        .bind(&utils::hashmap_to_hstore(&attributes))
+        .bind(utils::hashmap_to_hstore(&attributes))
         .fetch_one(postgres)
         .await?;
     let result: serde_json::Value = row.get(0);

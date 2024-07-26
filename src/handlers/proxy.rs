@@ -139,7 +139,7 @@ pub async fn rpc_provider_call(
     body: Bytes,
     provider: Arc<dyn crate::providers::RpcProvider>,
 ) -> Result<Response, RpcError> {
-    Span::current().record("provider", &provider.provider_kind().to_string());
+    Span::current().record("provider", provider.provider_kind().to_string());
     let chain_id = query_params.chain_id.clone();
     let origin = headers
         .get("origin")
