@@ -43,11 +43,6 @@ pub struct RpcQueryParams {
     pub source: Option<MessageSource>,
 }
 
-#[derive(Serialize)]
-pub struct SuccessResponse {
-    status: String,
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum SupportedCurrencies {

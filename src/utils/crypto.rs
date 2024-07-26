@@ -41,7 +41,7 @@ pub const JSON_RPC_BUNDLER_METHOD_STR: &str = "eth_sendUserOperation";
 pub static JSON_RPC_BUNDLER_METHOD: once_cell::sync::Lazy<Arc<str>> =
     once_cell::sync::Lazy::new(|| Arc::from(JSON_RPC_BUNDLER_METHOD_STR));
 
-pub const JSON_RPC_GET_RECEIPT_METHOD_STR: &str = "eth_getTransactionReceipt";
+pub const JSON_RPC_GET_RECEIPT_METHOD_STR: &str = "eth_getUserOperationReceipt";
 pub static JSON_RPC_GET_RECEIPT_METHOD: once_cell::sync::Lazy<Arc<str>> =
     once_cell::sync::Lazy::new(|| Arc::from(JSON_RPC_GET_RECEIPT_METHOD_STR));
 
@@ -734,7 +734,7 @@ pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u32) -
     balance_f64 * price
 }
 
-/// Function to send UserOperation to the bundler and return the receipt
+/// Function to send UserOperation to the bundler and return the user operation tx hash
 #[tracing::instrument(skip(http_client), level = "debug")]
 pub async fn send_user_operation_to_bundler(
     user_op: &UserOperation,
@@ -742,7 +742,7 @@ pub async fn send_user_operation_to_bundler(
     bundler_api_token: &str,
     entry_point: &str,
     http_client: &Client,
-) -> Result<serde_json::Value, CryptoUitlsError> {
+) -> Result<String, CryptoUitlsError> {
     // Send the UserOperation to the bundler
     let jsonrpc_send_userop_request = JsonRpcRequest {
         id: 1,
@@ -772,24 +772,12 @@ pub async fn send_user_operation_to_bundler(
         .get("result")
         .ok_or(CryptoUitlsError::NoResultInRpcResponse)?;
 
-    // Get the transaction receipt
-    let jsonrpc_get_receipt_request = JsonRpcRequest {
-        id: 1,
-        jsonrpc: JSON_RPC_VERSION.clone(),
-        method: JSON_RPC_GET_RECEIPT_METHOD.clone(),
-        params: vec![tx_hash],
-    };
-    let receipt: serde_json::Value = http_client
-        .post(bundler_url)
-        .json(&jsonrpc_get_receipt_request)
-        .send()
-        .await?
-        .json()
-        .await?;
+    let tx_hash_string = tx_hash.as_str().ok_or(CryptoUitlsError::RpcResponseError(
+        "Error converting tx hash result into string".to_string(),
+    ))?;
 
-    Ok(receipt)
+    Ok(tx_hash_string.into())
 }
-
 #[cfg(test)]
 mod tests {
     use {

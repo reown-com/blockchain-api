@@ -32,8 +32,9 @@ const ENTRY_POINT_V07_CONTRACT_ADDRESS: &str = "0x0000000071727De22E5E9d8BAf0edA
 
 /// Co-sign response schema
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CoSignResponse {
-    receipt: String,
+    user_operation_tx_hash: String,
 }
 
 pub async fn handler(
@@ -183,7 +184,7 @@ async fn handler_internal(
             .ok_or(RpcError::InvalidConfiguration(
                 "Missing bundler API token".to_string(),
             ))?;
-    let receipt = send_user_operation_to_bundler(
+    let user_operation_tx_hash = send_user_operation_to_bundler(
         &user_op,
         &chain_id,
         &bundler_api_token,
@@ -192,5 +193,8 @@ async fn handler_internal(
     )
     .await?;
 
-    Ok(Json(receipt).into_response())
+    Ok(Json(CoSignResponse {
+        user_operation_tx_hash,
+    })
+    .into_response())
 }
