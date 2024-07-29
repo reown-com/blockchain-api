@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.85.0 - 2024-07-29
+#### Features
+- **(analytics)** adding  optional field to the analytics (#718) - (88284e9) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.84.1 - 2024-07-26
 #### Bug Fixes
 - **(sessions)** removing getting of the receipt from the co-sign request (#717) - (04b3809) - Max Kalashnikoff | maksy.eth
