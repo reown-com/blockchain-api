@@ -127,6 +127,7 @@ async fn handler_internal(
             region,
             country,
             continent,
+            query.client_id.clone(),
         ));
     }
 
@@ -173,6 +174,8 @@ pub struct IdentityQueryParams {
     /// Optional flag to control the cache to fetch the data from the provider
     /// or serve from the cache where applicable
     pub use_cache: Option<bool>,
+    /// Client ID for analytics
+    pub client_id: Option<String>,
 }
 
 #[tracing::instrument(skip_all, level = "debug")]
