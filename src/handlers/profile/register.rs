@@ -200,7 +200,9 @@ pub async fn handler_internal(
     match get_name_and_addresses_by_name(payload.name.clone(), &state.postgres.clone()).await {
         Ok(response) => Ok(Json(response).into_response()),
         Err(e) => match e {
-            SqlxError::RowNotFound => Err(RpcError::NameNotFound(payload.name.clone())),
+            SqlxError::RowNotFound => Err(RpcError::NameRegistrationError(
+                "Name was not found in the database after the registration".into(),
+            )),
             _ => {
                 // Handle other types of errors
                 error!("Failed to lookup name: {}", e);
