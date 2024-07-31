@@ -52,8 +52,7 @@ async fn handler_internal(
         Ok(response) => Ok(Json(response).into_response()),
         Err(e) => match e {
             SqlxError::RowNotFound => {
-                // Return an empty response when there are no results when `v=2` query
-                // parameter is set to fix the console errors and for the future v2 support
+                // Return `HTTP 404` by default and an empty array for the future v2 support
                 return {
                     if query.api_version == Some(2) {
                         Ok(Json(EMPTY_RESPONSE).into_response())

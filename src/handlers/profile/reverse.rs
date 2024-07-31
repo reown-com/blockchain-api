@@ -41,8 +41,7 @@ async fn handler_internal(
     };
 
     if names.is_empty() {
-        // Return an empty response when there are no results when `v=2` query
-        // parameter is set to fix the console errors and for the future v2 support
+        // Return `HTTP 404` by default and an empty array for the future v2 support
         if query.api_version == Some(2) {
             return Ok(Json(EMPTY_RESPONSE).into_response());
         } else {
