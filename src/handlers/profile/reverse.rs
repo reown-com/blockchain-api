@@ -43,7 +43,7 @@ async fn handler_internal(
     if names.is_empty() {
         // Return an empty response when there are no results when `v=2` query
         // parameter is set to fix the console errors and for the future v2 support
-        if query.v == Some(2) {
+        if query.api_version == Some(2) {
             return Ok(Json(EMPTY_RESPONSE).into_response());
         } else {
             return Err(RpcError::NameByAddressNotFound);

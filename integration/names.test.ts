@@ -290,15 +290,15 @@ describe('Account profile names', () => {
       () => (Math.random().toString(36)[2] || '0')).join('')
     const name = `integration-test-${randomString}.${zone}`;
     
-    // Test v=1 where 404 is returned
+    // Test default behavior where 404 is returned
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/profile/account/${name}`
     )
     expect(resp.status).toBe(404)
     
-    // Test v=2 where 200 and empty array is returned
+    // Test apiVersion=2 where 200 and empty array is returned
     resp = await httpClient.get(
-      `${baseUrl}/v1/profile/account/${name}?v=2`
+      `${baseUrl}/v1/profile/account/${name}?apiVersion=2`
     )
     expect(resp.status).toBe(200)
     expect(typeof resp.data).toBe('object')
@@ -324,15 +324,15 @@ describe('Account profile names', () => {
     const wallet = ethers.Wallet.createRandom();
     const address = wallet.address;
 
-    // Test v=1 where 404 is returned
+    // Test default behavior where 404 is returned
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/profile/reverse/${address}`
     )
     expect(resp.status).toBe(404)
     
-    // Test v=2 where 200 and empty array is returned
+    // Test apiVersion=2 where 200 and empty array is returned
     resp = await httpClient.get(
-      `${baseUrl}/v1/profile/reverse/${address}?v=2`
+      `${baseUrl}/v1/profile/reverse/${address}?apiVersion=2`
     )
     expect(resp.status).toBe(200)
     expect(typeof resp.data).toBe('object')

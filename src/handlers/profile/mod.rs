@@ -86,5 +86,5 @@ pub struct RegisterRequest {
 #[serde(rename_all = "camelCase")]
 pub struct LookupQueryParams {
     /// Optional version parameter to support version-dependent responses
-    pub v: Option<usize>,
+    pub api_version: Option<usize>,
 }
