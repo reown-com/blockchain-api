@@ -135,6 +135,9 @@ pub enum RpcError {
     #[error("Name is not registered: {0}")]
     NameNotRegistered(String),
 
+    #[error("Name registeration error: {0}")]
+    NameRegistrationError(String),
+
     #[error("Name is not found: {0}")]
     NameNotFound(String),
 

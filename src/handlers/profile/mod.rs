@@ -31,6 +31,10 @@ static SUPPORTED_ATTRIBUTES: Lazy<HashMap<String, Regex>> = Lazy::new(|| {
     map
 });
 
+/// Empty vector as an empty response
+/// This is used to return an empty response when there are no results
+pub const EMPTY_RESPONSE: Vec<String> = Vec::new();
+
 /// Payload to register domain name that should be serialized to JSON
 /// and passed to the RegisterRequest.message
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -75,4 +79,12 @@ pub struct RegisterRequest {
     pub coin_type: u32,
     /// Address
     pub address: String,
+}
+
+/// Forward and reverse lookup query parameters
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LookupQueryParams {
+    /// Optional version parameter to support version-dependent responses
+    pub api_version: Option<usize>,
 }
