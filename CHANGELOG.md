@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.86.0 - 2024-07-31
+#### Features
+- **(names)** adding `apiVersion=2` query parameter to fix not-found responses (#719) - (9ebf459) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.85.0 - 2024-07-29
 #### Features
 - **(analytics)** adding  optional field to the analytics (#718) - (88284e9) - Max Kalashnikoff | maksy.eth
