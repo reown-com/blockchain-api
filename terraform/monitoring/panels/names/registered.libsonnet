@@ -14,7 +14,7 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr        = 'account_names_count',
+      expr        = 'max(account_names_count)',
       refId       = "Names count",
     ))
 }
