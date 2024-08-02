@@ -1,5 +1,9 @@
 use {
-    crate::{analytics::MessageSource, error::RpcError},
+    crate::{
+        analytics::MessageSource,
+        error::RpcError,
+        providers::{BundlerOpsProvider, SupportedBundlerOps},
+    },
     alloy_primitives::Address,
     base64::prelude::*,
     ethers::{
@@ -16,7 +20,6 @@ use {
     once_cell::sync::Lazy,
     regex::Regex,
     relay_rpc::auth::cacao::{signature::eip6492::verify_eip6492, CacaoError},
-    reqwest::Client,
     serde::{Deserialize, Serialize},
     std::{str::FromStr, sync::Arc},
     strum::IntoEnumIterator,
@@ -36,16 +39,6 @@ static CAIP_ADDRESS_REGEX: Lazy<Regex> = Lazy::new(|| {
 pub const JSON_RPC_VERSION_STR: &str = "2.0";
 pub static JSON_RPC_VERSION: once_cell::sync::Lazy<Arc<str>> =
     once_cell::sync::Lazy::new(|| Arc::from(JSON_RPC_VERSION_STR));
-
-pub const JSON_RPC_BUNDLER_METHOD_STR: &str = "eth_sendUserOperation";
-pub static JSON_RPC_BUNDLER_METHOD: once_cell::sync::Lazy<Arc<str>> =
-    once_cell::sync::Lazy::new(|| Arc::from(JSON_RPC_BUNDLER_METHOD_STR));
-
-pub const JSON_RPC_GET_RECEIPT_METHOD_STR: &str = "eth_getUserOperationReceipt";
-pub static JSON_RPC_GET_RECEIPT_METHOD: once_cell::sync::Lazy<Arc<str>> =
-    once_cell::sync::Lazy::new(|| Arc::from(JSON_RPC_GET_RECEIPT_METHOD_STR));
-
-const BUNDLER_API_URL: &str = "https://api.pimlico.io/v2";
 
 #[derive(thiserror::Error, Debug)]
 pub enum CryptoUitlsError {
@@ -75,8 +68,8 @@ pub enum CryptoUitlsError {
     HttpRequest(#[from] reqwest::Error),
     #[error("No result JSON-RPC call response")]
     NoResultInRpcResponse,
-    #[error("Error in JSON-RPC call response: {0}")]
-    RpcResponseError(String),
+    #[error("Error in JSON-RPC call to the Bundler: {0}")]
+    BundlerRpcResponseError(String),
 }
 
 /// JSON-RPC request schema
@@ -734,46 +727,34 @@ pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u32) -
 }
 
 /// Function to send UserOperation to the bundler and return the user operation tx hash
-#[tracing::instrument(skip(http_client), level = "debug")]
+#[tracing::instrument(skip(bundler), level = "debug")]
 pub async fn send_user_operation_to_bundler(
     user_op: &UserOperation,
     chain_id: &str,
-    bundler_api_token: &str,
     entry_point: &str,
-    http_client: &Client,
-) -> Result<String, CryptoUitlsError> {
+    bundler: &dyn BundlerOpsProvider,
+) -> Result<String, RpcError> {
     // Send the UserOperation to the bundler
-    let jsonrpc_send_userop_request = JsonRpcRequest {
-        id: 1,
-        jsonrpc: JSON_RPC_VERSION.clone(),
-        method: JSON_RPC_BUNDLER_METHOD.clone(),
-        params: serde_json::json!([user_op.clone(), entry_point]),
-    };
-    let bundler_url = format!(
-        "{}/{}/rpc?apikey={}",
-        BUNDLER_API_URL, chain_id, bundler_api_token
-    );
-    let response: serde_json::Value = http_client
-        .post(bundler_url.clone())
-        .json(&jsonrpc_send_userop_request)
-        .send()
-        .await?
-        .json()
+    let response = bundler
+        .bundler_rpc_call(
+            chain_id,
+            1,
+            &JSON_RPC_VERSION[..],
+            &SupportedBundlerOps::EthSendUserOperation,
+            serde_json::json!([user_op.clone(), entry_point]),
+        )
         .await?;
-
-    // Check if there was an error in the response
-    if let Some(error) = response.get("error") {
-        return Err(CryptoUitlsError::RpcResponseError(error.to_string()));
-    }
 
     // Get the transaction hash from the response
     let tx_hash = response
         .get("result")
         .ok_or(CryptoUitlsError::NoResultInRpcResponse)?;
 
-    let tx_hash_string = tx_hash.as_str().ok_or(CryptoUitlsError::RpcResponseError(
-        "Error converting tx hash result into string".to_string(),
-    ))?;
+    let tx_hash_string = tx_hash
+        .as_str()
+        .ok_or(CryptoUitlsError::BundlerRpcResponseError(
+            "Error converting tx hash result into string".to_string(),
+        ))?;
 
     Ok(tx_hash_string.into())
 }

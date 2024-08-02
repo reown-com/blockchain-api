@@ -52,6 +52,9 @@ pub enum RpcError {
     #[error("Specified provider is not supported: {0}")]
     UnsupportedProvider(String),
 
+    #[error("Specified bundler is not supported: {0}")]
+    UnsupportedBundler(String),
+
     #[error("Failed to reach the provider")]
     ProviderError,
 
@@ -246,6 +249,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "provider".to_string(),
                     format!("Provider {provider} is not supported"),
+                )),
+            )
+                .into_response(),
+            Self::UnsupportedBundler(bundler) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "bundler".to_string(),
+                    format!("Bundler {bundler} is not supported"),
                 )),
             )
                 .into_response(),

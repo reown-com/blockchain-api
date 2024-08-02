@@ -175,21 +175,11 @@ async fn handler_internal(
     // Update the userOp with the signature,
     // send the userOperation to the bundler and get the receipt
     user_op.signature = get_signature_result;
-    let bundler_api_token =
-        state
-            .config
-            .providers
-            .bundler_token
-            .clone()
-            .ok_or(RpcError::InvalidConfiguration(
-                "Missing bundler API token".to_string(),
-            ))?;
     let user_operation_tx_hash = send_user_operation_to_bundler(
         &user_op,
         &chain_id,
-        &bundler_api_token,
         ENTRY_POINT_V07_CONTRACT_ADDRESS,
-        &state.http_client,
+        state.providers.bundler_ops_provider.as_ref(),
     )
     .await?;
 

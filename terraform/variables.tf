@@ -133,8 +133,8 @@ variable "getblock_access_tokens" {
   sensitive   = true
 }
 
-variable "bundler_token" {
-  description = "Bundler API token"
+variable "pimlico_api_key" {
+  description = "Pimlico bundler API token key"
   type        = string
   sensitive   = true
 }
