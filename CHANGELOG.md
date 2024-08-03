@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.87.0 - 2024-08-03
+#### Bug Fixes
+- **(o11y)** ENS Metric tracked without aggregate (#720) - (ae56668) - Derek
+#### Features
+- **(cosigner)** changing get signature function name and signatures concat (#722) - (2b8ced5) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.86.0 - 2024-07-31
 #### Features
 - **(names)** adding `apiVersion=2` query parameter to fix not-found responses (#719) - (9ebf459) - Max Kalashnikoff | maksy.eth
