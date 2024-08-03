@@ -234,9 +234,8 @@ pub fn pack_signature(unpacked: &EthSignature) -> Bytes {
 
 /// Encode two bytes array into a single ABI encoded bytes
 pub fn abi_encode_two_bytes_arrays(bytes1: &Bytes, bytes2: &Bytes) -> Bytes {
-    let tokens = vec![Token::Bytes(bytes1.to_vec()), Token::Bytes(bytes2.to_vec())];
-
-    Bytes::from(ethers::abi::encode(&tokens))
+    let data = vec![Token::Bytes(bytes1.to_vec()), Token::Bytes(bytes2.to_vec())];
+    Bytes::from(ethers::abi::encode(&[Token::Array(data)]))
 }
 
 /// Returns the keccak256 EIP-191 hash of the message
@@ -480,7 +479,7 @@ pub async fn call_get_signature(
         Safe7579UserOperationBuilder,
         r#"[
             struct v07UserOperation { address sender; uint256 nonce; bytes initCode; bytes callData; bytes32 accountGasLimits; uint256 preVerificationGas; bytes32 gasFees; bytes paymasterAndData; bytes signature}
-            function getSignature(address smartAccount, v07UserOperation calldata userOperation, bytes calldata context) public view returns (bytes)
+            function formatSignature(address smartAccount, v07UserOperation calldata userOperation, bytes calldata context) public view returns (bytes)
         ]"#,
     );
 
@@ -506,12 +505,12 @@ pub async fn call_get_signature(
     };
 
     let signature = contract
-        .get_signature(smart_account_address, user_op, context)
+        .format_signature(smart_account_address, user_op, context)
         .call()
         .await
         .map_err(|e| {
             CryptoUitlsError::ContractCallError(format!(
-                "Failed to call getSignature in Safe7579UserOperationBuilder contract: {}",
+                "Failed to call formatSignature in Safe7579UserOperationBuilder contract: {}",
                 e
             ))
         })?;
