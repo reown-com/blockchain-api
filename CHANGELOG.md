@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.89.0 - 2024-08-05
+#### Features
+- bumping packages versions (#723) - (54bce91) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.88.0 - 2024-08-05
 #### Features
 - **(bundler)** implementing bundler operations endpoint (#721) - (5b43b7c) - Max Kalashnikoff | maksy.eth
