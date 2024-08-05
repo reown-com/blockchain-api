@@ -4,7 +4,9 @@ version = "0.88.0"
 edition = "2021"
 authors = [
     "Derek <derek@walletconnect.com>",
-    "Raku <maciejrak@walletconnect.com"
+    "Raku <maciejrak@walletconnect.com>",
+    "Chris <chris@walletconnect.com>",
+    "Max <max@walletconnect.com>"
 ]
 build = "build.rs"
 
@@ -13,20 +15,20 @@ wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.9.0", fe
 relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", tag = "v0.30.0", features = ["cacao"] }
 
 # Async
-async-trait = "0.1.57"
+async-trait = "0.1.81"
 tokio = { version = "1", features = ["full"] }
 
 # Web
-hyper = "0.14.4"
+hyper = "0.14.28"
 hyper-tls = "0.5.0"
 tap = "1.0"
 axum = { version = "0.6", features = ["json", "tokio", "ws"] }
-tower = "0.4.11"
-tower-http = { version = "0.4.0", features = ["cors", "trace", "request-id", "util"] }
+tower = "0.4.13"
+tower-http = { version = "0.4.4", features = ["cors", "trace", "request-id", "util"] }
 jsonrpc = "0.14.0"
 async-tungstenite = { version = "0.20.0", features = ["tokio", "tokio-runtime", "tokio-native-tls"] }
 url = "2.5"
-reqwest = { version= "0.11", features = ["deflate", "brotli", "gzip"] }
+reqwest = { version= "0.12", features = ["deflate", "brotli", "gzip"] }
 
 # Serialization
 rmp-serde = "1.3"
@@ -45,7 +47,7 @@ aws-config = "1.1"
 aws-sdk-s3 = "1.13"
 deadpool-redis = "0.14"
 moka = "0.12"
-sqlx = { version = "0.7.3", features = ["runtime-tokio-native-tls", "postgres", "chrono"] }
+sqlx = { version = "0.7.4", features = ["runtime-tokio-native-tls", "postgres", "chrono"] }
 
 # IRN
 irn_api = { package = "irn_api", path = "irn/crates/irn_api", features = ["client"] }
@@ -73,17 +75,17 @@ futures-util = "0.3.28"
 tokio-stream = "0.1.12"
 axum-tungstenite = "0.2.0"
 
-rand = "0.8.4"
+rand = "0.8.5"
 rand_core = "0.6"
 prometheus-http-query = "0.6.6"
 ethers = { version = "2.0.11", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
 alloy-primitives = "0.7"
 
-bytes = "1.4.0"
+bytes = "1.7.1"
 base64 = "0.22"
 regex = "1.10"
-sha256 = "1.2.2"
-uuid = "1.9"
+sha256 = "1.5"
+uuid = "1.10"
 
 # System CPU and Memory metrics
 sysinfo = "0.30"
