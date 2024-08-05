@@ -48,6 +48,7 @@ mod infura;
 mod mantle;
 mod near;
 mod one_inch;
+mod pimlico;
 mod pokt;
 mod publicnode;
 mod quicknode;
@@ -65,6 +66,7 @@ pub use {
     mantle::MantleProvider,
     near::NearProvider,
     one_inch::OneInchProvider,
+    pimlico::PimlicoProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
     quicknode::QuicknodeProvider,
@@ -92,8 +94,8 @@ pub struct ProvidersConfig {
     pub one_inch_referrer: Option<String>,
     /// GetBlock provider access tokens in JSON format
     pub getblock_access_tokens: Option<String>,
-    /// Bundler API token
-    pub bundler_token: Option<String>,
+    /// Pimlico API token key
+    pub pimlico_api_key: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -121,6 +123,7 @@ pub struct ProviderRepository {
     pub balance_provider: Arc<dyn BalanceProvider>,
     pub conversion_provider: Arc<dyn ConversionProvider>,
     pub fungible_price_provider: Arc<dyn FungiblePriceProvider>,
+    pub bundler_ops_provider: Arc<dyn BundlerOpsProvider>,
 }
 
 impl ProviderRepository {
@@ -185,6 +188,8 @@ impl ProviderRepository {
             "https://pay.coinbase.com/api/v1".into(),
         ));
 
+        let bundler_ops_provider = Arc::new(PimlicoProvider::new(config.pimlico_api_key.clone()));
+
         Self {
             supported_chains: SupportedChains {
                 http: HashSet::new(),
@@ -203,6 +208,7 @@ impl ProviderRepository {
             balance_provider,
             conversion_provider: one_inch_provider.clone(),
             fungible_price_provider: one_inch_provider.clone(),
+            bundler_ops_provider,
         }
     }
 
@@ -648,4 +654,34 @@ pub trait ConversionProvider: Send + Sync + Debug {
 
     async fn get_allowance(&self, params: AllowanceQueryParams)
         -> RpcResult<AllowanceResponseBody>;
+}
+
+/// List of supported bundler operations
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq, Hash)]
+pub enum SupportedBundlerOps {
+    #[serde(rename = "wallet_getCallsStatus")]
+    WalletGetCallsStatus,
+    #[serde(rename = "wallet_showCallsStatus")]
+    WalletShowCallsStatus,
+    #[serde(rename = "eth_getUserOperationReceipt")]
+    EthGetUserOperationReceipt,
+    #[serde(rename = "eth_sendUserOperation")]
+    EthSendUserOperation,
+}
+
+/// Provider for the bundler operations
+#[async_trait]
+pub trait BundlerOpsProvider: Send + Sync + Debug {
+    /// Send JSON-RPC request to the bundler
+    async fn bundler_rpc_call(
+        &self,
+        chain_id: &str,
+        id: u64,
+        jsonrpc: &str,
+        method: &SupportedBundlerOps,
+        params: serde_json::Value,
+    ) -> RpcResult<serde_json::Value>;
+
+    /// Maps the operations enum variant to its provider-specific operation string.
+    fn to_provider_op(&self, op: &SupportedBundlerOps) -> String;
 }
