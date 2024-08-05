@@ -15,11 +15,17 @@ use {
 };
 
 #[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum SupportedBundlers {
+    Pimlico,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BundlerQueryParams {
     pub project_id: String,
     pub chain_id: String,
-    pub bundler: String,
+    pub bundler: SupportedBundlers,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -50,10 +56,6 @@ async fn handler_internal(
         .validate_project_access_and_quota(&query_params.project_id.clone())
         .await?;
     let evm_chain_id = disassemble_caip2(&query_params.chain_id)?.1;
-    // We are supporting only Pimlico for testing stage
-    if query_params.bundler != "pimlico" {
-        return Err(RpcError::UnsupportedBundler(query_params.bundler));
-    }
     let result = state
         .providers
         .bundler_ops_provider
