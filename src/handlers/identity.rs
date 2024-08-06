@@ -348,12 +348,21 @@ pub fn handle_rpc_error(error: ProviderError) -> Result<(), RpcError> {
     match error {
         ProviderError::CustomError(e) if e.starts_with(SELF_PROVIDER_ERROR_PREFIX) => {
             let error_detail = e.trim_start_matches(SELF_PROVIDER_ERROR_PREFIX);
-            // Exceptions for the detailed HTTP error return on RPC call
+            // Exception for no available JSON-RPC providers
             if error_detail.contains("503 Service Unavailable") {
-                Err(RpcError::ProviderError)
-            } else {
-                Err(RpcError::IdentityLookup(error_detail.to_string()))
+                return Err(RpcError::ProviderError);
             }
+            // Proceed with Ok() if the error is related to the contract call error
+            // since there should be a wrong NFT avatar contract address.
+            if error_detail.contains("Contract call error") {
+                warn!(
+                    "Contract call error while looking up identity: {:?}",
+                    error_detail
+                );
+                return Ok(());
+            }
+
+            Err(RpcError::IdentityLookup(error_detail.to_string()))
         }
         ProviderError::CustomError(e) => {
             debug!("Custom error while looking up identity: {:?}", e);
@@ -433,6 +442,9 @@ pub enum SelfProviderError {
 
     #[error("Generic parameter error: {0}")]
     GenericParameterError(String),
+
+    #[error("Contract call error: {0}")]
+    ContractCallError(String),
 }
 
 impl ethers::providers::RpcError for SelfProviderError {
@@ -506,21 +518,22 @@ impl JsonRpcClient for SelfProvider {
             JsonRpcResponse::Error(e) => return Err(SelfProviderError::JsonRpcError(e)),
             JsonRpcResponse::Result(r) => {
                 // We shouldn't process with `0x` result because this leads to the ethers-rs
-                // panic when looking for an avatar
+                // panic when looking for an avatar. This is a workaround for the ethers-rs
+                // when avatar pointing to the wrong ERC-721 contract address.
                 if r.result == EMPTY_RPC_RESPONSE {
-                    return Err(SelfProviderError::ProviderError {
-                        status: StatusCode::METHOD_NOT_ALLOWED,
-                        body: format!("JSON-RPC result is {}", EMPTY_RPC_RESPONSE),
-                    });
+                    return Err(SelfProviderError::ContractCallError(
+                        "Empty response from the contract call".into(),
+                    ));
                 } else {
                     r.result
                 }
             }
         };
-        let result = serde_json::from_value(result).map_err(|_| {
-            SelfProviderError::GenericParameterError(
-                "Caller always provides generic parameter R=Bytes".into(),
-            )
+        let result = serde_json::from_value(result).map_err(|e| {
+            SelfProviderError::GenericParameterError(format!(
+                "Result should always provide generic parameter which is deserializable: {}",
+                e
+            ))
         })?;
         Ok(result)
     }
