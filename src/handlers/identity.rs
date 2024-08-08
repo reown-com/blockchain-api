@@ -531,7 +531,7 @@ impl JsonRpcClient for SelfProvider {
         };
         let result = serde_json::from_value(result).map_err(|e| {
             SelfProviderError::GenericParameterError(format!(
-                "Result should always provide generic parameter which is deserializable: {}",
+                "Caller should always provide generic parameter R=Bytes: {}",
                 e
             ))
         })?;
