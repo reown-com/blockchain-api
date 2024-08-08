@@ -361,6 +361,14 @@ pub fn handle_rpc_error(error: ProviderError) -> Result<(), RpcError> {
                 );
                 return Ok(());
             }
+            // Proceed with Ok() if the error is related to the JSON-RPC -32000 error code.
+            if error_detail.contains("code: -32000") {
+                warn!(
+                    "JsonRpcError code -32000 while looking up identity: {:?}",
+                    error_detail
+                );
+                return Ok(());
+            }
 
             Err(RpcError::IdentityLookup(error_detail.to_string()))
         }
