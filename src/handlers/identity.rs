@@ -355,8 +355,16 @@ pub fn handle_rpc_error(error: ProviderError) -> Result<(), RpcError> {
             // Proceed with Ok() if the error is related to the contract call error
             // since there should be a wrong NFT avatar contract address.
             if error_detail.contains("Contract call error") {
-                warn!(
+                debug!(
                     "Contract call error while looking up identity: {:?}",
+                    error_detail
+                );
+                return Ok(());
+            }
+            // Proceed with Ok() if the error is related to the JSON-RPC -32000 error code.
+            if error_detail.contains("code: -32000") {
+                debug!(
+                    "JsonRpcError code -32000 while looking up identity: {:?}",
                     error_detail
                 );
                 return Ok(());
