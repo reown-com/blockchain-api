@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.89.2 - 2024-08-08
+#### Bug Fixes
+- **(identity)** properly handling of the JSON-RPC code `-32000` (#725) - (1e70a29) - Max Kalashnikoff | maksy.eth
+- **(tests)** increasing integration tests timeout (#726) - (9ad0d52) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.89.1 - 2024-08-08
 #### Bug Fixes
 - **(identity)** properly handling of the avatar NFT absence (#724) - (232afd2) - Max Kalashnikoff | maksy.eth
