@@ -574,8 +574,12 @@ pub enum ChainId {
         serialize = "gnosischain"
     )]
     GnosisChain = 100,
-    #[strum(serialize = "zksync", serialize = "zksyncera")]
-    ZkSyncEra = 328,
+    #[strum(
+        serialize = "zksync",
+        serialize = "zksyncera",
+        serialize = "zksync-era"
+    )]
+    ZkSyncEra = 324,
     Zora = 7854577,
 }
 
