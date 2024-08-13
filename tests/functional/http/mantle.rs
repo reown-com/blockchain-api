@@ -19,8 +19,8 @@ async fn mantle_provider(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &ProviderKind::Mantle,
-        "eip155:5001",
-        "0x1389",
+        "eip155:5003",
+        "0x138b",
     )
     .await;
 }

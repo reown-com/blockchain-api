@@ -16,7 +16,7 @@ Chain name with associated `chainId` query param to use.
 | zkSync Era                                               | eip155:324           |
 | Polygon Zkevm                                            | eip155:1101          |
 | Mantle <sup>[1](#footnote1)</sup>                        | eip155:5000          |
-| Mantle Testnet <sup>[1](#footnote1)</sup>                | eip155:5001          |
+| Mantle Testnet <sup>[1](#footnote1)</sup>                | eip155:5003          |
 | Klaytn Mainnet                                           | eip155:8217          |
 | Base                                                     | eip155:8453          |
 | Ethereum Holesky                                         | eip155:17000         |
