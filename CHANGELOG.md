@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.90.0 - 2024-08-13
+#### Features
+- **(providers)** adding Polygon Amoy testnet support to the Publicnode (#731) - (3762a28) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.89.4 - 2024-08-13
 #### Bug Fixes
 - **(providers)** changing Mantle Testnet endpoint and chain ID to the actual (#729) - (8f2c268) - Max Kalashnikoff | maksy.eth
