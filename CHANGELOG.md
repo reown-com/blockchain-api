@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.89.4 - 2024-08-13
+#### Bug Fixes
+- **(providers)** changing Mantle Testnet endpoint and chain ID to the actual (#729) - (8f2c268) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.89.3 - 2024-08-12
 #### Bug Fixes
 - **(zerion)** adding zksync era mapping name (#727) - (1fa23b4) - Max Kalashnikoff | maksy.eth
