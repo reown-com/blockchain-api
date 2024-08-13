@@ -84,6 +84,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:137".into(),
             ("polygon-bor".into(), Weight::new(Priority::Normal).unwrap()),
         ),
+        // Polygon bor amoy testnet
+        (
+            "eip155:80002".into(),
+            (
+                "polygon-amoy-bor-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
         // Mantle mainnet
         (
             "eip155:5000".into(),

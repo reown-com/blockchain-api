@@ -79,6 +79,15 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
     )
     .await;
 
+    // Polygon amoy testnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Publicnode,
+        "eip155:80002",
+        "0x13882",
+    )
+    .await;
+
     // Mantle mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
