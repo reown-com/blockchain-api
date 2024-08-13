@@ -87,4 +87,6 @@ pub struct RegisterRequest {
 pub struct LookupQueryParams {
     /// Optional version parameter to support version-dependent responses
     pub api_version: Option<usize>,
+    /// Request sender address for analytics
+    pub sender: Option<String>,
 }
