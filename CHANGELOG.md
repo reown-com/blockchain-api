@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.91.0 - 2024-08-14
+#### Features
+- **(analytics)** adding  field to the identity lookup (#728) - (7ce4530) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.90.0 - 2024-08-13
 #### Features
 - **(providers)** adding Polygon Amoy testnet support to the Publicnode (#731) - (3762a28) - Max Kalashnikoff | maksy.eth
