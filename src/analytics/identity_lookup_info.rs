@@ -28,6 +28,8 @@ pub struct IdentityLookupInfo {
     pub continent: Option<Arc<str>>,
 
     pub client_id: Option<String>,
+    /// Whether the sender of the request is the same as the address being looked up
+    pub same_sender: Option<bool>,
 }
 
 impl IdentityLookupInfo {
@@ -44,6 +46,7 @@ impl IdentityLookupInfo {
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
         client_id: Option<String>,
+        same_sender: Option<bool>,
     ) -> Self {
         Self {
             timestamp: wc::analytics::time::now(),
@@ -65,6 +68,7 @@ impl IdentityLookupInfo {
             continent,
 
             client_id,
+            same_sender,
         }
     }
 }
