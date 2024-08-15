@@ -53,9 +53,6 @@ use {
     },
 };
 
-const KEEPALIVE_IDLE_DURATION: Duration = Duration::from_secs(60);
-const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(10);
-const KEEPALIVE_RETRIES: u32 = 5;
 const DB_STATS_POLLING_INTERVAL: Duration = Duration::from_secs(3600);
 
 mod analytics;
@@ -448,13 +445,7 @@ fn create_server(
     app: Router,
     addr: &SocketAddr,
 ) -> Server<AddrIncoming, IntoMakeServiceWithConnectInfo<Router, SocketAddr>> {
-    axum::Server::bind(addr)
-        .tcp_keepalive(Some(KEEPALIVE_IDLE_DURATION))
-        .tcp_keepalive_interval(Some(KEEPALIVE_INTERVAL))
-        .tcp_keepalive_retries(Some(KEEPALIVE_RETRIES))
-        .tcp_sleep_on_accept_errors(true)
-        .tcp_nodelay(true)
-        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+    axum::Server::bind(addr).serve(app.into_make_service_with_connect_info::<SocketAddr>())
 }
 
 fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
