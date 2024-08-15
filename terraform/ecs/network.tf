@@ -9,6 +9,11 @@ resource "aws_lb" "load_balancer" {
   load_balancer_type = "application"
   subnets            = var.public_subnets
 
+  // client_keep_alive must be greater (or equal?) than idle_timeout:
+  // https://repost.aws/knowledge-center/elb-alb-troubleshoot-502-errors
+  client_keep_alive = 60
+  idle_timeout      = 60
+
   security_groups = [aws_security_group.lb_ingress.id]
 
   lifecycle {
