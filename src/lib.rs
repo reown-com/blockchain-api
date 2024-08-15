@@ -53,9 +53,6 @@ use {
     },
 };
 
-const KEEPALIVE_IDLE_DURATION: Duration = Duration::from_secs(60);
-const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(10);
-const KEEPALIVE_RETRIES: u32 = 5;
 const DB_STATS_POLLING_INTERVAL: Duration = Duration::from_secs(3600);
 
 mod analytics;
