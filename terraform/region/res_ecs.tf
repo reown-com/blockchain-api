@@ -1,5 +1,5 @@
 locals {
-  stage = module.stage.stage
+  stage              = module.stage.stage
   ecr_repository_url = module.stage.dev ? data.terraform_remote_state.org.outputs.accounts.sdlc.dev.ecr-urls.blockchain : data.terraform_remote_state.org.outputs.accounts.wl.blockchain[local.stage].ecr-url
 }
 
