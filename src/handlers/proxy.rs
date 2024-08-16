@@ -19,6 +19,7 @@ use {
         time::{Duration, SystemTime},
     },
     tap::TapFallible,
+    tokio::time::timeout,
     tracing::{
         log::{debug, error, warn},
         Span,
@@ -169,13 +170,25 @@ pub async fn rpc_provider_call(
     // Start timing external provider added time
     let external_call_start = SystemTime::now();
 
-    let mut response = provider.proxy(&chain_id, body).await.tap_err(|e| {
-        warn!(
-            "Failed call to provider: {} with {}",
-            provider.provider_kind(),
-            e
-        );
-    })?;
+    let proxy_fut = provider.proxy(&chain_id, body);
+    let timeout_fut = timeout(Duration::from_secs(10), proxy_fut);
+    let mut response = timeout_fut
+        .await
+        .tap_err(|e| {
+            warn!(
+                "Timeout calling provider: {} with {}",
+                provider.provider_kind(),
+                e
+            );
+        })
+        .map_err(RpcError::ProxyTimeoutError)?
+        .tap_err(|e| {
+            warn!(
+                "Failed call to provider: {} with {}",
+                provider.provider_kind(),
+                e
+            );
+        })?;
 
     state
         .metrics
