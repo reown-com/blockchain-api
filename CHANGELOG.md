@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.91.2 - 2024-08-16
+#### Bug Fixes
+- **(identity)** handling of all execution reverted codes (#733) - (f2fb922) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.91.1 - 2024-08-15
 #### Bug Fixes
 - remove special TCP flags (#732) - (6d44ef8) - Chris Smith
