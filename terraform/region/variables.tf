@@ -1,20 +1,11 @@
 #-------------------------------------------------------------------------------
-# Configuration
-
-variable "grafana_auth" {
-  description = "The API Token for the Grafana instance"
-  type        = string
-  default     = ""
-}
-
-#-------------------------------------------------------------------------------
 # Application
 
-variable "name" {
-  description = "The name of the application"
-  type        = string
-  default     = "blockchain-api"
-}
+# variable "name" {
+#   description = "The name of the application"
+#   type        = string
+#   default     = "blockchain-api"
+# }
 
 variable "region" {
   description = "AWS region to deploy to"
@@ -154,27 +145,6 @@ variable "geoip_db_key" {
 }
 
 #-------------------------------------------------------------------------------
-# Alerting / Monitoring
-
-variable "notification_channels" {
-  description = "The notification channels to send alerts to"
-  type        = list(any)
-  default     = []
-}
-
-variable "webhook_cloudwatch_p2" {
-  description = "The webhook to send CloudWatch P2 alerts to"
-  type        = string
-  default     = ""
-}
-
-variable "webhook_prometheus_p2" {
-  description = "The webhook to send Prometheus P2 alerts to"
-  type        = string
-  default     = ""
-}
-
-#-------------------------------------------------------------------------------
 # Rate-limiting (Token bucket) configuration
 
 variable "rate_limiting_max_tokens" {
@@ -198,12 +168,12 @@ variable "rate_limiting_refill_rate" {
 #-------------------------------------------------------------------------------
 # IRN VPC peering
 
-variable "irn_vpc_ids" {
+variable "irn_vpc_id" {
   description = "ID of the IRN VPC"
   type        = string
 }
 
-variable "irn_vpc_cidrs" {
+variable "irn_vpc_cidr" {
   description = "CIDR block of the IRN VPC"
   type        = string
 }
@@ -216,7 +186,7 @@ variable "irn_aws_account_id" {
 #-------------------------------------------------------------------------------
 # IRN client configuration
 
-variable "irn_nodes" {
+variable "irn_node" {
   description = "IRN node address in Address:Socket format"
   type        = string
 }
@@ -235,3 +205,4 @@ variable "irn_namespace_secret" {
   description = "IRN storage namespace secret key"
   type        = string
 }
+
