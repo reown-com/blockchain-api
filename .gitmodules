@@ -1,5 +1,5 @@
-[submodule "terraform/monitoring/grafonnet-lib"]
-	path = terraform/monitoring/grafonnet-lib
+[submodule "terraform/region/monitoring/grafonnet-lib"]
+	path = terraform/region/monitoring/grafonnet-lib
 	url = git@github.com:WalletConnect/grafonnet-lib.git
 [submodule "irn"]
 	path = irn

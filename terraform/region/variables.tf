@@ -150,19 +150,16 @@ variable "geoip_db_key" {
 variable "notification_channels" {
   description = "The notification channels to send alerts to"
   type        = list(any)
-  default     = []
 }
 
 variable "webhook_cloudwatch_p2" {
   description = "The webhook to send CloudWatch P2 alerts to"
   type        = string
-  default     = ""
 }
 
 variable "webhook_prometheus_p2" {
   description = "The webhook to send Prometheus P2 alerts to"
   type        = string
-  default     = ""
 }
 
 #-------------------------------------------------------------------------------

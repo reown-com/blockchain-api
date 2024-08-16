@@ -1,10 +1,8 @@
-data "aws_caller_identity" "this" {}
-
 resource "random_pet" "this" {
   length = 2
 }
 
-module "eu-central-1" {
+module "eu_central_1" {
   source                        = "./region"
   region                        = "eu-central-1"
   image_version                 = var.image_version
@@ -30,7 +28,7 @@ module "eu-central-1" {
   geoip_db_key                  = var.geoip_db_key
   notification_channels         = var.notification_channels
   webhook_cloudwatch_p2         = var.webhook_cloudwatch_p2
-  webhook_prometheus_p2         = var.webhook_cloudwatch_p2
+  webhook_prometheus_p2         = var.webhook_prometheus_p2
   rate_limiting_max_tokens      = var.rate_limiting_max_tokens
   rate_limiting_refill_interval = var.rate_limiting_refill_interval
   rate_limiting_refill_rate     = var.rate_limiting_refill_rate
@@ -47,7 +45,7 @@ module "eu-central-1" {
   }
 }
 
-module "us-east-1" {
+module "us_east_1" {
   source                        = "./region"
   region                        = "us-east-1"
   image_version                 = var.image_version
@@ -73,7 +71,7 @@ module "us-east-1" {
   geoip_db_key                  = var.geoip_db_key
   notification_channels         = var.notification_channels
   webhook_cloudwatch_p2         = var.webhook_cloudwatch_p2
-  webhook_prometheus_p2         = var.webhook_cloudwatch_p2
+  webhook_prometheus_p2         = var.webhook_prometheus_p2
   rate_limiting_max_tokens      = var.rate_limiting_max_tokens
   rate_limiting_refill_interval = var.rate_limiting_refill_interval
   rate_limiting_refill_rate     = var.rate_limiting_refill_rate
@@ -90,7 +88,7 @@ module "us-east-1" {
   }
 }
 
-module "ap-southeast-1" {
+module "ap_southeast_1" {
   source                        = "./region"
   region                        = "ap-southeast-1"
   image_version                 = var.image_version
@@ -116,7 +114,7 @@ module "ap-southeast-1" {
   geoip_db_key                  = var.geoip_db_key
   notification_channels         = var.notification_channels
   webhook_cloudwatch_p2         = var.webhook_cloudwatch_p2
-  webhook_prometheus_p2         = var.webhook_cloudwatch_p2
+  webhook_prometheus_p2         = var.webhook_prometheus_p2
   rate_limiting_max_tokens      = var.rate_limiting_max_tokens
   rate_limiting_refill_interval = var.rate_limiting_refill_interval
   rate_limiting_refill_rate     = var.rate_limiting_refill_rate
