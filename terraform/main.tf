@@ -28,6 +28,9 @@ module "eu-central-1" {
   pimlico_api_key               = var.pimlico_api_key
   testing_project_id            = var.testing_project_id
   geoip_db_key                  = var.geoip_db_key
+  notification_channels         = var.notification_channels
+  webhook_cloudwatch_p2         = var.webhook_cloudwatch_p2
+  webhook_prometheus_p2         = var.webhook_cloudwatch_p2
   rate_limiting_max_tokens      = var.rate_limiting_max_tokens
   rate_limiting_refill_interval = var.rate_limiting_refill_interval
   rate_limiting_refill_rate     = var.rate_limiting_refill_rate
@@ -68,6 +71,9 @@ module "us-east-1" {
   pimlico_api_key               = var.pimlico_api_key
   testing_project_id            = var.testing_project_id
   geoip_db_key                  = var.geoip_db_key
+  notification_channels         = var.notification_channels
+  webhook_cloudwatch_p2         = var.webhook_cloudwatch_p2
+  webhook_prometheus_p2         = var.webhook_cloudwatch_p2
   rate_limiting_max_tokens      = var.rate_limiting_max_tokens
   rate_limiting_refill_interval = var.rate_limiting_refill_interval
   rate_limiting_refill_rate     = var.rate_limiting_refill_rate
@@ -108,6 +114,9 @@ module "ap-southeast-1" {
   pimlico_api_key               = var.pimlico_api_key
   testing_project_id            = var.testing_project_id
   geoip_db_key                  = var.geoip_db_key
+  notification_channels         = var.notification_channels
+  webhook_cloudwatch_p2         = var.webhook_cloudwatch_p2
+  webhook_prometheus_p2         = var.webhook_cloudwatch_p2
   rate_limiting_max_tokens      = var.rate_limiting_max_tokens
   rate_limiting_refill_interval = var.rate_limiting_refill_interval
   rate_limiting_refill_rate     = var.rate_limiting_refill_rate

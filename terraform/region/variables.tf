@@ -145,6 +145,27 @@ variable "geoip_db_key" {
 }
 
 #-------------------------------------------------------------------------------
+# Alerting / Monitoring
+
+variable "notification_channels" {
+  description = "The notification channels to send alerts to"
+  type        = list(any)
+  default     = []
+}
+
+variable "webhook_cloudwatch_p2" {
+  description = "The webhook to send CloudWatch P2 alerts to"
+  type        = string
+  default     = ""
+}
+
+variable "webhook_prometheus_p2" {
+  description = "The webhook to send Prometheus P2 alerts to"
+  type        = string
+  default     = ""
+}
+
+#-------------------------------------------------------------------------------
 # Rate-limiting (Token bucket) configuration
 
 variable "rate_limiting_max_tokens" {
