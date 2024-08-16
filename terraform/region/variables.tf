@@ -1,11 +1,11 @@
 #-------------------------------------------------------------------------------
 # Application
 
-# variable "name" {
-#   description = "The name of the application"
-#   type        = string
-#   default     = "blockchain-api"
-# }
+variable "name" {
+  description = "The name of the application"
+  type        = string
+  default     = "blockchain-api"
+}
 
 variable "region" {
   description = "AWS region to deploy to"

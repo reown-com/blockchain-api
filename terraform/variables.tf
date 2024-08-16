@@ -200,12 +200,12 @@ variable "rate_limiting_refill_rate" {
 
 variable "irn_vpc_ids" {
   description = "ID of the IRN VPC"
-  type        = string
+  type        = map(string)
 }
 
 variable "irn_vpc_cidrs" {
   description = "CIDR block of the IRN VPC"
-  type        = string
+  type        = map(string)
 }
 
 variable "irn_aws_account_id" {
@@ -218,7 +218,7 @@ variable "irn_aws_account_id" {
 
 variable "irn_nodes" {
   description = "IRN node address in Address:Socket format"
-  type        = string
+  type        = map(string)
 }
 
 variable "irn_key" {
