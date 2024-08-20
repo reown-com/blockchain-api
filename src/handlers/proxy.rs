@@ -112,12 +112,12 @@ pub async fn rpc_call(
             Ok(response) if !response.status().is_server_error() => {
                 return Ok(response);
             }
-            _ => {
+            e => {
                 state
                     .metrics
                     .add_rpc_call_retries(i as u64, chain_id.clone());
                 debug!(
-                    "Provider '{}' returned an error, trying the next provider",
+                    "Provider '{}' returned an error {e:?}, trying the next provider",
                     provider.provider_kind()
                 );
             }
