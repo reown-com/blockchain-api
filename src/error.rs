@@ -37,6 +37,9 @@ pub enum RpcError {
     #[error("Transport error: {0}")]
     TransportError(#[from] hyper::Error),
 
+    #[error("Proxy timeout error: {0}")]
+    ProxyTimeoutError(tokio::time::error::Elapsed),
+
     #[error("Request::builder() failed: {0}")]
     RequestBuilderError(#[from] hyper::http::Error),
 
