@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.91.4 - 2024-08-21
+#### Bug Fixes
+- min 1 weight (#738) - (c8b09c4) - Chris Smith
+
+- - -
+
 ## 0.91.3 - 2024-08-20
 #### Bug Fixes
 - add proxy timeout (#734) - (9eca8d9) - Chris Smith
