@@ -114,6 +114,7 @@ dashboard.new(
     panels.proxy.calls(ds, vars)                     { gridPos: pos._2 },
     panels.proxy.latency(ds, vars)                   { gridPos: pos._2 },
     panels.proxy.errors_provider(ds, vars)           { gridPos: pos._3 },
+    panels.proxy.provider_retries(ds, vars)          { gridPos: pos._3 },
     panels.proxy.rejected_projects(ds, vars)         { gridPos: pos._3 },
     panels.proxy.quota_limited_projects(ds, vars)    { gridPos: pos._3 },
     panels.proxy.rate_limited_counter(ds, vars)      { gridPos: pos._3 },
