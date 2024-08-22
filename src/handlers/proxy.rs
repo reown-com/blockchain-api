@@ -109,7 +109,12 @@ pub async fn rpc_call(
         .await;
 
         match response {
-            Ok(response) if !response.status().is_server_error() => {
+            // Passing the response through to the user if it's a bad request
+            // to preserve the JSON-RPC error message
+            Ok(response)
+                if response.status() == http::StatusCode::BAD_REQUEST
+                    || !response.status().is_server_error() =>
+            {
                 return Ok(response);
             }
             e => {
@@ -207,7 +212,7 @@ pub async fn rpc_provider_call(
     );
 
     match response.status() {
-        http::StatusCode::OK => {
+        http::StatusCode::OK | http::StatusCode::BAD_REQUEST => {
             state.metrics.add_finished_provider_call(provider.borrow());
         }
         _ => {
