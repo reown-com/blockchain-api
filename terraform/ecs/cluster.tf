@@ -95,6 +95,7 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_PROVIDER_ONE_INCH_REFERRER", value = var.one_inch_referrer },
         { name = "RPC_PROXY_PROVIDER_GETBLOCK_ACCESS_TOKENS", value = var.getblock_access_tokens },
         { name = "RPC_PROXY_PROVIDER_PIMLICO_API_KEY", value = var.pimlico_api_key },
+        { name = "RPC_PROXY_PROVIDER_SOLSCAN_API_V1_TOKEN", value = var.solscan_api_v1_token },
 
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL", value = "http://127.0.0.1:${local.prometheus_proxy_port}/workspaces/${var.prometheus_workspace_id}" },
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_WORKSPACE_HEADER", value = "aps-workspaces.${module.this.region}.amazonaws.com" },

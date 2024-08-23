@@ -32,8 +32,13 @@ const ENSIP11_MAINNET_COIN_TYPE: u32 = 60;
 static CAIP_CHAIN_ID_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"[-a-zA-Z0-9]{1,32}").expect("Failed to initialize regexp for the chain ID format")
 });
-static CAIP_ADDRESS_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"[-a-zA-Z0-9]{1,63}").expect("Failed to initialize regexp for the address format")
+static CAIP_ETH_ADDRESS_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"0x[a-fA-F0-9]{40}")
+        .expect("Failed to initialize regexp for the eth address format")
+});
+static CAIP_SOLANA_ADDRESS_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"[1-9A-HJ-NP-Za-km-z]{32,44}")
+        .expect("Failed to initialize regexp for the solana address format")
 });
 
 pub const JSON_RPC_VERSION_STR: &str = "2.0";
@@ -540,6 +545,14 @@ pub fn is_coin_type_supported(coin_type: u32) -> bool {
     ChainId::iter().any(|x| x as u64 == evm_chain_id as u64)
 }
 
+/// Check if the address is in correct format
+pub fn is_address_valid(address: &str, namespace: &CaipNamespaces) -> bool {
+    match namespace {
+        CaipNamespaces::Eip155 => CAIP_ETH_ADDRESS_REGEX.is_match(address),
+        CaipNamespaces::Solana => CAIP_SOLANA_ADDRESS_REGEX.is_match(address),
+    }
+}
+
 /// Human readable chain ids to CAIP-2 chain ids
 #[derive(Clone, Copy, Debug, EnumString, EnumIter, Display)]
 #[strum(serialize_all = "lowercase")]
@@ -628,10 +641,12 @@ impl ChainId {
     }
 }
 
-#[derive(Clone, Copy, Debug, EnumString, EnumIter, Display, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, EnumString, EnumIter, Display, Eq, PartialEq, Deserialize, Hash)]
 #[strum(serialize_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum CaipNamespaces {
     Eip155,
+    Solana,
 }
 
 pub fn format_to_caip10(namespace: CaipNamespaces, chain_id: &str, address: &str) -> String {
@@ -681,7 +696,7 @@ pub fn disassemble_caip10(
         .ok_or(CryptoUitlsError::WrongChainIdFormat(chain_id.clone()))?;
 
     let address = parts[2].to_string();
-    CAIP_ADDRESS_REGEX
+    CAIP_ETH_ADDRESS_REGEX
         .captures(&address)
         .ok_or(CryptoUitlsError::WrongAddressFormat(address.clone()))?;
     Ok((namespace, chain_id, address))
@@ -865,11 +880,14 @@ mod tests {
 
     #[test]
     fn test_disassemble_caip10() {
-        let caip10 = "eip155:1:0xtest";
+        let caip10 = "eip155:1:0x1234567890123456789012345678901234567890";
         let result = disassemble_caip10(caip10).unwrap();
         assert_eq!(result.0, CaipNamespaces::Eip155);
         assert_eq!(result.1, "1".to_string());
-        assert_eq!(result.2, "0xtest".to_string());
+        assert_eq!(
+            result.2,
+            "0x1234567890123456789012345678901234567890".to_string()
+        );
 
         let malformed_caip10 = "eip15510xtest";
         let error_result = disassemble_caip10(malformed_caip10);
@@ -932,6 +950,19 @@ mod tests {
             &public_key_der_base64
         )
         .is_err());
+    }
+
+    #[test]
+    fn test_is_address_valid() {
+        let valid_eth_address = "0x1234567890123456789012345678901234567890";
+        let valid_sol_address = "CKfatsPMUf8SkiURsDXs7eK6GWb4Jsd6UDbs7twMCWxo";
+        let invalid_address = "67890123456789012340123456";
+
+        assert!(is_address_valid(valid_eth_address, &CaipNamespaces::Eip155));
+        assert!(!is_address_valid(invalid_address, &CaipNamespaces::Eip155));
+
+        assert!(is_address_valid(valid_sol_address, &CaipNamespaces::Solana));
+        assert!(!is_address_valid(invalid_address, &CaipNamespaces::Solana));
     }
 
     // Ignoring this test until the RPC project ID is provided by the CI workflow

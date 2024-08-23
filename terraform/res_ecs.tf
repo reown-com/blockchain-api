@@ -72,6 +72,7 @@ module "ecs" {
   one_inch_referrer      = var.one_inch_referrer
   getblock_access_tokens = var.getblock_access_tokens
   pimlico_api_key        = var.pimlico_api_key
+  solscan_api_v1_token   = var.solscan_api_v1_token
 
   # Project Registry
   registry_api_endpoint   = var.registry_api_endpoint

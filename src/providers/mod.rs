@@ -22,6 +22,7 @@ use {
             portfolio::{PortfolioQueryParams, PortfolioResponseBody},
             RpcQueryParams, SupportedCurrencies,
         },
+        utils::crypto::CaipNamespaces,
     },
     async_trait::async_trait,
     axum::response::Response,
@@ -52,6 +53,7 @@ mod pimlico;
 mod pokt;
 mod publicnode;
 mod quicknode;
+mod solscan;
 mod weights;
 pub mod zerion;
 mod zksync;
@@ -70,6 +72,7 @@ pub use {
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
     quicknode::QuicknodeProvider,
+    solscan::SolScanProvider,
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
 };
@@ -96,6 +99,8 @@ pub struct ProvidersConfig {
     pub getblock_access_tokens: Option<String>,
     /// Pimlico API token key
     pub pimlico_api_key: String,
+    /// SolScan API v1 token key
+    pub solscan_api_v1_token: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -120,7 +125,7 @@ pub struct ProviderRepository {
     pub portfolio_provider: Arc<dyn PortfolioProvider>,
     pub coinbase_pay_provider: Arc<dyn HistoryProvider>,
     pub onramp_provider: Arc<dyn OnRampProvider>,
-    pub balance_provider: Arc<dyn BalanceProvider>,
+    pub balance_providers: HashMap<CaipNamespaces, Arc<dyn BalanceProvider>>,
     pub conversion_provider: Arc<dyn ConversionProvider>,
     pub fungible_price_provider: Arc<dyn FungiblePriceProvider>,
     pub bundler_ops_provider: Arc<dyn BundlerOpsProvider>,
@@ -180,7 +185,12 @@ impl ProviderRepository {
         let one_inch_provider = Arc::new(OneInchProvider::new(one_inch_api_key, one_inch_referrer));
         let history_provider = zerion_provider.clone();
         let portfolio_provider = zerion_provider.clone();
-        let balance_provider = zerion_provider.clone();
+        let solscan_provider = Arc::new(SolScanProvider::new(config.solscan_api_v1_token.clone()));
+
+        let mut balance_providers: HashMap<CaipNamespaces, Arc<dyn BalanceProvider>> =
+            HashMap::new();
+        balance_providers.insert(CaipNamespaces::Eip155, zerion_provider.clone());
+        balance_providers.insert(CaipNamespaces::Solana, solscan_provider.clone());
 
         let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
             coinbase_api_key,
@@ -205,7 +215,7 @@ impl ProviderRepository {
             portfolio_provider,
             coinbase_pay_provider: coinbase_pay_provider.clone(),
             onramp_provider: coinbase_pay_provider,
-            balance_provider,
+            balance_providers,
             conversion_provider: one_inch_provider.clone(),
             fungible_price_provider: one_inch_provider.clone(),
             bundler_ops_provider,
