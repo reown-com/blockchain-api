@@ -55,7 +55,6 @@ impl BalanceProvider for SolScanProvider {
 
         let response = http_client
             .get(url)
-            .header("Content-Type", "application/json")
             .header("token", self.api_v1_token.clone())
             .send()
             .await?;
