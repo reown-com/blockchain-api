@@ -31,6 +31,8 @@ module "ecs" {
   source  = "./ecs"
   context = module.this
 
+  region = var.region
+
   # Cluster
   ecr_repository_url        = local.ecr_repository_url
   image_version             = var.image_version
