@@ -109,12 +109,7 @@ pub async fn rpc_call(
         .await;
 
         match response {
-            // Passing the response through to the user if it's a bad request
-            // to preserve the JSON-RPC error message
-            Ok(response)
-                if response.status() == http::StatusCode::BAD_REQUEST
-                    || !response.status().is_server_error() =>
-            {
+            Ok(response) if !response.status().is_server_error() => {
                 return Ok(response);
             }
             e => {
