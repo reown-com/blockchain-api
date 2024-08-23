@@ -5,17 +5,16 @@ use {
         error::RpcError,
         providers::ProviderKind,
         state::AppState,
-        utils::network,
+        utils::{crypto, network},
     },
     axum::{
         extract::{ConnectInfo, MatchedPath, Path, Query, State},
         response::{IntoResponse, Response},
         Json,
     },
-    ethers::types::H160,
     hyper::HeaderMap,
     serde::{Deserialize, Serialize},
-    std::{net::SocketAddr, str::FromStr, sync::Arc},
+    std::{net::SocketAddr, sync::Arc},
     tap::TapFallible,
     tracing::log::error,
     wc::future::FutureExt,
@@ -26,6 +25,7 @@ use {
 pub struct HistoryQueryParams {
     pub currency: Option<String>,
     pub project_id: String,
+    pub chain_id: Option<String>,
     pub cursor: Option<String>,
     pub onramp: Option<String>,
 }
@@ -141,16 +141,28 @@ async fn handler_internal(
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
 
-    // Checking for the H160 address correctness
-    H160::from_str(&address).map_err(|_| RpcError::InvalidAddress)?;
+    // If the chainId is not provided, then default to the Ethereum namespace
+    let namespace = query
+        .chain_id
+        .as_ref()
+        .map(|chain_id| {
+            crypto::disassemble_caip2(chain_id)
+                .map(|(namespace, _)| namespace)
+                .unwrap_or(crypto::CaipNamespaces::Eip155)
+        })
+        .unwrap_or(crypto::CaipNamespaces::Eip155);
+
+    if !crypto::is_address_valid(&address, &namespace) {
+        return Err(RpcError::InvalidAddress);
+    }
 
     let latency_tracker_start = std::time::SystemTime::now();
-    let history_provider: ProviderKind;
+    let history_provider_kind: ProviderKind;
     let response: HistoryResponseBody = if let Some(onramp) = query.onramp.clone() {
-        if onramp == "coinbase" {
+        if onramp == "coinbase" && namespace == crypto::CaipNamespaces::Eip155 {
             // We don't want to validate the quota for the onramp
             state.validate_project_access(&project_id).await?;
-            history_provider = ProviderKind::Coinbase;
+            history_provider_kind = ProviderKind::Coinbase;
             state
                 .providers
                 .coinbase_pay_provider
@@ -164,10 +176,13 @@ async fn handler_internal(
         }
     } else {
         state.validate_project_access_and_quota(&project_id).await?;
-        history_provider = ProviderKind::Zerion;
-        state
+        history_provider_kind = ProviderKind::Zerion;
+        let provider = state
             .providers
-            .history_provider
+            .history_providers
+            .get(&namespace)
+            .ok_or_else(|| RpcError::UnsupportedNamespace(namespace))?;
+        provider
             .get_transactions(address.clone(), query.0.clone(), state.http_client.clone())
             .await
             .tap_err(|e| {
@@ -178,7 +193,7 @@ async fn handler_internal(
     let latency_tracker = latency_tracker_start
         .elapsed()
         .unwrap_or(std::time::Duration::from_secs(0));
-    state.metrics.add_history_lookup(&history_provider);
+    state.metrics.add_history_lookup(&history_provider_kind);
 
     let origin = headers
         .get("origin")
@@ -191,7 +206,7 @@ async fn handler_internal(
         .unwrap_or((None, None, None));
 
     // Different analytics for different history providers
-    match history_provider {
+    match history_provider_kind {
         ProviderKind::Zerion => {
             state.analytics.history_lookup(HistoryLookupInfo::new(
                 address,
@@ -280,10 +295,12 @@ async fn handler_internal(
     let latency_tracker = latency_tracker_start
         .elapsed()
         .unwrap_or(std::time::Duration::from_secs(0));
-    state.metrics.add_history_lookup_success(&history_provider);
     state
         .metrics
-        .add_history_lookup_latency(&history_provider, latency_tracker);
+        .add_history_lookup_success(&history_provider_kind);
+    state
+        .metrics
+        .add_history_lookup_latency(&history_provider_kind, latency_tracker);
 
     Ok(Json(response).into_response())
 }
