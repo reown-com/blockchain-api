@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.92.0 - 2024-08-23
+#### Features
+- **(grafana)** adding provider call retries panel (#736) - (d2ca278) - Max Kalashnikoff | maksy.eth
+- **(providers)** implementing SolScan provider for the solana address balance (#739) - (6c9ec22) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.91.4 - 2024-08-21
 #### Bug Fixes
 - min 1 weight (#738) - (c8b09c4) - Chris Smith
