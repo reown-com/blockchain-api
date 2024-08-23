@@ -11,4 +11,9 @@ resource "aws_route53_record" "dns_load_balancer" {
     zone_id                = aws_lb.load_balancer.zone_id
     evaluate_target_health = true
   }
+
+  latency_routing_policy {
+    region = var.region
+  }
+  set_identifier = var.region
 }
