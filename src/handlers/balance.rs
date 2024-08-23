@@ -32,8 +32,6 @@ pub struct BalanceQueryParams {
     pub chain_id: Option<String>,
     /// Comma separated list of CAIP-10 contract addresses to force update the balance
     pub force_update: Option<String>,
-    /// Optional address namespace to filter the balance results
-    pub namespace: Option<crypto::CaipNamespaces>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -97,19 +95,24 @@ async fn handler_internal(
 
     // If the namespace is not provided, then default to the Ethereum namespace
     let namespace = query
-        .namespace
+        .chain_id
         .as_ref()
-        .unwrap_or(&crypto::CaipNamespaces::Eip155);
+        .map(|chain_id| {
+            crypto::disassemble_caip2(chain_id)
+                .map(|(namespace, _)| namespace)
+                .unwrap_or(crypto::CaipNamespaces::Eip155)
+        })
+        .unwrap_or(crypto::CaipNamespaces::Eip155);
 
-    if !crypto::is_address_valid(&address, namespace) {
+    if !crypto::is_address_valid(&address, &namespace) {
         return Err(RpcError::InvalidAddress);
     }
 
     let provider = state
         .providers
         .balance_providers
-        .get(namespace)
-        .ok_or_else(|| RpcError::UnsupportedNamespace(*namespace))?;
+        .get(&namespace)
+        .ok_or_else(|| RpcError::UnsupportedNamespace(namespace))?;
 
     let start = SystemTime::now();
     let mut response = provider
@@ -155,8 +158,8 @@ async fn handler_internal(
     // update/override balance results for the token from the RPC call
     if let Some(force_update) = &query.force_update {
         // Force update is only supported on the Ethereum namespace
-        if namespace != &crypto::CaipNamespaces::Eip155 {
-            return Err(RpcError::UnsupportedNamespace(*namespace));
+        if namespace != crypto::CaipNamespaces::Eip155 {
+            return Err(RpcError::UnsupportedNamespace(namespace));
         }
         const H160_EMPTY_ADDRESS: H160 = H160::repeat_byte(0xee);
         let rpc_project_id = state

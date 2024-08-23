@@ -41,8 +41,9 @@ describe('Account balance', () => {
   })
 
   it('fulfilled balance Solana address', async () => {
+    let chainId = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/account/${fulfilled_solana_address}/balance?projectId=${projectId}&currency=${currency}&namespace=solana`,
+      `${baseUrl}/v1/account/${fulfilled_solana_address}/balance?projectId=${projectId}&currency=${currency}&chainId=${chainId}`,
       {
         headers: {
             'x-sdk-version': sdk_version,
@@ -87,8 +88,9 @@ describe('Account balance', () => {
   })
 
   it('empty balance Solana address', async () => {
+    let chainId = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/account/${empty_solana_address}/balance?projectId=${projectId}&currency=${currency}&namespace=solana`,
+      `${baseUrl}/v1/account/${empty_solana_address}/balance?projectId=${projectId}&currency=${currency}&chainId=${chainId}`,
       {
         headers: {
             'x-sdk-version': sdk_version,
