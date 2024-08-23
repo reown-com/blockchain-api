@@ -25,6 +25,7 @@ local redis  = panels.aws.redis;
     latency:                (import 'proxy/latency.libsonnet'               ).new,
     errors_non_provider:    (import 'proxy/errors_non_provider.libsonnet'   ).new,
     errors_provider:        (import 'proxy/errors_provider.libsonnet'       ).new,
+    provider_retries:       (import 'proxy/rpc_retries.libsonnet'           ).new,
     rejected_projects:      (import 'proxy/rejected_projects.libsonnet'     ).new,
     quota_limited_projects: (import 'proxy/quota_limited_projects.libsonnet').new,
     rate_limited_counter:   (import 'proxy/rate_limited_counter.libsonnet'  ).new,

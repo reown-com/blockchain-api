@@ -84,10 +84,6 @@ async fn handler_internal(
     Path(address): Path<String>,
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
-    let parsed_address = address
-        .parse::<Address>()
-        .map_err(|_| RpcError::InvalidAddress)?;
-
     state.validate_project_access_and_quota(&project_id).await?;
 
     // if headers not contains `x-sdk-version` then respond with an empty balance
@@ -97,10 +93,29 @@ async fn handler_internal(
         return Ok(Json(BalanceResponseBody { balances: vec![] }).into_response());
     }
 
-    let start = SystemTime::now();
-    let mut response = state
+    // If the namespace is not provided, then default to the Ethereum namespace
+    let namespace = query
+        .chain_id
+        .as_ref()
+        .map(|chain_id| {
+            crypto::disassemble_caip2(chain_id)
+                .map(|(namespace, _)| namespace)
+                .unwrap_or(crypto::CaipNamespaces::Eip155)
+        })
+        .unwrap_or(crypto::CaipNamespaces::Eip155);
+
+    if !crypto::is_address_valid(&address, &namespace) {
+        return Err(RpcError::InvalidAddress);
+    }
+
+    let provider = state
         .providers
-        .balance_provider
+        .balance_providers
+        .get(&namespace)
+        .ok_or_else(|| RpcError::UnsupportedNamespace(namespace))?;
+
+    let start = SystemTime::now();
+    let mut response = provider
         .get_balance(address.clone(), query.clone().0, state.http_client.clone())
         .await
         .tap_err(|e| {
@@ -142,6 +157,10 @@ async fn handler_internal(
     // Check for the cache invalidation for the certain token contract addresses and
     // update/override balance results for the token from the RPC call
     if let Some(force_update) = &query.force_update {
+        // Force update is only supported on the Ethereum namespace
+        if namespace != crypto::CaipNamespaces::Eip155 {
+            return Err(RpcError::UnsupportedNamespace(namespace));
+        }
         const H160_EMPTY_ADDRESS: H160 = H160::repeat_byte(0xee);
         let rpc_project_id = state
             .config
@@ -167,6 +186,9 @@ async fn handler_internal(
                 .parse::<Address>()
                 .map_err(|_| RpcError::InvalidAddress)?;
             let caip2_chain_id = format!("{}:{}", namespace, chain_id);
+            let parsed_address = address
+                .parse::<Address>()
+                .map_err(|_| RpcError::InvalidAddress)?;
             let rpc_balance = crypto::get_erc20_balance(
                 &caip2_chain_id,
                 contract_address,

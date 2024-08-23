@@ -19,6 +19,7 @@ use {
         time::{Duration, SystemTime},
     },
     tap::TapFallible,
+    tokio::time::timeout,
     tracing::{
         log::{debug, error, warn},
         Span,
@@ -26,7 +27,8 @@ use {
     wc::future::FutureExt,
 };
 
-const RPC_MAX_RETRIES: usize = 3;
+const PROVIDER_PROXY_MAX_CALLS: usize = 3;
+const PROVIDER_PROXY_CALL_TIMEOUT: Duration = Duration::from_secs(10);
 
 pub async fn handler(
     state: State<Arc<AppState>>,
@@ -92,7 +94,7 @@ pub async fn rpc_call(
         }
         None => state
             .providers
-            .get_provider_for_chain_id(&chain_id, RPC_MAX_RETRIES)?,
+            .get_provider_for_chain_id(&chain_id, PROVIDER_PROXY_MAX_CALLS)?,
     };
 
     for (i, provider) in providers.iter().enumerate() {
@@ -107,25 +109,21 @@ pub async fn rpc_call(
         .await;
 
         match response {
-            Ok(response) => {
-                // If the response is a 503 (we are rate-limited) we should try the next
-                // provider
-                if response.status() == http::StatusCode::SERVICE_UNAVAILABLE {
-                    debug!(
-                        "Provider '{}' returned a 503, trying the next provider",
-                        provider.provider_kind()
-                    );
-                    continue;
-                }
-                state.metrics.add_rpc_call_retries(i as u64, chain_id);
+            Ok(response) if !response.status().is_server_error() => {
                 return Ok(response);
             }
-            Err(e) => {
-                state.metrics.add_rpc_call_retries(i as u64, chain_id);
-                return Err(e);
+            e => {
+                state
+                    .metrics
+                    .add_rpc_call_retries(i as u64, chain_id.clone());
+                debug!(
+                    "Provider '{}' returned an error {e:?}, trying the next provider",
+                    provider.provider_kind()
+                );
             }
         }
     }
+
     debug!("All providers failed for chain_id: {}", chain_id);
     Err(RpcError::ChainTemporarilyUnavailable(chain_id))
 }
@@ -169,13 +167,25 @@ pub async fn rpc_provider_call(
     // Start timing external provider added time
     let external_call_start = SystemTime::now();
 
-    let mut response = provider.proxy(&chain_id, body).await.tap_err(|e| {
-        warn!(
-            "Failed call to provider: {} with {}",
-            provider.provider_kind(),
-            e
-        );
-    })?;
+    let proxy_fut = provider.proxy(&chain_id, body);
+    let timeout_fut = timeout(PROVIDER_PROXY_CALL_TIMEOUT, proxy_fut);
+    let mut response = timeout_fut
+        .await
+        .tap_err(|e| {
+            warn!(
+                "Timeout calling provider: {} with {}",
+                provider.provider_kind(),
+                e
+            );
+        })
+        .map_err(RpcError::ProxyTimeoutError)?
+        .tap_err(|e| {
+            warn!(
+                "Failed call to provider: {} with {}",
+                provider.provider_kind(),
+                e
+            );
+        })?;
 
     state
         .metrics
