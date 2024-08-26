@@ -45,9 +45,16 @@ resource "aws_lb_listener" "listener-https" {
 }
 
 resource "aws_lb_listener_certificate" "listener-https" {
-  for_each        = local.additional_certificates
+  for_each        = aws_acm_certificate_validation.certificate_validation
   listener_arn    = aws_lb_listener.listener-https.arn
+  certificate_arn = each.value.certificate_arn
+}
+
+resource "aws_acm_certificate_validation" "certificate_validation" {
+  for_each        = local.additional_certificates
   certificate_arn = each.value
+
+  # validation_record_fqdns = [...]
 }
 
 resource "aws_lb_listener" "listener-http" {

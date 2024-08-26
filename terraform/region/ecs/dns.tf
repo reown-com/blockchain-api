@@ -1,6 +1,7 @@
 # DNS Records
 resource "aws_route53_record" "dns_load_balancer_region" {
-  for_each = var.route53_zones
+  depends_on = [aws_acm_certificate_validation.certificate_validation]
+  for_each   = var.route53_zones
 
   zone_id = each.key
   name    = "${module.this.region}.${each.value}"
