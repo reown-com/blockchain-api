@@ -189,7 +189,7 @@ impl HistoryProvider for SolScanProvider {
         }
         let body = response.json::<HistoryResponse>().await?;
 
-        let transactions = body
+        let transactions: Vec<HistoryTransaction> = body
             .data
             .into_iter()
             .map(|f| HistoryTransaction {
@@ -229,7 +229,12 @@ impl HistoryProvider for SolScanProvider {
             })
             .collect();
 
-        let next = Some((page.parse::<u64>().unwrap_or(1) + 1).to_string());
+        let next = if !transactions.is_empty() {
+            Some((page.parse::<u64>().unwrap_or(1) + 1).to_string())
+        } else {
+            None
+        };
+
         Ok(HistoryResponseBody {
             data: transactions,
             next,

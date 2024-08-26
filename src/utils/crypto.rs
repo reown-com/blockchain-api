@@ -6,6 +6,7 @@ use {
     },
     alloy_primitives::Address,
     base64::prelude::*,
+    bs58,
     ethers::{
         abi::Token,
         core::{
@@ -548,8 +549,21 @@ pub fn is_coin_type_supported(coin_type: u32) -> bool {
 /// Check if the address is in correct format
 pub fn is_address_valid(address: &str, namespace: &CaipNamespaces) -> bool {
     match namespace {
-        CaipNamespaces::Eip155 => CAIP_ETH_ADDRESS_REGEX.is_match(address),
-        CaipNamespaces::Solana => CAIP_SOLANA_ADDRESS_REGEX.is_match(address),
+        CaipNamespaces::Eip155 => {
+            if !CAIP_ETH_ADDRESS_REGEX.is_match(address) {
+                return false;
+            }
+            H160::from_str(address).is_ok()
+        }
+        CaipNamespaces::Solana => {
+            if !CAIP_SOLANA_ADDRESS_REGEX.is_match(address) {
+                return false;
+            }
+            match bs58::decode(address).into_vec() {
+                Ok(decoded) => decoded.len() == 32,
+                Err(_) => false,
+            }
+        }
     }
 }
 

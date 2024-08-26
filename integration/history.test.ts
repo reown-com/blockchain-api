@@ -47,7 +47,7 @@ describe('Transactions history', () => {
       expect(typeof item.metadata).toBe('object')
       // expect chain to be null or caip-2 format
       if (item.metadata.chain !== null) {
-        expect(item.metadata.chain).toEqual(expect.stringMatching(/^(solana:)?\d+$/));
+        expect(item.metadata.chain).toEqual(expect.stringMatching(/^(solana:)?[a-zA-Z0-9]+$/));
       } else {
         expect(item.metadata.chain).toBeNull();
       }
@@ -76,9 +76,17 @@ describe('Transactions history', () => {
     expect(resp.data.next).toBeNull()
   })
 
-  it('wrong address format', async () => {
+  it('wrong addresses', async () => {
+    // wrong Ethereum address format
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/account/X${fulfilled_eth_address}/history?projectId=${projectId}`,
+    )
+    expect(resp.status).toBe(400)
+
+    // wrong Solana address format
+    let solana_chainId = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
+    resp = await httpClient.get(
+      `${baseUrl}/v1/account/X${fulfilled_solana_address}/history?projectId=${projectId}&chainId=${solana_chainId}`,
     )
     expect(resp.status).toBe(400)
   })
