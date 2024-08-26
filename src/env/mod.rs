@@ -160,6 +160,10 @@ mod test {
                 "SOLSCAN_API_V1_TOKEN",
             ),
             (
+                "RPC_PROXY_PROVIDER_SOLSCAN_API_V2_TOKEN",
+                "SOLSCAN_API_V2_TOKEN",
+            ),
+            (
                 "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL",
                 "PROMETHEUS_QUERY_URL",
             ),
@@ -252,6 +256,7 @@ mod test {
                     getblock_access_tokens: Some("{}".to_owned()),
                     pimlico_api_key: "PIMLICO_API_KEY".to_string(),
                     solscan_api_v1_token: "SOLSCAN_API_V1_TOKEN".to_string(),
+                    solscan_api_v2_token: "SOLSCAN_API_V2_TOKEN".to_string(),
                 },
                 rate_limiting: RateLimitingConfig {
                     max_tokens: Some(100),
