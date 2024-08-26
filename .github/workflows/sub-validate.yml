@@ -98,15 +98,7 @@ jobs:
       - name: Yarn Install
         run: yarn install
 
-      # Temporary ignoring `Sessions tests` for staging until IRN peering for staging is ready
-      - name: Run Yarn Integration Tests (no IRN tests)
-        if: ${{ inputs.stage == 'staging' }}
-        run: yarn integration --testPathIgnorePatterns='sessions.test.ts'
-        env:
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          RPC_URL: ${{ inputs.stage-url }}
       - name: Yarn Integration Tests
-        if: ${{ inputs.stage == 'prod' }}
         run: yarn integration
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
