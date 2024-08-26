@@ -83,6 +83,7 @@ alloy-primitives = "0.7"
 
 bytes = "1.7.1"
 base64 = "0.22"
+bs58 = "0.5"
 regex = "1.10"
 sha256 = "1.5"
 uuid = "1.10"
