@@ -48,10 +48,10 @@ jobs:
     strategy:
       matrix:
         endpoint:
-          - "staging.rpc.walletconnect.com"
-          - "staging.eu-central-1.rpc.walletconnect.com"
-          # - "staging.us-east-1.rpc.walletconnect.com"
-          # - "staging.ap-southeast-1.rpc.walletconnect.com"
+          - "https://staging.rpc.walletconnect.com"
+          - "https://staging.eu-central-1.rpc.walletconnect.com"
+          # - "https://staging.us-east-1.rpc.walletconnect.com"
+          # - "https://staging.ap-southeast-1.rpc.walletconnect.com"
     needs: [ cd-staging ]
     uses: ./.github/workflows/sub-validate.yml
     secrets: inherit
@@ -81,10 +81,10 @@ jobs:
     strategy:
       matrix:
         endpoint:
-          - "rpc.walletconnect.com"
-          - "eu-central-1.rpc.walletconnect.com"
-          # - "us-east-1.rpc.walletconnect.com"
-          # - "ap-southeast-1.rpc.walletconnect.com"
+          - "https://rpc.walletconnect.com"
+          - "https://eu-central-1.rpc.walletconnect.com"
+          # - "https://us-east-1.rpc.walletconnect.com"
+          # - "https://ap-southeast-1.rpc.walletconnect.com"
     needs: [ cd-prod ]
     uses: ./.github/workflows/sub-validate.yml
     secrets: inherit
