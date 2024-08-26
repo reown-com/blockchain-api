@@ -136,6 +136,12 @@ variable "solscan_api_v1_token" {
   sensitive   = true
 }
 
+variable "solscan_api_v2_token" {
+  description = "Solscan API v2 token"
+  type        = string
+  sensitive   = true
+}
+
 variable "testing_project_id" {
   description = "Project ID used in a testing suite"
   type        = string

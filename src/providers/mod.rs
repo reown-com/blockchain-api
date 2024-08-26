@@ -99,8 +99,9 @@ pub struct ProvidersConfig {
     pub getblock_access_tokens: Option<String>,
     /// Pimlico API token key
     pub pimlico_api_key: String,
-    /// SolScan API v1 token key
+    /// SolScan API v1 and v2 token keys
     pub solscan_api_v1_token: String,
+    pub solscan_api_v2_token: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -121,7 +122,7 @@ pub struct ProviderRepository {
     prometheus_client: prometheus_http_query::Client,
     prometheus_workspace_header: String,
 
-    pub history_provider: Arc<dyn HistoryProvider>,
+    pub history_providers: HashMap<CaipNamespaces, Arc<dyn HistoryProvider>>,
     pub portfolio_provider: Arc<dyn PortfolioProvider>,
     pub coinbase_pay_provider: Arc<dyn HistoryProvider>,
     pub onramp_provider: Arc<dyn OnRampProvider>,
@@ -183,14 +184,21 @@ impl ProviderRepository {
 
         let zerion_provider = Arc::new(ZerionProvider::new(zerion_api_key));
         let one_inch_provider = Arc::new(OneInchProvider::new(one_inch_api_key, one_inch_referrer));
-        let history_provider = zerion_provider.clone();
         let portfolio_provider = zerion_provider.clone();
-        let solscan_provider = Arc::new(SolScanProvider::new(config.solscan_api_v1_token.clone()));
+        let solscan_provider = Arc::new(SolScanProvider::new(
+            config.solscan_api_v1_token.clone(),
+            config.solscan_api_v2_token.clone(),
+        ));
 
         let mut balance_providers: HashMap<CaipNamespaces, Arc<dyn BalanceProvider>> =
             HashMap::new();
         balance_providers.insert(CaipNamespaces::Eip155, zerion_provider.clone());
         balance_providers.insert(CaipNamespaces::Solana, solscan_provider.clone());
+
+        let mut history_providers: HashMap<CaipNamespaces, Arc<dyn HistoryProvider>> =
+            HashMap::new();
+        history_providers.insert(CaipNamespaces::Eip155, zerion_provider.clone());
+        history_providers.insert(CaipNamespaces::Solana, solscan_provider.clone());
 
         let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
             coinbase_api_key,
@@ -211,7 +219,7 @@ impl ProviderRepository {
             ws_weight_resolver: HashMap::new(),
             prometheus_client,
             prometheus_workspace_header,
-            history_provider,
+            history_providers,
             portfolio_provider,
             coinbase_pay_provider: coinbase_pay_provider.clone(),
             onramp_provider: coinbase_pay_provider,

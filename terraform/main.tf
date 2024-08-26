@@ -21,6 +21,7 @@ module "eu_central_1" {
   getblock_access_tokens        = var.getblock_access_tokens
   pimlico_api_key               = var.pimlico_api_key
   solscan_api_v1_token          = var.solscan_api_v1_token
+  solscan_api_v2_token          = var.solscan_api_v2_token
   testing_project_id            = var.testing_project_id
   geoip_db_key                  = var.geoip_db_key
   notification_channels         = var.notification_channels
@@ -65,6 +66,7 @@ module "us_east_1" {
   getblock_access_tokens        = var.getblock_access_tokens
   pimlico_api_key               = var.pimlico_api_key
   solscan_api_v1_token          = var.solscan_api_v1_token
+  solscan_api_v2_token          = var.solscan_api_v2_token
   testing_project_id            = var.testing_project_id
   geoip_db_key                  = var.geoip_db_key
   notification_channels         = var.notification_channels
@@ -109,6 +111,7 @@ module "ap_southeast_1" {
   getblock_access_tokens        = var.getblock_access_tokens
   pimlico_api_key               = var.pimlico_api_key
   solscan_api_v1_token          = var.solscan_api_v1_token
+  solscan_api_v2_token          = var.solscan_api_v2_token
   testing_project_id            = var.testing_project_id
   geoip_db_key                  = var.geoip_db_key
   notification_channels         = var.notification_channels
