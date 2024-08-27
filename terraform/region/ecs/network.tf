@@ -22,7 +22,7 @@ resource "aws_lb" "load_balancer" {
 }
 
 locals {
-  main_certificate_key    = keys(var.route53_zones_certificates)[0]
+  main_certificate_key    = 0
   main_certificate        = var.route53_zones_certificates[local.main_certificate_key]
   additional_certificates = { for k, v in var.route53_zones_certificates : k => v if k != local.main_certificate_key }
 }
