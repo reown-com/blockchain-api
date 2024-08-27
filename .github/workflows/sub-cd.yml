@@ -45,12 +45,19 @@ jobs:
 
   validate-staging:
     name: Validate Staging
+    strategy:
+      matrix:
+        endpoint:
+          - "https://staging.rpc.walletconnect.com"
+          - "https://eu-central-1.staging.rpc.walletconnect.com"
+          # - "https://us-east-1.staging.rpc.walletconnect.com"
+          # - "https://ap-southeast-1.staging.rpc.walletconnect.com"
     needs: [ cd-staging ]
     uses: ./.github/workflows/sub-validate.yml
     secrets: inherit
     with:
       stage: staging
-      stage-url: https://staging.${{ vars.SUBDOMAIN_NAME }}.walletconnect.com
+      stage-url: ${{ matrix.endpoint }}
 
   cd-prod:
     name: Prod
@@ -71,9 +78,16 @@ jobs:
 
   validate-prod:
     name: Validate Prod
+    strategy:
+      matrix:
+        endpoint:
+          - "https://rpc.walletconnect.com"
+          - "https://eu-central-1.rpc.walletconnect.com"
+          # - "https://us-east-1.rpc.walletconnect.com"
+          # - "https://ap-southeast-1.rpc.walletconnect.com"
     needs: [ cd-prod ]
     uses: ./.github/workflows/sub-validate.yml
     secrets: inherit
     with:
       stage: prod
-      stage-url: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.com
+      stage-url: ${{ matrix.endpoint }}

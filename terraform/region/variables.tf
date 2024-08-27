@@ -1,12 +1,4 @@
 #-------------------------------------------------------------------------------
-# Configuration
-
-variable "grafana_auth" {
-  description = "The API Token for the Grafana instance"
-  type        = string
-}
-
-#-------------------------------------------------------------------------------
 # Application
 
 variable "name" {
@@ -170,19 +162,16 @@ variable "geoip_db_key" {
 variable "notification_channels" {
   description = "The notification channels to send alerts to"
   type        = list(any)
-  default     = []
 }
 
 variable "webhook_cloudwatch_p2" {
   description = "The webhook to send CloudWatch P2 alerts to"
   type        = string
-  default     = ""
 }
 
 variable "webhook_prometheus_p2" {
   description = "The webhook to send Prometheus P2 alerts to"
   type        = string
-  default     = ""
 }
 
 #-------------------------------------------------------------------------------
@@ -209,14 +198,14 @@ variable "rate_limiting_refill_rate" {
 #-------------------------------------------------------------------------------
 # IRN VPC peering
 
-variable "irn_vpc_ids" {
+variable "irn_vpc_id" {
   description = "ID of the IRN VPC"
-  type        = map(string)
+  type        = string
 }
 
-variable "irn_vpc_cidrs" {
+variable "irn_vpc_cidr" {
   description = "CIDR block of the IRN VPC"
-  type        = map(string)
+  type        = string
 }
 
 variable "irn_aws_account_id" {
@@ -227,9 +216,9 @@ variable "irn_aws_account_id" {
 #-------------------------------------------------------------------------------
 # IRN client configuration
 
-variable "irn_nodes" {
+variable "irn_node" {
   description = "IRN node address in Address:Socket format"
-  type        = map(string)
+  type        = string
 }
 
 variable "irn_key" {
@@ -246,3 +235,4 @@ variable "irn_namespace_secret" {
   description = "IRN storage namespace secret key"
   type        = string
 }
+

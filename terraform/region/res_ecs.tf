@@ -1,3 +1,7 @@
+locals {
+  ecr_repository_url = module.stage.dev ? data.terraform_remote_state.org.outputs.accounts.sdlc.dev.ecr-urls.blockchain : data.terraform_remote_state.org.outputs.accounts.wl.blockchain[local.stage].ecr-url
+}
+
 data "aws_s3_bucket" "geoip" {
   bucket = data.terraform_remote_state.infra_aws.outputs.geoip_bucked_id
 }
