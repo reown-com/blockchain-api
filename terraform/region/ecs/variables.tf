@@ -65,7 +65,7 @@ variable "route53_zones" {
 
 variable "route53_zones_certificates" {
   description = "The ARNs of the ACM certificates to use for HTTPS"
-  type        = map(string)
+  type        = list(string)
 }
 
 #-------------------------------------------------------------------------------

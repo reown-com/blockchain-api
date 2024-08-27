@@ -236,3 +236,34 @@ variable "irn_namespace_secret" {
   type        = string
 }
 
+# Postgres VPC peering
+
+variable "database_url" {
+  description = "The URL used to connect to the cluster"
+  type        = string
+  default     = null
+}
+
+variable "database_vpc_id" {
+  description = "ID of the database VPC"
+  type        = string
+  default     = null
+}
+
+variable "database_vpc_cidr" {
+  description = "CIDR block of the database VPC"
+  type        = string
+  default     = null
+}
+
+variable "database_vpc_region" {
+  description = "Region of the database VPC"
+  type        = string
+  default     = null
+}
+
+variable "database_client_vpc_peering_connections" {
+  description = "Peering connections of database client VPCs"
+  type        = map(string)
+  default     = {}
+}

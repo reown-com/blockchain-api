@@ -9,6 +9,8 @@ module "db_context" {
 }
 
 module "postgres" {
+  count = var.database_url != null ? 1 : 0
+
   source     = "./postgres"
   context    = module.db_context
   attributes = ["postgres"]
