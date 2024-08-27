@@ -207,7 +207,7 @@ pub async fn rpc_provider_call(
     );
 
     match response.status() {
-        http::StatusCode::OK => {
+        http::StatusCode::OK | http::StatusCode::BAD_REQUEST => {
             state.metrics.add_finished_provider_call(provider.borrow());
         }
         _ => {
