@@ -113,7 +113,7 @@ variable "log_level" {
 variable "redis_max_connections" {
   description = "The maximum number of connections to the Redis server"
   type        = number
-  default     = 128
+  default     = 512
 }
 
 variable "project_cache_endpoint_read" {
