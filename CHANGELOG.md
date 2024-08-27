@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.93.2 - 2024-08-27
+#### Bug Fixes
+- **(redis)** increasing the node type and max connections (#752) - (9fe1d73) - Max Kalashnikoff | maksy.eth
+- **(rpc)** passing through a `bad request` error from the RPC provider (#741) - (1bbff5f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.93.1 - 2024-08-26
 #### Bug Fixes
 - **(tests)** fixing transactions history integration tests (#747) - (828dee9) - Max Kalashnikoff | maksy.eth
