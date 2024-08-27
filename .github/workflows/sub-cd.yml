@@ -49,9 +49,9 @@ jobs:
       matrix:
         endpoint:
           - "https://staging.rpc.walletconnect.com"
-          - "https://staging.eu-central-1.rpc.walletconnect.com"
-          # - "https://staging.us-east-1.rpc.walletconnect.com"
-          # - "https://staging.ap-southeast-1.rpc.walletconnect.com"
+          - "https://eu-central-1.staging.rpc.walletconnect.com"
+          # - "https://us-east-1.staging.rpc.walletconnect.com"
+          # - "https://ap-southeast-1.staging.rpc.walletconnect.com"
     needs: [ cd-staging ]
     uses: ./.github/workflows/sub-validate.yml
     secrets: inherit
