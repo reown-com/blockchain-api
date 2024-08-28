@@ -767,3 +767,8 @@ moved {
   from = module.eu_central_1.module.ecs.aws_lb_listener_certificate.listener-https["Z08482453O4S3RHV9217F"]
   to   = module.eu_central_1.module.ecs.aws_lb_listener_certificate.listener-https["1"]
 }
+
+moved {
+  from = module.eu_central_1.module.ecs.aws_lb_listener_certificate.listener-https["Z08394271XY7LL4G2RE1G"]
+  to   = module.eu_central_1.module.ecs.aws_lb_listener_certificate.listener-https["1"]
+}
