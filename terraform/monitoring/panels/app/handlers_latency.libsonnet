@@ -1,8 +1,10 @@
 local grafana   = import '../../grafonnet-lib/grafana.libsonnet';
 local defaults  = import '../../grafonnet-lib/defaults.libsonnet';
 
-local panels    = grafana.panels;
-local targets   = grafana.targets;
+local panels          = grafana.panels;
+local targets         = grafana.targets;
+local alert           = grafana.alert;
+local alertCondition  = grafana.alertCondition;
 
 local _configuration = defaults.configuration.timeseries
   .withUnit('ms');
@@ -31,7 +33,7 @@ local _configuration = defaults.configuration.timeseries
           evaluatorParams = [ 3000 ],
           evaluatorType   = 'gt',
           operatorType    = 'or',
-          queryRefId      = 'Rate_limited_count',
+          queryRefId      = 'HandlersLatency',
           queryTimeStart  = '5m',
           reducerType     = 'avg',
         ),
@@ -43,5 +45,6 @@ local _configuration = defaults.configuration.timeseries
       expr          = 'sum by(task_name) (rate(handler_task_duration_sum[$__rate_interval])) / sum by(task_name) (rate(handler_task_duration_count[$__rate_interval]))',
       exemplar      = false,
       legendFormat  = '__auto',
+      refId         = 'HandlersLatency',
     ))
 }

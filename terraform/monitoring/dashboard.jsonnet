@@ -62,6 +62,7 @@ dashboard.new(
     panels.proxy.errors_non_provider(ds, vars)       { gridPos: pos._4 },
     panels.lb.error_5xx_logs(ds, vars)               { gridPos: pos._4 },
     panels.app.handlers_latency(ds, vars)            { gridPos: pos._2 },
+    panels.app.handlers_rate(ds, vars)               { gridPos: pos._2 },
 
   row.new('ECS'),
     panels.ecs.memory(ds, vars)                      { gridPos: pos._3 },

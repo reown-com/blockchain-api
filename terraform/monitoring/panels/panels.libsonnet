@@ -3,9 +3,10 @@ local redis  = panels.aws.redis;
 
 {
   app: {
-    handlers_latency:     (import 'app/handlers_latency.libsonnet'        ).new, 
+    handlers_latency:     (import 'app/handlers_latency.libsonnet'        ).new,
+    handlers_rate:        (import 'app/handlers_rate.libsonnet'           ).new,
   },
-  
+
   ecs: {
     availability:         (import 'ecs/availability.libsonnet'            ).new,
     cpu:                  (import 'ecs/cpu.libsonnet'                     ).new,
