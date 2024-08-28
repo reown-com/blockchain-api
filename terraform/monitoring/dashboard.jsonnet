@@ -145,6 +145,7 @@ dashboard.new(
 
     panels.lb.healthy_hosts(ds, vars)             { gridPos: pos._3 },
     panels.lb.error_4xx(ds, vars)                 { gridPos: pos._3 },
+    panels.lb.response_time(ds, vars)             { gridPos: pos._3 },
 
   row.new('IRN Client'),
     panels.irn.latency(ds, vars)        { gridPos: pos._2 },
