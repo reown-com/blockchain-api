@@ -5,9 +5,9 @@ use {
         state::AppState,
         storage::irn::OperationType,
         utils::crypto::{
-            abi_encode_two_bytes_arrays, call_get_signature, call_get_user_op_hash,
-            disassemble_caip10, pack_signature, send_user_operation_to_bundler, to_eip191_message,
-            CaipNamespaces, ChainId,
+            abi_encode_two_bytes_arrays, call_get_user_op_hash, disassemble_caip10,
+            is_address_valid, pack_signature, to_eip191_message, CaipNamespaces, ChainId,
+            UserOperation,
         },
     },
     axum::{
@@ -24,17 +24,31 @@ use {
     },
     serde::{Deserialize, Serialize},
     std::{sync::Arc, time::SystemTime},
-    tracing::info,
     wc::future::FutureExt,
 };
 
 const ENTRY_POINT_V07_CONTRACT_ADDRESS: &str = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
+const SEND_USER_OP_ENDPOINT: &str = "https://react-wallet.walletconnect.com/api/sendUserOp";
 
 /// Co-sign response schema
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CoSignResponse {
     user_operation_tx_hash: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SendUserOpRequest {
+    pub chain_id: usize,
+    pub user_op: UserOperation,
+    pub permissions_context: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SendUserOpResponse {
+    pub receipt: String,
 }
 
 pub async fn handler(
@@ -58,6 +72,9 @@ async fn handler_internal(
     if namespace != CaipNamespaces::Eip155 {
         return Err(RpcError::UnsupportedNamespace(namespace));
     }
+    if !is_address_valid(&address, &namespace) {
+        return Err(RpcError::InvalidAddress);
+    }
 
     // ChainID validation
     let chain_id_uint = chain_id
@@ -67,9 +84,6 @@ async fn handler_internal(
         return Err(RpcError::UnsupportedChain(chain_id.clone()));
     }
 
-    let h160_address = address
-        .parse::<H160>()
-        .map_err(|_| RpcError::InvalidAddress)?;
     let chain_id_caip2 = format!("{}:{}", namespace, chain_id);
     let mut user_op = request_payload.user_op.clone();
 
@@ -117,20 +131,7 @@ async fn handler_internal(
         .context
         .clone()
         .ok_or_else(|| RpcError::PermissionContextNotUpdated(request_payload.pci.clone()))?;
-    let permission_context = hex::decode(
-        permission_context_item
-            .context
-            .permissions_context
-            .clone()
-            .trim_start_matches("0x"),
-    )
-    .map_err(|e| {
-        RpcError::WrongHexFormat(format!(
-            "error:{:?} permission_context:{}",
-            e.to_string(),
-            permission_context_item.context.permissions_context
-        ))
-    })?;
+    let permission_context = permission_context_item.context.permissions_context.clone();
 
     // Sign the userOp hash with the permission signing key
     let signing_key_bytes = BASE64_STANDARD
@@ -152,39 +153,21 @@ async fn handler_internal(
     // Update the userOp with the signature
     user_op.signature = concatenated_signature;
 
-    // Get the Signature from the UserOpBuilder
-    let user_op_builder_contract_address = permission_context_item
-        .context
-        .signer_data
-        .user_op_builder
-        .parse::<H160>()
-        .map_err(|_| RpcError::InvalidAddress)?;
-    let get_signature_result = call_get_signature(
-        rpc_project_id,
-        &chain_id_caip2,
-        user_op_builder_contract_address,
-        h160_address,
-        user_op.clone(),
-        permission_context.into(),
-    )
-    .await?;
+    // Make a POST request to the sendUserOp endpoint
+    let send_user_op_request = SendUserOpRequest {
+        chain_id: chain_id_uint as usize,
+        user_op: user_op.clone(),
+        permissions_context: Some(permission_context),
+    };
+    let http_client = state.http_client.clone();
+    let send_user_op_call_result = http_client
+        .post(SEND_USER_OP_ENDPOINT)
+        .json(&send_user_op_request)
+        .send()
+        .await?;
+    let result = send_user_op_call_result
+        .json::<SendUserOpResponse>()
+        .await?;
 
-    // Todo: remove this debug line before production stage
-    info!("UserOpPacked final JSON: {:?}", serde_json::json!(user_op));
-
-    // Update the userOp with the signature,
-    // send the userOperation to the bundler and get the receipt
-    user_op.signature = get_signature_result;
-    let user_operation_tx_hash = send_user_operation_to_bundler(
-        &user_op,
-        &chain_id,
-        ENTRY_POINT_V07_CONTRACT_ADDRESS,
-        state.providers.bundler_ops_provider.as_ref(),
-    )
-    .await?;
-
-    Ok(Json(CoSignResponse {
-        user_operation_tx_hash,
-    })
-    .into_response())
+    Ok(Json(result).into_response())
 }
