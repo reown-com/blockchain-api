@@ -1,5 +1,19 @@
 locals {
   vpc_cidr                = "10.0.0.0/16"
+  # https://www.notion.so/walletconnect/Private-IP-range-allocation-5fba8350d0a9453ca589dfa73affd508?pvs=4
+  # vpc_cidr = (
+  #   module.this.stage == "prod" ? {
+  #     "eu-central-1"   = "10.0.0.0/16" # "10.7.0.0/16"
+  #     "us-east-1"      = "10.8.0.0/16"
+  #     "ap-southeast-1" = "10.9.0.0/16"
+  #   }
+  #   : {
+  #     "eu-central-1"   = "10.10.0.0/16"
+  #     "us-east-1"      = "10.11.0.0/16"
+  #     "ap-southeast-1" = "10.12.0.0/16"
+  #   }
+  # )[module.this.region]
+
   vpc_azs                 = slice(data.aws_availability_zones.available.names, 0, 3)
   vpc_flow_s3_bucket_name = substr("vpc-flow-logs-${module.this.id}-${random_pet.this.id}", 0, 63)
 }
