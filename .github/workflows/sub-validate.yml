@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   health-check:
-    name: Health Check - ${{ inputs.stage }}
+    name: Health Check - ${{ inputs.stage-url }}
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.stage }}
@@ -31,7 +31,7 @@ jobs:
         run: curl "${{ inputs.stage-url }}/health"
 
   integration-tests:
-    name: Integration Tests - ${{ inputs.stage }}
+    name: Integration Tests - ${{ inputs.stage-url }}
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -74,7 +74,7 @@ jobs:
           args: --test integration
 
   integration-tests-providers:
-    name: Providers Integration Tests - ${{ inputs.stage }}
+    name: Providers Integration Tests - ${{ inputs.stage-url }}
     uses: ./.github/workflows/sub-providers.yml
     secrets: inherit
     with:
@@ -82,7 +82,7 @@ jobs:
       stage-url: ${{ inputs.stage-url }}
 
   integration-tests-ts:
-    name: TS Integration Tests - ${{ inputs.stage }}
+    name: TS Integration Tests - ${{ inputs.stage-url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -98,15 +98,7 @@ jobs:
       - name: Yarn Install
         run: yarn install
 
-      # Temporary ignoring `Sessions tests` for staging until IRN peering for staging is ready
-      - name: Run Yarn Integration Tests (no IRN tests)
-        if: ${{ inputs.stage == 'staging' }}
-        run: yarn integration --testPathIgnorePatterns='sessions.test.ts'
-        env:
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          RPC_URL: ${{ inputs.stage-url }}
       - name: Yarn Integration Tests
-        if: ${{ inputs.stage == 'prod' }}
         run: yarn integration
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
