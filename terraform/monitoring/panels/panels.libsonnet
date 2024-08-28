@@ -2,6 +2,10 @@ local panels = (import '../grafonnet-lib/defaults.libsonnet').panels;
 local redis  = panels.aws.redis;
 
 {
+  app: {
+    handlers_latency:     (import 'app/handlers_latency.libsonnet'        ).new, 
+  },
+  
   ecs: {
     availability:         (import 'ecs/availability.libsonnet'            ).new,
     cpu:                  (import 'ecs/cpu.libsonnet'                     ).new,
