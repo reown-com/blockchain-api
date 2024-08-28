@@ -38,6 +38,11 @@ module "eu_central_1" {
   irn_namespace                 = var.irn_namespace
   irn_namespace_secret          = var.irn_namespace_secret
 
+  database_client_vpc_peering_connections = {
+    (module.us_east_1.database_client_vpc_peering_connection)      = module.us_east_1.vpc_private_subnets,
+    (module.ap_southeast_1.database_client_vpc_peering_connection) = module.ap_southeast_1.vpc_private_subnets
+  }
+
   providers = {
     aws = aws.eu-central-1
   }
@@ -82,6 +87,10 @@ module "us_east_1" {
   irn_key                       = var.irn_key
   irn_namespace                 = var.irn_namespace
   irn_namespace_secret          = var.irn_namespace_secret
+  database_url                  = module.eu_central_1.database_url
+  database_vpc_id               = module.eu_central_1.database_vpc_id
+  database_vpc_cidr             = module.eu_central_1.database_vpc_cidr
+  database_vpc_region           = "eu-central-1"
 
   providers = {
     aws = aws.us-east-1
@@ -127,6 +136,10 @@ module "ap_southeast_1" {
   irn_key                       = var.irn_key
   irn_namespace                 = var.irn_namespace
   irn_namespace_secret          = var.irn_namespace_secret
+  database_url                  = module.eu_central_1.database_url
+  database_vpc_id               = module.eu_central_1.database_vpc_id
+  database_vpc_cidr             = module.eu_central_1.database_vpc_cidr
+  database_vpc_region           = "eu-central-1"
 
   providers = {
     aws = aws.ap-southeast-1

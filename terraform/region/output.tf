@@ -17,3 +17,8 @@ output "database_client_vpc_peering_connection" {
   description = "Peering connection of database client VPCs"
   value       = aws_vpc_peering_connection.database[0].id
 }
+
+output "vpc_private_subnets" {
+  description = "Private subnets of the VPC"
+  value       = module.vpc.private_subnets
+}
