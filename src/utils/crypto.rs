@@ -1,9 +1,5 @@
 use {
-    crate::{
-        analytics::MessageSource,
-        error::RpcError,
-        providers::{BundlerOpsProvider, SupportedBundlerOps},
-    },
+    crate::{analytics::MessageSource, error::RpcError},
     alloy_primitives::Address,
     base64::prelude::*,
     bs58,
@@ -464,59 +460,6 @@ pub async fn call_get_user_op_hash(
     Ok(hash)
 }
 
-/// Call getSignature on  ERC-7579 userOperationBuilder contract
-#[tracing::instrument(level = "debug")]
-pub async fn call_get_signature(
-    rpc_project_id: &str,
-    chain_id: &str,
-    contract_address: H160,
-    smart_account_address: H160,
-    user_operation: UserOperation,
-    context: Bytes,
-) -> Result<Bytes, CryptoUitlsError> {
-    abigen!(
-        Safe7579UserOperationBuilder,
-        r#"[
-            struct v07UserOperation { address sender; uint256 nonce; bytes initCode; bytes callData; bytes32 accountGasLimits; uint256 preVerificationGas; bytes32 gasFees; bytes paymasterAndData; bytes signature}
-            function formatSignature(address smartAccount, v07UserOperation calldata userOperation, bytes calldata context) public view returns (bytes)
-        ]"#,
-    );
-
-    let provider = Provider::<Http>::try_from(format!(
-        "https://rpc.walletconnect.com/v1?chainId={}&projectId={}",
-        chain_id, rpc_project_id
-    ))
-    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
-    let provider = Arc::new(provider);
-    let contract = Safe7579UserOperationBuilder::new(contract_address, provider);
-
-    let packed_user_op = user_operation.get_packed();
-    let user_op = v07UserOperation {
-        sender: packed_user_op.sender,
-        nonce: packed_user_op.nonce,
-        init_code: packed_user_op.init_code,
-        call_data: packed_user_op.call_data,
-        account_gas_limits: packed_user_op.account_gas_limits.into(),
-        pre_verification_gas: packed_user_op.pre_verification_gas,
-        gas_fees: packed_user_op.gas_fees.into(),
-        paymaster_and_data: packed_user_op.paymaster_and_data,
-        signature: packed_user_op.signature,
-    };
-
-    let signature = contract
-        .format_signature(smart_account_address, user_op, context)
-        .call()
-        .await
-        .map_err(|e| {
-            CryptoUitlsError::ContractCallError(format!(
-                "Failed to call formatSignature in Safe7579UserOperationBuilder contract: {}",
-                e
-            ))
-        })?;
-
-    Ok(signature)
-}
-
 /// Convert EVM chain ID to coin type ENSIP-11
 #[tracing::instrument(level = "debug")]
 pub fn convert_evm_chain_id_to_coin_type(chain_id: u32) -> u32 {
@@ -759,38 +702,6 @@ pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u32) -
     balance_f64 * price
 }
 
-/// Function to send UserOperation to the bundler and return the user operation tx hash
-#[tracing::instrument(skip(bundler), level = "debug")]
-pub async fn send_user_operation_to_bundler(
-    user_op: &UserOperation,
-    chain_id: &str,
-    entry_point: &str,
-    bundler: &dyn BundlerOpsProvider,
-) -> Result<String, RpcError> {
-    // Send the UserOperation to the bundler
-    let response = bundler
-        .bundler_rpc_call(
-            chain_id,
-            1,
-            &JSON_RPC_VERSION[..],
-            &SupportedBundlerOps::EthSendUserOperation,
-            serde_json::json!([user_op.clone(), entry_point]),
-        )
-        .await?;
-
-    // Get the transaction hash from the response
-    let tx_hash = response
-        .get("result")
-        .ok_or(CryptoUitlsError::NoResultInRpcResponse)?;
-
-    let tx_hash_string = tx_hash
-        .as_str()
-        .ok_or(CryptoUitlsError::BundlerRpcResponseError(
-            "Error converting tx hash result into string".to_string(),
-        ))?;
-
-    Ok(tx_hash_string.into())
-}
 #[cfg(test)]
 mod tests {
     use {
@@ -1021,70 +932,5 @@ mod tests {
             hex::encode(result),
             "a5e787e98d421a0e62b2457e525bc8a4b1bde14cc71d48c0cf139b0b1fadb1cc"
         );
-    }
-
-    /// Creating a dummy context for the UserOperationBuilder contract
-    fn create_dummy_context_for_op_builder() -> Bytes {
-        let validator_address = hex::decode("1234567890123456789012345678901234567890").unwrap();
-        // Assuming mode is SmartSessionMode.USE (1)
-        let mode = vec![1];
-        let signer_id =
-            hex::decode("abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef")
-                .unwrap();
-
-        let mut context = Vec::new();
-        context.extend_from_slice(&validator_address);
-        context.extend_from_slice(&mode);
-        context.extend_from_slice(&signer_id);
-
-        Bytes::from(context)
-    }
-
-    // Ignoring this test until the RPC project ID is provided by the CI workflow
-    // The test can be run manually by providing the project ID
-    #[ignore]
-    #[tokio::test]
-    async fn test_call_get_signature() {
-        let rpc_project_id = ""; // Fill the project ID
-        let chain_id = "eip155:11155111";
-        // UserOpBuilder contract address
-        let contract_address = "0xCd67aCD5d31969e2c368d6A1cfE1911932C744b1"
-            .parse::<H160>()
-            .unwrap();
-        // Dummy smart account address
-        let sa_address = "0x1234567890123456789012345678901234567890"
-            .parse::<H160>()
-            .unwrap();
-        let user_operation = UserOperation {
-            sender: sa_address,
-            nonce: U256::zero(),
-            call_data: Bytes::from(vec![0x04, 0x05, 0x06]),
-            call_gas_limit: U128::zero(),
-            verification_gas_limit: U128::zero(),
-            pre_verification_gas: U256::zero(),
-            max_fee_per_gas: U128::zero(),
-            max_priority_fee_per_gas: U128::zero(),
-            signature: Bytes::from(vec![0x0a, 0x0b, 0x0c]),
-            factory: None,
-            factory_data: None,
-            paymaster: None,
-            paymaster_data: None,
-            paymaster_post_op_gas_limit: None,
-            paymaster_verification_gas_limit: None,
-        };
-
-        let result = call_get_signature(
-            rpc_project_id,
-            chain_id,
-            contract_address,
-            sa_address,
-            user_operation,
-            create_dummy_context_for_op_builder(),
-        )
-        .await
-        .unwrap();
-
-        // Expect an empty signature because of dummy parameters
-        assert_eq!(hex::encode(result), "");
     }
 }
