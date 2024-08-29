@@ -67,6 +67,7 @@ local redis  = panels.aws.redis;
     error_5xx_logs:           (import 'lb/error_5xx_logs.libsonnet'             ).new,
     healthy_hosts:            (import 'lb/healthy_hosts.libsonnet'              ).new,
     requests:                 (import 'lb/requests.libsonnet'                   ).new,
+    response_time:            (import 'lb/latency.libsonnet'                    ).new, 
   },
 
   irn: {
