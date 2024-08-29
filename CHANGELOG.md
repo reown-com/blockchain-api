@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.94.0 - 2024-08-29
+#### Features
+- **(cosigner)** removing sending user operation to the bundler, adding call to the sendUserOp endpoint (#754) - (433db49) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.93.2 - 2024-08-27
 #### Bug Fixes
 - **(redis)** increasing the node type and max connections (#752) - (9fe1d73) - Max Kalashnikoff | maksy.eth
