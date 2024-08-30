@@ -31,10 +31,21 @@ local redis  = panels.aws.redis;
     errors_non_provider:    (import 'proxy/errors_non_provider.libsonnet'   ).new,
     errors_provider:        (import 'proxy/errors_provider.libsonnet'       ).new,
     provider_retries:       (import 'proxy/rpc_retries.libsonnet'           ).new,
-    rejected_projects:      (import 'proxy/rejected_projects.libsonnet'     ).new,
-    quota_limited_projects: (import 'proxy/quota_limited_projects.libsonnet').new,
     rate_limited_counter:   (import 'proxy/rate_limited_counter.libsonnet'  ).new,
     http_codes:             (import 'proxy/http_codes.libsonnet'            ).new,
+  },
+
+  projects: {
+    rejected_projects:      (import 'projects/rejected_projects.libsonnet'     ).new,
+    quota_limited_projects: (import 'projects/quota_limited_projects.libsonnet').new,
+    cache_latency:          (import 'projects/cache_latency.libsonnet'         ).new,
+    fetch_latency:          (import 'projects/fetch_latency.libsonnet'         ).new,
+  },
+
+  rate_limiting: {
+    counter:      (import 'rate_limiting/counter.libsonnet'     ).new,
+    latency:      (import 'rate_limiting/latency.libsonnet'     ).new,
+    rate_limited: (import 'rate_limiting/rate_limited.libsonnet').new,
   },
 
   redis: {

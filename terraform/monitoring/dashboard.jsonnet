@@ -115,10 +115,18 @@ dashboard.new(
     panels.proxy.latency(ds, vars)                   { gridPos: pos._2 },
     panels.proxy.errors_provider(ds, vars)           { gridPos: pos._3 },
     panels.proxy.provider_retries(ds, vars)          { gridPos: pos._3 },
-    panels.proxy.rejected_projects(ds, vars)         { gridPos: pos._3 },
-    panels.proxy.quota_limited_projects(ds, vars)    { gridPos: pos._3 },
-    panels.proxy.rate_limited_counter(ds, vars)      { gridPos: pos._3 },
     panels.proxy.http_codes(ds, vars)                { gridPos: pos._3 },
+
+  row.new('Projects registry'),
+    panels.projects.rejected_projects(ds, vars)         { gridPos: pos._4 },
+    panels.projects.quota_limited_projects(ds, vars)    { gridPos: pos._4 },
+    panels.projects.cache_latency(ds, vars)             { gridPos: pos._4 },
+    panels.projects.fetch_latency(ds, vars)             { gridPos: pos._4 },
+
+  row.new('Rate limiting'),
+    panels.rate_limiting.counter(ds, vars)      { gridPos: pos._3 },
+    panels.rate_limiting.latency(ds, vars)      { gridPos: pos._3 },
+    panels.rate_limiting.rate_limited(ds, vars) { gridPos: pos._3 },
 
   row.new('History Metrics'),
     panels.history.requests(ds, vars)               { gridPos: pos_short._3 },
