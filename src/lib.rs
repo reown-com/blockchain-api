@@ -99,9 +99,11 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
                     );
                     RateLimit::new(
                         redis_addr.write(),
+                        config.storage.redis_max_connections,
                         max_tokens,
                         chrono::Duration::seconds(refill_interval_sec as i64),
                         refill_rate,
+                        metrics.clone(),
                     )
                 }
                 _ => {

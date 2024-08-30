@@ -59,6 +59,8 @@ pub struct Metrics {
 
     // Rate limiting
     pub rate_limited_entries_counter: Histogram<u64>,
+    pub rate_limiting_latency_tracker: Histogram<f64>,
+    pub rate_limited_responses_counter: Counter<u64>,
 
     // Account names
     pub account_names_count: ObservableGauge<u64>,
@@ -242,6 +244,16 @@ impl Metrics {
             .with_description("The latency of IRN client calls")
             .init();
 
+        let rate_limiting_latency_tracker = meter
+            .f64_histogram("rate_limiting_latency_tracker")
+            .with_description("Rate limiting latency tracker")
+            .init();
+
+        let rate_limited_responses_counter = meter
+            .u64_counter("rate_limited_responses_counter")
+            .with_description("Rate limiting responses counter")
+            .init();
+
         Metrics {
             rpc_call_counter,
             rpc_call_retries,
@@ -274,9 +286,11 @@ impl Metrics {
             cpu_usage,
             memory_total,
             memory_used,
-            rate_limited_entries_counter,
             account_names_count,
             irn_latency_tracker,
+            rate_limiting_latency_tracker,
+            rate_limited_entries_counter,
+            rate_limited_responses_counter,
         }
     }
 }
@@ -536,6 +550,22 @@ impl Metrics {
     pub fn add_rate_limited_entries_count(&self, entry: u64) {
         self.rate_limited_entries_counter
             .record(&otel::Context::new(), entry, &[]);
+    }
+
+    pub fn add_rate_limiting_latency(&self, start: SystemTime) {
+        self.rate_limiting_latency_tracker.record(
+            &otel::Context::new(),
+            start
+                .elapsed()
+                .unwrap_or(Duration::from_secs(0))
+                .as_secs_f64(),
+            &[],
+        );
+    }
+
+    pub fn add_rate_limited_response(&self) {
+        self.rate_limited_responses_counter
+            .add(&otel::Context::new(), 1, &[]);
     }
 
     pub fn add_irn_latency(&self, start: SystemTime, operation: OperationType) {

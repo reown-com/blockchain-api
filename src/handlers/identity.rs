@@ -34,7 +34,10 @@ use {
     wc::future::FutureExt,
 };
 
-const CACHE_TTL: TimeDelta = TimeDelta::seconds(60 * 60 * 24);
+const CACHE_TTL: u64 = 60 * 60 * 24;
+const CACHE_TTL_DELTA: TimeDelta = TimeDelta::seconds(CACHE_TTL as i64);
+const CACHE_TTL_STD: Duration = Duration::from_secs(CACHE_TTL);
+
 const SELF_PROVIDER_ERROR_PREFIX: &str = "SelfProviderError: ";
 const EMPTY_RPC_RESPONSE: &str = "0x";
 pub const ETHEREUM_MAINNET: &str = "eip155:1";
@@ -154,7 +157,7 @@ async fn handler_internal(
 }
 
 fn ttl_from_resolved_at(resolved_at: DateTime<Utc>, now: DateTime<Utc>) -> TimeDelta {
-    let expires = resolved_at + CACHE_TTL;
+    let expires = resolved_at + CACHE_TTL_DELTA;
     (expires - now).max(TimeDelta::zero())
 }
 
@@ -277,9 +280,9 @@ async fn lookup_identity(
             let res = res.clone();
             // Do not block on cache write.
             tokio::spawn(async move {
-                let cache_ttl = CACHE_TTL.to_std().expect("invalid duration");
+                let cache_start = SystemTime::now();
                 cache
-                    .set(&cache_record_key, &res, Some(cache_ttl))
+                    .set(&cache_record_key, &res, Some(CACHE_TTL_STD))
                     .await
                     .tap_err(|err| {
                         warn!(
@@ -288,6 +291,7 @@ async fn lookup_identity(
                         )
                     })
                     .ok();
+                state.metrics.add_identity_lookup_cache_latency(cache_start);
                 debug!("Setting cache success");
             });
         }
@@ -572,14 +576,14 @@ mod tests {
     #[test]
     fn full_ttl_when_resolved_now() {
         let now = Utc::now();
-        assert_eq!(ttl_from_resolved_at(now, now), CACHE_TTL);
+        assert_eq!(ttl_from_resolved_at(now, now), CACHE_TTL_DELTA);
     }
 
     #[test]
     fn expires_now() {
         let now = Utc::now();
         assert_eq!(
-            ttl_from_resolved_at(now - CACHE_TTL, now),
+            ttl_from_resolved_at(now - CACHE_TTL_DELTA, now),
             TimeDelta::zero()
         );
     }
@@ -588,7 +592,7 @@ mod tests {
     fn expires_past() {
         let now = Utc::now();
         assert_eq!(
-            ttl_from_resolved_at(now - CACHE_TTL - TimeDelta::days(1), now),
+            ttl_from_resolved_at(now - CACHE_TTL_DELTA - TimeDelta::days(1), now),
             TimeDelta::zero()
         );
     }
