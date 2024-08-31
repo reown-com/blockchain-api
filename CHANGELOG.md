@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.95.0 - 2024-08-31
+#### Features
+- **(grafana)** adding ELB target response time panel and alert (#756) - (95ffbe6) - Max Kalashnikoff | maksy.eth
+- **(grafana)** adding handlers execution time, rps chart and alert (#755) - (52978f2) - Max Kalashnikoff | maksy.eth
+- **(observation)** adding rate limit latency and projects registry monitoring, organizing Grafana panels (#758) - (dc9e8c1) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.94.0 - 2024-08-29
 #### Features
 - **(cosigner)** removing sending user operation to the bundler, adding call to the sendUserOp endpoint (#754) - (433db49) - Max Kalashnikoff | maksy.eth
