@@ -36,7 +36,7 @@ async fn handler_internal(
     let storage_permissions_item = irn_client
         .hget(request.address.clone(), request.pci.clone())
         .await?
-        .ok_or_else(|| RpcError::PermissionNotFound(request.pci))?;
+        .ok_or_else(|| RpcError::PermissionNotFound(request.address.clone(), request.pci))?;
     state
         .metrics
         .add_irn_latency(irn_call_start, OperationType::Hget);

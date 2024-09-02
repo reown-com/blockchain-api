@@ -190,7 +190,7 @@ pub enum RpcError {
     IrnNotConfigured,
 
     #[error("Permission for PCI is not found: {0}")]
-    PermissionNotFound(String),
+    PermissionNotFound(String, String),
 
     #[error("Wrong Base64 format: {0}")]
     WrongBase64Format(String),
@@ -449,14 +449,22 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
-            Self::PermissionNotFound(e) => (
+            Self::PermissionNotFound(address, pci) => {
+                // TODO: Remove this debug log
+                print!(
+                    "Permission not found with PCI: {:?} and address: {:?}",
+                    pci,
+                    address
+                );
+                (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "pci".to_string(),
-                    format!("Permission for PCI is not found: {}", e),
+                    format!("Permission for PCI is not found: {}", pci),
                 )),
             )
-                .into_response(),
+                .into_response()
+        },
             Self::WrongBase64Format(e) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
