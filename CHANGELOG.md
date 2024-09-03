@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.96.1 - 2024-09-03
+#### Bug Fixes
+- **(providers)** temporary disabling Publicnode for the Base (#762) - (0f133e3) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.96.0 - 2024-09-03
 #### Features
 - **(debug)** temporary adding debug messages for PCI creation and error when not found in IRN (#759) - (486fe74) - Max Kalashnikoff | maksy.eth
