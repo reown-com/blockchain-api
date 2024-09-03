@@ -76,9 +76,15 @@ async fn handler_internal(
         .add_irn_latency(irn_call_start, OperationType::Hset);
 
     let response = NewPermissionResponse {
-        pci,
+        pci: pci.clone(),
         key: public_key_der_base64,
     };
+
+    // TODO: remove this debuging log
+    print!(
+        "New permission created with PCI: {:?} for address: {:?}",
+        pci, address
+    );
 
     Ok(Json(response).into_response())
 }
