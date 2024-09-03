@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.96.0 - 2024-09-03
+#### Features
+- **(debug)** temporary adding debug messages for PCI creation and error when not found in IRN (#759) - (486fe74) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.95.0 - 2024-08-31
 #### Features
 - **(grafana)** adding ELB target response time panel and alert (#756) - (95ffbe6) - Max Kalashnikoff | maksy.eth
