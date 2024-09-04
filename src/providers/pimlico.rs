@@ -68,8 +68,12 @@ impl BundlerOpsProvider for PimlicoProvider {
         match op {
             SupportedBundlerOps::EthSendUserOperation => "eth_sendUserOperation".into(),
             SupportedBundlerOps::EthGetUserOperationReceipt => "eth_getUserOperationReceipt".into(),
+            SupportedBundlerOps::EthEstimateUserOperationGas => {
+                "eth_estimateUserOperationGas".into()
+            }
             SupportedBundlerOps::WalletGetCallsStatus => "wallet_getCallsStatus".into(),
             SupportedBundlerOps::WalletShowCallsStatus => "wallet_showCallsStatus".into(),
+            SupportedBundlerOps::PmSponsorUserOperation => "pm_sponsorUserOperation".into(),
         }
     }
 }

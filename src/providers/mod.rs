@@ -689,6 +689,10 @@ pub enum SupportedBundlerOps {
     EthGetUserOperationReceipt,
     #[serde(rename = "eth_sendUserOperation")]
     EthSendUserOperation,
+    #[serde(rename = "eth_estimateUserOperationGas")]
+    EthEstimateUserOperationGas,
+    #[serde(rename = "pm_sponsorUserOperation")]
+    PmSponsorUserOperation,
 }
 
 /// Provider for the bundler operations
