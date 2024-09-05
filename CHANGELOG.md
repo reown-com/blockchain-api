@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.98.0 - 2024-09-05
+#### Features
+- **(providers)** adding Solana fungible price support (#765) - (57d929e) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.97.1 - 2024-09-05
 #### Bug Fixes
 - **(providers)** enabling Base for Publicnode provider (#764) - (cacfa23) - Max Kalashnikoff | maksy.eth
