@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.99.0 - 2024-09-05
+#### Features
+- **(providers)** injecting SOL native token balance (#767) - (dac1410) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.98.0 - 2024-09-05
 #### Features
 - **(providers)** adding Solana fungible price support (#765) - (57d929e) - Max Kalashnikoff | maksy.eth
