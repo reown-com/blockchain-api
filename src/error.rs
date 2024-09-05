@@ -46,6 +46,9 @@ pub enum RpcError {
     #[error("Specified chain is not supported by any of the providers: {0}")]
     UnsupportedChain(String),
 
+    #[error("Specified currency is not supported: {0}")]
+    UnsupportedCurrency(String),
+
     #[error("Requested chain provider is temporarily unavailable: {0}")]
     ChainTemporarilyUnavailable(String),
 
@@ -70,8 +73,8 @@ pub enum RpcError {
     #[error("Failed to reach the balance provider")]
     BalanceProviderError,
 
-    #[error("Failed to reach the fungible price provider")]
-    FungiblePriceProviderError,
+    #[error("Failed to reach the fungible price provider: {0}")]
+    FungiblePriceProviderError(String),
 
     #[error("Failed to parse balance provider url")]
     BalanceParseURLError,
@@ -223,6 +226,14 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+            Self::UnsupportedCurrency(error_message) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(new_error_response(
+                        "currency".to_string(),
+                        format!("Unsupported currency: {error_message}."),
+                    )),
+                )
+                    .into_response(),
             Self::CryptoUitlsError(e) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(

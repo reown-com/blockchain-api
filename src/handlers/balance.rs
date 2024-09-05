@@ -235,9 +235,13 @@ async fn handler_internal(
             }
             // Appending the token item to the response if it's not in
             // the balance response due to the zero balance
-            let get_price_info = state
+            let get_price_info_provider = state
                 .providers
-                .fungible_price_provider
+                .fungible_price_providers
+                .get(&namespace)
+                .ok_or_else(|| RpcError::UnsupportedNamespace(namespace))?;
+
+            let get_price_info = get_price_info_provider
                 .get_price(
                     &chain_id.clone(),
                     format!("{:#x}", contract_address).as_str(),
