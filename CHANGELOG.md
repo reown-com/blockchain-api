@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.97.1 - 2024-09-05
+#### Bug Fixes
+- **(providers)** enabling Base for Publicnode provider (#764) - (cacfa23) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.97.0 - 2024-09-04
 #### Features
 - **(bundlerops)** extending supported bundler operations list (#761) - (c35c4cc) - Max Kalashnikoff | maksy.eth
