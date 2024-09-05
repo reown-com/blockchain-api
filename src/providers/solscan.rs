@@ -1,15 +1,20 @@
 use {
-    super::{BalanceProvider, HistoryProvider},
+    super::{
+        BalanceProvider, FungiblePriceProvider, HistoryProvider, PriceResponseBody,
+        SupportedCurrencies,
+    },
     crate::{
         error::{RpcError, RpcResult},
         handlers::{
             balance::{BalanceItem, BalanceQuantity, BalanceQueryParams, BalanceResponseBody},
+            fungible_price::FungiblePriceItem,
             history::{
                 HistoryQueryParams, HistoryResponseBody, HistoryTransaction,
                 HistoryTransactionMetadata, HistoryTransactionTransfer,
                 HistoryTransactionTransferQuantity,
             },
         },
+        utils::crypto::SOLANA_NATIVE_TOKEN_ADDRESS,
     },
     async_trait::async_trait,
     serde::{Deserialize, Serialize},
@@ -18,14 +23,45 @@ use {
     url::Url,
 };
 
+const SOLANA_SOL_TOKEN_ICON: &str =
+    "https://cdn.jsdelivr.net/gh/trustwallet/assets@master/blockchains/solana/info/logo.png";
 const SOLANA_MAINNET_CHAIN_ID: &str = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
 const ACCOUNT_TOKENS_URL: &str = "https://pro-api.solscan.io/v1.0/account/tokens";
 const ACCOUNT_HISTORY_URL: &str = "https://pro-api.solscan.io/v2.0/account/transfer";
+const TOKEN_METADATA_URL: &str = "https://pro-api.solscan.io/v2.0/token/meta";
+
+const WSOL_TOKEN_ADDRESS: &str = "So11111111111111111111111111111111111111112";
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+struct TokenInfoResponse {
+    pub data: TokenMetaData,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+struct TokenMetaData {
+    pub address: String,
+    pub name: String,
+    pub symbol: String,
+    pub decimals: u8,
+    pub icon: Option<String>,
+    pub price: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+struct TokenPriceResponse {
+    pub data: Vec<TokenPriceResponseData>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+struct TokenPriceResponseData {
+    pub price: f64,
+}
 
 #[derive(Debug)]
 pub struct SolScanProvider {
     pub api_v1_token: String,
     pub api_v2_token: String,
+    pub http_client: reqwest::Client,
 }
 
 impl SolScanProvider {
@@ -33,7 +69,63 @@ impl SolScanProvider {
         Self {
             api_v1_token,
             api_v2_token,
+            http_client: reqwest::Client::new(),
         }
+    }
+
+    async fn metadata_token_request(&self, address: &str) -> Result<TokenMetaData, RpcError> {
+        let mut url =
+            Url::parse(TOKEN_METADATA_URL).map_err(|_| RpcError::FungiblePriceParseURLError)?;
+        url.query_pairs_mut().append_pair("address", address);
+
+        let response = self
+            .http_client
+            .get(url)
+            .header("token", self.api_v2_token.clone())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            error!(
+                "Error on SolScan token metadata response. Status is not OK: {:?}",
+                response.status(),
+            );
+            return Err(RpcError::FungiblePriceProviderError(
+                "Token metadata provider response status is not success".to_string(),
+            ));
+        }
+        let body = response.json::<TokenInfoResponse>().await?;
+
+        Ok(TokenMetaData {
+            address: body.data.address,
+            name: body.data.name,
+            symbol: body.data.symbol,
+            decimals: body.data.decimals,
+            icon: body.data.icon,
+            price: body.data.price,
+        })
+    }
+
+    async fn get_token_info(&self, address: &str) -> Result<TokenMetaData, RpcError> {
+        // Respond instantly for the native token (SOL) metadata with making just a price request
+        // since metadata is static
+        if address == SOLANA_NATIVE_TOKEN_ADDRESS {
+            // Temporary using the WSOL metadata to get the SOL price
+            // until the SolScan pricing endpoint is fixed
+            let price = self.metadata_token_request(WSOL_TOKEN_ADDRESS).await?.price;
+
+            return Ok(TokenMetaData {
+                address: SOLANA_NATIVE_TOKEN_ADDRESS.to_string(),
+                name: "Solana".to_string(),
+                symbol: "SOL".to_string(),
+                decimals: 9,
+                icon: Some(SOLANA_SOL_TOKEN_ICON.to_string()),
+                price,
+            });
+        }
+
+        let metadata = self.metadata_token_request(WSOL_TOKEN_ADDRESS).await?;
+        Ok(metadata)
     }
 }
 
@@ -239,5 +331,35 @@ impl HistoryProvider for SolScanProvider {
             data: transactions,
             next,
         })
+    }
+}
+
+#[async_trait]
+impl FungiblePriceProvider for SolScanProvider {
+    #[tracing::instrument(skip(self), fields(provider = "SolScan"), level = "debug")]
+    async fn get_price(
+        &self,
+        chain_id: &str,
+        address: &str,
+        currency: &SupportedCurrencies,
+    ) -> RpcResult<PriceResponseBody> {
+        if currency != &SupportedCurrencies::USD {
+            return Err(RpcError::UnsupportedCurrency(
+                "Only USD currency is supported for Solana tokens price".to_string(),
+            ));
+        }
+
+        let info = self.get_token_info(address).await?;
+        let response = PriceResponseBody {
+            fungibles: vec![FungiblePriceItem {
+                name: info.name,
+                symbol: info.symbol,
+                icon_url: info.icon.unwrap_or_default(),
+                price: info.price,
+                decimals: info.decimals as u32,
+            }],
+        };
+
+        Ok(response)
     }
 }

@@ -6,7 +6,9 @@ describe('Fungible price', () => {
   const currency = 'usd'
   const native_token_address = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
-  it('get erc20 mainnet token price', async () => {
+  const solana_mainnet_chain_id = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp';
+
+  it('get Ethereum ERC20 token price', async () => {
     const shib_token_address = 'eip155:1:0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce';
     let request_data = {
       projectId: projectId,
@@ -29,7 +31,30 @@ describe('Fungible price', () => {
     }
   })
 
-  it('get native tokens price', async () => {
+  it('get Solana SPL token price', async () => {
+    const wsol_token_address = `${solana_mainnet_chain_id}:So11111111111111111111111111111111111111112`;
+    let request_data = {
+      projectId: projectId,
+      currency: currency,
+      addresses: [wsol_token_address]
+    }
+    let resp: any = await httpClient.post(
+      `${endpoint}`,
+      request_data
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.fungibles).toBe('object')
+    expect(resp.data.fungibles.length).toBe(1)
+
+    for (const item of resp.data.fungibles) {
+      expect(item.name).toBe('Wrapped SOL')
+      expect(item.symbol).toBe('SOL')
+      expect(typeof item.iconUrl).toBe('string')
+      expect(typeof item.price).toBe('number')
+    }
+  })
+
+  it('get ETH chains native tokens price', async () => {
     const native_tokens = [
       { chainId: 1, symbol: 'ETH' },
       { chainId: 56, symbol: 'BNB' },

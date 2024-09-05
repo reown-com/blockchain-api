@@ -38,6 +38,8 @@ static CAIP_SOLANA_ADDRESS_REGEX: Lazy<Regex> = Lazy::new(|| {
         .expect("Failed to initialize regexp for the solana address format")
 });
 
+pub const SOLANA_NATIVE_TOKEN_ADDRESS: &str = "So11111111111111111111111111111111111111111";
+
 pub const JSON_RPC_VERSION_STR: &str = "2.0";
 pub static JSON_RPC_VERSION: once_cell::sync::Lazy<Arc<str>> =
     once_cell::sync::Lazy::new(|| Arc::from(JSON_RPC_VERSION_STR));
@@ -653,9 +655,10 @@ pub fn disassemble_caip10(
         .ok_or(CryptoUitlsError::WrongChainIdFormat(chain_id.clone()))?;
 
     let address = parts[2].to_string();
-    CAIP_ETH_ADDRESS_REGEX
-        .captures(&address)
-        .ok_or(CryptoUitlsError::WrongAddressFormat(address.clone()))?;
+    if !is_address_valid(&address, &namespace) {
+        return Err(CryptoUitlsError::WrongAddressFormat(address.clone()));
+    };
+
     Ok((namespace, chain_id, address))
 }
 

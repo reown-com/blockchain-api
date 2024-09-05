@@ -128,7 +128,7 @@ pub struct ProviderRepository {
     pub onramp_provider: Arc<dyn OnRampProvider>,
     pub balance_providers: HashMap<CaipNamespaces, Arc<dyn BalanceProvider>>,
     pub conversion_provider: Arc<dyn ConversionProvider>,
-    pub fungible_price_provider: Arc<dyn FungiblePriceProvider>,
+    pub fungible_price_providers: HashMap<CaipNamespaces, Arc<dyn FungiblePriceProvider>>,
     pub bundler_ops_provider: Arc<dyn BundlerOpsProvider>,
 }
 
@@ -208,6 +208,11 @@ impl ProviderRepository {
 
         let bundler_ops_provider = Arc::new(PimlicoProvider::new(config.pimlico_api_key.clone()));
 
+        let mut fungible_price_providers: HashMap<CaipNamespaces, Arc<dyn FungiblePriceProvider>> =
+            HashMap::new();
+        fungible_price_providers.insert(CaipNamespaces::Eip155, one_inch_provider.clone());
+        fungible_price_providers.insert(CaipNamespaces::Solana, solscan_provider.clone());
+
         Self {
             supported_chains: SupportedChains {
                 http: HashSet::new(),
@@ -225,7 +230,7 @@ impl ProviderRepository {
             onramp_provider: coinbase_pay_provider,
             balance_providers,
             conversion_provider: one_inch_provider.clone(),
-            fungible_price_provider: one_inch_provider.clone(),
+            fungible_price_providers,
             bundler_ops_provider,
         }
     }

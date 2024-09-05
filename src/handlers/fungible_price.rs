@@ -63,11 +63,18 @@ async fn handler_internal(
         return Err(RpcError::InvalidAddress);
     };
 
-    let (_, chain_id, address) = crypto::disassemble_caip10(address)?;
+    let (namespace, chain_id, address) = crypto::disassemble_caip10(address)?;
+    if !crypto::is_address_valid(&address, &namespace) {
+        return Err(RpcError::InvalidAddress);
+    }
 
-    let response = state
+    let provider = state
         .providers
-        .fungible_price_provider
+        .fungible_price_providers
+        .get(&namespace)
+        .ok_or_else(|| RpcError::UnsupportedNamespace(namespace))?;
+
+    let response = provider
         .get_price(&chain_id, &address, &query.currency)
         .await
         .tap_err(|e| {

@@ -89,6 +89,7 @@ impl Redis {
         })
     }
 
+    #[allow(dependency_on_unit_never_type_fallback)]
     async fn set_internal(
         &self,
         key: &str,
