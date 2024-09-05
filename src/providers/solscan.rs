@@ -29,8 +29,19 @@ const SOLANA_MAINNET_CHAIN_ID: &str = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
 const ACCOUNT_TOKENS_URL: &str = "https://pro-api.solscan.io/v1.0/account/tokens";
 const ACCOUNT_HISTORY_URL: &str = "https://pro-api.solscan.io/v2.0/account/transfer";
 const TOKEN_METADATA_URL: &str = "https://pro-api.solscan.io/v2.0/token/meta";
+const ACCOUNT_DETAIL_URL: &str = "https://pro-api.solscan.io/v2.0/account/detail";
 
 const WSOL_TOKEN_ADDRESS: &str = "So11111111111111111111111111111111111111112";
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+struct AccountDetailResponse {
+    pub data: AccountDetail,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+struct AccountDetail {
+    pub lamports: Option<usize>,
+}
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 struct TokenInfoResponse {
@@ -127,6 +138,33 @@ impl SolScanProvider {
         let metadata = self.metadata_token_request(WSOL_TOKEN_ADDRESS).await?;
         Ok(metadata)
     }
+
+    // Get SOL address balance by getting account detail
+    async fn get_sol_balance(&self, address: &str) -> Result<f64, RpcError> {
+        let mut url = Url::parse(ACCOUNT_DETAIL_URL).map_err(|_| RpcError::BalanceParseURLError)?;
+        url.query_pairs_mut().append_pair("address", address);
+
+        let response = self
+            .http_client
+            .get(url)
+            .header("token", self.api_v2_token.clone())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            error!(
+                "Error on SolScan account detail response. Status is not OK: {:?}",
+                response.status(),
+            );
+            return Err(RpcError::BalanceProviderError);
+        }
+        let detail = response.json::<AccountDetailResponse>().await?;
+
+        let lamports = detail.data.lamports.unwrap_or_default();
+        let balance = lamports as f64 / 10f64.powf(9.0);
+
+        Ok(balance)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -220,7 +258,7 @@ impl BalanceProvider for SolScanProvider {
         }
         let body = response.json::<Vec<TokensResponseItem>>().await?;
 
-        let balances_vec = body
+        let mut balances_vec: Vec<BalanceItem> = body
             .into_iter()
             .map(|f| BalanceItem {
                 name: f
@@ -238,6 +276,26 @@ impl BalanceProvider for SolScanProvider {
                 icon_url: f.token_icon.unwrap_or_default(),
             })
             .collect();
+
+        // Inject Solana native token (SOL) balance if not zero
+        let sol_balance = self.get_sol_balance(&address).await?;
+        if sol_balance > 0.0 {
+            let sol_metadata = self.get_token_info(SOLANA_NATIVE_TOKEN_ADDRESS).await?;
+            let sol_balance_item = BalanceItem {
+                name: sol_metadata.name,
+                symbol: sol_metadata.symbol,
+                chain_id: Some(SOLANA_MAINNET_CHAIN_ID.to_string()),
+                address: sol_metadata.address.into(),
+                value: Some(sol_balance * sol_metadata.price),
+                price: sol_metadata.price,
+                quantity: BalanceQuantity {
+                    decimals: sol_metadata.decimals.to_string(),
+                    numeric: sol_balance.to_string(),
+                },
+                icon_url: sol_metadata.icon.unwrap_or_default(),
+            };
+            balances_vec.push(sol_balance_item);
+        }
 
         let response = BalanceResponseBody {
             balances: balances_vec,
