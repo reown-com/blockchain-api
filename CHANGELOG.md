@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.100.0 - 2024-09-06
+#### Features
+- **(history)** fulfilling Solana transactions history with the tokens metadata (#768) - (0be9887) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.99.0 - 2024-09-05
 #### Features
 - **(providers)** injecting SOL native token balance (#767) - (dac1410) - Max Kalashnikoff | maksy.eth
