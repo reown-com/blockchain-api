@@ -10,8 +10,9 @@ use {
             fungible_price::FungiblePriceItem,
             history::{
                 HistoryQueryParams, HistoryResponseBody, HistoryTransaction,
-                HistoryTransactionMetadata, HistoryTransactionTransfer,
-                HistoryTransactionTransferQuantity,
+                HistoryTransactionFungibleInfo, HistoryTransactionMetadata,
+                HistoryTransactionTransfer, HistoryTransactionTransferQuantity,
+                HistoryTransactionURLItem,
             },
         },
         utils::crypto::SOLANA_NATIVE_TOKEN_ADDRESS,
@@ -314,9 +315,11 @@ impl HistoryProvider for SolScanProvider {
         params: HistoryQueryParams,
         http_client: reqwest::Client,
     ) -> RpcResult<HistoryResponseBody> {
+        let page_size = 100;
         let mut url =
             Url::parse(ACCOUNT_HISTORY_URL).map_err(|_| RpcError::BalanceParseURLError)?;
-        url.query_pairs_mut().append_pair("page_size", "100");
+        url.query_pairs_mut()
+            .append_pair("page_size", &page_size.to_string());
         url.query_pairs_mut().append_pair("remove_spam", "true");
         url.query_pairs_mut()
             .append_pair("exclude_amount_zero", "true");
@@ -339,15 +342,15 @@ impl HistoryProvider for SolScanProvider {
         }
         let body = response.json::<HistoryResponse>().await?;
 
-        let transactions: Vec<HistoryTransaction> = body
-            .data
-            .into_iter()
-            .map(|f| HistoryTransaction {
-                id: f.block_id.to_string(),
+        let mut transactions: Vec<HistoryTransaction> = Vec::new();
+        for item in &body.data {
+            let token_info = self.get_token_info(&item.token_address).await?;
+            let transaction = HistoryTransaction {
+                id: item.block_id.to_string(),
                 metadata: HistoryTransactionMetadata {
-                    operation_type: match f.activity_type {
+                    operation_type: match item.activity_type {
                         HistoryActivityType::Transfer => {
-                            if f.flow == HistoryDirectionType::In {
+                            if item.flow == HistoryDirectionType::In {
                                 "receive".to_string()
                             } else {
                                 "send".to_string()
@@ -357,29 +360,36 @@ impl HistoryProvider for SolScanProvider {
                         HistoryActivityType::Mint => "mint".to_string(),
                         HistoryActivityType::CreateAccount => "execute".to_string(),
                     },
-                    hash: f.trans_id,
-                    mined_at: f.time,
+                    hash: item.trans_id.clone(),
+                    mined_at: item.time.clone(),
                     nonce: 0,
-                    sent_from: f.from_address,
-                    sent_to: f.to_address,
+                    sent_from: item.from_address.clone(),
+                    sent_to: item.to_address.clone(),
                     status: "confirmed".to_string(), // Balance changes are always confirmed
                     application: None,
                     chain: Some(SOLANA_MAINNET_CHAIN_ID.to_string()),
                 },
                 transfers: Some(vec![HistoryTransactionTransfer {
-                    fungible_info: None, // Todo: Add fungible info from saved tokens info list
+                    fungible_info: Some(HistoryTransactionFungibleInfo {
+                        name: Some(token_info.name),
+                        symbol: Some(token_info.symbol),
+                        icon: Some(HistoryTransactionURLItem {
+                            url: token_info.icon.unwrap_or_default(),
+                        }),
+                    }),
                     nft_info: None,
-                    direction: f.flow.to_string(),
+                    direction: item.flow.to_string(),
                     quantity: HistoryTransactionTransferQuantity {
-                        numeric: f.amount.to_string(),
+                        numeric: item.amount.to_string(),
                     },
-                    value: None,
-                    price: None,
+                    value: Some(item.amount as f64 / 10f64.powf(9.0) * token_info.price),
+                    price: Some(token_info.price),
                 }]),
-            })
-            .collect();
+            };
+            transactions.push(transaction);
+        }
 
-        let next = if !transactions.is_empty() {
+        let next = if !transactions.is_empty() && body.data.len() == page_size {
             Some((page.parse::<u64>().unwrap_or(1) + 1).to_string())
         } else {
             None
