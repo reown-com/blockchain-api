@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.100.1 - 2024-09-06
+#### Bug Fixes
+- **(solscan)** fixing tokens amount in the transactions history (#769) - (4ffb6e1) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.100.0 - 2024-09-06
 #### Features
 - **(history)** fulfilling Solana transactions history with the tokens metadata (#768) - (0be9887) - Max Kalashnikoff | maksy.eth
