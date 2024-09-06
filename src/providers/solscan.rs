@@ -200,6 +200,7 @@ struct HistoryResponseItem {
     pub from_address: String,
     pub to_address: String,
     pub token_address: String,
+    pub token_decimals: u8,
     pub amount: usize,
     pub flow: HistoryDirectionType,
     pub time: String,
@@ -345,6 +346,7 @@ impl HistoryProvider for SolScanProvider {
         let mut transactions: Vec<HistoryTransaction> = Vec::new();
         for item in &body.data {
             let token_info = self.get_token_info(&item.token_address).await?;
+            let decimal_amount = item.amount as f64 / 10f64.powf(token_info.decimals as f64);
             let transaction = HistoryTransaction {
                 id: item.block_id.to_string(),
                 metadata: HistoryTransactionMetadata {
@@ -380,9 +382,9 @@ impl HistoryProvider for SolScanProvider {
                     nft_info: None,
                     direction: item.flow.to_string(),
                     quantity: HistoryTransactionTransferQuantity {
-                        numeric: item.amount.to_string(),
+                        numeric: decimal_amount.to_string(),
                     },
-                    value: Some(item.amount as f64 / 10f64.powf(9.0) * token_info.price),
+                    value: Some(decimal_amount * token_info.price),
                     price: Some(token_info.price),
                 }]),
             };
