@@ -6371,7 +6371,7 @@ dependencies = [
 
 [[package]]
 name = "rpc-proxy"
-version = "0.101.0"
+version = "0.101.1"
 dependencies = [
  "alloy-primitives",
  "anyhow",
