@@ -500,6 +500,38 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+            Self::TransactionProviderError => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Transaction provider is temporarily unavailable".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::PortfolioProviderError => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Portfolio provider is temporarily unavailable".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::BalanceProviderError => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Balance provider is temporarily unavailable".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::FungiblePriceProviderError(e) => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "".to_string(),
+                    format!("Fungibles price provider is temporarily unavailable: {}", e),
+                )),
+            )
+                .into_response(),
 
             // Any other errors considering as 500
             _ => (
