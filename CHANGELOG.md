@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.101.1 - 2024-09-07
+#### Bug Fixes
+- update Cargo.lock to the up to date state (#745) - (e5757ad) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.101.0 - 2024-09-07
 #### Features
 - **(providers)** respond HTTP 503 instead of 500 on provider non-success request (#770) - (e8f00e0) - Max Kalashnikoff | maksy.eth
