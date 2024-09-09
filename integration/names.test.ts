@@ -15,7 +15,7 @@ describe('Account profile names', () => {
   // Generate a random name
   const randomString = Array.from({ length: 10 }, 
     () => (Math.random().toString(36)[2] || '0')).join('')
-  const zone = 'wcn.id';
+  const zone =  process.env.NAMES_MAIN_ZONE;
   const name = `integration-test-${randomString}.${zone}`;
 
   // Create a message to sign
@@ -423,7 +423,7 @@ describe('Account profile names', () => {
   it('name suggestions', async () => {
     const test_name_suggest = 'max';
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/profile/suggestions/${test_name_suggest}`
+      `${baseUrl}/v1/profile/suggestions/${test_name_suggest}?zone=${zone}`
     )
     expect(resp.status).toBe(200)
     expect(typeof resp.data.suggestions).toBe('object')

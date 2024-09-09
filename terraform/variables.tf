@@ -247,3 +247,11 @@ variable "irn_namespace_secret" {
   description = "IRN storage namespace secret key"
   type        = string
 }
+
+#-------------------------------------------------------------------------------
+# Names configuration
+
+variable "names_allowed_zones" {
+  description = "Comma separated list of allowed zones for names"
+  type        = string
+}

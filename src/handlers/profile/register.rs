@@ -1,11 +1,6 @@
 use {
     super::{
-        super::HANDLER_TASK_METRICS,
-        utils::{
-            check_attributes, is_name_format_correct, is_name_in_allowed_zones,
-            is_name_length_correct, is_timestamp_within_interval,
-        },
-        RegisterPayload, RegisterRequest, ALLOWED_ZONES, UNIXTIMESTAMP_SYNC_THRESHOLD,
+        super::HANDLER_TASK_METRICS, RegisterPayload, RegisterRequest, UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{
         analytics::{AccountNameRegistration, MessageSource},
@@ -14,6 +9,13 @@ use {
             types::{Address, ENSIP11AddressesMap, SupportedNamespaces},
         },
         error::RpcError,
+        names::{
+            utils::{
+                check_attributes, is_name_format_correct, is_name_in_allowed_zones,
+                is_name_length_correct, is_timestamp_within_interval,
+            },
+            ATTRIBUTES_VALUE_MAX_LENGTH, SUPPORTED_ATTRIBUTES,
+        },
         state::AppState,
         utils::{
             crypto::{
@@ -52,6 +54,9 @@ pub async fn handler_internal(
     headers: HeaderMap,
     register_request: RegisterRequest,
 ) -> Result<Response, RpcError> {
+    let allowed_zones = state.config.names.allowed_zones.as_ref().ok_or_else(|| {
+        RpcError::InvalidConfiguration("Names allowed zones are not defined".to_string())
+    })?;
     let raw_payload = &register_request.message;
     let payload = match serde_json::from_str::<RegisterPayload>(raw_payload) {
         Ok(payload) => payload,
@@ -68,8 +73,8 @@ pub async fn handler_internal(
         return Err(RpcError::InvalidNameLength(payload.name));
     }
 
-    // Check is name in the allowed zones
-    if !is_name_in_allowed_zones(&payload.name, &ALLOWED_ZONES) {
+    // Allow register only in the main zone
+    if !is_name_in_allowed_zones(&payload.name, allowed_zones.clone()) {
         return Err(RpcError::InvalidNameZone(payload.name));
     }
 
@@ -95,8 +100,8 @@ pub async fn handler_internal(
     if let Some(attributes) = payload.attributes.clone() {
         if !check_attributes(
             &attributes,
-            &super::SUPPORTED_ATTRIBUTES,
-            super::ATTRIBUTES_VALUE_MAX_LENGTH,
+            &SUPPORTED_ATTRIBUTES,
+            ATTRIBUTES_VALUE_MAX_LENGTH,
         ) {
             return Err(RpcError::UnsupportedNameAttribute);
         }

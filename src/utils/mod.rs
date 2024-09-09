@@ -4,7 +4,6 @@ pub mod build;
 pub mod crypto;
 pub mod network;
 pub mod rate_limit;
-pub mod suggestions;
 
 pub fn generate_random_string(len: usize) -> String {
     let rng = rand::thread_rng();
