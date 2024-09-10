@@ -62,6 +62,7 @@ pub mod error;
 pub mod handlers;
 mod json_rpc;
 mod metrics;
+pub mod names;
 pub mod profiler;
 mod project;
 pub mod providers;

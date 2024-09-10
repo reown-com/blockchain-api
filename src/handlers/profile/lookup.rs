@@ -1,10 +1,11 @@
 use {
-    super::{
-        super::HANDLER_TASK_METRICS,
-        utils::{is_name_format_correct, is_name_in_allowed_zones, is_name_length_correct},
-        LookupQueryParams, ALLOWED_ZONES, EMPTY_RESPONSE,
+    super::{super::HANDLER_TASK_METRICS, LookupQueryParams, EMPTY_RESPONSE},
+    crate::{
+        database::helpers::get_name_and_addresses_by_name,
+        error::RpcError,
+        names::utils::{is_name_format_correct, is_name_in_allowed_zones, is_name_length_correct},
+        state::AppState,
     },
-    crate::{database::helpers::get_name_and_addresses_by_name, error::RpcError, state::AppState},
     axum::{
         extract::{Path, Query, State},
         response::{IntoResponse, Response},
@@ -33,6 +34,10 @@ async fn handler_internal(
     Path(name): Path<String>,
     Query(query): Query<LookupQueryParams>,
 ) -> Result<Response, RpcError> {
+    let allowed_zones = state.config.names.allowed_zones.as_ref().ok_or_else(|| {
+        RpcError::InvalidConfiguration("Names allowed zones are not defined".to_string())
+    })?;
+
     // Check if the name is in the correct format
     if !is_name_format_correct(&name) {
         return Err(RpcError::InvalidNameFormat(name));
@@ -44,7 +49,7 @@ async fn handler_internal(
     }
 
     // Check is name in the allowed zones
-    if !is_name_in_allowed_zones(&name, &ALLOWED_ZONES) {
+    if !is_name_in_allowed_zones(&name, allowed_zones.clone()) {
         return Err(RpcError::InvalidNameZone(name));
     }
 

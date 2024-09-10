@@ -105,9 +105,12 @@ jobs:
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
           RPC_URL: ${{ inputs.stage-url }}
+          NAMES_MAIN_ZONE: ${{ secrets.NAMES_MAIN_ZONE }}
       - name: Yarn Integration Tests
         if: ${{ inputs.stage == 'prod' }}
         run: yarn integration
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
           RPC_URL: ${{ inputs.stage-url }}
+          NAMES_MAIN_ZONE: ${{ secrets.NAMES_MAIN_ZONE }}
+          

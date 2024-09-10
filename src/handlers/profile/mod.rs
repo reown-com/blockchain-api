@@ -1,6 +1,4 @@
 use {
-    once_cell::sync::Lazy,
-    regex::Regex,
     serde::{Deserialize, Serialize},
     std::collections::HashMap,
 };
@@ -11,25 +9,8 @@ pub mod lookup;
 pub mod register;
 pub mod reverse;
 pub mod suggestions;
-pub mod utils;
-
-/// List of allowed name zones
-pub const ALLOWED_ZONES: [&str; 1] = ["wcn.id"];
 
 pub const UNIXTIMESTAMP_SYNC_THRESHOLD: u64 = 10;
-
-/// Attributes value max length
-const ATTRIBUTES_VALUE_MAX_LENGTH: usize = 255;
-
-/// List of supported attributes with the regex check pattern
-static SUPPORTED_ATTRIBUTES: Lazy<HashMap<String, Regex>> = Lazy::new(|| {
-    let mut map: HashMap<String, Regex> = HashMap::new();
-    map.insert(
-        "bio".into(),
-        Regex::new(r"^[a-zA-Z0-9@:/._\-?&=+ ]+$").expect("Invalid regex for bio"),
-    );
-    map
-});
 
 /// Empty vector as an empty response
 /// This is used to return an empty response when there are no results
@@ -89,4 +70,12 @@ pub struct LookupQueryParams {
     pub api_version: Option<usize>,
     /// Request sender address for analytics
     pub sender: Option<String>,
+}
+
+/// Name suggestions query parameters
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SuggestionsParams {
+    /// Optional zone to use for name suggestions
+    pub zone: Option<String>,
 }

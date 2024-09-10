@@ -124,6 +124,8 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_IRN_NAMESPACE", value = var.irn_namespace },
         { name = "RPC_PROXY_IRN_NAMESPACE_SECRET", value = var.irn_namespace_secret },
 
+        { name = "RPC_PROXY_NAMES_ALLOWED_ZONES", value = var.names_allowed_zones },
+
         { name = "RPC_PROXY_ANALYTICS_EXPORT_BUCKET", value = var.analytics_datalake_bucket_name },
       ],
 

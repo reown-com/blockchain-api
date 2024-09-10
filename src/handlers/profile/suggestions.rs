@@ -1,12 +1,13 @@
 use {
-    super::{
-        super::HANDLER_TASK_METRICS,
-        utils::{is_name_format_correct, is_name_registered},
-        ALLOWED_ZONES,
+    super::{super::HANDLER_TASK_METRICS, SuggestionsParams},
+    crate::{
+        error::RpcError,
+        names::suggestions::dictionary_suggestions,
+        names::utils::{is_name_format_correct, is_name_registered},
+        state::AppState,
     },
-    crate::{error::RpcError, state::AppState, utils::suggestions::dictionary_suggestions},
     axum::{
-        extract::{Path, State},
+        extract::{Path, Query, State},
         response::{IntoResponse, Response},
         Json,
     },
@@ -32,8 +33,9 @@ pub struct NameSuggestion {
 pub async fn handler(
     state: State<Arc<AppState>>,
     name: Path<String>,
+    query: Query<SuggestionsParams>,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, name)
+    handler_internal(state, name, query)
         .with_metrics(HANDLER_TASK_METRICS.with_name("name_suggestions"))
         .await
 }
@@ -42,6 +44,7 @@ pub async fn handler(
 async fn handler_internal(
     state: State<Arc<AppState>>,
     Path(name): Path<String>,
+    Query(query): Query<SuggestionsParams>,
 ) -> Result<Response, RpcError> {
     if name.len() < MIN_NAME_LENGTH {
         return Err(RpcError::InvalidNameLength(name));
@@ -53,29 +56,36 @@ async fn handler_internal(
     let mut suggestions = Vec::new();
     let candidates = dictionary_suggestions(&name);
 
-    // Adding the exact match for each of available zones to check if it is
+    // Use the `zone` query parameter if it is provided for the new AppKit versions
+    // Otherwise, use the first zone in the allowed zones list for the backward compatibility
+    // with the old AppKit versions
+    let allowed_zones = state.config.names.allowed_zones.as_ref().ok_or_else(|| {
+        RpcError::InvalidConfiguration("Names allowed zones are not defined".to_string())
+    })?;
+    let default_zone = allowed_zones.first().ok_or_else(|| {
+        RpcError::InvalidConfiguration("Names allowed zones are empty".to_string())
+    })?;
+    let zone = query.zone.unwrap_or_else(|| default_zone.to_string());
+
+    // Adding the exact match for the main zone to check if it is
     // registered
-    for zone in ALLOWED_ZONES.iter() {
-        let exact_name_with_zone = format!("{}.{}", name, zone);
-        suggestions.push(NameSuggestion {
-            name: exact_name_with_zone.clone(),
-            registered: is_name_registered(exact_name_with_zone, &state.postgres).await,
-        });
-    }
+    let exact_name_with_zone = format!("{}.{}", name, zone);
+    suggestions.push(NameSuggestion {
+        name: exact_name_with_zone.clone(),
+        registered: is_name_registered(exact_name_with_zone, &state.postgres).await,
+    });
 
     // Iterate found dictionary candidates and check if they are registered
     for suggested_name in candidates {
-        // Get name suggestion for each of available zones if the name is free
-        for zone in ALLOWED_ZONES.iter() {
-            let name_with_zone = format!("{}.{}", suggested_name, zone);
-            let is_registered = is_name_registered(name_with_zone.clone(), &state.postgres).await;
+        // Get name suggestion for the main zone if the name is free
+        let name_with_zone = format!("{}.{}", suggested_name, zone);
+        let is_registered = is_name_registered(name_with_zone.clone(), &state.postgres).await;
 
-            if !is_registered {
-                suggestions.push(NameSuggestion {
-                    name: name_with_zone,
-                    registered: false,
-                });
-            }
+        if !is_registered {
+            suggestions.push(NameSuggestion {
+                name: name_with_zone,
+                registered: false,
+            });
         }
         if suggestions.len() == SUGGESTION_OPTIONS {
             break;

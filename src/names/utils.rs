@@ -50,13 +50,13 @@ pub fn check_attributes(
 }
 
 /// Check if the given name is in the allowed zones
-pub fn is_name_in_allowed_zones(name: &str, allowed_zones: &[&str]) -> bool {
+pub fn is_name_in_allowed_zones(name: &str, allowed_zones: Vec<String>) -> bool {
     let name_parts: Vec<&str> = name.split('.').collect();
     if name_parts.len() != 3 {
         return false;
     }
     let tld = format!("{}.{}", name_parts[1], name_parts[2]);
-    allowed_zones.contains(&tld.as_str())
+    allowed_zones.contains(&tld)
 }
 
 /// Check if the given name is in the correct format
@@ -90,8 +90,8 @@ pub async fn is_name_registered(name: String, postgres: &PgPool) -> bool {
 #[cfg(test)]
 mod tests {
     use {
+        super::super::{ATTRIBUTES_VALUE_MAX_LENGTH, SUPPORTED_ATTRIBUTES},
         super::*,
-        crate::handlers::profile::{ATTRIBUTES_VALUE_MAX_LENGTH, SUPPORTED_ATTRIBUTES},
     };
 
     #[test]
@@ -159,22 +159,28 @@ mod tests {
 
     #[test]
     fn test_is_name_in_allowed_zones() {
-        let allowed_zones = ["eth.link", "ens.domains"];
+        let allowed_zones = vec!["eth.link".to_string(), "ens.domains".to_string()];
 
         let mut valid_name = "test.eth.link";
-        assert!(is_name_in_allowed_zones(valid_name, &allowed_zones));
+        assert!(is_name_in_allowed_zones(valid_name, allowed_zones.clone()));
 
         valid_name = "some.ens.domains";
-        assert!(is_name_in_allowed_zones(valid_name, &allowed_zones));
+        assert!(is_name_in_allowed_zones(valid_name, allowed_zones.clone()));
 
         let mut invalid_name = "test.com";
-        assert!(!is_name_in_allowed_zones(invalid_name, &allowed_zones));
+        assert!(!is_name_in_allowed_zones(
+            invalid_name,
+            allowed_zones.clone()
+        ));
 
         invalid_name = "eth.link";
-        assert!(!is_name_in_allowed_zones(invalid_name, &allowed_zones));
+        assert!(!is_name_in_allowed_zones(
+            invalid_name,
+            allowed_zones.clone()
+        ));
 
         invalid_name = "test.some.link";
-        assert!(!is_name_in_allowed_zones(invalid_name, &allowed_zones));
+        assert!(!is_name_in_allowed_zones(invalid_name, allowed_zones));
     }
 
     #[test]

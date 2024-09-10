@@ -1,13 +1,14 @@
 use {
     super::{
-        super::HANDLER_TASK_METRICS,
-        utils::{check_attributes, is_timestamp_within_interval},
-        RegisterRequest, UpdateAttributesPayload, UNIXTIMESTAMP_SYNC_THRESHOLD,
+        super::HANDLER_TASK_METRICS, RegisterRequest, UpdateAttributesPayload,
+        UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{
         analytics::MessageSource,
         database::helpers::{get_name_and_addresses_by_name, update_name_attributes},
         error::RpcError,
+        names::utils::{check_attributes, is_timestamp_within_interval},
+        names::{ATTRIBUTES_VALUE_MAX_LENGTH, SUPPORTED_ATTRIBUTES},
         state::AppState,
         utils::crypto::{
             constant_time_eq, convert_coin_type_to_evm_chain_id, is_coin_type_supported,
@@ -129,8 +130,8 @@ pub async fn handler_internal(
     // Check for supported attributes
     if !check_attributes(
         &payload.attributes,
-        &super::SUPPORTED_ATTRIBUTES,
-        super::ATTRIBUTES_VALUE_MAX_LENGTH,
+        &SUPPORTED_ATTRIBUTES,
+        ATTRIBUTES_VALUE_MAX_LENGTH,
     ) {
         return Err(RpcError::UnsupportedNameAttribute);
     }

@@ -1,7 +1,7 @@
 use {
     super::{
-        super::HANDLER_TASK_METRICS, utils::is_timestamp_within_interval, RegisterRequest,
-        UpdateAddressPayload, UNIXTIMESTAMP_SYNC_THRESHOLD,
+        super::HANDLER_TASK_METRICS, RegisterRequest, UpdateAddressPayload,
+        UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{
         analytics::MessageSource,
@@ -10,6 +10,7 @@ use {
             types::SupportedNamespaces,
         },
         error::RpcError,
+        names::utils::is_timestamp_within_interval,
         state::AppState,
         utils::crypto::{
             constant_time_eq, convert_coin_type_to_evm_chain_id, is_coin_type_supported,

@@ -91,6 +91,9 @@ module "ecs" {
   irn_namespace        = var.irn_namespace
   irn_namespace_secret = var.irn_namespace_secret
 
+  # ENS Names
+  names_allowed_zones = var.names_allowed_zones
+
   # Analytics
   analytics_datalake_bucket_name = data.terraform_remote_state.datalake.outputs.datalake_bucket_id
   analytics_datalake_kms_key_arn = data.terraform_remote_state.datalake.outputs.datalake_kms_key_arn

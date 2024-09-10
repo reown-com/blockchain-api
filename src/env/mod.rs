@@ -3,6 +3,7 @@ use {
         analytics::Config as AnalyticsConfig,
         database::config::PostgresConfig,
         error,
+        names::Config as NamesConfig,
         profiler::ProfilerConfig,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
         providers::{ProviderKind, ProvidersConfig, Weight},
@@ -50,6 +51,7 @@ pub struct Config {
     pub providers: ProvidersConfig,
     pub rate_limiting: RateLimitingConfig,
     pub irn: IrnConfig,
+    pub names: NamesConfig,
 }
 
 impl Config {
@@ -64,6 +66,7 @@ impl Config {
             providers: from_env("RPC_PROXY_PROVIDER_")?,
             rate_limiting: from_env("RPC_PROXY_RATE_LIMITING_")?,
             irn: from_env("RPC_PROXY_IRN_")?,
+            names: from_env("RPC_PROXY_NAMES_")?,
         })
     }
 }
@@ -85,6 +88,7 @@ mod test {
             analytics,
             database::config::PostgresConfig,
             env::{Config, ServerConfig},
+            names::Config as NamesConfig,
             profiler::ProfilerConfig,
             project,
             providers::ProvidersConfig,
@@ -186,6 +190,8 @@ mod test {
             ("RPC_PROXY_IRN_KEY", "key"),
             ("RPC_PROXY_IRN_NAMESPACE", "namespace"),
             ("RPC_PROXY_IRN_NAMESPACE_SECRET", "namespace"),
+            // Names configuration
+            ("RPC_PROXY_NAMES_ALLOWED_ZONES", "test1.id,test2.id"),
         ];
 
         values.iter().for_each(set_env_var);
@@ -269,6 +275,9 @@ mod test {
                     namespace: Some("namespace".to_owned()),
                     namespace_secret: Some("namespace".to_owned()),
                 },
+                names: NamesConfig {
+                    allowed_zones: Some(vec!["test1.id".to_owned(), "test2.id".to_owned()]),
+                }
             }
         );
 
