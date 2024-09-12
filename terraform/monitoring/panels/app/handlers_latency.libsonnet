@@ -32,19 +32,36 @@ local _configuration = defaults.configuration.timeseries
         alertCondition.new(
           evaluatorParams = [ 3000 ],
           evaluatorType   = 'gt',
-          operatorType    = 'or',
           queryRefId      = 'HandlersLatency',
+          queryTimeStart  = '5m',
+          reducerType     = 'avg',
+        ),
+        alertCondition.new(
+          evaluatorParams = [ 10000 ],
+          evaluatorType   = 'gt',
+          queryRefId      = 'TransactionsHandlerLatency',
           queryTimeStart  = '5m',
           reducerType     = 'avg',
         ),
       ]
     ))
 
+    // Distinguishing between all handlers and transactions list for the different
+    // alerting threshold since Solana transactions list taking longer then others
+
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
-      expr          = 'sum by(task_name) (rate(handler_task_duration_sum[$__rate_interval])) / sum by(task_name) (rate(handler_task_duration_count[$__rate_interval]))',
+      expr          = 'sum by(task_name) (rate(handler_task_duration_sum{task_name!="transactions"}[$__rate_interval])) / sum by(task_name) (rate(handler_task_duration_count{task_name!="transactions"}[$__rate_interval]))',
       exemplar      = false,
       legendFormat  = '__auto',
       refId         = 'HandlersLatency',
+    ))
+
+    .addTarget(targets.prometheus(
+      datasource    = ds.prometheus,
+      expr          = 'sum by(task_name) (rate(handler_task_duration_sum{task_name="transactions"}[$__rate_interval])) / sum by(task_name) (rate(handler_task_duration_count{task_name="transactions"}[$__rate_interval]))',
+      exemplar      = false,
+      legendFormat  = '__auto',
+      refId         = 'TransactionsHandlerLatency',
     ))
 }
