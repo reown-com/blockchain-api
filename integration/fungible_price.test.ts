@@ -59,7 +59,7 @@ describe('Fungible price', () => {
       { chainId: 1, symbol: 'ETH' },
       { chainId: 56, symbol: 'BNB' },
       { chainId: 100, symbol: 'xDAI' },
-      { chainId: 137, symbol: 'MATIC' },
+      { chainId: 137, symbol: 'POL' },
       { chainId: 250, symbol: 'FTM' },
       { chainId: 43114, symbol: 'AVAX' },
     ];

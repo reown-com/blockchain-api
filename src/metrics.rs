@@ -333,14 +333,24 @@ impl Metrics {
         )
     }
 
-    pub fn add_external_http_latency(&self, provider_kind: ProviderKind, start: SystemTime) {
+    pub fn add_external_http_latency(
+        &self,
+        provider_kind: ProviderKind,
+        start: SystemTime,
+        endpoint: Option<String>,
+    ) {
+        let mut attributes = vec![otel::KeyValue::new("provider", provider_kind.to_string())];
+        if let Some(endpoint) = endpoint {
+            attributes.push(otel::KeyValue::new("endpoint", endpoint));
+        }
+
         self.http_external_latency_tracker.record(
             &otel::Context::new(),
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
                 .as_secs_f64(),
-            &[otel::KeyValue::new("provider", provider_kind.to_string())],
+            &attributes,
         )
     }
 
@@ -419,8 +429,8 @@ impl Metrics {
         chain_id: Option<String>,
         endpoint: Option<String>,
     ) {
-        self.add_status_code_for_provider(provider_kind, status, chain_id, endpoint);
-        self.add_external_http_latency(provider_kind, latency);
+        self.add_status_code_for_provider(provider_kind, status, chain_id, endpoint.clone());
+        self.add_external_http_latency(provider_kind, latency, endpoint);
     }
 
     pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: String, weight: u64) {

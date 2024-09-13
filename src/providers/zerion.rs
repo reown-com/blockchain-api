@@ -493,7 +493,7 @@ impl BalanceProvider for ZerionProvider {
                         .and_then(|f| f.address.clone());
                     let chain_id = crypto::ChainId::to_caip2(&chain_id_human);
                     if let Some(chain_address) = chain_address {
-                        // For Polygon native token (Matic)
+                        // For Polygon native token (POL)
                         // address is returned, but address should be null
                         // for native tokens
                         // https://specs.walletconnect.com/2.0/specs/servers/blockchain/blockchain-server-api#success-response-body-4

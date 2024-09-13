@@ -203,7 +203,7 @@ pub async fn rpc_provider_call(
 
     state
         .metrics
-        .add_external_http_latency(provider.provider_kind(), external_call_start);
+        .add_external_http_latency(provider.provider_kind(), external_call_start, None);
 
     match response.status() {
         http::StatusCode::OK | http::StatusCode::BAD_REQUEST => {

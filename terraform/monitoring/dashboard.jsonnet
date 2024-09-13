@@ -68,7 +68,7 @@ dashboard.new(
     panels.ecs.memory(ds, vars)                      { gridPos: pos._3 },
     panels.ecs.cpu(ds, vars)                         { gridPos: pos._3 },
 
-  row.new('Chain Usage'),
+  row.new('RPC Proxy Chain Usage'),
     panels.usage.provider(ds, vars, 'Aurora')        { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Base')          { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Binance')       { gridPos: pos._4 },
@@ -82,7 +82,7 @@ dashboard.new(
     panels.usage.provider(ds, vars, 'Mantle')        { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'GetBlock')      { gridPos: pos._4 },
 
-  row.new('Provider Weights'),
+  row.new('RPC Proxy provider Weights'),
     panels.weights.provider(ds, vars, 'Aurora')      { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Base')        { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Binance')     { gridPos: pos._4 },
@@ -96,7 +96,7 @@ dashboard.new(
     panels.weights.provider(ds, vars, 'Mantle')      { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'GetBlock')    { gridPos: pos._4 },
 
-  row.new('Status Codes'),
+  row.new('RPC Proxy providers Status Codes'),
     panels.status.provider(ds, vars, 'Aurora')       { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Base')         { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Binance')      { gridPos: pos._4 },
@@ -110,12 +110,24 @@ dashboard.new(
     panels.status.provider(ds, vars, 'Mantle')       { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'GetBlock')     { gridPos: pos._4 },
 
-  row.new('Proxy Metrics'),
+  row.new('RPC Proxy Metrics'),
     panels.proxy.calls(ds, vars)                     { gridPos: pos._2 },
     panels.proxy.latency(ds, vars)                   { gridPos: pos._2 },
     panels.proxy.errors_provider(ds, vars)           { gridPos: pos._3 },
     panels.proxy.provider_retries(ds, vars)          { gridPos: pos._3 },
     panels.proxy.http_codes(ds, vars)                { gridPos: pos._3 },
+
+  row.new('Non-RPC providers Status Codes'),
+    panels.status.provider(ds, vars, 'Zerion')       { gridPos: pos._4 },
+    panels.status.provider(ds, vars, 'SolScan')      { gridPos: pos._4 },
+    panels.status.provider(ds, vars, 'OneInch')      { gridPos: pos._4 },
+    panels.status.provider(ds, vars, 'Coinbase')     { gridPos: pos._4 },
+  
+  row.new('Non-RPC providers Latency'),
+    panels.non_rpc.endpoints_latency(ds, vars, 'Zerion')       { gridPos: pos._4 },
+    panels.non_rpc.endpoints_latency(ds, vars, 'SolScan')      { gridPos: pos._4 },
+    panels.non_rpc.endpoints_latency(ds, vars, 'OneInch')      { gridPos: pos._4 },
+    panels.non_rpc.endpoints_latency(ds, vars, 'Coinbase')     { gridPos: pos._4 },
 
   row.new('Projects registry'),
     panels.projects.rejected_projects(ds, vars)         { gridPos: pos._4 },
