@@ -116,7 +116,7 @@ async fn handler_internal(
 
     let start = SystemTime::now();
     let mut response = provider
-        .get_balance(address.clone(), query.clone().0, state.http_client.clone())
+        .get_balance(address.clone(), query.clone().0, state.metrics.clone())
         .await
         .tap_err(|e| {
             error!("Failed to call balance with {}", e);
@@ -246,6 +246,7 @@ async fn handler_internal(
                     &chain_id.clone(),
                     format!("{:#x}", contract_address).as_str(),
                     &query.currency,
+                    state.metrics.clone(),
                 )
                 .await
                 .tap_err(|e| {

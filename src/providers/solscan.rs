@@ -15,11 +15,13 @@ use {
                 HistoryTransactionURLItem,
             },
         },
+        providers::ProviderKind,
         utils::crypto::SOLANA_NATIVE_TOKEN_ADDRESS,
+        Metrics,
     },
     async_trait::async_trait,
     serde::{Deserialize, Serialize},
-    std::fmt,
+    std::{fmt, sync::Arc, time::SystemTime},
     tracing::log::error,
     url::Url,
 };
@@ -71,6 +73,7 @@ struct TokenPriceResponseData {
 
 #[derive(Debug)]
 pub struct SolScanProvider {
+    pub provider_kind: ProviderKind,
     pub api_v1_token: String,
     pub api_v2_token: String,
     pub http_client: reqwest::Client,
@@ -79,23 +82,47 @@ pub struct SolScanProvider {
 impl SolScanProvider {
     pub fn new(api_v1_token: String, api_v2_token: String) -> Self {
         Self {
+            provider_kind: ProviderKind::SolScan,
             api_v1_token,
             api_v2_token,
             http_client: reqwest::Client::new(),
         }
     }
 
-    async fn metadata_token_request(&self, address: &str) -> Result<TokenMetaData, RpcError> {
+    async fn send_request_v1(&self, url: Url) -> Result<reqwest::Response, reqwest::Error> {
+        self.http_client
+            .get(url)
+            .header("token", self.api_v1_token.clone())
+            .send()
+            .await
+    }
+
+    async fn send_request_v2(&self, url: Url) -> Result<reqwest::Response, reqwest::Error> {
+        self.http_client
+            .get(url)
+            .header("token", self.api_v2_token.clone())
+            .send()
+            .await
+    }
+
+    async fn metadata_token_request(
+        &self,
+        address: &str,
+        metrics: Arc<Metrics>,
+    ) -> Result<TokenMetaData, RpcError> {
         let mut url =
             Url::parse(TOKEN_METADATA_URL).map_err(|_| RpcError::FungiblePriceParseURLError)?;
         url.query_pairs_mut().append_pair("address", address);
 
-        let response = self
-            .http_client
-            .get(url)
-            .header("token", self.api_v2_token.clone())
-            .send()
-            .await?;
+        let latency_start = SystemTime::now();
+        let response = self.send_request_v2(url).await?;
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some(TOKEN_METADATA_URL.to_string()),
+        );
 
         if !response.status().is_success() {
             error!(
@@ -118,13 +145,20 @@ impl SolScanProvider {
         })
     }
 
-    async fn get_token_info(&self, address: &str) -> Result<TokenMetaData, RpcError> {
+    async fn get_token_info(
+        &self,
+        address: &str,
+        metrics: Arc<Metrics>,
+    ) -> Result<TokenMetaData, RpcError> {
         // Respond instantly for the native token (SOL) metadata with making just a price request
         // since metadata is static
         if address == SOLANA_NATIVE_TOKEN_ADDRESS {
             // Temporary using the WSOL metadata to get the SOL price
             // until the SolScan pricing endpoint is fixed
-            let price = self.metadata_token_request(WSOL_TOKEN_ADDRESS).await?.price;
+            let price = self
+                .metadata_token_request(WSOL_TOKEN_ADDRESS, metrics)
+                .await?
+                .price;
 
             return Ok(TokenMetaData {
                 address: SOLANA_NATIVE_TOKEN_ADDRESS.to_string(),
@@ -136,21 +170,26 @@ impl SolScanProvider {
             });
         }
 
-        let metadata = self.metadata_token_request(WSOL_TOKEN_ADDRESS).await?;
+        let metadata = self
+            .metadata_token_request(WSOL_TOKEN_ADDRESS, metrics)
+            .await?;
         Ok(metadata)
     }
 
     // Get SOL address balance by getting account detail
-    async fn get_sol_balance(&self, address: &str) -> Result<f64, RpcError> {
+    async fn get_sol_balance(&self, address: &str, metrics: Arc<Metrics>) -> Result<f64, RpcError> {
         let mut url = Url::parse(ACCOUNT_DETAIL_URL).map_err(|_| RpcError::BalanceParseURLError)?;
         url.query_pairs_mut().append_pair("address", address);
 
-        let response = self
-            .http_client
-            .get(url)
-            .header("token", self.api_v2_token.clone())
-            .send()
-            .await?;
+        let latency_start = SystemTime::now();
+        let response = self.send_request_v2(url).await?;
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some(ACCOUNT_DETAIL_URL.to_string()),
+        );
 
         if !response.status().is_success() {
             error!(
@@ -240,16 +279,20 @@ impl BalanceProvider for SolScanProvider {
         &self,
         address: String,
         _params: BalanceQueryParams,
-        http_client: reqwest::Client,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody> {
         let mut url = Url::parse(ACCOUNT_TOKENS_URL).map_err(|_| RpcError::BalanceParseURLError)?;
         url.query_pairs_mut().append_pair("account", &address);
 
-        let response = http_client
-            .get(url)
-            .header("token", self.api_v1_token.clone())
-            .send()
-            .await?;
+        let latency_start = SystemTime::now();
+        let response = self.send_request_v1(url).await?;
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some(ACCOUNT_TOKENS_URL.to_string()),
+        );
 
         if !response.status().is_success() {
             error!(
@@ -280,9 +323,11 @@ impl BalanceProvider for SolScanProvider {
             .collect();
 
         // Inject Solana native token (SOL) balance if not zero
-        let sol_balance = self.get_sol_balance(&address).await?;
+        let sol_balance = self.get_sol_balance(&address, metrics.clone()).await?;
         if sol_balance > 0.0 {
-            let sol_metadata = self.get_token_info(SOLANA_NATIVE_TOKEN_ADDRESS).await?;
+            let sol_metadata = self
+                .get_token_info(SOLANA_NATIVE_TOKEN_ADDRESS, metrics)
+                .await?;
             let sol_balance_item = BalanceItem {
                 name: sol_metadata.name,
                 symbol: sol_metadata.symbol,
@@ -314,7 +359,7 @@ impl HistoryProvider for SolScanProvider {
         &self,
         address: String,
         params: HistoryQueryParams,
-        http_client: reqwest::Client,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<HistoryResponseBody> {
         let page_size = 100;
         let mut url =
@@ -328,11 +373,15 @@ impl HistoryProvider for SolScanProvider {
         let page = params.cursor.unwrap_or("1".into());
         url.query_pairs_mut().append_pair("page", &page);
 
-        let response = http_client
-            .get(url)
-            .header("token", self.api_v2_token.clone())
-            .send()
-            .await?;
+        let latency_start = SystemTime::now();
+        let response = self.send_request_v2(url).await?;
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some(ACCOUNT_HISTORY_URL.to_string()),
+        );
 
         if !response.status().is_success() {
             error!(
@@ -345,7 +394,9 @@ impl HistoryProvider for SolScanProvider {
 
         let mut transactions: Vec<HistoryTransaction> = Vec::new();
         for item in &body.data {
-            let token_info = self.get_token_info(&item.token_address).await?;
+            let token_info = self
+                .get_token_info(&item.token_address, metrics.clone())
+                .await?;
             let decimal_amount = item.amount as f64 / 10f64.powf(token_info.decimals as f64);
             let transaction = HistoryTransaction {
                 id: item.block_id.to_string(),
@@ -412,6 +463,7 @@ impl FungiblePriceProvider for SolScanProvider {
         chain_id: &str,
         address: &str,
         currency: &SupportedCurrencies,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<PriceResponseBody> {
         if currency != &SupportedCurrencies::USD {
             return Err(RpcError::UnsupportedCurrency(
@@ -419,7 +471,7 @@ impl FungiblePriceProvider for SolScanProvider {
             ));
         }
 
-        let info = self.get_token_info(address).await?;
+        let info = self.get_token_info(address, metrics).await?;
         let response = PriceResponseBody {
             fungibles: vec![FungiblePriceItem {
                 name: info.name,

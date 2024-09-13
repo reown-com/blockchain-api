@@ -187,9 +187,12 @@ pub async fn rpc_provider_call(
             );
         })?;
 
-    state
-        .metrics
-        .add_status_code_for_provider(provider.borrow(), response.status(), chain_id);
+    state.metrics.add_status_code_for_provider(
+        provider.provider_kind(),
+        response.status().as_u16(),
+        Some(chain_id),
+        None,
+    );
 
     if provider.is_rate_limited(&mut response).await {
         state
@@ -198,13 +201,9 @@ pub async fn rpc_provider_call(
         *response.status_mut() = http::StatusCode::SERVICE_UNAVAILABLE;
     }
 
-    state.metrics.add_external_http_latency(
-        provider.provider_kind(),
-        external_call_start
-            .elapsed()
-            .unwrap_or(Duration::from_secs(0))
-            .as_secs_f64(),
-    );
+    state
+        .metrics
+        .add_external_http_latency(provider.provider_kind(), external_call_start);
 
     match response.status() {
         http::StatusCode::OK | http::StatusCode::BAD_REQUEST => {

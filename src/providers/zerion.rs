@@ -14,15 +14,16 @@ use {
             },
             portfolio::{PortfolioPosition, PortfolioQueryParams, PortfolioResponseBody},
         },
-        providers::balance::{BalanceItem, BalanceQuantity},
+        providers::{
+            balance::{BalanceItem, BalanceQuantity},
+            ProviderKind,
+        },
         utils::crypto,
+        Metrics,
     },
     async_trait::async_trait,
-    axum::body::Bytes,
-    futures_util::StreamExt,
-    hyper::Client,
-    hyper_tls::HttpsConnector,
     serde::{Deserialize, Serialize},
+    std::{sync::Arc, time::SystemTime},
     tap::TapFallible,
     tracing::log::error,
     url::Url,
@@ -30,17 +31,27 @@ use {
 
 #[derive(Debug)]
 pub struct ZerionProvider {
+    pub provider_kind: ProviderKind,
     pub api_key: String,
-    pub http_client: Client<HttpsConnector<hyper::client::HttpConnector>>,
+    pub http_client: reqwest::Client,
 }
 
 impl ZerionProvider {
     pub fn new(api_key: String) -> Self {
-        let http_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let http_client = reqwest::Client::new();
         Self {
+            provider_kind: ProviderKind::Zerion,
             api_key,
             http_client,
         }
+    }
+
+    async fn send_request(&self, url: Url) -> Result<reqwest::Response, reqwest::Error> {
+        self.http_client
+            .get(url)
+            .header("authorization", format!("Basic {}", self.api_key))
+            .send()
+            .await
     }
 }
 
@@ -227,7 +238,7 @@ impl HistoryProvider for ZerionProvider {
         &self,
         address: String,
         params: HistoryQueryParams,
-        http_client: reqwest::Client,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<HistoryResponseBody> {
         let base = format!(
             "https://api.zerion.io/v1/wallets/{}/transactions/?",
@@ -246,15 +257,17 @@ impl HistoryProvider for ZerionProvider {
             url.query_pairs_mut().append_pair("page[after]", &cursor);
         }
 
-        let response = http_client
-            .get(url)
-            .header("Content-Type", "application/json")
-            .header("authorization", format!("Basic {}", self.api_key))
-            .send()
-            .await
-            .tap_err(|e| {
-                error!("Error on request to zerion history endpoint with {}", e);
-            })?;
+        let latency_start = SystemTime::now();
+        let response = self.send_request(url).await.tap_err(|e| {
+            error!("Error on request to zerion history endpoint with {}", e);
+        })?;
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some("transactions".to_string()),
+        );
 
         if !response.status().is_success() {
             error!(
@@ -366,25 +379,27 @@ impl HistoryProvider for ZerionProvider {
 
 #[async_trait]
 impl PortfolioProvider for ZerionProvider {
-    #[tracing::instrument(skip(self, body, params), fields(provider = "Zerion"), level = "debug")]
+    #[tracing::instrument(skip(self, params), fields(provider = "Zerion"), level = "debug")]
     async fn get_portfolio(
         &self,
         address: String,
-        body: Bytes,
         params: PortfolioQueryParams,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<PortfolioResponseBody> {
         let base = format!("https://api.zerion.io/v1/wallets/{}/positions/?", &address);
         let mut url = Url::parse(&base).map_err(|_| RpcError::HistoryParseCursorError)?;
         url.query_pairs_mut()
             .append_pair("currency", &params.currency.unwrap_or("usd".to_string()));
 
-        let hyper_request = hyper::http::Request::builder()
-            .uri(url.as_str())
-            .header("Content-Type", "application/json")
-            .header("authorization", format!("Basic {}", self.api_key))
-            .body(hyper::body::Body::from(body))?;
-
-        let response = self.http_client.request(hyper_request).await?;
+        let latency_start = SystemTime::now();
+        let response = self.send_request(url).await?;
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some("positions".to_string()),
+        );
 
         if !response.status().is_success() {
             error!(
@@ -394,19 +409,9 @@ impl PortfolioProvider for ZerionProvider {
             return Err(RpcError::PortfolioProviderError);
         }
 
-        let mut body = response.into_body();
-        let mut bytes = Vec::new();
-        while let Some(next) = body.next().await {
-            bytes.extend_from_slice(&next?);
-        }
-        let body: ZerionResponseBody<Vec<ZerionPortfolioResponseBody>> =
-            match serde_json::from_slice(&bytes) {
-                Ok(body) => body,
-                Err(e) => {
-                    error!("Error on parsing zerion portfolio response: {:?}", e);
-                    return Err(RpcError::PortfolioProviderError);
-                }
-            };
+        let body = response
+            .json::<ZerionResponseBody<Vec<ZerionPortfolioResponseBody>>>()
+            .await?;
 
         let portfolio = body
             .data
@@ -429,7 +434,7 @@ impl BalanceProvider for ZerionProvider {
         &self,
         address: String,
         params: BalanceQueryParams,
-        http_client: reqwest::Client,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody> {
         let base = format!("https://api.zerion.io/v1/wallets/{}/positions/?", &address);
         let mut url = Url::parse(&base).map_err(|_| RpcError::BalanceParseURLError)?;
@@ -447,12 +452,15 @@ impl BalanceProvider for ZerionProvider {
                 .append_pair("filter[chain_ids]", &chain_name);
         }
 
-        let response = http_client
-            .get(url)
-            .header("Content-Type", "application/json")
-            .header("authorization", format!("Basic {}", self.api_key))
-            .send()
-            .await?;
+        let latency_start = SystemTime::now();
+        let response = self.send_request(url.clone()).await?;
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some("positions".to_string()),
+        );
 
         if !response.status().is_success() {
             error!(

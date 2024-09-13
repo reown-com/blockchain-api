@@ -23,6 +23,7 @@ use {
             RpcQueryParams, SupportedCurrencies,
         },
         utils::crypto::CaipNamespaces,
+        Metrics,
     },
     async_trait::async_trait,
     axum::response::Response,
@@ -428,10 +429,12 @@ pub enum ProviderKind {
     Zora,
     Zerion,
     Coinbase,
+    OneInch,
     Quicknode,
     Near,
     Mantle,
     GetBlock,
+    SolScan,
 }
 
 impl Display for ProviderKind {
@@ -450,10 +453,12 @@ impl Display for ProviderKind {
                 ProviderKind::Zora => "Zora",
                 ProviderKind::Zerion => "Zerion",
                 ProviderKind::Coinbase => "Coinbase",
+                ProviderKind::OneInch => "OneInch",
                 ProviderKind::Quicknode => "Quicknode",
                 ProviderKind::Near => "Near",
                 ProviderKind::Mantle => "Mantle",
                 ProviderKind::GetBlock => "GetBlock",
+                ProviderKind::SolScan => "SolScan",
             }
         )
     }
@@ -473,10 +478,12 @@ impl ProviderKind {
             "Zora" => Some(Self::Zora),
             "Zerion" => Some(Self::Zerion),
             "Coinbase" => Some(Self::Coinbase),
+            "OneInch" => Some(Self::OneInch),
             "Quicknode" => Some(Self::Quicknode),
             "Near" => Some(Self::Near),
             "Mantle" => Some(Self::Mantle),
             "GetBlock" => Some(Self::GetBlock),
+            "SolScan" => Some(Self::SolScan),
             _ => None,
         }
     }
@@ -603,7 +610,7 @@ pub trait HistoryProvider: Send + Sync + Debug {
         &self,
         address: String,
         params: HistoryQueryParams,
-        http_client: reqwest::Client,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<HistoryResponseBody>;
 }
 
@@ -612,8 +619,8 @@ pub trait PortfolioProvider: Send + Sync + Debug {
     async fn get_portfolio(
         &self,
         address: String,
-        body: hyper::body::Bytes,
         params: PortfolioQueryParams,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<PortfolioResponseBody>;
 }
 
@@ -622,13 +629,13 @@ pub trait OnRampProvider: Send + Sync + Debug {
     async fn get_buy_options(
         &self,
         params: OnRampBuyOptionsParams,
-        http_client: reqwest::Client,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<OnRampBuyOptionsResponse>;
 
     async fn get_buy_quotes(
         &self,
         params: OnRampBuyQuotesParams,
-        http_client: reqwest::Client,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<OnRampBuyQuotesResponse>;
 }
 
@@ -638,7 +645,7 @@ pub trait BalanceProvider: Send + Sync + Debug {
         &self,
         address: String,
         params: BalanceQueryParams,
-        http_client: reqwest::Client,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody>;
 }
 
@@ -649,6 +656,7 @@ pub trait FungiblePriceProvider: Send + Sync + Debug {
         chain_id: &str,
         address: &str,
         currency: &SupportedCurrencies,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<PriceResponseBody>;
 }
 
@@ -657,30 +665,38 @@ pub trait ConversionProvider: Send + Sync + Debug {
     async fn get_tokens_list(
         &self,
         params: TokensListQueryParams,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<TokensListResponseBody>;
 
     async fn get_convert_quote(
         &self,
         params: ConvertQuoteQueryParams,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<ConvertQuoteResponseBody>;
 
     async fn build_approve_tx(
         &self,
         params: ConvertApproveQueryParams,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<ConvertApproveResponseBody>;
 
     async fn build_convert_tx(
         &self,
         params: ConvertTransactionQueryParams,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<ConvertTransactionResponseBody>;
 
     async fn get_gas_price(
         &self,
         params: GasPriceQueryParams,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<GasPriceQueryResponseBody>;
 
-    async fn get_allowance(&self, params: AllowanceQueryParams)
-        -> RpcResult<AllowanceResponseBody>;
+    async fn get_allowance(
+        &self,
+        params: AllowanceQueryParams,
+        metrics: Arc<Metrics>,
+    ) -> RpcResult<AllowanceResponseBody>;
 }
 
 /// List of supported bundler operations

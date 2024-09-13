@@ -2,7 +2,6 @@ use {
     super::HANDLER_TASK_METRICS,
     crate::{error::RpcError, state::AppState},
     axum::{
-        body::Bytes,
         extract::{ConnectInfo, MatchedPath, Path, Query, State},
         response::{IntoResponse, Response},
         Json,
@@ -44,9 +43,8 @@ pub async fn handler(
     path: MatchedPath,
     headers: HeaderMap,
     address: Path<String>,
-    body: Bytes,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, connect_info, query, path, headers, address, body)
+    handler_internal(state, connect_info, query, path, headers, address)
         .with_metrics(HANDLER_TASK_METRICS.with_name("portfolio"))
         .await
 }
@@ -59,7 +57,6 @@ async fn handler_internal(
     _path: MatchedPath,
     _headers: HeaderMap,
     Path(address): Path<String>,
-    body: Bytes,
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
     let _address_hash = address.clone();
@@ -72,7 +69,7 @@ async fn handler_internal(
     let response = state
         .providers
         .portfolio_provider
-        .get_portfolio(address, body, query.0)
+        .get_portfolio(address, query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
             error!("Failed to call portfolio with {}", e);

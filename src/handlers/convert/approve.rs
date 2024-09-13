@@ -63,7 +63,7 @@ async fn handler_internal(
     let response = state
         .providers
         .conversion_provider
-        .build_approve_tx(query.0)
+        .build_approve_tx(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
             error!("Failed to call build approve tx for conversion with {}", e);

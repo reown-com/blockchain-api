@@ -60,7 +60,7 @@ async fn handler_internal(
     let response = state
         .providers
         .conversion_provider
-        .get_convert_quote(query.0)
+        .get_convert_quote(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
             error!("Failed to call get conversion quotes with {}", e);
