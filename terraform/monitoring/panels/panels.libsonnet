@@ -84,4 +84,8 @@ local redis  = panels.aws.redis;
   irn: {
     latency: (import 'irn/latency.libsonnet').new,
   },
+
+  non_rpc: {
+    endpoints_latency: (import 'non_rpc/endpoints_latency.libsonnet').new,
+  },
 }
