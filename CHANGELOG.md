@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.103.0 - 2024-09-15
+#### Features
+- **(monitoring)** implementing latency and status codes metrics for all non-proxy providers calls (#773) - (1927cd7) - Max Kalashnikoff | maksy.eth
+- **(monitoring)** separating the alert for transactions list handler (#772) - (445fced) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.102.0 - 2024-09-10
 #### Features
 - **(names)** refactoring, adding support for legacy and new names (#771) - (54030a4) - Max Kalashnikoff | maksy.eth
