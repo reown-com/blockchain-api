@@ -49,7 +49,7 @@ async fn handler_internal(
     let response = state
         .providers
         .conversion_provider
-        .get_gas_price(query.0)
+        .get_gas_price(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
             error!("Failed to call get gas price with {}", e);

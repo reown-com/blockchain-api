@@ -48,7 +48,7 @@ async fn handler_internal(
     let response = state
         .providers
         .conversion_provider
-        .get_allowance(query.0)
+        .get_allowance(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
             error!("Failed to call get allownce with {}", e);

@@ -75,7 +75,7 @@ async fn handler_internal(
     let response = state
         .providers
         .conversion_provider
-        .build_convert_tx(request_payload)
+        .build_convert_tx(request_payload, state.metrics.clone())
         .await
         .tap_err(|e| {
             error!("Failed to call build conversion transaction with {}", e);

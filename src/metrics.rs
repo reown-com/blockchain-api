@@ -5,7 +5,6 @@ use {
         providers::{ProviderKind, RpcProvider},
         storage::irn::OperationType,
     },
-    hyper::http,
     sqlx::PgPool,
     std::time::{Duration, SystemTime},
     sysinfo::{
@@ -334,10 +333,13 @@ impl Metrics {
         )
     }
 
-    pub fn add_external_http_latency(&self, provider_kind: ProviderKind, latency: f64) {
+    pub fn add_external_http_latency(&self, provider_kind: ProviderKind, start: SystemTime) {
         self.http_external_latency_tracker.record(
             &otel::Context::new(),
-            latency,
+            start
+                .elapsed()
+                .unwrap_or(Duration::from_secs(0))
+                .as_secs_f64(),
             &[otel::KeyValue::new("provider", provider_kind.to_string())],
         )
     }
@@ -389,19 +391,36 @@ impl Metrics {
 
     pub fn add_status_code_for_provider(
         &self,
-        provider: &dyn RpcProvider,
-        status: http::StatusCode,
-        chain_id: String,
+        provider_kind: ProviderKind,
+        status: u16,
+        chain_id: Option<String>,
+        endpoint: Option<String>,
     ) {
-        self.provider_status_code_counter.add(
-            &otel::Context::new(),
-            1,
-            &[
-                otel::KeyValue::new("provider", provider.provider_kind().to_string()),
-                otel::KeyValue::new("status_code", format!("{}", status.as_u16())),
-                otel::KeyValue::new("chain_id", chain_id),
-            ],
-        )
+        let mut attributes = vec![
+            otel::KeyValue::new("provider", provider_kind.to_string()),
+            otel::KeyValue::new("status_code", format!("{}", status)),
+        ];
+        if let Some(chain_id) = chain_id {
+            attributes.push(otel::KeyValue::new("chain_id", chain_id));
+        }
+        if let Some(endpoint) = endpoint {
+            attributes.push(otel::KeyValue::new("endpoint", endpoint));
+        }
+
+        self.provider_status_code_counter
+            .add(&otel::Context::new(), 1, &attributes)
+    }
+
+    pub fn add_latency_and_status_code_for_provider(
+        &self,
+        provider_kind: ProviderKind,
+        status: u16,
+        latency: SystemTime,
+        chain_id: Option<String>,
+        endpoint: Option<String>,
+    ) {
+        self.add_status_code_for_provider(provider_kind, status, chain_id, endpoint);
+        self.add_external_http_latency(provider_kind, latency);
     }
 
     pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: String, weight: u64) {
