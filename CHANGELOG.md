@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.104.0 - 2024-09-15
+#### Features
+- **(monitoring)** adding non-rpc providers Grafana panels for status codes and latency (#774) - (c4b608b) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.103.0 - 2024-09-15
 #### Features
 - **(monitoring)** implementing latency and status codes metrics for all non-proxy providers calls (#773) - (1927cd7) - Max Kalashnikoff | maksy.eth
