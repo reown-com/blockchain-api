@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.104.1 - 2024-09-16
+#### Bug Fixes
+- **(OneInch)** proper handling of the bad request response (#775) - (1a75bc3) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.104.0 - 2024-09-15
 #### Features
 - **(monitoring)** adding non-rpc providers Grafana panels for status codes and latency (#774) - (c4b608b) - Max Kalashnikoff | maksy.eth
