@@ -23,6 +23,7 @@ use {
         utils::keccak256,
     },
     serde::{Deserialize, Serialize},
+    serde_json::json,
     std::{sync::Arc, time::SystemTime},
     wc::future::FutureExt,
 };
@@ -155,21 +156,9 @@ async fn handler_internal(
     // Update the userOp with the signature
     user_op.signature = concatenated_signature;
 
-    // Make a POST request to the sendUserOp endpoint
-    let send_user_op_request = SendUserOpRequest {
-        chain_id: chain_id_uint as usize,
-        user_op: user_op.clone(),
-        permissions_context: Some(permission_context),
-    };
-    let http_client = state.http_client.clone();
-    let send_user_op_call_result = http_client
-        .post(SEND_USER_OP_ENDPOINT)
-        .json(&send_user_op_request)
-        .send()
-        .await?;
-    let result = send_user_op_call_result
-        .json::<SendUserOpResponse>()
-        .await?;
+    let result = json!({
+        "signature": format!("0x{}", hex::encode(user_op.signature)),
+    });
 
     Ok(Json(result).into_response())
 }

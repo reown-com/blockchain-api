@@ -526,6 +526,7 @@ pub enum ChainId {
         serialize = "binance_smart_chain",
         serialize = "bsc"
     )]
+    BaseSepoliaTestnet = 84532,
     BinanceSmartChain = 56,
     Blast = 81032,
     Celo = 42220,
