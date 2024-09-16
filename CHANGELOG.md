@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.105.0 - 2024-09-16
+#### Features
+- **(rate_limiting)** implementing IP whitelisting (#776) - (5f58885) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.104.1 - 2024-09-16
 #### Bug Fixes
 - **(OneInch)** proper handling of the bad request response (#775) - (1a75bc3) - Max Kalashnikoff | maksy.eth
