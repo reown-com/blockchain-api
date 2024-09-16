@@ -14,6 +14,7 @@ pub struct RateLimitingConfig {
     pub max_tokens: Option<u32>,
     pub refill_interval_sec: Option<u32>,
     pub refill_rate: Option<u32>,
+    pub ip_whitelist: Option<Vec<String>>,
 }
 
 pub struct RateLimit {
@@ -23,6 +24,7 @@ pub struct RateLimit {
     interval: Duration,
     refill_rate: u32,
     metrics: Arc<Metrics>,
+    ip_whitelist: Option<Vec<String>>,
 }
 
 impl RateLimit {
@@ -33,6 +35,7 @@ impl RateLimit {
         interval: Duration,
         refill_rate: u32,
         metrics: Arc<Metrics>,
+        ip_whitelist: Option<Vec<String>>,
     ) -> Option<Self> {
         let redis_builder = deadpool_redis::Config::from_url(redis_addr)
             .builder()
@@ -68,6 +71,7 @@ impl RateLimit {
             interval,
             refill_rate,
             metrics,
+            ip_whitelist,
         })
     }
 
@@ -83,6 +87,13 @@ impl RateLimit {
         ip: &str,
         _project_id: Option<&str>,
     ) -> Result<(), RateLimitExceeded> {
+        // Check first if the IP is in the white list
+        if let Some(whitelist) = &self.ip_whitelist {
+            if whitelist.contains(&ip.to_string()) {
+                return Ok(());
+            }
+        }
+
         let call_start_time = SystemTime::now();
         let result = token_bucket(
             &self.mem_cache.clone(),
