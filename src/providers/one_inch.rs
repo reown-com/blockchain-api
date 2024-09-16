@@ -88,18 +88,27 @@ impl OneInchProvider {
         );
 
         if !price_response.status().is_success() {
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if price_response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = match price_response.json::<OneInchErrorResponse>().await {
+                    Ok(response_error) => response_error.description,
+                    Err(e) => {
+                        error!(
+                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
+                            e
+                        );
+                        // Respond to the client with a generic error message and HTTP 400 anyway
+                        "Invalid parameter".to_string()
+                    }
+                };
+                return Err(RpcError::ConversionInvalidParameter(response_error));
+            }
+
             error!(
                 "Error on getting fungible price from 1inch provider. Status is not OK: {:?}",
                 price_response.status(),
             );
-            // Passing through error description for the error context
-            // if user parameter is invalid (got 400 status code from the provider)
-            if price_response.status() == reqwest::StatusCode::BAD_REQUEST {
-                let response_error = price_response.json::<OneInchErrorResponse>().await?;
-                return Err(RpcError::ConversionInvalidParameter(
-                    response_error.error.description,
-                ));
-            }
             return Err(RpcError::ConversionProviderError);
         }
         let price_body = price_response.json::<HashMap<String, String>>().await?;
@@ -142,18 +151,27 @@ impl OneInchProvider {
         );
 
         if !response.status().is_success() {
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = match response.json::<OneInchErrorResponse>().await {
+                    Ok(response_error) => response_error.description,
+                    Err(e) => {
+                        error!(
+                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
+                            e
+                        );
+                        // Respond to the client with a generic error message and HTTP 400 anyway
+                        "Invalid parameter".to_string()
+                    }
+                };
+                return Err(RpcError::ConversionInvalidParameter(response_error));
+            }
+
             error!(
                 "Error on getting token info from 1inch provider. Status is not OK: {:?}",
                 response.status(),
             );
-            // Passing through error description for the error context
-            // if user parameter is invalid (got 400 status code from the provider)
-            if response.status() == reqwest::StatusCode::BAD_REQUEST {
-                let response_error = response.json::<OneInchErrorResponse>().await?;
-                return Err(RpcError::ConversionInvalidParameter(
-                    response_error.error.description,
-                ));
-            }
             return Err(RpcError::ConversionProviderError);
         }
         let body = response.json::<OneInchTokenItem>().await?;
@@ -212,15 +230,8 @@ struct OneInchTxTransaction {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct OneInchErrorResponse {
-    error: OneInchErrorItem,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct OneInchErrorItem {
     description: String,
 }
-
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 enum OneInchGasPriceResponse {
@@ -285,10 +296,18 @@ impl ConversionProvider for OneInchProvider {
             // Passing through error description for the error context
             // if user parameter is invalid (got 400 status code from the provider)
             if response.status() == reqwest::StatusCode::BAD_REQUEST {
-                let response_error = response.json::<OneInchErrorResponse>().await?;
-                return Err(RpcError::ConversionInvalidParameter(
-                    response_error.error.description,
-                ));
+                let response_error = match response.json::<OneInchErrorResponse>().await {
+                    Ok(response_error) => response_error.description,
+                    Err(e) => {
+                        error!(
+                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
+                            e
+                        );
+                        // Respond to the client with a generic error message and HTTP 400 anyway
+                        "Invalid parameter".to_string()
+                    }
+                };
+                return Err(RpcError::ConversionInvalidParameter(response_error));
             }
             // 404 response is expected when the chain ID is not supported
             if response.status() == reqwest::StatusCode::NOT_FOUND {
@@ -388,20 +407,29 @@ impl ConversionProvider for OneInchProvider {
             Some("quote".to_string()),
         );
 
-        if !response.status().is_success() {
+        let response_status = response.status();
+        if !response_status.is_success() {
             // Passing through error description for the error context
             // if user parameter is invalid (got 400 status code from the provider)
             if response.status() == reqwest::StatusCode::BAD_REQUEST {
-                let response_error = response.json::<OneInchErrorResponse>().await?;
-                return Err(RpcError::ConversionInvalidParameter(
-                    response_error.error.description,
-                ));
+                let response_error = match response.json::<OneInchErrorResponse>().await {
+                    Ok(response_error) => response_error.description,
+                    Err(e) => {
+                        error!(
+                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
+                            e
+                        );
+                        // Respond to the client with a generic error message and HTTP 400 anyway
+                        "Invalid parameter".to_string()
+                    }
+                };
+                return Err(RpcError::ConversionInvalidParameter(response_error));
             }
 
             error!(
                 "Error on getting quotes for conversion from 1inch provider. Status is not OK: \
                  {:?}",
-                response.status(),
+                response_status,
             );
             return Err(RpcError::ConversionProviderError);
         }
@@ -459,15 +487,22 @@ impl ConversionProvider for OneInchProvider {
             Some("approve_transactions".to_string()),
         );
 
-        // Todo
         if !response.status().is_success() {
             // Passing through error description for the error context
             // if user parameter is invalid (got 400 status code from the provider)
             if response.status() == reqwest::StatusCode::BAD_REQUEST {
-                let response_error = response.json::<OneInchErrorResponse>().await?;
-                return Err(RpcError::ConversionInvalidParameter(
-                    response_error.error.description,
-                ));
+                let response_error = match response.json::<OneInchErrorResponse>().await {
+                    Ok(response_error) => response_error.description,
+                    Err(e) => {
+                        error!(
+                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
+                            e
+                        );
+                        // Respond to the client with a generic error message and HTTP 400 anyway
+                        "Invalid parameter".to_string()
+                    }
+                };
+                return Err(RpcError::ConversionInvalidParameter(response_error));
             }
 
             error!(
@@ -554,10 +589,18 @@ impl ConversionProvider for OneInchProvider {
             // Passing through error description for the error context
             // if user parameter is invalid (got 400 status code from the provider)
             if response.status() == reqwest::StatusCode::BAD_REQUEST {
-                let response_error = response.json::<OneInchErrorResponse>().await?;
-                return Err(RpcError::ConversionInvalidParameter(
-                    response_error.error.description,
-                ));
+                let response_error = match response.json::<OneInchErrorResponse>().await {
+                    Ok(response_error) => response_error.description,
+                    Err(e) => {
+                        error!(
+                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
+                            e
+                        );
+                        // Respond to the client with a generic error message and HTTP 400 anyway
+                        "Invalid parameter".to_string()
+                    }
+                };
+                return Err(RpcError::ConversionInvalidParameter(response_error));
             }
 
             error!(
@@ -617,19 +660,28 @@ impl ConversionProvider for OneInchProvider {
         );
 
         if !response.status().is_success() {
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = match response.json::<OneInchErrorResponse>().await {
+                    Ok(response_error) => response_error.description,
+                    Err(e) => {
+                        error!(
+                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
+                            e
+                        );
+                        // Respond to the client with a generic error message and HTTP 400 anyway
+                        "Invalid parameter".to_string()
+                    }
+                };
+                return Err(RpcError::ConversionInvalidParameter(response_error));
+            }
+
             error!(
                 "Error on getting gas price for conversion from 1inch provider. Status is not OK: \
                  {:?}",
                 response.status(),
             );
-            // Passing through error description for the error context
-            // if user parameter is invalid (got 400 status code from the provider)
-            if response.status() == reqwest::StatusCode::BAD_REQUEST {
-                let response_error = response.json::<OneInchErrorResponse>().await?;
-                return Err(RpcError::ConversionInvalidParameter(
-                    response_error.error.description,
-                ));
-            }
             return Err(RpcError::ConversionProviderError);
         }
         let body = response.json::<OneInchGasPriceResponse>().await?;
@@ -678,19 +730,28 @@ impl ConversionProvider for OneInchProvider {
         );
 
         if !response.status().is_success() {
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = match response.json::<OneInchErrorResponse>().await {
+                    Ok(response_error) => response_error.description,
+                    Err(e) => {
+                        error!(
+                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
+                            e
+                        );
+                        // Respond to the client with a generic error message and HTTP 400 anyway
+                        "Invalid parameter".to_string()
+                    }
+                };
+                return Err(RpcError::ConversionInvalidParameter(response_error));
+            }
+
             error!(
                 "Error on getting allowance for conversion from 1inch provider. Status is not OK: \
                  {:?}",
                 response.status(),
             );
-            // Passing through error description for the error context
-            // if user parameter is invalid (got 400 status code from the provider)
-            if response.status() == reqwest::StatusCode::BAD_REQUEST {
-                let response_error = response.json::<OneInchErrorResponse>().await?;
-                return Err(RpcError::ConversionInvalidParameter(
-                    response_error.error.description,
-                ));
-            }
             return Err(RpcError::ConversionProviderError);
         }
         let body = response.json::<OneInchAllowanceResponse>().await?;
