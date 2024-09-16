@@ -185,6 +185,10 @@ mod test {
             ("RPC_PROXY_RATE_LIMITING_MAX_TOKENS", "100"),
             ("RPC_PROXY_RATE_LIMITING_REFILL_INTERVAL_SEC", "1"),
             ("RPC_PROXY_RATE_LIMITING_REFILL_RATE", "10"),
+            (
+                "RPC_PROXY_RATE_LIMITING_IP_WHITE_LIST",
+                "127.0.0.1,127.0.0.2",
+            ),
             // IRN config.
             ("RPC_PROXY_IRN_NODE", "node"),
             ("RPC_PROXY_IRN_KEY", "key"),
@@ -268,6 +272,7 @@ mod test {
                     max_tokens: Some(100),
                     refill_interval_sec: Some(1),
                     refill_rate: Some(10),
+                    ip_white_list: Some(vec!["127.0.0.1".into(), "127.0.0.2".into()]),
                 },
                 irn: IrnConfig {
                     node: Some("node".to_owned()),

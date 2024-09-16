@@ -91,12 +91,13 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
                 config.rate_limiting.max_tokens,
                 config.rate_limiting.refill_interval_sec,
                 config.rate_limiting.refill_rate,
+                config.rate_limiting.ip_white_list.clone(),
             ) {
-                (Some(max_tokens), Some(refill_interval_sec), Some(refill_rate)) => {
+                (Some(max_tokens), Some(refill_interval_sec), Some(refill_rate), ip_white_list) => {
                     info!(
                         "Rate limiting is enabled with the following configuration: \
-                         max_tokens={}, refill_interval_sec={}, refill_rate={}",
-                        max_tokens, refill_interval_sec, refill_rate
+                         max_tokens={}, refill_interval_sec={}, refill_rate={}, ip_white_list={:?}",
+                        max_tokens, refill_interval_sec, refill_rate, ip_white_list
                     );
                     RateLimit::new(
                         redis_addr.write(),
@@ -105,6 +106,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
                         chrono::Duration::seconds(refill_interval_sec as i64),
                         refill_rate,
                         metrics.clone(),
+                        ip_white_list,
                     )
                 }
                 _ => {
