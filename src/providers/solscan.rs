@@ -220,7 +220,7 @@ struct TokensResponseItem {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 struct AmountItem {
-    pub amount: String,
+    pub ui_amount_string: String,
     pub decimals: u8,
 }
 
@@ -316,7 +316,7 @@ impl BalanceProvider for SolScanProvider {
                 price: 0.0,
                 quantity: BalanceQuantity {
                     decimals: f.token_amount.decimals.to_string(),
-                    numeric: f.token_amount.amount,
+                    numeric: f.token_amount.ui_amount_string,
                 },
                 icon_url: f.token_icon.unwrap_or_default(),
             })
