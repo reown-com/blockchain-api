@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.106.1 - 2024-09-17
+#### Bug Fixes
+- **(SolScan)** using the correct SPL tokens amount in balance (#778) - (0453ee9) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.106.0 - 2024-09-17
 #### Features
 - **(CoSign)** response depends on the `version` query parameter (#779) - (237adeb) - Max Kalashnikoff | maksy.eth
