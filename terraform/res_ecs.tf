@@ -84,6 +84,7 @@ module "ecs" {
   rate_limiting_max_tokens      = var.rate_limiting_max_tokens
   rate_limiting_refill_interval = var.rate_limiting_refill_interval
   rate_limiting_refill_rate     = var.rate_limiting_refill_rate
+  rate_limiting_ip_whitelist    = var.rate_limiting_ip_whitelist
 
   # IRN Client
   irn_node             = var.irn_node

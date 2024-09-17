@@ -116,6 +116,7 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_RATE_LIMITING_MAX_TOKENS", value = tostring(var.rate_limiting_max_tokens) },
         { name = "RPC_PROXY_RATE_LIMITING_REFILL_INTERVAL_SEC", value = tostring(var.rate_limiting_refill_interval) },
         { name = "RPC_PROXY_RATE_LIMITING_REFILL_RATE", value = tostring(var.rate_limiting_refill_rate) },
+        { name = "RPC_PROXY_RATE_LIMITING_IP_WHITELIST", value = var.rate_limiting_ip_whitelist },
 
         { name = "RPC_PROXY_POSTGRES_URI", value = var.postgres_url },
 
