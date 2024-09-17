@@ -521,6 +521,8 @@ pub enum ChainId {
     Aurora = 1313161554,
     Avalanche = 43114,
     Base = 8453,
+    #[strum(serialize = "base_sepolia_testnet", serialize = "base-sepolia-testnet")]
+    BaseSepoliaTestnet = 84532,
     #[strum(
         to_string = "binance-smart-chain",
         serialize = "binance_smart_chain",
@@ -752,6 +754,7 @@ mod tests {
         chains.insert("xdai", "eip155:100");
         chains.insert("polygon", "eip155:137");
         chains.insert("base", "eip155:8453");
+        chains.insert("base_sepolia_testnet", "eip155:84532");
 
         for (chain_name, coin_type) in chains.iter() {
             let result = ChainId::to_caip2(chain_name);
@@ -770,6 +773,7 @@ mod tests {
         chains.insert("eip155:100", "xdai");
         chains.insert("eip155:137", "polygon");
         chains.insert("eip155:8453", "base");
+        chains.insert("eip155:84532", "base-sepolia-testnet");
 
         for (chain_id, chain_name) in chains.iter() {
             let result = ChainId::from_caip2(chain_id);

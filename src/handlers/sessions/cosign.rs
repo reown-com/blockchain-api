@@ -11,7 +11,7 @@ use {
         },
     },
     axum::{
-        extract::{Path, State},
+        extract::{Path, Query, State},
         response::{IntoResponse, Response},
         Json,
     },
@@ -23,6 +23,7 @@ use {
         utils::keccak256,
     },
     serde::{Deserialize, Serialize},
+    serde_json::json,
     std::{sync::Arc, time::SystemTime},
     wc::future::FutureExt,
 };
@@ -51,12 +52,20 @@ pub struct SendUserOpResponse {
     pub receipt: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CoSignQueryParams {
+    /// CoSigner version for testing purposes
+    pub version: Option<u8>,
+}
+
 pub async fn handler(
     state: State<Arc<AppState>>,
     address: Path<String>,
+    query_payload: Query<CoSignQueryParams>,
     Json(request_payload): Json<CoSignRequest>,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, address, request_payload)
+    handler_internal(state, address, request_payload, query_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("sessions_co_sign"))
         .await
 }
@@ -66,6 +75,7 @@ async fn handler_internal(
     state: State<Arc<AppState>>,
     Path(caip10_address): Path<String>,
     request_payload: CoSignRequest,
+    query_payload: Query<CoSignQueryParams>,
 ) -> Result<Response, RpcError> {
     // Checking the CAIP-10 address format
     let (namespace, chain_id, address) = disassemble_caip10(&caip10_address)?;
@@ -155,21 +165,31 @@ async fn handler_internal(
     // Update the userOp with the signature
     user_op.signature = concatenated_signature;
 
-    // Make a POST request to the sendUserOp endpoint
-    let send_user_op_request = SendUserOpRequest {
-        chain_id: chain_id_uint as usize,
-        user_op: user_op.clone(),
-        permissions_context: Some(permission_context),
-    };
-    let http_client = state.http_client.clone();
-    let send_user_op_call_result = http_client
-        .post(SEND_USER_OP_ENDPOINT)
-        .json(&send_user_op_request)
-        .send()
-        .await?;
-    let result = send_user_op_call_result
-        .json::<SendUserOpResponse>()
-        .await?;
-
-    Ok(Json(result).into_response())
+    // Check the call version and make or skip wallet service call
+    // if the version 0 (default) or return the signature
+    // if the version not 0
+    let version = query_payload.version.unwrap_or(0);
+    if version == 0 {
+        // Make a POST request to the sendUserOp endpoint
+        let send_user_op_request = SendUserOpRequest {
+            chain_id: chain_id_uint as usize,
+            user_op: user_op.clone(),
+            permissions_context: Some(permission_context),
+        };
+        let http_client = state.http_client.clone();
+        let send_user_op_call_result = http_client
+            .post(SEND_USER_OP_ENDPOINT)
+            .json(&send_user_op_request)
+            .send()
+            .await?;
+        let result = send_user_op_call_result
+            .json::<SendUserOpResponse>()
+            .await?;
+        Ok(Json(result).into_response())
+    } else {
+        Ok(Json(json!({
+            "signature": format!("0x{}", hex::encode(user_op.signature)),
+        }))
+        .into_response())
+    }
 }
