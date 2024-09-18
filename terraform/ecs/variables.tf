@@ -352,6 +352,11 @@ variable "rate_limiting_refill_rate" {
   type        = number
 }
 
+variable "rate_limiting_ip_whitelist" {
+  description = "Comma separated list of whitelisted IPs"
+  type        = string
+}
+
 #-------------------------------------------------------------------------------
 # IRN client configuration
 

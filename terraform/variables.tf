@@ -207,6 +207,11 @@ variable "rate_limiting_refill_rate" {
   default     = 3
 }
 
+variable "rate_limiting_ip_whitelist" {
+  description = "Comma separated list of whitelisted IPs"
+  type        = string
+}
+
 #-------------------------------------------------------------------------------
 # IRN VPC peering
 
