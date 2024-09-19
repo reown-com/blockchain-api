@@ -16,10 +16,12 @@ use {
             },
         },
         providers::ProviderKind,
+        storage::error::StorageError,
         utils::crypto::SOLANA_NATIVE_TOKEN_ADDRESS,
         Metrics,
     },
     async_trait::async_trait,
+    deadpool_redis::{redis::AsyncCommands, Pool},
     serde::{Deserialize, Serialize},
     std::{fmt, sync::Arc, time::SystemTime},
     tracing::log::error,
@@ -32,9 +34,14 @@ const SOLANA_MAINNET_CHAIN_ID: &str = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
 const ACCOUNT_TOKENS_URL: &str = "https://pro-api.solscan.io/v1.0/account/tokens";
 const ACCOUNT_HISTORY_URL: &str = "https://pro-api.solscan.io/v2.0/account/transfer";
 const TOKEN_METADATA_URL: &str = "https://pro-api.solscan.io/v2.0/token/meta";
+const TOKEN_PRICE_URL: &str = "https://pro-api.solscan.io/v2.0/token/price";
 const ACCOUNT_DETAIL_URL: &str = "https://pro-api.solscan.io/v2.0/account/detail";
 
 const WSOL_TOKEN_ADDRESS: &str = "So11111111111111111111111111111111111111112";
+
+// Caching TTL paramters
+const METADATA_CACHE_TTL: u64 = 60 * 60; // 1 hour
+const PRICING_CACHE_TTL: u64 = 60 * 5; // 5 minutes
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 struct AccountDetailResponse {
@@ -71,21 +78,26 @@ struct TokenPriceResponseData {
     pub price: f64,
 }
 
-#[derive(Debug)]
 pub struct SolScanProvider {
-    pub provider_kind: ProviderKind,
-    pub api_v1_token: String,
-    pub api_v2_token: String,
-    pub http_client: reqwest::Client,
+    provider_kind: ProviderKind,
+    api_v1_token: String,
+    api_v2_token: String,
+    http_client: reqwest::Client,
+    redis_caching_pool: Option<Arc<Pool>>,
 }
 
 impl SolScanProvider {
-    pub fn new(api_v1_token: String, api_v2_token: String) -> Self {
+    pub fn new(
+        api_v1_token: String,
+        api_v2_token: String,
+        redis_caching_pool: Option<Arc<Pool>>,
+    ) -> Self {
         Self {
             provider_kind: ProviderKind::SolScan,
             api_v1_token,
             api_v2_token,
             http_client: reqwest::Client::new(),
+            redis_caching_pool,
         }
     }
 
@@ -105,11 +117,132 @@ impl SolScanProvider {
             .await
     }
 
-    async fn metadata_token_request(
+    /// Construct the cache key for the metadata
+    fn format_cache_metadata_key(&self, address: &str) -> String {
+        format!("solscan/metadata/{}", address)
+    }
+
+    /// Construct the cache key for the pricing
+    fn format_cache_pricing_key(&self, address: &str) -> String {
+        format!("solscan/pricing/{}", address)
+    }
+
+    #[allow(dependency_on_unit_never_type_fallback)]
+    async fn set_cache(
+        &self,
+        key: &str,
+        value: &str,
+        ttl: u64,
+        metrics: Arc<Metrics>,
+    ) -> Result<(), StorageError> {
+        if let Some(redis_pool) = &self.redis_caching_pool {
+            let mut cache = redis_pool.get().await.map_err(|e| {
+                StorageError::Connection(format!("Error when getting the Redis pool instance {e}"))
+            })?;
+            let start = SystemTime::now();
+            cache
+                .set_ex(key, value, ttl)
+                .await
+                .map_err(|e| StorageError::Connection(format!("Error when seting cache: {e}")))?;
+            metrics.add_non_rpc_providers_cache_latency(start);
+        }
+        Ok(())
+    }
+
+    #[allow(dependency_on_unit_never_type_fallback)]
+    async fn get_cache(
+        &self,
+        key: &str,
+        metrics: Arc<Metrics>,
+    ) -> Result<Option<String>, StorageError> {
+        if let Some(redis_pool) = &self.redis_caching_pool {
+            let mut cache = redis_pool.get().await.map_err(|e| {
+                StorageError::Connection(format!("Error when getting the Redis pool instance {e}"))
+            })?;
+            let start = SystemTime::now();
+            let value = cache
+                .get(key)
+                .await
+                .map_err(|e| StorageError::Connection(format!("Error when getting cache: {e}")))?;
+            metrics.add_non_rpc_providers_cache_latency(start);
+            return Ok(value);
+        }
+        Ok(None)
+    }
+
+    async fn token_price_request(
+        &self,
+        address: &str,
+        metrics: Arc<Metrics>,
+    ) -> Result<f64, RpcError> {
+        // Check the price from the cache first
+        if let Some(redis_pool) = self
+            .get_cache(&self.format_cache_pricing_key(address), metrics.clone())
+            .await?
+        {
+            return Ok(redis_pool.parse().unwrap_or_default());
+        }
+
+        let mut url =
+            Url::parse(TOKEN_PRICE_URL).map_err(|_| RpcError::FungiblePriceParseURLError)?;
+        url.query_pairs_mut().append_pair("address", address);
+
+        let latency_start = SystemTime::now();
+        let response = self.send_request_v2(url).await?;
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some(TOKEN_PRICE_URL.to_string()),
+        );
+
+        if !response.status().is_success() {
+            error!(
+                "Error on SolScan token price response. Status is not OK: {:?}",
+                response.status(),
+            );
+            return Err(RpcError::FungiblePriceProviderError(
+                "Token price provider response status is not success".to_string(),
+            ));
+        }
+        let body = response.json::<TokenPriceResponse>().await?;
+        let price = body
+            .data
+            .first()
+            .ok_or_else(|| {
+                RpcError::FungiblePriceProviderError(
+                    "Empty price response from the provider".to_string(),
+                )
+            })?
+            .price;
+
+        // Cache the price from the response
+        self.set_cache(
+            &self.format_cache_pricing_key(address),
+            &price.to_string(),
+            PRICING_CACHE_TTL,
+            metrics,
+        )
+        .await?;
+
+        Ok(price)
+    }
+
+    async fn token_metadata_request(
         &self,
         address: &str,
         metrics: Arc<Metrics>,
     ) -> Result<TokenMetaData, RpcError> {
+        // Check the metadata from the cache first
+        if let Some(redis_pool) = self
+            .get_cache(&self.format_cache_metadata_key(address), metrics.clone())
+            .await?
+        {
+            let metadata: TokenMetaData = serde_json::from_str(&redis_pool)?;
+            return Ok(metadata);
+        }
+
         let mut url =
             Url::parse(TOKEN_METADATA_URL).map_err(|_| RpcError::FungiblePriceParseURLError)?;
         url.query_pairs_mut().append_pair("address", address);
@@ -134,15 +267,25 @@ impl SolScanProvider {
             ));
         }
         let body = response.json::<TokenInfoResponse>().await?;
-
-        Ok(TokenMetaData {
+        let response = TokenMetaData {
             address: body.data.address,
             name: body.data.name,
             symbol: body.data.symbol,
             decimals: body.data.decimals,
             icon: body.data.icon,
             price: body.data.price,
-        })
+        };
+
+        // Cache the metadata from the response
+        self.set_cache(
+            &self.format_cache_metadata_key(address),
+            &serde_json::to_string(&response)?,
+            METADATA_CACHE_TTL,
+            metrics,
+        )
+        .await?;
+
+        Ok(response)
     }
 
     async fn get_token_info(
@@ -153,12 +296,9 @@ impl SolScanProvider {
         // Respond instantly for the native token (SOL) metadata with making just a price request
         // since metadata is static
         if address == SOLANA_NATIVE_TOKEN_ADDRESS {
-            // Temporary using the WSOL metadata to get the SOL price
-            // until the SolScan pricing endpoint is fixed
             let price = self
-                .metadata_token_request(WSOL_TOKEN_ADDRESS, metrics)
-                .await?
-                .price;
+                .token_price_request(SOLANA_NATIVE_TOKEN_ADDRESS, metrics.clone())
+                .await?;
 
             return Ok(TokenMetaData {
                 address: SOLANA_NATIVE_TOKEN_ADDRESS.to_string(),
@@ -171,7 +311,7 @@ impl SolScanProvider {
         }
 
         let metadata = self
-            .metadata_token_request(WSOL_TOKEN_ADDRESS, metrics)
+            .token_metadata_request(WSOL_TOKEN_ADDRESS, metrics)
             .await?;
         Ok(metadata)
     }
@@ -221,6 +361,7 @@ struct TokensResponseItem {
 #[serde(rename_all = "camelCase")]
 struct AmountItem {
     pub ui_amount_string: String,
+    pub ui_amount: f64,
     pub decimals: u8,
 }
 
@@ -301,26 +442,30 @@ impl BalanceProvider for SolScanProvider {
             );
             return Err(RpcError::BalanceProviderError);
         }
+        let mut balances_vec: Vec<BalanceItem> = Vec::new();
         let body = response.json::<Vec<TokensResponseItem>>().await?;
-
-        let mut balances_vec: Vec<BalanceItem> = body
-            .into_iter()
-            .map(|f| BalanceItem {
-                name: f
+        for item in body {
+            let token_price = &self
+                .token_price_request(&item.token_address, metrics.clone())
+                .await
+                .unwrap_or(0.0);
+            let balance_item = BalanceItem {
+                name: item
                     .token_name
-                    .unwrap_or_else(|| f.token_symbol.clone().unwrap_or_default()),
-                symbol: f.token_symbol.unwrap_or_default(),
+                    .unwrap_or_else(|| item.token_symbol.clone().unwrap_or_default()),
+                symbol: item.token_symbol.unwrap_or_default(),
                 chain_id: Some(SOLANA_MAINNET_CHAIN_ID.to_string()),
-                address: Some(f.token_address),
-                value: None,
-                price: 0.0,
+                address: Some(item.token_address),
+                value: Some(item.token_amount.ui_amount * token_price),
+                price: *token_price,
                 quantity: BalanceQuantity {
-                    decimals: f.token_amount.decimals.to_string(),
-                    numeric: f.token_amount.ui_amount_string,
+                    decimals: item.token_amount.decimals.to_string(),
+                    numeric: item.token_amount.ui_amount_string,
                 },
-                icon_url: f.token_icon.unwrap_or_default(),
-            })
-            .collect();
+                icon_url: item.token_icon.unwrap_or_default(),
+            };
+            balances_vec.push(balance_item);
+        }
 
         // Inject Solana native token (SOL) balance if not zero
         let sol_balance = self.get_sol_balance(&address, metrics.clone()).await?;
@@ -471,13 +616,14 @@ impl FungiblePriceProvider for SolScanProvider {
             ));
         }
 
-        let info = self.get_token_info(address, metrics).await?;
+        let info = self.get_token_info(address, metrics.clone()).await?;
+        let price = self.token_price_request(address, metrics).await?;
         let response = PriceResponseBody {
             fungibles: vec![FungiblePriceItem {
                 name: info.name,
                 symbol: info.symbol,
                 icon_url: info.icon.unwrap_or_default(),
-                price: info.price,
+                price,
                 decimals: info.decimals as u32,
             }],
         };
