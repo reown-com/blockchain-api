@@ -31,7 +31,7 @@ pub enum StorageError {
     Utf8Error(#[from] std::string::FromUtf8Error),
     /// IRN network errors
     #[error("IRN network error: {0}")]
-    IrnNetworkError(#[from] irn_network::Error),
+    IrnNetworkError(#[from] irn_rpc::quic::Error),
     /// IRN client errors
     #[error("IRN client error: {0}")]
     IrnClientError(#[from] irn_api::client::Error),
