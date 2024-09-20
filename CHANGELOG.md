@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.107.1 - 2024-09-20
+#### Bug Fixes
+- upgrade IRN and alloy (#784) - (57bd1d5) - Chris Smith
+
+- - -
+
 ## 0.107.0 - 2024-09-20
 #### Bug Fixes
 - **(rate_limiting)** adding terraform IP whitelisting variable (#777) - (1dde9bc) - Max Kalashnikoff | maksy.eth
