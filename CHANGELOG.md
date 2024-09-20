@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.107.0 - 2024-09-20
+#### Bug Fixes
+- **(rate_limiting)** adding terraform IP whitelisting variable (#777) - (1dde9bc) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(SolScan)** implementing tokens metadata and price caching (#782) - (972fb6d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.106.1 - 2024-09-17
 #### Bug Fixes
 - **(SolScan)** using the correct SPL tokens amount in balance (#778) - (0453ee9) - Max Kalashnikoff | maksy.eth
