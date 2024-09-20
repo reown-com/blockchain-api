@@ -112,6 +112,7 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_STORAGE_IDENTITY_CACHE_REDIS_ADDR_WRITE", value = "redis://${var.identity_cache_endpoint_write}/1" },
         { name = "RPC_PROXY_STORAGE_RATE_LIMITING_CACHE_REDIS_ADDR_READ", value = "redis://${var.rate_limiting_cache_endpoint_read}/2" },
         { name = "RPC_PROXY_STORAGE_RATE_LIMITING_CACHE_REDIS_ADDR_WRITE", value = "redis://${var.rate_limiting_cache_endpoint_write}/2" },
+        { name = "RPC_PROXY_PROVIDER_CACHE_REDIS_ADDR", value = "redis://${var.provider_cache_endpoint}/3" },
 
         { name = "RPC_PROXY_RATE_LIMITING_MAX_TOKENS", value = tostring(var.rate_limiting_max_tokens) },
         { name = "RPC_PROXY_RATE_LIMITING_REFILL_INTERVAL_SEC", value = tostring(var.rate_limiting_refill_interval) },
