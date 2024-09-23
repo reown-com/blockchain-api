@@ -1,6 +1,6 @@
 use {
     crate::{analytics::MessageSource, error::RpcError},
-    alloy_primitives::Address,
+    alloy::primitives::Address,
     base64::prelude::*,
     bs58,
     ethers::{

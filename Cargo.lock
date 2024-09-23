@@ -6967,7 +6967,7 @@ dependencies = [
 name = "rpc-proxy"
 version = "0.106.1"
 dependencies = [
- "alloy-primitives",
+ "alloy",
  "anyhow",
  "async-trait",
  "async-tungstenite",
@@ -9705,7 +9705,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?branch=chore/refactor#c95d8045c482798107fc6376e1ef5390a6e7df67"
+source = "git+https://github.com/reown-com/yttrium.git?branch=chore/refactor#c27b483ce6a1577716af87e0980683791a1bcc42"
 dependencies = [
  "alloy",
  "dotenvy",
