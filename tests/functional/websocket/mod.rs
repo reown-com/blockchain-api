@@ -20,7 +20,7 @@ async fn check_if_rpc_is_responding_correctly_for_supported_chain(
     let (client, _) = async_tungstenite::tokio::connect_async(addr).await.unwrap();
     let request = jsonrpc::Request {
         method: "eth_chainId",
-        params: &[],
+        params: None,
         id: serde_json::Value::Number(1.into()),
         jsonrpc: JSONRPC_VERSION,
     };

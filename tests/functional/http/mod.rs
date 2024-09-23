@@ -33,7 +33,7 @@ async fn check_if_rpc_is_responding_correctly_for_supported_chain(
     let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
     let request = jsonrpc::Request {
         method: "eth_chainId",
-        params: &[],
+        params: None,
         id: serde_json::Value::Number(1.into()),
         jsonrpc: JSONRPC_VERSION,
     };
@@ -64,7 +64,7 @@ async fn check_if_rpc_is_responding_correctly_for_near_protocol(
     let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
     let request = jsonrpc::Request {
         method: "EXPERIMENTAL_genesis_config",
-        params: &[],
+        params: None,
         id: serde_json::Value::Number(1.into()),
         jsonrpc: JSONRPC_VERSION,
     };
@@ -104,7 +104,7 @@ async fn check_if_rpc_is_responding_correctly_for_solana(
     let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
     let request = jsonrpc::Request {
         method: "getHealth",
-        params: &[],
+        params: None,
         id: serde_json::Value::Number(1.into()),
         jsonrpc: JSONRPC_VERSION,
     };
