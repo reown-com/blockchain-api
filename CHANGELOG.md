@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.107.2 - 2024-09-23
+#### Bug Fixes
+- **(tests)** increasing jest tests timeout (#785) - (d964495) - Max Kalashnikoff | maksy.eth
+- revert back `WalletConnectRust` and `alloy_primitives` versions (#787) - (a69cdf5) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.107.1 - 2024-09-20
 #### Bug Fixes
 - upgrade IRN and alloy (#784) - (57bd1d5) - Chris Smith
