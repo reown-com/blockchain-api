@@ -12,20 +12,20 @@ build = "build.rs"
 
 [dependencies]
 wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.9.0", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock", "rate_limit"] }
-relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", tag = "v0.32.0", features = ["cacao"] }
+relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", tag = "v0.31.0", features = ["cacao"] }
 
 # Async
-async-trait = "0.1.81"
+async-trait = "0.1.82"
 tokio = { version = "1", features = ["full"] }
 
 # Web
-hyper = "0.14.28"
+hyper = "0.14"
 hyper-tls = "0.5.0"
 tap = "1.0"
 axum = { version = "0.6", features = ["json", "tokio", "ws"] }
 tower = "0.4.13"
-tower-http = { version = "0.4.4", features = ["cors", "trace", "request-id", "util"] }
-jsonrpc = "0.14.0"
+tower-http = { version = "0.4", features = ["cors", "trace", "request-id", "util"] }
+jsonrpc = "0.18.0"
 async-tungstenite = { version = "0.20.0", features = ["tokio", "tokio-runtime", "tokio-native-tls"] }
 url = "2.5"
 reqwest = { version= "0.12", features = ["deflate", "brotli", "gzip"] }
@@ -71,7 +71,7 @@ cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.13
 parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3", default-features = false, features = ["flate2"] }
 parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3" }
 chrono = { version = "0.4", features = ["serde"] }
-futures-util = "0.3.28"
+futures-util = "0.3.30"
 tokio-stream = "0.1.12"
 axum-tungstenite = "0.2.0"
 
@@ -79,7 +79,7 @@ rand = "0.8.5"
 rand_core = "0.6"
 prometheus-http-query = "0.6.6"
 ethers = { version = "2.0.11", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
-alloy-primitives = "0.8"
+alloy-primitives = "0.7"
 
 bytes = "1.7.1"
 data-encoding = "2.6.0"
@@ -93,7 +93,7 @@ uuid = "1.10"
 sysinfo = "0.30"
 
 [dev-dependencies]
-jsonrpc = "0.14.0"
+jsonrpc = "0.18.0"
 test-context = "0.1"
 
 [build-dependencies]
