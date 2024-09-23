@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.108.0 - 2024-09-23
+#### Bug Fixes
+- **(providers)** responding with HTTP 503 on provider non-success response (#786) - (a6c83a7) - Max Kalashnikoff | maksy.eth
+- **(tests)** changing Solana fulfilled address and removing name zone variable (#788) - (8ecb401) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(monitoring)** add non-rpc providers cache latency Grafana panel (#783) - (3892d8a) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.107.2 - 2024-09-23
 #### Bug Fixes
 - **(tests)** increasing jest tests timeout (#785) - (d964495) - Max Kalashnikoff | maksy.eth
