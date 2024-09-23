@@ -345,6 +345,9 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/v1/sessions/:address/sign", post(handlers::sessions::cosign::handler))
         // Bundler
         .route("/v1/bundler", post(handlers::bundler::handler))
+        // Wallet
+        .route("/v1/wallet/prepareCalls", post(handlers::wallet::prepare_calls::handler))
+        // .route("/v1/wallet/sendPrepareCalls", post(handlers::wallet::send_prepare_calls::handler))
         // Health
         .route("/health", get(handlers::health::handler))
         .route_layer(tracing_and_metrics_layer)
