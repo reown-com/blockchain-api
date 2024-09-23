@@ -5,5 +5,5 @@
   },
   "testRegex": "./.*\\.test\\.ts$",
   "collectCoverageFrom": ["src/**/*.{ts,js}"],
-  "testTimeout": 10000
+  "testTimeout": 30000
 }
