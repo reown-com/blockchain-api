@@ -508,6 +508,14 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+            Self::OnRampProviderError => (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    Json(new_error_response(
+                        "".to_string(),
+                        "OnRamp provider is temporarily unavailable".to_string(),
+                    )),
+                )
+                    .into_response(),
             Self::PortfolioProviderError => (
                 StatusCode::SERVICE_UNAVAILABLE,
                 Json(new_error_response(
@@ -532,7 +540,14 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
-
+            Self::ConversionProviderError => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Convertion provider is temporarily unavailable".to_string(),
+                )),
+            )
+                .into_response(),
             // Any other errors considering as 500
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,
