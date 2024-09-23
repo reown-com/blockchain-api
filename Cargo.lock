@@ -6371,7 +6371,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acf0c195eebb4af52c752bec4f52f645da98b6e92077a04110c7f349477ae5ac"
 dependencies = [
  "anyhow",
- "itertools 0.10.5",
+ "itertools 0.13.0",
  "proc-macro2 1.0.86",
  "quote 1.0.37",
  "syn 2.0.77",
@@ -9705,7 +9705,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?branch=chore/refactor#c27b483ce6a1577716af87e0980683791a1bcc42"
+source = "git+https://github.com/reown-com/yttrium.git?branch=chore/refactor#c8bc1994689c367bd301aab98a2a323822195bd7"
 dependencies = [
  "alloy",
  "dotenvy",
