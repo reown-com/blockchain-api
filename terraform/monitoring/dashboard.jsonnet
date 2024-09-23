@@ -129,6 +129,9 @@ dashboard.new(
     panels.non_rpc.endpoints_latency(ds, vars, 'OneInch')      { gridPos: pos._4 },
     panels.non_rpc.endpoints_latency(ds, vars, 'Coinbase')     { gridPos: pos._4 },
 
+  row.new('Non-RPC providers Cache'),
+    panels.non_rpc.cache_latency(ds, vars)      { gridPos: pos._2 },
+
   row.new('Projects registry'),
     panels.projects.rejected_projects(ds, vars)         { gridPos: pos._4 },
     panels.projects.quota_limited_projects(ds, vars)    { gridPos: pos._4 },
