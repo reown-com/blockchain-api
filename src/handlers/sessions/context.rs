@@ -1,5 +1,5 @@
 use {
-    super::{super::HANDLER_TASK_METRICS, PermissionContextItem, StoragePermissionsItem},
+    super::{super::HANDLER_TASK_METRICS, ActivatePermissionPayload, StoragePermissionsItem},
     crate::{
         error::RpcError, state::AppState, storage::irn::OperationType,
         utils::crypto::disassemble_caip10,
@@ -16,7 +16,7 @@ use {
 pub async fn handler(
     state: State<Arc<AppState>>,
     address: Path<String>,
-    Json(request_payload): Json<PermissionContextItem>,
+    Json(request_payload): Json<ActivatePermissionPayload>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("sessions_context_update"))
@@ -27,7 +27,7 @@ pub async fn handler(
 async fn handler_internal(
     state: State<Arc<AppState>>,
     Path(address): Path<String>,
-    request_payload: PermissionContextItem,
+    request_payload: ActivatePermissionPayload,
 ) -> Result<Response, RpcError> {
     let irn_client = state.irn.as_ref().ok_or(RpcError::IrnNotConfigured)?;
 
@@ -49,7 +49,7 @@ async fn handler_internal(
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
 
     // Update the context
-    storage_permissions_item.context = Some(request_payload.clone());
+    storage_permissions_item.context = Some(request_payload.context);
 
     // Store it back to the IRN database
     let irn_call_start = SystemTime::now();
@@ -64,5 +64,5 @@ async fn handler_internal(
         .metrics
         .add_irn_latency(irn_call_start, OperationType::Hset);
 
-    Ok(Json(storage_permissions_item).into_response())
+    Ok(().into_response())
 }

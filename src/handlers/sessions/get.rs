@@ -9,6 +9,7 @@ use {
         response::{IntoResponse, Response},
         Json,
     },
+    serde_json::json,
     std::{sync::Arc, time::SystemTime},
     wc::future::FutureExt,
 };
@@ -43,5 +44,7 @@ async fn handler_internal(
     let storage_permissions_item =
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
 
-    Ok(Json(storage_permissions_item.permissions).into_response())
+    let response = json!({"context": storage_permissions_item.context});
+
+    Ok(Json(response).into_response())
 }
