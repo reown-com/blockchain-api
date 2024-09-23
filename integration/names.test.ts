@@ -15,7 +15,7 @@ describe('Account profile names', () => {
   // Generate a random name
   const randomString = Array.from({ length: 10 }, 
     () => (Math.random().toString(36)[2] || '0')).join('')
-  const zone =  process.env.NAMES_MAIN_ZONE;
+  const zone =  'reown.id';
   const name = `integration-test-${randomString}.${zone}`;
 
   // Create a message to sign
