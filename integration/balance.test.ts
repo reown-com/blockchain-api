@@ -4,7 +4,7 @@ describe('Account balance', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
 
   const fulfilled_eth_address = '0xf3ea39310011333095CFCcCc7c4Ad74034CABA63'
-  const fulfilled_solana_address = 'ThDDM64EYViLM1trknxJTBcuWRh2eGuecLG3sVj8VV7'
+  const fulfilled_solana_address = '5PUrktzVvJPNFYpxNzFkGp4a5Dcj1Dduif5dAzuUUhsr'
 
   const empty_eth_address = '0x5b6262592954B925B510651462b63ddEbcc22eaD'
   const empty_solana_address = '7ar3r6Mau1Bk7pGLWHCMj1C1bk2eCDwGWTP77j9MXTtd'

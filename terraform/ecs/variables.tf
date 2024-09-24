@@ -146,6 +146,11 @@ variable "rate_limiting_cache_endpoint_write" {
   type        = string
 }
 
+variable "provider_cache_endpoint" {
+  description = "Non-RPC providers responses caching endpoint"
+  type        = string
+}
+
 variable "ofac_blocked_countries" {
   description = "The list of countries under OFAC sanctions"
   type        = string

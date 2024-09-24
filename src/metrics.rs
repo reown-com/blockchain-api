@@ -51,6 +51,9 @@ pub struct Metrics {
     pub history_lookup_success_counter: Counter<u64>,
     pub history_lookup_latency_tracker: Histogram<f64>,
 
+    // Generic Non-RPC providers caching
+    pub non_rpc_providers_cache_latency_tracker: Histogram<f64>,
+
     // System metrics
     pub cpu_usage: Histogram<f64>,
     pub memory_total: Histogram<f64>,
@@ -252,6 +255,10 @@ impl Metrics {
             .u64_counter("rate_limited_responses_counter")
             .with_description("Rate limiting responses counter")
             .init();
+        let non_rpc_providers_cache_latency_tracker = meter
+            .f64_histogram("non_rpc_providers_cache_latency_tracker")
+            .with_description("The latency of non-RPC providers cache lookups")
+            .init();
 
         Metrics {
             rpc_call_counter,
@@ -282,6 +289,7 @@ impl Metrics {
             history_lookup_counter,
             history_lookup_success_counter,
             history_lookup_latency_tracker,
+            non_rpc_providers_cache_latency_tracker,
             cpu_usage,
             memory_total,
             memory_used,
@@ -583,6 +591,17 @@ impl Metrics {
 
     pub fn add_rate_limiting_latency(&self, start: SystemTime) {
         self.rate_limiting_latency_tracker.record(
+            &otel::Context::new(),
+            start
+                .elapsed()
+                .unwrap_or(Duration::from_secs(0))
+                .as_secs_f64(),
+            &[],
+        );
+    }
+
+    pub fn add_non_rpc_providers_cache_latency(&self, start: SystemTime) {
+        self.non_rpc_providers_cache_latency_tracker.record(
             &otel::Context::new(),
             start
                 .elapsed()

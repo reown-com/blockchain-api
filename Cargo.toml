@@ -1,6 +1,6 @@
 [package]
 name = "rpc-proxy"
-version = "0.106.1"
+version = "0.108.1"
 edition = "2021"
 authors = [
     "Derek <derek@walletconnect.com>",
@@ -16,17 +16,17 @@ relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", ta
 yttrium = { git = "https://github.com/reown-com/yttrium.git", branch = "chore/refactor" }
 
 # Async
-async-trait = "0.1.81"
+async-trait = "0.1.82"
 tokio = { version = "1", features = ["full"] }
 
 # Web
-hyper = "0.14.28"
+hyper = "0.14"
 hyper-tls = "0.5.0"
 tap = "1.0"
 axum = { version = "0.6", features = ["json", "tokio", "ws"] }
 tower = "0.4.13"
-tower-http = { version = "0.4.4", features = ["cors", "trace", "request-id", "util"] }
-jsonrpc = "0.14.0"
+tower-http = { version = "0.4", features = ["cors", "trace", "request-id", "util"] }
+jsonrpc = "0.18.0"
 async-tungstenite = { version = "0.20.0", features = ["tokio", "tokio-runtime", "tokio-native-tls"] }
 url = "2.5"
 reqwest = { version= "0.12", features = ["deflate", "brotli", "gzip"] }
@@ -72,7 +72,7 @@ cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.13
 parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3", default-features = false, features = ["flate2"] }
 parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3" }
 chrono = { version = "0.4", features = ["serde"] }
-futures-util = "0.3.28"
+futures-util = "0.3.30"
 tokio-stream = "0.1.12"
 axum-tungstenite = "0.2.0"
 
@@ -95,7 +95,7 @@ sysinfo = "0.30"
 eyre = "0.6.12"
 
 [dev-dependencies]
-jsonrpc = "0.14.0"
+jsonrpc = "0.18.0"
 test-context = "0.1"
 
 [build-dependencies]

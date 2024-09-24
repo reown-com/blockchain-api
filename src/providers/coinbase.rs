@@ -122,7 +122,7 @@ impl HistoryProvider for CoinbaseProvider {
             Some("transactions".to_string()),
         );
 
-        if response.status() != reqwest::StatusCode::OK {
+        if !response.status().is_success() {
             error!(
                 "Error on Coinbase transactions response. Status is not OK: {:?}",
                 response.status(),
@@ -199,7 +199,7 @@ impl OnRampProvider for CoinbaseProvider {
             Some("buy_options".to_string()),
         );
 
-        if response.status() != reqwest::StatusCode::OK {
+        if !response.status().is_success() {
             error!(
                 "Error on CoinBase buy options response. Status is not OK: {:?}",
                 response.status(),
@@ -228,7 +228,7 @@ impl OnRampProvider for CoinbaseProvider {
             Some("buy_quote".to_string()),
         );
 
-        if response.status() != reqwest::StatusCode::OK {
+        if !response.status().is_success() {
             error!(
                 "Error on CoinBase buy quotes response. Status is not OK: {:?}",
                 response.status(),

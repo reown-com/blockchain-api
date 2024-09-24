@@ -37,7 +37,7 @@ use {
         hash::Hash,
         sync::Arc,
     },
-    tracing::{debug, log::warn},
+    tracing::{debug, error, log::warn},
     wc::metrics::TaskMetrics,
 };
 
@@ -86,6 +86,9 @@ pub type WeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
 pub struct ProvidersConfig {
     pub prometheus_query_url: Option<String>,
     pub prometheus_workspace_header: Option<String>,
+
+    /// Redis address for provider's responses caching
+    pub cache_redis_addr: Option<String>,
 
     pub infura_project_id: String,
     pub pokt_project_id: String,
@@ -151,6 +154,27 @@ impl ProviderRepository {
             .clone()
             .unwrap_or("localhost:9090".into());
 
+        // Redis pool for providers responses caching where needed
+        let mut redis_pool = None;
+        if let Some(redis_addr) = &config.cache_redis_addr {
+            let redis_builder = deadpool_redis::Config::from_url(redis_addr)
+                .builder()
+                .map_err(|e| {
+                    error!(
+                        "Failed to create redis pool builder for provider's responses caching: {:?}",
+                        e
+                    );
+                })
+                .expect("Failed to create redis pool builder for provider's responses caching, builder is None");
+
+            redis_pool = Some(Arc::new(
+                redis_builder
+                    .runtime(deadpool_redis::Runtime::Tokio1)
+                    .build()
+                    .expect("Failed to create redis pool"),
+            ));
+        };
+
         // Don't crash the application if the ZERION_API_KEY is not set
         // TODO: find a better way to handle this
         let zerion_api_key = config
@@ -189,6 +213,7 @@ impl ProviderRepository {
         let solscan_provider = Arc::new(SolScanProvider::new(
             config.solscan_api_v1_token.clone(),
             config.solscan_api_v2_token.clone(),
+            redis_pool.clone(),
         ));
 
         let mut balance_providers: HashMap<CaipNamespaces, Arc<dyn BalanceProvider>> =
@@ -605,7 +630,7 @@ pub trait RateLimited {
 }
 
 #[async_trait]
-pub trait HistoryProvider: Send + Sync + Debug {
+pub trait HistoryProvider: Send + Sync {
     async fn get_transactions(
         &self,
         address: String,
@@ -640,7 +665,7 @@ pub trait OnRampProvider: Send + Sync + Debug {
 }
 
 #[async_trait]
-pub trait BalanceProvider: Send + Sync + Debug {
+pub trait BalanceProvider: Send + Sync {
     async fn get_balance(
         &self,
         address: String,
@@ -650,7 +675,7 @@ pub trait BalanceProvider: Send + Sync + Debug {
 }
 
 #[async_trait]
-pub trait FungiblePriceProvider: Send + Sync + Debug {
+pub trait FungiblePriceProvider: Send + Sync {
     async fn get_price(
         &self,
         chain_id: &str,
@@ -661,7 +686,7 @@ pub trait FungiblePriceProvider: Send + Sync + Debug {
 }
 
 #[async_trait]
-pub trait ConversionProvider: Send + Sync + Debug {
+pub trait ConversionProvider: Send + Sync {
     async fn get_tokens_list(
         &self,
         params: TokensListQueryParams,
