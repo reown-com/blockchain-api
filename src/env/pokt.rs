@@ -94,7 +94,12 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Ethereum mainnet
         (
             "eip155:1".into(),
-            ("eth-mainnet".into(), Weight::new(Priority::Max).unwrap()),
+            (
+                "eth-mainnet".into(),
+                // TODO: Temporary disabling Pokt for the mainnet until the issue
+                // with the flaky RPC response with the updated Alloy is resolved.
+                Weight::new(Priority::Disabled).unwrap(),
+            ),
         ),
         // Ethereum holesky
         (
