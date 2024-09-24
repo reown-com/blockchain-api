@@ -92,6 +92,7 @@ uuid = "1.10"
 
 # System CPU and Memory metrics
 sysinfo = "0.30"
+eyre = "0.6.12"
 
 [dev-dependencies]
 jsonrpc = "0.14.0"

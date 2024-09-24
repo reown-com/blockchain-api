@@ -17,6 +17,7 @@ use tracing::error;
 use wc::future::FutureExt;
 use yttrium::smart_accounts::account_address::AccountAddress;
 use yttrium::{
+    bundler::{config::BundlerConfig, pimlico::client::BundlerClient},
     chain::ChainId,
     entry_point::{EntryPointConfig, EntryPointVersion},
     smart_accounts::{
@@ -102,6 +103,9 @@ pub enum PrepareCallsError {
 pub enum PrepareCallsInternalError {
     #[error("Get nonce: {0}")]
     GetNonce(alloy::contract::Error),
+
+    #[error("Estimate user operation gas price: {0}")]
+    EstimateUserOperationGasPrice(eyre::Error),
 }
 
 impl IntoResponse for PrepareCallsError {
@@ -189,6 +193,24 @@ async fn handler_internal(
                 })?
         };
 
+        let pimlico_client = BundlerClient::new(BundlerConfig::new(
+            format!(
+                "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
+                chain_id.caip2_identifier(),
+                state.config.server.testing_project_id.as_ref().unwrap(),
+            )
+            .parse()
+            .unwrap(),
+        ));
+        let gas_price = pimlico_client
+            .estimate_user_operation_gas_price()
+            .await
+            .map_err(|e| {
+                PrepareCallsError::InternalError(
+                    PrepareCallsInternalError::EstimateUserOperationGasPrice(e),
+                )
+            })?;
+
         // TODO prepare paymaster info
         // TODO get special dummy signature: https://github.com/reown-com/web-examples/blob/32f9df464e2fa85ec49c21837d811cfe1437719e/advanced/wallets/react-wallet-v2/src/lib/smart-accounts/builders/ContextBuilderUtil.ts#L190
 
@@ -198,11 +220,11 @@ async fn handler_internal(
             factory: None,
             factory_data: None,
             call_data: get_call_data(request.calls),
-            call_gas_limit: U256::ZERO,
-            verification_gas_limit: U256::ZERO,
-            pre_verification_gas: U256::ZERO,
-            max_fee_per_gas: U256::ZERO,
-            max_priority_fee_per_gas: U256::ZERO,
+            call_gas_limit: U256::from(2000000),
+            verification_gas_limit: U256::from(2000000),
+            pre_verification_gas: U256::from(2000000),
+            max_fee_per_gas: gas_price.fast.max_fee_per_gas,
+            max_priority_fee_per_gas: gas_price.fast.max_priority_fee_per_gas,
             paymaster: None,
             paymaster_verification_gas_limit: None,
             paymaster_post_op_gas_limit: None,

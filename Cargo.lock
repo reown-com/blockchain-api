@@ -6986,6 +6986,7 @@ dependencies = [
  "dotenv",
  "envy",
  "ethers",
+ "eyre",
  "futures-util",
  "hex",
  "hyper 0.14.30",
