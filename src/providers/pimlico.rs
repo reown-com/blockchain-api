@@ -74,7 +74,7 @@ impl BundlerOpsProvider for PimlicoProvider {
             SupportedBundlerOps::WalletGetCallsStatus => "wallet_getCallsStatus".into(),
             SupportedBundlerOps::WalletShowCallsStatus => "wallet_showCallsStatus".into(),
             SupportedBundlerOps::PmSponsorUserOperation => "pm_sponsorUserOperation".into(),
-            SupportedBundlerOps::PmGetUserOperationGasPrice => {
+            SupportedBundlerOps::PimlicoGetUserOperationGasPrice => {
                 "pimlico_getUserOperationGasPrice".into()
             }
         }
