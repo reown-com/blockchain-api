@@ -13,6 +13,7 @@ use axum::{
 };
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
+use url::Url;
 use std::sync::Arc;
 use thiserror::Error;
 use tracing::error;
@@ -44,12 +45,19 @@ pub struct PrepareCallsRequestItem {
 #[serde(rename_all = "camelCase")]
 pub struct Capabilities {
     permissions: Permissions,
+    paymaster_service: Option<PaymasterService>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Permissions {
     context: Bytes,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PaymasterService {
+    url: Url,
 }
 
 pub type PrepareCallsResponse = Vec<PrepareCallsResponseItem>;
@@ -111,6 +119,9 @@ pub enum PrepareCallsError {
     #[error("Invalid permission context")]
     InvalidPermissionContext,
 
+    #[error("Paymaster service capability is not supported")]
+    PaymasterServiceUnsupported,
+
     #[error("Internal error")]
     InternalError(PrepareCallsInternalError),
 }
@@ -165,6 +176,10 @@ async fn handler_internal(
     let mut response = Vec::with_capacity(request.len());
     for request in request {
         let chain_id = ChainId::new_eip155(request.chain_id.to::<u64>());
+
+        if request.capabilities.paymaster_service.is_some() {
+            return Err(PrepareCallsError::PaymasterServiceUnsupported);
+        }
 
         // TODO check isSafe for request.from:
         // https://github.com/reown-com/web-examples/blob/32f9df464e2fa85ec49c21837d811cfe1437719e/advanced/wallets/react-wallet-v2/src/utils/UserOpBuilderUtil.ts#L39
