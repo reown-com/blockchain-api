@@ -3276,6 +3276,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fastlz-rs"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aec3f2376b1a451070e235824e1d63d71663356dc117cd0d1cb7ae94cb5c3c09"
+
+[[package]]
 name = "fastrand"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4220,7 +4226,7 @@ dependencies = [
  "iana-time-zone-haiku",
  "js-sys",
  "wasm-bindgen",
- "windows-core 0.51.1",
+ "windows-core 0.52.0",
 ]
 
 [[package]]
@@ -6371,7 +6377,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acf0c195eebb4af52c752bec4f52f645da98b6e92077a04110c7f349477ae5ac"
 dependencies = [
  "anyhow",
- "itertools 0.11.0",
+ "itertools 0.13.0",
  "proc-macro2 1.0.86",
  "quote 1.0.37",
  "syn 2.0.77",
@@ -6987,6 +6993,7 @@ dependencies = [
  "envy",
  "ethers",
  "eyre",
+ "fastlz-rs",
  "futures-util",
  "hex",
  "hyper 0.14.30",
@@ -9706,7 +9713,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?branch=chore/refactor#df5385e422e305fcc4ea9b165ab1988d0b815a4a"
+source = "git+https://github.com/reown-com/yttrium.git?branch=chore/refactor#6b9b9882194abc536c7759f4307fe74cc4ca78eb"
 dependencies = [
  "alloy",
  "dotenvy",

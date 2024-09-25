@@ -93,6 +93,7 @@ uuid = "1.10"
 # System CPU and Memory metrics
 sysinfo = "0.30"
 eyre = "0.6.12"
+fastlz-rs = "0.0.3"
 
 [dev-dependencies]
 jsonrpc = "0.18.0"
