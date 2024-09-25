@@ -4226,7 +4226,7 @@ dependencies = [
  "iana-time-zone-haiku",
  "js-sys",
  "wasm-bindgen",
- "windows-core 0.52.0",
+ "windows-core 0.51.1",
 ]
 
 [[package]]
@@ -6377,7 +6377,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acf0c195eebb4af52c752bec4f52f645da98b6e92077a04110c7f349477ae5ac"
 dependencies = [
  "anyhow",
- "itertools 0.13.0",
+ "itertools 0.11.0",
  "proc-macro2 1.0.86",
  "quote 1.0.37",
  "syn 2.0.77",
@@ -9713,7 +9713,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?branch=chore/refactor#6b9b9882194abc536c7759f4307fe74cc4ca78eb"
+source = "git+https://github.com/reown-com/yttrium.git?branch=chore/refactor#4f8418f5ccead6463b65e81917731e780d6405cd"
 dependencies = [
  "alloy",
  "dotenvy",
