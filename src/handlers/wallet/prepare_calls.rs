@@ -13,10 +13,10 @@ use axum::{
 };
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
-use url::Url;
 use std::sync::Arc;
 use thiserror::Error;
 use tracing::error;
+use url::Url;
 use wc::future::FutureExt;
 use yttrium::erc7579::smart_sessions::ISmartSession::isSessionEnabledReturn;
 use yttrium::erc7579::smart_sessions::{enableSessionSigCall, EnableSession, ISmartSession};
