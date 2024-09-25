@@ -737,8 +737,11 @@ pub enum SupportedBundlerOps {
     EthSendUserOperation,
     #[serde(rename = "eth_estimateUserOperationGas")]
     EthEstimateUserOperationGas,
+    /// Paymaster sponsor UserOp
     #[serde(rename = "pm_sponsorUserOperation")]
     PmSponsorUserOperation,
+    #[serde(rename = "pimlico_getUserOperationGasPrice")]
+    PimlicoGetUserOperationGasPrice,
 }
 
 /// Provider for the bundler operations
