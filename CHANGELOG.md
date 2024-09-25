@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.110.0 - 2024-09-25
+#### Features
+- **(cosigner)** updating the request shema to the ERC7715 (#793) - (1bbb957) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.109.0 - 2024-09-25
 #### Features
 - **(providers)** adding `pimlico_getUserOperationGasPrice` to the bundler supported operations. (#792) - (c85973b) - Max Kalashnikoff | maksy.eth

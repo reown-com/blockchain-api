@@ -9,7 +9,6 @@ use {
         response::{IntoResponse, Response},
         Json,
     },
-    base64::prelude::*,
     ethers::core::k256::ecdsa::{SigningKey, VerifyingKey},
     rand_core::OsRng,
     serde::{Deserialize, Serialize},
@@ -20,7 +19,20 @@ use {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NewPermissionResponse {
     pci: String,
-    key: String,
+    key: KeyItem,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+
+pub enum KeyType {
+    Secp256k1,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KeyItem {
+    pub r#type: KeyType,
+    pub public_key: String,
 }
 
 pub async fn handler(
@@ -47,20 +59,23 @@ async fn handler_internal(
     // Generate a unique permission control identifier
     let pci = uuid::Uuid::new_v4().to_string();
 
-    // Generate a secp256k1 keys and export to DER Base64 format
+    // Generate a secp256k1 keys and export to DER Base64 and Hex formats
     let signing_key = SigningKey::random(&mut OsRng);
     let verifying_key = VerifyingKey::from(&signing_key);
     let private_key_der = signing_key.to_bytes().to_vec();
-    let private_key_der_base64 = BASE64_STANDARD.encode(private_key_der);
+    let private_key_der_hex = hex::encode(private_key_der);
     let public_key_der = verifying_key.to_encoded_point(false).as_bytes().to_vec();
-    let public_key_der_base64 = BASE64_STANDARD.encode(&public_key_der);
+    let public_key_der_hex = hex::encode(&public_key_der);
 
     // Store the permission item in the IRN database
     let storage_permissions_item = StoragePermissionsItem {
-        permissions: request_payload.permission,
+        expiry: request_payload.expiry,
+        signer: request_payload.signer,
+        permissions: request_payload.permissions,
+        policies: request_payload.policies,
         context: None,
-        verification_key: public_key_der_base64.clone(),
-        signing_key: private_key_der_base64,
+        verification_key: public_key_der_hex.clone(),
+        signing_key: private_key_der_hex.clone(),
     };
 
     let irn_call_start = SystemTime::now();
@@ -77,7 +92,10 @@ async fn handler_internal(
 
     let response = NewPermissionResponse {
         pci: pci.clone(),
-        key: public_key_der_base64,
+        key: KeyItem {
+            r#type: KeyType::Secp256k1,
+            public_key: format!("0x{}", hex::encode(public_key_der_hex)),
+        },
     };
 
     // TODO: remove this debuging log

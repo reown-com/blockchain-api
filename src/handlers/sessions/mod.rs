@@ -1,6 +1,7 @@
 use {
     crate::utils::crypto::UserOperation,
     serde::{Deserialize, Serialize},
+    serde_json::Value,
 };
 
 pub mod context;
@@ -13,9 +14,17 @@ pub mod revoke;
 /// Payload to create a new permission
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NewPermissionPayload {
-    pub permission: PermissionItem,
+    pub expiry: usize,
+    pub signer: PermissionTypeData,
+    pub permissions: Vec<PermissionTypeData>,
+    pub policies: Vec<PermissionTypeData>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PermissionTypeData {
+    pub r#type: String,
+    pub data: Value,
+}
 // Payload to get permission by PCI
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GetPermissionsRequest {
@@ -23,46 +32,16 @@ pub struct GetPermissionsRequest {
     pci: String,
 }
 
-/// Permission item schema
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PermissionItem {
-    permission_type: String,
-    data: String,
-    required: bool,
-    on_chain_validated: bool,
-}
-
 /// Permissions Context item schema
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PermissionContextItem {
-    pci: String,
-    context: PermissionSubContext,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PermissionSubContext {
-    signer: PermissionContextSigner,
-    expiry: usize,
-    signer_data: PermissionSubContextSignerData,
-    factory: String,
-    factory_data: String,
-    permissions_context: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PermissionContextSigner {
-    r#type: String,
-    data: PermissionContextSignerData,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PermissionContextSignerData {
-    ids: Vec<String>,
+pub struct ActivatePermissionPayload {
+    pub pci: String,
+    pub expiry: usize,
+    pub signer: PermissionTypeData,
+    pub permissions: Vec<PermissionTypeData>,
+    pub policies: Vec<PermissionTypeData>,
+    pub context: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -75,8 +54,11 @@ pub struct PermissionSubContextSignerData {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StoragePermissionsItem {
-    permissions: PermissionItem,
-    context: Option<PermissionContextItem>,
+    expiry: usize,
+    signer: PermissionTypeData,
+    permissions: Vec<PermissionTypeData>,
+    policies: Vec<PermissionTypeData>,
+    context: Option<String>,
     verification_key: String,
     signing_key: String,
 }

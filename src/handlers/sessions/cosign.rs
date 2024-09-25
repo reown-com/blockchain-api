@@ -15,7 +15,6 @@ use {
         response::{IntoResponse, Response},
         Json,
     },
-    base64::prelude::*,
     ethers::{
         core::k256::ecdsa::SigningKey,
         signers::LocalWallet,
@@ -29,7 +28,6 @@ use {
 };
 
 const ENTRY_POINT_V07_CONTRACT_ADDRESS: &str = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
-const SEND_USER_OP_ENDPOINT: &str = "https://react-wallet.walletconnect.com/api/sendUserOp";
 
 /// Co-sign response schema
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -139,16 +137,14 @@ async fn handler_internal(
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
 
     // Check and get the permission context if it's updated
-    let permission_context_item = storage_permissions_item
+    let _permission_context = storage_permissions_item
         .context
         .clone()
         .ok_or_else(|| RpcError::PermissionContextNotUpdated(request_payload.pci.clone()))?;
-    let permission_context = permission_context_item.context.permissions_context.clone();
 
     // Sign the userOp hash with the permission signing key
-    let signing_key_bytes = BASE64_STANDARD
-        .decode(storage_permissions_item.signing_key)
-        .map_err(|e| RpcError::WrongBase64Format(e.to_string()))?;
+    let signing_key_bytes = hex::decode(storage_permissions_item.signing_key)
+        .map_err(|e| RpcError::WrongHexFormat(e.to_string()))?;
     let signer = SigningKey::from_bytes(signing_key_bytes.as_slice().into())
         .map_err(|e| RpcError::KeyFormatError(e.to_string()))?;
 
@@ -165,31 +161,8 @@ async fn handler_internal(
     // Update the userOp with the signature
     user_op.signature = concatenated_signature;
 
-    // Check the call version and make or skip wallet service call
-    // if the version 0 (default) or return the signature
-    // if the version not 0
-    let version = query_payload.version.unwrap_or(0);
-    if version == 0 {
-        // Make a POST request to the sendUserOp endpoint
-        let send_user_op_request = SendUserOpRequest {
-            chain_id: chain_id_uint as usize,
-            user_op: user_op.clone(),
-            permissions_context: Some(permission_context),
-        };
-        let http_client = state.http_client.clone();
-        let send_user_op_call_result = http_client
-            .post(SEND_USER_OP_ENDPOINT)
-            .json(&send_user_op_request)
-            .send()
-            .await?;
-        let result = send_user_op_call_result
-            .json::<SendUserOpResponse>()
-            .await?;
-        Ok(Json(result).into_response())
-    } else {
-        Ok(Json(json!({
-            "signature": format!("0x{}", hex::encode(user_op.signature)),
-        }))
-        .into_response())
-    }
+    Ok(Json(json!({
+        "signature": format!("0x{}", hex::encode(user_op.signature)),
+    }))
+    .into_response())
 }
