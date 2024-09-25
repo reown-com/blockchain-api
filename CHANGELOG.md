@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.109.0 - 2024-09-25
+#### Features
+- **(providers)** adding `pimlico_getUserOperationGasPrice` to the bundler supported operations. (#792) - (c85973b) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.108.1 - 2024-09-24
 #### Bug Fixes
 - updating WalletConnectRust and Alloy dependencies, disabling Pokt for the Eth mainnet (#790) - (12e9319) - Max Kalashnikoff | maksy.eth
