@@ -9713,7 +9713,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?branch=chore/refactor#b491fb0586afeef23e288f07b1120a62624f0ef2"
+source = "git+https://github.com/reown-com/yttrium.git?rev=51e836e#51e836e7418079090497be28e7663f3832b042bc"
 dependencies = [
  "alloy",
  "dotenvy",
