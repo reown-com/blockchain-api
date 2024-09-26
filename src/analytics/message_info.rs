@@ -67,6 +67,7 @@ pub enum MessageSource {
     ProfileAttributesSigValidate,
     ProfileRegisterSigValidate,
     SessionCoSignSigValidate,
+    WalletPrepareCalls,
 }
 
 #[cfg(test)]

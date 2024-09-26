@@ -1,5 +1,6 @@
 binary-crate  := "."
 tf-dir        := "terraform"
+set dotenv-load
 
 export JUST_ROOT := justfile_directory()
 
@@ -159,7 +160,7 @@ cargo-test-default: _check-cmd-cargo
 # Run project tests with all features activated
 cargo-test-all: _check-cmd-cargo
   @printf '==> Testing project ({{ light-green }}all features{{ nocolor }})\n'
-  cargo test --all-features
+  cargo test --features=full
 
 # Run tests from project documentation
 cargo-test-doc: _check-cmd-cargo
@@ -179,7 +180,7 @@ cargo-check: _check-cmd-cargo
 # Check rust project with clippy
 cargo-clippy: _check-cmd-cargo-clippy
   @printf '==> Running {{ color-cmd }}clippy{{ nocolor }}\n'
-  cargo clippy --all-features --tests -- -D clippy::all
+  cargo clippy --features=full --tests -- -D clippy::all
 
 # Check unused dependencies
 cargo-udeps: _check-cmd-cargo-udeps

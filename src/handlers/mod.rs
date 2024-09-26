@@ -27,6 +27,7 @@ pub mod profile;
 pub mod proxy;
 pub mod sessions;
 pub mod supported_chains;
+pub mod wallet;
 pub mod ws_proxy;
 
 static HANDLER_TASK_METRICS: TaskMetrics = TaskMetrics::new("handler_task");
