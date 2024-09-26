@@ -40,6 +40,7 @@ impl Provider for GetBlockProvider {
 impl RateLimited for GetBlockProvider {
     async fn is_rate_limited(&self, response: &mut Response) -> bool {
         response.status() == http::StatusCode::TOO_MANY_REQUESTS
+            || response.status() == http::StatusCode::PAYMENT_REQUIRED
     }
 }
 
