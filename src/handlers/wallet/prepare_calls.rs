@@ -200,6 +200,7 @@ async fn handler_internal(
             version: EntryPointVersion::V07,
         };
 
+        // TODO refactor to call internal proxy function directly
         let provider = ReqwestProvider::<Ethereum>::new_http(
             format!(
                 "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",
@@ -227,6 +228,7 @@ async fn handler_internal(
             return Err(PrepareCallsError::InvalidPermissionContext);
         }
 
+        // TODO refactor into yttrium
         let dummy_signature = {
             let DecodedSmartSessionSignature {
                 permission_id,
@@ -328,6 +330,7 @@ async fn handler_internal(
         .await
         .map_err(|e| PrepareCallsError::InternalError(PrepareCallsInternalError::GetNonce(e)))?;
 
+        // TODO refactor to use bundler_rpc_call directly: https://github.com/WalletConnect/blockchain-api/blob/8be3ca5b08dec2387ee2c2ffcb4b7ca739443bcb/src/handlers/bundler.rs#L62
         let pimlico_client = BundlerClient::new(BundlerConfig::new(
             format!(
                 "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
