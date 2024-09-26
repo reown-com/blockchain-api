@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.111.0 - 2024-09-26
+#### Features
+- partial prepareCalls impl (#789) - (39583b7) - Chris Smith
+
+- - -
+
 ## 0.110.1 - 2024-09-26
 #### Bug Fixes
 - **(providers)** considering HTTP 402 as rate limited for GetBlock (#791) - (87db8ac) - Max Kalashnikoff | maksy.eth
