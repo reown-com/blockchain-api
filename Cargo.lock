@@ -9713,7 +9713,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?rev=51e836e#51e836e7418079090497be28e7663f3832b042bc"
+source = "git+https://github.com/reown-com/yttrium.git?branch=chore/remove-foundry-building#2a082c54edb314c52258a2010154b57cca9a6983"
 dependencies = [
  "alloy",
  "dotenvy",
