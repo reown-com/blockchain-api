@@ -350,6 +350,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/v1/bundler", post(handlers::bundler::handler))
         // Wallet
         .route("/v1/wallet", post(handlers::wallet::handler::handler))
+        // Chain agnostic orchestration
+        .route("/v1/ca/orchestrator/check", post(handlers::chain_agnostic::check::handler))
         // Health
         .route("/health", get(handlers::health::handler))
         .route_layer(tracing_and_metrics_layer)

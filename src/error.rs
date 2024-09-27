@@ -167,6 +167,9 @@ pub enum RpcError {
     #[error("Name is not in the allowed zones: {0}")]
     InvalidNameZone(String),
 
+    #[error("Invalid value: {0}")]
+    InvalidValue(String),
+
     #[error("Unsupported coin type: {0}")]
     UnsupportedCoinType(u32),
 

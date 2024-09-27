@@ -70,6 +70,7 @@ pub enum MessageSource {
     WalletPrepareCalls,
     WalletSendPreparedCalls,
     WalletGetCallsStatus,
+    ChainAgnosticCheck,
 }
 
 #[cfg(test)]

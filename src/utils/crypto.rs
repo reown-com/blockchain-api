@@ -1,6 +1,6 @@
 use {
     crate::{analytics::MessageSource, error::RpcError},
-    alloy::{primitives::Address, rpc::json_rpc::Id},
+    alloy::{primitives::Address, rpc::json_rpc::Id, sol, sol_types::SolCall},
     base64::prelude::*,
     bs58,
     ethers::{
@@ -74,6 +74,8 @@ pub enum CryptoUitlsError {
     NoResultInRpcResponse,
     #[error("Error in JSON-RPC call to the Bundler: {0}")]
     BundlerRpcResponseError(String),
+    #[error("Error when decoding ERC20 call: {0}")]
+    Erc20DecodeError(String),
 }
 
 /// JSON-RPC request schema
@@ -200,6 +202,49 @@ fn concat_128(a: [u8; 16], b: [u8; 16]) -> [u8; 32] {
             a[i]
         }
     })
+}
+
+// ERC20 contract
+sol! {
+    function balanceOf(address _owner) external view returns (uint256);
+    function transfer(address _to, uint256 _value) external returns (bool);
+    function approve(address _spender, uint256 _value) external returns (bool);
+    function transferFrom(address _from, address _to, uint256 _value) external returns (bool);
+    function allowance(address _owner, address _spender) external view returns (uint256);
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Erc20FunctionType {
+    BalanceOf,
+    Transfer,
+    Approve,
+    TransferFrom,
+    Allowance,
+}
+
+/// Decodes ERC20 contract call function data and returns the function name.
+pub fn decode_erc20_call_function_data(
+    function_data: &[u8],
+) -> Result<Erc20FunctionType, CryptoUitlsError> {
+    // Get the 4 bytes function selector
+    let selector: [u8; 4] = function_data[0..4].try_into().map_err(|_| {
+        CryptoUitlsError::Erc20DecodeError("Function data is less then 4 bytes.".into())
+    })?;
+
+    let function_type = match selector {
+        balanceOfCall::SELECTOR => Erc20FunctionType::BalanceOf,
+        transferCall::SELECTOR => Erc20FunctionType::Transfer,
+        approveCall::SELECTOR => Erc20FunctionType::Approve,
+        transferFromCall::SELECTOR => Erc20FunctionType::TransferFrom,
+        allowanceCall::SELECTOR => Erc20FunctionType::Allowance,
+        _ => {
+            return Err(CryptoUitlsError::Erc20DecodeError(
+                "Unknown function selector.".into(),
+            ))
+        }
+    };
+
+    Ok(function_type)
 }
 
 /// Convert message to EIP-191 compatible format
@@ -390,7 +435,7 @@ async fn get_erc20_contract_balance(
 
 /// Get the balance of the native coin
 #[tracing::instrument(level = "debug")]
-async fn get_balance(
+pub async fn get_balance(
     chain_id: &str,
     wallet: H160,
     rpc_project_id: &str,
@@ -707,6 +752,12 @@ pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u32) -
     balance_f64 * price
 }
 
+/// Convert Alloy Address type to Ethers H160
+pub fn convert_alloy_address_to_h160(addr: Address) -> H160 {
+    let bytes = addr.as_ref();
+    H160::from_slice(bytes)
+}
+
 #[cfg(test)]
 mod tests {
     use {
@@ -895,6 +946,24 @@ mod tests {
 
         assert!(is_address_valid(valid_sol_address, &CaipNamespaces::Solana));
         assert!(!is_address_valid(invalid_address, &CaipNamespaces::Solana));
+    }
+
+    #[test]
+    fn test_decode_erc20_call_function_data() {
+        // Test for ERC20 transfer function data.
+        let transfer_function_data_hex = "a9059cbb0000000000000000000000005aeda56215b167893e80b4fe645ba6d5bab767de000000000000000000000000000000000000000000000000000000000000000a";
+        let transfer_function_data = hex::decode(transfer_function_data_hex).unwrap();
+        let transfer_function_type =
+            decode_erc20_call_function_data(&transfer_function_data).unwrap();
+        assert_eq!(transfer_function_type, Erc20FunctionType::Transfer);
+
+        // Test for ERC20 balanceOf function data.
+        let balance_of_function_data_hex =
+            "70a082310000000000000000000000005aeda56215b167893e80b4fe645ba6d5bab767de";
+        let balance_of_function_data = hex::decode(balance_of_function_data_hex).unwrap();
+        let balance_of_function_type =
+            decode_erc20_call_function_data(&balance_of_function_data).unwrap();
+        assert_eq!(balance_of_function_type, Erc20FunctionType::BalanceOf);
     }
 
     // Ignoring this test until the RPC project ID is provided by the CI workflow

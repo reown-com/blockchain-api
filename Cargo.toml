@@ -42,6 +42,7 @@ num_enum = "0.7"
 strum = "0.26"
 strum_macros = "0.26"
 hex = "0.4"
+phf = { version = "0.11", features = ["macros"] }
 
 # Storage
 aws-config = "1.1"
