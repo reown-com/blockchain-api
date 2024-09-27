@@ -82,6 +82,7 @@ pub enum SendPreparedCallsError {
     #[error("Invalid permissionEnableSig for kernel account")]
     PermissionContextInvalidPermissionEnableSigForKernelAccount,
 
+    // TODO refactor these errors to not depend on the other handler
     #[error("SplitPermissionsContextAndCheckValidator: {0}")]
     SplitPermissionsContextAndCheckValidator(PrepareCallsError),
 
