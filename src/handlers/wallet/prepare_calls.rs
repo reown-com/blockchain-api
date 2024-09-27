@@ -1,11 +1,14 @@
+use super::types::PreparedCalls;
 use crate::analytics::MessageSource;
+use crate::handlers::wallet::types::SignatureRequestType;
 use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
-use alloy::network::Ethereum;
+use alloy::network::{Ethereum, Network};
 use alloy::primitives::aliases::U192;
 use alloy::primitives::{address, bytes, Address, Bytes, FixedBytes, U256, U64};
-use alloy::providers::ReqwestProvider;
+use alloy::providers::{Provider, ReqwestProvider};
 use alloy::sol_types::SolCall;
 use alloy::sol_types::SolValue;
+use alloy::transports::Transport;
 use axum::{
     extract::State,
     response::{IntoResponse, Response},
@@ -18,6 +21,7 @@ use thiserror::Error;
 use tracing::error;
 use url::Url;
 use wc::future::FutureExt;
+use yttrium::bundler::pimlico::paymaster::client::PaymasterClient;
 use yttrium::erc7579::smart_sessions::ISmartSession::isSessionEnabledReturn;
 use yttrium::erc7579::smart_sessions::{enableSessionSigCall, EnableSession, ISmartSession};
 use yttrium::smart_accounts::account_address::AccountAddress;
@@ -68,20 +72,6 @@ pub struct PrepareCallsResponseItem {
     prepared_calls: PreparedCalls,
     signature_request: SignatureRequest,
     context: Bytes,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PreparedCalls {
-    r#type: SignatureRequestType,
-    data: yttrium::user_operation::UserOperationV07,
-    chain_id: U64,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum SignatureRequestType {
-    #[serde(rename = "user-operation-v07")]
-    UserOpV7,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -139,6 +129,9 @@ pub enum PrepareCallsInternalError {
 
     #[error("Compress session enabled: {0}")]
     CompressSessionEnabled(fastlz_rs::CompressError),
+
+    #[error("Sponsorship: {0}")]
+    Sponsorship(eyre::Error),
 }
 
 impl IntoResponse for PrepareCallsError {
@@ -173,6 +166,8 @@ async fn handler_internal(
     state: State<Arc<AppState>>,
     request: PrepareCallsRequest,
 ) -> Result<Response, PrepareCallsError> {
+    // TODO check project ID query param
+
     let mut response = Vec::with_capacity(request.len());
     for request in request {
         let chain_id = ChainId::new_eip155(request.chain_id.to::<u64>());
@@ -195,6 +190,8 @@ async fn handler_internal(
 
         let account_type = AccountType::Safe;
 
+        // TODO run get_nonce, get gas price, and isSessionsEnabled in parallel
+
         let entry_point_config = EntryPointConfig {
             chain_id,
             version: EntryPointVersion::V07,
@@ -212,21 +209,9 @@ async fn handler_internal(
             .unwrap(),
         );
 
-        // https://github.com/rhinestonewtf/module-sdk/blob/18ef7ca998c0d0a596572f18575e1b4967d9227b/src/module/smart-sessions/constants.ts#L2
-        const SMART_SESSIONS_ADDRESS: Address =
-            address!("82e5e20582d976f5db5e36c5a72c70d5711cef8b");
-
-        let (validator_address, signature) = request
-            .capabilities
-            .permissions
-            .context
-            .split_at_checked(20)
-            .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?;
-
-        let validator_address = Address::from_slice(validator_address);
-        if validator_address != SMART_SESSIONS_ADDRESS {
-            return Err(PrepareCallsError::InvalidPermissionContext);
-        }
+        let (validator_address, signature) = split_permissions_context_and_check_validator(
+            &request.capabilities.permissions.context,
+        )?;
 
         // TODO refactor into yttrium
         let dummy_signature = {
@@ -251,73 +236,14 @@ async fn handler_internal(
             .collect::<Vec<_>>()
             .abi_encode();
 
-            let smart_sessions = ISmartSession::new(SMART_SESSIONS_ADDRESS, provider.clone());
-            let isSessionEnabledReturn {
-                _0: session_enabled,
-            } = smart_sessions
-                .isSessionEnabled(permission_id, request.from.into())
-                .call()
-                .await
-                .map_err(|e| {
-                    PrepareCallsError::InternalError(PrepareCallsInternalError::IsSessionEnabled(e))
-                })?;
-            if session_enabled {
-                let mut compress_state = fastlz_rs::CompressState::new();
-                let compressed = Bytes::from(
-                    compress_state
-                        .compress_to_vec(&signature, fastlz_rs::CompressionLevel::Default)
-                        .map_err(|e| {
-                            PrepareCallsError::InternalError(
-                                PrepareCallsInternalError::CompressSessionEnabled(e),
-                            )
-                        })?,
-                );
-                (Bytes::from([MODE_USE]), permission_id, compressed)
-                    .abi_encode_packed()
-                    .into()
-            } else {
-                let signature = (
-                    enable_session_data.enable_session,
-                    // EnableSession {
-                    //     chainDigestIndex: enable_session_data.enable_session.chainDigestIndex,
-                    //     hashesAndChainIds: enable_session_data.enable_session.hashesAndChainIds,
-                    //     sessionToEnable: enable_session_data.enable_session.sessionToEnable,
-                    //     permissionEnableSig: match account_type {
-                    //         AccountType::Erc7579Implementation
-                    //         | AccountType::Safe
-                    //         | AccountType::Nexus => (
-                    //             enable_session_data.validator,
-                    //             enable_session_data.enable_session.permissionEnableSig,
-                    //         )
-                    //             .abi_encode_packed()
-                    //             .into(),
-                    //         AccountType::Kernel => (
-                    //             [0x01],
-                    //             enable_session_data.validator,
-                    //             enable_session_data.enable_session.permissionEnableSig,
-                    //         )
-                    //             .abi_encode_packed()
-                    //             .into(),
-                    //     },
-                    // },
-                    signature,
-                )
-                    .abi_encode();
-
-                let mut compress_state = fastlz_rs::CompressState::new();
-                let compressed = Bytes::from(
-                    compress_state
-                        .compress_to_vec(&signature, fastlz_rs::CompressionLevel::Default)
-                        .map_err(|e| {
-                            PrepareCallsError::InternalError(
-                                PrepareCallsInternalError::CompressSessionEnabled(e),
-                            )
-                        })?,
-                );
-                (Bytes::from([MODE_ENABLE]), permission_id, compressed)
-                    .abi_encode_packed()
-                    .into()
-            }
+            encode_use_or_enable_smart_session_signature(
+                provider.clone(),
+                permission_id,
+                request.from,
+                signature,
+                enable_session_data,
+            )
+            .await?
         };
 
         // https://github.com/reown-com/web-examples/blob/32f9df464e2fa85ec49c21837d811cfe1437719e/advanced/wallets/react-wallet-v2/src/lib/smart-accounts/builders/SafeUserOpBuilder.ts#L110
@@ -340,6 +266,8 @@ async fn handler_internal(
             .parse()
             .unwrap(),
         ));
+
+        // TODO cache this
         let gas_price = pimlico_client
             .estimate_user_operation_gas_price()
             .await
@@ -366,7 +294,46 @@ async fn handler_internal(
             paymaster_data: None,
             signature: dummy_signature,
         };
-        let hash = user_operation.hash(
+
+        let user_op = {
+            let paymaster_client = PaymasterClient::new(BundlerConfig::new(
+                format!(
+                "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
+                chain_id.caip2_identifier(),
+                state.config.server.testing_project_id.as_ref().unwrap(),
+            )
+                .parse()
+                .unwrap(),
+            ));
+
+            let sponsor_user_op_result = paymaster_client
+                .sponsor_user_operation_v07(
+                    &user_operation.clone().into(),
+                    &entry_point_config.address(),
+                    None,
+                )
+                .await
+                .map_err(|e| {
+                    PrepareCallsError::InternalError(PrepareCallsInternalError::Sponsorship(e))
+                })?;
+
+            UserOperationV07 {
+                call_gas_limit: sponsor_user_op_result.call_gas_limit,
+                verification_gas_limit: sponsor_user_op_result.verification_gas_limit,
+                pre_verification_gas: sponsor_user_op_result.pre_verification_gas,
+                paymaster: Some(sponsor_user_op_result.paymaster),
+                paymaster_verification_gas_limit: Some(
+                    sponsor_user_op_result.paymaster_verification_gas_limit,
+                ),
+                paymaster_post_op_gas_limit: Some(
+                    sponsor_user_op_result.paymaster_post_op_gas_limit,
+                ),
+                paymaster_data: Some(sponsor_user_op_result.paymaster_data),
+                ..user_operation
+            }
+        };
+
+        let hash = user_op.hash(
             &entry_point_config.address().to_address(),
             chain_id.eip155_chain_id(),
         );
@@ -374,7 +341,7 @@ async fn handler_internal(
         response.push(PrepareCallsResponseItem {
             prepared_calls: PreparedCalls {
                 r#type: SignatureRequestType::UserOpV7,
-                data: user_operation,
+                data: user_op,
                 chain_id: request.chain_id,
             },
             signature_request: SignatureRequest { hash },
@@ -383,6 +350,22 @@ async fn handler_internal(
     }
 
     Ok(Json(response).into_response())
+}
+
+pub fn split_permissions_context_and_check_validator(
+    context: &[u8],
+) -> Result<(Address, &[u8]), PrepareCallsError> {
+    // Refactor this into a function
+    let (validator_address, signature) = context
+        .split_at_checked(20)
+        .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?;
+
+    let validator_address = Address::from_slice(validator_address);
+    if validator_address != SMART_SESSIONS_ADDRESS {
+        return Err(PrepareCallsError::InvalidPermissionContext);
+    }
+
+    Ok((validator_address, signature))
 }
 
 fn key_from_validator_address(validator_address: Address) -> U192 {
@@ -395,7 +378,7 @@ fn key_from_validator_address(validator_address: Address) -> U192 {
 
 // https://github.com/rhinestonewtf/module-sdk/blob/18ef7ca998c0d0a596572f18575e1b4967d9227b/src/account/types.ts#L4
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-enum AccountType {
+pub enum AccountType {
     #[serde(rename = "erc7579-implementation")]
     Erc7579Implementation,
 
@@ -409,14 +392,14 @@ enum AccountType {
     Nexus,
 }
 
-struct EnableSessionData {
+pub struct EnableSessionData {
     enable_session: EnableSession,
     // validator: Address,
 }
 
-struct DecodedSmartSessionSignature {
-    permission_id: FixedBytes<32>,
-    enable_session_data: EnableSessionData,
+pub struct DecodedSmartSessionSignature {
+    pub permission_id: FixedBytes<32>,
+    pub enable_session_data: EnableSessionData,
 }
 
 // https://github.com/rhinestonewtf/module-sdk/blob/18ef7ca998c0d0a596572f18575e1b4967d9227b/src/module/smart-sessions/types.ts#L42
@@ -424,8 +407,11 @@ const MODE_USE: u8 = 0x00;
 const MODE_ENABLE: u8 = 0x01;
 const MODE_UNSAFE_ENABLE: u8 = 0x02;
 
+// https://github.com/rhinestonewtf/module-sdk/blob/18ef7ca998c0d0a596572f18575e1b4967d9227b/src/module/smart-sessions/constants.ts#L2
+const SMART_SESSIONS_ADDRESS: Address = address!("82e5e20582d976f5db5e36c5a72c70d5711cef8b");
+
 // https://github.com/rhinestonewtf/module-sdk/blob/18ef7ca998c0d0a596572f18575e1b4967d9227b/src/module/smart-sessions/usage.ts#L209
-fn decode_smart_session_signature(
+pub fn decode_smart_session_signature(
     signature: &[u8],
     _account_type: AccountType,
 ) -> Result<DecodedSmartSessionSignature, PrepareCallsError> {
@@ -486,6 +472,90 @@ fn decode_smart_session_signature(
         }
         _ => Err(PrepareCallsError::PermissionContextInvalidMode),
     }
+}
+
+pub async fn encode_use_or_enable_smart_session_signature<P, T, N>(
+    provider: P,
+    permission_id: FixedBytes<32>,
+    address: AccountAddress,
+    signature: Vec<u8>,
+    enable_session_data: EnableSessionData,
+) -> Result<Bytes, PrepareCallsError>
+where
+    T: Transport + Clone,
+    P: Provider<T, N>,
+    N: Network,
+{
+    let smart_sessions = ISmartSession::new(SMART_SESSIONS_ADDRESS, provider);
+    let isSessionEnabledReturn {
+        _0: session_enabled,
+    } = smart_sessions
+        .isSessionEnabled(permission_id, address.to_address())
+        .call()
+        .await
+        .map_err(|e| {
+            PrepareCallsError::InternalError(PrepareCallsInternalError::IsSessionEnabled(e))
+        })?;
+
+    let signature = if session_enabled {
+        let mut compress_state = fastlz_rs::CompressState::new();
+        let compressed = Bytes::from(
+            compress_state
+                .compress_to_vec(&signature, fastlz_rs::CompressionLevel::Default)
+                .map_err(|e| {
+                    PrepareCallsError::InternalError(
+                        PrepareCallsInternalError::CompressSessionEnabled(e),
+                    )
+                })?,
+        );
+        (Bytes::from([MODE_USE]), permission_id, compressed)
+            .abi_encode_packed()
+            .into()
+    } else {
+        let signature = (
+            enable_session_data.enable_session,
+            // EnableSession {
+            //     chainDigestIndex: enable_session_data.enable_session.chainDigestIndex,
+            //     hashesAndChainIds: enable_session_data.enable_session.hashesAndChainIds,
+            //     sessionToEnable: enable_session_data.enable_session.sessionToEnable,
+            //     permissionEnableSig: match account_type {
+            //         AccountType::Erc7579Implementation
+            //         | AccountType::Safe
+            //         | AccountType::Nexus => (
+            //             enable_session_data.validator,
+            //             enable_session_data.enable_session.permissionEnableSig,
+            //         )
+            //             .abi_encode_packed()
+            //             .into(),
+            //         AccountType::Kernel => (
+            //             [0x01],
+            //             enable_session_data.validator,
+            //             enable_session_data.enable_session.permissionEnableSig,
+            //         )
+            //             .abi_encode_packed()
+            //             .into(),
+            //     },
+            // },
+            signature,
+        )
+            .abi_encode();
+
+        let mut compress_state = fastlz_rs::CompressState::new();
+        let compressed = Bytes::from(
+            compress_state
+                .compress_to_vec(&signature, fastlz_rs::CompressionLevel::Default)
+                .map_err(|e| {
+                    PrepareCallsError::InternalError(
+                        PrepareCallsInternalError::CompressSessionEnabled(e),
+                    )
+                })?,
+        );
+        (Bytes::from([MODE_ENABLE]), permission_id, compressed)
+            .abi_encode_packed()
+            .into()
+    };
+
+    Ok(signature)
 }
 
 enum SignerType {

@@ -74,6 +74,6 @@ pub struct PermissionRevokeRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CoSignRequest {
-    pci: String,
-    user_op: UserOperation,
+    pub pci: String,
+    pub user_op: UserOperation,
 }
