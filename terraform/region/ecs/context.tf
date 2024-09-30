@@ -53,7 +53,6 @@ variable "namespace" {
 #tflint-ignore: terraform_standard_module_structure
 variable "region" {
   type        = string
-  default     = null
   description = "ID element. Usually used for region e.g. 'uw2', 'us-west-2'."
 }
 
