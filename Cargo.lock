@@ -9707,7 +9707,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?branch=fix/more-refactoring#a7701b8925f7140cfad8a70bc3567de90ec38f4f"
+source = "git+https://github.com/reown-com/yttrium.git?rev=5b0c319#5b0c3196dbf203ec1b73cfdfb7cc41d6d82b2414"
 dependencies = [
  "alloy",
  "dotenvy",
