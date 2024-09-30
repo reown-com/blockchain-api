@@ -7,6 +7,9 @@ use super::types::PreparedCalls;
 use crate::analytics::MessageSource;
 use crate::error::RpcError;
 use crate::handlers::sessions::cosign::{self, CoSignQueryParams};
+use crate::handlers::sessions::get::{
+    get_session_context, GetSessionContextError, InternalGetSessionContextError,
+};
 use crate::handlers::sessions::CoSignRequest;
 use crate::utils::crypto::UserOperation;
 use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
@@ -26,6 +29,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use thiserror::Error;
 use tracing::error;
+use uuid::Uuid;
 use wc::future::FutureExt;
 use yttrium::bundler::client::BundlerClient;
 use yttrium::bundler::config::BundlerConfig;
@@ -35,6 +39,12 @@ use yttrium::{
     user_operation::UserOperationV07,
 };
 
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SendPreparedCallsQueryParams {
+    pub project_id: String,
+}
+
 pub type SendPreparedCallsRequest = Vec<SendPreparedCallsRequestItem>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -42,7 +52,7 @@ pub type SendPreparedCallsRequest = Vec<SendPreparedCallsRequestItem>;
 pub struct SendPreparedCallsRequestItem {
     prepared_calls: PreparedCalls,
     signature: Bytes,
-    context: Bytes,
+    context: Uuid,
 }
 
 pub type SendPreparedCallsResponse = Vec<SendPreparedCallsResponseItem>;
@@ -55,21 +65,25 @@ pub struct SendPreparedCallsResponseItem {
 
 #[derive(Error, Debug)]
 pub enum SendPreparedCallsError {
-    #[error("Cosign error: {0}")]
-    Cosign(RpcError),
+    #[error("Invalid project ID: {0}")]
+    InvalidProjectId(RpcError),
 
     #[error("Invalid address")]
     InvalidAddress,
 
     #[error("Invalid chain ID")]
     InvalidChainId,
+    #[error("Cosign error: {0}")]
+    Cosign(RpcError),
+
+    #[error("Permission not found")]
+    PermissionNotFound,
+
+    #[error("PCI not found")]
+    PciNotFound,
 
     #[error("Permission context not long enough")]
     PermissionContextNotLongEnough,
-
-    #[error("Permission context signature decompression error: {0}")]
-    PermissionContextSignatureDecompression(fastlz_rs::DecompressError),
-
     #[error("Unsupported permission context mode: USE")]
     PermissionContextUnsupportedModeUse,
 
@@ -104,6 +118,9 @@ pub enum SendPreparedCallsError {
 
 #[derive(Error, Debug)]
 pub enum SendPreparedCallsInternalError {
+    #[error("IRN not configured")]
+    IrnNotConfigured,
+
     #[error("Cosign: {0}")]
     Cosign(RpcError),
 
@@ -125,6 +142,9 @@ pub enum SendPreparedCallsInternalError {
     #[error("Cosign response signature not hex: {0}")]
     CosignResponseSignatureNotHex(hex::FromHexError),
 
+    #[error("Get session context: {0}")]
+    GetSessionContextError(InternalGetSessionContextError),
+
     #[error("Get nonce: {0}")]
     GetNonce(alloy::contract::Error),
 
@@ -133,10 +153,6 @@ pub enum SendPreparedCallsInternalError {
 
     #[error("isSessionEnabled: {0}")]
     IsSessionEnabled(alloy::contract::Error),
-
-    #[error("Compress session enabled: {0}")]
-    CompressSessionEnabled(fastlz_rs::CompressError),
-
     #[error("SendUserOperation: {0}")]
     SendUserOperation(eyre::Error),
 }
@@ -161,9 +177,10 @@ impl IntoResponse for SendPreparedCallsError {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
+    query: Query<SendPreparedCallsQueryParams>,
     Json(request_payload): Json<SendPreparedCallsRequest>,
 ) -> Result<Response, SendPreparedCallsError> {
-    handler_internal(state, request_payload)
+    handler_internal(state, query, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("wallet_send_prepared_calls"))
         .await
 }
@@ -171,9 +188,14 @@ pub async fn handler(
 #[tracing::instrument(skip(state), level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
+    query: Query<SendPreparedCallsQueryParams>,
     request: SendPreparedCallsRequest,
 ) -> Result<Response, SendPreparedCallsError> {
-    // TODO check project ID query param
+    // TODO refactor to differentiate between user and server errors
+    state
+        .validate_project_access_and_quota(&query.project_id)
+        .await
+        .map_err(SendPreparedCallsError::InvalidProjectId)?;
 
     let mut response = Vec::with_capacity(request.len());
     for request in request {
@@ -213,14 +235,14 @@ async fn handler_internal(
                                     .prepared_calls
                                     .data
                                     .call_gas_limit
-                                    .to_be_bytes::<256>()[16..],
+                                    .to_be_bytes::<32>()[16..],
                             ),
                             verification_gas_limit: ethers::types::U128::from(
                                 &request
                                     .prepared_calls
                                     .data
                                     .verification_gas_limit
-                                    .to_be_bytes::<256>()[16..],
+                                    .to_be_bytes::<32>()[16..],
                             ),
                             pre_verification_gas: ethers::types::U256::from(
                                 &request
@@ -234,14 +256,14 @@ async fn handler_internal(
                                     .prepared_calls
                                     .data
                                     .max_priority_fee_per_gas
-                                    .to_be_bytes::<256>()[16..],
+                                    .to_be_bytes::<32>()[16..],
                             ),
                             max_fee_per_gas: ethers::types::U128::from(
                                 &request
                                     .prepared_calls
                                     .data
                                     .max_fee_per_gas
-                                    .to_be_bytes::<256>()[16..],
+                                    .to_be_bytes::<32>()[16..],
                             ),
                             signature: ethers::types::Bytes::from(request.signature.to_vec()),
                             factory: request
@@ -261,8 +283,7 @@ async fn handler_internal(
                                 .paymaster_verification_gas_limit
                                 .map(|paymaster_verification_gas_limit| {
                                     ethers::types::U128::from(
-                                        &paymaster_verification_gas_limit.to_be_bytes::<256>()
-                                            [16..],
+                                        &paymaster_verification_gas_limit.to_be_bytes::<32>()[16..],
                                     )
                                 }),
                             paymaster_post_op_gas_limit: request
@@ -271,7 +292,7 @@ async fn handler_internal(
                                 .paymaster_post_op_gas_limit
                                 .map(|paymaster_post_op_gas_limit| {
                                     ethers::types::U128::from(
-                                        &paymaster_post_op_gas_limit.to_be_bytes::<256>()[16..],
+                                        &paymaster_post_op_gas_limit.to_be_bytes::<32>()[16..],
                                     )
                                 }),
                             paymaster_data: request.prepared_calls.data.paymaster_data.clone().map(
@@ -319,7 +340,8 @@ async fn handler_internal(
                 .as_str()
                 .ok_or(SendPreparedCallsError::InternalError(
                     SendPreparedCallsInternalError::CosignResponseSignatureNotString,
-                ))?,
+                ))?
+                .trim_start_matches("0x"),
             )
             .map_err(|e| {
                 SendPreparedCallsError::InternalError(
@@ -352,15 +374,43 @@ async fn handler_internal(
             format!(
                 "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",
                 chain_id.caip2_identifier(),
-                state.config.server.testing_project_id.as_ref().unwrap(),
-                MessageSource::WalletPrepareCalls,
+                query.project_id,
+                MessageSource::WalletSendPreparedCalls,
             )
             .parse()
             .unwrap(),
         );
 
+        let irn_client = state
+            .irn
+            .as_ref()
+            .ok_or(SendPreparedCallsError::InternalError(
+                SendPreparedCallsInternalError::IrnNotConfigured,
+            ))?;
+        let context = get_session_context(
+            format!(
+                "{}:{}",
+                chain_id.caip2_identifier(),
+                request.prepared_calls.data.sender
+            ),
+            request.context,
+            irn_client,
+            &state.metrics,
+        )
+        .await
+        .map_err(|e| match e {
+            GetSessionContextError::PermissionNotFound(_, _) => {
+                SendPreparedCallsError::PermissionNotFound
+            }
+            GetSessionContextError::InternalGetSessionContextError(e) => {
+                SendPreparedCallsError::InternalError(
+                    SendPreparedCallsInternalError::GetSessionContextError(e),
+                )
+            }
+        })?
+        .ok_or(SendPreparedCallsError::PciNotFound)?;
         let (_validator_address, signature) =
-            split_permissions_context_and_check_validator(&request.context)
+            split_permissions_context_and_check_validator(&context)
                 .map_err(SendPreparedCallsError::SplitPermissionsContextAndCheckValidator)?;
 
         let DecodedSmartSessionSignature {
@@ -373,6 +423,7 @@ async fn handler_internal(
             provider.clone(),
             permission_id,
             request.prepared_calls.data.sender,
+            account_type,
             cosign_signature,
             enable_session_data,
         )
@@ -386,10 +437,11 @@ async fn handler_internal(
 
         // TODO refactor to use bundler_rpc_call directly: https://github.com/WalletConnect/blockchain-api/blob/8be3ca5b08dec2387ee2c2ffcb4b7ca739443bcb/src/handlers/bundler.rs#L62
         let bundler_client = BundlerClient::new(BundlerConfig::new(
+            // "https://api.pimlico.io/v2/84532/rpc?apikey=pim_CNm9dEo4QHQAJ3fU3RyPzG"
             format!(
                 "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
                 chain_id.caip2_identifier(),
-                state.config.server.testing_project_id.as_ref().unwrap(),
+                query.project_id,
             )
             .parse()
             .unwrap(),

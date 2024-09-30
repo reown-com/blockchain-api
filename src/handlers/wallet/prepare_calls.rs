@@ -1,5 +1,9 @@
 use super::types::PreparedCalls;
 use crate::analytics::MessageSource;
+use crate::error::RpcError;
+use crate::handlers::sessions::get::{
+    get_session_context, GetSessionContextError, InternalGetSessionContextError,
+};
 use crate::handlers::wallet::types::SignatureRequestType;
 use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
 use alloy::network::{Ethereum, Network};
@@ -9,6 +13,7 @@ use alloy::providers::{Provider, ReqwestProvider};
 use alloy::sol_types::SolCall;
 use alloy::sol_types::SolValue;
 use alloy::transports::Transport;
+use axum::extract::Query;
 use axum::{
     extract::State,
     response::{IntoResponse, Response},
@@ -20,6 +25,7 @@ use std::sync::Arc;
 use thiserror::Error;
 use tracing::error;
 use url::Url;
+use uuid::Uuid;
 use wc::future::FutureExt;
 use yttrium::bundler::pimlico::paymaster::client::PaymasterClient;
 use yttrium::erc7579::smart_sessions::ISmartSession::isSessionEnabledReturn;
@@ -33,6 +39,12 @@ use yttrium::{
     transaction::Transaction,
     user_operation::{user_operation_hash::UserOperationHash, UserOperationV07},
 };
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PrepareCallsQueryParams {
+    pub project_id: String,
+}
 
 pub type PrepareCallsRequest = Vec<PrepareCallsRequestItem>;
 
@@ -55,7 +67,7 @@ pub struct Capabilities {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Permissions {
-    context: Bytes,
+    context: Uuid,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -71,7 +83,7 @@ pub type PrepareCallsResponse = Vec<PrepareCallsResponseItem>;
 pub struct PrepareCallsResponseItem {
     prepared_calls: PreparedCalls,
     signature_request: SignatureRequest,
-    context: Bytes,
+    context: Uuid,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -82,11 +94,20 @@ pub struct SignatureRequest {
 
 #[derive(Error, Debug)]
 pub enum PrepareCallsError {
+    #[error("Invalid project ID: {0}")]
+    InvalidProjectId(RpcError),
+
     #[error("Invalid address")]
     InvalidAddress,
 
     #[error("Invalid chain ID")]
     InvalidChainId,
+
+    #[error("Permission not found")]
+    PermissionNotFound,
+
+    #[error("PCI not found")]
+    PciNotFound,
 
     #[error("Permission context not long enough")]
     PermissionContextNotLongEnough,
@@ -132,6 +153,12 @@ pub enum PrepareCallsInternalError {
 
     #[error("Sponsorship: {0}")]
     Sponsorship(eyre::Error),
+
+    #[error("IRN not configured")]
+    IrnNotConfigured,
+
+    #[error("Get session context: {0}")]
+    GetSessionContextError(InternalGetSessionContextError),
 }
 
 impl IntoResponse for PrepareCallsError {
@@ -154,9 +181,10 @@ impl IntoResponse for PrepareCallsError {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
+    query: Query<PrepareCallsQueryParams>,
     Json(request_payload): Json<PrepareCallsRequest>,
 ) -> Result<Response, PrepareCallsError> {
-    handler_internal(state, request_payload)
+    handler_internal(state, query, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("wallet_prepare_calls"))
         .await
 }
@@ -164,9 +192,14 @@ pub async fn handler(
 #[tracing::instrument(skip(state), level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
+    query: Query<PrepareCallsQueryParams>,
     request: PrepareCallsRequest,
 ) -> Result<Response, PrepareCallsError> {
-    // TODO check project ID query param
+    // TODO refactor to differentiate between user and server errors
+    state
+        .validate_project_access_and_quota(&query.project_id)
+        .await
+        .map_err(PrepareCallsError::InvalidProjectId)?;
 
     let mut response = Vec::with_capacity(request.len());
     for request in request {
@@ -202,49 +235,40 @@ async fn handler_internal(
             format!(
                 "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",
                 chain_id.caip2_identifier(),
-                state.config.server.testing_project_id.as_ref().unwrap(),
+                query.project_id,
                 MessageSource::WalletPrepareCalls,
             )
             .parse()
             .unwrap(),
         );
 
-        let (validator_address, signature) = split_permissions_context_and_check_validator(
-            &request.capabilities.permissions.context,
-        )?;
+        let irn_client = state.irn.as_ref().ok_or(PrepareCallsError::InternalError(
+            PrepareCallsInternalError::IrnNotConfigured,
+        ))?;
+        let context = get_session_context(
+            format!("{}:{}", chain_id.caip2_identifier(), request.from),
+            request.capabilities.permissions.context,
+            irn_client,
+            &state.metrics,
+        )
+        .await
+        .map_err(|e| match e {
+            GetSessionContextError::PermissionNotFound(_, _) => {
+                PrepareCallsError::PermissionNotFound
+            }
+            GetSessionContextError::InternalGetSessionContextError(e) => {
+                PrepareCallsError::InternalError(PrepareCallsInternalError::GetSessionContextError(
+                    e,
+                ))
+            }
+        })?
+        .ok_or(PrepareCallsError::PciNotFound)?;
+        let (validator_address, signature) =
+            split_permissions_context_and_check_validator(&context)?;
 
         // TODO refactor into yttrium
-        let dummy_signature = {
-            let DecodedSmartSessionSignature {
-                permission_id,
-                enable_session_data,
-            } = decode_smart_session_signature(signature, account_type)?;
-
-            const DUMMY_ECDSA_SIGNATURE: Bytes = bytes!("e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c");
-            let signature = decode_signers(
-                enable_session_data
-                    .enable_session
-                    .sessionToEnable
-                    .sessionValidatorInitData
-                    .clone(),
-            )?
-            .into_iter()
-            .map(|t| match t {
-                SignerType::Ecdsa => DUMMY_ECDSA_SIGNATURE,
-                SignerType::Passkey => bytes!(""),
-            })
-            .collect::<Vec<_>>()
-            .abi_encode();
-
-            encode_use_or_enable_smart_session_signature(
-                provider.clone(),
-                permission_id,
-                request.from,
-                signature,
-                enable_session_data,
-            )
-            .await?
-        };
+        let dummy_signature =
+            get_dummy_signature(request.from, signature, account_type, provider.clone()).await?;
 
         // https://github.com/reown-com/web-examples/blob/32f9df464e2fa85ec49c21837d811cfe1437719e/advanced/wallets/react-wallet-v2/src/lib/smart-accounts/builders/SafeUserOpBuilder.ts#L110
         let nonce = get_nonce_with_key(
@@ -261,7 +285,7 @@ async fn handler_internal(
             format!(
                 "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
                 chain_id.caip2_identifier(),
-                state.config.server.testing_project_id.as_ref().unwrap(),
+                query.project_id,
             )
             .parse()
             .unwrap(),
@@ -283,9 +307,9 @@ async fn handler_internal(
             factory: None,
             factory_data: None,
             call_data: get_call_data(request.calls),
-            call_gas_limit: U256::from(2000000),
-            verification_gas_limit: U256::from(2000000),
-            pre_verification_gas: U256::from(2000000),
+            call_gas_limit: U256::ZERO,
+            verification_gas_limit: U256::ZERO,
+            pre_verification_gas: U256::ZERO,
             max_fee_per_gas: gas_price.fast.max_fee_per_gas,
             max_priority_fee_per_gas: gas_price.fast.max_priority_fee_per_gas,
             paymaster: None,
@@ -298,10 +322,10 @@ async fn handler_internal(
         let user_op = {
             let paymaster_client = PaymasterClient::new(BundlerConfig::new(
                 format!(
-                "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
-                chain_id.caip2_identifier(),
-                state.config.server.testing_project_id.as_ref().unwrap(),
-            )
+                    "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
+                    chain_id.caip2_identifier(),
+                    query.project_id,
+                )
                 .parse()
                 .unwrap(),
             ));
@@ -355,7 +379,6 @@ async fn handler_internal(
 pub fn split_permissions_context_and_check_validator(
     context: &[u8],
 ) -> Result<(Address, &[u8]), PrepareCallsError> {
-    // Refactor this into a function
     let (validator_address, signature) = context
         .split_at_checked(20)
         .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?;
@@ -394,7 +417,7 @@ pub enum AccountType {
 
 pub struct EnableSessionData {
     enable_session: EnableSession,
-    // validator: Address,
+    validator: Address,
 }
 
 pub struct DecodedSmartSessionSignature {
@@ -413,7 +436,7 @@ const SMART_SESSIONS_ADDRESS: Address = address!("82e5e20582d976f5db5e36c5a72c70
 // https://github.com/rhinestonewtf/module-sdk/blob/18ef7ca998c0d0a596572f18575e1b4967d9227b/src/module/smart-sessions/usage.ts#L209
 pub fn decode_smart_session_signature(
     signature: &[u8],
-    _account_type: AccountType,
+    account_type: AccountType,
 ) -> Result<DecodedSmartSessionSignature, PrepareCallsError> {
     let mode = signature
         .first()
@@ -442,31 +465,31 @@ pub fn decode_smart_session_signature(
                 signature: _,
             } = enableSessionSigCall::abi_decode_raw(&data, true)
                 .map_err(PrepareCallsError::PermissionContextAbiDecode)?;
-            // let is_kernel = account_type == AccountType::Kernel;
-            // if is_kernel && enable_session.permissionEnableSig.starts_with(&[0x01]) {
-            //     return Err(
-            //         PrepareCallsError::PermissionContextInvalidPermissionEnableSigForKernelAccount,
-            //     );
-            // }
+            let is_kernel = account_type == AccountType::Kernel;
+            if is_kernel && enable_session.permissionEnableSig.starts_with(&[0x01]) {
+                return Err(
+                    PrepareCallsError::PermissionContextInvalidPermissionEnableSigForKernelAccount,
+                );
+            }
 
-            // let permission_enable_sig =
-            //     &enable_session.permissionEnableSig[if is_kernel { 1 } else { 0 }..];
-            // let (validator, permission_enable_sig) = permission_enable_sig
-            //     .split_at_checked(20)
-            //     .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?;
-            // let validator = Address::from_slice(validator);
+            let (validator, permission_enable_sig) = enable_session.permissionEnableSig
+                [if is_kernel { 1 } else { 0 }..]
+                .split_at_checked(20)
+                .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?;
+            let validator = Address::from_slice(validator);
+            let permission_enable_sig = permission_enable_sig.to_vec().into();
 
             Ok(DecodedSmartSessionSignature {
                 permission_id,
                 enable_session_data: EnableSessionData {
-                    enable_session,
-                    // enable_session: EnableSession {
-                    //     chainDigestIndex: enable_session.chainDigestIndex,
-                    //     hashesAndChainIds: enable_session.hashesAndChainIds,
-                    //     sessionToEnable: enable_session.sessionToEnable,
-                    //     permissionEnableSig: permission_enable_sig.into(), // TODO skip all this and just pass-through as-is
-                    // },
-                    // validator,
+                    // enable_session,
+                    enable_session: EnableSession {
+                        chainDigestIndex: enable_session.chainDigestIndex,
+                        hashesAndChainIds: enable_session.hashesAndChainIds,
+                        sessionToEnable: enable_session.sessionToEnable,
+                        permissionEnableSig: permission_enable_sig, // TODO skip all this and just pass-through as-is
+                    },
+                    validator,
                 },
             })
         }
@@ -478,6 +501,7 @@ pub async fn encode_use_or_enable_smart_session_signature<P, T, N>(
     provider: P,
     permission_id: FixedBytes<32>,
     address: AccountAddress,
+    account_type: AccountType,
     signature: Vec<u8>,
     enable_session_data: EnableSessionData,
 ) -> Result<Bytes, PrepareCallsError>
@@ -498,64 +522,88 @@ where
         })?;
 
     let signature = if session_enabled {
-        let mut compress_state = fastlz_rs::CompressState::new();
-        let compressed = Bytes::from(
-            compress_state
-                .compress_to_vec(&signature, fastlz_rs::CompressionLevel::Default)
-                .map_err(|e| {
-                    PrepareCallsError::InternalError(
-                        PrepareCallsInternalError::CompressSessionEnabled(e),
-                    )
-                })?,
-        );
-        (Bytes::from([MODE_USE]), permission_id, compressed)
-            .abi_encode_packed()
-            .into()
+        encode_use_signature(permission_id, signature)?
     } else {
-        let signature = (
-            enable_session_data.enable_session,
-            // EnableSession {
-            //     chainDigestIndex: enable_session_data.enable_session.chainDigestIndex,
-            //     hashesAndChainIds: enable_session_data.enable_session.hashesAndChainIds,
-            //     sessionToEnable: enable_session_data.enable_session.sessionToEnable,
-            //     permissionEnableSig: match account_type {
-            //         AccountType::Erc7579Implementation
-            //         | AccountType::Safe
-            //         | AccountType::Nexus => (
-            //             enable_session_data.validator,
-            //             enable_session_data.enable_session.permissionEnableSig,
-            //         )
-            //             .abi_encode_packed()
-            //             .into(),
-            //         AccountType::Kernel => (
-            //             [0x01],
-            //             enable_session_data.validator,
-            //             enable_session_data.enable_session.permissionEnableSig,
-            //         )
-            //             .abi_encode_packed()
-            //             .into(),
-            //     },
-            // },
-            signature,
-        )
-            .abi_encode();
-
-        let mut compress_state = fastlz_rs::CompressState::new();
-        let compressed = Bytes::from(
-            compress_state
-                .compress_to_vec(&signature, fastlz_rs::CompressionLevel::Default)
-                .map_err(|e| {
-                    PrepareCallsError::InternalError(
-                        PrepareCallsInternalError::CompressSessionEnabled(e),
-                    )
-                })?,
-        );
-        (Bytes::from([MODE_ENABLE]), permission_id, compressed)
-            .abi_encode_packed()
-            .into()
+        encode_enable_signature(permission_id, account_type, signature, enable_session_data)?
     };
 
     Ok(signature)
+}
+
+fn encode_use_signature(
+    permission_id: FixedBytes<32>,
+    signature: Vec<u8>,
+) -> Result<Bytes, PrepareCallsError> {
+    let signature = signature.abi_encode();
+    let mut compress_state = fastlz_rs::CompressState::new();
+    let compressed = Bytes::from(
+        compress_state
+            .compress_to_vec(&signature, fastlz_rs::CompressionLevel::Level1)
+            .map_err(|e| {
+                PrepareCallsError::InternalError(PrepareCallsInternalError::CompressSessionEnabled(
+                    e,
+                ))
+            })?,
+    );
+    Ok((FixedBytes::from(MODE_USE), permission_id, compressed)
+        .abi_encode_packed()
+        .into())
+}
+
+fn encode_enable_signature_before_compress(
+    account_type: AccountType,
+    signature: Vec<u8>,
+    enable_session_data: EnableSessionData,
+) -> Vec<u8> {
+    (
+        // enable_session_data.enable_session,
+        EnableSession {
+            chainDigestIndex: enable_session_data.enable_session.chainDigestIndex,
+            hashesAndChainIds: enable_session_data.enable_session.hashesAndChainIds,
+            sessionToEnable: enable_session_data.enable_session.sessionToEnable,
+            permissionEnableSig: match account_type {
+                AccountType::Erc7579Implementation | AccountType::Safe | AccountType::Nexus => (
+                    enable_session_data.validator,
+                    enable_session_data.enable_session.permissionEnableSig,
+                )
+                    .abi_encode_packed()
+                    .into(),
+                AccountType::Kernel => (
+                    [0x01],
+                    enable_session_data.validator,
+                    enable_session_data.enable_session.permissionEnableSig,
+                )
+                    .abi_encode_packed()
+                    .into(),
+            },
+        },
+        signature,
+    )
+        .abi_encode_params()
+}
+
+fn encode_enable_signature(
+    permission_id: FixedBytes<32>,
+    account_type: AccountType,
+    signature: Vec<u8>,
+    enable_session_data: EnableSessionData,
+) -> Result<Bytes, PrepareCallsError> {
+    let signature =
+        encode_enable_signature_before_compress(account_type, signature, enable_session_data);
+
+    let mut compress_state = fastlz_rs::CompressState::new();
+    let compressed = Bytes::from(
+        compress_state
+            .compress_to_vec(&signature, fastlz_rs::CompressionLevel::Default)
+            .map_err(|e| {
+                PrepareCallsError::InternalError(PrepareCallsInternalError::CompressSessionEnabled(
+                    e,
+                ))
+            })?,
+    );
+    Ok((FixedBytes::from(MODE_ENABLE), permission_id, compressed)
+        .abi_encode_packed()
+        .into())
 }
 
 enum SignerType {
@@ -588,10 +636,56 @@ fn decode_signers(data: Bytes) -> Result<Vec<SignerType>, PrepareCallsError> {
     Ok(signers)
 }
 
+async fn get_dummy_signature<P, T, N>(
+    address: AccountAddress,
+    signature: &[u8],
+    account_type: AccountType,
+    provider: P,
+) -> Result<Bytes, PrepareCallsError>
+where
+    T: Transport + Clone,
+    P: Provider<T, N>,
+    N: Network,
+{
+    let DecodedSmartSessionSignature {
+        permission_id,
+        enable_session_data,
+    } = decode_smart_session_signature(signature, account_type)?;
+
+    const DUMMY_ECDSA_SIGNATURE: Bytes = bytes!("e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c");
+    let signature = decode_signers(
+        enable_session_data
+            .enable_session
+            .sessionToEnable
+            .sessionValidatorInitData
+            .clone(),
+    )?
+    .into_iter()
+    .map(|t| match t {
+        SignerType::Ecdsa => DUMMY_ECDSA_SIGNATURE,
+        SignerType::Passkey => bytes!(""),
+    })
+    .collect::<Vec<_>>()
+    .abi_encode();
+
+    encode_use_or_enable_smart_session_signature(
+        provider,
+        permission_id,
+        address,
+        account_type,
+        signature,
+        enable_session_data,
+    )
+    .await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloy::primitives::bytes;
+    use alloy::primitives::{bytes, fixed_bytes};
+    use yttrium::erc7579::smart_sessions::{
+        ActionData, ChainDigest, ERC7739Data, PolicyData, Session,
+    };
 
     #[test]
     fn test_key_from_validator_address() {
@@ -600,6 +694,106 @@ mod tests {
         assert_eq!(
             key.to_be_bytes_vec(),
             bytes!("abababababababababababababababababababab00000000").to_vec()
+        );
+    }
+
+    #[test]
+    fn test_encode_use_signature() {
+        assert_eq!(
+            encode_use_signature(
+                fixed_bytes!("2ec3eb29f3b075c8fed3fb0585947b5f1ae50c2fbe2f8274918bed889f69e342"),
+                bytes!("00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c00000000000000000000000000000000000000000000000000000000000000").to_vec()
+            ).unwrap(),
+            bytes!("002ec3eb29f3b075c8fed3fb0585947b5f1ae50c2fbe2f8274918bed889f69e3420000e015000020e0151e010180e0151fe0173f0100022003e013000040e0131c200000c02003e013001f41e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfc1fb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839a01f51ce0135de01900e0587f"),
+        );
+    }
+
+    #[test]
+    fn test_encode_enable_signature_before_compress() {
+        assert_eq!(
+            Bytes::from(encode_enable_signature_before_compress(
+                AccountType::Safe,
+                bytes!("00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c00000000000000000000000000000000000000000000000000000000000000").to_vec(),
+                EnableSessionData {
+                    enable_session: EnableSession {
+                        chainDigestIndex: 0,
+                        hashesAndChainIds: vec![ChainDigest {
+                            chainId: 84532,
+                            sessionDigest: fixed_bytes!("d921018061556bee2f63850c0762c9e7af9ad05895078ad8287f4cadc56f347a"),
+                        }],
+                        sessionToEnable: Session {
+                            sessionValidator: address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F"),
+                            sessionValidatorInitData: bytes!("020079b1cf6cb04b0e7a626c98053b3ad29d3a93527700bae0435ac2bccb87c2ef2db5e215fac4dec876f4"),
+                            salt: fixed_bytes!("3100000000000000000000000000000000000000000000000000000000000000"),
+                            userOpPolicies: vec![],
+                            erc7739Policies: ERC7739Data {
+                                allowedERC7739Content: vec![],
+                                erc1271Policies: vec![],
+                            },
+                            actions: vec![
+                                ActionData {
+                                    actionTargetSelector: fixed_bytes!("efef39a1"),
+                                    actionTarget: address!("2E65BAfA07238666c3b239E94F32DaD3cDD6498D"),
+                                    actionPolicies: vec![
+                                        PolicyData {
+                                            policy: address!("9A6c4974dcE237E01Ff35c602CA9555a3c0Fa5EF"),
+                                            initData: bytes!("00000000000000000000000066f8671c00000000000000000000000000000000"),
+                                        }
+                                    ],
+                                }
+                            ],
+                        },
+                        permissionEnableSig: bytes!("821a568f5940148c20779e18f7fa0547c4f53f388eb684678f92774152a728a73be1f82e3f3f37a54f20e686e2a9711c280871aef1f7aa796b790ade00c0f01020"),
+                    },
+                    validator: address!("9388056f9cecfa536e70649154db93485a1f3448"),
+                }
+            )),
+            bytes!("000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000004c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000014a34d921018061556bee2f63850c0762c9e7af9ad05895078ad8287f4cadc56f347a000000000000000000000000207b90941d9cff79a750c1e5c05ddaa17ea01b9f00000000000000000000000000000000000000000000000000000000000000c031000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000001c0000000000000000000000000000000000000000000000000000000000000002b020079b1cf6cb04b0e7a626c98053b3ad29d3a93527700bae0435ac2bccb87c2ef2db5e215fac4dec876f40000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020efef39a1000000000000000000000000000000000000000000000000000000000000000000000000000000002e65bafa07238666c3b239e94f32dad3cdd6498d0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000009a6c4974dce237e01ff35c602ca9555a3c0fa5ef0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000002000000000000000000000000066f8671c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000559388056f9cecfa536e70649154db93485a1f3448821a568f5940148c20779e18f7fa0547c4f53f388eb684678f92774152a728a73be1f82e3f3f37a54f20e686e2a9711c280871aef1f7aa796b790ade00c0f010200000000000000000000000000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c00000000000000000000000000000000000000000000000000000000000000"),
+        );
+    }
+
+    #[test]
+    fn test_encode_enable_signature() {
+        assert_eq!(
+            encode_enable_signature(
+                fixed_bytes!("2ec3eb29f3b075c8fed3fb0585947b5f1ae50c2fbe2f8274918bed889f69e342"),
+                AccountType::Safe,
+                bytes!("00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c00000000000000000000000000000000000000000000000000000000000000").to_vec(),
+                EnableSessionData {
+                    enable_session: EnableSession {
+                        chainDigestIndex: 0,
+                        hashesAndChainIds: vec![ChainDigest {
+                            chainId: 84532,
+                            sessionDigest: fixed_bytes!("64b2d184c4b8517d7f2f59bab7e6269b6aa524e268fcd1eec34a9c8e27d7389f"),
+                        }],
+                        sessionToEnable: Session {
+                            sessionValidator: address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F"),
+                            sessionValidatorInitData: bytes!("02001b60aa8eb31e11c41279f6a102026edeeb848ec600bae0435ac2bccb87c2ef2db5e215fac4dec876f4"),
+                            salt: fixed_bytes!("3100000000000000000000000000000000000000000000000000000000000000"),
+                            userOpPolicies: vec![],
+                            erc7739Policies: ERC7739Data {
+                                allowedERC7739Content: vec![],
+                                erc1271Policies: vec![],
+                            },
+                            actions: vec![
+                                ActionData {
+                                    actionTargetSelector: fixed_bytes!("efef39a1"),
+                                    actionTarget: address!("2E65BAfA07238666c3b239E94F32DaD3cDD6498D"),
+                                    actionPolicies: vec![
+                                        PolicyData {
+                                            policy: address!("9A6c4974dcE237E01Ff35c602CA9555a3c0Fa5EF"),
+                                            initData: bytes!("00000000000000000000000066f864d500000000000000000000000000000000"),
+                                        }
+                                    ],
+                                }
+                            ],
+                        },
+                        permissionEnableSig: bytes!("f0c9cba469e26f15ae4c098ff1b474b48673bb75d32e7e360391cb6e6db11c931dcc81986a86b380fcd480464b5f504fd5fa527fd9437e46ea75098adce216c81f"),
+                    },
+                    validator: address!("9388056f9cecfa536e70649154db93485a1f3448"),
+                }
+            ).unwrap(),
+            bytes!("012ec3eb29f3b075c8fed3fb0585947b5f1ae50c2fbe2f8274918bed889f69e3420000e015000040e0151e0104c0e0151fe018000080e0162100e0e0151f0004e0151e020000012003e011001f014a3464b2d184c4b8517d7f2f59bab7e6269b6aa524e268fcd1eec34a9c8e2702d7389fe0033c12207b90941d9cff79a750c1e5c05ddaa17ea01be0041fe00a0001c031e00a14e02100010120e0152b0001e1169f0001e1179f1f2b02001b60aa8eb31e11c41279f6a102026edeeb848ec600bae0435ac2bccb870bc2ef2db5e215fac4dec876f4e0158ae02d00e016bf0100602003e05300e2151f21f203efef39a12007e01c00132e65bafa07238666c3b239e94f32dad3cdd6498de01638e017dfe0189fe0035f139a6c4974dce237e01ff35c602ca9555a3c0fa5efe0031fe00a00e1177fe0045f0366f864d5e00a43e013001f559388056f9cecfa536e70649154db93485a1f3448f0c9cba469e26f15ae4c091f8ff1b474b48673bb75d32e7e360391cb6e6db11c931dcc81986a86b380fcd48015464b5f504fd5fa527fd9437e46ea75098adce216c81fe01371e004000001e4175fe004dfe00a000002e00a13e00300e1173fe3177f1f41e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfc1fb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839a01f51ce0038de02900e0587f"),
         );
     }
 }

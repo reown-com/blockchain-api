@@ -1,9 +1,16 @@
 use {
     super::{super::HANDLER_TASK_METRICS, GetPermissionsRequest, StoragePermissionsItem},
     crate::{
-        error::RpcError, state::AppState, storage::irn::OperationType,
+        error::RpcError,
+        metrics::Metrics,
+        state::AppState,
+        storage::{
+            error::StorageError,
+            irn::{Irn, OperationType},
+        },
         utils::crypto::disassemble_caip10,
     },
+    alloy::primitives::Bytes,
     axum::{
         extract::{Path, State},
         response::{IntoResponse, Response},
@@ -11,6 +18,7 @@ use {
     },
     serde_json::json,
     std::{sync::Arc, time::SystemTime},
+    uuid::Uuid,
     wc::future::FutureExt,
 };
 
@@ -33,18 +41,68 @@ async fn handler_internal(
     // Checking the CAIP-10 address format
     disassemble_caip10(&request.address)?;
 
-    let irn_call_start = SystemTime::now();
-    let storage_permissions_item = irn_client
-        .hget(request.address.clone(), request.pci.clone())
-        .await?
-        .ok_or_else(|| RpcError::PermissionNotFound(request.address.clone(), request.pci))?;
-    state
-        .metrics
-        .add_irn_latency(irn_call_start, OperationType::Hget);
-    let storage_permissions_item =
-        serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
+    let context = get_session_context(
+        request.address.clone(),
+        request.pci,
+        irn_client,
+        &state.metrics,
+    )
+    .await
+    .map_err(|e| match e {
+        GetSessionContextError::PermissionNotFound(address, pci) => {
+            RpcError::PermissionNotFound(address.to_string(), pci.to_string())
+        }
+        GetSessionContextError::InternalGetSessionContextError(e) => {
+            RpcError::InternalGetSessionContextError(e)
+        }
+    })?;
 
-    let response = json!({"context": storage_permissions_item.context});
+    let response = json!({"context": context});
 
     Ok(Json(response).into_response())
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum GetSessionContextError {
+    #[error("Permission not found for address {0} and PCI {1}")]
+    PermissionNotFound(String, Uuid),
+
+    #[error("Internal error: {0}")]
+    InternalGetSessionContextError(InternalGetSessionContextError),
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum InternalGetSessionContextError {
+    #[error("Storage: {0}")]
+    Storage(StorageError),
+
+    #[error("Deserializing: {0}")]
+    Deserializing(serde_json::Error),
+}
+
+pub async fn get_session_context(
+    address: String,
+    pci: Uuid,
+    irn_client: &Irn,
+    metrics: &Metrics,
+) -> Result<Option<Bytes>, GetSessionContextError> {
+    let irn_call_start = SystemTime::now();
+    let storage_permissions_item = irn_client
+        .hget(address.clone(), pci.to_string())
+        .await
+        .map_err(|e| {
+            GetSessionContextError::InternalGetSessionContextError(
+                InternalGetSessionContextError::Storage(e),
+            )
+        })?
+        .ok_or_else(|| GetSessionContextError::PermissionNotFound(address, pci))?;
+    metrics.add_irn_latency(irn_call_start, OperationType::Hget);
+
+    let storage_permissions_item =
+        serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item).map_err(|e| {
+            GetSessionContextError::InternalGetSessionContextError(
+                InternalGetSessionContextError::Deserializing(e),
+            )
+        })?;
+    Ok(storage_permissions_item.context)
 }
