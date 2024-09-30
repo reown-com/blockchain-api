@@ -1,7 +1,9 @@
 use {
     crate::{
-        project::ProjectDataError, storage::error::StorageError, utils::crypto::CaipNamespaces,
-        utils::crypto::CryptoUitlsError,
+        handlers::sessions::get::InternalGetSessionContextError,
+        project::ProjectDataError,
+        storage::error::StorageError,
+        utils::crypto::{CaipNamespaces, CryptoUitlsError},
     },
     axum::{response::IntoResponse, Json},
     cerberus::registry::RegistryError,
@@ -192,8 +194,11 @@ pub enum RpcError {
     #[error("IRN client is not configured")]
     IrnNotConfigured,
 
-    #[error("Permission for PCI is not found: {0}")]
+    #[error("Permission for PCI is not found: {0} {1}")]
     PermissionNotFound(String, String),
+
+    #[error("Internal permissions get context error: {0}")]
+    InternalGetSessionContextError(InternalGetSessionContextError),
 
     #[error("Wrong Base64 format: {0}")]
     WrongBase64Format(String),

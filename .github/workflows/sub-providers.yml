@@ -77,10 +77,10 @@ jobs:
           token: ${{ secrets.PRIVATE_SUBMODULE_ACCESS_TOKEN || github.token }}
           submodules: recursive
 
-      - name: "Install Rust ${{ vars.RUST_VERSION }}"
+      - name: "Install Rust stable"
         uses: WalletConnect/actions-rs/toolchain@1.0.0
         with:
-          toolchain: ${{ vars.RUST_VERSION }}
+          toolchain: stable
           profile: 'default'
           override: true
 

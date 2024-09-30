@@ -52,6 +52,7 @@ jobs:
       check-app: ${{ needs.paths-filter.outputs.app == 'true' }}
       check-infra: ${{ needs.paths-filter.outputs.infra == 'true' }}
       check-udeps: false
+      rust-toolchain: stable
 
   merge_check:
     name: Merge Check

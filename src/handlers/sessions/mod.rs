@@ -1,7 +1,9 @@
 use {
     crate::utils::crypto::UserOperation,
+    alloy::primitives::Bytes,
     serde::{Deserialize, Serialize},
     serde_json::Value,
+    uuid::Uuid,
 };
 
 pub mod context;
@@ -29,7 +31,7 @@ pub struct PermissionTypeData {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GetPermissionsRequest {
     address: String,
-    pci: String,
+    pci: Uuid,
 }
 
 /// Permissions Context item schema
@@ -41,7 +43,7 @@ pub struct ActivatePermissionPayload {
     pub signer: PermissionTypeData,
     pub permissions: Vec<PermissionTypeData>,
     pub policies: Vec<PermissionTypeData>,
-    pub context: String,
+    pub context: Bytes,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -58,7 +60,7 @@ pub struct StoragePermissionsItem {
     signer: PermissionTypeData,
     permissions: Vec<PermissionTypeData>,
     policies: Vec<PermissionTypeData>,
-    context: Option<String>,
+    context: Option<Bytes>,
     verification_key: String,
     signing_key: String,
 }
@@ -74,6 +76,6 @@ pub struct PermissionRevokeRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CoSignRequest {
-    pci: String,
-    user_op: UserOperation,
+    pub pci: String,
+    pub user_op: UserOperation,
 }
