@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.111.1 - 2024-09-27
+#### Bug Fixes
+- docker build - (b8ca503) - Chris Smith
+
+- - -
+
 ## 0.111.0 - 2024-09-26
 #### Features
 - partial prepareCalls impl (#789) - (39583b7) - Chris Smith
