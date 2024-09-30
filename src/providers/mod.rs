@@ -43,6 +43,7 @@ use {
 
 mod aurora;
 mod base;
+mod berachain;
 mod binance;
 mod coinbase;
 mod getblock;
@@ -63,6 +64,7 @@ mod zora;
 pub use {
     aurora::AuroraProvider,
     base::BaseProvider,
+    berachain::BerachainProvider,
     binance::BinanceProvider,
     getblock::GetBlockProvider,
     infura::{InfuraProvider, InfuraWsProvider},
@@ -448,6 +450,7 @@ pub enum ProviderKind {
     Infura,
     Pokt,
     Binance,
+    Berachain,
     ZKSync,
     Publicnode,
     Base,
@@ -472,6 +475,7 @@ impl Display for ProviderKind {
                 ProviderKind::Infura => "Infura",
                 ProviderKind::Pokt => "Pokt",
                 ProviderKind::Binance => "Binance",
+                ProviderKind::Berachain => "Berachain",
                 ProviderKind::ZKSync => "zkSync",
                 ProviderKind::Publicnode => "Publicnode",
                 ProviderKind::Base => "Base",
@@ -497,6 +501,7 @@ impl ProviderKind {
             "Infura" => Some(Self::Infura),
             "Pokt" => Some(Self::Pokt),
             "Binance" => Some(Self::Binance),
+            "Berachain" => Some(Self::Berachain),
             "zkSync" => Some(Self::ZKSync),
             "Publicnode" => Some(Self::Publicnode),
             "Base" => Some(Self::Base),

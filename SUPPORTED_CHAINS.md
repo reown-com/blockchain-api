@@ -26,6 +26,7 @@ Chain name with associated `chainId` query param to use.
 | Avalanche C-Chain                                        | eip155:43114         |
 | Linea <sup>[1](#footnote1)</sup>                         | eip155:59144         |
 | Polygon Amoy <sup>[1](#footnote1)</sup>                  | eip155:80002         |
+| Berachain bArtio <sup>[1](#footnote1)</sup>              | eip155:80084         |
 | Base Sepolia                                             | eip155:84532         |
 | Arbitrum Sepolia                                         | eip155:421614        |
 | Zora <sup>[1](#footnote1)</sup>                          | eip155:7777777       |

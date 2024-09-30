@@ -14,11 +14,12 @@ use {
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
-    aurora::*, base::*, binance::*, getblock::*, infura::*, mantle::*, near::*, pokt::*,
-    publicnode::*, quicknode::*, server::*, zksync::*, zora::*,
+    aurora::*, base::*, berachain::*, binance::*, getblock::*, infura::*, mantle::*, near::*,
+    pokt::*, publicnode::*, quicknode::*, server::*, zksync::*, zora::*,
 };
 mod aurora;
 mod base;
+mod berachain;
 mod binance;
 mod getblock;
 mod infura;
