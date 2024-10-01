@@ -1,28 +1,47 @@
 use super::*;
 
 #[test]
-fn test_request() {
-    let payload: JsonRpcPayload =
-        JsonRpcPayload::Request(JsonRpcRequest::new(1.into(), "eth_chainId".into()));
-
-    let serialized = serde_json::to_string(&payload).unwrap();
-
+fn test_request_serialized() {
     assert_eq!(
-        &serialized,
-        "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\"}"
+        &serde_json::to_string(&JsonRpcPayload::Request(JsonRpcRequest::new(
+            MessageId("1".into()),
+            "eth_chainId".into()
+        )))
+        .unwrap(),
+        "{\"id\":\"1\",\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\"}"
     );
+}
 
-    let deserialized: JsonRpcPayload = serde_json::from_str(&serialized).unwrap();
-
-    assert_eq!(&payload, &deserialized)
+#[test]
+fn test_request_deserialized() {
+    assert_eq!(
+        &serde_json::from_str::<JsonRpcPayload>(
+            "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\"}"
+        )
+        .unwrap(),
+        &JsonRpcPayload::Request(JsonRpcRequest::new(
+            MessageId("1".into()),
+            "eth_chainId".into(),
+        )),
+    );
+    assert_eq!(
+        &serde_json::from_str::<JsonRpcPayload>(
+            "{\"id\":\"abc\",\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\"}"
+        )
+        .unwrap(),
+        &JsonRpcPayload::Request(JsonRpcRequest::new(
+            MessageId("abc".into()),
+            "eth_chainId".into(),
+        )),
+    );
 }
 
 #[test]
 fn test_response_result() {
     let payload: JsonRpcPayload =
         JsonRpcPayload::Response(JsonRpcResponse::Result(JsonRpcResult {
-            id: 1.into(),
-            jsonrpc: Arc::from(JSON_RPC_VERSION),
+            id: MessageId("1".into()),
+            jsonrpc: JSON_RPC_VERSION.clone(),
             result: "some result".into(),
         }));
 
@@ -30,7 +49,7 @@ fn test_response_result() {
 
     assert_eq!(
         &serialized,
-        "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":\"some result\"}"
+        "{\"id\":\"1\",\"jsonrpc\":\"2.0\",\"result\":\"some result\"}"
     );
 
     let deserialized: JsonRpcPayload = serde_json::from_str(&serialized).unwrap();
@@ -41,8 +60,8 @@ fn test_response_result() {
 #[test]
 fn test_response_error() {
     let payload: JsonRpcPayload = JsonRpcPayload::Response(JsonRpcResponse::Error(JsonRpcError {
-        id: 1.into(),
-        jsonrpc: Arc::from(JSON_RPC_VERSION),
+        id: MessageId(1.to_string().into()),
+        jsonrpc: JSON_RPC_VERSION.clone(),
         error: ErrorResponse {
             code: 32,
             message: Arc::from("some message"),
@@ -54,7 +73,7 @@ fn test_response_error() {
 
     assert_eq!(
         &serialized,
-        "{\"id\":1,\"jsonrpc\":\"2.0\",\"error\":{\"code\":32,\"message\":\"some message\"}}"
+        "{\"id\":1,\"jsonrpc\":\"2.0\",\"error\":{\"code\":32,\"message\":\"some message\",\"data\":null}}"
     );
 
     let deserialized: JsonRpcPayload = serde_json::from_str(&serialized).unwrap();

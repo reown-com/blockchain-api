@@ -39,12 +39,6 @@ use yttrium::{
     user_operation::UserOperationV07,
 };
 
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct SendPreparedCallsQueryParams {
-    pub project_id: String,
-}
-
 pub type SendPreparedCallsRequest = Vec<SendPreparedCallsRequestItem>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -74,7 +68,7 @@ pub enum SendPreparedCallsError {
     #[error("Invalid chain ID")]
     InvalidChainId,
     #[error("Cosign error: {0}")]
-    Cosign(RpcError),
+    Cosign(String),
 
     #[error("Permission not found")]
     PermissionNotFound,
@@ -122,7 +116,7 @@ pub enum SendPreparedCallsInternalError {
     IrnNotConfigured,
 
     #[error("Cosign: {0}")]
-    Cosign(RpcError),
+    Cosign(String),
 
     #[error("Cosign unsuccessful: {0:?}")]
     CosignUnsuccessful(std::result::Result<hyper::body::Bytes, axum::Error>),
@@ -177,10 +171,10 @@ impl IntoResponse for SendPreparedCallsError {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
-    query: Query<SendPreparedCallsQueryParams>,
-    Json(request_payload): Json<SendPreparedCallsRequest>,
-) -> Result<Response, SendPreparedCallsError> {
-    handler_internal(state, query, request_payload)
+    project_id: String,
+    request: SendPreparedCallsRequest,
+) -> Result<SendPreparedCallsResponse, SendPreparedCallsError> {
+    handler_internal(state, project_id, request)
         .with_metrics(HANDLER_TASK_METRICS.with_name("wallet_send_prepared_calls"))
         .await
 }
@@ -188,15 +182,9 @@ pub async fn handler(
 #[tracing::instrument(skip(state), level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
-    query: Query<SendPreparedCallsQueryParams>,
+    project_id: String,
     request: SendPreparedCallsRequest,
-) -> Result<Response, SendPreparedCallsError> {
-    // TODO refactor to differentiate between user and server errors
-    state
-        .validate_project_access_and_quota(&query.project_id)
-        .await
-        .map_err(SendPreparedCallsError::InvalidProjectId)?;
-
+) -> Result<SendPreparedCallsResponse, SendPreparedCallsError> {
     let mut response = Vec::with_capacity(request.len());
     for request in request {
         let chain_id = ChainId::new_eip155(request.prepared_calls.chain_id.to::<u64>());
@@ -306,12 +294,27 @@ async fn handler_internal(
                 .await
                 {
                     Ok(response) => response,
-                    Err(e) => return Ok(e.into_response()),
-                    // if e.clone().into_response().status().is_server_error() {
-                    //     SendPreparedCallsError::InternalError(SendPreparedCallsInternalError::Cosign(e))
-                    // } else {
-                    //     SendPreparedCallsError::Cosign(e)
-                    // }
+                    Err(e) => {
+                        let response = e.into_response();
+                        let status = response.status();
+                        let response = String::from_utf8(
+                            to_bytes(response.into_body())
+                                .await
+                                // Lazy error handling here for now. We will refactor soon to avoid all this
+                                .unwrap_or_default()
+                                .to_vec(),
+                        )
+                        // Lazy error handling here for now. We will refactor soon to avoid all this
+                        .unwrap_or_default();
+                        let e = if status.is_server_error() {
+                            SendPreparedCallsError::InternalError(
+                                SendPreparedCallsInternalError::Cosign(response),
+                            )
+                        } else {
+                            SendPreparedCallsError::Cosign(response)
+                        };
+                        return Err(e);
+                    }
                 };
             if !response.status().is_success() {
                 return Err(SendPreparedCallsError::InternalError(
@@ -374,7 +377,7 @@ async fn handler_internal(
             format!(
                 "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",
                 chain_id.caip2_identifier(),
-                query.project_id,
+                project_id,
                 MessageSource::WalletSendPreparedCalls,
             )
             .parse()
@@ -441,7 +444,7 @@ async fn handler_internal(
             format!(
                 "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
                 chain_id.caip2_identifier(),
-                query.project_id,
+                project_id,
             )
             .parse()
             .unwrap(),
@@ -459,5 +462,5 @@ async fn handler_internal(
         response.push(SendPreparedCallsResponseItem { user_op_hash });
     }
 
-    Ok(Json(response).into_response())
+    Ok(response)
 }

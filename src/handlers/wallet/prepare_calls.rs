@@ -13,7 +13,6 @@ use alloy::providers::{Provider, ReqwestProvider};
 use alloy::sol_types::SolCall;
 use alloy::sol_types::SolValue;
 use alloy::transports::Transport;
-use axum::extract::Query;
 use axum::{
     extract::State,
     response::{IntoResponse, Response},
@@ -39,12 +38,6 @@ use yttrium::{
     transaction::Transaction,
     user_operation::{user_operation_hash::UserOperationHash, UserOperationV07},
 };
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct PrepareCallsQueryParams {
-    pub project_id: String,
-}
 
 pub type PrepareCallsRequest = Vec<PrepareCallsRequestItem>;
 
@@ -181,10 +174,10 @@ impl IntoResponse for PrepareCallsError {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
-    query: Query<PrepareCallsQueryParams>,
-    Json(request_payload): Json<PrepareCallsRequest>,
-) -> Result<Response, PrepareCallsError> {
-    handler_internal(state, query, request_payload)
+    project_id: String,
+    request: PrepareCallsRequest,
+) -> Result<PrepareCallsResponse, PrepareCallsError> {
+    handler_internal(state, project_id, request)
         .with_metrics(HANDLER_TASK_METRICS.with_name("wallet_prepare_calls"))
         .await
 }
@@ -192,15 +185,9 @@ pub async fn handler(
 #[tracing::instrument(skip(state), level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
-    query: Query<PrepareCallsQueryParams>,
+    project_id: String,
     request: PrepareCallsRequest,
-) -> Result<Response, PrepareCallsError> {
-    // TODO refactor to differentiate between user and server errors
-    state
-        .validate_project_access_and_quota(&query.project_id)
-        .await
-        .map_err(PrepareCallsError::InvalidProjectId)?;
-
+) -> Result<PrepareCallsResponse, PrepareCallsError> {
     let mut response = Vec::with_capacity(request.len());
     for request in request {
         let chain_id = ChainId::new_eip155(request.chain_id.to::<u64>());
@@ -235,7 +222,7 @@ async fn handler_internal(
             format!(
                 "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",
                 chain_id.caip2_identifier(),
-                query.project_id,
+                project_id,
                 MessageSource::WalletPrepareCalls,
             )
             .parse()
@@ -285,7 +272,7 @@ async fn handler_internal(
             format!(
                 "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
                 chain_id.caip2_identifier(),
-                query.project_id,
+                project_id,
             )
             .parse()
             .unwrap(),
@@ -324,7 +311,7 @@ async fn handler_internal(
                 format!(
                     "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
                     chain_id.caip2_identifier(),
-                    query.project_id,
+                    project_id,
                 )
                 .parse()
                 .unwrap(),
@@ -373,7 +360,7 @@ async fn handler_internal(
         });
     }
 
-    Ok(Json(response).into_response())
+    Ok(response)
 }
 
 pub fn split_permissions_context_and_check_validator(
