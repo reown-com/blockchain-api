@@ -6,6 +6,7 @@
 use {
     derive_more::{Display, From, Into},
     serde::{Deserialize, Serialize},
+    serde_aux::prelude::deserialize_string_from_number,
     std::sync::Arc,
 };
 
@@ -20,7 +21,7 @@ pub static JSON_RPC_VERSION: once_cell::sync::Lazy<Arc<str>> =
 /// Represents the message ID type.
 #[derive(Debug, Hash, Clone, PartialEq, Eq, Serialize, Deserialize, From, Into, Display)]
 #[serde(transparent)]
-pub struct MessageId(Arc<str>);
+pub struct MessageId(#[serde(deserialize_with = "deserialize_string_from_number")] String);
 
 /// Enum representing a JSON RPC Payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
