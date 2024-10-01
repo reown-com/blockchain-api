@@ -49,13 +49,7 @@ pub struct SendPreparedCallsRequestItem {
     context: Uuid,
 }
 
-pub type SendPreparedCallsResponse = Vec<SendPreparedCallsResponseItem>;
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SendPreparedCallsResponseItem {
-    user_op_hash: B256,
-}
+pub type SendPreparedCallsResponse = Vec<B256>;
 
 #[derive(Error, Debug)]
 pub enum SendPreparedCallsError {
@@ -459,7 +453,7 @@ async fn handler_internal(
                 )
             })?;
 
-        response.push(SendPreparedCallsResponseItem { user_op_hash });
+        response.push(user_op_hash);
     }
 
     Ok(response)

@@ -1,18 +1,19 @@
+use super::prepare_calls::{self, PrepareCallsError};
+use super::send_prepared_calls::{self, SendPreparedCallsError};
 use crate::error::RpcError;
 use crate::json_rpc::{
     ErrorResponse, JsonRpcError, JsonRpcRequest, JsonRpcResponse, JsonRpcResult,
 };
 use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
 use axum::extract::Query;
+use axum::response::{IntoResponse, Response};
 use axum::{extract::State, Json};
+use hyper::StatusCode;
 use serde::Deserialize;
 use std::sync::Arc;
 use thiserror::Error;
 use tracing::error;
 use wc::future::FutureExt;
-
-use super::prepare_calls::{self, PrepareCallsError};
-use super::send_prepared_calls::{self, SendPreparedCallsError};
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -24,7 +25,7 @@ pub async fn handler(
     state: State<Arc<AppState>>,
     query: Query<WalletQueryParams>,
     Json(request_payload): Json<JsonRpcRequest>,
-) -> Json<JsonRpcResponse> {
+) -> Response {
     handler_internal(state, query, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("wallet"))
         .await
@@ -35,29 +36,49 @@ async fn handler_internal(
     state: State<Arc<AppState>>,
     query: Query<WalletQueryParams>,
     request: JsonRpcRequest,
-) -> Json<JsonRpcResponse> {
+) -> Response {
     match handle_rpc(state, query, request.method, request.params).await {
         Ok(result) => Json(JsonRpcResponse::Result(JsonRpcResult::new(
             request.id, result,
-        ))),
+        )))
+        .into_response(),
         Err(e) => {
-            if matches!(e, Error::Internal(_)) {
+            let is_internal = matches!(e, Error::Internal(_));
+            if is_internal {
                 error!("Internal server error handling wallet RPC request: {e:?}");
             }
-            Json(JsonRpcResponse::Error(JsonRpcError::new(
+            // TODO these special cases shouldn't be necessary, by remapping
+            if matches!(
+                e,
+                Error::SendPreparedCalls(SendPreparedCallsError::InternalError(_))
+            ) {
+                error!(
+                    "Internal server error handling wallet RPC request (sendPreparedCalls): {e:?}"
+                );
+            }
+            if matches!(e, Error::PrepareCalls(PrepareCallsError::InternalError(_))) {
+                error!("Internal server error handling wallet RPC request (prepareCalls): {e:?}");
+            }
+            let json = Json(JsonRpcResponse::Error(JsonRpcError::new(
                 request.id,
                 ErrorResponse {
                     code: e.to_json_rpc_error_code(),
                     message: e.to_string().into(),
                     data: None,
                 },
-            )))
+            )));
+            if is_internal {
+                (StatusCode::INTERNAL_SERVER_ERROR, json).into_response()
+            } else {
+                (StatusCode::BAD_REQUEST, json).into_response()
+            }
         }
     }
 }
 
 const WALLET_PREPARE_CALLS: &str = "wallet_prepareCalls";
 const WALLET_SEND_PREPARED_CALLS: &str = "wallet_sendPreparedCalls";
+const WALLET_GET_CALLS_STATUS: &str = "wallet_getCallsStatus";
 
 #[derive(Debug, Error)]
 enum Error {
@@ -134,6 +155,7 @@ async fn handle_rpc(
             .map_err(Error::SendPreparedCalls)?,
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
+        WALLET_GET_CALLS_STATUS => Ok(serde_json::Value::String("Not implemented yet".to_owned())), // TODO
         _ => Err(Error::MethodNotFound),
     }
 }

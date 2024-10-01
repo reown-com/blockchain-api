@@ -57,7 +57,7 @@ impl JsonRpcRequest {
     }
 }
 
-impl <T> JsonRpcRequest<T> {
+impl<T> JsonRpcRequest<T> {
     pub fn new_with_params(id: MessageId, method: Arc<str>, params: T) -> Self {
         Self {
             id,
@@ -110,7 +110,7 @@ pub struct JsonRpcError<T: Serialize = Option<Arc<str>>> {
     pub error: ErrorResponse<T>,
 }
 
-impl <T: Serialize> JsonRpcError<T> {
+impl<T: Serialize> JsonRpcError<T> {
     pub fn new(id: MessageId, error: ErrorResponse<T>) -> Self {
         Self {
             id,
