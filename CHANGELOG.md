@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.112.0 - 2024-10-02
+#### Bug Fixes
+- **(ci)** bumping ci_workflows version (#799) - (f54da11) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(providers)** adding Berachain provider and Berachain bArtio support (#796) - (fa4db4c) - Max Kalashnikoff | maksy.eth
+- wallet service use JSON-RPC (#798) - (bbdc0f4) - Chris Smith
+- send prepared calls (#794) - (ca12088) - Chris Smith
+
+- - -
+
 ## 0.111.1 - 2024-09-27
 #### Bug Fixes
 - docker build - (b8ca503) - Chris Smith
