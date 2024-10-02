@@ -13,7 +13,6 @@ use alloy::providers::{Provider, ReqwestProvider};
 use alloy::sol_types::SolCall;
 use alloy::sol_types::SolValue;
 use alloy::transports::Transport;
-use axum::extract::Query;
 use axum::{
     extract::State,
     response::{IntoResponse, Response},
@@ -39,12 +38,6 @@ use yttrium::{
     transaction::Transaction,
     user_operation::{user_operation_hash::UserOperationHash, UserOperationV07},
 };
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct PrepareCallsQueryParams {
-    pub project_id: String,
-}
 
 pub type PrepareCallsRequest = Vec<PrepareCallsRequestItem>;
 
@@ -181,10 +174,10 @@ impl IntoResponse for PrepareCallsError {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
-    query: Query<PrepareCallsQueryParams>,
-    Json(request_payload): Json<PrepareCallsRequest>,
-) -> Result<Response, PrepareCallsError> {
-    handler_internal(state, query, request_payload)
+    project_id: String,
+    request: PrepareCallsRequest,
+) -> Result<PrepareCallsResponse, PrepareCallsError> {
+    handler_internal(state, project_id, request)
         .with_metrics(HANDLER_TASK_METRICS.with_name("wallet_prepare_calls"))
         .await
 }
@@ -192,15 +185,9 @@ pub async fn handler(
 #[tracing::instrument(skip(state), level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
-    query: Query<PrepareCallsQueryParams>,
+    project_id: String,
     request: PrepareCallsRequest,
-) -> Result<Response, PrepareCallsError> {
-    // TODO refactor to differentiate between user and server errors
-    state
-        .validate_project_access_and_quota(&query.project_id)
-        .await
-        .map_err(PrepareCallsError::InvalidProjectId)?;
-
+) -> Result<PrepareCallsResponse, PrepareCallsError> {
     let mut response = Vec::with_capacity(request.len());
     for request in request {
         let chain_id = ChainId::new_eip155(request.chain_id.to::<u64>());
@@ -235,7 +222,7 @@ async fn handler_internal(
             format!(
                 "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",
                 chain_id.caip2_identifier(),
-                query.project_id,
+                project_id,
                 MessageSource::WalletPrepareCalls,
             )
             .parse()
@@ -285,7 +272,7 @@ async fn handler_internal(
             format!(
                 "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
                 chain_id.caip2_identifier(),
-                query.project_id,
+                project_id,
             )
             .parse()
             .unwrap(),
@@ -324,7 +311,7 @@ async fn handler_internal(
                 format!(
                     "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
                     chain_id.caip2_identifier(),
-                    query.project_id,
+                    project_id,
                 )
                 .parse()
                 .unwrap(),
@@ -373,7 +360,7 @@ async fn handler_internal(
         });
     }
 
-    Ok(Json(response).into_response())
+    Ok(response)
 }
 
 pub fn split_permissions_context_and_check_validator(
@@ -653,6 +640,7 @@ where
     } = decode_smart_session_signature(signature, account_type)?;
 
     const DUMMY_ECDSA_SIGNATURE: Bytes = bytes!("e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c");
+    const DUMMY_PASSKEY_SIGNATURE: Bytes = bytes!("00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000001635bc6d0f68ff895cae8a288ecf7542a6a9cd555df784b73e1e2ea7e9104b1db15e9015d280cb19527881c625fee43fd3a405d5b0d199a8c8e6589a7381209e40000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002549960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f47b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a22746278584e465339585f3442797231634d77714b724947422d5f3330613051685a36793775634d30424f45222c226f726967696e223a22687474703a2f2f6c6f63616c686f73743a33303030222c2263726f73734f726967696e223a66616c73652c20226f746865725f6b6579735f63616e5f62655f61646465645f68657265223a22646f206e6f7420636f6d7061726520636c69656e74446174614a534f4e20616761696e737420612074656d706c6174652e205365652068747470733a2f2f676f6f2e676c2f796162506578227d000000000000000000000000");
     let signature = decode_signers(
         enable_session_data
             .enable_session
@@ -663,7 +651,7 @@ where
     .into_iter()
     .map(|t| match t {
         SignerType::Ecdsa => DUMMY_ECDSA_SIGNATURE,
-        SignerType::Passkey => bytes!(""),
+        SignerType::Passkey => DUMMY_PASSKEY_SIGNATURE,
     })
     .collect::<Vec<_>>()
     .abi_encode();
