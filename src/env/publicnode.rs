@@ -102,5 +102,18 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:1329".into(),
             ("sei-rpc".into(), Weight::new(Priority::Normal).unwrap()),
         ),
+        // Scroll
+        (
+            "eip155:534352".into(),
+            ("scroll-rpc".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
+        // Scroll sepolia testnet
+        (
+            "eip155:534351".into(),
+            (
+                "scroll-sepolia-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
     ])
 }
