@@ -96,4 +96,13 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
         "0x1388",
     )
     .await;
+
+    // Sei
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Publicnode,
+        "eip155:1329",
+        "0x531",
+    )
+    .await;
 }
