@@ -178,5 +178,21 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Scroll
+        (
+            "eip155:534352".into(),
+            (
+                "scroll-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        // Scroll sepolia testnet
+        (
+            "eip155:534351".into(),
+            (
+                "scroll-sepolia-testnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
     ])
 }

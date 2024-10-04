@@ -128,6 +128,24 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     // zkSync era
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:324", "0x144")
         .await;
+
+    // Scroll
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:534352",
+        "0x82750",
+    )
+    .await;
+
+    // Scroll Sepolia
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:534351",
+        "0x8274f",
+    )
+    .await;
 }
 
 #[test_context(ServerContext)]
