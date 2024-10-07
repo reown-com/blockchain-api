@@ -69,6 +69,7 @@ pub enum MessageSource {
     SessionCoSignSigValidate,
     WalletPrepareCalls,
     WalletSendPreparedCalls,
+    WalletGetCallsStatus,
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 use {
     crate::{analytics::MessageSource, error::RpcError},
-    alloy::primitives::Address,
+    alloy::{primitives::Address, rpc::json_rpc::Id},
     base64::prelude::*,
     bs58,
     ethers::{
@@ -79,7 +79,7 @@ pub enum CryptoUitlsError {
 /// JSON-RPC request schema
 #[derive(Serialize, Clone, Debug)]
 pub struct JsonRpcRequest<T: Serialize + Send + Sync> {
-    pub id: u64,
+    pub id: Id,
     pub jsonrpc: Arc<str>,
     pub method: Arc<str>,
     pub params: T,

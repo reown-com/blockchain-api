@@ -73,6 +73,9 @@ mod storage;
 pub mod utils;
 mod ws;
 
+#[cfg(test)]
+pub mod test_helpers;
+
 pub async fn bootstrap(config: Config) -> RpcResult<()> {
     ServiceMetrics::init_with_name("rpc-proxy");
 

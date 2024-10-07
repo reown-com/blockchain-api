@@ -273,6 +273,7 @@ mod test {
                     pimlico_api_key: "PIMLICO_API_KEY".to_string(),
                     solscan_api_v1_token: "SOLSCAN_API_V1_TOKEN".to_string(),
                     solscan_api_v2_token: "SOLSCAN_API_V2_TOKEN".to_string(),
+                    override_bundler_urls: None,
                 },
                 rate_limiting: RateLimitingConfig {
                     max_tokens: Some(100),

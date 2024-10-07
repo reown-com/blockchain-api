@@ -25,10 +25,12 @@ use {
         utils::crypto::CaipNamespaces,
         Metrics,
     },
+    alloy::rpc::json_rpc::Id,
     async_trait::async_trait,
     axum::response::Response,
     axum_tungstenite::WebSocketUpgrade,
     hyper::http::HeaderValue,
+    mock_alto::{MockAltoProvider, MockAltoUrls},
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
     serde::{Deserialize, Serialize},
     std::{
@@ -49,6 +51,7 @@ mod coinbase;
 mod getblock;
 mod infura;
 mod mantle;
+pub mod mock_alto;
 mod near;
 mod one_inch;
 mod pimlico;
@@ -108,6 +111,8 @@ pub struct ProvidersConfig {
     /// SolScan API v1 and v2 token keys
     pub solscan_api_v1_token: String,
     pub solscan_api_v2_token: String,
+
+    pub override_bundler_urls: Option<MockAltoUrls>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -234,7 +239,12 @@ impl ProviderRepository {
             "https://pay.coinbase.com/api/v1".into(),
         ));
 
-        let bundler_ops_provider = Arc::new(PimlicoProvider::new(config.pimlico_api_key.clone()));
+        let bundler_ops_provider: Arc<dyn BundlerOpsProvider> =
+            if let Some(override_bundler_url) = config.override_bundler_urls.clone() {
+                Arc::new(MockAltoProvider::new(override_bundler_url))
+            } else {
+                Arc::new(PimlicoProvider::new(config.pimlico_api_key.clone()))
+            };
 
         let mut fungible_price_providers: HashMap<CaipNamespaces, Arc<dyn FungiblePriceProvider>> =
             HashMap::new();
@@ -732,10 +742,6 @@ pub trait ConversionProvider: Send + Sync {
 /// List of supported bundler operations
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub enum SupportedBundlerOps {
-    #[serde(rename = "wallet_getCallsStatus")]
-    WalletGetCallsStatus,
-    #[serde(rename = "wallet_showCallsStatus")]
-    WalletShowCallsStatus,
     #[serde(rename = "eth_getUserOperationReceipt")]
     EthGetUserOperationReceipt,
     #[serde(rename = "eth_sendUserOperation")]
@@ -756,8 +762,8 @@ pub trait BundlerOpsProvider: Send + Sync + Debug {
     async fn bundler_rpc_call(
         &self,
         chain_id: &str,
-        id: u64,
-        jsonrpc: &str,
+        id: Id,
+        jsonrpc: Arc<str>,
         method: &SupportedBundlerOps,
         params: serde_json::Value,
     ) -> RpcResult<serde_json::Value>;
