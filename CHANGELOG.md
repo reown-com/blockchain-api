@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.113.0 - 2024-10-03
+#### Features
+- **(providers)** adding Sei network support (#797) - (0a0ae73) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.112.0 - 2024-10-02
 #### Bug Fixes
 - **(ci)** bumping ci_workflows version (#799) - (f54da11) - Max Kalashnikoff | maksy.eth

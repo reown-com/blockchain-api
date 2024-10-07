@@ -15,6 +15,7 @@ Chain name with associated `chainId` query param to use.
 | zkSync Era Sepolia Testnet <sup>[1](#footnote1)</sup>    | eip155:300           |
 | zkSync Era                                               | eip155:324           |
 | Polygon Zkevm                                            | eip155:1101          |
+| Sei Network <sup>[1](#footnote1)</sup>                   | eip155:1329          |
 | Mantle <sup>[1](#footnote1)</sup>                        | eip155:5000          |
 | Mantle Testnet <sup>[1](#footnote1)</sup>                | eip155:5003          |
 | Klaytn Mainnet                                           | eip155:8217          |
@@ -29,6 +30,8 @@ Chain name with associated `chainId` query param to use.
 | Berachain bArtio <sup>[1](#footnote1)</sup>              | eip155:80084         |
 | Base Sepolia                                             | eip155:84532         |
 | Arbitrum Sepolia                                         | eip155:421614        |
+| Scroll Mainnet <sup>[1](#footnote1)</sup>                | eip155:534352        |
+| Scroll Sepolia Testnet <sup>[1](#footnote1)</sup>        | eip155:534351        |
 | Zora <sup>[1](#footnote1)</sup>                          | eip155:7777777       |
 | Ethereum Sepolia                                         | eip155:11155111      |
 | Optimism Sepolia                                         | eip155:11155420      |
