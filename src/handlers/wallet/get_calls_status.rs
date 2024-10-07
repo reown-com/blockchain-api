@@ -331,7 +331,7 @@ mod tests {
         config::Config,
         smart_accounts::safe::{get_account_address, Owners},
         test_helpers::{anvil_faucet, use_faucet},
-        transaction::{send::safe_test::send_transaction, Transaction},
+        transaction::{send::safe_test::send_transactions, Transaction},
     };
 
     #[tokio::test]
@@ -371,7 +371,7 @@ mod tests {
             data: Bytes::new(),
         }];
 
-        let receipt = send_transaction(transaction, owner.clone(), None, None, config.clone())
+        let receipt = send_transactions(transaction, owner.clone(), None, None, config.clone())
             .await
             .unwrap();
         assert!(receipt.success);
