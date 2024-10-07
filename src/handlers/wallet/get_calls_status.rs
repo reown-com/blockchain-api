@@ -113,7 +113,7 @@ async fn handler_internal(
 ) -> Result<GetCallsStatusResult, GetCallsStatusError> {
     let chain_id = ChainId::new_eip155(request.0 .0.chain_id.to());
     let provider = RootProvider::<_, Ethereum>::new(RpcClient::new(
-        self_transport::SelfTransport {
+        self_transport::SelfBundlerTransport {
             state: state.0.clone(),
             connect_info,
             headers,
@@ -187,7 +187,7 @@ mod self_transport {
     };
 
     #[derive(Clone)]
-    pub struct SelfTransport {
+    pub struct SelfBundlerTransport {
         pub state: Arc<AppState>,
         pub connect_info: SocketAddr,
         pub query: RpcQueryParams,
@@ -195,7 +195,7 @@ mod self_transport {
         pub chain_id: ChainId,
     }
 
-    impl Service<RequestPacket> for SelfTransport {
+    impl Service<RequestPacket> for SelfBundlerTransport {
         type Error = TransportError;
         type Future = TransportFut<'static>;
         type Response = ResponsePacket;
@@ -221,18 +221,28 @@ mod self_transport {
                     RequestPacket::Batch(_) => unimplemented!(),
                 };
 
-                // let id = SystemTime::now()
-                //     .duration_since(UNIX_EPOCH)
-                //     .expect("Time should't go backwards")
-                //     .as_millis()
-                //     .to_string();
+                let method_result =
+                    serde_json::from_value::<SupportedBundlerOps>(serde_json::json!(req.method()));
+                // let method = match method_result {
+                //     Ok(m) => m,
+                //     Err(_) => {
+                //         return Ok(ResponsePacket::Single(Response {
+                //             id: req.id().clone(),
+                //             payload: alloy::rpc::json_rpc::ResponsePayload::Failure(
+                //                 serde_json::value::RawValue::from_string(
+                //                     serde_json::json!({
+                //                         "code": -32601,
+                //                         "message": "Method not found",
+                //                     })
+                //                     .to_string(),
+                //                 )
+                //                 .unwrap(),
+                //             ),
+                //         }));
+                //     }
+                // };
+                let method = method_result.unwrap();
 
-                // let body = req.serialized().to_string().into_bytes().into();
-
-                // let response = rpc_call(state, connect_info, query, headers, body)
-                //     .await
-                //     // .map_err(SelfProviderError::RpcError)?;
-                //     .unwrap();
                 let response = state
                     .providers
                     .bundler_ops_provider
@@ -240,14 +250,11 @@ mod self_transport {
                         &caip2_identifier,
                         req.id().clone(),
                         JSON_RPC_VERSION.clone(),
-                        &serde_json::from_value::<SupportedBundlerOps>(serde_json::json!(
-                            req.method()
-                        ))
-                        .unwrap(),
+                        &method,
                         serde_json::from_str(req.params().unwrap().get()).unwrap(),
                     )
                     .await
-                    .unwrap();
+                    .unwrap(); // TODO remove
                 let body = serde_json::to_string(response.get("result").unwrap()).unwrap();
 
                 // TODO handle error response status
@@ -304,9 +311,6 @@ mod self_transport {
 }
 
 // TODO test case:
-// - anvil node bindings
-// - run normal safe_test transaction
-// - check "call status" with above code
 // - check receipt contents, e.g. confirmed, pending. Unsuccessful txn
 // - what about missing Option in alloy's getUserOperationReceipt
 
@@ -360,7 +364,7 @@ mod tests {
         use_faucet(
             provider.clone(),
             faucet.clone(),
-            U256::from(2),
+            U256::from(1),
             sender_address.into(),
         )
         .await;
@@ -375,6 +379,73 @@ mod tests {
             .await
             .unwrap();
         assert!(receipt.success);
+
+        let balance = provider.get_balance(destination.address()).await.unwrap();
+        assert_eq!(balance, Uint::from(1));
+
+        let url = spawn_blockchain_api_with_params(crate::test_helpers::Params {
+            validate_project_id: false,
+            override_bundler_urls: Some(MockAltoUrls {
+                bundler_url: config.endpoints.bundler.base_url.parse().unwrap(),
+                paymaster_url: config.endpoints.paymaster.base_url.parse().unwrap(),
+            }),
+        })
+        .await;
+        let mut endpoint = url.join("/v1/wallet").unwrap();
+        endpoint.query_pairs_mut().append_pair("projectId", "test");
+        let provider = ReqwestProvider::<Ethereum>::new_http(endpoint);
+        let result = provider
+            .client()
+            .request::<_, GetCallsStatusResult>(
+                WALLET_GET_CALLS_STATUS,
+                (CallId(CallIdInner {
+                    chain_id: U64::from(11155111),
+                    user_op_hash: receipt.user_op_hash,
+                }),),
+            )
+            .await
+            .unwrap();
+        assert_eq!(result.status, CallStatus::Confirmed);
+        let receipts = result.receipts.unwrap();
+        assert_eq!(receipts.len(), 1);
+        let receipt = receipts.first().unwrap();
+        assert_eq!(receipt.status, U8::from(1));
+        assert_eq!(receipt.chain_id, U64::from(11155111));
+    }
+
+    #[tokio::test]
+    async fn test_get_calls_status_failed() {
+        // let anvil = Anvil::new().spawn();
+        let config = Config::local();
+        let _faucet = anvil_faucet(config.endpoints.rpc.base_url.clone()).await;
+
+        let provider =
+            ReqwestProvider::<Ethereum>::new_http(config.endpoints.rpc.base_url.parse().unwrap());
+
+        let destination = LocalSigner::random();
+        let balance = provider.get_balance(destination.address()).await.unwrap();
+        assert_eq!(balance, Uint::from(0));
+
+        let owner = LocalSigner::random();
+        let _sender_address = get_account_address(
+            provider.clone(),
+            Owners {
+                owners: vec![owner.address()],
+                threshold: 1,
+            },
+        )
+        .await;
+
+        let transaction = vec![Transaction {
+            to: destination.address(),
+            value: Uint::from(1),
+            data: Bytes::new(),
+        }];
+
+        let receipt = send_transactions(transaction, owner.clone(), None, None, config.clone())
+            .await
+            .unwrap();
+        assert!(!receipt.success);
 
         let balance = provider.get_balance(destination.address()).await.unwrap();
         assert_eq!(balance, Uint::from(1));

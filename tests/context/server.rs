@@ -1,17 +1,7 @@
-#[cfg(feature = "test-localhost")]
-use std::net::SocketAddr;
-
 use url::Url;
 
 #[cfg(feature = "test-localhost")]
-use {
-    super::TestResult,
-    rpc_proxy::env::{Config, ServerConfig},
-    std::net::{Ipv4Addr, SocketAddrV4, TcpStream},
-    std::time::Duration,
-    std::{env, net::IpAddr},
-    tokio::{runtime::Handle, time::sleep},
-};
+use {rpc_proxy::test_helpers::spawn_blockchain_api, std::env};
 
 pub struct RpcProxy {
     pub public_addr: Url,
