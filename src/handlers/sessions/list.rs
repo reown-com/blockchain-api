@@ -26,7 +26,7 @@ struct ListPermissionResponse {
 struct Pci {
     pub project: ProjectItem,
     pub pci: String,
-    pub expiration: usize,
+    pub expiry: usize,
     pub created_at: usize,
     pub permissions: Vec<PermissionTypeData>,
     pub policies: Vec<PermissionTypeData>,
@@ -102,7 +102,7 @@ async fn handler_internal(
                 icon_url: None,
             },
             pci,
-            expiration: storage_permissions_item.expiration,
+            expiry: storage_permissions_item.expiry,
             created_at: storage_permissions_item.created_at,
             permissions: storage_permissions_item.permissions,
             policies: storage_permissions_item.policies,

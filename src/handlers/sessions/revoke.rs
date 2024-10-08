@@ -1,11 +1,11 @@
 use {
-    super::{super::HANDLER_TASK_METRICS, PermissionRevokeRequest},
+    super::{super::HANDLER_TASK_METRICS, PermissionRevokeRequest, QueryParams},
     crate::{
         error::RpcError, state::AppState, storage::irn::OperationType,
         utils::crypto::disassemble_caip10,
     },
     axum::{
-        extract::{Path, State},
+        extract::{Path, Query, State},
         response::Response,
         Json,
     },
@@ -16,9 +16,10 @@ use {
 pub async fn handler(
     state: State<Arc<AppState>>,
     address: Path<String>,
+    query_params: Query<QueryParams>,
     Json(request_payload): Json<PermissionRevokeRequest>,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, address, request_payload)
+    handler_internal(state, address, query_params, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("sessions_revoke"))
         .await
 }
@@ -27,8 +28,12 @@ pub async fn handler(
 async fn handler_internal(
     state: State<Arc<AppState>>,
     Path(address): Path<String>,
+    query_params: Query<QueryParams>,
     request_payload: PermissionRevokeRequest,
 ) -> Result<Response, RpcError> {
+    let project_id = query_params.project_id.clone();
+    state.validate_project_access_and_quota(&project_id).await?;
+
     let irn_client = state.irn.as_ref().ok_or(RpcError::IrnNotConfigured)?;
 
     // Checking the CAIP-10 address format

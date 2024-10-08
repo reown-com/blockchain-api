@@ -25,7 +25,7 @@ pub struct NewPermissionResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-
+#[serde(rename_all = "lowercase")]
 pub enum KeyType {
     Secp256k1,
 }
@@ -78,7 +78,7 @@ async fn handler_internal(
 
     // Store the permission item in the IRN database
     let storage_permissions_item = StoragePermissionsItem {
-        expiration: request_payload.expiry,
+        expiry: request_payload.expiry,
         created_at: SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap_or(std::time::Duration::new(0, 0))
