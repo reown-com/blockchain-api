@@ -54,6 +54,35 @@ jobs:
       check-udeps: false
       rust-toolchain: stable
 
+  test_bundler:
+    name: Test with mock bundler
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.4
+      - run: rustup update stable && rustup default stable
+      - run: cd irn && docker compose up -d
+      - run: docker compose up -d redis postgres
+      - run: docker compose -f docker-compose.mock-bundler.yaml up -d
+        working-directory: test/scripts/forked_state
+      - run: while ! curl localhost:5432/health; do sleep 1; done # Postgres
+      - run: while ! curl localhost:6379/health; do sleep 1; done # Redis
+      - run: while ! curl localhost:8545/health; do sleep 1; done # Anvil
+      - run: while ! curl localhost:4337/health; do sleep 1; done # Mock Bundler
+      - run: while ! curl localhost:3000/ping; do sleep 1; done   # Mock Paymaster
+      - run: cargo test --features=test-mock-bundler --lib --bins
+        env:
+          RPC_PROXY_POSTGRES_URI: "postgres://postgres@localhost/postgres"
+          RPC_PROXY_PROVIDER_INFURA_PROJECT_ID: ""
+          RPC_PROXY_PROVIDER_POKT_PROJECT_ID: ""
+          RPC_PROXY_PROVIDER_QUICKNODE_API_TOKENS: ""
+          RPC_PROXY_PROVIDER_PIMLICO_API_KEY: ""
+          RPC_PROXY_PROVIDER_SOLSCAN_API_V1_TOKEN: ""
+          RPC_PROXY_PROVIDER_SOLSCAN_API_V2_TOKEN: ""
+
   merge_check:
     name: Merge Check
     needs: [ check_pr, ci ]

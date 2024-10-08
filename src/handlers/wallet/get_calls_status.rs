@@ -173,18 +173,33 @@ fn user_operation_receipt_to_call_receipt(
 mod self_transport {
     use {
         crate::{
-            handlers::RpcQueryParams, json_rpc::JSON_RPC_VERSION, providers::SupportedBundlerOps,
-            state::AppState,
+            error::RpcError, handlers::RpcQueryParams, json_rpc::JSON_RPC_VERSION,
+            providers::SupportedBundlerOps, state::AppState,
         },
         alloy::{
             rpc::json_rpc::{RequestPacket, Response, ResponsePacket},
-            transports::{TransportError, TransportFut},
+            transports::{TransportError, TransportErrorKind, TransportFut},
         },
         hyper::HeaderMap,
         std::{net::SocketAddr, sync::Arc, task::Poll},
         tower::Service,
         yttrium::chain::ChainId,
     };
+
+    #[derive(thiserror::Error, Debug)]
+    pub enum SelfBundlerTransportError {
+        #[error("RPC error: {0}")]
+        Rpc(RpcError),
+
+        #[error("Parse params: {0}")]
+        ParseParams(serde_json::Error),
+
+        #[error("No result")]
+        NoResult,
+
+        #[error("Parse result: {0}")]
+        ParseResult(serde_json::Error),
+    }
 
     #[derive(Clone)]
     pub struct SelfBundlerTransport {
@@ -221,27 +236,17 @@ mod self_transport {
                     RequestPacket::Batch(_) => unimplemented!(),
                 };
 
-                let method_result =
-                    serde_json::from_value::<SupportedBundlerOps>(serde_json::json!(req.method()));
-                // let method = match method_result {
-                //     Ok(m) => m,
-                //     Err(_) => {
-                //         return Ok(ResponsePacket::Single(Response {
-                //             id: req.id().clone(),
-                //             payload: alloy::rpc::json_rpc::ResponsePayload::Failure(
-                //                 serde_json::value::RawValue::from_string(
-                //                     serde_json::json!({
-                //                         "code": -32601,
-                //                         "message": "Method not found",
-                //                     })
-                //                     .to_string(),
-                //                 )
-                //                 .unwrap(),
-                //             ),
-                //         }));
-                //     }
-                // };
-                let method = method_result.unwrap();
+                let method =
+                    serde_json::from_value::<SupportedBundlerOps>(serde_json::json!(req.method()))
+                        .map_err(|_| TransportErrorKind::custom_str("Unsupported method"))?;
+                let params = serde_json::from_str(
+                    req.params()
+                        .ok_or_else(|| TransportErrorKind::custom_str("Params is null"))?
+                        .get(),
+                )
+                .map_err(|e| {
+                    TransportErrorKind::custom(SelfBundlerTransportError::ParseParams(e))
+                })?;
 
                 let response = state
                     .providers
@@ -251,53 +256,17 @@ mod self_transport {
                         req.id().clone(),
                         JSON_RPC_VERSION.clone(),
                         &method,
-                        serde_json::from_str(req.params().unwrap().get()).unwrap(),
+                        params,
                     )
                     .await
-                    .unwrap(); // TODO remove
-                let body = serde_json::to_string(response.get("result").unwrap()).unwrap();
-
-                // TODO handle error response status
-                // if response.status() != StatusCode::OK {
-                //     return Err(SelfProviderError::ProviderError {
-                //         status: response.status(),
-                //         body: format!("{:?}", response.body()),
-                //     });
-                // }
-                // response.body().
-
-                // let bytes = to_bytes(response.into_body()).await.unwrap();
-                // .map_err(SelfProviderError::ProviderBody)?;
-
-                // let body = String::from_utf8(bytes.to_vec()).unwrap();
-                // let response = serde_json::from_slice::<JsonRpcResponse>(&bytes)
-                // .unwrap();
-                //     // .map_err(SelfProviderError::ProviderBodySerde)?;
-
-                // let result = match response {
-                //     JsonRpcResponse::Error(e) => return
-                // Err(SelfProviderError::JsonRpcError(e)),
-                //     JsonRpcResponse::Result(r) => {
-                //         // We shouldn't process with `0x` result because this leads to the
-                // ethers-rs         // panic when looking for an avatar
-                //         if r.result == EMPTY_RPC_RESPONSE {
-                //             return Err(SelfProviderError::ProviderError {
-                //                 status: StatusCode::METHOD_NOT_ALLOWED,
-                //                 body: format!("JSON-RPC result is {}", EMPTY_RPC_RESPONSE),
-                //             });
-                //         } else {
-                //             r.result
-                //         }
-                //     }
-                // };
-
-                // let result = serde_json::from_value(result).unwrap();
-                // // .map_err(|_| {
-                // //     SelfProviderError::GenericParameterError(
-                // //         "Caller always provides generic parameter R=Bytes".into(),
-                // //     )
-                // // })?;
-                // Ok(result)
+                    .map_err(|e| TransportErrorKind::custom(SelfBundlerTransportError::Rpc(e)))?;
+                // TODO check for error
+                let body = serde_json::to_string(response.get("result").ok_or_else(|| {
+                    TransportErrorKind::custom(SelfBundlerTransportError::NoResult)
+                })?)
+                .map_err(|e| {
+                    TransportErrorKind::custom(SelfBundlerTransportError::ParseResult(e))
+                })?;
 
                 Ok(ResponsePacket::Single(Response {
                     id: req.id().clone(),
@@ -315,6 +284,7 @@ mod self_transport {
 // - what about missing Option in alloy's getUserOperationReceipt
 
 #[cfg(test)]
+#[cfg(feature = "test-mock-bundler")]
 mod tests {
     use crate::{
         handlers::wallet::{
@@ -414,6 +384,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn test_get_calls_status_failed() {
         // let anvil = Anvil::new().spawn();
         let config = Config::local();

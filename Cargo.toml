@@ -105,6 +105,7 @@ vergen = { version = "6", default-features = false, features = ["build", "cargo"
 [features]
 full = []
 test-localhost = []
+test-mock-bundler = []
 
 [profile.release-debug]
 inherits = "release"
