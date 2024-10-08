@@ -341,7 +341,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         // Sessions
         .route("/v1/sessions/:address", post(handlers::sessions::create::handler))
         .route("/v1/sessions/:address", get(handlers::sessions::list::handler))
-        .route("/v1/sessions/:address/:pci", get(handlers::sessions::get::handler))
+        .route("/v1/sessions/:address/getcontext", get(handlers::sessions::get::handler))
         .route("/v1/sessions/:address/activate", post(handlers::sessions::context::handler))
         .route("/v1/sessions/:address/revoke", post(handlers::sessions::revoke::handler))
         .route("/v1/sessions/:address/sign", post(handlers::sessions::cosign::handler))

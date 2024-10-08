@@ -99,7 +99,7 @@ describe('Sessions/Permissions', () => {
 
   it('get session context by PCI', async () => {
     let resp = await httpClient.get(
-      `${baseUrl}/v1/sessions/${address}/${new_pci}?projectId=${projectId}`
+      `${baseUrl}/v1/sessions/${address}/getcontext?projectId=${projectId}&pci=${new_pci}`
     )
     expect(resp.status).toBe(200)
     expect(resp.data.context).toBe('0x00')
