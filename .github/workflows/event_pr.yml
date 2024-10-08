@@ -53,6 +53,7 @@ jobs:
       check-infra: ${{ needs.paths-filter.outputs.infra == 'true' }}
       check-udeps: false
       rust-toolchain: stable
+      rust-test-args: --features=full,test-localhost --lib --bins
 
   test_bundler:
     name: Test with mock bundler
