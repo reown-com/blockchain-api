@@ -21,76 +21,98 @@ describe('Sessions/Permissions', () => {
   let signing_key: string;
   
   it('create new session', async () => {
+    const permission = {
+      expiry: Math.floor(Date.now() / 1000) + 3600,
+      signer: {
+          type: "k256",
+          data: "0x"
+        },
+      permissions: [
+        {
+          type: "custom",
+          data: "0x"
+        }
+      ],
+      policies: [
+        {
+          type: "custom",
+          data: "0x"
+        }
+      ]
+    }
+
     let resp: any = await httpClient.post(
-      `${baseUrl}/v1/sessions/${address}`,
-      payload
+      `${baseUrl}/v1/sessions/${address}?projectId=${projectId}`,
+      permission
     )
+
     expect(resp.status).toBe(200)
     expect(typeof resp.data.pci).toBe('string')
     new_pci = resp.data.pci
-    expect(typeof resp.data.key).toBe('string')
-    // check key is base64 encoded
-    expect(Buffer.from(resp.data.key, 'base64').toString('base64')).toBe(resp.data.key)
-    signing_key = resp.data.key
+    expect(typeof resp.data.key).toBe('object')
+    expect(resp.data.key.type).toBe('secp256k1')
+    // check key is string starting from 0x
+    expect(resp.data.key.publicKey.startsWith('0x')).toBe(true)
   })
 
   it('list PCIs for address', async () => {
     let resp = await httpClient.get(
-      `${baseUrl}/v1/sessions/${address}`
+      `${baseUrl}/v1/sessions/${address}?projectId=${projectId}`
     )
     expect(resp.status).toBe(200)
-    expect(resp.data.pci.length).toBe(1)
-    expect(resp.data.pci[0]).toBe(new_pci)
+    expect(resp.data.pcis.length).toBe(1)
+    let pci = resp.data.pcis[0]
+    expect(pci.pci).toBe(new_pci)
+    expect(pci.project.id).toBe(projectId)
   })
 
-  it('get session by PCI', async () => {
-    let resp = await httpClient.get(
-      `${baseUrl}/v1/sessions/${address}/${new_pci}`
-    )
-    expect(resp.status).toBe(200)
-    expect(resp.data.permissionType).toBe(payload.permission.permissionType)
-    expect(resp.data.data).toBe(payload.permission.data)
-    expect(resp.data.required).toBe(payload.permission.required)
-    expect(resp.data.onChainValidated).toBe(payload.permission.onChainValidated)
-  })
-
-  it('update PCI permission context', async () => {
+  it('update PCI permission context (activate)', async () => {
     const context = {
-      expiry: 1234567890,
-      factory: "exampleFactory",
-      factoryData: "exampleFactoryData",
-      permissionsContext: "examplePermissionsContext",
-      signer: {
-        type: "exampleType",
-        data:{
-          ids: ["exampleId1", "exampleId2"]
-        }, 
-      },
-      signerData:{
-        userOpBuilder: "exampleUserOpBuilder",
-      }
-    }
-    
-    const payload = {
       pci: new_pci,
-      context
+      expiry: Math.floor(Date.now() / 1000) + 3600,
+      signer: {
+        type: "k256",
+        data: "0x"
+      },
+      permissions: [
+        {
+          type: "custom",
+          data: "0x"
+        }
+      ],
+      policies: [
+        {
+          type: "custom",
+          data: "0x"
+        }
+      ],
+      context: "0x00"
     }
     
     let resp: any = await httpClient.post(
-      `${baseUrl}/v1/sessions/${address}/context`,
-      payload
+      `${baseUrl}/v1/sessions/${address}/activate?projectId=${projectId}`,
+      context
+    )
+
+    expect(resp.status).toBe(200)
+  })
+
+  it('get session context by PCI', async () => {
+    let resp = await httpClient.get(
+      `${baseUrl}/v1/sessions/${address}/${new_pci}?projectId=${projectId}`
     )
     expect(resp.status).toBe(200)
+    expect(resp.data.context).toBe('0x00')
   })
 
   it('revoke PCI permission', async () => {
     // Check PCI is exists
     let resp = await httpClient.get(
-      `${baseUrl}/v1/sessions/${address}`
+      `${baseUrl}/v1/sessions/${address}?projectId=${projectId}`
     )
     expect(resp.status).toBe(200)
-    expect(resp.data.pci.length).toBe(1)
-    expect(resp.data.pci[0]).toBe(new_pci)
+    expect(resp.data.pcis.length).toBe(1)
+    expect(resp.data.pcis[0].pci).toBe(new_pci)
 
     let payload = {
       pci: new_pci,
@@ -98,16 +120,16 @@ describe('Sessions/Permissions', () => {
     
     // Revoke PCI
     resp = await httpClient.post(
-      `${baseUrl}/v1/sessions/${address}/revoke`,
+      `${baseUrl}/v1/sessions/${address}/revoke?projectId=${projectId}`,
       payload
     )
     expect(resp.status).toBe(200)
 
     // check PCI is revoked
     resp = await httpClient.get(
-      `${baseUrl}/v1/sessions/${address}`
+      `${baseUrl}/v1/sessions/${address}?projectId=${projectId}`
     )
     expect(resp.status).toBe(200)
-    expect(resp.data.pci.length).toBe(0)
+    expect(resp.data.pcis.length).toBe(0)
   })
 })
