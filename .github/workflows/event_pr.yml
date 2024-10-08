@@ -69,7 +69,6 @@ jobs:
       - run: cd irn && docker compose up -d
       - run: docker compose up -d redis postgres
       - run: docker compose -f docker-compose.mock-bundler.yaml up -d
-        working-directory: test/scripts/forked_state
       - run: while ! curl localhost:5432/health; do sleep 1; done # Postgres
       - run: while ! curl localhost:6379/health; do sleep 1; done # Redis
       - run: while ! curl localhost:8545/health; do sleep 1; done # Anvil
