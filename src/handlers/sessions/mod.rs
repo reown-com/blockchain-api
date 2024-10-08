@@ -13,6 +13,12 @@ pub mod get;
 pub mod list;
 pub mod revoke;
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryParams {
+    pub project_id: String,
+}
+
 /// Payload to create a new permission
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NewPermissionPayload {
@@ -56,7 +62,9 @@ pub struct PermissionSubContextSignerData {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StoragePermissionsItem {
-    expiry: usize,
+    expiration: usize,
+    created_at: usize,
+    project_id: String,
     signer: PermissionTypeData,
     permissions: Vec<PermissionTypeData>,
     policies: Vec<PermissionTypeData>,
