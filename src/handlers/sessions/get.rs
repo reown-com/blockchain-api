@@ -1,7 +1,5 @@
 use {
-    super::{
-        super::HANDLER_TASK_METRICS, GetPermissionsRequest, QueryParams, StoragePermissionsItem,
-    },
+    super::{super::HANDLER_TASK_METRICS, StoragePermissionsItem},
     crate::{
         error::RpcError,
         metrics::Metrics,
@@ -18,18 +16,26 @@ use {
         response::{IntoResponse, Response},
         Json,
     },
+    serde::{Deserialize, Serialize},
     serde_json::json,
     std::{sync::Arc, time::SystemTime},
     uuid::Uuid,
     wc::future::FutureExt,
 };
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryParams {
+    pub project_id: String,
+    pub pci: uuid::Uuid,
+}
+
 pub async fn handler(
     state: State<Arc<AppState>>,
-    request: Path<GetPermissionsRequest>,
+    address: Path<String>,
     query_params: Query<QueryParams>,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, request, query_params)
+    handler_internal(state, address, query_params)
         .with_metrics(HANDLER_TASK_METRICS.with_name("sessions_create"))
         .await
 }
@@ -37,7 +43,7 @@ pub async fn handler(
 #[tracing::instrument(skip(state), level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
-    Path(request): Path<GetPermissionsRequest>,
+    Path(address): Path<String>,
     query_params: Query<QueryParams>,
 ) -> Result<Response, RpcError> {
     let project_id = query_params.project_id.clone();
@@ -46,11 +52,11 @@ async fn handler_internal(
     let irn_client = state.irn.as_ref().ok_or(RpcError::IrnNotConfigured)?;
 
     // Checking the CAIP-10 address format
-    disassemble_caip10(&request.address)?;
+    disassemble_caip10(&address.clone())?;
 
     let context = get_session_context(
-        request.address.clone(),
-        request.pci,
+        address.clone(),
+        query_params.pci,
         irn_client,
         &state.metrics,
     )
