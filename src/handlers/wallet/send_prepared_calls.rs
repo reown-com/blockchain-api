@@ -196,7 +196,10 @@ async fn handler_internal(
                                 .to_checksum(None)
                         )
                     }),
-                    Query(CoSignQueryParams { version: None }),
+                    Query(CoSignQueryParams {
+                        project_id: project_id.clone(),
+                        version: None,
+                    }),
                     Json(CoSignRequest {
                         pci: request.context.to_string(),
                         user_op: UserOperation {

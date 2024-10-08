@@ -53,6 +53,7 @@ pub struct SendUserOpResponse {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CoSignQueryParams {
+    pub project_id: String,
     /// CoSigner version for testing purposes
     pub version: Option<u8>,
 }
@@ -75,6 +76,9 @@ async fn handler_internal(
     request_payload: CoSignRequest,
     query_payload: Query<CoSignQueryParams>,
 ) -> Result<Response, RpcError> {
+    let project_id = query_payload.project_id.clone();
+    state.validate_project_access_and_quota(&project_id).await?;
+
     // Checking the CAIP-10 address format
     let (namespace, chain_id, address) = disassemble_caip10(&caip10_address)?;
     if namespace != CaipNamespaces::Eip155 {
