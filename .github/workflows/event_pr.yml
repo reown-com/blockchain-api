@@ -66,6 +66,14 @@ jobs:
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.4
       - run: rustup update stable && rustup default stable
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: WalletConnectBot
+          password: ${{ secrets.PRIVATE_GHCR_TOKEN_WCF }}
+      - run: docker pull ghcr.io/walletconnectfoundation/irn-node:sha-baef4e8
+      - run: docker tag ghcr.io/walletconnectfoundation/irn-node:sha-baef4e8 irn:master
       - run: cd irn && docker compose up -d
       - run: docker compose up -d redis postgres
       - run: docker compose -f docker-compose.mock-bundler.yaml up -d
