@@ -57,6 +57,7 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> error::RpcResult<Config> {
+        println!("RPC_PROXY_POSTGRES_URI: {}", std::env::var("RPC_PROXY_POSTGRES_URI").unwrap());
         Ok(Self {
             server: from_env("RPC_PROXY_")?,
             registry: from_env("RPC_PROXY_REGISTRY_")?,

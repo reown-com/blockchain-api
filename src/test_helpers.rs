@@ -35,8 +35,11 @@ pub async fn spawn_blockchain_api_with_params(params: Params) -> Url {
     let rt = Handle::current();
     let public_addr = SocketAddr::new(IpAddr::V4(hostname), public_port);
 
+    println!("RPC_PROXY_POSTGRES_URI 1: {}", std::env::var("RPC_PROXY_POSTGRES_URI").unwrap());
     std::thread::spawn(move || {
+        println!("RPC_PROXY_POSTGRES_URI 2: {}", std::env::var("RPC_PROXY_POSTGRES_URI").unwrap());
         rt.block_on(async move {
+            println!("RPC_PROXY_POSTGRES_URI 3: {}", std::env::var("RPC_PROXY_POSTGRES_URI").unwrap());
             let mut config = Config::from_env()?;
             config.server = ServerConfig {
                 port: public_port,
