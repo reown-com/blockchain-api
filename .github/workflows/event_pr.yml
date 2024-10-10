@@ -99,6 +99,16 @@ jobs:
         if: failure()
       - run: docker logs mock-bundler-mock-paymaster-1
         if: failure()
+      - run: docker logs blockchain-api-postgres-1
+        if: failure()
+      - run: docker logs blockchain-api-redis-1
+        if: failure()
+      - run: docker logs irn-node-1
+        if: failure()
+      - run: docker logs irn-node-2
+        if: failure()
+      - run: docker logs irn-node-3
+        if: failure()
 
   merge_check:
     name: Merge Check
