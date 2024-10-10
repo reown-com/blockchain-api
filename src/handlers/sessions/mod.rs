@@ -3,7 +3,6 @@ use {
     alloy::primitives::Bytes,
     serde::{Deserialize, Serialize},
     serde_json::Value,
-    uuid::Uuid,
 };
 
 pub mod context;
@@ -32,12 +31,6 @@ pub struct NewPermissionPayload {
 pub struct PermissionTypeData {
     pub r#type: String,
     pub data: Value,
-}
-// Payload to get permission by PCI
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct GetPermissionsRequest {
-    address: String,
-    pci: Uuid,
 }
 
 /// Permissions Context item schema

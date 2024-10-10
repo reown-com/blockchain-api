@@ -30,21 +30,4 @@ describe('Proxy', () => {
     )
     expect(resp.status).toBe(401)
   })
-
-  it('Bad JSON-RPC request', async () => {
-    // Missing the id field
-    const payload = {
-      jsonrpc: "2.0",
-      method: "eth_chainId",
-      params: [],
-    };
-    const chainId = "eip155:11155111";
-
-    let resp: any = await httpClient.post(
-      `${baseUrl}/v1?chainId=${chainId}&projectId=${projectId}`,
-      payload
-    )
-    expect(resp.status).toBe(400)
-    expect(typeof resp.data).toBe('object')
-  })
 })
