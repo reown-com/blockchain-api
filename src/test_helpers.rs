@@ -27,7 +27,7 @@ pub async fn spawn_blockchain_api() -> Url {
 }
 
 pub async fn spawn_blockchain_api_with_params(params: Params) -> Url {
-    dotenv::dotenv().ok();
+    // dotenv::dotenv().ok();
 
     let public_port = get_random_port();
     let prometheus_port = get_random_port();

@@ -81,9 +81,7 @@ jobs:
       - run: while ! curl localhost:8545/health; do sleep 1; done # Anvil
       - run: while ! curl localhost:4337/health; do sleep 1; done # Mock Bundler
       - run: while ! curl localhost:3000/ping; do sleep 1; done   # Mock Paymaster
-      - run: |
-          env
-          cargo test --features=test-mock-bundler --lib --bins
+      - run: cargo test --features=test-mock-bundler --lib --bins
         env:
           RPC_PROXY_POSTGRES_URI: "postgres://postgres@localhost/postgres"
           RPC_PROXY_PROVIDER_INFURA_PROJECT_ID: ""
