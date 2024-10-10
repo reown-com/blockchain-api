@@ -310,7 +310,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_calls_status() {
-        println!("RPC_PROXY_POSTGRES_URI: {}", std::env::var("RPC_PROXY_POSTGRES_URI").unwrap());
+        println!("RPC_PROXY_POSTGRES_URI -1: {}", std::env::var("RPC_PROXY_POSTGRES_URI").unwrap());
         // let anvil = Anvil::new().spawn();
         let config = Config::local();
         let faucet = anvil_faucet(config.endpoints.rpc.base_url.clone()).await;
