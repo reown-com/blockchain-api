@@ -4,10 +4,17 @@ use {
         error::RpcError,
         state::AppState,
         storage::irn::OperationType,
-        utils::crypto::{
-            abi_encode_two_bytes_arrays, call_get_user_op_hash, disassemble_caip10,
-            is_address_valid, pack_signature, to_eip191_message, CaipNamespaces, ChainId,
-            UserOperation,
+        utils::{
+            crypto::{
+                abi_encode_two_bytes_arrays, call_get_user_op_hash, disassemble_caip10,
+                is_address_valid, pack_signature, to_eip191_message, CaipNamespaces, ChainId,
+                UserOperation,
+            },
+            permissions::{
+                contract_call_permission_check, native_token_transfer_permission_check,
+                ContractCallPermissionData, NativeTokenTransferPermissionData, PermissionType,
+            },
+            sessions::extract_execution_batch_components,
         },
     },
     axum::{
@@ -16,16 +23,15 @@ use {
         Json,
     },
     ethers::{
-        abi::{Abi, Token},
         core::k256::ecdsa::SigningKey,
         signers::LocalWallet,
-        types::{Bytes, H160, H256},
+        types::{H160, H256},
         utils::keccak256,
     },
     serde::{Deserialize, Serialize},
-    serde_json::{json, Value},
-    std::{sync::Arc, time::SystemTime},
-    tracing::error,
+    serde_json::json,
+    std::{str::FromStr, sync::Arc, time::SystemTime},
+    tracing::debug,
     wc::future::FutureExt,
 };
 
@@ -60,14 +66,6 @@ pub struct CoSignQueryParams {
     pub version: Option<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ContractCallPermissionData {
-    pub address: H160,
-    pub abi: Value,
-    pub functions: Value,
-}
-
 pub async fn handler(
     state: State<Arc<AppState>>,
     address: Path<String>,
@@ -77,148 +75,6 @@ pub async fn handler(
     handler_internal(state, address, request_payload, query_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("sessions_co_sign"))
         .await
-}
-
-fn extract_target_from_calldata_using_abi(call_data_bytes: Vec<u8>) -> Result<H160, RpcError> {
-    // 1. Define the execute function ABI
-    let execute_abi_json = r#"
-    [
-      {
-        "type": "function",
-        "name": "execute",
-        "inputs": [
-          {
-            "name": "execMode",
-            "type": "bytes32",
-            "internalType": "ExecMode"
-          },
-          {
-            "name": "executionCalldata",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ],
-        "outputs": [],
-        "stateMutability": "payable"
-      }
-    ]
-    "#;
-
-    // 2. Parse the execute ABI
-    let execute_abi: Abi = serde_json::from_str(execute_abi_json)?;
-    let execute_function = execute_abi.function("execute").map_err(|e| {
-        RpcError::AbiDecodingError(format!("Failed to parse execute function: {}", e))
-    })?;
-
-    // 4. Verify the function selector
-    let function_selector = &call_data_bytes[0..4];
-    let expected_selector = execute_function.short_signature();
-
-    if function_selector != expected_selector {
-        return Err(RpcError::AbiDecodingError(
-            "Function selector does not match `execute`".into(),
-        ));
-    }
-
-    // 5. Decode the calldata
-    let decoded_params = execute_function
-        .decode_input(&call_data_bytes[4..])
-        .map_err(|e| RpcError::AbiDecodingError(format!("Failed to decode calldata: {}", e)))?;
-
-    // 6. Extract executionCalldata
-    let execution_calldata = match &decoded_params[1] {
-        Token::Bytes(bytes) => bytes,
-        _ => {
-            return Err(RpcError::AbiDecodingError(
-                "executionCalldata is not bytes".into(),
-            ))
-        }
-    };
-
-    // 7. Define the executionCalldata ABI
-    // Since ethers-rs requires function definitions to parse parameters,
-    // we wrap the executionCalldata parameter into a dummy function.
-    let execution_calldata_abi_json = r#"
-    [
-      {
-        "type": "function",
-        "name": "decodeExecutionCalldata",
-        "inputs": [
-          {
-            "name": "executionBatch",
-            "type": "tuple[]",
-            "components": [
-              {
-                "name": "target",
-                "type": "address"
-              },
-              {
-                "name": "value",
-                "type": "uint256"
-              },
-              {
-                "name": "callData",
-                "type": "bytes"
-              }
-            ]
-          }
-        ],
-        "outputs": []
-      }
-    ]
-    "#;
-
-    // 8. Parse the executionCalldata ABI
-    let execution_calldata_abi: Abi = serde_json::from_str(execution_calldata_abi_json)?;
-    let decode_function = execution_calldata_abi
-        .function("decodeExecutionCalldata")
-        .map_err(|e| {
-            RpcError::AbiDecodingError(format!(
-                "Failed to parse decodeExecutionCalldata function: {}",
-                e
-            ))
-        })?;
-
-    // 9. Decode executionCalldata
-    let tokens = decode_function
-        .decode_input(execution_calldata)
-        .map_err(|e| {
-            RpcError::AbiDecodingError(format!("Failed to decode executionCalldata: {}", e))
-        })?;
-
-    // 10. Extract the target address
-    let execution_batch = match &tokens[0] {
-        Token::Array(arr) => arr,
-        _ => {
-            return Err(RpcError::AbiDecodingError(
-                "Expected an array for executionBatch".into(),
-            ))
-        }
-    };
-
-    if execution_batch.is_empty() {
-        return Err(RpcError::AbiDecodingError("executionBatch is empty".into()));
-    }
-
-    let first_tx = match &execution_batch[0] {
-        Token::Tuple(tuple) => tuple,
-        _ => {
-            return Err(RpcError::AbiDecodingError(
-                "Expected a tuple for transaction".into(),
-            ))
-        }
-    };
-
-    let target = match &first_tx[0] {
-        Token::Address(addr) => *addr,
-        _ => {
-            return Err(RpcError::AbiDecodingError(
-                "Expected address for target".into(),
-            ))
-        }
-    };
-
-    Ok(target)
 }
 
 #[tracing::instrument(skip(state), level = "debug")]
@@ -247,12 +103,6 @@ async fn handler_internal(
     if !ChainId::is_supported(chain_id_uint) {
         return Err(RpcError::UnsupportedChain(chain_id.clone()));
     }
-
-    // json stringify request_payload
-    error!(
-        "request_payload: {:?}",
-        serde_json::to_string(&request_payload)
-    );
 
     let chain_id_caip2 = format!("{}:{}", namespace, chain_id);
     let mut user_op = request_payload.user_op.clone();
@@ -297,32 +147,36 @@ async fn handler_internal(
         .add_irn_latency(irn_call_start, OperationType::Hget);
     let storage_permissions_item =
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
+    let call_data = request_payload.user_op.call_data.clone();
 
-    error!(
-        "storage_permissions_item: {:?}",
-        serde_json::to_string(&storage_permissions_item)
-    );
+    // Extract the batch components
+    let execution_batch = extract_execution_batch_components(call_data.to_vec())?;
 
-    // Check the permission type
+    // Check permissions by types
     for permission in storage_permissions_item.permissions {
-        if permission.r#type == "contract-call" {
-            let call_data = request_payload.user_op.call_data.clone();
-            let contract_address = extract_target_from_calldata_using_abi(call_data.to_vec())?;
-
-            println!("Extracted Contract Address: {:?}", contract_address);
-            println!(
-                "Permission Data: {:?}",
-                serde_json::to_string(&permission.data)
-            );
-
-            let contract_call_permission_data =
-                serde_json::from_value::<ContractCallPermissionData>(permission.data)?;
-            if contract_call_permission_data.address != contract_address {
-                error!("Contract address does not match the target address in the permission data. UserOp Address: {:?}, Permission Target: {:?}", contract_address, contract_call_permission_data.address);
-                return Err(RpcError::CosignerPermissionsDenied(format!(
-                    "Contract address does not match the target address in the permission data. UserOp Address: {:?}, Permission Target: {:?}",
-                    contract_address, contract_call_permission_data.address.to_string()
-                )));
+        match PermissionType::from_str(permission.r#type.as_str()) {
+            Ok(permission_type) => match permission_type {
+                PermissionType::ContractCall => {
+                    debug!("Executing contract call permission check");
+                    contract_call_permission_check(
+                        execution_batch.clone(),
+                        serde_json::from_value::<ContractCallPermissionData>(
+                            permission.data.clone(),
+                        )?,
+                    )?;
+                }
+                PermissionType::NativeTokenTransfer => {
+                    debug!("Executing native token transfer permission check");
+                    native_token_transfer_permission_check(
+                        execution_batch.clone(),
+                        serde_json::from_value::<NativeTokenTransferPermissionData>(
+                            permission.data.clone(),
+                        )?,
+                    )?;
+                }
+            },
+            Err(_) => {
+                return Err(RpcError::CosignerUnsupportedPermission(permission.r#type));
             }
         }
     }

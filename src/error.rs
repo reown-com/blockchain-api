@@ -218,8 +218,11 @@ pub enum RpcError {
     #[error("Permission context was not updated yet: {0}")]
     PermissionContextNotUpdated(String),
 
-    #[error("Cosigner permissions denied: {0}")]
-    CosignerPermissionsDenied(String),
+    #[error("Cosigner permission denied: {0}")]
+    CosignerPermissionDenied(String),
+
+    #[error("Cosigner unsupported permission: {0}")]
+    CosignerUnsupportedPermission(String),
 
     #[error("ABI decoding error: {0}")]
     AbiDecodingError(String),
@@ -567,7 +570,7 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
-            Self::CosignerPermissionsDenied(e) => (
+            Self::CosignerPermissionDenied(e) => (
                     StatusCode::UNAUTHORIZED,
                     Json(new_error_response(
                         "".to_string(),
@@ -575,6 +578,14 @@ impl IntoResponse for RpcError {
                     )),
                 )
                     .into_response(),
+            Self::CosignerUnsupportedPermission(e) => (
+                StatusCode::UNAUTHORIZED,
+                Json(new_error_response(
+                    "".to_string(),
+                    format!("Unsupported permission in CoSigner: {}", e),
+                )),
+            )
+                .into_response(),
             // Any other errors considering as 500
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,
