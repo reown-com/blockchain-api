@@ -298,15 +298,42 @@ mod tests {
     use alloy::{
         network::Ethereum,
         primitives::{Bytes, Uint, U256, U64, U8},
-        providers::{Provider, ReqwestProvider},
-        signers::local::LocalSigner,
+        providers::{ext::AnvilApi, Provider, ReqwestProvider},
+        signers::{k256::ecdsa::SigningKey, local::LocalSigner},
     };
+    use reqwest::IntoUrl;
     use yttrium::{
         config::Config,
         smart_accounts::safe::{get_account_address, Owners},
-        test_helpers::{anvil_faucet, use_faucet},
+        test_helpers::use_faucet,
         transaction::{send::safe_test::send_transactions, Transaction},
     };
+
+    pub async fn anvil_faucet<T: IntoUrl>(url: T) -> LocalSigner<SigningKey> {
+        println!(
+            "RPC_PROXY_POSTGRES_URI b.1: {}",
+            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
+        );
+        let faucet = LocalSigner::random();
+        println!(
+            "RPC_PROXY_POSTGRES_URI b.2: {}",
+            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
+        );
+        let provider = ReqwestProvider::<Ethereum>::new_http(url.into_url().unwrap());
+        println!(
+            "RPC_PROXY_POSTGRES_URI b.3: {}",
+            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
+        );
+        provider
+            .anvil_set_balance(faucet.address(), U256::MAX)
+            .await
+            .unwrap();
+        println!(
+            "RPC_PROXY_POSTGRES_URI b.4: {}",
+            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
+        );
+        faucet
+    }
 
     #[tokio::test]
     async fn test_get_calls_status() {
