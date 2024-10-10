@@ -315,6 +315,11 @@ mod tests {
             std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
         );
         let faucet = LocalSigner::random();
+        std::env::vars().for_each(|(k, v)| println!("{}: {}", k, v));
+        println!(
+            "RPC_PROXY_POSTGRES_URI b.2: {:?}",
+            std::env::var_os("RPC_PROXY_POSTGRES_URI").unwrap()
+        );
         println!(
             "RPC_PROXY_POSTGRES_URI b.2: {}",
             std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
