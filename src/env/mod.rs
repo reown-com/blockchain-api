@@ -101,6 +101,7 @@ mod test {
     };
 
     #[test]
+    #[cfg(not(feature = "test-mock-bundler"))] // These tests depend on environment variables
     fn ensure_env_var_config() {
         let values = [
             // Server config.
