@@ -298,80 +298,28 @@ mod tests {
     use alloy::{
         network::Ethereum,
         primitives::{Bytes, Uint, U256, U64, U8},
-        providers::{ext::AnvilApi, Provider, ReqwestProvider},
-        signers::{k256::ecdsa::SigningKey, local::LocalSigner},
+        providers::{Provider, ReqwestProvider},
+        signers::local::LocalSigner,
     };
-    use reqwest::IntoUrl;
     use yttrium::{
         config::Config,
         smart_accounts::safe::{get_account_address, Owners},
-        test_helpers::use_faucet,
+        test_helpers::{anvil_faucet, use_faucet},
         transaction::{send::safe_test::send_transactions, Transaction},
     };
 
-    pub async fn anvil_faucet<T: IntoUrl>(url: T) -> LocalSigner<SigningKey> {
-        println!(
-            "RPC_PROXY_POSTGRES_URI b.1: {}",
-            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
-        );
-        let faucet = LocalSigner::random();
-        std::env::vars().for_each(|(k, v)| println!("{}: {}", k, v));
-        println!(
-            "RPC_PROXY_POSTGRES_URI b.2: {:?}",
-            std::env::var_os("RPC_PROXY_POSTGRES_URI").unwrap()
-        );
-        println!(
-            "RPC_PROXY_POSTGRES_URI b.2: {}",
-            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
-        );
-        let provider = ReqwestProvider::<Ethereum>::new_http(url.into_url().unwrap());
-        println!(
-            "RPC_PROXY_POSTGRES_URI b.3: {}",
-            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
-        );
-        provider
-            .anvil_set_balance(faucet.address(), U256::MAX)
-            .await
-            .unwrap();
-        println!(
-            "RPC_PROXY_POSTGRES_URI b.4: {}",
-            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
-        );
-        faucet
-    }
-
     #[tokio::test]
     async fn test_get_calls_status() {
-        println!(
-            "RPC_PROXY_POSTGRES_URI -1: {}",
-            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
-        );
         // let anvil = Anvil::new().spawn();
         let config = Config::local();
-        println!(
-            "RPC_PROXY_POSTGRES_URI a.2: {}",
-            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
-        );
         let faucet = anvil_faucet(config.endpoints.rpc.base_url.clone()).await;
-        println!(
-            "RPC_PROXY_POSTGRES_URI a.3: {}",
-            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
-        );
 
         let provider =
             ReqwestProvider::<Ethereum>::new_http(config.endpoints.rpc.base_url.parse().unwrap());
-        println!(
-            "RPC_PROXY_POSTGRES_URI a.4: {}",
-            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
-        );
 
         let destination = LocalSigner::random();
         let balance = provider.get_balance(destination.address()).await.unwrap();
         assert_eq!(balance, Uint::from(0));
-        println!(
-            "RPC_PROXY_POSTGRES_URI a.5: {}",
-            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
-        );
 
         let owner = LocalSigner::random();
         let sender_address = get_account_address(
@@ -382,10 +330,6 @@ mod tests {
             },
         )
         .await;
-        println!(
-            "RPC_PROXY_POSTGRES_URI a.6: {}",
-            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
-        );
 
         use_faucet(
             provider.clone(),
@@ -394,10 +338,6 @@ mod tests {
             sender_address.into(),
         )
         .await;
-        println!(
-            "RPC_PROXY_POSTGRES_URI a.7: {}",
-            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
-        );
 
         let transaction = vec![Transaction {
             to: destination.address(),
@@ -409,18 +349,10 @@ mod tests {
             .await
             .unwrap();
         assert!(receipt.success);
-        println!(
-            "RPC_PROXY_POSTGRES_URI a.8: {}",
-            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
-        );
 
         let balance = provider.get_balance(destination.address()).await.unwrap();
         assert_eq!(balance, Uint::from(1));
 
-        println!(
-            "RPC_PROXY_POSTGRES_URI a.199: {}",
-            std::env::var("RPC_PROXY_POSTGRES_URI").unwrap()
-        );
         let url = spawn_blockchain_api_with_params(crate::test_helpers::Params {
             validate_project_id: false,
             override_bundler_urls: Some(MockAltoUrls {

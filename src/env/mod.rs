@@ -57,7 +57,6 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> error::RpcResult<Config> {
-        println!("RPC_PROXY_POSTGRES_URI 0: {}", std::env::var("RPC_PROXY_POSTGRES_URI").unwrap());
         Ok(Self {
             server: from_env("RPC_PROXY_")?,
             registry: from_env("RPC_PROXY_REGISTRY_")?,
@@ -84,6 +83,7 @@ pub trait ProviderConfig {
 }
 
 #[cfg(test)]
+#[cfg(not(feature = "test-mock-bundler"))] // These tests depend on environment variables
 mod test {
     use {
         crate::{
@@ -101,7 +101,6 @@ mod test {
     };
 
     #[test]
-    #[cfg(not(feature = "test-mock-bundler"))] // These tests depend on environment variables
     fn ensure_env_var_config() {
         let values = [
             // Server config.
