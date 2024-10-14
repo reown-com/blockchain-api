@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.117.0 - 2024-10-14
+#### Bug Fixes
+- **(ci)** bumping the ci_workflows to the latest version (#806) - (68e1ede) - Max Kalashnikoff | maksy.eth
+- **(tests)** removing JSON-RPC bad request test (#808) - (a517e6a) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(grafana)** adding Berachain provider panels (#800) - (5b32c5c) - Max Kalashnikoff | maksy.eth
+- **(providers)** adding Unichain support (#810) - (ed01206) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.113.0 - 2024-10-03
 #### Features
 - **(providers)** adding Sei network support (#797) - (0a0ae73) - Max Kalashnikoff | maksy.eth
