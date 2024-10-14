@@ -19,8 +19,8 @@ use {
     },
     env::{
         AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig, GetBlockConfig, InfuraConfig,
-        MantleConfig, NearConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig, ZKSyncConfig,
-        ZoraConfig,
+        MantleConfig, NearConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig, UnichainConfig,
+        ZKSyncConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
@@ -28,8 +28,8 @@ use {
     providers::{
         AuroraProvider, BaseProvider, BerachainProvider, BinanceProvider, GetBlockProvider,
         InfuraProvider, InfuraWsProvider, MantleProvider, NearProvider, PoktProvider,
-        ProviderRepository, PublicnodeProvider, QuicknodeProvider, ZKSyncProvider, ZoraProvider,
-        ZoraWsProvider,
+        ProviderRepository, PublicnodeProvider, QuicknodeProvider, UnichainProvider,
+        ZKSyncProvider, ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -480,6 +480,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_provider::<NearProvider, NearConfig>(NearConfig::default());
     providers.add_provider::<MantleProvider, MantleConfig>(MantleConfig::default());
     providers.add_provider::<BerachainProvider, BerachainConfig>(BerachainConfig::default());
+    providers.add_provider::<UnichainProvider, UnichainConfig>(UnichainConfig::default());
 
     if let Some(getblock_access_tokens) = &config.getblock_access_tokens {
         providers.add_provider::<GetBlockProvider, GetBlockConfig>(GetBlockConfig::new(
