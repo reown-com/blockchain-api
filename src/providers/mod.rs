@@ -56,6 +56,7 @@ mod pokt;
 mod publicnode;
 mod quicknode;
 mod solscan;
+mod unichain;
 mod weights;
 pub mod zerion;
 mod zksync;
@@ -76,6 +77,7 @@ pub use {
     publicnode::PublicnodeProvider,
     quicknode::QuicknodeProvider,
     solscan::SolScanProvider,
+    unichain::UnichainProvider,
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
 };
@@ -463,6 +465,7 @@ pub enum ProviderKind {
     Mantle,
     GetBlock,
     SolScan,
+    Unichain,
 }
 
 impl Display for ProviderKind {
@@ -488,6 +491,7 @@ impl Display for ProviderKind {
                 ProviderKind::Mantle => "Mantle",
                 ProviderKind::GetBlock => "GetBlock",
                 ProviderKind::SolScan => "SolScan",
+                ProviderKind::Unichain => "Unichain",
             }
         )
     }
@@ -514,6 +518,7 @@ impl ProviderKind {
             "Mantle" => Some(Self::Mantle),
             "GetBlock" => Some(Self::GetBlock),
             "SolScan" => Some(Self::SolScan),
+            "Unichain" => Some(Self::Unichain),
             _ => None,
         }
     }
