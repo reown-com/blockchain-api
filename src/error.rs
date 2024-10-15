@@ -218,6 +218,9 @@ pub enum RpcError {
     #[error("Permission context was not updated yet: {0}")]
     PermissionContextNotUpdated(String),
 
+    #[error("Permission is revoked: {0}")]
+    RevokedPermission(String),
+
     #[error("Cosigner permission denied: {0}")]
     CosignerPermissionDenied(String),
 
@@ -489,7 +492,15 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response()
-        },
+            },
+            Self::RevokedPermission(pci) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "pci".to_string(),
+                    format!("Permission is revoked: {}", pci),
+                )),
+            )
+                .into_response(),
             Self::WrongBase64Format(e) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(

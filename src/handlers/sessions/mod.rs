@@ -64,6 +64,7 @@ pub struct StoragePermissionsItem {
     context: Option<Bytes>,
     verification_key: String,
     signing_key: String,
+    revoked_at: Option<usize>,
 }
 
 /// Permission revoke request schema

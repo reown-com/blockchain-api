@@ -134,7 +134,7 @@ pub fn extract_execution_batch_components(
 pub fn extract_addresses_from_execution_batch(
     execution_batch: Vec<Token>,
 ) -> Result<Vec<H160>, RpcError> {
-    let mut targets = Vec::new();
+    let mut targets = Vec::with_capacity(execution_batch.len());
     for tx in execution_batch {
         let tx = match &tx {
             Token::Tuple(tuple) => tuple,
@@ -163,7 +163,7 @@ pub fn extract_addresses_from_execution_batch(
 pub fn extract_values_from_execution_batch(
     execution_batch: Vec<Token>,
 ) -> Result<Vec<U256>, RpcError> {
-    let mut values = Vec::new();
+    let mut values = Vec::with_capacity(execution_batch.len());
     for tx in execution_batch {
         let tx = match &tx {
             Token::Tuple(tuple) => tuple,
