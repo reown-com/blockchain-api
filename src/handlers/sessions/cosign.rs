@@ -4,10 +4,17 @@ use {
         error::RpcError,
         state::AppState,
         storage::irn::OperationType,
-        utils::crypto::{
-            abi_encode_two_bytes_arrays, call_get_user_op_hash, disassemble_caip10,
-            is_address_valid, pack_signature, to_eip191_message, CaipNamespaces, ChainId,
-            UserOperation,
+        utils::{
+            crypto::{
+                abi_encode_two_bytes_arrays, call_get_user_op_hash, disassemble_caip10,
+                is_address_valid, pack_signature, to_eip191_message, CaipNamespaces, ChainId,
+                UserOperation,
+            },
+            permissions::{
+                contract_call_permission_check, native_token_transfer_permission_check,
+                ContractCallPermissionData, NativeTokenTransferPermissionData, PermissionType,
+            },
+            sessions::extract_execution_batch_components,
         },
     },
     axum::{
@@ -23,7 +30,8 @@ use {
     },
     serde::{Deserialize, Serialize},
     serde_json::json,
-    std::{sync::Arc, time::SystemTime},
+    std::{str::FromStr, sync::Arc, time::SystemTime},
+    tracing::debug,
     wc::future::FutureExt,
 };
 
@@ -139,6 +147,39 @@ async fn handler_internal(
         .add_irn_latency(irn_call_start, OperationType::Hget);
     let storage_permissions_item =
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
+    let call_data = request_payload.user_op.call_data.clone();
+
+    // Extract the batch components
+    let execution_batch = extract_execution_batch_components(call_data.to_vec())?;
+
+    // Check permissions by types
+    for permission in storage_permissions_item.permissions {
+        match PermissionType::from_str(permission.r#type.as_str()) {
+            Ok(permission_type) => match permission_type {
+                PermissionType::ContractCall => {
+                    debug!("Executing contract call permission check");
+                    contract_call_permission_check(
+                        execution_batch.clone(),
+                        serde_json::from_value::<ContractCallPermissionData>(
+                            permission.data.clone(),
+                        )?,
+                    )?;
+                }
+                PermissionType::NativeTokenTransfer => {
+                    debug!("Executing native token transfer permission check");
+                    native_token_transfer_permission_check(
+                        execution_batch.clone(),
+                        serde_json::from_value::<NativeTokenTransferPermissionData>(
+                            permission.data.clone(),
+                        )?,
+                    )?;
+                }
+            },
+            Err(_) => {
+                return Err(RpcError::CosignerUnsupportedPermission(permission.r#type));
+            }
+        }
+    }
 
     // Check and get the permission context if it's updated
     let _permission_context = storage_permissions_item

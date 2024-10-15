@@ -3,18 +3,18 @@ import { ethers } from "ethers"
 import { canonicalize } from 'json-canonicalize';
 import { createSign, createPrivateKey } from 'crypto';
 
+const contractCallPermission = {
+  type: "contract-call",
+  data: {
+    address:"0x2E65BAfA07238666c3b239E94F32DaD3cDD6498D",
+  }
+}
+
+const permissionContext = "0x00"
+
 describe('Sessions/Permissions', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
   const address = `eip155:1:${ethers.Wallet.createRandom().address}`;
-  // Session payload
-  const payload = {
-    permission: {
-      permissionType: "exampleType",
-      data: "exampleData",
-      required: true,
-      onChainValidated: false
-    }
-  }
   // New session PCI
   let new_pci: string;
   // New session signing (private) key
@@ -27,18 +27,8 @@ describe('Sessions/Permissions', () => {
           type: "k256",
           data: "0x"
         },
-      permissions: [
-        {
-          type: "custom",
-          data: "0x"
-        }
-      ],
-      policies: [
-        {
-          type: "custom",
-          data: "0x"
-        }
-      ]
+      permissions: [contractCallPermission],
+      policies: []
     }
 
     let resp: any = await httpClient.post(
@@ -74,19 +64,9 @@ describe('Sessions/Permissions', () => {
         type: "k256",
         data: "0x"
       },
-      permissions: [
-        {
-          type: "custom",
-          data: "0x"
-        }
-      ],
-      policies: [
-        {
-          type: "custom",
-          data: "0x"
-        }
-      ],
-      context: "0x00"
+      permissions: [contractCallPermission],
+      policies: [],
+      context: permissionContext
     }
     
     let resp: any = await httpClient.post(
@@ -102,7 +82,7 @@ describe('Sessions/Permissions', () => {
       `${baseUrl}/v1/sessions/${address}/getcontext?projectId=${projectId}&pci=${new_pci}`
     )
     expect(resp.status).toBe(200)
-    expect(resp.data.context).toBe('0x00')
+    expect(resp.data.context).toBe(permissionContext)
   })
 
   it('revoke PCI permission', async () => {
@@ -113,6 +93,7 @@ describe('Sessions/Permissions', () => {
     expect(resp.status).toBe(200)
     expect(resp.data.pcis.length).toBe(1)
     expect(resp.data.pcis[0].pci).toBe(new_pci)
+    expect(resp.data.pcis[0].revokedAt).toBe(null)
 
     let payload = {
       pci: new_pci,
@@ -130,6 +111,8 @@ describe('Sessions/Permissions', () => {
       `${baseUrl}/v1/sessions/${address}?projectId=${projectId}`
     )
     expect(resp.status).toBe(200)
-    expect(resp.data.pcis.length).toBe(0)
+    expect(resp.data.pcis.length).toBe(1)
+    // Check revokedAt is fullfilled
+    expect(typeof resp.data.pcis[0].revokedAt).toBe('number')
   })
 })

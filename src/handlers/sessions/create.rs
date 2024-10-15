@@ -90,6 +90,7 @@ async fn handler_internal(
         context: None,
         verification_key: public_key_der_hex.clone(),
         signing_key: private_key_der_hex.clone(),
+        revoked_at: None,
     };
 
     let irn_call_start = SystemTime::now();

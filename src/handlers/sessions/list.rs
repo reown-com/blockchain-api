@@ -31,6 +31,7 @@ struct Pci {
     pub permissions: Vec<PermissionTypeData>,
     pub policies: Vec<PermissionTypeData>,
     pub context: Option<Bytes>,
+    pub revoked_at: Option<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -107,6 +108,7 @@ async fn handler_internal(
             permissions: storage_permissions_item.permissions,
             policies: storage_permissions_item.policies,
             context: storage_permissions_item.context,
+            revoked_at: storage_permissions_item.revoked_at,
         });
     }
 

@@ -3,7 +3,9 @@ use rand::{distributions::Alphanumeric, Rng};
 pub mod build;
 pub mod crypto;
 pub mod network;
+pub mod permissions;
 pub mod rate_limit;
+pub mod sessions;
 
 pub fn generate_random_string(len: usize) -> String {
     let rng = rand::thread_rng();
