@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.119.0 - 2024-10-16
+#### Features
+- **(providers)** adding Unichain and Berachain to the Quicknode provider (#811) - (ca5f5bc) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.118.0 - 2024-10-15
 #### Features
 - **(CoSigner)** implementing `contract-call` and `native-token-transfer` permissions check (#809) - (051a9b7) - Max Kalashnikoff | maksy.eth
