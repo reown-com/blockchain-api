@@ -20,6 +20,22 @@ async fn quicknode_provider(ctx: &mut ServerContext) {
         "0x144",
     )
     .await;
+    // Unichain Sepolia
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Quicknode,
+        "eip155:1301",
+        "0x515",
+    )
+    .await;
+    // Berachain Bartio
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Quicknode,
+        "eip155:80084",
+        "0x138d4",
+    )
+    .await;
 }
 
 #[test_context(ServerContext)]
