@@ -58,6 +58,14 @@ fn extract_supported_chains_and_subdomains(
             ("snowy-chaotic-hill.zksync-mainnet", Priority::High),
         ),
         (
+            "eip155:1301",
+            ("blissful-side-log.unichain-sepolia", Priority::Normal),
+        ),
+        (
+            "eip155:80084",
+            ("frequent-capable-putty.bera-bartio", Priority::Normal),
+        ),
+        (
             "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
             ("indulgent-thrumming-bush.solana-mainnet", Priority::Normal),
         ),

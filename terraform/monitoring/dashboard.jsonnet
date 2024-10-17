@@ -82,6 +82,7 @@ dashboard.new(
     panels.usage.provider(ds, vars, 'Mantle')        { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'GetBlock')      { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Berachain')     { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Unichain')      { gridPos: pos._4 },
 
   row.new('RPC Proxy provider Weights'),
     panels.weights.provider(ds, vars, 'Aurora')      { gridPos: pos._4 },
@@ -97,6 +98,7 @@ dashboard.new(
     panels.weights.provider(ds, vars, 'Mantle')      { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'GetBlock')    { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Berachain')   { gridPos: pos._4 },
+    panels.weights.provider(ds, vars, 'Unichain')    { gridPos: pos._4 },
 
   row.new('RPC Proxy providers Status Codes'),
     panels.status.provider(ds, vars, 'Aurora')       { gridPos: pos._4 },
@@ -111,7 +113,8 @@ dashboard.new(
     panels.status.provider(ds, vars, 'zkSync')       { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Mantle')       { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'GetBlock')     { gridPos: pos._4 },
-    panels.status.provider(ds, vars, 'Berachain')     { gridPos: pos._4 },
+    panels.status.provider(ds, vars, 'Berachain')    { gridPos: pos._4 },
+    panels.status.provider(ds, vars, 'Unichain')     { gridPos: pos._4 },
 
   row.new('RPC Proxy Metrics'),
     panels.proxy.calls(ds, vars)                     { gridPos: pos._2 },

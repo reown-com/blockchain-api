@@ -217,6 +217,18 @@ pub enum RpcError {
 
     #[error("Permission context was not updated yet: {0}")]
     PermissionContextNotUpdated(String),
+
+    #[error("Permission is revoked: {0}")]
+    RevokedPermission(String),
+
+    #[error("Cosigner permission denied: {0}")]
+    CosignerPermissionDenied(String),
+
+    #[error("Cosigner unsupported permission: {0}")]
+    CosignerUnsupportedPermission(String),
+
+    #[error("ABI decoding error: {0}")]
+    AbiDecodingError(String),
 }
 
 impl IntoResponse for RpcError {
@@ -480,7 +492,15 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response()
-        },
+            },
+            Self::RevokedPermission(pci) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "pci".to_string(),
+                    format!("Permission is revoked: {}", pci),
+                )),
+            )
+                .into_response(),
             Self::WrongBase64Format(e) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
@@ -502,6 +522,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "signature".to_string(),
                     format!("Invalid signature format: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::AbiDecodingError(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "calldata".to_string(),
+                    format!("ABI signature decoding error: {}", e),
                 )),
             )
                 .into_response(),
@@ -550,6 +578,22 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "".to_string(),
                     "Convertion provider is temporarily unavailable".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::CosignerPermissionDenied(e) => (
+                    StatusCode::UNAUTHORIZED,
+                    Json(new_error_response(
+                        "".to_string(),
+                        format!("Cosigner permission denied: {}", e),
+                    )),
+                )
+                    .into_response(),
+            Self::CosignerUnsupportedPermission(e) => (
+                StatusCode::UNAUTHORIZED,
+                Json(new_error_response(
+                    "".to_string(),
+                    format!("Unsupported permission in CoSigner: {}", e),
                 )),
             )
                 .into_response(),

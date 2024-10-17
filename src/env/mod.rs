@@ -15,7 +15,7 @@ use {
 };
 pub use {
     aurora::*, base::*, berachain::*, binance::*, getblock::*, infura::*, mantle::*, near::*,
-    pokt::*, publicnode::*, quicknode::*, server::*, zksync::*, zora::*,
+    pokt::*, publicnode::*, quicknode::*, server::*, unichain::*, zksync::*, zora::*,
 };
 mod aurora;
 mod base;
@@ -29,6 +29,7 @@ mod pokt;
 mod publicnode;
 mod quicknode;
 mod server;
+mod unichain;
 mod zksync;
 mod zora;
 

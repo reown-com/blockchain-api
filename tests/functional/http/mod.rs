@@ -17,6 +17,7 @@ pub(crate) mod near;
 pub(crate) mod pokt;
 pub(crate) mod publicnode;
 pub(crate) mod quicknode;
+pub(crate) mod unichain;
 pub(crate) mod zksync;
 pub(crate) mod zora;
 
