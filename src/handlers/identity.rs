@@ -517,7 +517,7 @@ impl JsonRpcClient for SelfProvider {
             self.query.clone(),
             self.headers.clone(),
             serde_json::to_vec(&crypto::JsonRpcRequest {
-                id,
+                id: id.into(),
                 jsonrpc: crypto::JSON_RPC_VERSION.clone(),
                 method: method.to_owned().into(),
                 params,

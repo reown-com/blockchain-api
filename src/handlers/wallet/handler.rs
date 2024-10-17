@@ -1,3 +1,4 @@
+use super::get_calls_status::{self, GetCallsStatusError};
 use super::prepare_calls::{self, PrepareCallsError};
 use super::send_prepared_calls::{self, SendPreparedCallsError};
 use crate::error::RpcError;
@@ -5,11 +6,12 @@ use crate::json_rpc::{
     ErrorResponse, JsonRpcError, JsonRpcRequest, JsonRpcResponse, JsonRpcResult,
 };
 use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
-use axum::extract::Query;
+use axum::extract::{ConnectInfo, Query};
 use axum::response::{IntoResponse, Response};
 use axum::{extract::State, Json};
-use hyper::StatusCode;
+use hyper::{HeaderMap, StatusCode};
 use serde::Deserialize;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use thiserror::Error;
 use tracing::error;
@@ -23,10 +25,12 @@ pub struct WalletQueryParams {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     query: Query<WalletQueryParams>,
     Json(request_payload): Json<JsonRpcRequest>,
 ) -> Response {
-    handler_internal(state, query, request_payload)
+    handler_internal(state, connect_info, headers, query, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("wallet"))
         .await
 }
@@ -34,10 +38,21 @@ pub async fn handler(
 #[tracing::instrument(skip(state), level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     query: Query<WalletQueryParams>,
     request: JsonRpcRequest,
 ) -> Response {
-    match handle_rpc(state, query, request.method, request.params).await {
+    match handle_rpc(
+        state,
+        connect_info,
+        headers,
+        query,
+        request.method,
+        request.params,
+    )
+    .await
+    {
         Ok(result) => Json(JsonRpcResponse::Result(JsonRpcResult::new(
             request.id, result,
         )))
@@ -76,9 +91,9 @@ async fn handler_internal(
     }
 }
 
-const WALLET_PREPARE_CALLS: &str = "wallet_prepareCalls";
-const WALLET_SEND_PREPARED_CALLS: &str = "wallet_sendPreparedCalls";
-const WALLET_GET_CALLS_STATUS: &str = "wallet_getCallsStatus";
+pub const WALLET_PREPARE_CALLS: &str = "wallet_prepareCalls";
+pub const WALLET_SEND_PREPARED_CALLS: &str = "wallet_sendPreparedCalls";
+pub const WALLET_GET_CALLS_STATUS: &str = "wallet_getCallsStatus";
 
 #[derive(Debug, Error)]
 enum Error {
@@ -90,6 +105,9 @@ enum Error {
 
     #[error("{WALLET_SEND_PREPARED_CALLS}: {0}")]
     SendPreparedCalls(SendPreparedCallsError),
+
+    #[error("{WALLET_GET_CALLS_STATUS}: {0}")]
+    GetCallsStatus(GetCallsStatusError),
 
     #[error("Method not found")]
     MethodNotFound,
@@ -113,6 +131,7 @@ impl Error {
             Error::InvalidProjectId(_) => -1,
             Error::PrepareCalls(_) => -2, // TODO more specific codes
             Error::SendPreparedCalls(_) => -3, // TODO more specific codes
+            Error::GetCallsStatus(_) => -4, // TODO more specific codes
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,
@@ -123,6 +142,8 @@ impl Error {
 #[tracing::instrument(skip(state), level = "debug")]
 async fn handle_rpc(
     state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     Query(query): Query<WalletQueryParams>,
     method: Arc<str>,
     params: serde_json::Value,
@@ -155,7 +176,18 @@ async fn handle_rpc(
             .map_err(Error::SendPreparedCalls)?,
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
-        WALLET_GET_CALLS_STATUS => Ok(serde_json::Value::String("Not implemented yet".to_owned())), // TODO
+        WALLET_GET_CALLS_STATUS => serde_json::to_value(
+            &get_calls_status::handler(
+                state,
+                project_id,
+                serde_json::from_value(params).map_err(Error::InvalidParams)?,
+                connect_info,
+                headers,
+            )
+            .await
+            .map_err(Error::GetCallsStatus)?,
+        )
+        .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
         _ => Err(Error::MethodNotFound),
     }
 }

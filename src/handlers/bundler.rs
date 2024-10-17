@@ -4,6 +4,7 @@ use {
         error::RpcError, providers::SupportedBundlerOps, state::AppState,
         utils::crypto::disassemble_caip2,
     },
+    alloy::rpc::json_rpc::Id,
     axum::{
         extract::{Query, State},
         response::{IntoResponse, Response},
@@ -30,8 +31,8 @@ pub struct BundlerQueryParams {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct BundlerJsonRpcRequest {
-    pub id: u64,
-    pub jsonrpc: String,
+    pub id: Id,
+    pub jsonrpc: Arc<str>,
     pub method: SupportedBundlerOps,
     pub params: serde_json::Value,
 }
@@ -62,7 +63,7 @@ async fn handler_internal(
         .bundler_rpc_call(
             &evm_chain_id,
             request_payload.id,
-            &request_payload.jsonrpc,
+            request_payload.jsonrpc,
             &request_payload.method,
             request_payload.params,
         )

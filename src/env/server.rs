@@ -1,5 +1,5 @@
 use {
-    crate::{utils, utils::network::NetworkInterfaceError},
+    crate::utils::{self, network::NetworkInterfaceError},
     serde::Deserialize,
     serde_piecewise_default::DeserializePiecewiseDefault,
     std::net::IpAddr,

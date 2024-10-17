@@ -1,3 +1,4 @@
+use super::call_id::{CallId, CallIdInner};
 use super::prepare_calls::{
     decode_smart_session_signature, encode_use_or_enable_smart_session_signature,
     split_permissions_context_and_check_validator, AccountType, DecodedSmartSessionSignature,
@@ -5,7 +6,6 @@ use super::prepare_calls::{
 };
 use super::types::PreparedCalls;
 use crate::analytics::MessageSource;
-use crate::error::RpcError;
 use crate::handlers::sessions::cosign::{self, CoSignQueryParams};
 use crate::handlers::sessions::get::{
     get_session_context, GetSessionContextError, InternalGetSessionContextError,
@@ -14,7 +14,7 @@ use crate::handlers::sessions::CoSignRequest;
 use crate::utils::crypto::UserOperation;
 use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
 use alloy::network::Ethereum;
-use alloy::primitives::{Bytes, B256};
+use alloy::primitives::{Bytes, U64};
 use alloy::providers::ReqwestProvider;
 use axum::extract::{Path, Query};
 use axum::{
@@ -49,13 +49,10 @@ pub struct SendPreparedCallsRequestItem {
     context: Uuid,
 }
 
-pub type SendPreparedCallsResponse = Vec<B256>;
+pub type SendPreparedCallsResponse = Vec<CallId>;
 
 #[derive(Error, Debug)]
 pub enum SendPreparedCallsError {
-    #[error("Invalid project ID: {0}")]
-    InvalidProjectId(RpcError),
-
     #[error("Invalid address")]
     InvalidAddress,
 
@@ -456,7 +453,10 @@ async fn handler_internal(
                 )
             })?;
 
-        response.push(user_op_hash);
+        response.push(CallId(CallIdInner {
+            chain_id: U64::from(chain_id.eip155_chain_id()),
+            user_op_hash,
+        }));
     }
 
     Ok(response)

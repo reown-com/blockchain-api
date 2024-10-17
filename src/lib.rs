@@ -70,6 +70,7 @@ mod project;
 pub mod providers;
 mod state;
 mod storage;
+pub mod test_helpers;
 pub mod utils;
 mod ws;
 

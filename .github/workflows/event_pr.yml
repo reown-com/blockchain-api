@@ -53,6 +53,59 @@ jobs:
       check-infra: ${{ needs.paths-filter.outputs.infra == 'true' }}
       check-udeps: false
       rust-toolchain: stable
+      rust-test-args: --features=full,test-localhost --lib --bins
+
+  test_bundler:
+    name: Test with mock bundler
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.PRIVATE_SUBMODULE_ACCESS_TOKEN || github.token }}
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.4
+      - run: rustup update stable && rustup default stable
+      - run: docker compose -p mock-bundler -f docker-compose.mock-bundler.yaml up -d # run this first since container startup takes foooorrrrrreeeeeeever
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: WalletConnectBot
+          password: ${{ secrets.PRIVATE_GHCR_TOKEN_WCF }}
+      - run: docker pull ghcr.io/walletconnectfoundation/irn-node:sha-baef4e8
+      - run: docker tag ghcr.io/walletconnectfoundation/irn-node:sha-baef4e8 irn:master
+      - run: cd irn && docker compose up -d
+      - run: docker compose up -d redis postgres
+      - run: cargo build --tests --features=test-mock-bundler # pre-build to parallelize container startup
+      - run: while ! curl localhost:8545/health; do sleep 1; done # Anvil
+      - run: while ! curl localhost:4337/health; do sleep 1; done # Mock Bundler
+      - run: while ! curl localhost:3000/ping; do sleep 1; done   # Mock Paymaster
+      - run: cargo test --features=test-mock-bundler --lib --bins
+        env:
+          RPC_PROXY_POSTGRES_URI: "postgres://postgres@localhost/postgres"
+          RPC_PROXY_PROVIDER_INFURA_PROJECT_ID: ""
+          RPC_PROXY_PROVIDER_POKT_PROJECT_ID: ""
+          RPC_PROXY_PROVIDER_QUICKNODE_API_TOKENS: ""
+          RPC_PROXY_PROVIDER_PIMLICO_API_KEY: ""
+          RPC_PROXY_PROVIDER_SOLSCAN_API_V1_TOKEN: ""
+          RPC_PROXY_PROVIDER_SOLSCAN_API_V2_TOKEN: ""
+      - run: docker logs mock-bundler-anvil-1
+        if: failure()
+      - run: docker logs mock-bundler-alto-1
+        if: failure()
+      - run: docker logs mock-bundler-mock-paymaster-1
+        if: failure()
+      - run: docker logs blockchain-api-postgres-1
+        if: failure()
+      - run: docker logs blockchain-api-redis-1
+        if: failure()
+      - run: docker logs irn-node-1
+        if: failure()
+      - run: docker logs irn-node-2
+        if: failure()
+      - run: docker logs irn-node-3
+        if: failure()
 
   merge_check:
     name: Merge Check

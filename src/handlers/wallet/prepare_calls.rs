@@ -1,6 +1,5 @@
 use super::types::PreparedCalls;
 use crate::analytics::MessageSource;
-use crate::error::RpcError;
 use crate::handlers::sessions::get::{
     get_session_context, GetSessionContextError, InternalGetSessionContextError,
 };
@@ -87,9 +86,6 @@ pub struct SignatureRequest {
 
 #[derive(Error, Debug)]
 pub enum PrepareCallsError {
-    #[error("Invalid project ID: {0}")]
-    InvalidProjectId(RpcError),
-
     #[error("Invalid address")]
     InvalidAddress,
 
