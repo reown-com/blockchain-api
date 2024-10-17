@@ -9707,7 +9707,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?branch=fix/support-get-calls-status#435d0b6204a110fb048bc0a38a877d71f42f1312"
+source = "git+https://github.com/reown-com/yttrium.git#33621880a9a11881c7358e749aa65f8a53080c18"
 dependencies = [
  "alloy",
  "alloy-provider",
