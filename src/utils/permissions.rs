@@ -2,13 +2,11 @@ use {
     crate::{
         error::RpcError,
         utils::sessions::{
-            extract_addresses_from_execution_batch, extract_values_from_execution_batch,
+            extract_addresses_from_execution_batch, extract_values_sum_from_execution_batch,
+            ExecutionTransaction,
         },
     },
-    ethers::{
-        abi::Token,
-        types::{H160, U256},
-    },
+    alloy::primitives::{Address, U256},
     serde::{Deserialize, Serialize},
     serde_json::Value,
     strum_macros::{Display, EnumIter, EnumString},
@@ -27,7 +25,7 @@ pub enum PermissionType {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContractCallPermissionData {
-    pub address: H160,
+    pub address: Address,
     pub abi: Value,
     pub functions: Value,
 }
@@ -43,10 +41,10 @@ pub struct NativeTokenTransferPermissionData {
 
 /// `contract-call` permission type check
 pub fn contract_call_permission_check(
-    execution_batch: Vec<Token>,
+    execution_batch: Vec<ExecutionTransaction>,
     contract_call_permission_data: ContractCallPermissionData,
 ) -> Result<(), RpcError> {
-    let execution_addresses = extract_addresses_from_execution_batch(execution_batch.clone())?;
+    let execution_addresses = extract_addresses_from_execution_batch(execution_batch)?;
     let call_address = contract_call_permission_data.address;
 
     for address in execution_addresses {
@@ -62,15 +60,11 @@ pub fn contract_call_permission_check(
 
 /// `native-token-transfer` permission type check
 pub fn native_token_transfer_permission_check(
-    execution_batch: Vec<Token>,
+    execution_batch: Vec<ExecutionTransaction>,
     native_token_transfer_permission_data: NativeTokenTransferPermissionData,
 ) -> Result<(), RpcError> {
-    let execution_values = extract_values_from_execution_batch(execution_batch.clone())?;
     let allowance = native_token_transfer_permission_data.allowance;
-    // summ execution values from the execution batch and check if it is less than or equal to the allowance
-    let sum: U256 = execution_values
-        .iter()
-        .fold(U256::zero(), |acc, &x| acc + x);
+    let sum: U256 = extract_values_sum_from_execution_batch(execution_batch)?;
     if sum > allowance {
         error!(
             "Execution value is greater than the allowance. Execution Value: {:?}, Allowance: {:?}",

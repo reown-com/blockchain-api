@@ -194,9 +194,6 @@ pub enum RpcError {
     #[error("IRN client is not configured")]
     IrnNotConfigured,
 
-    #[error("Permission for PCI is not found: {0} {1}")]
-    PermissionNotFound(String, String),
-
     #[error("Internal permissions get context error: {0}")]
     InternalGetSessionContextError(InternalGetSessionContextError),
 
@@ -215,11 +212,20 @@ pub enum RpcError {
     #[error("Pkcs8 error: {0}")]
     Pkcs8Error(#[from] ethers::core::k256::pkcs8::Error),
 
+    #[error("Permission for PCI is not found: {0} {1}")]
+    PermissionNotFound(String, String),
+
     #[error("Permission context was not updated yet: {0}")]
     PermissionContextNotUpdated(String),
 
     #[error("Permission is revoked: {0}")]
     RevokedPermission(String),
+
+    #[error("Permission is expired: {0}")]
+    PermissionExpired(String),
+
+    #[error("Permissions set is empty")]
+    CoSignerEmptyPermissions,
 
     #[error("Cosigner permission denied: {0}")]
     CosignerPermissionDenied(String),
@@ -501,6 +507,14 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+            Self::PermissionExpired(pci) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "pci".to_string(),
+                    format!("Permission is expired: {}", pci),
+                )),
+            )
+                .into_response(),
             Self::WrongBase64Format(e) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
@@ -522,6 +536,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "signature".to_string(),
                     format!("Invalid signature format: {}", e),
+                )),
+            )
+                .into_response(),
+            Self::CoSignerEmptyPermissions => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Permissions set is empty".to_string(),
                 )),
             )
                 .into_response(),

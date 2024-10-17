@@ -147,10 +147,30 @@ async fn handler_internal(
         .add_irn_latency(irn_call_start, OperationType::Hget);
     let storage_permissions_item =
         serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
-    let call_data = request_payload.user_op.call_data.clone();
 
+    // Check if the permission is revoked
+    if storage_permissions_item.revoked_at.is_some() {
+        return Err(RpcError::RevokedPermission(request_payload.pci.clone()));
+    }
+
+    // Check if the permission is expired
+    if storage_permissions_item.expiry
+        < SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs() as usize
+    {
+        return Err(RpcError::PermissionExpired(request_payload.pci.clone()));
+    }
+
+    let call_data = request_payload.user_op.call_data.clone();
     // Extract the batch components
-    let execution_batch = extract_execution_batch_components(call_data.to_vec())?;
+    let execution_batch = extract_execution_batch_components(&call_data)?;
+
+    // Check the permissions length
+    if storage_permissions_item.permissions.is_empty() {
+        return Err(RpcError::CoSignerEmptyPermissions);
+    }
 
     // Check permissions by types
     for permission in storage_permissions_item.permissions {
