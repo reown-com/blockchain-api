@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.120.0 - 2024-10-17
+#### Features
+- wallet_getCallsStatus (#804) - (cdaf425) - Chris Smith
+
+- - -
+
 ## 0.119.0 - 2024-10-16
 #### Features
 - **(providers)** adding Unichain and Berachain to the Quicknode provider (#811) - (ca5f5bc) - Max Kalashnikoff | maksy.eth
