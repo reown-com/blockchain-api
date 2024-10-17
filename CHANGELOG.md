@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.120.1 - 2024-10-17
+#### Bug Fixes
+- **(CoSigner)** decoding the ABI calldata from Safe format, PCI expiration and revocation check. (#812) - (4ada030) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.120.0 - 2024-10-17
 #### Features
 - wallet_getCallsStatus (#804) - (cdaf425) - Chris Smith
