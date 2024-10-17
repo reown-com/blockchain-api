@@ -1,7 +1,6 @@
 use {
     crate::error::RpcError,
     alloy::{
-        dyn_abi::DynSolValue,
         primitives::{Address, Bytes, U256},
         sol,
         sol_types::{SolCall, SolType},
@@ -13,11 +12,19 @@ type BatchTransactionType = sol! {
     (address, uint256, bytes)[]
 };
 
+#[derive(Clone)]
+#[allow(dead_code)]
+pub struct ExecutionTransaction {
+    address: Address,
+    value: U256,
+    call_data: Bytes,
+}
+
 // Extract the execution batch components from the calldata
 // from bundler's `execute` function ABI
 pub fn extract_execution_batch_components(
     call_data_bytes: &[u8],
-) -> Result<Vec<DynSolValue>, RpcError> {
+) -> Result<Vec<ExecutionTransaction>, RpcError> {
     // Decode the calldata into Safe7579::executeCall
     let execute_call = Safe7579::executeCall::abi_decode(call_data_bytes, true).map_err(|e| {
         RpcError::AbiDecodingError(format!("Failed to decode executeCall: {:?}", e))
@@ -43,12 +50,10 @@ pub fn extract_execution_batch_components(
 
         let execution_batch = batch_transactions
             .into_iter()
-            .map(|(target, value, call_data)| {
-                DynSolValue::Tuple(vec![
-                    DynSolValue::Address(target),
-                    DynSolValue::Uint(value, 256),
-                    DynSolValue::Bytes(call_data.to_vec()),
-                ])
+            .map(|(target, value, call_data)| ExecutionTransaction {
+                address: target,
+                value,
+                call_data,
             })
             .collect();
 
@@ -78,11 +83,11 @@ pub fn extract_execution_batch_components(
         // callData (remaining bytes)
         let call_data = execution_calldata_bytes[52..].to_vec();
 
-        let transaction = DynSolValue::Tuple(vec![
-            DynSolValue::Address(address),
-            DynSolValue::Uint(value, 256),
-            DynSolValue::Bytes(call_data),
-        ]);
+        let transaction = ExecutionTransaction {
+            address,
+            value,
+            call_data: call_data.into(),
+        };
 
         Ok(vec![transaction])
     }
@@ -90,75 +95,26 @@ pub fn extract_execution_batch_components(
 
 /// Extract addresses from the bundler's execute calldata execution batch
 pub fn extract_addresses_from_execution_batch(
-    execution_batch: Vec<DynSolValue>,
+    execution_batch: Vec<ExecutionTransaction>,
 ) -> Result<Vec<Address>, RpcError> {
     let mut targets = Vec::with_capacity(execution_batch.len());
-
     for tx in execution_batch {
-        let values = match tx {
-            DynSolValue::Tuple(values) => values,
-            _ => {
-                return Err(RpcError::AbiDecodingError(
-                    "Expected a tuple for execution batch transaction".into(),
-                ))
-            }
-        };
-
-        if values.is_empty() {
-            return Err(RpcError::AbiDecodingError(
-                "Expected non-empty tuple for execution batch transaction".into(),
-            ));
-        }
-
-        let target =
-            match &values[0] {
-                DynSolValue::Address(addr) => *addr,
-                _ => return Err(RpcError::AbiDecodingError(
-                    "Expected address as the first field for target in the execution batch item"
-                        .into(),
-                )),
-            };
-
-        targets.push(target);
+        targets.push(tx.address);
     }
-
     Ok(targets)
 }
 
-/// Exract values from the bundler's execute calldata execution batch
-pub fn extract_values_from_execution_batch(
-    execution_batch: Vec<DynSolValue>,
-) -> Result<Vec<U256>, RpcError> {
+/// Exract sum of values from the bundler's execute calldata execution batch
+pub fn extract_values_sum_from_execution_batch(
+    execution_batch: Vec<ExecutionTransaction>,
+) -> Result<U256, RpcError> {
     let mut values_vec = Vec::with_capacity(execution_batch.len());
-
     for tx in execution_batch {
-        let values = match tx {
-            DynSolValue::Tuple(values) => values,
-            _ => {
-                return Err(RpcError::AbiDecodingError(
-                    "Expected a tuple for execution batch transaction".into(),
-                ))
-            }
-        };
-
-        if values.len() <= 1 {
-            return Err(RpcError::AbiDecodingError(
-                "Expected at least two fields in the execution batch transaction tuple".into(),
-            ));
-        }
-
-        let value =
-            match &values[1] {
-                DynSolValue::Uint(value, _) => *value,
-                _ => return Err(RpcError::AbiDecodingError(
-                    "Expected uint256 as the second field for value in the execution batch item"
-                        .into(),
-                )),
-            };
-
-        values_vec.push(value);
+        values_vec.push(tx.value);
     }
-    Ok(values_vec)
+    // summ execution values from the execution batch and check if it is less than or equal to the allowance
+    let sum: U256 = values_vec.iter().fold(U256::ZERO, |acc, &x| acc + x);
+    Ok(sum)
 }
 
 #[cfg(test)]
