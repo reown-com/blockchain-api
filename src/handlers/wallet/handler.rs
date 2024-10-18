@@ -58,7 +58,13 @@ async fn handler_internal(
         )))
         .into_response(),
         Err(e) => {
-            let is_internal = matches!(e, Error::Internal(_));
+            let is_internal = matches!(e, Error::Internal(_))
+                || matches!(
+                    e,
+                    Error::SendPreparedCalls(SendPreparedCallsError::InternalError(_))
+                )
+                || matches!(e, Error::PrepareCalls(PrepareCallsError::InternalError(_)));
+
             if is_internal {
                 error!("Internal server error handling wallet RPC request: {e:?}");
             }
