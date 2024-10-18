@@ -12,12 +12,7 @@ use alloy::providers::{Provider, ReqwestProvider};
 use alloy::sol_types::SolCall;
 use alloy::sol_types::SolValue;
 use alloy::transports::Transport;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Response},
-    Json,
-};
-use hyper::StatusCode;
+use axum::extract::State;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use thiserror::Error;
@@ -148,24 +143,6 @@ pub enum PrepareCallsInternalError {
 
     #[error("Get session context: {0}")]
     GetSessionContextError(InternalGetSessionContextError),
-}
-
-impl IntoResponse for PrepareCallsError {
-    fn into_response(self) -> Response {
-        match self {
-            Self::InternalError(e) => {
-                error!("HTTP server error: (prepare_calls) {e:?}");
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-            e => (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({
-                    "error": e.to_string(),
-                })),
-            )
-                .into_response(),
-        }
-    }
 }
 
 pub async fn handler(

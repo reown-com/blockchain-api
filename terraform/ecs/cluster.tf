@@ -76,6 +76,7 @@ resource "aws_ecs_task_definition" "app_task" {
       essential = true,
 
       environment = [
+        { name = "RPC_PROXY_LOG_LEVEL", value = var.log_level },
         { name = "RPC_PROXY_PORT", value = tostring(var.port) },
         { name = "RPC_PROXY_PROMETHEUS_PORT", value = tostring(local.otel_port) },
 

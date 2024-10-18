@@ -17,13 +17,8 @@ use alloy::network::Ethereum;
 use alloy::primitives::{Bytes, U64};
 use alloy::providers::ReqwestProvider;
 use axum::extract::{Path, Query};
-use axum::{
-    extract::State,
-    response::{IntoResponse, Response},
-    Json,
-};
+use axum::{extract::State, response::IntoResponse, Json};
 use hyper::body::to_bytes;
-use hyper::StatusCode;
 use parquet::data_type::AsBytes;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -140,24 +135,6 @@ pub enum SendPreparedCallsInternalError {
     IsSessionEnabled(alloy::contract::Error),
     #[error("SendUserOperation: {0}")]
     SendUserOperation(eyre::Error),
-}
-
-impl IntoResponse for SendPreparedCallsError {
-    fn into_response(self) -> Response {
-        match self {
-            Self::InternalError(e) => {
-                error!("HTTP server error: (prepare_calls) {e:?}");
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-            e => (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({
-                    "error": e.to_string(),
-                })),
-            )
-                .into_response(),
-        }
-    }
 }
 
 pub async fn handler(
