@@ -13,7 +13,7 @@ build = "build.rs"
 [dependencies]
 wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.9.0", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock", "rate_limit"] }
 relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", tag = "v0.32.0", features = ["cacao"] }
-yttrium = { git = "https://github.com/reown-com/yttrium.git" }
+yttrium = { git = "https://github.com/reown-com/yttrium.git", branch = "fix/logging" }
 
 # Async
 async-trait = "0.1.82"
@@ -66,7 +66,7 @@ ipnet = "2.5"
 pnet_datalink = "0.31"
 
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["json", "ansi"] }
+tracing-subscriber = { version = "0.3", features = ["json", "ansi", "env-filter"] }
 
 cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.13.1" }
 parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3", default-features = false, features = ["flate2"] }
