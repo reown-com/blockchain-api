@@ -1,8 +1,8 @@
 use {
     dotenv::dotenv,
     rpc_proxy::{env::Config, error},
-    std::str::FromStr,
-    tracing_subscriber::fmt::format::FmtSpan,
+    tracing::level_filters::LevelFilter,
+    tracing_subscriber::{fmt::format::FmtSpan, EnvFilter},
 };
 
 #[global_allocator]
@@ -17,8 +17,11 @@ async fn main() -> error::RpcResult<()> {
         .expect("Failed to load config, please ensure all env variables are defined.");
 
     tracing_subscriber::fmt()
-        .with_max_level(
-            tracing::Level::from_str(config.server.log_level.as_str()).expect("Invalid log level"),
+        .with_env_filter(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::ERROR.into())
+                .parse(&config.server.log_level)
+                .expect("Invalid log level"),
         )
         .with_span_events(FmtSpan::CLOSE)
         .with_ansi(false)
