@@ -28,7 +28,7 @@ async fn check_if_rpc_is_responding_correctly_for_supported_chain(
     expected_id: &str,
 ) {
     let addr = format!(
-        "{}/v1/?projectId={}&providerId={}&chainId=",
+        "{}v1/?projectId={}&providerId={}&chainId=",
         ctx.server.public_addr, ctx.server.project_id, provider_id
     );
 
@@ -59,7 +59,7 @@ async fn check_if_rpc_is_responding_correctly_for_near_protocol(
     provider_id: &ProviderKind,
 ) {
     let addr = format!(
-        "{}/v1/?projectId={}&providerId={}&chainId=",
+        "{}v1/?projectId={}&providerId={}&chainId=",
         ctx.server.public_addr, ctx.server.project_id, provider_id
     );
 
@@ -99,7 +99,7 @@ async fn check_if_rpc_is_responding_correctly_for_solana(
     provider_id: &ProviderKind,
 ) {
     let addr = format!(
-        "{}/v1/?projectId={}&providerId={}&chainId=",
+        "{}v1/?projectId={}&providerId={}&chainId=",
         ctx.server.public_addr, ctx.server.project_id, provider_id
     );
 
@@ -127,8 +127,7 @@ async fn check_if_rpc_is_responding_correctly_for_solana(
 #[test_context(ServerContext)]
 #[tokio::test]
 async fn health_check(ctx: &mut ServerContext) {
-    let addr = format!("{}/health", ctx.server.public_addr);
-
+    let addr = format!("{}health", ctx.server.public_addr);
     let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
 
     let request = Request::builder()
@@ -148,7 +147,7 @@ async fn account_history_check(ctx: &mut ServerContext) {
     let account = "0xf3ea39310011333095CFCcCc7c4Ad74034CABA63";
     let project_id = ctx.server.project_id.clone();
     let addr = format!(
-        "{}/v1/account/{}/history?projectId={}",
+        "{}v1/account/{}/history?projectId={}",
         ctx.server.public_addr, account, project_id
     );
 

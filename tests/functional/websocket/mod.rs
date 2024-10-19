@@ -12,7 +12,7 @@ async fn check_if_rpc_is_responding_correctly_for_supported_chain(
     expected_id: &str,
 ) {
     let addr = format!(
-        "{}/ws?projectId={}&chainId={}",
+        "{}ws?projectId={}&chainId={}",
         ctx.server.public_addr, ctx.server.project_id, chain_id
     )
     .replace("http", "ws");
