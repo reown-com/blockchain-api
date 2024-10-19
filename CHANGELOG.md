@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.120.3 - 2024-10-19
+#### Bug Fixes
+- **(ci)** fixing integration tests context url path (#815) - (e18f53f) - Max Kalashnikoff | maksy.eth
+- debug wallet service with new logs (#814) - (0e015e1) - Chris Smith
+
+- - -
+
 ## 0.120.2 - 2024-10-18
 #### Bug Fixes
 - **(WalletService)** fixing HTTP 400 error when internal expected (#813) - (d4e2be0) - Max Kalashnikoff | maksy.eth
