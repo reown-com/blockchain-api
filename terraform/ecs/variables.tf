@@ -236,6 +236,12 @@ variable "solscan_api_v2_token" {
   sensitive   = true
 }
 
+variable "bungee_api_key" {
+  description = "Bungee API key"
+  type        = string
+  sensitive   = true
+}
+
 variable "testing_project_id" {
   description = "Project ID used in a testing suite"
   type        = string

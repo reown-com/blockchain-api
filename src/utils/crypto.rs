@@ -1,6 +1,11 @@
 use {
     crate::{analytics::MessageSource, error::RpcError},
-    alloy::{primitives::Address, rpc::json_rpc::Id, sol, sol_types::SolCall},
+    alloy::{
+        primitives::{Address, U256 as AlloyU256},
+        rpc::json_rpc::Id,
+        sol,
+        sol_types::SolCall,
+    },
     base64::prelude::*,
     bs58,
     ethers::{
@@ -207,7 +212,7 @@ fn concat_128(a: [u8; 16], b: [u8; 16]) -> [u8; 32] {
 // ERC20 contract
 sol! {
     function balanceOf(address _owner) external view returns (uint256);
-    function transfer(address _to, uint256 _value) external returns (bool);
+    function transfer(address to, uint256 value) external returns (bool);
     function approve(address _spender, uint256 _value) external returns (bool);
     function transferFrom(address _from, address _to, uint256 _value) external returns (bool);
     function allowance(address _owner, address _spender) external view returns (uint256);
@@ -223,7 +228,7 @@ pub enum Erc20FunctionType {
 }
 
 /// Decodes ERC20 contract call function data and returns the function name.
-pub fn decode_erc20_call_function_data(
+pub fn decode_erc20_function_type(
     function_data: &[u8],
 ) -> Result<Erc20FunctionType, CryptoUitlsError> {
     // Get the 4 bytes function selector
@@ -245,6 +250,31 @@ pub fn decode_erc20_call_function_data(
     };
 
     Ok(function_type)
+}
+
+/// Decode ERC20 contract transfer data and returns to and amount
+pub fn decode_erc20_transfer_data(data: &[u8]) -> Result<(Address, AlloyU256), CryptoUitlsError> {
+    // Ensure the function data is at least 4 bytes for the selector
+    if data.len() < 4 {
+        return Err(CryptoUitlsError::Erc20DecodeError(
+            "ERC20 function data is less than 4 bytes.".into(),
+        ));
+    }
+
+    // Get the 4-byte function selector and check it
+    let selector = &data[0..4];
+    if selector != transferCall::SELECTOR {
+        return Err(CryptoUitlsError::Erc20DecodeError(
+            "ERC20 function data is not a transfer function.".into(),
+        ));
+    }
+    let transfer_params = transferCall::abi_decode(data, false).map_err(|err| {
+        CryptoUitlsError::Erc20DecodeError(format!(
+            "Failed to decode ERC20 transfer params: {}",
+            err
+        ))
+    })?;
+    Ok((transfer_params.to, transfer_params.value))
 }
 
 /// Convert message to EIP-191 compatible format
@@ -402,7 +432,7 @@ pub async fn get_erc20_balance(
 
 /// Get the balance of ERC20 token by calling the contract address
 #[tracing::instrument(level = "debug")]
-async fn get_erc20_contract_balance(
+pub async fn get_erc20_contract_balance(
     chain_id: &str,
     contract: H160,
     wallet: H160,
@@ -949,12 +979,11 @@ mod tests {
     }
 
     #[test]
-    fn test_decode_erc20_call_function_data() {
+    fn test_decode_erc20_function_type() {
         // Test for ERC20 transfer function data.
         let transfer_function_data_hex = "a9059cbb0000000000000000000000005aeda56215b167893e80b4fe645ba6d5bab767de000000000000000000000000000000000000000000000000000000000000000a";
         let transfer_function_data = hex::decode(transfer_function_data_hex).unwrap();
-        let transfer_function_type =
-            decode_erc20_call_function_data(&transfer_function_data).unwrap();
+        let transfer_function_type = decode_erc20_function_type(&transfer_function_data).unwrap();
         assert_eq!(transfer_function_type, Erc20FunctionType::Transfer);
 
         // Test for ERC20 balanceOf function data.
@@ -962,8 +991,25 @@ mod tests {
             "70a082310000000000000000000000005aeda56215b167893e80b4fe645ba6d5bab767de";
         let balance_of_function_data = hex::decode(balance_of_function_data_hex).unwrap();
         let balance_of_function_type =
-            decode_erc20_call_function_data(&balance_of_function_data).unwrap();
+            decode_erc20_function_type(&balance_of_function_data).unwrap();
         assert_eq!(balance_of_function_type, Erc20FunctionType::BalanceOf);
+    }
+
+    #[test]
+    fn test_decode_erc20_transfer_data() {
+        let address = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045";
+        let amount = "10000000";
+
+        let transfer_function_encoded = transferCall {
+            to: Address::from_str(address).unwrap(),
+            value: AlloyU256::from_str(amount).unwrap(),
+        };
+        let encoded = transfer_function_encoded.abi_encode();
+
+        let (to, amount_decoded) = decode_erc20_transfer_data(&encoded).unwrap();
+
+        assert_eq!(to, Address::from_str(address).unwrap());
+        assert_eq!(amount_decoded, AlloyU256::from_str(amount).unwrap());
     }
 
     // Ignoring this test until the RPC project ID is provided by the CI workflow

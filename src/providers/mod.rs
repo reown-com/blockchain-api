@@ -25,7 +25,10 @@ use {
         utils::crypto::CaipNamespaces,
         Metrics,
     },
-    alloy::rpc::json_rpc::Id,
+    alloy::{
+        primitives::{Address, U256},
+        rpc::json_rpc::Id,
+    },
     async_trait::async_trait,
     axum::response::Response,
     axum_tungstenite::WebSocketUpgrade,
@@ -33,6 +36,7 @@ use {
     mock_alto::{MockAltoProvider, MockAltoUrls},
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
     serde::{Deserialize, Serialize},
+    serde_json::Value,
     std::{
         collections::{HashMap, HashSet},
         fmt::{Debug, Display},
@@ -47,6 +51,7 @@ mod aurora;
 mod base;
 mod berachain;
 mod binance;
+mod bungee;
 mod coinbase;
 mod getblock;
 mod infura;
@@ -70,6 +75,7 @@ pub use {
     base::BaseProvider,
     berachain::BerachainProvider,
     binance::BinanceProvider,
+    bungee::BungeeProvider,
     getblock::GetBlockProvider,
     infura::{InfuraProvider, InfuraWsProvider},
     mantle::MantleProvider,
@@ -113,6 +119,8 @@ pub struct ProvidersConfig {
     /// SolScan API v1 and v2 token keys
     pub solscan_api_v1_token: String,
     pub solscan_api_v2_token: String,
+    /// Bungee API key
+    pub bungee_api_key: String,
 
     pub override_bundler_urls: Option<MockAltoUrls>,
 }
@@ -143,6 +151,7 @@ pub struct ProviderRepository {
     pub conversion_provider: Arc<dyn ConversionProvider>,
     pub fungible_price_providers: HashMap<CaipNamespaces, Arc<dyn FungiblePriceProvider>>,
     pub bundler_ops_provider: Arc<dyn BundlerOpsProvider>,
+    pub chain_orchestrator_provider: Arc<dyn ChainOrchestrationProvider>,
 }
 
 impl ProviderRepository {
@@ -253,6 +262,9 @@ impl ProviderRepository {
         fungible_price_providers.insert(CaipNamespaces::Eip155, one_inch_provider.clone());
         fungible_price_providers.insert(CaipNamespaces::Solana, solscan_provider.clone());
 
+        let chain_orchestrator_provider =
+            Arc::new(BungeeProvider::new(config.bungee_api_key.clone()));
+
         Self {
             supported_chains: SupportedChains {
                 http: HashSet::new(),
@@ -272,6 +284,7 @@ impl ProviderRepository {
             conversion_provider: one_inch_provider.clone(),
             fungible_price_providers,
             bundler_ops_provider,
+            chain_orchestrator_provider,
         }
     }
 
@@ -463,6 +476,7 @@ pub enum ProviderKind {
     Pokt,
     Binance,
     Berachain,
+    Bungee,
     ZKSync,
     Publicnode,
     Base,
@@ -489,6 +503,7 @@ impl Display for ProviderKind {
                 ProviderKind::Pokt => "Pokt",
                 ProviderKind::Binance => "Binance",
                 ProviderKind::Berachain => "Berachain",
+                ProviderKind::Bungee => "Bungee",
                 ProviderKind::ZKSync => "zkSync",
                 ProviderKind::Publicnode => "Publicnode",
                 ProviderKind::Base => "Base",
@@ -516,6 +531,7 @@ impl ProviderKind {
             "Pokt" => Some(Self::Pokt),
             "Binance" => Some(Self::Binance),
             "Berachain" => Some(Self::Berachain),
+            "Bungee" => Some(Self::Bungee),
             "zkSync" => Some(Self::ZKSync),
             "Publicnode" => Some(Self::Publicnode),
             "Base" => Some(Self::Base),
@@ -775,4 +791,20 @@ pub trait BundlerOpsProvider: Send + Sync + Debug {
 
     /// Maps the operations enum variant to its provider-specific operation string.
     fn to_provider_op(&self, op: &SupportedBundlerOps) -> String;
+}
+
+/// Provider for the chain orchestrator operations
+#[async_trait]
+pub trait ChainOrchestrationProvider: Send + Sync + Debug {
+    async fn get_bridging_quotes(
+        &self,
+        from_chain_id: String,
+        from_token_address: Address,
+        to_chain_id: String,
+        to_token_address: Address,
+        amount: U256,
+        user_address: Address,
+    ) -> Result<Vec<Value>, RpcError>;
+
+    async fn build_bridging_tx(&self, route: Value) -> Result<bungee::BungeeBuildTx, RpcError>;
 }
