@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.121.0 - 2024-10-22
+#### Features
+- **(CoSigner)** changing the native token permission name to native-token-recurring-allowance (#816) - (20d630a) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.120.3 - 2024-10-19
 #### Bug Fixes
 - **(ci)** fixing integration tests context url path (#815) - (e18f53f) - Max Kalashnikoff | maksy.eth
