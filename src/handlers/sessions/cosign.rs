@@ -12,7 +12,7 @@ use {
             },
             permissions::{
                 contract_call_permission_check, native_token_transfer_permission_check,
-                ContractCallPermissionData, NativeTokenTransferPermissionData, PermissionType,
+                ContractCallPermissionData, NativeTokenAllowancePermissionData, PermissionType,
             },
             sessions::extract_execution_batch_components,
         },
@@ -185,11 +185,11 @@ async fn handler_internal(
                         )?,
                     )?;
                 }
-                PermissionType::NativeTokenTransfer => {
+                PermissionType::NativeTokenRecurringAllowance => {
                     debug!("Executing native token transfer permission check");
                     native_token_transfer_permission_check(
                         execution_batch.clone(),
-                        serde_json::from_value::<NativeTokenTransferPermissionData>(
+                        serde_json::from_value::<NativeTokenAllowancePermissionData>(
                             permission.data.clone(),
                         )?,
                     )?;
