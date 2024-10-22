@@ -10,6 +10,15 @@ const contractCallPermission = {
   }
 }
 
+const NativeTokenRecurringAllowancePermission = {
+  type: "native-token-recurring-allowance",
+  data: {
+    start: Math.floor(Date.now() / 1000),
+    period: 86400,
+    allowance: "0x00000000000000000000000000000000000000000000000000005AF3107A4000" // 0.0001
+  }
+}
+
 const permissionContext = "0x00"
 
 describe('Sessions/Permissions', () => {
@@ -27,7 +36,10 @@ describe('Sessions/Permissions', () => {
           type: "k256",
           data: "0x"
         },
-      permissions: [contractCallPermission],
+      permissions: [
+        contractCallPermission, 
+        NativeTokenRecurringAllowancePermission
+      ],
       policies: []
     }
 

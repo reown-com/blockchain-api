@@ -18,7 +18,7 @@ use {
 #[strum(serialize_all = "kebab-case")]
 pub enum PermissionType {
     ContractCall,
-    NativeTokenTransfer,
+    NativeTokenRecurringAllowance,
 }
 
 /// `contract-call` permission type data schema
@@ -33,7 +33,7 @@ pub struct ContractCallPermissionData {
 /// `native-token-transfer` permission type data schema
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct NativeTokenTransferPermissionData {
+pub struct NativeTokenAllowancePermissionData {
     pub allowance: U256,
     pub start: usize,
     pub period: usize,
@@ -61,7 +61,7 @@ pub fn contract_call_permission_check(
 /// `native-token-transfer` permission type check
 pub fn native_token_transfer_permission_check(
     execution_batch: Vec<ExecutionTransaction>,
-    native_token_transfer_permission_data: NativeTokenTransferPermissionData,
+    native_token_transfer_permission_data: NativeTokenAllowancePermissionData,
 ) -> Result<(), RpcError> {
     let allowance = native_token_transfer_permission_data.allowance;
     let sum: U256 = extract_values_sum_from_execution_batch(execution_batch)?;
