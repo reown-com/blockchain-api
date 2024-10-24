@@ -36,8 +36,8 @@ pub struct CheckTransactionRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Transaction {
-    from: String,
-    to: String,
+    from: Address,
+    to: Address,
     value: String,
     gas: String,
     gas_price: String,
@@ -81,10 +81,8 @@ async fn handler_internal(
         .validate_project_access_and_quota(&query_params.project_id.clone())
         .await?;
 
-    let from_address = Address::from_str(&request_payload.transaction.from)
-        .map_err(|_| RpcError::InvalidAddress)?;
-    let to_address =
-        Address::from_str(&request_payload.transaction.to).map_err(|_| RpcError::InvalidAddress)?;
+    let from_address = request_payload.transaction.from;
+    let to_address = request_payload.transaction.to;
 
     // Check the native token balance
     let native_token_balance = get_balance(
@@ -140,7 +138,7 @@ async fn handler_internal(
             .providers
             .chain_orchestrator_provider
             .get_bridging_quotes(
-                bridge_chain_id,
+                bridge_chain_id.clone(),
                 bridge_contract,
                 request_payload.transaction.chain_id.clone(),
                 to_address,
@@ -150,6 +148,7 @@ async fn handler_internal(
             .await?;
 
         // Build bridging transaction
+        let mut routes = Vec::new();
         let best_route = quotes.first().ok_or(RpcError::NoBridgingRoutesAvailable)?;
         let bridge_tx = state
             .providers
@@ -157,12 +156,54 @@ async fn handler_internal(
             .build_bridging_tx(best_route.clone())
             .await?;
 
-        // Return the bridging transactions
-        let orchestration_id = Uuid::new_v4().to_string();
+        // Check for the allowance
+        if let Some(approval_data) = bridge_tx.approval_data {
+            let allowance = state
+                .providers
+                .chain_orchestrator_provider
+                .check_allowance(
+                    bridge_chain_id.clone(),
+                    approval_data.owner,
+                    approval_data.allowance_target,
+                    approval_data.approval_token_address,
+                )
+                .await?;
 
-        let mut routes = Vec::new();
+            // Check if the approval transaction injection is needed
+            if approval_data.minimum_approval_amount >= allowance {
+                let approval_tx = state
+                    .providers
+                    .chain_orchestrator_provider
+                    .build_approval_tx(
+                        bridge_chain_id.clone(),
+                        approval_data.owner,
+                        approval_data.allowance_target,
+                        approval_data.approval_token_address,
+                        erc20_transfer_value,
+                    )
+                    .await?;
+
+                routes.push(Transaction {
+                    from: approval_tx.from,
+                    to: approval_tx.to,
+                    value: "0x00".to_string(),
+                    gas_price: request_payload.transaction.gas_price.clone(),
+                    gas: request_payload.transaction.gas.clone(),
+                    data: approval_tx.data,
+                    nonce: request_payload.transaction.nonce.clone(),
+                    max_fee_per_gas: request_payload.transaction.max_fee_per_gas.clone(),
+                    max_priority_fee_per_gas: request_payload
+                        .transaction
+                        .max_priority_fee_per_gas
+                        .clone(),
+                    chain_id: bridge_chain_id,
+                });
+            }
+        }
+
+        // Push bridging transaction
         routes.push(Transaction {
-            from: from_address.to_string(),
+            from: from_address,
             to: bridge_tx.tx_target,
             value: bridge_tx.value,
             gas_price: request_payload.transaction.gas_price.clone(),
@@ -173,9 +214,11 @@ async fn handler_internal(
             max_priority_fee_per_gas: request_payload.transaction.max_priority_fee_per_gas.clone(),
             chain_id: format!("eip155:{}", bridge_tx.chain_id),
         });
-        // Push initial transaction last after bridging transactions
+
+        // Push initial transaction last after all bridging transactions
         routes.push(request_payload.transaction);
 
+        let orchestration_id = Uuid::new_v4().to_string();
         return Ok(Json(RouteResponse {
             orchestration_id,
             transactions: routes,

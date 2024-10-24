@@ -13,8 +13,8 @@ use {
 };
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct BungeeResponse {
-    pub result: BungeeQuotes,
+pub struct BungeeResponse<T> {
+    pub result: T,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -32,17 +32,35 @@ pub struct BungeeBuildTxRequest {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct BungeeBuildTxResponse {
-    pub result: BungeeBuildTx,
+pub struct BungeeBuildTx {
+    pub chain_id: usize,
+    pub tx_data: String,
+    pub tx_target: Address,
+    pub value: String,
+    pub approval_data: Option<BungeeApprovalData>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct BungeeBuildTx {
-    pub chain_id: usize,
-    pub tx_data: String,
-    pub tx_target: String,
-    pub value: String,
+pub struct BungeeApprovalData {
+    pub allowance_target: Address,
+    pub approval_token_address: Address,
+    pub minimum_approval_amount: U256,
+    pub owner: Address,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BungeeApprovalTx {
+    pub from: Address,
+    pub to: Address,
+    pub data: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BungeeAllowance {
+    pub value: U256,
 }
 
 #[derive(Debug)]
@@ -133,7 +151,7 @@ impl ChainOrchestrationProvider for BungeeProvider {
             );
             return Err(RpcError::ConversionProviderError);
         }
-        let body = response.json::<BungeeResponse>().await?;
+        let body = response.json::<BungeeResponse<BungeeQuotes>>().await?;
         if body.result.routes.is_empty() {
             error!(
                 "No bridging routes available from Bungee provider. Bridges errors: {:?}",
@@ -158,7 +176,77 @@ impl ChainOrchestrationProvider for BungeeProvider {
             );
             return Err(RpcError::ConversionProviderError);
         }
-        let body = response.json::<BungeeBuildTxResponse>().await?;
+        let body = response.json::<BungeeResponse<BungeeBuildTx>>().await?;
+
+        Ok(body.result)
+    }
+
+    async fn check_allowance(
+        &self,
+        chain_id: String,
+        owner: Address,
+        target: Address,
+        token_address: Address,
+    ) -> Result<U256, RpcError> {
+        let mut url =
+            Url::parse(format!("{}/v2/approval/check-allowance", &self.base_api_url).as_str())
+                .map_err(|_| RpcError::ConversionParseURLError)?;
+
+        let (_, evm_chain_id) = disassemble_caip2(&chain_id)?;
+
+        url.query_pairs_mut().append_pair("chainID", &evm_chain_id);
+        url.query_pairs_mut()
+            .append_pair("owner", &owner.to_string());
+        url.query_pairs_mut()
+            .append_pair("allowanceTarget", &target.to_string());
+        url.query_pairs_mut()
+            .append_pair("tokenAddress", &token_address.to_string());
+
+        let response = self.send_get_request(url).await?;
+        if !response.status().is_success() {
+            error!(
+                "Failed to get bridging allowance from Bungee with status: {}",
+                response.status()
+            );
+            return Err(RpcError::ConversionProviderError);
+        }
+        let body = response.json::<BungeeResponse<BungeeAllowance>>().await?;
+
+        Ok(body.result.value)
+    }
+
+    async fn build_approval_tx(
+        &self,
+        chain_id: String,
+        owner: Address,
+        target: Address,
+        token_address: Address,
+        amount: U256,
+    ) -> Result<BungeeApprovalTx, RpcError> {
+        let mut url = Url::parse(format!("{}/v2/approval/build-tx", &self.base_api_url).as_str())
+            .map_err(|_| RpcError::ConversionParseURLError)?;
+
+        let (_, evm_chain_id) = disassemble_caip2(&chain_id)?;
+
+        url.query_pairs_mut().append_pair("chainID", &evm_chain_id);
+        url.query_pairs_mut()
+            .append_pair("owner", &owner.to_string());
+        url.query_pairs_mut()
+            .append_pair("allowanceTarget", &target.to_string());
+        url.query_pairs_mut()
+            .append_pair("tokenAddress", &token_address.to_string());
+        url.query_pairs_mut()
+            .append_pair("amount", &amount.to_string());
+
+        let response = self.send_get_request(url).await?;
+        if !response.status().is_success() {
+            error!(
+                "Failed to get bridging approval tx from Bungee with status: {}",
+                response.status()
+            );
+            return Err(RpcError::ConversionProviderError);
+        }
+        let body = response.json::<BungeeResponse<BungeeApprovalTx>>().await?;
 
         Ok(body.result)
     }
