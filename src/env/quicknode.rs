@@ -63,7 +63,7 @@ fn extract_supported_chains_and_subdomains(
         ),
         (
             "eip155:80084",
-            ("frequent-capable-putty.bera-bartio", Priority::Normal),
+            ("frequent-capable-putty.bera-bartio", Priority::High),
         ),
         (
             "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
