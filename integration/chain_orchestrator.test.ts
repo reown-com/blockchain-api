@@ -2,19 +2,23 @@ import { getTestSetup } from './init';
 import { ethers, Interface } from "ethers"
 
 describe('Chain abstraction orchestrator', () => {
-  const { baseUrl, projectId, httpClient } = getTestSetup();  
+  const { baseUrl, projectId, httpClient } = getTestSetup();
+
   const erc20Interface = new Interface([
     'function transfer(address to, uint256 amount)',
+    'function approve(address spender, uint256 amount) public returns (bool)'
   ]);
 
   // Address with 3 USDC on Base chain
-  const from_address_with_funds = "0x2Aae531A81461F029cD55Cb46703211c9227ba05";
+  const from_address_with_funds = "0x2aae531a81461f029cd55cb46703211c9227ba05";
   const usdc_funds_on_address = 3_000_000;
 
   const receiver_address = "0x739ff389c8eBd9339E69611d46Eec6212179BB67";
   const chain_id_optimism = "eip155:10";
   const chain_id_base = "eip155:8453";
   const usdc_contract_optimism = "0x0b2c639c533813f4aa9d7837caf62653d097ff85";
+
+  let orchestration_id = "";
 
   it('bridging available', async () => {
     // Sending USDC to Optimism, but having the USDC balance on Base chain
@@ -175,9 +179,32 @@ describe('Chain abstraction orchestrator', () => {
 
     const data = resp.data
     expect(typeof data.orchestrationId).toBe('string')
-    // First transaction expected to be the bridging to the Base
-    expect(data.transactions[0].chainId).toBe(chain_id_base)
-    // The second transaction expected to be the initial one
-    expect(data.transactions[1].chainId).toBe(chain_id_optimism)
+    // Expecting 3 transactions in the route
+    expect(data.transactions.length).toBe(3)
+
+    // First transaction expected to be the approval transaction
+    const approvalTransaction = data.transactions[0]
+    expect(approvalTransaction.chainId).toBe(chain_id_base)
+    const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.data);  
+    expect(decodedData.amount.toString()).toBe(amount_to_send_in_decimals.toString())
+
+    // Second transaction expected to be the bridging to the Base
+    expect(data.transactions[1].chainId).toBe(chain_id_base)
+
+    // Last transaction expected to be the initial one
+    expect(data.transactions[2]).toStrictEqual(transactionObj.transaction)
+
+    // Set the Orchestration ID for the next test
+    orchestration_id = data.orchestrationId;
+  })
+
+  it('bridging status', async () => {
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/ca/orchestrator/status?projectId=${projectId}&orchestrationId=${orchestration_id}`,
+    )
+    expect(resp.status).toBe(200)
+    const data = resp.data
+    expect(typeof data.status).toBe('string')
+    expect(data.status).toBe('pending')
   })
 })

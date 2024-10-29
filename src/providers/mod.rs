@@ -807,4 +807,21 @@ pub trait ChainOrchestrationProvider: Send + Sync + Debug {
     ) -> Result<Vec<Value>, RpcError>;
 
     async fn build_bridging_tx(&self, route: Value) -> Result<bungee::BungeeBuildTx, RpcError>;
+
+    async fn check_allowance(
+        &self,
+        chain_id: String,
+        owner: Address,
+        target: Address,
+        token_address: Address,
+    ) -> Result<U256, RpcError>;
+
+    async fn build_approval_tx(
+        &self,
+        chain_id: String,
+        owner: Address,
+        target: Address,
+        token_address: Address,
+        amount: U256,
+    ) -> Result<bungee::BungeeApprovalTx, RpcError>;
 }

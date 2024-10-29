@@ -353,6 +353,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         // Chain agnostic orchestration
         .route("/v1/ca/orchestrator/check", post(handlers::chain_agnostic::check::handler))
         .route("/v1/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler))
+        .route("/v1/ca/orchestrator/status", get(handlers::chain_agnostic::status::handler))
         // Health
         .route("/health", get(handlers::health::handler))
         .route_layer(tracing_and_metrics_layer)

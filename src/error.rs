@@ -247,6 +247,9 @@ pub enum RpcError {
 
     #[error("No routes available for the bridging")]
     NoBridgingRoutesAvailable,
+
+    #[error("Orchestration ID is not found: {0}")]
+    OrchestrationIdNotFound(String),
 }
 
 impl IntoResponse for RpcError {
@@ -652,6 +655,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "".to_string(),
                     "No bridging routes available".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::OrchestrationIdNotFound(id) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "orchestrationId".to_string(),
+                    format!("Orchestration ID is not found: {}", id),
                 )),
             )
                 .into_response(),

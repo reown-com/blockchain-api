@@ -22,6 +22,8 @@ pub enum OperationType {
     Hget,
     Hfields,
     Hdel,
+    Set,
+    Get,
 }
 
 impl OperationType {
@@ -31,6 +33,8 @@ impl OperationType {
             OperationType::Hget => "hget",
             OperationType::Hfields => "hfields",
             OperationType::Hdel => "hdel",
+            OperationType::Set => "set",
+            OperationType::Get => "get",
         }
     }
 }
