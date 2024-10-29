@@ -3,11 +3,13 @@ use {
     alloy::primitives::{Address, U256},
     ethers::types::H160 as EthersH160,
     phf::phf_map,
+    serde::{Deserialize, Serialize},
     std::{collections::HashMap, str::FromStr},
 };
 
 pub mod check;
 pub mod route;
+pub mod status;
 
 /// Available assets for Bridging
 pub static BRIDGING_AVAILABLE_ASSETS: phf::Map<&'static str, phf::Map<&'static str, &'static str>> = phf_map! {
@@ -20,6 +22,26 @@ pub static BRIDGING_AVAILABLE_ASSETS: phf::Map<&'static str, phf::Map<&'static s
       "eip155:42161" => "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
   },
 };
+
+/// Serialized bridging request item schema to store it in the IRN database
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageBridgingItem {
+    created_at: usize,
+    chain_id: String,
+    wallet: Address,
+    amount_expected: U256,
+    status: BridgingStatus,
+}
+
+/// Bridging status
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum BridgingStatus {
+    Pending,
+    Completed,
+    Error,
+}
 
 /// Checking ERC20 balances for given address for provided ERC20 contracts
 pub async fn check_erc20_balances(

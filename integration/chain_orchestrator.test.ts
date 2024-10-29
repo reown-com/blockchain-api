@@ -18,6 +18,8 @@ describe('Chain abstraction orchestrator', () => {
   const chain_id_base = "eip155:8453";
   const usdc_contract_optimism = "0x0b2c639c533813f4aa9d7837caf62653d097ff85";
 
+  let orchestration_id = "";
+
   it('bridging available', async () => {
     // Sending USDC to Optimism, but having the USDC balance on Base chain
     const amount_to_send_in_decimals = usdc_funds_on_address - 1_000_000
@@ -191,5 +193,18 @@ describe('Chain abstraction orchestrator', () => {
 
     // Last transaction expected to be the initial one
     expect(data.transactions[2]).toStrictEqual(transactionObj.transaction)
+
+    // Set the Orchestration ID for the next test
+    orchestration_id = data.orchestrationId;
+  })
+
+  it('bridging status', async () => {
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/ca/orchestrator/status?projectId=${projectId}&orchestrationId=${orchestration_id}`,
+    )
+    expect(resp.status).toBe(200)
+    const data = resp.data
+    expect(typeof data.status).toBe('string')
+    expect(data.status).toBe('pending')
   })
 })

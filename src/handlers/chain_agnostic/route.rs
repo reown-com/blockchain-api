@@ -1,9 +1,13 @@
 use {
-    super::{super::HANDLER_TASK_METRICS, check_bridging_for_erc20_transfer},
+    super::{
+        super::HANDLER_TASK_METRICS, check_bridging_for_erc20_transfer, BridgingStatus,
+        StorageBridgingItem,
+    },
     crate::{
         analytics::MessageSource,
         error::RpcError,
         state::AppState,
+        storage::irn::OperationType,
         utils::crypto::{
             convert_alloy_address_to_h160, decode_erc20_function_type, decode_erc20_transfer_data,
             get_balance, Erc20FunctionType,
@@ -16,7 +20,7 @@ use {
         Json,
     },
     serde::{Deserialize, Serialize},
-    std::{str::FromStr, sync::Arc},
+    std::{str::FromStr, sync::Arc, time::SystemTime, time::UNIX_EPOCH},
     tracing::{debug, error},
     uuid::Uuid,
     wc::future::FutureExt,
@@ -196,7 +200,7 @@ async fn handler_internal(
                         .transaction
                         .max_priority_fee_per_gas
                         .clone(),
-                    chain_id: bridge_chain_id,
+                    chain_id: bridge_chain_id.clone(),
                 });
             }
         }
@@ -217,8 +221,31 @@ async fn handler_internal(
 
         // Push initial transaction last after all bridging transactions
         routes.push(request_payload.transaction);
-
         let orchestration_id = Uuid::new_v4().to_string();
+
+        // Save the bridging transaction to the IRN
+        let bridging_status_item = StorageBridgingItem {
+            created_at: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as usize,
+            chain_id: bridge_chain_id,
+            wallet: from_address,
+            amount_expected: erc20_transfer_value,
+            status: BridgingStatus::Pending,
+        };
+        let irn_client = state.irn.as_ref().ok_or(RpcError::IrnNotConfigured)?;
+        let irn_call_start = SystemTime::now();
+        irn_client
+            .set(
+                orchestration_id.clone(),
+                serde_json::to_string(&bridging_status_item)?.into(),
+            )
+            .await?;
+        state
+            .metrics
+            .add_irn_latency(irn_call_start, OperationType::Set);
+
         return Ok(Json(RouteResponse {
             orchestration_id,
             transactions: routes,
