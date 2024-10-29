@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.123.0 - 2024-10-29
+#### Features
+- **(ca_orchestration)** adding the approval transaction if needed and checking the status (#818) - (d9ac787) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.122.0 - 2024-10-24
 #### Features
 - **(ca_orchestration)** implementing chain agnostic orchestration check endpoint (#795) - (3909b8d) - Max Kalashnikoff | maksy.eth
