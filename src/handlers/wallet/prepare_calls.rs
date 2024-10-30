@@ -7,7 +7,7 @@ use crate::handlers::wallet::types::SignatureRequestType;
 use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
 use alloy::network::{Ethereum, Network};
 use alloy::primitives::aliases::U192;
-use alloy::primitives::{address, bytes, Address, Bytes, FixedBytes, U256, U64};
+use alloy::primitives::{address, bytes, keccak256, Address, Bytes, FixedBytes, B256, U256, U64};
 use alloy::providers::{Provider, ReqwestProvider};
 use alloy::sol_types::SolCall;
 use alloy::sol_types::SolValue;
@@ -401,25 +401,28 @@ pub fn decode_smart_session_signature(
     let mode = signature
         .first()
         .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?;
-    let permission_id = signature
-        .get(1..33)
-        .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?
-        .try_into() // this error shouldn't happen
-        .map_err(|_| PrepareCallsError::PermissionContextNotLongEnough)?;
-    let compressed_data = signature
-        .get(33..)
-        .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?;
-
-    let data = fastlz_rs::decompress_to_vec(compressed_data, None)
-        .map_err(PrepareCallsError::PermissionContextSignatureDecompression)?;
 
     match *mode {
         MODE_USE => {
+            let _permission_id: B256 = signature
+                .get(1..33)
+                .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?
+                .try_into() // this error shouldn't happen
+                .map_err(|_| PrepareCallsError::PermissionContextNotLongEnough)?;
+            // TODO compressed data next
+
             // https://github.com/rhinestonewtf/module-sdk/blob/18ef7ca998c0d0a596572f18575e1b4967d9227b/src/module/smart-sessions/usage.ts#L221
             // We aren't implementing this currently because it doesn't return the needed value (enableSessionData)
             Err(PrepareCallsError::PermissionContextUnsupportedModeUse)
         }
         MODE_ENABLE | MODE_UNSAFE_ENABLE => {
+            let compressed_data = signature
+                .get(33..)
+                .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?;
+
+            let data = fastlz_rs::decompress_to_vec(compressed_data, None)
+                .map_err(PrepareCallsError::PermissionContextSignatureDecompression)?;
+
             let enableSessionSigCall {
                 session: enable_session,
                 signature: _,
@@ -438,6 +441,15 @@ pub fn decode_smart_session_signature(
                 .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?;
             let validator = Address::from_slice(validator);
             let permission_enable_sig = permission_enable_sig.to_vec().into();
+
+            let permission_id = keccak256(
+                (
+                    &enable_session.sessionToEnable.sessionValidator,
+                    &enable_session.sessionToEnable.sessionValidatorInitData,
+                    &enable_session.sessionToEnable.salt,
+                )
+                    .abi_encode_params(),
+            );
 
             Ok(DecodedSmartSessionSignature {
                 permission_id,
@@ -484,7 +496,7 @@ where
     let signature = if session_enabled {
         encode_use_signature(permission_id, signature)?
     } else {
-        encode_enable_signature(permission_id, account_type, signature, enable_session_data)?
+        encode_enable_signature(account_type, signature, enable_session_data)?
     };
 
     Ok(signature)
@@ -543,7 +555,6 @@ fn encode_enable_signature_before_compress(
 }
 
 fn encode_enable_signature(
-    permission_id: FixedBytes<32>,
     account_type: AccountType,
     signature: Vec<u8>,
     enable_session_data: EnableSessionData,
@@ -561,7 +572,7 @@ fn encode_enable_signature(
                 ))
             })?,
     );
-    Ok((FixedBytes::from(MODE_ENABLE), permission_id, compressed)
+    Ok((FixedBytes::from(MODE_ENABLE), compressed)
         .abi_encode_packed()
         .into())
 }
@@ -717,7 +728,6 @@ mod tests {
     fn test_encode_enable_signature() {
         assert_eq!(
             encode_enable_signature(
-                fixed_bytes!("2ec3eb29f3b075c8fed3fb0585947b5f1ae50c2fbe2f8274918bed889f69e342"),
                 AccountType::Safe,
                 bytes!("00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c00000000000000000000000000000000000000000000000000000000000000").to_vec(),
                 EnableSessionData {
@@ -754,7 +764,7 @@ mod tests {
                     validator: address!("9388056f9cecfa536e70649154db93485a1f3448"),
                 }
             ).unwrap(),
-            bytes!("012ec3eb29f3b075c8fed3fb0585947b5f1ae50c2fbe2f8274918bed889f69e3420000e015000040e0151e0104c0e0151fe018000080e0162100e0e0151f0004e0151e020000012003e011001f014a3464b2d184c4b8517d7f2f59bab7e6269b6aa524e268fcd1eec34a9c8e2702d7389fe0033c12207b90941d9cff79a750c1e5c05ddaa17ea01be0041fe00a0001c031e00a14e02100010120e0152b0001e1169f0001e1179f1f2b02001b60aa8eb31e11c41279f6a102026edeeb848ec600bae0435ac2bccb870bc2ef2db5e215fac4dec876f4e0158ae02d00e016bf0100602003e05300e2151f21f203efef39a12007e01c00132e65bafa07238666c3b239e94f32dad3cdd6498de01638e017dfe0189fe0035f139a6c4974dce237e01ff35c602ca9555a3c0fa5efe0031fe00a00e1177fe0045f0366f864d5e00a43e013001f559388056f9cecfa536e70649154db93485a1f3448f0c9cba469e26f15ae4c091f8ff1b474b48673bb75d32e7e360391cb6e6db11c931dcc81986a86b380fcd48015464b5f504fd5fa527fd9437e46ea75098adce216c81fe01371e004000001e4175fe004dfe00a000002e00a13e00300e1173fe3177f1f41e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfc1fb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839a01f51ce0038de02900e0587f"),
+            bytes!("010000e015000040e0151e0104c0e0151fe018000080e0162100e0e0151f0004e0151e020000012003e011001f014a3464b2d184c4b8517d7f2f59bab7e6269b6aa524e268fcd1eec34a9c8e2702d7389fe0033c12207b90941d9cff79a750c1e5c05ddaa17ea01be0041fe00a0001c031e00a14e02100010120e0152b0001e1169f0001e1179f1f2b02001b60aa8eb31e11c41279f6a102026edeeb848ec600bae0435ac2bccb870bc2ef2db5e215fac4dec876f4e0158ae02d00e016bf0100602003e05300e2151f21f203efef39a12007e01c00132e65bafa07238666c3b239e94f32dad3cdd6498de01638e017dfe0189fe0035f139a6c4974dce237e01ff35c602ca9555a3c0fa5efe0031fe00a00e1177fe0045f0366f864d5e00a43e013001f559388056f9cecfa536e70649154db93485a1f3448f0c9cba469e26f15ae4c091f8ff1b474b48673bb75d32e7e360391cb6e6db11c931dcc81986a86b380fcd48015464b5f504fd5fa527fd9437e46ea75098adce216c81fe01371e004000001e4175fe004dfe00a000002e00a13e00300e1173fe3177f1f41e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfc1fb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839a01f51ce0038de02900e0587f"),
         );
     }
 }
