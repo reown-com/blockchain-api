@@ -417,7 +417,7 @@ pub fn decode_smart_session_signature(
         }
         MODE_ENABLE | MODE_UNSAFE_ENABLE => {
             let compressed_data = signature
-                .get(33..)
+                .get(1..)
                 .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?;
 
             let data = fastlz_rs::decompress_to_vec(compressed_data, None)
