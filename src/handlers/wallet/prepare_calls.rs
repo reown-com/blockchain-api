@@ -390,8 +390,8 @@ const MODE_USE: u8 = 0x00;
 const MODE_ENABLE: u8 = 0x01;
 const MODE_UNSAFE_ENABLE: u8 = 0x02;
 
-// https://github.com/rhinestonewtf/module-sdk/blob/18ef7ca998c0d0a596572f18575e1b4967d9227b/src/module/smart-sessions/constants.ts#L2
-const SMART_SESSIONS_ADDRESS: Address = address!("82e5e20582d976f5db5e36c5a72c70d5711cef8b");
+// https://github.com/rhinestonewtf/module-sdk/blob/main/src/module/smart-sessions/constants.ts#L3
+const SMART_SESSIONS_ADDRESS: Address = address!("DDFF43A42726df11E34123f747bDce0f755F784d");
 
 // https://github.com/rhinestonewtf/module-sdk/blob/18ef7ca998c0d0a596572f18575e1b4967d9227b/src/module/smart-sessions/usage.ts#L209
 pub fn decode_smart_session_signature(
