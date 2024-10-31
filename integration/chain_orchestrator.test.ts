@@ -11,7 +11,12 @@ describe('Chain abstraction orchestrator', () => {
 
   // Address with 3 USDC on Base chain
   const from_address_with_funds = "0x2aae531a81461f029cd55cb46703211c9227ba05";
-  const usdc_funds_on_address = 3_000_000;
+  const usdc_funds_on_base = 3_000_000;
+  const usdc_funds_on_optimism = 1_057_151;
+  // Amount to send to Optimism
+  const amount_to_send = 3_000_000
+  // How much needs to be topped up
+  const amount_to_topup = amount_to_send - usdc_funds_on_optimism
 
   const receiver_address = "0x739ff389c8eBd9339E69611d46Eec6212179BB67";
   const chain_id_optimism = "eip155:10";
@@ -22,10 +27,9 @@ describe('Chain abstraction orchestrator', () => {
 
   it('bridging available', async () => {
     // Sending USDC to Optimism, but having the USDC balance on Base chain
-    const amount_to_send_in_decimals = usdc_funds_on_address - 1_000_000
     const data_encoded = erc20Interface.encodeFunctionData('transfer', [
       receiver_address,
-      amount_to_send_in_decimals,
+      amount_to_send,
     ]);
 
     let transactionObj = {
@@ -54,7 +58,7 @@ describe('Chain abstraction orchestrator', () => {
 
   it('bridging unavailable (insufficient funds)', async () => {
     // Having the USDC balance on Base chain less then the amount to send
-    const amount_to_send_in_decimals = usdc_funds_on_address + 1_000_000
+    const amount_to_send_in_decimals = usdc_funds_on_base + 10_000_000
     const data_encoded = erc20Interface.encodeFunctionData('transfer', [
       receiver_address,
       amount_to_send_in_decimals,
@@ -86,7 +90,7 @@ describe('Chain abstraction orchestrator', () => {
 
   it('bridging unavailable (empty wallet)', async () => {
     // Checking an empty wallet
-    const amount_to_send_in_decimals = usdc_funds_on_address
+    const amount_to_send_in_decimals = usdc_funds_on_base
     const empty_wallet_address = ethers.Wallet.createRandom().address
     const data_encoded = erc20Interface.encodeFunctionData('transfer', [
       receiver_address,
@@ -150,10 +154,9 @@ describe('Chain abstraction orchestrator', () => {
 
   it('bridging routes (routes available)', async () => {
     // Sending USDC to Optimism, but having the USDC balance on Base chain
-    const amount_to_send_in_decimals = usdc_funds_on_address - 1_000_000
     const data_encoded = erc20Interface.encodeFunctionData('transfer', [
       receiver_address,
-      amount_to_send_in_decimals,
+      amount_to_send,
     ]);
 
     let transactionObj = {
@@ -186,7 +189,7 @@ describe('Chain abstraction orchestrator', () => {
     const approvalTransaction = data.transactions[0]
     expect(approvalTransaction.chainId).toBe(chain_id_base)
     const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.data);  
-    expect(decodedData.amount.toString()).toBe(amount_to_send_in_decimals.toString())
+    expect(decodedData.amount.toString()).toBe(amount_to_topup.toString())
 
     // Second transaction expected to be the bridging to the Base
     expect(data.transactions[1].chainId).toBe(chain_id_base)

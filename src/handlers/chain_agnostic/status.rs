@@ -2,7 +2,7 @@ use {
     super::{super::HANDLER_TASK_METRICS, BridgingStatus, StorageBridgingItem},
     crate::{
         analytics::MessageSource, error::RpcError, state::AppState, storage::irn::OperationType,
-        utils::crypto::get_balance,
+        utils::crypto::get_erc20_balance,
     },
     alloy::primitives::U256,
     axum::{
@@ -75,13 +75,15 @@ async fn handler_internal(
     }
 
     // Check the balance of the wallet and the amount expected
-    let wallet_balance = get_balance(
+    let wallet_balance = get_erc20_balance(
         &bridging_status_item.chain_id,
+        EthersH160::from(<[u8; 20]>::from(bridging_status_item.contract)),
         EthersH160::from(<[u8; 20]>::from(bridging_status_item.wallet)),
         &query_params.project_id,
         MessageSource::ChainAgnosticCheck,
     )
     .await?;
+
     if U256::from_be_bytes(wallet_balance.into()) < bridging_status_item.amount_expected {
         // The balance was not fullfilled return the same pending status
         return Ok(Json(StatusResponse {
