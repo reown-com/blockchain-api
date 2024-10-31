@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.123.1 - 2024-10-31
+#### Bug Fixes
+- update smart sessions address & session signature encoding/decoding (#820) - (8022dfd) - Chris Smith
+
+- - -
+
 ## 0.123.0 - 2024-10-29
 #### Features
 - **(ca_orchestration)** adding the approval transaction if needed and checking the status (#818) - (d9ac787) - Max Kalashnikoff | maksy.eth
