@@ -10,7 +10,7 @@ use {
         storage::irn::OperationType,
         utils::crypto::{
             convert_alloy_address_to_h160, decode_erc20_function_type, decode_erc20_transfer_data,
-            get_balance, get_erc20_balance, Erc20FunctionType,
+            get_balance, get_erc20_balance, get_gas_price, get_nonce, Erc20FunctionType,
         },
     },
     alloy::primitives::{Address, U256},
@@ -133,7 +133,7 @@ async fn handler_internal(
         &request_payload.transaction.chain_id,
         convert_alloy_address_to_h160(to_address),
         convert_alloy_address_to_h160(from_address),
-        &query_params.project_id,
+        &query_params.project_id.clone(),
         MessageSource::ChainAgnosticCheck,
     )
     .await?;
@@ -144,9 +144,12 @@ async fn handler_internal(
     let erc20_topup_value = erc20_transfer_value - erc20_balance;
 
     // Check for possible bridging by iterating over supported assets
-    if let Some((bridge_chain_id, bridge_contract)) =
-        check_bridging_for_erc20_transfer(query_params.project_id, erc20_topup_value, from_address)
-            .await?
+    if let Some((bridge_chain_id, bridge_contract)) = check_bridging_for_erc20_transfer(
+        query_params.project_id.clone(),
+        erc20_topup_value,
+        from_address,
+    )
+    .await?
     {
         // Skip bridging if that's the same chainId and contract address
         if bridge_chain_id == request_payload.transaction.chain_id && bridge_contract == to_address
@@ -167,6 +170,26 @@ async fn handler_internal(
                 from_address,
             )
             .await?;
+
+        // Getting the current nonce for the address
+        let mut current_nonce = get_nonce(
+            &request_payload.transaction.chain_id.clone(),
+            from_address,
+            &query_params.project_id.clone(),
+            MessageSource::ChainAgnosticCheck,
+        )
+        .await?;
+
+        // Getting the current gas price
+        let gas_price = get_gas_price(
+            &bridge_chain_id.clone(),
+            &query_params.project_id.clone(),
+            MessageSource::ChainAgnosticCheck,
+        )
+        .await?;
+        // Default gas estimate
+        // Using default with 4x increase: '0x029a6b * 4 = 0x52d9ac'
+        let gas = 0x029a6b * 0x4;
 
         // Build bridging transaction
         let mut routes = Vec::new();
@@ -208,10 +231,10 @@ async fn handler_internal(
                     from: approval_tx.from,
                     to: approval_tx.to,
                     value: "0x00".to_string(),
-                    gas_price: request_payload.transaction.gas_price.clone(),
-                    gas: request_payload.transaction.gas.clone(),
+                    gas_price: format!("0x{:x}", gas_price),
+                    gas: format!("0x{:x}", gas),
                     data: approval_tx.data,
-                    nonce: request_payload.transaction.nonce.clone(),
+                    nonce: format!("0x{:x}", current_nonce),
                     max_fee_per_gas: request_payload.transaction.max_fee_per_gas.clone(),
                     max_priority_fee_per_gas: request_payload
                         .transaction
@@ -219,6 +242,7 @@ async fn handler_internal(
                         .clone(),
                     chain_id: bridge_chain_id.clone(),
                 });
+                current_nonce += 1;
             }
         }
 
@@ -227,17 +251,21 @@ async fn handler_internal(
             from: from_address,
             to: bridge_tx.tx_target,
             value: bridge_tx.value,
-            gas_price: request_payload.transaction.gas_price.clone(),
-            gas: request_payload.transaction.gas.clone(),
+            gas_price: format!("0x{:x}", gas_price),
+            gas: format!("0x{:x}", gas),
             data: bridge_tx.tx_data,
-            nonce: request_payload.transaction.nonce.clone(),
+            nonce: format!("0x{:x}", current_nonce),
             max_fee_per_gas: request_payload.transaction.max_fee_per_gas.clone(),
             max_priority_fee_per_gas: request_payload.transaction.max_priority_fee_per_gas.clone(),
             chain_id: format!("eip155:{}", bridge_tx.chain_id),
         });
+        current_nonce += 1;
 
         // Push initial transaction last after all bridging transactions
-        routes.push(request_payload.transaction.clone());
+        routes.push(Transaction {
+            nonce: format!("0x{:x}", current_nonce),
+            ..request_payload.transaction.clone()
+        });
         let orchestration_id = Uuid::new_v4().to_string();
 
         // Save the bridging transaction to the IRN
