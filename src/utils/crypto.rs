@@ -1,7 +1,9 @@
 use {
     crate::{analytics::MessageSource, error::RpcError},
     alloy::{
+        network::Ethereum,
         primitives::{Address, U256 as AlloyU256},
+        providers::{Provider as AlloyProvider, ReqwestProvider},
         rpc::json_rpc::Id,
         sol,
         sol_types::SolCall,
@@ -336,6 +338,25 @@ pub async fn verify_message_signature(
     .await
 }
 
+/// Construct RPC calls url
+fn get_rpc_url(
+    chain_id: &str,
+    rpc_project_id: &str,
+    source: MessageSource,
+) -> Result<Url, CryptoUitlsError> {
+    let mut provider = Url::parse("https://rpc.walletconnect.com/v1").map_err(|e| {
+        CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e))
+    })?;
+    provider.query_pairs_mut().append_pair("chainId", chain_id);
+    provider
+        .query_pairs_mut()
+        .append_pair("projectId", rpc_project_id);
+    provider
+        .query_pairs_mut()
+        .append_pair("source", &source.to_string());
+    Ok(provider)
+}
+
 /// Veryfy message signature for eip6492 contract
 #[tracing::instrument(level = "debug")]
 pub async fn verify_eip6492_message_signature(
@@ -350,23 +371,7 @@ pub async fn verify_eip6492_message_signature(
     let address = Address::parse_checksummed(address, None)
         .map_err(|_| CryptoUitlsError::AddressChecksum(address.into()))?;
 
-    let mut provider = Url::parse("https://rpc.walletconnect.com/v1")
-        .map_err(|e| {
-            CryptoUitlsError::RpcUrlParseError(format!(
-                "Failed to parse RPC url:
-        {}",
-                e
-            ))
-        })
-        .unwrap();
-    provider.query_pairs_mut().append_pair("chainId", chain_id);
-    provider
-        .query_pairs_mut()
-        .append_pair("projectId", rpc_project_id);
-    provider
-        .query_pairs_mut()
-        .append_pair("source", &source.to_string());
-
+    let provider = get_rpc_url(chain_id, rpc_project_id, source)?;
     let hexed_signature = hex::decode(&signature[2..])
         .map_err(|e| CryptoUitlsError::SignatureFormat(format!("Wrong signature format: {}", e)))?;
 
@@ -446,11 +451,11 @@ pub async fn get_erc20_contract_balance(
         ]"#,
     );
 
-    let provider = Provider::<Http>::try_from(format!(
-        "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",
-        chain_id, rpc_project_id, source
-    ))
-    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
+    let provider =
+        Provider::<Http>::try_from(get_rpc_url(chain_id, rpc_project_id, source)?.as_str())
+            .map_err(|e| {
+                CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e))
+            })?;
     let provider = Arc::new(provider);
 
     let contract = ERC20Contract::new(contract, provider);
@@ -471,11 +476,11 @@ pub async fn get_balance(
     rpc_project_id: &str,
     source: MessageSource,
 ) -> Result<U256, CryptoUitlsError> {
-    let provider = Provider::<Http>::try_from(format!(
-        "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",
-        chain_id, rpc_project_id, source
-    ))
-    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
+    let provider =
+        Provider::<Http>::try_from(get_rpc_url(chain_id, rpc_project_id, source)?.as_str())
+            .map_err(|e| {
+                CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e))
+            })?;
     let provider = Arc::new(provider);
 
     let balance = provider
@@ -483,6 +488,39 @@ pub async fn get_balance(
         .await
         .map_err(|e| CryptoUitlsError::ProviderError(format!("{}", e)))?;
     Ok(balance)
+}
+
+/// Get the gas price
+#[tracing::instrument(level = "debug")]
+pub async fn get_gas_price(
+    chain_id: &str,
+    rpc_project_id: &str,
+    source: MessageSource,
+) -> Result<u128, CryptoUitlsError> {
+    let provider =
+        ReqwestProvider::<Ethereum>::new_http(get_rpc_url(chain_id, rpc_project_id, source)?);
+    let gas_price = provider
+        .get_gas_price()
+        .await
+        .map_err(|e| CryptoUitlsError::ProviderError(format!("{}", e)))?;
+    Ok(gas_price)
+}
+
+/// Get the nonce
+#[tracing::instrument(level = "debug")]
+pub async fn get_nonce(
+    chain_id: &str,
+    wallet: Address,
+    rpc_project_id: &str,
+    source: MessageSource,
+) -> Result<u64, CryptoUitlsError> {
+    let provider =
+        ReqwestProvider::<Ethereum>::new_http(get_rpc_url(chain_id, rpc_project_id, source)?);
+    let nonce = provider
+        .get_transaction_count(wallet)
+        .await
+        .map_err(|e| CryptoUitlsError::ProviderError(format!("{}", e)))?;
+    Ok(nonce)
 }
 
 /// Call entry point v07 getUserOpHash contract and get the userOperation hash
@@ -501,10 +539,9 @@ pub async fn call_get_user_op_hash(
         ]"#,
     );
 
-    let provider = Provider::<Http>::try_from(format!(
-        "https://rpc.walletconnect.com/v1?chainId={}&projectId={}",
-        chain_id, rpc_project_id
-    ))
+    let provider = Provider::<Http>::try_from(
+        get_rpc_url(chain_id, rpc_project_id, MessageSource::ChainAgnosticCheck)?.as_str(),
+    )
     .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
     let provider = Arc::new(provider);
 

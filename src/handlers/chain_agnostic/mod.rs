@@ -30,6 +30,7 @@ pub struct StorageBridgingItem {
     created_at: usize,
     chain_id: String,
     wallet: Address,
+    contract: Address,
     amount_expected: U256,
     status: BridgingStatus,
 }

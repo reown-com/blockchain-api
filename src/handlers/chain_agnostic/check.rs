@@ -6,7 +6,7 @@ use {
         state::AppState,
         utils::crypto::{
             convert_alloy_address_to_h160, decode_erc20_function_type, decode_erc20_transfer_data,
-            get_balance, Erc20FunctionType,
+            get_balance, get_erc20_balance, Erc20FunctionType,
         },
     },
     alloy::primitives::{Address, U256},
@@ -119,13 +119,30 @@ async fn handler_internal(
     // Decode the ERC20 transfer function data
     let (_erc20_receiver, erc20_transfer_value) = decode_erc20_transfer_data(&transaction_data)?;
 
-    // Check for possible bridging by iterating over supported assets
-    if let Some((bridge_chain_id, bridge_contract)) = check_bridging_for_erc20_transfer(
-        query_params.project_id,
-        erc20_transfer_value,
-        from_address,
+    // Get the current balance of the ERC20 token and check if it's enough for the transfer
+    // without bridging or calculate the top-up value
+    let erc20_balance = get_erc20_balance(
+        &request_payload.transaction.chain_id,
+        convert_alloy_address_to_h160(to_address),
+        convert_alloy_address_to_h160(from_address),
+        &query_params.project_id,
+        MessageSource::ChainAgnosticCheck,
     )
-    .await?
+    .await?;
+    let erc20_balance = U256::from_be_bytes(erc20_balance.into());
+    if erc20_balance >= erc20_transfer_value {
+        // The balance is sufficient for the transfer no need for bridging
+        return Ok(Json(RequiresMultiChainResponse {
+            requires_multi_chain: false,
+        })
+        .into_response());
+    }
+    let erc20_topup_value = erc20_transfer_value - erc20_balance;
+
+    // Check for possible bridging by iterating over supported assets
+    if let Some((bridge_chain_id, bridge_contract)) =
+        check_bridging_for_erc20_transfer(query_params.project_id, erc20_topup_value, from_address)
+            .await?
     {
         // Skip bridging if that's the same chainId and contract address
         if bridge_chain_id == request_payload.transaction.chain_id && bridge_contract == to_address
@@ -142,7 +159,7 @@ async fn handler_internal(
         .into_response());
     }
 
-    // No balance is sufficient for the transfer or bridging
+    // No sufficient balances found for the transfer or bridging
     Ok(Json(RequiresMultiChainResponse {
         requires_multi_chain: false,
     })

@@ -10,7 +10,7 @@ use {
         storage::irn::OperationType,
         utils::crypto::{
             convert_alloy_address_to_h160, decode_erc20_function_type, decode_erc20_transfer_data,
-            get_balance, Erc20FunctionType,
+            get_balance, get_erc20_balance, get_gas_price, get_nonce, Erc20FunctionType,
         },
     },
     alloy::primitives::{Address, U256},
@@ -20,7 +20,11 @@ use {
         Json,
     },
     serde::{Deserialize, Serialize},
-    std::{str::FromStr, sync::Arc, time::SystemTime, time::UNIX_EPOCH},
+    std::{
+        str::FromStr,
+        sync::Arc,
+        time::{SystemTime, UNIX_EPOCH},
+    },
     tracing::{debug, error},
     uuid::Uuid,
     wc::future::FutureExt,
@@ -123,10 +127,26 @@ async fn handler_internal(
     // Decode the ERC20 transfer function data
     let (_erc20_receiver, erc20_transfer_value) = decode_erc20_transfer_data(&transaction_data)?;
 
+    // Get the current balance of the ERC20 token and check if it's enough for the transfer
+    // without bridging or calculate the top-up value
+    let erc20_balance = get_erc20_balance(
+        &request_payload.transaction.chain_id,
+        convert_alloy_address_to_h160(to_address),
+        convert_alloy_address_to_h160(from_address),
+        &query_params.project_id.clone(),
+        MessageSource::ChainAgnosticCheck,
+    )
+    .await?;
+    let erc20_balance = U256::from_be_bytes(erc20_balance.into());
+    if erc20_balance >= erc20_transfer_value {
+        return Err(RpcError::NoBridgingNeeded);
+    }
+    let erc20_topup_value = erc20_transfer_value - erc20_balance;
+
     // Check for possible bridging by iterating over supported assets
     if let Some((bridge_chain_id, bridge_contract)) = check_bridging_for_erc20_transfer(
-        query_params.project_id,
-        erc20_transfer_value,
+        query_params.project_id.clone(),
+        erc20_topup_value,
         from_address,
     )
     .await?
@@ -146,10 +166,30 @@ async fn handler_internal(
                 bridge_contract,
                 request_payload.transaction.chain_id.clone(),
                 to_address,
-                erc20_transfer_value,
+                erc20_topup_value,
                 from_address,
             )
             .await?;
+
+        // Getting the current nonce for the address
+        let mut current_nonce = get_nonce(
+            &request_payload.transaction.chain_id.clone(),
+            from_address,
+            &query_params.project_id.clone(),
+            MessageSource::ChainAgnosticCheck,
+        )
+        .await?;
+
+        // Getting the current gas price
+        let gas_price = get_gas_price(
+            &bridge_chain_id.clone(),
+            &query_params.project_id.clone(),
+            MessageSource::ChainAgnosticCheck,
+        )
+        .await?;
+        // Default gas estimate
+        // Using default with 4x increase: '0x029a6b * 4 = 0x52d9ac'
+        let gas = 0x029a6b * 0x4;
 
         // Build bridging transaction
         let mut routes = Vec::new();
@@ -183,7 +223,7 @@ async fn handler_internal(
                         approval_data.owner,
                         approval_data.allowance_target,
                         approval_data.approval_token_address,
-                        erc20_transfer_value,
+                        erc20_topup_value,
                     )
                     .await?;
 
@@ -191,10 +231,10 @@ async fn handler_internal(
                     from: approval_tx.from,
                     to: approval_tx.to,
                     value: "0x00".to_string(),
-                    gas_price: request_payload.transaction.gas_price.clone(),
-                    gas: request_payload.transaction.gas.clone(),
+                    gas_price: format!("0x{:x}", gas_price),
+                    gas: format!("0x{:x}", gas),
                     data: approval_tx.data,
-                    nonce: request_payload.transaction.nonce.clone(),
+                    nonce: format!("0x{:x}", current_nonce),
                     max_fee_per_gas: request_payload.transaction.max_fee_per_gas.clone(),
                     max_priority_fee_per_gas: request_payload
                         .transaction
@@ -202,6 +242,7 @@ async fn handler_internal(
                         .clone(),
                     chain_id: bridge_chain_id.clone(),
                 });
+                current_nonce += 1;
             }
         }
 
@@ -210,17 +251,21 @@ async fn handler_internal(
             from: from_address,
             to: bridge_tx.tx_target,
             value: bridge_tx.value,
-            gas_price: request_payload.transaction.gas_price.clone(),
-            gas: request_payload.transaction.gas.clone(),
+            gas_price: format!("0x{:x}", gas_price),
+            gas: format!("0x{:x}", gas),
             data: bridge_tx.tx_data,
-            nonce: request_payload.transaction.nonce.clone(),
+            nonce: format!("0x{:x}", current_nonce),
             max_fee_per_gas: request_payload.transaction.max_fee_per_gas.clone(),
             max_priority_fee_per_gas: request_payload.transaction.max_priority_fee_per_gas.clone(),
             chain_id: format!("eip155:{}", bridge_tx.chain_id),
         });
+        current_nonce += 1;
 
         // Push initial transaction last after all bridging transactions
-        routes.push(request_payload.transaction);
+        routes.push(Transaction {
+            nonce: format!("0x{:x}", current_nonce),
+            ..request_payload.transaction.clone()
+        });
         let orchestration_id = Uuid::new_v4().to_string();
 
         // Save the bridging transaction to the IRN
@@ -229,9 +274,10 @@ async fn handler_internal(
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_secs() as usize,
-            chain_id: bridge_chain_id,
+            chain_id: request_payload.transaction.chain_id,
             wallet: from_address,
-            amount_expected: erc20_transfer_value,
+            contract: to_address,
+            amount_expected: erc20_transfer_value, // The total transfer amount expected
             status: BridgingStatus::Pending,
         };
         let irn_client = state.irn.as_ref().ok_or(RpcError::IrnNotConfigured)?;
