@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.123.2 - 2024-10-31
+#### Bug Fixes
+- **(CA)** fixing the topup amount and status check (#822) - (8fa4e0e) - Max Kalashnikoff | maksy.eth
+- **(ci)** adding CA tests to the staging ignore list (#821) - (d525c1d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.123.1 - 2024-10-31
 #### Bug Fixes
 - update smart sessions address & session signature encoding/decoding (#820) - (8022dfd) - Chris Smith
