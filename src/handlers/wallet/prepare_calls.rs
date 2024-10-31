@@ -21,7 +21,7 @@ use url::Url;
 use uuid::Uuid;
 use wc::future::FutureExt;
 use yttrium::bundler::pimlico::paymaster::client::PaymasterClient;
-use yttrium::erc7579::smart_sessions::ISmartSession::isSessionEnabledReturn;
+use yttrium::erc7579::smart_sessions::ISmartSession::isPermissionEnabledReturn;
 use yttrium::erc7579::smart_sessions::{enableSessionSigCall, EnableSession, ISmartSession};
 use yttrium::smart_accounts::account_address::AccountAddress;
 use yttrium::{
@@ -483,10 +483,10 @@ where
     N: Network,
 {
     let smart_sessions = ISmartSession::new(SMART_SESSIONS_ADDRESS, provider);
-    let isSessionEnabledReturn {
+    let isPermissionEnabledReturn {
         _0: session_enabled,
     } = smart_sessions
-        .isSessionEnabled(permission_id, address.to_address())
+        .isPermissionEnabled(permission_id, address.to_address())
         .call()
         .await
         .map_err(|e| {
