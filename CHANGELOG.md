@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.124.0 - 2024-11-01
+#### Features
+- **(CA)** adding topup amount multiplier (#823) - (d148495) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.123.2 - 2024-10-31
 #### Bug Fixes
 - **(CA)** fixing the topup amount and status check (#822) - (8fa4e0e) - Max Kalashnikoff | maksy.eth
