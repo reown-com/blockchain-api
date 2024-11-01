@@ -1,7 +1,7 @@
 use {
     super::{
         super::HANDLER_TASK_METRICS, check_bridging_for_erc20_transfer, BridgingStatus,
-        StorageBridgingItem,
+        StorageBridgingItem, BRIDGING_AMOUNT_MULTIPLIER,
     },
     crate::{
         analytics::MessageSource,
@@ -142,6 +142,9 @@ async fn handler_internal(
         return Err(RpcError::NoBridgingNeeded);
     }
     let erc20_topup_value = erc20_transfer_value - erc20_balance;
+    // Multiply the topup value by the bridging percent multiplier
+    let erc20_topup_value = erc20_topup_value
+        + (erc20_topup_value * U256::from(BRIDGING_AMOUNT_MULTIPLIER)) / U256::from(100);
 
     // Check for possible bridging by iterating over supported assets
     if let Some((bridge_chain_id, bridge_contract)) = check_bridging_for_erc20_transfer(
