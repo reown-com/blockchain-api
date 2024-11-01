@@ -15,8 +15,10 @@ describe('Chain abstraction orchestrator', () => {
   const usdc_funds_on_optimism = 1_057_151;
   // Amount to send to Optimism
   const amount_to_send = 3_000_000
+  // Amount bridging multiplier
+  const amount_multiplier = 5; // +5% topup
   // How much needs to be topped up
-  const amount_to_topup = amount_to_send - usdc_funds_on_optimism
+  const amount_to_topup = (amount_to_send - usdc_funds_on_optimism) * (100 + amount_multiplier) / 100;
   // Default gas esimation is default with 4x increase
   const gas_estimate = "0xa69ac";
 
@@ -193,7 +195,7 @@ describe('Chain abstraction orchestrator', () => {
     expect(approvalTransaction.nonce).not.toBe("0x00")
     expect(approvalTransaction.gas).toBe(gas_estimate)
     const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.data);  
-    expect(decodedData.amount.toString()).toBe(amount_to_topup.toString())
+    expect(decodedData.amount.toString()).toBe(amount_to_topup.toString().split('.')[0])
 
 
     // Second transaction expected to be the bridging to the Base
