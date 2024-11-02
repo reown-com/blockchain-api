@@ -70,7 +70,10 @@ pub enum GetCallsStatusError {
 }
 
 #[derive(Error, Debug)]
-pub enum GetCallsStatusInternalError {}
+pub enum GetCallsStatusInternalError {
+    #[error("UserOp operation get receipt error: {0}")]
+    UserOperationReceiptError(String),
+}
 
 impl IntoResponse for GetCallsStatusError {
     fn into_response(self) -> Response {
@@ -118,7 +121,7 @@ async fn handler_internal(
             connect_info,
             headers,
             query: RpcQueryParams {
-                chain_id: chain_id.caip2_identifier(),
+                chain_id: chain_id.into(),
                 project_id,
                 provider_id: None,
                 source: Some(MessageSource::WalletGetCallsStatus),
@@ -131,7 +134,11 @@ async fn handler_internal(
     let receipt = provider
         .get_user_operation_receipt(request.0 .0.user_op_hash)
         .await
-        .unwrap();
+        .map_err(|e| {
+            GetCallsStatusError::InternalError(
+                GetCallsStatusInternalError::UserOperationReceiptError(e.to_string()),
+            )
+        })?;
     // TODO handle None as CallStatus::Pending
 
     Ok(GetCallsStatusResult {
@@ -174,7 +181,7 @@ mod self_transport {
     use {
         crate::{
             error::RpcError, handlers::RpcQueryParams, json_rpc::JSON_RPC_VERSION,
-            providers::SupportedBundlerOps, state::AppState,
+            providers::SupportedBundlerOps, state::AppState, utils::crypto::disassemble_caip2,
         },
         alloy::{
             rpc::json_rpc::{RequestPacket, Response, ResponsePacket},
@@ -248,11 +255,13 @@ mod self_transport {
                     TransportErrorKind::custom(SelfBundlerTransportError::ParseParams(e))
                 })?;
 
+                let (_, eip155_chain_id) = disassemble_caip2(&caip2_identifier)
+                    .map_err(|_| TransportErrorKind::custom_str("Failed to parse CAIP2 chainId"))?;
                 let response = state
                     .providers
                     .bundler_ops_provider
                     .bundler_rpc_call(
-                        &caip2_identifier,
+                        &eip155_chain_id,
                         req.id().clone(),
                         JSON_RPC_VERSION.clone(),
                         &method,
