@@ -139,7 +139,16 @@ async fn handler_internal(
                 GetCallsStatusInternalError::UserOperationReceiptError(e.to_string()),
             )
         })?;
-    // TODO handle None as CallStatus::Pending
+
+    let receipt = match receipt {
+        Some(receipt) => receipt,
+        None => {
+            return Ok(GetCallsStatusResult {
+                status: CallStatus::Pending,
+                receipts: None,
+            })
+        }
+    };
 
     Ok(GetCallsStatusResult {
         status: if receipt.receipt.status == U8::from(1) {
