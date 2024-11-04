@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.125.0 - 2024-11-04
+#### Features
+- updating Cargo dependencies and yttrium library (#826) - (4868191) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.124.2 - 2024-11-04
 #### Bug Fixes
 - **(providers)** Removing Pokt provider from Base Sepolia chain support (#825) - (056e371) - Max Kalashnikoff | maksy.eth
