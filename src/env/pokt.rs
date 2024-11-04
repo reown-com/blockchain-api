@@ -79,11 +79,13 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ),
         ),
         // Base Sepolia
+        // Todo: Temporary disabling Pokt for the Sepolia until the contract call
+        // flaky responses issue will be resolved.
         (
             "eip155:84532".into(),
             (
                 "base-testnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                Weight::new(Priority::Disabled).unwrap(),
             ),
         ),
         // Binance Smart Chain
