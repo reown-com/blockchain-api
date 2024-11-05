@@ -100,7 +100,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Sei mainnet
         (
             "eip155:1329".into(),
-            ("sei-rpc".into(), Weight::new(Priority::Normal).unwrap()),
+            ("sei-evm-rpc".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Scroll
         (
