@@ -174,9 +174,18 @@ async fn handler_internal(
             )
             .await?;
 
+        // Build bridging transaction
+        let mut routes = Vec::new();
+        let best_route = quotes.first().ok_or(RpcError::NoBridgingRoutesAvailable)?;
+        let bridge_tx = state
+            .providers
+            .chain_orchestrator_provider
+            .build_bridging_tx(best_route.clone())
+            .await?;
+
         // Getting the current nonce for the address
         let mut current_nonce = get_nonce(
-            &request_payload.transaction.chain_id.clone(),
+            format!("eip155:{}", bridge_tx.chain_id).as_str(),
             from_address,
             &query_params.project_id.clone(),
             MessageSource::ChainAgnosticCheck,
@@ -190,18 +199,11 @@ async fn handler_internal(
             MessageSource::ChainAgnosticCheck,
         )
         .await?;
-        // Default gas estimate
-        // Using default with 4x increase: '0x029a6b * 4 = 0x52d9ac'
-        let gas = 0x029a6b * 0x4;
 
-        // Build bridging transaction
-        let mut routes = Vec::new();
-        let best_route = quotes.first().ok_or(RpcError::NoBridgingRoutesAvailable)?;
-        let bridge_tx = state
-            .providers
-            .chain_orchestrator_provider
-            .build_bridging_tx(best_route.clone())
-            .await?;
+        // Default gas estimate
+        // Using default with 2x increase
+        // Todo: Implement gas estimation using `eth_estimateGas`
+        let gas = 0x029a6b * 0x2;
 
         // Check for the allowance
         if let Some(approval_data) = bridge_tx.approval_data {
@@ -209,7 +211,7 @@ async fn handler_internal(
                 .providers
                 .chain_orchestrator_provider
                 .check_allowance(
-                    bridge_chain_id.clone(),
+                    format!("eip155:{}", bridge_tx.chain_id),
                     approval_data.owner,
                     approval_data.allowance_target,
                     approval_data.approval_token_address,
@@ -222,7 +224,7 @@ async fn handler_internal(
                     .providers
                     .chain_orchestrator_provider
                     .build_approval_tx(
-                        bridge_chain_id.clone(),
+                        format!("eip155:{}", bridge_tx.chain_id),
                         approval_data.owner,
                         approval_data.allowance_target,
                         approval_data.approval_token_address,
@@ -243,7 +245,7 @@ async fn handler_internal(
                         .transaction
                         .max_priority_fee_per_gas
                         .clone(),
-                    chain_id: bridge_chain_id.clone(),
+                    chain_id: format!("eip155:{}", bridge_tx.chain_id),
                 });
                 current_nonce += 1;
             }
