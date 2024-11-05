@@ -19,8 +19,8 @@ describe('Chain abstraction orchestrator', () => {
   const amount_multiplier = 5; // +5% topup
   // How much needs to be topped up
   const amount_to_topup = (amount_to_send - usdc_funds_on_optimism) * (100 + amount_multiplier) / 100;
-  // Default gas esimation is default with 4x increase
-  const gas_estimate = "0xa69ac";
+  // Default gas esimation is default with 2x increase
+  const gas_estimate = "0x534d6";
 
   const receiver_address = "0x739ff389c8eBd9339E69611d46Eec6212179BB67";
   const chain_id_optimism = "eip155:10";
@@ -197,14 +197,15 @@ describe('Chain abstraction orchestrator', () => {
     const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.data);  
     expect(decodedData.amount.toString()).toBe(amount_to_topup.toString().split('.')[0])
 
-
     // Second transaction expected to be the bridging to the Base
-    expect(data.transactions[1].chainId).toBe(chain_id_base)
-    expect(data.transactions[1].nonce).not.toBe("0x00")
-    expect(data.transactions[1].gas).toBe(gas_estimate)
+    const bridgingTransaction = data.transactions[1]
+    expect(bridgingTransaction.chainId).toBe(chain_id_base)
+    expect(bridgingTransaction.nonce).not.toBe("0x00")
+    expect(bridgingTransaction.gas).toBe(gas_estimate)
 
     // Last transaction expected to be the initial one
-    expect(data.transactions[2].data).toBe(transactionObj.transaction.data)
+    const initialTransaction = data.transactions[2]
+    expect(initialTransaction.data).toBe(transactionObj.transaction.data)
 
     // Set the Orchestration ID for the next test
     orchestration_id = data.orchestrationId;
