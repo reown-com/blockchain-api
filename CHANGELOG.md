@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.126.1 - 2024-11-05
+#### Bug Fixes
+- **(CA)** fixing the nonce calculation, decreasing gas estimate, chain ID fix (#829) - (dbf3982) - Max Kalashnikoff | maksy.eth
+- **(ecs)** increasing the cluster max capacity (#828) - (835859c) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.126.0 - 2024-11-05
 #### Features
 - **(providers)** adding Publicnode Bitcoin RPC support (#827) - (7a4e9d9) - Max Kalashnikoff | maksy.eth
