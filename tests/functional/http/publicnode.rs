@@ -1,6 +1,11 @@
 use {
-    super::check_if_rpc_is_responding_correctly_for_supported_chain, crate::context::ServerContext,
-    rpc_proxy::providers::ProviderKind, test_context::test_context,
+    super::{
+        check_if_rpc_is_responding_correctly_for_bitcoin,
+        check_if_rpc_is_responding_correctly_for_supported_chain,
+    },
+    crate::context::ServerContext,
+    rpc_proxy::providers::ProviderKind,
+    test_context::test_context,
 };
 
 #[test_context(ServerContext)]
@@ -103,6 +108,29 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
         &provider,
         "eip155:534351",
         "0x8274f",
+    )
+    .await;
+}
+
+#[test_context(ServerContext)]
+#[tokio::test]
+#[ignore]
+async fn publicnode_provider_bitcoin(ctx: &mut ServerContext) {
+    let provider = ProviderKind::Publicnode;
+
+    // Bitcoin mainnet
+    check_if_rpc_is_responding_correctly_for_bitcoin(
+        ctx,
+        "000000000019d6689c085ae165831e93",
+        &provider,
+    )
+    .await;
+
+    // Bitcoin testnet
+    check_if_rpc_is_responding_correctly_for_bitcoin(
+        ctx,
+        "000000000933ea01ad0ee984209779ba",
+        &provider,
     )
     .await;
 }

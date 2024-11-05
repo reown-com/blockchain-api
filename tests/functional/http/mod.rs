@@ -124,6 +124,37 @@ async fn check_if_rpc_is_responding_correctly_for_solana(
     assert_eq!(rpc_response.result::<String>().unwrap(), "ok")
 }
 
+async fn check_if_rpc_is_responding_correctly_for_bitcoin(
+    ctx: &ServerContext,
+    chain_id: &str,
+    provider_id: &ProviderKind,
+) {
+    let addr = format!(
+        "{}v1/?projectId={}&providerId={}&chainId=",
+        ctx.server.public_addr, ctx.server.project_id, provider_id
+    );
+
+    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let request = jsonrpc::Request {
+        method: "getblockcount",
+        params: None,
+        id: serde_json::Value::Number(1.into()),
+        jsonrpc: JSONRPC_VERSION,
+    };
+
+    let (status, rpc_response) =
+        send_jsonrpc_request(client, addr, &format!("bip122:{}", chain_id), request).await;
+
+    // Verify that HTTP communication was successful
+    assert_eq!(status, StatusCode::OK);
+
+    // Verify there was no error in rpc
+    assert!(rpc_response.error.is_none());
+
+    // Check the block number is greater than current block number
+    assert!(rpc_response.result::<usize>().unwrap() > 868888);
+}
+
 #[test_context(ServerContext)]
 #[tokio::test]
 async fn health_check(ctx: &mut ServerContext) {

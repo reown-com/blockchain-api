@@ -100,7 +100,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Sei mainnet
         (
             "eip155:1329".into(),
-            ("sei-rpc".into(), Weight::new(Priority::Normal).unwrap()),
+            ("sei-evm-rpc".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Scroll
         (
@@ -112,6 +112,19 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:534351".into(),
             (
                 "scroll-sepolia-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        // Bitcoin mainnet
+        (
+            "bip122:000000000019d6689c085ae165831e93".into(),
+            ("bitcoin-rpc".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
+        // Bitcoin testnet
+        (
+            "bip122:000000000933ea01ad0ee984209779ba".into(),
+            (
+                "bitcoin-testnet-rpc".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
