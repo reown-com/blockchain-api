@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.126.0 - 2024-11-05
+#### Features
+- **(providers)** adding Publicnode Bitcoin RPC support (#827) - (7a4e9d9) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.125.0 - 2024-11-04
 #### Features
 - updating Cargo dependencies and yttrium library (#826) - (4868191) - Max Kalashnikoff | maksy.eth
