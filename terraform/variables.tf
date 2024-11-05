@@ -46,7 +46,7 @@ variable "app_autoscaling_min_capacity" {
 variable "app_autoscaling_max_capacity" {
   description = "The maximum number of tasks to run when autoscaling"
   type        = number
-  default     = 8
+  default     = 10
 }
 
 variable "ofac_blocked_countries" {
