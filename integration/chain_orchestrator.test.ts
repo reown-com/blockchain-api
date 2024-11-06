@@ -19,8 +19,8 @@ describe('Chain abstraction orchestrator', () => {
   const amount_multiplier = 5; // +5% topup
   // How much needs to be topped up
   const amount_to_topup = (amount_to_send - usdc_funds_on_optimism) * (100 + amount_multiplier) / 100;
-  // Default gas esimation is default with 2x increase
-  const gas_estimate = "0x534d6";
+  // Default gas esimation is default with 6x increase
+  const gas_estimate = "0xf9e82";
 
   const receiver_address = "0x739ff389c8eBd9339E69611d46Eec6212179BB67";
   const chain_id_optimism = "eip155:10";

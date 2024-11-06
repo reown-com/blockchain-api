@@ -201,9 +201,9 @@ async fn handler_internal(
         .await?;
 
         // Default gas estimate
-        // Using default with 2x increase
+        // Using default with 6x increase
         // Todo: Implement gas estimation using `eth_estimateGas`
-        let gas = 0x029a6b * 0x2;
+        let gas = 0x029a6b * 0x6;
 
         // Check for the allowance
         if let Some(approval_data) = bridge_tx.approval_data {
