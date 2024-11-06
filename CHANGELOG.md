@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.126.2 - 2024-11-06
+#### Bug Fixes
+- **(CA)** increasing the gas estimation multiplier (#830) - (352223e) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.126.1 - 2024-11-05
 #### Bug Fixes
 - **(CA)** fixing the nonce calculation, decreasing gas estimate, chain ID fix (#829) - (dbf3982) - Max Kalashnikoff | maksy.eth
