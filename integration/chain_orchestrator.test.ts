@@ -13,19 +13,21 @@ describe('Chain abstraction orchestrator', () => {
   const from_address_with_funds = "0x2aae531a81461f029cd55cb46703211c9227ba05";
   const usdc_funds_on_base = 3_000_000;
   const usdc_funds_on_optimism = 1_057_151;
+  const usdc_token_symbol = "USDC";
   // Amount to send to Optimism
   const amount_to_send = 3_000_000
   // Amount bridging multiplier
   const amount_multiplier = 5; // +5% topup
   // How much needs to be topped up
-  const amount_to_topup = (amount_to_send - usdc_funds_on_optimism) * (100 + amount_multiplier) / 100;
+  const amount_to_topup = Math.round((amount_to_send - usdc_funds_on_optimism) * (100 + amount_multiplier) / 100);
   // Default gas esimation is default with 6x increase
   const gas_estimate = "0xf9e82";
 
   const receiver_address = "0x739ff389c8eBd9339E69611d46Eec6212179BB67";
   const chain_id_optimism = "eip155:10";
-  const chain_id_base = "eip155:8453";
   const usdc_contract_optimism = "0x0b2c639c533813f4aa9d7837caf62653d097ff85";
+  const chain_id_base = "eip155:8453";
+  const usdc_contract_base = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
 
   let orchestration_id = "";
 
@@ -195,7 +197,7 @@ describe('Chain abstraction orchestrator', () => {
     expect(approvalTransaction.nonce).not.toBe("0x00")
     expect(approvalTransaction.gas).toBe(gas_estimate)
     const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.data);  
-    expect(decodedData.amount.toString()).toBe(amount_to_topup.toString().split('.')[0])
+    expect(decodedData.amount.toString()).toBe(amount_to_topup.toString())
 
     // Second transaction expected to be the bridging to the Base
     const bridgingTransaction = data.transactions[1]
@@ -207,6 +209,12 @@ describe('Chain abstraction orchestrator', () => {
     const initialTransaction = data.transactions[2]
     expect(initialTransaction.data).toBe(transactionObj.transaction.data)
 
+    // Check the metadata fundingFrom
+    const fundingFrom = data.metadata.fundingFrom[0]
+    expect(fundingFrom.chainId).toBe(chain_id_base)
+    expect(fundingFrom.symbol).toBe(usdc_token_symbol)
+    expect(fundingFrom.tokenContract).toBe(usdc_contract_base)
+    expect(fundingFrom.amount).toBe("0x" + amount_to_topup.toString(16))
     // Set the Orchestration ID for the next test
     orchestration_id = data.orchestrationId;
   })

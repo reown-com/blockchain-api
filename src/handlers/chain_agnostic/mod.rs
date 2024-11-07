@@ -71,23 +71,25 @@ pub async fn check_erc20_balances(
     Ok(balances)
 }
 
+/// Check available assets for bridging and return
+/// the chain_id, token symbol and contract_address
 pub async fn check_bridging_for_erc20_transfer(
     rpc_project_id: String,
     value: U256,
     sender: Address,
-) -> Result<Option<(String, Address)>, RpcError> {
+) -> Result<Option<(String, String, Address)>, RpcError> {
     // Check ERC20 tokens balance for each of supported assets
-    let mut contracts_per_chain: HashMap<String, Vec<String>> = HashMap::new();
-    for (_, chain_map) in BRIDGING_AVAILABLE_ASSETS.entries() {
+    let mut contracts_per_chain: HashMap<(String, String), Vec<String>> = HashMap::new();
+    for (token_symbol, chain_map) in BRIDGING_AVAILABLE_ASSETS.entries() {
         for (chain_id, contract_address) in chain_map.entries() {
             contracts_per_chain
-                .entry((*chain_id).to_string())
+                .entry((token_symbol.to_string(), (*chain_id).to_string()))
                 .or_default()
                 .push((*contract_address).to_string());
         }
     }
     // Making the check for each chain_id
-    for (chain_id, contracts) in contracts_per_chain {
+    for ((token_symbol, chain_id), contracts) in contracts_per_chain {
         let erc20_balances = check_erc20_balances(
             rpc_project_id.clone(),
             sender,
@@ -100,7 +102,7 @@ pub async fn check_bridging_for_erc20_transfer(
         .await?;
         for (contract, balance) in erc20_balances {
             if balance >= value {
-                return Ok(Some((chain_id, contract)));
+                return Ok(Some((chain_id, token_symbol, contract)));
             }
         }
     }

@@ -145,7 +145,7 @@ async fn handler_internal(
         + (erc20_topup_value * U256::from(BRIDGING_AMOUNT_MULTIPLIER)) / U256::from(100);
 
     // Check for possible bridging by iterating over supported assets
-    if let Some((bridge_chain_id, bridge_contract)) =
+    if let Some((bridge_chain_id, _, bridge_contract)) =
         check_bridging_for_erc20_transfer(query_params.project_id, erc20_topup_value, from_address)
             .await?
     {
