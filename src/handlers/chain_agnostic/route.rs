@@ -67,6 +67,22 @@ pub struct RequiresMultiChainResponse {
 pub struct RouteResponse {
     orchestration_id: String,
     transactions: Vec<Transaction>,
+    metadata: Metadata,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Metadata {
+    funding_from: Vec<FundingMetadata>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FundingMetadata {
+    chain_id: String,
+    token_contract: Address,
+    symbol: String,
+    amount: String,
 }
 
 pub async fn handler(
@@ -147,12 +163,13 @@ async fn handler_internal(
         + (erc20_topup_value * U256::from(BRIDGING_AMOUNT_MULTIPLIER)) / U256::from(100);
 
     // Check for possible bridging by iterating over supported assets
-    if let Some((bridge_chain_id, bridge_contract)) = check_bridging_for_erc20_transfer(
-        query_params.project_id.clone(),
-        erc20_topup_value,
-        from_address,
-    )
-    .await?
+    if let Some((bridge_chain_id, bridge_token_symbol, bridge_contract)) =
+        check_bridging_for_erc20_transfer(
+            query_params.project_id.clone(),
+            erc20_topup_value,
+            from_address,
+        )
+        .await?
     {
         // Skip bridging if that's the same chainId and contract address
         if bridge_chain_id == request_payload.transaction.chain_id && bridge_contract == to_address
@@ -300,6 +317,14 @@ async fn handler_internal(
         return Ok(Json(RouteResponse {
             orchestration_id,
             transactions: routes,
+            metadata: Metadata {
+                funding_from: vec![FundingMetadata {
+                    chain_id: bridge_chain_id,
+                    token_contract: bridge_contract,
+                    symbol: bridge_token_symbol,
+                    amount: format!("0x{:x}", erc20_topup_value),
+                }],
+            },
         })
         .into_response());
     }
