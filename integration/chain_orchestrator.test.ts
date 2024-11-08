@@ -31,37 +31,6 @@ describe('Chain abstraction orchestrator', () => {
 
   let orchestration_id = "";
 
-  it('bridging available', async () => {
-    // Sending USDC to Optimism, but having the USDC balance on Base chain
-    const data_encoded = erc20Interface.encodeFunctionData('transfer', [
-      receiver_address,
-      amount_to_send,
-    ]);
-
-    let transactionObj = {
-      transaction: {
-        from: from_address_with_funds,
-        to: usdc_contract_optimism,
-        value: "0x00", // Zero native tokens
-        gas: "0x00",
-        gasPrice: "0x00",
-        data: data_encoded,
-        nonce: "0x00",
-        maxFeePerGas: "0x00",
-        maxPriorityFeePerGas: "0x00",
-        chainId: chain_id_optimism,
-      }
-    }
-
-    let resp: any = await httpClient.post(
-      `${baseUrl}/v1/ca/orchestrator/check?projectId=${projectId}`,
-      transactionObj
-    )
-    expect(resp.status).toBe(200)
-    expect(typeof resp.data.requiresMultiChain).toBe('boolean')
-    expect(resp.data.requiresMultiChain).toBe(true)
-  })
-
   it('bridging unavailable (insufficient funds)', async () => {
     // Having the USDC balance on Base chain less then the amount to send
     const amount_to_send_in_decimals = usdc_funds_on_base + 10_000_000
@@ -86,12 +55,11 @@ describe('Chain abstraction orchestrator', () => {
     }
 
     let resp: any = await httpClient.post(
-      `${baseUrl}/v1/ca/orchestrator/check?projectId=${projectId}`,
+      `${baseUrl}/v1/ca/orchestrator/route?projectId=${projectId}`,
       transactionObj
     )
     expect(resp.status).toBe(200)
-    expect(typeof resp.data.requiresMultiChain).toBe('boolean')
-    expect(resp.data.requiresMultiChain).toBe(false)
+    expect(resp.data.error).toBe("INSUFFICIENT_FUNDS")
   })
 
   it('bridging unavailable (empty wallet)', async () => {
@@ -119,18 +87,16 @@ describe('Chain abstraction orchestrator', () => {
     }
 
     let resp: any = await httpClient.post(
-      `${baseUrl}/v1/ca/orchestrator/check?projectId=${projectId}`,
+      `${baseUrl}/v1/ca/orchestrator/route?projectId=${projectId}`,
       transactionObj
     )
     expect(resp.status).toBe(200)
-    expect(typeof resp.data.requiresMultiChain).toBe('boolean')
-    expect(resp.data.requiresMultiChain).toBe(false)
+    expect(resp.data.error).toBe("INSUFFICIENT_FUNDS")
   })
 
-  it('bridging routes (no routes)', async () => {
+  it('bridging routes (no bridging needed)', async () => {
     // Sending USDC to Optimism, having the USDC balance on Base chain
-    // with MIN_AMOUNT_NOT_MET error expected
-    const amount_to_send_in_decimals = 20_000 // Less then minimum amount required
+    const amount_to_send_in_decimals = 20_000 // Less then bridging needed amount
     const data_encoded = erc20Interface.encodeFunctionData('transfer', [
       receiver_address,
       amount_to_send_in_decimals,
@@ -155,7 +121,9 @@ describe('Chain abstraction orchestrator', () => {
       `${baseUrl}/v1/ca/orchestrator/route?projectId=${projectId}`,
       transactionObj
     )
-    expect(resp.status).toBe(400)
+    expect(resp.status).toBe(200)
+    expect(resp.data.transactions.length).toBe(0)
+
   })
 
   it('bridging routes (routes available)', async () => {
@@ -188,8 +156,8 @@ describe('Chain abstraction orchestrator', () => {
 
     const data = resp.data
     expect(typeof data.orchestrationId).toBe('string')
-    // Expecting 3 transactions in the route
-    expect(data.transactions.length).toBe(3)
+    // Expecting 2 transactions in the route
+    expect(data.transactions.length).toBe(2)
 
     // First transaction expected to be the approval transaction
     const approvalTransaction = data.transactions[0]
@@ -204,10 +172,6 @@ describe('Chain abstraction orchestrator', () => {
     expect(bridgingTransaction.chainId).toBe(chain_id_base)
     expect(bridgingTransaction.nonce).not.toBe("0x00")
     expect(bridgingTransaction.gas).toBe(gas_estimate)
-
-    // Last transaction expected to be the initial one
-    const initialTransaction = data.transactions[2]
-    expect(initialTransaction.data).toBe(transactionObj.transaction.data)
 
     // Check the metadata fundingFrom
     const fundingFrom = data.metadata.fundingFrom[0]
@@ -226,6 +190,7 @@ describe('Chain abstraction orchestrator', () => {
     expect(resp.status).toBe(200)
     const data = resp.data
     expect(typeof data.status).toBe('string')
-    expect(data.status).toBe('pending')
+    expect(data.status).toBe('PENDING')
+    expect(data.checkIn).toBe(3000)
   })
 })

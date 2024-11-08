@@ -157,7 +157,7 @@ impl ChainOrchestrationProvider for BungeeProvider {
                 "No bridging routes available from Bungee provider. Bridges errors: {:?}",
                 body.result.bridge_route_errors
             );
-            return Err(RpcError::NoBridgingRoutesAvailable);
+            return Ok(vec![]);
         }
 
         Ok(body.result.routes)

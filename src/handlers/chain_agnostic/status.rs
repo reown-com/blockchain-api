@@ -16,6 +16,9 @@ use {
     wc::future::FutureExt,
 };
 
+/// The status polling interval in ms for the client
+const STATUS_POLLING_INTERVAL: usize = 3000; // 3 seconds
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryParams {
@@ -28,6 +31,9 @@ pub struct QueryParams {
 pub struct StatusResponse {
     status: BridgingStatus,
     created_at: usize,
+    error_reason: Option<String>,
+    /// Polling interval in ms for the client
+    check_in: Option<usize>,
 }
 
 pub async fn handler(
@@ -70,6 +76,8 @@ async fn handler_internal(
         return Ok(Json(StatusResponse {
             status: bridging_status_item.status,
             created_at: bridging_status_item.created_at,
+            error_reason: bridging_status_item.error_reason,
+            check_in: None,
         })
         .into_response());
     }
@@ -89,6 +97,8 @@ async fn handler_internal(
         return Ok(Json(StatusResponse {
             status: bridging_status_item.status,
             created_at: bridging_status_item.created_at,
+            check_in: Some(STATUS_POLLING_INTERVAL),
+            error_reason: None,
         })
         .into_response());
     } else {
@@ -109,6 +119,8 @@ async fn handler_internal(
     return Ok(Json(StatusResponse {
         status: bridging_status_item.status,
         created_at: bridging_status_item.created_at,
+        check_in: Some(STATUS_POLLING_INTERVAL),
+        error_reason: None,
     })
     .into_response());
 }

@@ -7,7 +7,6 @@ use {
     std::{collections::HashMap, str::FromStr},
 };
 
-pub mod check;
 pub mod route;
 pub mod status;
 
@@ -36,11 +35,12 @@ pub struct StorageBridgingItem {
     contract: Address,
     amount_expected: U256,
     status: BridgingStatus,
+    error_reason: Option<String>,
 }
 
 /// Bridging status
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "UPPERCASE")]
 pub enum BridgingStatus {
     Pending,
     Completed,
