@@ -11,6 +11,7 @@ use {
     },
     hyper::{self, client::HttpConnector, Client, Method, StatusCode},
     hyper_tls::HttpsConnector,
+    serde::Deserialize,
     std::collections::HashMap,
     tracing::debug,
 };
@@ -20,6 +21,12 @@ pub struct PoktProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
     pub project_id: String,
     pub supported_chains: HashMap<String, String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct InternalErrorResponse {
+    pub request_id: String,
+    pub error: String,
 }
 
 impl Provider for PoktProvider {
@@ -38,32 +45,8 @@ impl Provider for PoktProvider {
 
 #[async_trait]
 impl RateLimited for PoktProvider {
-    // async fn is_rate_limited(&self, response: &mut Response) -> bool
-    // where
-    //     Self: Sized,
-    // {
-    //     let Ok(bytes) = body::to_bytes(response.body_mut()).await else {return
-    // false};     let Ok(jsonrpc_response) =
-    // serde_json::from_slice::<jsonrpc::Response>(&bytes) else {return false};
-
-    //     if let Some(err) = jsonrpc_response.error {
-    //         // Code used by Pokt to indicate rate limited request
-    //         // https://github.com/pokt-foundation/portal-api/blob/e06d1e50abfee8533c58768bb9b638c351b87a48/src/controllers/v1.controller.ts
-    //         if err.code == -32068 {
-    //             return true;
-    //         }
-    //     }
-
-    //     let body: axum::body::Body =
-    // axum::body::Body::wrap_stream(hyper::body::Body::from(bytes));
-    //     let body: UnsyncBoxBody<bytes::Bytes, axum_core::Error> =
-    // body.boxed_unsync();     let mut_body = response.body_mut();
-    //     false
-    // }
-
-    // TODO: Implement rate limiting as this is mocked
-    async fn is_rate_limited(&self, _response: &mut Response) -> bool {
-        false
+    async fn is_rate_limited(&self, response: &mut Response) -> bool {
+        response.status() == StatusCode::TOO_MANY_REQUESTS
     }
 }
 
@@ -96,12 +79,31 @@ impl RpcProvider for PoktProvider {
                          success: Pokt: {response:?}"
                     );
                 }
-                if error.code == -32004 {
+                // Handling the custom rate limit error
+                // https://github.com/pokt-foundation/portal-api/blob/a53c4952944041ba2749178907397963d7254baa/src/controllers/v1.controller.ts#L348
+                if error.code == -32004 || error.code == -32068 {
                     return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response());
                 }
                 if error.code == -32603 {
                     return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
                 }
+            }
+        }
+
+        // As an internal RPC node error the InternalErrorResponse is used for the response
+        // that should be considered as an HTTP 5xx error from the provider
+        if let Ok(response) = serde_json::from_slice::<InternalErrorResponse>(&body) {
+            let error = response.error;
+            let request_id = response.request_id;
+            if error.contains("try again later") {
+                return Ok((StatusCode::SERVICE_UNAVAILABLE, body).into_response());
+            } else {
+                debug!(
+                    "Pokt provider returned JSON RPC success status, but got the \
+                    error response structure with the following error: {error} \
+                    the request_id is {request_id}",
+                );
+                return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
             }
         }
 
