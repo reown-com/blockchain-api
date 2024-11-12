@@ -47,6 +47,16 @@ pub enum BridgingStatus {
     Error,
 }
 
+/// Check is the address is supported bridging asset
+pub fn is_supported_bridging_asset(chain_id: String, contract: Address) -> bool {
+    BRIDGING_AVAILABLE_ASSETS.entries().any(|(_, chain_map)| {
+        chain_map.entries().any(|(chain, contract_address)| {
+            *chain == chain_id
+                && contract == Address::from_str(contract_address).unwrap_or_default()
+        })
+    })
+}
+
 /// Checking ERC20 balances for given address for provided ERC20 contracts
 pub async fn check_erc20_balances(
     project_id: String,

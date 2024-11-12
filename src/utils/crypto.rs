@@ -461,8 +461,9 @@ pub async fn get_erc20_contract_balance(
     let contract = ERC20Contract::new(contract, provider);
     let balance = contract.balance_of(wallet).call().await.map_err(|e| {
         CryptoUitlsError::ContractCallError(format!(
-            "Failed to call ERC20 contract for the balance: {}",
-            e
+            "Failed to call ERC20 contract {:?} in {:?} for the balance of {:?}.\
+            The error: {}",
+            contract, chain_id, wallet, e
         ))
     })?;
     Ok(balance)

@@ -1,7 +1,8 @@
 use {
     super::{
-        super::HANDLER_TASK_METRICS, check_bridging_for_erc20_transfer, BridgingStatus,
-        StorageBridgingItem, BRIDGING_AMOUNT_MULTIPLIER,
+        super::HANDLER_TASK_METRICS, check_bridging_for_erc20_transfer,
+        is_supported_bridging_asset, BridgingStatus, StorageBridgingItem,
+        BRIDGING_AMOUNT_MULTIPLIER,
     },
     crate::{
         analytics::MessageSource,
@@ -25,7 +26,7 @@ use {
         sync::Arc,
         time::{SystemTime, UNIX_EPOCH},
     },
-    tracing::debug,
+    tracing::{debug, error},
     uuid::Uuid,
     wc::future::FutureExt,
 };
@@ -149,6 +150,12 @@ async fn handler_internal(
         .map_err(|e| RpcError::WrongHexFormat(e.to_string()))?;
     if decode_erc20_function_type(&transaction_data)? != Erc20FunctionType::Transfer {
         debug!("The transaction data is not a transfer function");
+        return Ok(NO_BRIDING_NEEDED_RESPONSE.into_response());
+    }
+
+    // Check if the destination address is supported ERC20 asset contract
+    if !is_supported_bridging_asset(request_payload.transaction.chain_id.clone(), to_address) {
+        error!("The destination address is not a supported bridging asset contract");
         return Ok(NO_BRIDING_NEEDED_RESPONSE.into_response());
     }
 
