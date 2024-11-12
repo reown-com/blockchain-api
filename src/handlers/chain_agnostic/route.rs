@@ -11,7 +11,7 @@ use {
         storage::irn::OperationType,
         utils::crypto::{
             convert_alloy_address_to_h160, decode_erc20_function_type, decode_erc20_transfer_data,
-            get_balance, get_erc20_balance, get_gas_price, get_nonce, Erc20FunctionType,
+            get_erc20_balance, get_gas_price, get_nonce, Erc20FunctionType,
         },
     },
     alloy::primitives::{Address, U256},
@@ -201,21 +201,6 @@ async fn handler_internal(
     // Skip bridging if that's the same chainId and contract address
     if bridge_chain_id == request_payload.transaction.chain_id && bridge_contract == to_address {
         return Ok(NO_BRIDING_NEEDED_RESPONSE.into_response());
-    }
-
-    // Check the native token balance for the bridging chainId for gas fees paying
-    let native_token_balance = get_balance(
-        &bridge_chain_id,
-        convert_alloy_address_to_h160(from_address),
-        &query_params.project_id.clone(),
-        MessageSource::ChainAgnosticCheck,
-    )
-    .await?;
-    if U256::from_be_bytes(native_token_balance.into()) == U256::ZERO {
-        return Ok(Json(ErrorResponse {
-            error: BridgingError::InsufficientGasFunds,
-        })
-        .into_response());
     }
 
     // Get Quotes for the bridging
