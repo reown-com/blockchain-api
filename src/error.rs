@@ -239,15 +239,6 @@ pub enum RpcError {
     #[error("ABI decoding error: {0}")]
     AbiDecodingError(String),
 
-    #[error("No bridging needed")]
-    NoBridgingNeeded,
-
-    #[error("No bridging available")]
-    NoBridgingAvailable,
-
-    #[error("No routes available for the bridging")]
-    NoBridgingRoutesAvailable,
-
     #[error("Orchestration ID is not found: {0}")]
     OrchestrationIdNotFound(String),
 }
@@ -631,30 +622,6 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "".to_string(),
                     format!("Unsupported permission in CoSigner: {}", e),
-                )),
-            )
-                .into_response(),
-            Self::NoBridgingNeeded => (
-                StatusCode::BAD_REQUEST,
-                Json(new_error_response(
-                    "".to_string(),
-                    "No bridging needed".to_string(),
-                )),
-            )
-                .into_response(),
-            Self::NoBridgingAvailable => (
-                StatusCode::BAD_REQUEST,
-                Json(new_error_response(
-                    "".to_string(),
-                    "No bridging available".to_string(),
-                )),
-            )
-                .into_response(),
-            Self::NoBridgingRoutesAvailable => (
-                StatusCode::BAD_REQUEST,
-                Json(new_error_response(
-                    "".to_string(),
-                    "No bridging routes available".to_string(),
                 )),
             )
                 .into_response(),

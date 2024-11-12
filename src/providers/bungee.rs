@@ -12,6 +12,8 @@ use {
     tracing::error,
 };
 
+pub const BRIDGING_SLIPPAGE: i8 = 3;
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct BungeeResponse<T> {
     pub result: T,
@@ -142,6 +144,10 @@ impl ChainOrchestrationProvider for BungeeProvider {
             .append_pair("uniqueRoutesPerBridge", "true");
         url.query_pairs_mut().append_pair("sort", "output");
         url.query_pairs_mut().append_pair("singleTxOnly", "true");
+        url.query_pairs_mut().append_pair(
+            "defaultBridgeSlippage",
+            BRIDGING_SLIPPAGE.to_string().as_str(),
+        );
 
         let response = self.send_get_request(url).await?;
         if !response.status().is_success() {
@@ -157,7 +163,7 @@ impl ChainOrchestrationProvider for BungeeProvider {
                 "No bridging routes available from Bungee provider. Bridges errors: {:?}",
                 body.result.bridge_route_errors
             );
-            return Err(RpcError::NoBridgingRoutesAvailable);
+            return Ok(vec![]);
         }
 
         Ok(body.result.routes)

@@ -7,7 +7,6 @@ use {
     std::{collections::HashMap, str::FromStr},
 };
 
-pub mod check;
 pub mod route;
 pub mod status;
 
@@ -26,6 +25,9 @@ pub static BRIDGING_AVAILABLE_ASSETS: phf::Map<&'static str, phf::Map<&'static s
   },
 };
 
+/// The status polling interval in ms for the client
+pub const STATUS_POLLING_INTERVAL: usize = 3000; // 3 seconds
+
 /// Serialized bridging request item schema to store it in the IRN database
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -36,15 +38,26 @@ pub struct StorageBridgingItem {
     contract: Address,
     amount_expected: U256,
     status: BridgingStatus,
+    error_reason: Option<String>,
 }
 
 /// Bridging status
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "UPPERCASE")]
 pub enum BridgingStatus {
     Pending,
     Completed,
     Error,
+}
+
+/// Check is the address is supported bridging asset
+pub fn is_supported_bridging_asset(chain_id: String, contract: Address) -> bool {
+    BRIDGING_AVAILABLE_ASSETS.entries().any(|(_, chain_map)| {
+        chain_map.entries().any(|(chain, contract_address)| {
+            *chain == chain_id
+                && contract == Address::from_str(contract_address).unwrap_or_default()
+        })
+    })
 }
 
 /// Checking ERC20 balances for given address for provided ERC20 contracts
