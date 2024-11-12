@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.128.0 - 2024-11-12
+#### Features
+- **(CA)** removing the `check` endpoint, updating the `route` and `status` responses schema (#832) - (6c3a053) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.127.1 - 2024-11-11
 #### Bug Fixes
 - **(providers)** adding proper error handling for the Pokt provider (#833) - (2c12c44) - Max Kalashnikoff | maksy.eth
