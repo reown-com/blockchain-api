@@ -31,7 +31,7 @@ pub struct QueryParams {
 pub struct StatusResponse {
     status: BridgingStatus,
     created_at: usize,
-    error_reason: Option<String>,
+    error: Option<String>,
     /// Polling interval in ms for the client
     check_in: Option<usize>,
 }
@@ -76,7 +76,7 @@ async fn handler_internal(
         return Ok(Json(StatusResponse {
             status: bridging_status_item.status,
             created_at: bridging_status_item.created_at,
-            error_reason: bridging_status_item.error_reason,
+            error: bridging_status_item.error_reason,
             check_in: None,
         })
         .into_response());
@@ -98,7 +98,7 @@ async fn handler_internal(
             status: bridging_status_item.status,
             created_at: bridging_status_item.created_at,
             check_in: Some(STATUS_POLLING_INTERVAL),
-            error_reason: None,
+            error: None,
         })
         .into_response());
     } else {
@@ -120,7 +120,7 @@ async fn handler_internal(
         status: bridging_status_item.status,
         created_at: bridging_status_item.created_at,
         check_in: Some(STATUS_POLLING_INTERVAL),
-        error_reason: None,
+        error: None,
     })
     .into_response());
 }
