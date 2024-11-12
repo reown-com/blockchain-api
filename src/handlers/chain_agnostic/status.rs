@@ -118,7 +118,7 @@ async fn handler_internal(
     return Ok(Json(StatusResponse {
         status: bridging_status_item.status,
         created_at: bridging_status_item.created_at,
-        check_in: Some(STATUS_POLLING_INTERVAL),
+        check_in: None,
         error: None,
     })
     .into_response());
