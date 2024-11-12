@@ -2,7 +2,7 @@ use {
     super::{
         super::HANDLER_TASK_METRICS, check_bridging_for_erc20_transfer,
         is_supported_bridging_asset, BridgingStatus, StorageBridgingItem,
-        BRIDGING_AMOUNT_MULTIPLIER,
+        BRIDGING_AMOUNT_MULTIPLIER, STATUS_POLLING_INTERVAL,
     },
     crate::{
         analytics::MessageSource,
@@ -75,6 +75,7 @@ pub struct RouteResponse {
 #[serde(rename_all = "camelCase")]
 pub struct Metadata {
     funding_from: Vec<FundingMetadata>,
+    check_in: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -346,6 +347,7 @@ async fn handler_internal(
                 symbol: bridge_token_symbol,
                 amount: format!("0x{:x}", erc20_topup_value),
             }],
+            check_in: STATUS_POLLING_INTERVAL,
         }),
     })
     .into_response());

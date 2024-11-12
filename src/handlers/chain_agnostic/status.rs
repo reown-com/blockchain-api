@@ -1,5 +1,7 @@
 use {
-    super::{super::HANDLER_TASK_METRICS, BridgingStatus, StorageBridgingItem},
+    super::{
+        super::HANDLER_TASK_METRICS, BridgingStatus, StorageBridgingItem, STATUS_POLLING_INTERVAL,
+    },
     crate::{
         analytics::MessageSource, error::RpcError, state::AppState, storage::irn::OperationType,
         utils::crypto::get_erc20_balance,
@@ -15,9 +17,6 @@ use {
     std::{sync::Arc, time::SystemTime},
     wc::future::FutureExt,
 };
-
-/// The status polling interval in ms for the client
-const STATUS_POLLING_INTERVAL: usize = 3000; // 3 seconds
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

@@ -25,6 +25,9 @@ pub static BRIDGING_AVAILABLE_ASSETS: phf::Map<&'static str, phf::Map<&'static s
   },
 };
 
+/// The status polling interval in ms for the client
+pub const STATUS_POLLING_INTERVAL: usize = 3000; // 3 seconds
+
 /// Serialized bridging request item schema to store it in the IRN database
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

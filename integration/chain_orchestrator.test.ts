@@ -179,6 +179,10 @@ describe('Chain abstraction orchestrator', () => {
     expect(fundingFrom.symbol).toBe(usdc_token_symbol)
     expect(fundingFrom.tokenContract).toBe(usdc_contract_base)
     expect(fundingFrom.amount).toBe("0x" + amount_to_topup.toString(16))
+
+    // Check the metadata checkIn
+    expect(typeof data.metadata.checkIn).toBe('number')
+
     // Set the Orchestration ID for the next test
     orchestration_id = data.orchestrationId;
   })
