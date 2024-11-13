@@ -115,6 +115,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Gnosis Chain mainnet
+        (
+            "eip155:100".into(),
+            ("gnosis-rpc".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Bitcoin mainnet
         (
             "bip122:000000000019d6689c085ae165831e93".into(),

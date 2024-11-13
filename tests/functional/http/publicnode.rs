@@ -110,6 +110,10 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
         "0x8274f",
     )
     .await;
+
+    // Gnosis
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:100", "0x64")
+        .await;
 }
 
 #[test_context(ServerContext)]

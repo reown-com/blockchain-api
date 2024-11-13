@@ -7,46 +7,32 @@ use {
 #[tokio::test]
 #[ignore]
 async fn infura_provider(ctx: &mut ServerContext) {
+    let provider = ProviderKind::Infura;
     // Ethereum mainnet
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        &ProviderKind::Infura,
-        "eip155:1",
-        "0x1",
-    )
-    .await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:1", "0x1")
+        .await;
 
     // Ethereum Sepolia
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
-        &ProviderKind::Infura,
+        &provider,
         "eip155:11155111",
         "0xaa36a7",
     )
     .await;
 
     // Polgyon mainnet
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        &ProviderKind::Infura,
-        "eip155:137",
-        "0x89",
-    )
-    .await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:137", "0x89")
+        .await;
 
     // Optimism mainnet
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        &ProviderKind::Infura,
-        "eip155:10",
-        "0xa",
-    )
-    .await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:10", "0xa")
+        .await;
 
     // Optimism Sepolia
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
-        &ProviderKind::Infura,
+        &provider,
         "eip155:11155420",
         "0xaa37dc",
     )
@@ -55,7 +41,7 @@ async fn infura_provider(ctx: &mut ServerContext) {
     // Arbitrum mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
-        &ProviderKind::Infura,
+        &provider,
         "eip155:42161",
         "0xa4b1",
     )
@@ -64,7 +50,7 @@ async fn infura_provider(ctx: &mut ServerContext) {
     // Arbitrum Sepolia
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
-        &ProviderKind::Infura,
+        &provider,
         "eip155:421614",
         "0x66eee",
     )
@@ -73,7 +59,7 @@ async fn infura_provider(ctx: &mut ServerContext) {
     // Celo
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
-        &ProviderKind::Infura,
+        &provider,
         "eip155:42220",
         "0xa4ec",
     )
@@ -82,7 +68,7 @@ async fn infura_provider(ctx: &mut ServerContext) {
     // Linea Mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
-        &ProviderKind::Infura,
+        &provider,
         "eip155:59144",
         "0xe708",
     )
@@ -91,7 +77,7 @@ async fn infura_provider(ctx: &mut ServerContext) {
     // Mantle Mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
-        &ProviderKind::Infura,
+        &provider,
         "eip155:5000",
         "0x1388",
     )
