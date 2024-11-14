@@ -1,5 +1,6 @@
 use {
     super::{
+        check_if_rpc_is_responding_correctly_for_bitcoin,
         check_if_rpc_is_responding_correctly_for_solana,
         check_if_rpc_is_responding_correctly_for_supported_chain,
     },
@@ -12,18 +13,22 @@ use {
 #[tokio::test]
 #[ignore]
 async fn quicknode_provider(ctx: &mut ServerContext) {
+    let provider = ProviderKind::Quicknode;
     // zkSync Mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:324", "0x144")
+        .await;
+    // Polygon zksync
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
-        &ProviderKind::Quicknode,
-        "eip155:324",
-        "0x144",
+        &provider,
+        "eip155:1101",
+        "0x44d",
     )
     .await;
     // Unichain Sepolia
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
-        &ProviderKind::Quicknode,
+        &provider,
         "eip155:1301",
         "0x515",
     )
@@ -31,7 +36,7 @@ async fn quicknode_provider(ctx: &mut ServerContext) {
     // Berachain Bartio
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
-        &ProviderKind::Quicknode,
+        &provider,
         "eip155:80084",
         "0x138d4",
     )
@@ -42,11 +47,12 @@ async fn quicknode_provider(ctx: &mut ServerContext) {
 #[tokio::test]
 #[ignore]
 async fn quicknode_provider_solana(ctx: &mut ServerContext) {
+    let provider = ProviderKind::Quicknode;
     // Solana mainnet
     check_if_rpc_is_responding_correctly_for_solana(
         ctx,
         "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
-        &ProviderKind::Quicknode,
+        &provider,
     )
     .await;
 
@@ -54,7 +60,7 @@ async fn quicknode_provider_solana(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_solana(
         ctx,
         "EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
-        &ProviderKind::Quicknode,
+        &provider,
     )
     .await;
 
@@ -62,7 +68,29 @@ async fn quicknode_provider_solana(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_solana(
         ctx,
         "4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z",
-        &ProviderKind::Quicknode,
+        &provider,
+    )
+    .await;
+}
+
+#[test_context(ServerContext)]
+#[tokio::test]
+#[ignore]
+async fn quicknode_provider_bitcoin(ctx: &mut ServerContext) {
+    let provider = ProviderKind::Quicknode;
+    // Bitcoin mainnet
+    check_if_rpc_is_responding_correctly_for_bitcoin(
+        ctx,
+        "000000000019d6689c085ae165831e93",
+        &provider,
+    )
+    .await;
+
+    // Bitcoin testnet
+    check_if_rpc_is_responding_correctly_for_bitcoin(
+        ctx,
+        "000000000933ea01ad0ee984209779ba",
+        &provider,
     )
     .await;
 }
