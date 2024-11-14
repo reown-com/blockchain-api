@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.130.0 - 2024-11-14
+#### Features
+- **(providers)** adding Polygon zkEvm and Bitcoin to the Quicknode provider (#834) - (7168045) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.129.0 - 2024-11-13
 #### Features
 - **(providers)** adding providers for Mantle and Gnosis chains (#819) - (06e2ae3) - Max Kalashnikoff | maksy.eth
