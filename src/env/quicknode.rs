@@ -62,6 +62,10 @@ fn extract_supported_chains_and_subdomains(
             ("blissful-side-log.unichain-sepolia", Priority::Normal),
         ),
         (
+            "eip155:1101",
+            ("clean-few-meme.zkevm-mainnet", Priority::Normal),
+        ),
+        (
             "eip155:80084",
             ("frequent-capable-putty.bera-bartio", Priority::Normal),
         ),
@@ -76,6 +80,14 @@ fn extract_supported_chains_and_subdomains(
         (
             "solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z",
             ("winter-flashy-glade.solana-testnet", Priority::Normal),
+        ),
+        (
+            "bip122:000000000019d6689c085ae165831e93",
+            ("warmhearted-multi-mound.btc", Priority::Normal),
+        ),
+        (
+            "bip122:000000000933ea01ad0ee984209779ba",
+            ("newest-lively-research.btc-testnet", Priority::Normal),
         ),
     ]);
 
