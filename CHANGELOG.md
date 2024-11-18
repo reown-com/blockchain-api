@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.130.1 - 2024-11-18
+#### Bug Fixes
+- **(dependencies)** pin to ytrrium repo to commit and bumping alloy (#836) - (3c5ef6c) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.130.0 - 2024-11-14
 #### Features
 - **(providers)** adding Polygon zkEvm and Bitcoin to the Quicknode provider (#834) - (7168045) - Max Kalashnikoff | maksy.eth
