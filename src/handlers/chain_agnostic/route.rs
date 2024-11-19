@@ -20,8 +20,10 @@ use {
         response::{IntoResponse, Response},
         Json,
     },
+    once_cell::sync::Lazy,
     serde::{Deserialize, Serialize},
     std::{
+        cmp::max,
         str::FromStr,
         sync::Arc,
         time::{SystemTime, UNIX_EPOCH},
@@ -111,6 +113,9 @@ const NO_BRIDING_NEEDED_RESPONSE: Json<RouteResponse> = Json(RouteResponse {
 // Using default with 6x increase
 const DEFAULT_GAS: i64 = 0x029a6b * 0x6;
 
+/// Minimal bridging fees coverage using decimals
+static MINIMAL_BRIDGING_FEES_COVERAGE: Lazy<U256> = Lazy::new(|| U256::from(50000u64)); // 0.05 USDC/USDT
+
 pub async fn handler(
     state: State<Arc<AppState>>,
     query_params: Query<QueryParams>,
@@ -178,10 +183,16 @@ async fn handler_internal(
         return Ok(NO_BRIDING_NEEDED_RESPONSE.into_response());
     }
 
-    // Multiply the topup value by the bridging percent multiplier
     let erc20_topup_value = erc20_transfer_value - erc20_balance;
+    // Multiply the topup value by the bridging percent multiplier and get the maximum between
+    // the calculated fees covering value and the minimal bridging fees coverage
+    let calculated_fees_covering_value =
+        (erc20_topup_value * U256::from(BRIDGING_AMOUNT_MULTIPLIER)) / U256::from(100);
     let erc20_topup_value = erc20_topup_value
-        + (erc20_topup_value * U256::from(BRIDGING_AMOUNT_MULTIPLIER)) / U256::from(100);
+        + max(
+            calculated_fees_covering_value,
+            *MINIMAL_BRIDGING_FEES_COVERAGE,
+        );
 
     // Check for possible bridging funds by iterating over supported assets
     // or return an insufficient funds error
