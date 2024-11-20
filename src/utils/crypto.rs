@@ -668,6 +668,13 @@ pub enum ChainId {
     )]
     ZkSyncEra = 324,
     Zora = 7854577,
+    Zero = 543210,
+    #[strum(
+        serialize = "zero-sepolia",
+        serialize = "zero_sepolia",
+        serialize = "zero-testnet"
+    )]
+    ZeroSepoliaTestnet = 4457845,
 }
 
 impl ChainId {
@@ -893,6 +900,8 @@ mod tests {
         chains.insert("eip155:137", "polygon");
         chains.insert("eip155:8453", "base");
         chains.insert("eip155:84532", "base-sepolia-testnet");
+        chains.insert("eip155:543210", "zero");
+        chains.insert("eip155:4457845", "zero-testnet");
 
         for (chain_id, chain_name) in chains.iter() {
             let result = ChainId::from_caip2(chain_id);
