@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.131.0 - 2024-11-20
+#### Bug Fixes
+- **(CA)** adds the minimal bridging fee coverage (#838) - (2db7a22) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(o11y)** adding HTTP 40[1-3] alerts for providers (#835) - (9823700) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.130.1 - 2024-11-18
 #### Bug Fixes
 - **(dependencies)** pin to ytrrium repo to commit and bumping alloy (#836) - (3c5ef6c) - Max Kalashnikoff | maksy.eth
