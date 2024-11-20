@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.132.0 - 2024-11-20
+#### Features
+- **(utils)** adding Zero chain to the CAIP2 utils (#840) - (a947612) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.131.0 - 2024-11-20
 #### Bug Fixes
 - **(CA)** adds the minimal bridging fee coverage (#838) - (2db7a22) - Max Kalashnikoff | maksy.eth
