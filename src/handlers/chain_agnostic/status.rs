@@ -1,6 +1,7 @@
 use {
     super::{
-        super::HANDLER_TASK_METRICS, BridgingStatus, StorageBridgingItem, STATUS_POLLING_INTERVAL,
+        super::HANDLER_TASK_METRICS, BridgingStatus, StorageBridgingItem, BRIDGING_TIMEOUT,
+        STATUS_POLLING_INTERVAL,
     },
     crate::{
         analytics::MessageSource, error::RpcError, state::AppState, storage::irn::OperationType,
@@ -15,6 +16,7 @@ use {
     ethers::types::H160 as EthersH160,
     serde::{Deserialize, Serialize},
     std::{sync::Arc, time::SystemTime},
+    tracing::error,
     wc::future::FutureExt,
 };
 
@@ -92,12 +94,48 @@ async fn handler_internal(
     .await?;
 
     if U256::from_be_bytes(wallet_balance.into()) < bridging_status_item.amount_expected {
-        // The balance was not fullfilled return the same pending status
+        // Check if the balance was not fullfilled with the right amount
+        if U256::from_be_bytes(wallet_balance.into()) > bridging_status_item.amount_current {
+            // We are not erroring here since there can be other transactions
+            // that topped up the address, but log error for debugging purposes
+            // to track if the bridging amount was less then expected
+            error!(
+                "Address was topped up with the amount less than expected: {} < {}",
+                U256::from_be_bytes(wallet_balance.into()),
+                bridging_status_item.amount_expected
+            );
+        }
+        // Check if the timeout has been reached and update the item status to error
+        if SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+            > (bridging_status_item.created_at + BRIDGING_TIMEOUT) as u64
+        {
+            bridging_status_item.status = BridgingStatus::Error;
+            bridging_status_item.error_reason = Some("Bridging timeout".to_string());
+            let irn_call_start = SystemTime::now();
+            irn_client
+                .set(
+                    query_params.orchestration_id,
+                    serde_json::to_string(&bridging_status_item)?.into(),
+                )
+                .await?;
+            state
+                .metrics
+                .add_irn_latency(irn_call_start, OperationType::Set);
+        }
+
+        // The balance was not fullfilled return the same pending or error status
         return Ok(Json(StatusResponse {
             status: bridging_status_item.status,
             created_at: bridging_status_item.created_at,
-            check_in: Some(STATUS_POLLING_INTERVAL),
-            error: None,
+            check_in: if bridging_status_item.error_reason.is_some() {
+                None
+            } else {
+                Some(STATUS_POLLING_INTERVAL)
+            },
+            error: bridging_status_item.error_reason,
         })
         .into_response());
     } else {

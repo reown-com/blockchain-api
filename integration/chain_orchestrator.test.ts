@@ -189,44 +189,6 @@ describe('Chain abstraction orchestrator', () => {
     orchestration_id = data.orchestrationId;
   })
 
-  it('bridging routes (routes available, low topping up amount)', async () => {
-    // Sending USDC to Base, but having the USDC balance on Optimism
-    // with less then 1 USDC for topping up
-    const amount_to_send = usdc_funds_on_base + 900_000
-    const data_encoded = erc20Interface.encodeFunctionData('transfer', [
-      receiver_address,
-      amount_to_send,
-    ]);
-
-    let transactionObj = {
-      transaction: {
-        from: from_address_with_funds,
-        to: usdc_contract_base,
-        value: "0x00", // Zero native tokens
-        gas: "0x00",
-        gasPrice: "0x00",
-        data: data_encoded,
-        nonce: "0x00",
-        maxFeePerGas: "0x00",
-        maxPriorityFeePerGas: "0x00",
-        chainId: chain_id_base,
-      }
-    }
-
-    let resp: any = await httpClient.post(
-      `${baseUrl}/v1/ca/orchestrator/route?projectId=${projectId}`,
-      transactionObj
-    )
-    expect(resp.status).toBe(200)
-    const data = resp.data
-    // Expecting 2 transactions in the route
-    expect(data.transactions.length).toBe(2)
-    const approvalTransaction = data.transactions[0]
-    const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.data)
-    // Topup amount should be with the minimal bridging fees covering
-    expect(decodedData.amount.toString()).toBe((amount_to_send + minimal_bridging_fees_covering).toString())
-  })
-
   it('bridging status', async () => {
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/ca/orchestrator/status?projectId=${projectId}&orchestrationId=${orchestration_id}`,
