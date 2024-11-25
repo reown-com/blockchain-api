@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.133.0 - 2024-11-25
+#### Features
+- **(CA)** adding timeouts, insufficient bridged amount check, pinning to the exact bridge (#841) - (97c4f17) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.132.1 - 2024-11-25
 #### Bug Fixes
 - **(providers)** temporarily disabling Pokt for the Polygon (#843) - (66bd12f) - Max Kalashnikoff | maksy.eth
