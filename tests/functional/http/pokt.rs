@@ -89,8 +89,10 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     .await;
 
     // Polygon mainnet
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:137", "0x89")
-        .await;
+    // Temporary removing Pokt for the Polygon mainnet until the issue with the flaky
+    // responses will be resolved.
+    // check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:137", "0x89")
+    //     .await;
 
     // Polygon zkevm
     check_if_rpc_is_responding_correctly_for_supported_chain(
