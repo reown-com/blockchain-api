@@ -135,7 +135,12 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Polygon
         (
             "eip155:137".into(),
-            ("poly-mainnet".into(), Weight::new(Priority::High).unwrap()),
+            // Temporary removing Pokt for the Polygon mainnet until the issue with the flaky
+            // responses will be resolved.
+            (
+                "poly-mainnet".into(),
+                Weight::new(Priority::Disabled).unwrap(),
+            ),
         ),
         (
             "eip155:1101".into(),
