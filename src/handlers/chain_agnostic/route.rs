@@ -332,6 +332,7 @@ async fn handler_internal(
         chain_id: request_payload.transaction.chain_id,
         wallet: from_address,
         contract: to_address,
+        amount_current: erc20_balance, // The current balance of the ERC20 token
         amount_expected: erc20_transfer_value, // The total transfer amount expected
         status: BridgingStatus::Pending,
         error_reason: None,

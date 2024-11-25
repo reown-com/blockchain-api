@@ -13,6 +13,9 @@ pub mod status;
 /// How much to multiply the amount by when bridging to cover bridging differences
 pub const BRIDGING_AMOUNT_MULTIPLIER: i8 = 5; // 5%
 
+/// Bridging timeout in seconds
+pub const BRIDGING_TIMEOUT: usize = 1800; // 30 minutes
+
 /// Available assets for Bridging
 pub static BRIDGING_AVAILABLE_ASSETS: phf::Map<&'static str, phf::Map<&'static str, &'static str>> = phf_map! {
   "USDC" => phf_map! {
@@ -36,6 +39,7 @@ pub struct StorageBridgingItem {
     chain_id: String,
     wallet: Address,
     contract: Address,
+    amount_current: U256,
     amount_expected: U256,
     status: BridgingStatus,
     error_reason: Option<String>,

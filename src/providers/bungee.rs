@@ -148,6 +148,9 @@ impl ChainOrchestrationProvider for BungeeProvider {
             "defaultBridgeSlippage",
             BRIDGING_SLIPPAGE.to_string().as_str(),
         );
+        // Use only Across bridge for latency reason
+        url.query_pairs_mut()
+            .append_pair("includeBridges", "across");
 
         let response = self.send_get_request(url).await?;
         if !response.status().is_success() {
