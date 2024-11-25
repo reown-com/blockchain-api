@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.132.1 - 2024-11-25
+#### Bug Fixes
+- **(providers)** temporarily disabling Pokt for the Polygon (#843) - (66bd12f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.132.0 - 2024-11-20
 #### Features
 - **(utils)** adding Zero chain to the CAIP2 utils (#840) - (a947612) - Max Kalashnikoff | maksy.eth
