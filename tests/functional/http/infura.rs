@@ -82,4 +82,22 @@ async fn infura_provider(ctx: &mut ServerContext) {
         "0x1388",
     )
     .await;
+
+    // Base Mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:8453",
+        "0x2105",
+    )
+    .await;
+
+    // Base Sepolia
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:84532",
+        "0x14a34",
+    )
+    .await;
 }

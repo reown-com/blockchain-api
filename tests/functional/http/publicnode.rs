@@ -36,6 +36,15 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
     )
     .await;
 
+    // Base Sepolia
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:84532",
+        "0x14a34",
+    )
+    .await;
+
     // BSC mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:56", "0x38")
         .await;

@@ -53,6 +53,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:8453".into(),
             ("base".into(), Weight::new(Priority::High).unwrap()),
         ),
+        // Base Sepolia
+        (
+            "eip155:84532".into(),
+            (
+                "base-sepolia-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
         // Binance Smart Chain mainnet
         (
             "eip155:56".into(),
