@@ -778,6 +778,12 @@ impl FungiblePriceProvider for OneInchProvider {
 
         let response = PriceResponseBody {
             fungibles: vec![FungiblePriceItem {
+                address: format!(
+                    "{}:{}:{}",
+                    crypto::CaipNamespaces::Eip155,
+                    chain_id,
+                    address
+                ),
                 name: info.name,
                 symbol: info.symbol,
                 icon_url: info.logo_uri.unwrap_or_default(),
