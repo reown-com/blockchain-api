@@ -41,6 +41,10 @@ async fn quicknode_provider(ctx: &mut ServerContext) {
         "0x138d4",
     )
     .await;
+
+    // Optimism Mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:10", "0xa")
+        .await;
 }
 
 #[test_context(ServerContext)]
