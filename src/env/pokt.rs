@@ -121,7 +121,9 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:10".into(),
             (
                 "optimism-mainnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                // TODO: Temporary disabling Pokt until the issue
+                // with the flaky RPC response is resolved.
+                Weight::new(Priority::Disabled).unwrap(),
             ),
         ),
         // Arbitrum

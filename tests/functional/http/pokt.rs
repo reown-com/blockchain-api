@@ -76,8 +76,9 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     .await;
 
     // Optimism
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:10", "0xa")
-        .await;
+    // Temporary removing Pokt for the Optimism until the issue with the flaky
+    // check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:10", "0xa")
+    //     .await;
 
     // Arbitrum
     check_if_rpc_is_responding_correctly_for_supported_chain(

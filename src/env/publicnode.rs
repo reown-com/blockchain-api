@@ -123,6 +123,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Optimisim Mainnet
+        (
+            "eip155:10".into(),
+            (
+                "optimism-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
         // Gnosis Chain mainnet
         (
             "eip155:100".into(),

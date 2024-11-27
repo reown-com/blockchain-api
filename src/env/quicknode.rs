@@ -70,6 +70,10 @@ fn extract_supported_chains_and_subdomains(
             ("frequent-capable-putty.bera-bartio", Priority::Normal),
         ),
         (
+            "eip155:10",
+            ("convincing-dawn-smoke.optimism", Priority::Normal),
+        ),
+        (
             "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
             ("indulgent-thrumming-bush.solana-mainnet", Priority::Normal),
         ),

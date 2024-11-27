@@ -123,6 +123,10 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
     // Gnosis
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:100", "0x64")
         .await;
+
+    // Optimism mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:10", "0xa")
+        .await;
 }
 
 #[test_context(ServerContext)]
