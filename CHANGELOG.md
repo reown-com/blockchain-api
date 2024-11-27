@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.134.1 - 2024-11-27
+#### Bug Fixes
+- **(providers)** swapping providers for the Optimism chain (#846) - (b3700e2) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.134.0 - 2024-11-26
 #### Features
 - **(providers)** adding additional providers for Base (#844) - (159ad29) - Max Kalashnikoff | maksy.eth
