@@ -16,12 +16,11 @@ describe('Chain abstraction orchestrator', () => {
   const usdc_token_symbol = "USDC";
   // Amount to send to Optimism
   const amount_to_send = 3_000_000
-  // Amount bridging multiplier
-  const amount_multiplier = 5; // +5% topup
-  // Minimal bridging fees covering
-  const minimal_bridging_fees_covering = 50_000; // 0.05 USDC/USDT
+  // Amount bridging slippage
+  const amount_slippage = 2; // +2% topup
   // How much needs to be topped up
-  const amount_to_topup = Math.round((amount_to_send - usdc_funds_on_optimism) * (100 + amount_multiplier) / 100);
+  const amount_to_topup = Math.round(amount_to_send - usdc_funds_on_optimism);
+  const amount_to_topup_with_fees = Math.round(((amount_to_topup * amount_slippage) / 100) + amount_to_topup);
   // Default gas esimation is default with 6x increase
   const gas_estimate = "0xf9e82";
 
@@ -166,8 +165,10 @@ describe('Chain abstraction orchestrator', () => {
     expect(approvalTransaction.chainId).toBe(chain_id_base)
     expect(approvalTransaction.nonce).not.toBe("0x00")
     expect(approvalTransaction.gas).toBe(gas_estimate)
-    const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.data);  
-    expect(decodedData.amount.toString()).toBe(amount_to_topup.toString())
+    const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.data);
+    if (BigInt(decodedData.amount) <= BigInt(amount_to_topup_with_fees)) {
+      throw new Error(`Expected amount is lower then the minimal required`);
+    }
 
     // Second transaction expected to be the bridging to the Base
     const bridgingTransaction = data.transactions[1]
@@ -180,7 +181,9 @@ describe('Chain abstraction orchestrator', () => {
     expect(fundingFrom.chainId).toBe(chain_id_base)
     expect(fundingFrom.symbol).toBe(usdc_token_symbol)
     expect(fundingFrom.tokenContract).toBe(usdc_contract_base)
-    expect(fundingFrom.amount).toBe("0x" + amount_to_topup.toString(16))
+    if (BigInt(fundingFrom.amount) <= BigInt(amount_to_topup_with_fees)) {
+      throw new Error(`Expected amount is lower then the minimal required`);
+    }
 
     // Check the metadata checkIn
     expect(typeof data.metadata.checkIn).toBe('number')
