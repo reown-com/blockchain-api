@@ -241,6 +241,9 @@ pub enum RpcError {
 
     #[error("Orchestration ID is not found: {0}")]
     OrchestrationIdNotFound(String),
+
+    #[error("Bridging final amount is less then expected")]
+    BridgingFinalAmountLess,
 }
 
 impl IntoResponse for RpcError {

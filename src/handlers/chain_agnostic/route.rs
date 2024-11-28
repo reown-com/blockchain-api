@@ -266,6 +266,17 @@ async fn handler_internal(
         })
         .into_response());
     };
+    // Check the final bridging amount from the quote
+    let bridging_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
+    let bridging_amount =
+        U256::from_str(&bridging_amount).map_err(|_| RpcError::InvalidValue(bridging_amount))?;
+    if erc20_topup_value > bridging_amount {
+        error!(
+            "The final bridging amount:{} is less than the topup amount:{}",
+            bridging_amount, erc20_topup_value
+        );
+        return Err(RpcError::BridgingFinalAmountLess);
+    }
 
     // Build bridging transaction
     let bridge_tx = state
