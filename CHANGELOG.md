@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.135.0 - 2024-11-28
+#### Features
+- **(CA)** fine tuning the bridging amount estimation (#847) - (8c60951) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.134.1 - 2024-11-27
 #### Bug Fixes
 - **(providers)** swapping providers for the Optimism chain (#846) - (b3700e2) - Max Kalashnikoff | maksy.eth
