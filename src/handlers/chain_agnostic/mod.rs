@@ -11,7 +11,7 @@ pub mod route;
 pub mod status;
 
 /// How much to multiply the amount by when bridging to cover bridging differences
-pub const BRIDGING_AMOUNT_MULTIPLIER: i8 = 5; // 5%
+pub const BRIDGING_AMOUNT_SLIPPAGE: i8 = 2; // 2%
 
 /// Bridging timeout in seconds
 pub const BRIDGING_TIMEOUT: usize = 1800; // 30 minutes
@@ -88,13 +88,20 @@ pub async fn check_erc20_balances(
     Ok(balances)
 }
 
+pub struct BridgingAsset {
+    pub chain_id: String,
+    pub token_symbol: String,
+    pub contract_address: Address,
+    pub current_balance: U256,
+}
+
 /// Check available assets for bridging and return
 /// the chain_id, token symbol and contract_address
 pub async fn check_bridging_for_erc20_transfer(
     rpc_project_id: String,
     value: U256,
     sender: Address,
-) -> Result<Option<(String, String, Address)>, RpcError> {
+) -> Result<Option<BridgingAsset>, RpcError> {
     // Check ERC20 tokens balance for each of supported assets
     let mut contracts_per_chain: HashMap<(String, String), Vec<String>> = HashMap::new();
     for (token_symbol, chain_map) in BRIDGING_AVAILABLE_ASSETS.entries() {
@@ -117,9 +124,14 @@ pub async fn check_bridging_for_erc20_transfer(
                 .collect(),
         )
         .await?;
-        for (contract, balance) in erc20_balances {
-            if balance >= value {
-                return Ok(Some((chain_id, token_symbol, contract)));
+        for (contract_address, current_balance) in erc20_balances {
+            if current_balance >= value {
+                return Ok(Some(BridgingAsset {
+                    chain_id,
+                    token_symbol,
+                    contract_address,
+                    current_balance,
+                }));
             }
         }
     }

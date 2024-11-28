@@ -1,8 +1,8 @@
 use {
     super::{
         super::HANDLER_TASK_METRICS, check_bridging_for_erc20_transfer,
-        is_supported_bridging_asset, BridgingStatus, StorageBridgingItem,
-        BRIDGING_AMOUNT_MULTIPLIER, STATUS_POLLING_INTERVAL,
+        is_supported_bridging_asset, BridgingStatus, StorageBridgingItem, BRIDGING_AMOUNT_SLIPPAGE,
+        STATUS_POLLING_INTERVAL,
     },
     crate::{
         analytics::MessageSource,
@@ -20,10 +20,8 @@ use {
         response::{IntoResponse, Response},
         Json,
     },
-    once_cell::sync::Lazy,
     serde::{Deserialize, Serialize},
     std::{
-        cmp::max,
         str::FromStr,
         sync::Arc,
         time::{SystemTime, UNIX_EPOCH},
@@ -103,6 +101,12 @@ pub enum BridgingError {
     InsufficientGasFunds,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct QuoteRoute {
+    pub to_amount: String,
+}
+
 const NO_BRIDING_NEEDED_RESPONSE: Json<RouteResponse> = Json(RouteResponse {
     transactions: vec![],
     orchestration_id: None,
@@ -112,9 +116,6 @@ const NO_BRIDING_NEEDED_RESPONSE: Json<RouteResponse> = Json(RouteResponse {
 // Default gas estimate
 // Using default with 6x increase
 const DEFAULT_GAS: i64 = 0x029a6b * 0x6;
-
-/// Minimal bridging fees coverage using decimals
-static MINIMAL_BRIDGING_FEES_COVERAGE: Lazy<U256> = Lazy::new(|| U256::from(50000u64)); // 0.05 USDC/USDT
 
 pub async fn handler(
     state: State<Arc<AppState>>,
@@ -182,33 +183,26 @@ async fn handler_internal(
     if erc20_balance >= erc20_transfer_value {
         return Ok(NO_BRIDING_NEEDED_RESPONSE.into_response());
     }
-
     let erc20_topup_value = erc20_transfer_value - erc20_balance;
-    // Multiply the topup value by the bridging percent multiplier and get the maximum between
-    // the calculated fees covering value and the minimal bridging fees coverage
-    let calculated_fees_covering_value =
-        (erc20_topup_value * U256::from(BRIDGING_AMOUNT_MULTIPLIER)) / U256::from(100);
-    let erc20_topup_value = erc20_topup_value
-        + max(
-            calculated_fees_covering_value,
-            *MINIMAL_BRIDGING_FEES_COVERAGE,
-        );
 
     // Check for possible bridging funds by iterating over supported assets
     // or return an insufficient funds error
-    let Some((bridge_chain_id, bridge_token_symbol, bridge_contract)) =
-        check_bridging_for_erc20_transfer(
-            query_params.project_id.clone(),
-            erc20_topup_value,
-            from_address,
-        )
-        .await?
+    let Some(bridging_asset) = check_bridging_for_erc20_transfer(
+        query_params.project_id.clone(),
+        erc20_topup_value,
+        from_address,
+    )
+    .await?
     else {
         return Ok(Json(ErrorResponse {
             error: BridgingError::InsufficientFunds,
         })
         .into_response());
     };
+    let bridge_chain_id = bridging_asset.chain_id;
+    let bridge_token_symbol = bridging_asset.token_symbol;
+    let bridge_contract = bridging_asset.contract_address;
+    let current_bridging_asset_balance = bridging_asset.current_balance;
 
     // Skip bridging if that's the same chainId and contract address
     if bridge_chain_id == request_payload.transaction.chain_id && bridge_contract == to_address {
@@ -228,15 +222,63 @@ async fn handler_internal(
             from_address,
         )
         .await?;
-
-    // Build bridging transaction
-    let mut routes = Vec::new();
     let Some(best_route) = quotes.first() else {
         return Ok(Json(ErrorResponse {
             error: BridgingError::NoRoutesAvailable,
         })
         .into_response());
     };
+
+    // Calculate the bridging fee based on the amount given from quotes
+    let bridging_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
+    let bridging_amount =
+        U256::from_str(&bridging_amount).map_err(|_| RpcError::InvalidValue(bridging_amount))?;
+    let bridging_fee = erc20_topup_value - bridging_amount;
+
+    // Calculate the required bridging topup amount with the bridging fee and slippage
+    let required_topup_amount = erc20_topup_value + bridging_fee;
+    let required_topup_amount = ((required_topup_amount * U256::from(BRIDGING_AMOUNT_SLIPPAGE))
+        / U256::from(100))
+        + required_topup_amount;
+    if current_bridging_asset_balance < required_topup_amount {
+        return Ok(Json(ErrorResponse {
+            error: BridgingError::InsufficientFunds,
+        })
+        .into_response());
+    }
+
+    // Get quotes for updated topup amount
+    let quotes = state
+        .providers
+        .chain_orchestrator_provider
+        .get_bridging_quotes(
+            bridge_chain_id.clone(),
+            bridge_contract,
+            request_payload.transaction.chain_id.clone(),
+            to_address,
+            required_topup_amount,
+            from_address,
+        )
+        .await?;
+    let Some(best_route) = quotes.first() else {
+        return Ok(Json(ErrorResponse {
+            error: BridgingError::NoRoutesAvailable,
+        })
+        .into_response());
+    };
+    // Check the final bridging amount from the quote
+    let bridging_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
+    let bridging_amount =
+        U256::from_str(&bridging_amount).map_err(|_| RpcError::InvalidValue(bridging_amount))?;
+    if erc20_topup_value > bridging_amount {
+        error!(
+            "The final bridging amount:{} is less than the topup amount:{}",
+            bridging_amount, erc20_topup_value
+        );
+        return Err(RpcError::BridgingFinalAmountLess);
+    }
+
+    // Build bridging transaction
     let bridge_tx = state
         .providers
         .chain_orchestrator_provider
@@ -261,6 +303,7 @@ async fn handler_internal(
     .await?;
 
     // TODO: Implement gas estimation using `eth_estimateGas` for each transaction
+    let mut routes = Vec::new();
 
     // Check for the allowance
     if let Some(approval_data) = bridge_tx.approval_data {
@@ -285,7 +328,7 @@ async fn handler_internal(
                     approval_data.owner,
                     approval_data.allowance_target,
                     approval_data.approval_token_address,
-                    erc20_topup_value,
+                    required_topup_amount,
                 )
                 .await?;
 
@@ -357,7 +400,7 @@ async fn handler_internal(
                 chain_id: bridge_chain_id,
                 token_contract: bridge_contract,
                 symbol: bridge_token_symbol,
-                amount: format!("0x{:x}", erc20_topup_value),
+                amount: format!("0x{:x}", required_topup_amount),
             }],
             check_in: STATUS_POLLING_INTERVAL,
         }),
