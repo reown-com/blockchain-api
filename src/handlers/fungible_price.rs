@@ -30,6 +30,7 @@ pub struct PriceResponseBody {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FungiblePriceItem {
+    pub address: String,
     pub name: String,
     pub symbol: String,
     pub icon_url: String,

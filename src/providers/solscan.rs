@@ -17,7 +17,7 @@ use {
         },
         providers::ProviderKind,
         storage::error::StorageError,
-        utils::crypto::SOLANA_NATIVE_TOKEN_ADDRESS,
+        utils::crypto::{CaipNamespaces, SOLANA_NATIVE_TOKEN_ADDRESS},
         Metrics,
     },
     async_trait::async_trait,
@@ -620,6 +620,7 @@ impl FungiblePriceProvider for SolScanProvider {
         let price = self.token_price_request(address, metrics).await?;
         let response = PriceResponseBody {
             fungibles: vec![FungiblePriceItem {
+                address: format!("{}:{}:{}", CaipNamespaces::Solana, chain_id, address),
                 name: info.name,
                 symbol: info.symbol,
                 icon_url: info.icon.unwrap_or_default(),
