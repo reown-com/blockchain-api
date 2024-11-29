@@ -73,7 +73,6 @@ module "ecs" {
   one_inch_referrer      = var.one_inch_referrer
   getblock_access_tokens = var.getblock_access_tokens
   pimlico_api_key        = var.pimlico_api_key
-  solscan_api_v1_token   = var.solscan_api_v1_token
   solscan_api_v2_token   = var.solscan_api_v2_token
   bungee_api_key         = var.bungee_api_key
 

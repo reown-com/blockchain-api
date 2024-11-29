@@ -116,8 +116,7 @@ pub struct ProvidersConfig {
     pub getblock_access_tokens: Option<String>,
     /// Pimlico API token key
     pub pimlico_api_key: String,
-    /// SolScan API v1 and v2 token keys
-    pub solscan_api_v1_token: String,
+    /// SolScan API v2 token key
     pub solscan_api_v2_token: String,
     /// Bungee API key
     pub bungee_api_key: String,
@@ -229,7 +228,6 @@ impl ProviderRepository {
         let one_inch_provider = Arc::new(OneInchProvider::new(one_inch_api_key, one_inch_referrer));
         let portfolio_provider = zerion_provider.clone();
         let solscan_provider = Arc::new(SolScanProvider::new(
-            config.solscan_api_v1_token.clone(),
             config.solscan_api_v2_token.clone(),
             redis_pool.clone(),
         ));

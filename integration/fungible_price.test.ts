@@ -28,7 +28,7 @@ describe('Fungible price', () => {
       expect(item.symbol).toBe('SHIB')
       expect(typeof item.iconUrl).toBe('string')
       expect(typeof item.price).toBe('number')
-      expect(typeof item.address).toBe(shib_token_address)
+      expect(item.address).toBe(shib_token_address)
     }
   })
 
@@ -52,7 +52,7 @@ describe('Fungible price', () => {
       expect(item.symbol).toBe('SOL')
       expect(typeof item.iconUrl).toBe('string')
       expect(typeof item.price).toBe('number')
-      expect(typeof item.address).toBe(wsol_token_address)
+      expect(item.address).toBe(wsol_token_address)
     }
   })
 

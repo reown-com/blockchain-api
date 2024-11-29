@@ -31,16 +31,14 @@ use {
 const SOLANA_SOL_TOKEN_ICON: &str =
     "https://cdn.jsdelivr.net/gh/trustwallet/assets@master/blockchains/solana/info/logo.png";
 const SOLANA_MAINNET_CHAIN_ID: &str = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
-const ACCOUNT_TOKENS_URL: &str = "https://pro-api.solscan.io/v1.0/account/tokens";
+const ACCOUNT_TOKENS_URL: &str = "https://pro-api.solscan.io/v2.0/account/token-accounts";
 const ACCOUNT_HISTORY_URL: &str = "https://pro-api.solscan.io/v2.0/account/transfer";
 const TOKEN_METADATA_URL: &str = "https://pro-api.solscan.io/v2.0/token/meta";
 const TOKEN_PRICE_URL: &str = "https://pro-api.solscan.io/v2.0/token/price";
 const ACCOUNT_DETAIL_URL: &str = "https://pro-api.solscan.io/v2.0/account/detail";
 
-const WSOL_TOKEN_ADDRESS: &str = "So11111111111111111111111111111111111111112";
-
 // Caching TTL paramters
-const METADATA_CACHE_TTL: u64 = 60 * 60; // 1 hour
+const METADATA_CACHE_TTL: u64 = 60 * 60 * 24; // 24 hours
 const PRICING_CACHE_TTL: u64 = 60 * 5; // 5 minutes
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -80,33 +78,19 @@ struct TokenPriceResponseData {
 
 pub struct SolScanProvider {
     provider_kind: ProviderKind,
-    api_v1_token: String,
     api_v2_token: String,
     http_client: reqwest::Client,
     redis_caching_pool: Option<Arc<Pool>>,
 }
 
 impl SolScanProvider {
-    pub fn new(
-        api_v1_token: String,
-        api_v2_token: String,
-        redis_caching_pool: Option<Arc<Pool>>,
-    ) -> Self {
+    pub fn new(api_v2_token: String, redis_caching_pool: Option<Arc<Pool>>) -> Self {
         Self {
             provider_kind: ProviderKind::SolScan,
-            api_v1_token,
             api_v2_token,
             http_client: reqwest::Client::new(),
             redis_caching_pool,
         }
-    }
-
-    async fn send_request_v1(&self, url: Url) -> Result<reqwest::Response, reqwest::Error> {
-        self.http_client
-            .get(url)
-            .header("token", self.api_v1_token.clone())
-            .send()
-            .await
     }
 
     async fn send_request_v2(&self, url: Url) -> Result<reqwest::Response, reqwest::Error> {
@@ -310,9 +294,7 @@ impl SolScanProvider {
             });
         }
 
-        let metadata = self
-            .token_metadata_request(WSOL_TOKEN_ADDRESS, metrics)
-            .await?;
+        let metadata = self.token_metadata_request(address, metrics).await?;
         Ok(metadata)
     }
 
@@ -348,21 +330,15 @@ impl SolScanProvider {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-#[serde(rename_all = "camelCase")]
-struct TokensResponseItem {
-    pub token_address: String,
-    pub token_name: Option<String>,
-    pub token_symbol: Option<String>,
-    pub token_icon: Option<String>,
-    pub token_amount: AmountItem,
+struct TokensResponse {
+    pub data: Vec<TokensResponseItem>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-#[serde(rename_all = "camelCase")]
-struct AmountItem {
-    pub ui_amount_string: String,
-    pub ui_amount: f64,
-    pub decimals: u8,
+struct TokensResponseItem {
+    pub token_address: String,
+    pub token_decimals: u8,
+    pub amount: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -423,10 +399,12 @@ impl BalanceProvider for SolScanProvider {
         metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody> {
         let mut url = Url::parse(ACCOUNT_TOKENS_URL).map_err(|_| RpcError::BalanceParseURLError)?;
-        url.query_pairs_mut().append_pair("account", &address);
+        url.query_pairs_mut().append_pair("address", &address);
+        url.query_pairs_mut().append_pair("type", "token");
+        url.query_pairs_mut().append_pair("hide_zero", "true");
 
         let latency_start = SystemTime::now();
-        let response = self.send_request_v1(url).await?;
+        let response = self.send_request_v2(url).await?;
         metrics.add_latency_and_status_code_for_provider(
             self.provider_kind,
             response.status().into(),
@@ -443,26 +421,28 @@ impl BalanceProvider for SolScanProvider {
             return Err(RpcError::BalanceProviderError);
         }
         let mut balances_vec: Vec<BalanceItem> = Vec::new();
-        let body = response.json::<Vec<TokensResponseItem>>().await?;
-        for item in body {
+        let body = response.json::<TokensResponse>().await?;
+        for item in body.data {
             let token_price = &self
                 .token_price_request(&item.token_address, metrics.clone())
                 .await
                 .unwrap_or(0.0);
+            let token_metadata = self
+                .get_token_info(&item.token_address, metrics.clone())
+                .await?;
+            let decimal_amount = item.amount as f64 / 10f64.powf(item.token_decimals as f64);
             let balance_item = BalanceItem {
-                name: item
-                    .token_name
-                    .unwrap_or_else(|| item.token_symbol.clone().unwrap_or_default()),
-                symbol: item.token_symbol.unwrap_or_default(),
+                name: token_metadata.name,
+                symbol: token_metadata.symbol,
                 chain_id: Some(SOLANA_MAINNET_CHAIN_ID.to_string()),
                 address: Some(item.token_address),
-                value: Some(item.token_amount.ui_amount * token_price),
+                value: Some(decimal_amount * token_price),
                 price: *token_price,
                 quantity: BalanceQuantity {
-                    decimals: item.token_amount.decimals.to_string(),
-                    numeric: item.token_amount.ui_amount_string,
+                    decimals: item.token_decimals.to_string(),
+                    numeric: decimal_amount.to_string(),
                 },
-                icon_url: item.token_icon.unwrap_or_default(),
+                icon_url: token_metadata.icon.unwrap_or_default(),
             };
             balances_vec.push(balance_item);
         }
