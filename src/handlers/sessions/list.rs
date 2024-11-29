@@ -36,7 +36,6 @@ struct Pci {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-
 struct ProjectItem {
     pub id: String,
     pub name: String,

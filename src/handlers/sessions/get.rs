@@ -108,7 +108,7 @@ pub async fn get_session_context(
                 InternalGetSessionContextError::Storage(e),
             )
         })?
-        .ok_or_else(|| GetSessionContextError::PermissionNotFound(address, pci))?;
+        .ok_or(GetSessionContextError::PermissionNotFound(address, pci))?;
     metrics.add_irn_latency(irn_call_start, OperationType::Hget);
 
     let storage_permissions_item =
