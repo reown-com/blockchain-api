@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.136.0 - 2024-11-29
+#### Features
+- **(o11y)** adding Bungee provider metrics and Grafana panels (#848) - (f7061b2) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.135.0 - 2024-11-28
 #### Features
 - **(CA)** fine tuning the bridging amount estimation (#847) - (8c60951) - Max Kalashnikoff | maksy.eth
