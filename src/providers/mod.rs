@@ -795,6 +795,7 @@ pub trait BundlerOpsProvider: Send + Sync + Debug {
 
 /// Provider for the chain orchestrator operations
 #[async_trait]
+#[allow(clippy::too_many_arguments)]
 pub trait ChainOrchestrationProvider: Send + Sync + Debug {
     async fn get_bridging_quotes(
         &self,
@@ -804,9 +805,14 @@ pub trait ChainOrchestrationProvider: Send + Sync + Debug {
         to_token_address: Address,
         amount: U256,
         user_address: Address,
+        metrics: Arc<Metrics>,
     ) -> Result<Vec<Value>, RpcError>;
 
-    async fn build_bridging_tx(&self, route: Value) -> Result<bungee::BungeeBuildTx, RpcError>;
+    async fn build_bridging_tx(
+        &self,
+        route: Value,
+        metrics: Arc<Metrics>,
+    ) -> Result<bungee::BungeeBuildTx, RpcError>;
 
     async fn check_allowance(
         &self,
@@ -814,6 +820,7 @@ pub trait ChainOrchestrationProvider: Send + Sync + Debug {
         owner: Address,
         target: Address,
         token_address: Address,
+        metrics: Arc<Metrics>,
     ) -> Result<U256, RpcError>;
 
     async fn build_approval_tx(
@@ -823,5 +830,6 @@ pub trait ChainOrchestrationProvider: Send + Sync + Debug {
         target: Address,
         token_address: Address,
         amount: U256,
+        metrics: Arc<Metrics>,
     ) -> Result<bungee::BungeeApprovalTx, RpcError>;
 }

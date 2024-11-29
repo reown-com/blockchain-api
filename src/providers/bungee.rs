@@ -3,12 +3,14 @@ use {
         error::RpcError,
         providers::{ChainOrchestrationProvider, ProviderKind},
         utils::crypto::disassemble_caip2,
+        Metrics,
     },
     alloy::primitives::{Address, U256},
     async_trait::async_trait,
     reqwest::Url,
     serde::{Deserialize, Serialize},
     serde_json::Value,
+    std::{sync::Arc, time::SystemTime},
     tracing::error,
 };
 
@@ -121,6 +123,7 @@ impl ChainOrchestrationProvider for BungeeProvider {
         to_token_address: Address,
         amount: U256,
         user_address: Address,
+        metrics: Arc<Metrics>,
     ) -> Result<Vec<Value>, RpcError> {
         let mut url = Url::parse(format!("{}/v2/quote", &self.base_api_url).as_str())
             .map_err(|_| RpcError::ConversionParseURLError)?;
@@ -152,7 +155,16 @@ impl ChainOrchestrationProvider for BungeeProvider {
         url.query_pairs_mut()
             .append_pair("includeBridges", "across");
 
+        let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await?;
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some("bridging_quotes".to_string()),
+        );
+
         if !response.status().is_success() {
             error!(
                 "Failed to get bridging quotes from Bungee with status: {}",
@@ -172,12 +184,26 @@ impl ChainOrchestrationProvider for BungeeProvider {
         Ok(body.result.routes)
     }
 
-    async fn build_bridging_tx(&self, route: Value) -> Result<BungeeBuildTx, RpcError> {
+    async fn build_bridging_tx(
+        &self,
+        route: Value,
+        metrics: Arc<Metrics>,
+    ) -> Result<BungeeBuildTx, RpcError> {
         let url = Url::parse(format!("{}/v2/build-tx", &self.base_api_url).as_str())
             .map_err(|_| RpcError::ConversionParseURLError)?;
+
+        let latency_start = SystemTime::now();
         let response = self
             .send_post_request(url, &BungeeBuildTxRequest { route })
             .await?;
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some("build_bridging_tx".to_string()),
+        );
+
         if !response.status().is_success() {
             error!(
                 "Failed to get bridging tx from Bungee with status: {}",
@@ -196,6 +222,7 @@ impl ChainOrchestrationProvider for BungeeProvider {
         owner: Address,
         target: Address,
         token_address: Address,
+        metrics: Arc<Metrics>,
     ) -> Result<U256, RpcError> {
         let mut url =
             Url::parse(format!("{}/v2/approval/check-allowance", &self.base_api_url).as_str())
@@ -211,7 +238,16 @@ impl ChainOrchestrationProvider for BungeeProvider {
         url.query_pairs_mut()
             .append_pair("tokenAddress", &token_address.to_string());
 
+        let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await?;
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some("check_allowance".to_string()),
+        );
+
         if !response.status().is_success() {
             error!(
                 "Failed to get bridging allowance from Bungee with status: {}",
@@ -231,6 +267,7 @@ impl ChainOrchestrationProvider for BungeeProvider {
         target: Address,
         token_address: Address,
         amount: U256,
+        metrics: Arc<Metrics>,
     ) -> Result<BungeeApprovalTx, RpcError> {
         let mut url = Url::parse(format!("{}/v2/approval/build-tx", &self.base_api_url).as_str())
             .map_err(|_| RpcError::ConversionParseURLError)?;
@@ -247,7 +284,16 @@ impl ChainOrchestrationProvider for BungeeProvider {
         url.query_pairs_mut()
             .append_pair("amount", &amount.to_string());
 
+        let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await?;
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some("build_approval_tx".to_string()),
+        );
+
         if !response.status().is_success() {
             error!(
                 "Failed to get bridging approval tx from Bungee with status: {}",

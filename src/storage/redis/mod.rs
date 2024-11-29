@@ -17,13 +17,13 @@ pub enum Addr<'a> {
     Separate { read: &'a str, write: &'a str },
 }
 
-impl<'a> Default for Addr<'a> {
+impl Default for Addr<'_> {
     fn default() -> Self {
         Self::Combined(LOCAL_REDIS_ADDR)
     }
 }
 
-impl<'a> Addr<'a> {
+impl Addr<'_> {
     pub fn read(&self) -> &str {
         match self {
             Self::Combined(addr) => addr,

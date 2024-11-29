@@ -128,12 +128,14 @@ dashboard.new(
     panels.status.provider(ds, vars, 'SolScan')      { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'OneInch')      { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Coinbase')     { gridPos: pos._4 },
+    panels.status.provider(ds, vars, 'Bungee')       { gridPos: pos._4 },
   
   row.new('Non-RPC providers Latency'),
     panels.non_rpc.endpoints_latency(ds, vars, 'Zerion')       { gridPos: pos._4 },
     panels.non_rpc.endpoints_latency(ds, vars, 'SolScan')      { gridPos: pos._4 },
     panels.non_rpc.endpoints_latency(ds, vars, 'OneInch')      { gridPos: pos._4 },
     panels.non_rpc.endpoints_latency(ds, vars, 'Coinbase')     { gridPos: pos._4 },
+    panels.non_rpc.endpoints_latency(ds, vars, 'Bungee')       { gridPos: pos._4 },
 
   row.new('Non-RPC providers Cache'),
     panels.non_rpc.cache_latency(ds, vars)      { gridPos: pos._2 },

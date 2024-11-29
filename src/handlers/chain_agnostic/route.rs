@@ -220,6 +220,7 @@ async fn handler_internal(
             to_address,
             erc20_topup_value,
             from_address,
+            state.metrics.clone(),
         )
         .await?;
     let Some(best_route) = quotes.first() else {
@@ -258,6 +259,7 @@ async fn handler_internal(
             to_address,
             required_topup_amount,
             from_address,
+            state.metrics.clone(),
         )
         .await?;
     let Some(best_route) = quotes.first() else {
@@ -282,7 +284,7 @@ async fn handler_internal(
     let bridge_tx = state
         .providers
         .chain_orchestrator_provider
-        .build_bridging_tx(best_route.clone())
+        .build_bridging_tx(best_route.clone(), state.metrics.clone())
         .await?;
 
     // Getting the current nonce for the address
@@ -315,6 +317,7 @@ async fn handler_internal(
                 approval_data.owner,
                 approval_data.allowance_target,
                 approval_data.approval_token_address,
+                state.metrics.clone(),
             )
             .await?;
 
@@ -329,6 +332,7 @@ async fn handler_internal(
                     approval_data.allowance_target,
                     approval_data.approval_token_address,
                     required_topup_amount,
+                    state.metrics.clone(),
                 )
                 .await?;
 
