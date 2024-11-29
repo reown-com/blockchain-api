@@ -27,6 +27,7 @@ pub struct Metrics {
     pub http_call_counter: Counter<u64>,
     pub provider_finished_call_counter: Counter<u64>,
     pub provider_failed_call_counter: Counter<u64>,
+    pub no_providers_for_chain_counter: Counter<u64>,
     pub http_latency_tracker: Histogram<f64>,
     pub http_external_latency_tracker: Histogram<f64>,
     pub rejected_project_counter: Counter<u64>,
@@ -260,6 +261,11 @@ impl Metrics {
             .with_description("The latency of non-RPC providers cache lookups")
             .init();
 
+        let no_providers_for_chain_counter = meter
+            .u64_counter("no_providers_for_chain_counter")
+            .with_description("The number of chain RPC calls that had no available providers")
+            .init();
+
         Metrics {
             rpc_call_counter,
             rpc_call_retries,
@@ -272,6 +278,7 @@ impl Metrics {
             provider_failed_call_counter,
             provider_finished_call_counter,
             provider_status_code_counter,
+            no_providers_for_chain_counter,
             weights_value_recorder,
             identity_lookup_counter,
             identity_lookup_success_counter,
@@ -450,6 +457,14 @@ impl Metrics {
                 otel::KeyValue::new("chain_id", chain_id),
             ],
         )
+    }
+
+    pub fn add_no_providers_for_chain(&self, chain_id: String) {
+        self.no_providers_for_chain_counter.add(
+            &otel::Context::new(),
+            1,
+            &[otel::KeyValue::new("chain_id", chain_id)],
+        );
     }
 
     pub fn add_identity_lookup(&self) {
