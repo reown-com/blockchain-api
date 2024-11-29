@@ -224,12 +224,6 @@ variable "pimlico_api_key" {
   sensitive   = true
 }
 
-variable "solscan_api_v1_token" {
-  description = "Solscan API v1 token"
-  type        = string
-  sensitive   = true
-}
-
 variable "solscan_api_v2_token" {
   description = "Solscan API v2 token"
   type        = string
