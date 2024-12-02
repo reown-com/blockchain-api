@@ -5,7 +5,7 @@ use {
         utils::crypto::disassemble_caip2,
         Metrics,
     },
-    alloy::primitives::{Address, U256},
+    alloy::primitives::{Address, Bytes, U256},
     async_trait::async_trait,
     reqwest::Url,
     serde::{Deserialize, Serialize},
@@ -38,9 +38,9 @@ pub struct BungeeBuildTxRequest {
 #[serde(rename_all = "camelCase")]
 pub struct BungeeBuildTx {
     pub chain_id: usize,
-    pub tx_data: String,
+    pub tx_data: Bytes,
     pub tx_target: Address,
-    pub value: String,
+    pub value: U256,
     pub approval_data: Option<BungeeApprovalData>,
 }
 
@@ -58,7 +58,7 @@ pub struct BungeeApprovalData {
 pub struct BungeeApprovalTx {
     pub from: Address,
     pub to: Address,
-    pub data: String,
+    pub data: Bytes,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

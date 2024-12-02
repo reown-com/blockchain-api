@@ -14,7 +14,7 @@ pub mod status;
 pub const BRIDGING_AMOUNT_SLIPPAGE: i8 = 2; // 2%
 
 /// Bridging timeout in seconds
-pub const BRIDGING_TIMEOUT: usize = 1800; // 30 minutes
+pub const BRIDGING_TIMEOUT: u64 = 1800; // 30 minutes
 
 /// Available assets for Bridging
 pub static BRIDGING_AVAILABLE_ASSETS: phf::Map<&'static str, phf::Map<&'static str, &'static str>> = phf_map! {
@@ -29,13 +29,13 @@ pub static BRIDGING_AVAILABLE_ASSETS: phf::Map<&'static str, phf::Map<&'static s
 };
 
 /// The status polling interval in ms for the client
-pub const STATUS_POLLING_INTERVAL: usize = 3000; // 3 seconds
+pub const STATUS_POLLING_INTERVAL: u64 = 3000; // 3 seconds
 
 /// Serialized bridging request item schema to store it in the IRN database
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StorageBridgingItem {
-    created_at: usize,
+    created_at: u64,
     chain_id: String,
     wallet: Address,
     contract: Address,
