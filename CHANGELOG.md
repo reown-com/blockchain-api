@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.138.0 - 2024-12-02
+#### Features
+- **(CA)** using yttrium types (#842) - (1743132) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.137.0 - 2024-11-29
 #### Features
 - **(providers)** removing SolScan API v1 support (#850) - (41f8492) - Max Kalashnikoff | maksy.eth
