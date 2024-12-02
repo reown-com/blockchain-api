@@ -14,7 +14,7 @@ use {
             get_erc20_balance, get_gas_price, get_nonce, Erc20FunctionType,
         },
     },
-    alloy::primitives::{Address, U256},
+    alloy::primitives::{U256, U64},
     axum::{
         extract::{Query, State},
         response::{IntoResponse, Response},
@@ -29,77 +29,19 @@ use {
     tracing::{debug, error},
     uuid::Uuid,
     wc::future::FutureExt,
+    yttrium::chain_abstraction::api::{
+        route::{
+            BridgingError, FundingMetadata, Metadata, RouteQueryParams, RouteRequest,
+            RouteResponse, RouteResponseAvailable, RouteResponseError, RouteResponseNotRequired,
+            RouteResponseSuccess,
+        },
+        Transaction,
+    },
 };
 
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct QueryParams {
-    pub project_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CheckTransactionRequest {
-    transaction: Transaction,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Transaction {
-    from: Address,
-    to: Address,
-    value: String,
-    gas: String,
-    gas_price: String,
-    data: String,
-    nonce: String,
-    max_fee_per_gas: String,
-    max_priority_fee_per_gas: String,
-    chain_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RequiresMultiChainResponse {
-    requires_multi_chain: bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RouteResponse {
-    orchestration_id: Option<String>,
-    transactions: Vec<Transaction>,
-    metadata: Option<Metadata>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Metadata {
-    funding_from: Vec<FundingMetadata>,
-    check_in: usize,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FundingMetadata {
-    chain_id: String,
-    token_contract: Address,
-    symbol: String,
-    amount: String,
-}
-
-/// Bridging check error response that should be returned as a normal HTTP 200 response
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ErrorResponse {
-    error: BridgingError,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum BridgingError {
-    NoRoutesAvailable,
-    InsufficientFunds,
-    InsufficientGasFunds,
-}
+// Default gas estimate
+// Using default with 6x increase
+const DEFAULT_GAS: i64 = 0x029a6b * 0x6;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -107,20 +49,10 @@ struct QuoteRoute {
     pub to_amount: String,
 }
 
-const NO_BRIDING_NEEDED_RESPONSE: Json<RouteResponse> = Json(RouteResponse {
-    transactions: vec![],
-    orchestration_id: None,
-    metadata: None,
-});
-
-// Default gas estimate
-// Using default with 6x increase
-const DEFAULT_GAS: i64 = 0x029a6b * 0x6;
-
 pub async fn handler(
     state: State<Arc<AppState>>,
-    query_params: Query<QueryParams>,
-    Json(request_payload): Json<CheckTransactionRequest>,
+    query_params: Query<RouteQueryParams>,
+    Json(request_payload): Json<RouteRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query_params, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("ca_route"))
@@ -130,18 +62,24 @@ pub async fn handler(
 #[tracing::instrument(skip(state), level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
-    Query(query_params): Query<QueryParams>,
-    request_payload: CheckTransactionRequest,
+    Query(query_params): Query<RouteQueryParams>,
+    request_payload: RouteRequest,
 ) -> Result<Response, RpcError> {
     state
-        .validate_project_access_and_quota(&query_params.project_id.clone())
+        .validate_project_access_and_quota(query_params.project_id.as_ref())
         .await?;
 
-    let from_address = request_payload.transaction.from;
-    let to_address = request_payload.transaction.to;
-    let transfer_value_string = request_payload.transaction.value.clone();
-    let transfer_value = U256::from_str(&transfer_value_string)
-        .map_err(|_| RpcError::InvalidValue(transfer_value_string))?;
+    let initial_transaction = request_payload.transaction.clone();
+    let from_address = initial_transaction.from;
+    let to_address = initial_transaction.to;
+    let transfer_value = initial_transaction.value;
+
+    let no_bridging_needed_response: Json<RouteResponse> = Json(RouteResponse::Success(
+        RouteResponseSuccess::NotRequired(RouteResponseNotRequired {
+            initial_transaction: initial_transaction.clone(),
+            transactions: vec![],
+        }),
+    ));
 
     // Check if the transaction value is non zero it's a native token transfer
     if transfer_value > U256::ZERO {
@@ -149,21 +87,20 @@ async fn handler_internal(
             "The transaction is a native token transfer with value: {:?}",
             transfer_value
         );
-        return Ok(NO_BRIDING_NEEDED_RESPONSE.into_response());
+        return Ok(no_bridging_needed_response.into_response());
     }
 
     // Check if the ERC20 function is the `transfer` function
-    let transaction_data = hex::decode(request_payload.transaction.data.trim_start_matches("0x"))
-        .map_err(|e| RpcError::WrongHexFormat(e.to_string()))?;
+    let transaction_data = request_payload.transaction.data;
     if decode_erc20_function_type(&transaction_data)? != Erc20FunctionType::Transfer {
         debug!("The transaction data is not a transfer function");
-        return Ok(NO_BRIDING_NEEDED_RESPONSE.into_response());
+        return Ok(no_bridging_needed_response.into_response());
     }
 
     // Check if the destination address is supported ERC20 asset contract
     if !is_supported_bridging_asset(request_payload.transaction.chain_id.clone(), to_address) {
         error!("The destination address is not a supported bridging asset contract");
-        return Ok(NO_BRIDING_NEEDED_RESPONSE.into_response());
+        return Ok(no_bridging_needed_response.into_response());
     }
 
     // Decode the ERC20 transfer function data
@@ -175,28 +112,28 @@ async fn handler_internal(
         &request_payload.transaction.chain_id,
         convert_alloy_address_to_h160(to_address),
         convert_alloy_address_to_h160(from_address),
-        &query_params.project_id.clone(),
+        query_params.project_id.as_ref(),
         MessageSource::ChainAgnosticCheck,
     )
     .await?;
     let erc20_balance = U256::from_be_bytes(erc20_balance.into());
     if erc20_balance >= erc20_transfer_value {
-        return Ok(NO_BRIDING_NEEDED_RESPONSE.into_response());
+        return Ok(no_bridging_needed_response.into_response());
     }
     let erc20_topup_value = erc20_transfer_value - erc20_balance;
 
     // Check for possible bridging funds by iterating over supported assets
     // or return an insufficient funds error
     let Some(bridging_asset) = check_bridging_for_erc20_transfer(
-        query_params.project_id.clone(),
+        query_params.project_id.as_ref().to_string(),
         erc20_topup_value,
         from_address,
     )
     .await?
     else {
-        return Ok(Json(ErrorResponse {
+        return Ok(Json(RouteResponse::Error(RouteResponseError {
             error: BridgingError::InsufficientFunds,
-        })
+        }))
         .into_response());
     };
     let bridge_chain_id = bridging_asset.chain_id;
@@ -206,7 +143,7 @@ async fn handler_internal(
 
     // Skip bridging if that's the same chainId and contract address
     if bridge_chain_id == request_payload.transaction.chain_id && bridge_contract == to_address {
-        return Ok(NO_BRIDING_NEEDED_RESPONSE.into_response());
+        return Ok(no_bridging_needed_response.into_response());
     }
 
     // Get Quotes for the bridging
@@ -224,9 +161,9 @@ async fn handler_internal(
         )
         .await?;
     let Some(best_route) = quotes.first() else {
-        return Ok(Json(ErrorResponse {
+        return Ok(Json(RouteResponse::Error(RouteResponseError {
             error: BridgingError::NoRoutesAvailable,
-        })
+        }))
         .into_response());
     };
 
@@ -242,9 +179,9 @@ async fn handler_internal(
         / U256::from(100))
         + required_topup_amount;
     if current_bridging_asset_balance < required_topup_amount {
-        return Ok(Json(ErrorResponse {
+        return Ok(Json(RouteResponse::Error(RouteResponseError {
             error: BridgingError::InsufficientFunds,
-        })
+        }))
         .into_response());
     }
 
@@ -263,9 +200,9 @@ async fn handler_internal(
         )
         .await?;
     let Some(best_route) = quotes.first() else {
-        return Ok(Json(ErrorResponse {
+        return Ok(Json(RouteResponse::Error(RouteResponseError {
             error: BridgingError::NoRoutesAvailable,
-        })
+        }))
         .into_response());
     };
     // Check the final bridging amount from the quote
@@ -279,6 +216,7 @@ async fn handler_internal(
         );
         return Err(RpcError::BridgingFinalAmountLess);
     }
+    let final_bridging_fee = bridging_amount - erc20_topup_value;
 
     // Build bridging transaction
     let bridge_tx = state
@@ -291,7 +229,7 @@ async fn handler_internal(
     let mut current_nonce = get_nonce(
         format!("eip155:{}", bridge_tx.chain_id).as_str(),
         from_address,
-        &query_params.project_id.clone(),
+        query_params.project_id.as_ref(),
         MessageSource::ChainAgnosticCheck,
     )
     .await?;
@@ -299,7 +237,7 @@ async fn handler_internal(
     // Getting the current gas price
     let gas_price = get_gas_price(
         &bridge_chain_id.clone(),
-        &query_params.project_id.clone(),
+        query_params.project_id.as_ref(),
         MessageSource::ChainAgnosticCheck,
     )
     .await?;
@@ -339,16 +277,13 @@ async fn handler_internal(
             routes.push(Transaction {
                 from: approval_tx.from,
                 to: approval_tx.to,
-                value: "0x00".to_string(),
-                gas_price: format!("0x{:x}", gas_price),
-                gas: format!("0x{:x}", DEFAULT_GAS),
+                value: U256::ZERO,
+                gas_price: U256::from(gas_price),
+                gas: U64::from(DEFAULT_GAS),
                 data: approval_tx.data,
-                nonce: format!("0x{:x}", current_nonce),
-                max_fee_per_gas: request_payload.transaction.max_fee_per_gas.clone(),
-                max_priority_fee_per_gas: request_payload
-                    .transaction
-                    .max_priority_fee_per_gas
-                    .clone(),
+                nonce: U64::from(current_nonce),
+                max_fee_per_gas: request_payload.transaction.max_fee_per_gas,
+                max_priority_fee_per_gas: request_payload.transaction.max_priority_fee_per_gas,
                 chain_id: format!("eip155:{}", bridge_tx.chain_id),
             });
             current_nonce += 1;
@@ -360,12 +295,12 @@ async fn handler_internal(
         from: from_address,
         to: bridge_tx.tx_target,
         value: bridge_tx.value,
-        gas_price: format!("0x{:x}", gas_price),
-        gas: format!("0x{:x}", DEFAULT_GAS),
+        gas_price: U256::from(gas_price),
+        gas: U64::from(DEFAULT_GAS),
         data: bridge_tx.tx_data,
-        nonce: format!("0x{:x}", current_nonce),
-        max_fee_per_gas: request_payload.transaction.max_fee_per_gas.clone(),
-        max_priority_fee_per_gas: request_payload.transaction.max_priority_fee_per_gas.clone(),
+        nonce: U64::from(current_nonce),
+        max_fee_per_gas: request_payload.transaction.max_fee_per_gas,
+        max_priority_fee_per_gas: request_payload.transaction.max_priority_fee_per_gas,
         chain_id: format!("eip155:{}", bridge_tx.chain_id),
     });
 
@@ -375,7 +310,7 @@ async fn handler_internal(
         created_at: SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
-            .as_secs() as usize,
+            .as_secs(),
         chain_id: request_payload.transaction.chain_id,
         wallet: from_address,
         contract: to_address,
@@ -396,18 +331,22 @@ async fn handler_internal(
         .metrics
         .add_irn_latency(irn_call_start, OperationType::Set);
 
-    return Ok(Json(RouteResponse {
-        orchestration_id: Some(orchestration_id),
-        transactions: routes,
-        metadata: Some(Metadata {
-            funding_from: vec![FundingMetadata {
-                chain_id: bridge_chain_id,
-                token_contract: bridge_contract,
-                symbol: bridge_token_symbol,
-                amount: format!("0x{:x}", required_topup_amount),
-            }],
-            check_in: STATUS_POLLING_INTERVAL,
-        }),
-    })
+    return Ok(Json(RouteResponse::Success(RouteResponseSuccess::Available(
+        RouteResponseAvailable {
+            orchestration_id,
+            initial_transaction,
+            transactions: routes,
+            metadata: Metadata {
+                funding_from: vec![FundingMetadata {
+                    chain_id: bridge_chain_id,
+                    token_contract: bridge_contract,
+                    symbol: bridge_token_symbol,
+                    amount: bridging_amount,
+                    bridging_fee: final_bridging_fee,
+                }],
+                check_in: STATUS_POLLING_INTERVAL,
+            },
+        },
+    )))
     .into_response());
 }

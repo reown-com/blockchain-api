@@ -166,7 +166,7 @@ describe('Chain abstraction orchestrator', () => {
     expect(approvalTransaction.nonce).not.toBe("0x00")
     expect(approvalTransaction.gas).toBe(gas_estimate)
     const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.data);
-    if (BigInt(decodedData.amount) <= BigInt(amount_to_topup_with_fees)) {
+    if (decodedData.amount < BigInt(amount_to_topup_with_fees)) {
       throw new Error(`Expected amount is lower then the minimal required`);
     }
 
@@ -183,6 +183,9 @@ describe('Chain abstraction orchestrator', () => {
     expect(fundingFrom.tokenContract).toBe(usdc_contract_base)
     if (BigInt(fundingFrom.amount) <= BigInt(amount_to_topup_with_fees)) {
       throw new Error(`Expected amount is lower then the minimal required`);
+    }
+    if (BigInt(fundingFrom.bridgingFee) != BigInt(fundingFrom.amount - amount_to_topup)){
+      throw new Error(`Expected bridging fee is incorrect. `);
     }
 
     // Check the metadata checkIn
