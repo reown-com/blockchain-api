@@ -99,6 +99,9 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_PROVIDER_SOLSCAN_API_V2_TOKEN", value = var.solscan_api_v2_token },
         { name = "RPC_PROXY_PROVIDER_BUNGEE_API_KEY", value = var.bungee_api_key },
         { name = "RPC_PROXY_PROVIDER_LAVA_API_KEY", value = var.lava_api_key },
+        { name = "RPC_PROXY_PROVIDER_TENDERLY_API_KEY", value = var.tenderly_api_key },
+        { name = "RPC_PROXY_PROVIDER_TENDERLY_ACCOUNT_ID", value = var.tenderly_account_id },
+        { name = "RPC_PROXY_PROVIDER_TENDERLY_PROJECT_ID", value = var.tenderly_project_id },
 
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL", value = "http://127.0.0.1:${local.prometheus_proxy_port}/workspaces/${var.prometheus_workspace_id}" },
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_WORKSPACE_HEADER", value = "aps-workspaces.${module.this.region}.amazonaws.com" },

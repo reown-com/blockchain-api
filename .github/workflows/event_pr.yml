@@ -91,6 +91,9 @@ jobs:
           RPC_PROXY_PROVIDER_SOLSCAN_API_V2_TOKEN: ""
           RPC_PROXY_PROVIDER_BUNGEE_API_KEY: ""
           RPC_PROXY_PROVIDER_LAVA_API_KEY: ""
+          RPC_PROXY_PROVIDER_TENDERLY_API_KEY: ""
+          RPC_PROXY_PROVIDER_TENDERLY_ACCOUNT_ID: ""
+          RPC_PROXY_PROVIDER_TENDERLY_PROJECT_ID: ""
       - run: docker logs mock-bundler-anvil-1
         if: failure()
       - run: docker logs mock-bundler-alto-1

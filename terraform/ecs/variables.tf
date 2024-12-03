@@ -242,6 +242,24 @@ variable "lava_api_key" {
   sensitive   = true
 }
 
+variable "tenderly_api_key" {
+  description = "Tenderly API key"
+  type        = string
+  sensitive   = true
+}
+
+variable "tenderly_account_id" {
+  description = "Tenderly Account ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "tenderly_project_id" {
+  description = "Tenderly Project ID"
+  type        = string
+  sensitive   = true
+}
+
 variable "testing_project_id" {
   description = "Project ID used in a testing suite"
   type        = string

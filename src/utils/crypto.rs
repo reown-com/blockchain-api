@@ -254,7 +254,7 @@ pub fn decode_erc20_function_type(
     Ok(function_type)
 }
 
-/// Decode ERC20 contract transfer data and returns to and amount
+/// Decode ERC20 contract transfer data and returns receiver and amount
 pub fn decode_erc20_transfer_data(data: &[u8]) -> Result<(Address, AlloyU256), CryptoUitlsError> {
     // Ensure the function data is at least 4 bytes for the selector
     if data.len() < 4 {
