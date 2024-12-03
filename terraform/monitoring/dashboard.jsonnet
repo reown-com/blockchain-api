@@ -117,8 +117,9 @@ dashboard.new(
     panels.status.provider(ds, vars, 'Unichain')     { gridPos: pos._4 },
 
   row.new('RPC Proxy Metrics'),
-    panels.proxy.calls(ds, vars)                     { gridPos: pos._2 },
-    panels.proxy.latency(ds, vars)                   { gridPos: pos._2 },
+    panels.proxy.calls(ds, vars)                     { gridPos: pos._3 },
+    panels.proxy.latency(ds, vars)                   { gridPos: pos._3 },
+    panels.proxy.chains_availability(ds, vars)       { gridPos: pos._3 },
     panels.proxy.errors_provider(ds, vars)           { gridPos: pos._3 },
     panels.proxy.provider_retries(ds, vars)          { gridPos: pos._3 },
     panels.proxy.http_codes(ds, vars)                { gridPos: pos._3 },
