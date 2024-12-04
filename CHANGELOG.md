@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.140.0 - 2024-12-04
+#### Bug Fixes
+- **(o11y)** removing 40x providers alerts (#852) - (cd6815b) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(providers)** adding Publicnode provider for the Arbitrum chain (#854) - (b73adcd) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.139.0 - 2024-12-03
 #### Features
 - **(o11y)** adding tracking of chains availability by ChainId (#849) - (4e30082) - Max Kalashnikoff | maksy.eth
