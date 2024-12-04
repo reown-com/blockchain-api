@@ -58,12 +58,15 @@ fn extract_supported_chains_and_subdomains(
             ("snowy-chaotic-hill.zksync-mainnet", Priority::High),
         ),
         (
-            "eip155:1301",
-            ("blissful-side-log.unichain-sepolia", Priority::Normal),
-        ),
-        (
             "eip155:1101",
             ("clean-few-meme.zkevm-mainnet", Priority::Normal),
+        ),
+        (
+            "eip155:42161",
+            (
+                "divine-special-snowflake.arbitrum-mainnet",
+                Priority::Normal,
+            ),
         ),
         (
             "eip155:80084",
