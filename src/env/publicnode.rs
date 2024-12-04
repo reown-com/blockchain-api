@@ -136,6 +136,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:100".into(),
             ("gnosis-rpc".into(), Weight::new(Priority::Normal).unwrap()),
         ),
+        // Arbitrum One
+        (
+            "eip155:42161".into(),
+            (
+                "arbitrum-one-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
         // Bitcoin mainnet
         (
             "bip122:000000000019d6689c085ae165831e93".into(),
