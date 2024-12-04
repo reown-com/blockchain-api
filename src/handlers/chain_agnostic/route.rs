@@ -128,6 +128,8 @@ async fn handler_internal(
         query_params.project_id.as_ref().to_string(),
         erc20_topup_value,
         from_address,
+        initial_transaction.chain_id.clone(),
+        to_address,
     )
     .await?
     else {
@@ -140,11 +142,6 @@ async fn handler_internal(
     let bridge_token_symbol = bridging_asset.token_symbol;
     let bridge_contract = bridging_asset.contract_address;
     let current_bridging_asset_balance = bridging_asset.current_balance;
-
-    // Skip bridging if that's the same chainId and contract address
-    if bridge_chain_id == request_payload.transaction.chain_id && bridge_contract == to_address {
-        return Ok(no_bridging_needed_response.into_response());
-    }
 
     // Get Quotes for the bridging
     let quotes = state
