@@ -127,6 +127,15 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
     // Optimism mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:10", "0xa")
         .await;
+
+    // Arbitrum One
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:42161",
+        "0xa4b1",
+    )
+    .await;
 }
 
 #[test_context(ServerContext)]
