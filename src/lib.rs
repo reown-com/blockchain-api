@@ -18,17 +18,17 @@ use {
         Router,
     },
     env::{
-        AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig, GetBlockConfig, InfuraConfig,
-        MantleConfig, NearConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig, UnichainConfig,
-        ZKSyncConfig, ZoraConfig,
+        ArbitrumConfig, AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig, GetBlockConfig,
+        InfuraConfig, MantleConfig, NearConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
+        UnichainConfig, ZKSyncConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
-        AuroraProvider, BaseProvider, BerachainProvider, BinanceProvider, GetBlockProvider,
-        InfuraProvider, InfuraWsProvider, MantleProvider, NearProvider, PoktProvider,
-        ProviderRepository, PublicnodeProvider, QuicknodeProvider, UnichainProvider,
+        ArbitrumProvider, AuroraProvider, BaseProvider, BerachainProvider, BinanceProvider,
+        GetBlockProvider, InfuraProvider, InfuraWsProvider, MantleProvider, NearProvider,
+        PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider, UnichainProvider,
         ZKSyncProvider, ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
@@ -467,6 +467,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     // Keep in-sync with SUPPORTED_CHAINS.md
 
     providers.add_provider::<AuroraProvider, AuroraConfig>(AuroraConfig::default());
+    providers.add_provider::<ArbitrumProvider, ArbitrumConfig>(ArbitrumConfig::default());
     providers
         .add_provider::<PoktProvider, PoktConfig>(PoktConfig::new(config.pokt_project_id.clone()));
 
