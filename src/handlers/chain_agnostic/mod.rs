@@ -101,11 +101,19 @@ pub async fn check_bridging_for_erc20_transfer(
     rpc_project_id: String,
     value: U256,
     sender: Address,
+    exclude_chain_id: String,
+    exclude_contract_address: Address,
 ) -> Result<Option<BridgingAsset>, RpcError> {
     // Check ERC20 tokens balance for each of supported assets
     let mut contracts_per_chain: HashMap<(String, String), Vec<String>> = HashMap::new();
     for (token_symbol, chain_map) in BRIDGING_AVAILABLE_ASSETS.entries() {
         for (chain_id, contract_address) in chain_map.entries() {
+            if *chain_id == exclude_chain_id
+                && Address::from_str(contract_address).unwrap_or_default()
+                    == exclude_contract_address
+            {
+                continue;
+            }
             contracts_per_chain
                 .entry((token_symbol.to_string(), (*chain_id).to_string()))
                 .or_default()
