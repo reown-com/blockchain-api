@@ -33,7 +33,7 @@ local redis  = panels.aws.redis;
     provider_retries:       (import 'proxy/rpc_retries.libsonnet'           ).new,
     rate_limited_counter:   (import 'proxy/rate_limited_counter.libsonnet'  ).new,
     http_codes:             (import 'proxy/http_codes.libsonnet'            ).new,
-    chains_availability:    (import 'proxy/chains_availability.libsonnet'   ).new,
+    chains_unavailability:  (import 'proxy/chains_unavailability.libsonnet' ).new,
   },
 
   projects: {
