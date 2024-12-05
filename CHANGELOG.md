@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.142.1 - 2024-12-05
+#### Bug Fixes
+- **(CA)** adding an exclusion into the bridging assets search (#853) - (a456ae0) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.142.0 - 2024-12-05
 #### Features
 - **(providers)** adding Ethereum Sepolia to the Publicnode (#858) - (d0c0275) - Max Kalashnikoff | maksy.eth
