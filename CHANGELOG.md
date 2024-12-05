@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.142.0 - 2024-12-05
+#### Features
+- **(providers)** adding Ethereum Sepolia to the Publicnode (#858) - (d0c0275) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.141.0 - 2024-12-05
 #### Bug Fixes
 - **(o11y)** change chain availability to unavailability Grafana panel (#856) - (d871b1e) - Max Kalashnikoff | maksy.eth
