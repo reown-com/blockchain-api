@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.141.0 - 2024-12-05
+#### Bug Fixes
+- **(o11y)** change chain availability to unavailability Grafana panel (#856) - (d871b1e) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(providers)** adding Arbitrum native RPC endpoints (#857) - (b3684e6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.140.1 - 2024-12-04
 #### Bug Fixes
 - **(providers)** swaping Unichain to Arbitrum in the Quicknode (#855) - (259b32a) - Max Kalashnikoff | maksy.eth
