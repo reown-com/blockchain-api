@@ -47,6 +47,7 @@ use {
     wc::metrics::TaskMetrics,
 };
 
+mod arbitrum;
 mod aurora;
 mod base;
 mod berachain;
@@ -71,6 +72,7 @@ mod zksync;
 mod zora;
 
 pub use {
+    arbitrum::ArbitrumProvider,
     aurora::AuroraProvider,
     base::BaseProvider,
     berachain::BerachainProvider,
@@ -470,6 +472,7 @@ impl ProviderRepository {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ProviderKind {
     Aurora,
+    Arbitrum,
     Infura,
     Pokt,
     Binance,
@@ -497,6 +500,7 @@ impl Display for ProviderKind {
             "{}",
             match self {
                 ProviderKind::Aurora => "Aurora",
+                ProviderKind::Arbitrum => "Arbitrum",
                 ProviderKind::Infura => "Infura",
                 ProviderKind::Pokt => "Pokt",
                 ProviderKind::Binance => "Binance",
@@ -525,6 +529,7 @@ impl ProviderKind {
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
             "Aurora" => Some(Self::Aurora),
+            "Arbitrum" => Some(Self::Arbitrum),
             "Infura" => Some(Self::Infura),
             "Pokt" => Some(Self::Pokt),
             "Binance" => Some(Self::Binance),

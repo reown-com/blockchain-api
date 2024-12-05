@@ -70,6 +70,7 @@ dashboard.new(
 
   row.new('RPC Proxy Chain Usage'),
     panels.usage.provider(ds, vars, 'Aurora')        { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Arbitrum')      { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Base')          { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Binance')       { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Infura')        { gridPos: pos._4 },
@@ -86,6 +87,7 @@ dashboard.new(
 
   row.new('RPC Proxy provider Weights'),
     panels.weights.provider(ds, vars, 'Aurora')      { gridPos: pos._4 },
+    panels.weights.provider(ds, vars, 'Arbitrum')    { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Base')        { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Binance')     { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Infura')      { gridPos: pos._4 },
@@ -102,6 +104,7 @@ dashboard.new(
 
   row.new('RPC Proxy providers Status Codes'),
     panels.status.provider(ds, vars, 'Aurora')       { gridPos: pos._4 },
+    panels.status.provider(ds, vars, 'Arbitrum')     { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Base')         { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Binance')      { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Infura')       { gridPos: pos._4 },

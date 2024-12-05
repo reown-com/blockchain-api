@@ -14,9 +14,10 @@ use {
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
-    aurora::*, base::*, berachain::*, binance::*, getblock::*, infura::*, mantle::*, near::*,
-    pokt::*, publicnode::*, quicknode::*, server::*, unichain::*, zksync::*, zora::*,
+    arbitrum::*, aurora::*, base::*, berachain::*, binance::*, getblock::*, infura::*, mantle::*,
+    near::*, pokt::*, publicnode::*, quicknode::*, server::*, unichain::*, zksync::*, zora::*,
 };
+mod arbitrum;
 mod aurora;
 mod base;
 mod berachain;
