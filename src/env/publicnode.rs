@@ -40,6 +40,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:1".into(),
             ("ethereum".into(), Weight::new(Priority::High).unwrap()),
         ),
+        // Ethereum Sepolia
+        (
+            "eip155:11155111".into(),
+            (
+                "ethereum-sepolia-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
         // Ethereum Holesky
         (
             "eip155:17000".into(),

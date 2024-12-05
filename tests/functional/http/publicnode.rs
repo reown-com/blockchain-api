@@ -18,6 +18,15 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:1", "0x1")
         .await;
 
+    // Ethereum Sepolia
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:11155111",
+        "0xaa36a7",
+    )
+    .await;
+
     // Ethereum holesky
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
