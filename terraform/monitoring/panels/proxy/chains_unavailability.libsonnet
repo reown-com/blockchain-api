@@ -21,10 +21,10 @@ local alertCondition  = grafana.alertCondition;
         message       = '%(env)s - RPC chain unavailability alert'  % { env: grafana.utils.strings.capitalize(vars.environment) },
         notifications = vars.notifications,
         noDataState   = 'no_data',
-        period        = '0m',
+        period        = '5m',
         conditions    = [
           grafana.alertCondition.new(
-            evaluatorParams = [ 100 ],
+            evaluatorParams = [ 10 ],
             evaluatorType   = 'gt',
             operatorType    = 'or',
             queryRefId      = 'ChainsUnavailability',
