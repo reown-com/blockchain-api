@@ -1,10 +1,20 @@
 use {
-    crate::{error::RpcError, handlers::MessageSource, utils::crypto::get_erc20_contract_balance},
-    alloy::primitives::{Address, U256},
-    ethers::types::H160 as EthersH160,
+    crate::{
+        error::RpcError,
+        handlers::MessageSource,
+        providers::{
+            tenderly::{AssetChangeType, TokenStandard},
+            SimulationProvider,
+        },
+        utils::crypto::get_erc20_contract_balance,
+    },
+    alloy::primitives::{Address, Bytes, U256},
+    ethers::{types::H160 as EthersH160, utils::keccak256},
     phf::phf_map,
     serde::{Deserialize, Serialize},
-    std::{collections::HashMap, str::FromStr},
+    std::{collections::HashMap, str::FromStr, sync::Arc},
+    tracing::debug,
+    yttrium::chain_abstraction::api::Transaction,
 };
 
 pub mod route;
@@ -52,6 +62,19 @@ pub enum BridgingStatus {
     Pending,
     Completed,
     Error,
+}
+
+/// Return available assets contracts addresses for the given chain_id
+pub fn get_bridging_assets_contracts_for_chain(chain_id: &str) -> Vec<String> {
+    BRIDGING_AVAILABLE_ASSETS
+        .entries()
+        .filter_map(|(_token_symbol, chain_map)| {
+            chain_map
+                .entries()
+                .find(|(chain, _)| **chain == chain_id)
+                .map(|(_, contract_address)| contract_address.to_string())
+        })
+        .collect()
 }
 
 /// Check is the address is supported bridging asset
@@ -144,4 +167,103 @@ pub async fn check_bridging_for_erc20_transfer(
         }
     }
     Ok(None)
+}
+
+/// Compute the simulation state override balance for a given balance
+pub fn compute_simulation_balance(balance: u128) -> Bytes {
+    let raw_bytes = balance.to_be_bytes();
+    let mut padded = [0u8; 32];
+    padded[32 - raw_bytes.len()..].copy_from_slice(&raw_bytes);
+    Bytes::from(padded.to_vec())
+}
+
+/// Compute the storage slot for a given address and slot number to use in the
+/// simulation state overrides
+/// https://docs.tenderly.co/simulations/state-overrides#storage-slot-calculation
+pub fn compute_simulation_storage_slot(address: Address, slot_number: u64) -> Bytes {
+    let address_string = address.to_string();
+    let address_clean = address_string.trim_start_matches("0x").to_lowercase();
+    let padded_address = format!("{:0>64}", address_clean);
+    let slot_hex = format!("{:x}", slot_number);
+    let padded_slot = format!("{:0>64}", slot_hex);
+    let concatenated = format!("{}{}", padded_address, padded_slot);
+    let concatenated_bytes = hex::decode(concatenated).expect("Failed to decode hex");
+    let result = keccak256(concatenated_bytes);
+    Bytes::from(result.to_vec())
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Erc20AssetChange {
+    pub chain_id: String,
+    pub asset_contract: Address,
+    pub amount: U256,
+}
+
+/// Get the ERC20 assets changes from the transaction simulation result
+pub async fn get_assets_changes_from_simulation(
+    simulation_provider: Arc<dyn SimulationProvider>,
+    transaction: &Transaction,
+) -> Result<Vec<Erc20AssetChange>, RpcError> {
+    // Fill the state overrides for the source address for each of the supported
+    // assets on the initial tx chain
+    let state_overrides = {
+        let mut state_overrides = HashMap::new();
+        let assets_contracts =
+            get_bridging_assets_contracts_for_chain(&transaction.chain_id.clone());
+        let mut account_state = HashMap::new();
+        account_state.insert(
+            // Since we are using only USDC for the bridging,
+            // we can hardcode the storage slot for the contract which is 9
+            compute_simulation_storage_slot(transaction.from, 9),
+            compute_simulation_balance(99000000000),
+        );
+        for contract in assets_contracts {
+            state_overrides.insert(
+                Address::from_str(&contract).unwrap_or_default(),
+                account_state.clone(),
+            );
+        }
+        state_overrides
+    };
+
+    let simulation_result = &simulation_provider
+        .simulate_transaction(
+            transaction.chain_id.clone(),
+            transaction.from,
+            transaction.to,
+            transaction.data.clone(),
+            state_overrides,
+        )
+        .await?;
+
+    if simulation_result
+        .transaction
+        .transaction_info
+        .asset_changes
+        .is_none()
+    {
+        debug!("The transaction does not change any assets");
+        return Ok(vec![]);
+    }
+
+    let mut asset_changes = Vec::new();
+    for asset_changed in simulation_result
+        .transaction
+        .transaction_info
+        .asset_changes
+        .clone()
+        .unwrap_or_default()
+    {
+        if asset_changed.asset_type.clone() == AssetChangeType::Transfer
+            && asset_changed.token_info.standard.clone() == TokenStandard::Erc20
+        {
+            asset_changes.push(Erc20AssetChange {
+                chain_id: transaction.chain_id.clone(),
+                asset_contract: asset_changed.token_info.contract_address,
+                amount: asset_changed.raw_amount,
+            })
+        }
+    }
+
+    Ok(asset_changes)
 }
