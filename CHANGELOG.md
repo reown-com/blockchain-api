@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.143.0 - 2024-12-09
+#### Features
+- **(providers)** adding Solana mainnet to the Publicnode (#861) - (ef994e6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.142.1 - 2024-12-05
 #### Bug Fixes
 - **(CA)** adding an exclusion into the bridging assets search (#853) - (a456ae0) - Max Kalashnikoff | maksy.eth
