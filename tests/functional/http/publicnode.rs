@@ -1,6 +1,7 @@
 use {
     super::{
         check_if_rpc_is_responding_correctly_for_bitcoin,
+        check_if_rpc_is_responding_correctly_for_solana,
         check_if_rpc_is_responding_correctly_for_supported_chain,
     },
     crate::context::ServerContext,
@@ -165,6 +166,20 @@ async fn publicnode_provider_bitcoin(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_bitcoin(
         ctx,
         "000000000933ea01ad0ee984209779ba",
+        &provider,
+    )
+    .await;
+}
+
+#[test_context(ServerContext)]
+#[tokio::test]
+#[ignore]
+async fn quicknode_provider_solana(ctx: &mut ServerContext) {
+    let provider = ProviderKind::Publicnode;
+    // Solana mainnet
+    check_if_rpc_is_responding_correctly_for_solana(
+        ctx,
+        "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
         &provider,
     )
     .await;

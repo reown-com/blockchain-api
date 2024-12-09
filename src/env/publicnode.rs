@@ -165,5 +165,10 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Solana mainnet
+        (
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp".into(),
+            ("solana-rpc".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
     ])
 }
