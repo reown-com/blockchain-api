@@ -1,6 +1,6 @@
 use {
     crate::{error::RpcError, handlers::MessageSource, utils::crypto::get_erc20_contract_balance},
-    alloy::primitives::{Address, U256},
+    alloy::primitives::{utils::Unit, Address, U256},
     ethers::types::H160 as EthersH160,
     phf::phf_map,
     serde::{Deserialize, Serialize},
@@ -27,6 +27,7 @@ pub static BRIDGING_AVAILABLE_ASSETS: phf::Map<&'static str, phf::Map<&'static s
       "eip155:42161" => "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
   },
 };
+pub const USDC_DECIMALS: Unit = Unit::new(6).expect("Invalid decimals is used for USDC");
 
 /// The status polling interval in ms for the client
 pub const STATUS_POLLING_INTERVAL: u64 = 3000; // 3 seconds
@@ -92,6 +93,7 @@ pub struct BridgingAsset {
     pub chain_id: String,
     pub token_symbol: String,
     pub contract_address: Address,
+    pub decimals: Unit,
     pub current_balance: U256,
 }
 
@@ -139,6 +141,8 @@ pub async fn check_bridging_for_erc20_transfer(
                     token_symbol,
                     contract_address,
                     current_balance,
+                    // We are supporting only USDC for now which have a fixed decimals
+                    decimals: USDC_DECIMALS,
                 }));
             }
         }
