@@ -25,6 +25,15 @@ async fn infura_provider(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:137", "0x89")
         .await;
 
+    // Polygin Amoy
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:80002",
+        "0x13882",
+    )
+    .await;
+
     // Optimism mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:10", "0xa")
         .await;
@@ -98,6 +107,27 @@ async fn infura_provider(ctx: &mut ServerContext) {
         &provider,
         "eip155:84532",
         "0x14a34",
+    )
+    .await;
+
+    // BSC Mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:56", "0x38")
+        .await;
+
+    // BSC Testnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:97", "0x61")
+        .await;
+
+    // ZkSync Mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:324", "0x144")
+        .await;
+
+    // Unichain Sepolia
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:1301",
+        "0x515",
     )
     .await;
 }

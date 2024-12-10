@@ -88,6 +88,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::High).unwrap(),
             ),
         ),
+        // Polygon Amoy
+        (
+            "eip155:80002".into(),
+            (
+                "polygon-amoy".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
         // Celo
         (
             "eip155:42220".into(),
@@ -125,6 +133,32 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:84532".into(),
             (
                 "base-sepolia".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        // BSC Mainnet
+        (
+            "eip155:56".into(),
+            ("bsc-mainnet".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
+        // BSC Testnet
+        (
+            "eip155:97".into(),
+            ("bsc-testnet".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
+        // ZkSync Mainnet
+        (
+            "eip155:324".into(),
+            (
+                "zksync-mainnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        // Unichain Sepolia
+        (
+            "eip155:1301".into(),
+            (
+                "unichain-sepolia".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
