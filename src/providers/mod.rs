@@ -56,6 +56,7 @@ mod bungee;
 mod coinbase;
 mod getblock;
 mod infura;
+mod lava;
 mod mantle;
 pub mod mock_alto;
 mod near;
@@ -80,6 +81,7 @@ pub use {
     bungee::BungeeProvider,
     getblock::GetBlockProvider,
     infura::{InfuraProvider, InfuraWsProvider},
+    lava::LavaProvider,
     mantle::MantleProvider,
     near::NearProvider,
     one_inch::OneInchProvider,
@@ -122,6 +124,8 @@ pub struct ProvidersConfig {
     pub solscan_api_v2_token: String,
     /// Bungee API key
     pub bungee_api_key: String,
+    /// Lava API key
+    pub lava_api_key: String,
 
     pub override_bundler_urls: Option<MockAltoUrls>,
 }
@@ -491,6 +495,7 @@ pub enum ProviderKind {
     GetBlock,
     SolScan,
     Unichain,
+    Lava,
 }
 
 impl Display for ProviderKind {
@@ -519,6 +524,7 @@ impl Display for ProviderKind {
                 ProviderKind::GetBlock => "GetBlock",
                 ProviderKind::SolScan => "SolScan",
                 ProviderKind::Unichain => "Unichain",
+                ProviderKind::Lava => "Lava",
             }
         )
     }
@@ -548,6 +554,7 @@ impl ProviderKind {
             "GetBlock" => Some(Self::GetBlock),
             "SolScan" => Some(Self::SolScan),
             "Unichain" => Some(Self::Unichain),
+            "Lava" => Some(Self::Lava),
             _ => None,
         }
     }

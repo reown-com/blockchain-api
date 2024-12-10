@@ -19,17 +19,17 @@ use {
     },
     env::{
         ArbitrumConfig, AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig, GetBlockConfig,
-        InfuraConfig, MantleConfig, NearConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
-        UnichainConfig, ZKSyncConfig, ZoraConfig,
+        InfuraConfig, LavaConfig, MantleConfig, NearConfig, PoktConfig, PublicnodeConfig,
+        QuicknodeConfig, UnichainConfig, ZKSyncConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
         ArbitrumProvider, AuroraProvider, BaseProvider, BerachainProvider, BinanceProvider,
-        GetBlockProvider, InfuraProvider, InfuraWsProvider, MantleProvider, NearProvider,
-        PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider, UnichainProvider,
-        ZKSyncProvider, ZoraProvider, ZoraWsProvider,
+        GetBlockProvider, InfuraProvider, InfuraWsProvider, LavaProvider, MantleProvider,
+        NearProvider, PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider,
+        UnichainProvider, ZKSyncProvider, ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -486,6 +486,8 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_provider::<MantleProvider, MantleConfig>(MantleConfig::default());
     providers.add_provider::<BerachainProvider, BerachainConfig>(BerachainConfig::default());
     providers.add_provider::<UnichainProvider, UnichainConfig>(UnichainConfig::default());
+    providers
+        .add_provider::<LavaProvider, LavaConfig>(LavaConfig::new(config.lava_api_key.clone()));
 
     if let Some(getblock_access_tokens) = &config.getblock_access_tokens {
         providers.add_provider::<GetBlockProvider, GetBlockConfig>(GetBlockConfig::new(

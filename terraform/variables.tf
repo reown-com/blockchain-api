@@ -151,6 +151,12 @@ variable "bungee_api_key" {
   sensitive   = true
 }
 
+variable "lava_api_key" {
+  description = "Lava API key"
+  type        = string
+  sensitive   = true
+}
+
 variable "testing_project_id" {
   description = "Project ID used in a testing suite"
   type        = string

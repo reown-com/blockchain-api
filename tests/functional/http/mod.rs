@@ -13,6 +13,7 @@ pub(crate) mod berachain;
 pub(crate) mod binance;
 pub(crate) mod getblock;
 pub(crate) mod infura;
+pub(crate) mod lava;
 pub(crate) mod mantle;
 pub(crate) mod near;
 pub(crate) mod pokt;
