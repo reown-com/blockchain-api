@@ -10333,7 +10333,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?branch=feat%2Ffungible-metadata-amount-utils#74e1a61af5f4a6abc05f08fd1e5ddc353cdceeec"
+source = "git+https://github.com/reown-com/yttrium.git?rev=65928ebce99862cb6fe3cc8468fb7add2aaf5a3e#65928ebce99862cb6fe3cc8468fb7add2aaf5a3e"
 dependencies = [
  "alloy 0.6.4",
  "alloy-provider 0.6.4",
