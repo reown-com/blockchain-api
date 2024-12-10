@@ -141,6 +141,7 @@ async fn handler_internal(
     let bridge_chain_id = bridging_asset.chain_id;
     let bridge_token_symbol = bridging_asset.token_symbol;
     let bridge_contract = bridging_asset.contract_address;
+    let bridge_decimals = bridging_asset.decimals;
     let current_bridging_asset_balance = bridging_asset.current_balance;
 
     // Get Quotes for the bridging
@@ -340,6 +341,7 @@ async fn handler_internal(
                     symbol: bridge_token_symbol,
                     amount: bridging_amount,
                     bridging_fee: final_bridging_fee,
+                    decimals: bridge_decimals,
                 }],
                 check_in: STATUS_POLLING_INTERVAL,
             },
