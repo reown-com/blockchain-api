@@ -75,6 +75,7 @@ module "ecs" {
   pimlico_api_key        = var.pimlico_api_key
   solscan_api_v2_token   = var.solscan_api_v2_token
   bungee_api_key         = var.bungee_api_key
+  lava_api_key           = var.lava_api_key
 
   # Project Registry
   registry_api_endpoint   = var.registry_api_endpoint
