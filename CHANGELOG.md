@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.146.0 - 2024-12-10
+#### Features
+- **(providers)** updating Infura provider endpoints (#863) - (2adf225) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.145.0 - 2024-12-10
 #### Features
 - **(providers)** adding Lava provider RPC endpoins (#862) - (1c1717b) - Max Kalashnikoff | maksy.eth
