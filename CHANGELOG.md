@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.144.0 - 2024-12-10
+#### Features
+- **(CA)** adding funding from decimals (#860) - (63ab4e9) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.143.0 - 2024-12-09
 #### Features
 - **(providers)** adding Solana mainnet to the Publicnode (#861) - (ef994e6) - Max Kalashnikoff | maksy.eth
