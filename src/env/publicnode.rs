@@ -38,7 +38,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Ethereum mainnet
         (
             "eip155:1".into(),
-            ("ethereum".into(), Weight::new(Priority::High).unwrap()),
+            ("ethereum-rpc".into(), Weight::new(Priority::High).unwrap()),
         ),
         // Ethereum Sepolia
         (
@@ -59,7 +59,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Base mainnet
         (
             "eip155:8453".into(),
-            ("base".into(), Weight::new(Priority::High).unwrap()),
+            ("base-rpc".into(), Weight::new(Priority::High).unwrap()),
         ),
         // Base Sepolia
         (
@@ -72,18 +72,21 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Binance Smart Chain mainnet
         (
             "eip155:56".into(),
-            ("bsc".into(), Weight::new(Priority::High).unwrap()),
+            ("bsc-rpc".into(), Weight::new(Priority::High).unwrap()),
         ),
         // Binance Smart Chain testnet
         (
             "eip155:97".into(),
-            ("bsc-testnet".into(), Weight::new(Priority::High).unwrap()),
+            (
+                "bsc-testnet-rpc".into(),
+                Weight::new(Priority::High).unwrap(),
+            ),
         ),
         // Avalanche c chain
         (
             "eip155:43114".into(),
             (
-                "avalanche-c-chain".into(),
+                "avalanche-c-chain-rpc".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
@@ -91,14 +94,17 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         (
             "eip155:43113".into(),
             (
-                "avalanche-fuji-c-chain".into(),
+                "avalanche-fuji-c-chain-rpc".into(),
                 Weight::new(Priority::High).unwrap(),
             ),
         ),
         // Polygon bor mainnet
         (
             "eip155:137".into(),
-            ("polygon-bor".into(), Weight::new(Priority::Normal).unwrap()),
+            (
+                "polygon-bor-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Polygon bor amoy testnet
         (
@@ -149,6 +155,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:42161".into(),
             (
                 "arbitrum-one-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        // Berachain bArtio testnet
+        (
+            "eip155:80084".into(),
+            (
+                "berachain-testnet-evm-rpc".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
