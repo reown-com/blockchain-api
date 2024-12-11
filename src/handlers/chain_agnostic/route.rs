@@ -1,8 +1,8 @@
 use {
     super::{
         super::HANDLER_TASK_METRICS, check_bridging_for_erc20_transfer,
-        is_supported_bridging_asset, BridgingStatus, StorageBridgingItem, BRIDGING_AMOUNT_SLIPPAGE,
-        STATUS_POLLING_INTERVAL,
+        find_supported_bridging_asset, BridgingStatus, StorageBridgingItem,
+        BRIDGING_AMOUNT_SLIPPAGE, STATUS_POLLING_INTERVAL,
     },
     crate::{
         analytics::MessageSource,
@@ -31,9 +31,9 @@ use {
     wc::future::FutureExt,
     yttrium::chain_abstraction::api::{
         route::{
-            BridgingError, FundingMetadata, Metadata, RouteQueryParams, RouteRequest,
-            RouteResponse, RouteResponseAvailable, RouteResponseError, RouteResponseNotRequired,
-            RouteResponseSuccess,
+            BridgingError, FundingMetadata, InitialTransactionMetadata, Metadata, RouteQueryParams,
+            RouteRequest, RouteResponse, RouteResponseAvailable, RouteResponseError,
+            RouteResponseNotRequired, RouteResponseSuccess,
         },
         Transaction,
     },
@@ -98,13 +98,18 @@ async fn handler_internal(
     }
 
     // Check if the destination address is supported ERC20 asset contract
-    if !is_supported_bridging_asset(request_payload.transaction.chain_id.clone(), to_address) {
-        error!("The destination address is not a supported bridging asset contract");
-        return Ok(no_bridging_needed_response.into_response());
-    }
+    // Attempt to destructure the result into symbol and decimals using a match expression
+    let (initial_tx_token_symbol, initial_tx_token_decimals) =
+        match find_supported_bridging_asset(&request_payload.transaction.chain_id, to_address) {
+            Some((symbol, decimals)) => (symbol, decimals),
+            None => {
+                error!("The destination address is not a supported bridging asset contract");
+                return Ok(no_bridging_needed_response.into_response());
+            }
+        };
 
     // Decode the ERC20 transfer function data
-    let (_erc20_receiver, erc20_transfer_value) = decode_erc20_transfer_data(&transaction_data)?;
+    let (erc20_receiver, erc20_transfer_value) = decode_erc20_transfer_data(&transaction_data)?;
 
     // Get the current balance of the ERC20 token and check if it's enough for the transfer
     // without bridging or calculate the top-up value
@@ -344,6 +349,13 @@ async fn handler_internal(
                     decimals: bridge_decimals,
                 }],
                 check_in: STATUS_POLLING_INTERVAL,
+                initial_transaction: InitialTransactionMetadata {
+                    transfer_to: erc20_receiver,
+                    amount: erc20_transfer_value,
+                    token_contract: to_address,
+                    symbol: initial_tx_token_symbol,
+                    decimals: initial_tx_token_decimals,
+                },
             },
         },
     )))
