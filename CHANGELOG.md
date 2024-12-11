@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.148.0 - 2024-12-11
+#### Features
+- **(providers)** updating Publicnode RPC endpoints (#865) - (9f936db) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.147.0 - 2024-12-11
 #### Features
 - **(CA)** filling initial transaction metadata (#864) - (52c80b7) - Max Kalashnikoff | maksy.eth
