@@ -146,6 +146,15 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
         "0xa4b1",
     )
     .await;
+
+    // Berachain Bartio
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:80084",
+        "0x138d4",
+    )
+    .await;
 }
 
 #[test_context(ServerContext)]
