@@ -10333,7 +10333,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?rev=65928ebce99862cb6fe3cc8468fb7add2aaf5a3e#65928ebce99862cb6fe3cc8468fb7add2aaf5a3e"
+source = "git+https://github.com/reown-com/yttrium.git?rev=58f2d00e03f36f65d2138c1693fb931afab450f1#58f2d00e03f36f65d2138c1693fb931afab450f1"
 dependencies = [
  "alloy 0.6.4",
  "alloy-provider 0.6.4",

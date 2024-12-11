@@ -187,6 +187,11 @@ describe('Chain abstraction orchestrator', () => {
     if (BigInt(fundingFrom.bridgingFee) != BigInt(fundingFrom.amount - amount_to_topup)){
       throw new Error(`Expected bridging fee is incorrect. `);
     }
+    // Check the metadata initialTransaction
+    const initialTransaction = data.metadata.initialTransaction
+    expect(initialTransaction.symbol).toBe(usdc_token_symbol)
+    expect(initialTransaction.transferTo).toBe(receiver_address.toLowerCase())
+    expect(initialTransaction.tokenContract).toBe(usdc_contract_optimism.toLowerCase())
 
     // Check the metadata checkIn
     expect(typeof data.metadata.checkIn).toBe('number')

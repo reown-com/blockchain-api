@@ -1,6 +1,6 @@
 use {
     crate::{error::RpcError, handlers::MessageSource, utils::crypto::get_erc20_contract_balance},
-    alloy::primitives::{utils::Unit, Address, U256},
+    alloy::primitives::{Address, U256},
     ethers::types::H160 as EthersH160,
     phf::phf_map,
     serde::{Deserialize, Serialize},
@@ -27,7 +27,7 @@ pub static BRIDGING_AVAILABLE_ASSETS: phf::Map<&'static str, phf::Map<&'static s
       "eip155:42161" => "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
   },
 };
-pub const USDC_DECIMALS: Unit = Unit::new(6).expect("Invalid decimals is used for USDC");
+pub const USDC_DECIMALS: u8 = 6;
 
 /// The status polling interval in ms for the client
 pub const STATUS_POLLING_INTERVAL: u64 = 3000; // 3 seconds
@@ -55,14 +55,18 @@ pub enum BridgingStatus {
     Error,
 }
 
-/// Check is the address is supported bridging asset
-pub fn is_supported_bridging_asset(chain_id: String, contract: Address) -> bool {
-    BRIDGING_AVAILABLE_ASSETS.entries().any(|(_, chain_map)| {
-        chain_map.entries().any(|(chain, contract_address)| {
-            *chain == chain_id
+/// Check is the address is supported bridging asset and return the token symbol and decimals
+pub fn find_supported_bridging_asset(chain_id: &str, contract: Address) -> Option<(String, u8)> {
+    for (symbol, chain_map) in BRIDGING_AVAILABLE_ASSETS.entries() {
+        for (chain, contract_address) in chain_map.entries() {
+            if *chain == chain_id
                 && contract == Address::from_str(contract_address).unwrap_or_default()
-        })
-    })
+            {
+                return Some((symbol.to_string(), USDC_DECIMALS));
+            }
+        }
+    }
+    None
 }
 
 /// Checking ERC20 balances for given address for provided ERC20 contracts
@@ -93,7 +97,7 @@ pub struct BridgingAsset {
     pub chain_id: String,
     pub token_symbol: String,
     pub contract_address: Address,
-    pub decimals: Unit,
+    pub decimals: u8,
     pub current_balance: U256,
 }
 
