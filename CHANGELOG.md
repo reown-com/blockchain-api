@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.150.0 - 2024-12-12
+#### Features
+- **(provider)** adding Morph native RPC endpoints (#867) - (fa21fa4) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.149.0 - 2024-12-12
 #### Bug Fixes
 - **(tests)** changing Eth address for tests (#866) - (d1a70fe) - Max Kalashnikoff | maksy.eth
