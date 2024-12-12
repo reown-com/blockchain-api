@@ -26,7 +26,7 @@ use {
         Metrics,
     },
     alloy::{
-        primitives::{Address, U256},
+        primitives::{Address, Bytes, B256, U256},
         rpc::json_rpc::Id,
     },
     async_trait::async_trait,
@@ -66,6 +66,7 @@ mod pokt;
 mod publicnode;
 mod quicknode;
 mod solscan;
+pub mod tenderly;
 mod unichain;
 mod weights;
 pub mod zerion;
@@ -90,6 +91,7 @@ pub use {
     publicnode::PublicnodeProvider,
     quicknode::QuicknodeProvider,
     solscan::SolScanProvider,
+    tenderly::TenderlyProvider,
     unichain::UnichainProvider,
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
@@ -126,6 +128,12 @@ pub struct ProvidersConfig {
     pub bungee_api_key: String,
     /// Lava API key
     pub lava_api_key: String,
+    /// Tenderly API key
+    pub tenderly_api_key: String,
+    /// Tenderly Account ID
+    pub tenderly_account_id: String,
+    /// Tenderly Project ID
+    pub tenderly_project_id: String,
 
     pub override_bundler_urls: Option<MockAltoUrls>,
 }
@@ -157,6 +165,7 @@ pub struct ProviderRepository {
     pub fungible_price_providers: HashMap<CaipNamespaces, Arc<dyn FungiblePriceProvider>>,
     pub bundler_ops_provider: Arc<dyn BundlerOpsProvider>,
     pub chain_orchestrator_provider: Arc<dyn ChainOrchestrationProvider>,
+    pub simulation_provider: Arc<dyn SimulationProvider>,
 }
 
 impl ProviderRepository {
@@ -268,6 +277,11 @@ impl ProviderRepository {
 
         let chain_orchestrator_provider =
             Arc::new(BungeeProvider::new(config.bungee_api_key.clone()));
+        let simulation_provider = Arc::new(TenderlyProvider::new(
+            config.tenderly_api_key.clone(),
+            config.tenderly_account_id.clone(),
+            config.tenderly_project_id.clone(),
+        ));
 
         Self {
             supported_chains: SupportedChains {
@@ -289,6 +303,7 @@ impl ProviderRepository {
             fungible_price_providers,
             bundler_ops_provider,
             chain_orchestrator_provider,
+            simulation_provider,
         }
     }
 
@@ -496,6 +511,7 @@ pub enum ProviderKind {
     SolScan,
     Unichain,
     Lava,
+    Tenderly,
 }
 
 impl Display for ProviderKind {
@@ -525,6 +541,7 @@ impl Display for ProviderKind {
                 ProviderKind::SolScan => "SolScan",
                 ProviderKind::Unichain => "Unichain",
                 ProviderKind::Lava => "Lava",
+                ProviderKind::Tenderly => "Tenderly",
             }
         )
     }
@@ -555,6 +572,7 @@ impl ProviderKind {
             "SolScan" => Some(Self::SolScan),
             "Unichain" => Some(Self::Unichain),
             "Lava" => Some(Self::Lava),
+            "Tenderly" => Some(Self::Tenderly),
             _ => None,
         }
     }
@@ -842,4 +860,17 @@ pub trait ChainOrchestrationProvider: Send + Sync + Debug {
         amount: U256,
         metrics: Arc<Metrics>,
     ) -> Result<bungee::BungeeApprovalTx, RpcError>;
+}
+
+/// Provider for the transaction simulation
+#[async_trait]
+pub trait SimulationProvider: Send + Sync + Debug {
+    async fn simulate_transaction(
+        &self,
+        chain_id: String,
+        from: Address,
+        to: Address,
+        input: Bytes,
+        state_overrides: HashMap<Address, HashMap<B256, B256>>,
+    ) -> Result<tenderly::SimulationResponse, RpcError>;
 }

@@ -175,6 +175,15 @@ mod test {
             ),
             ("RPC_PROXY_PROVIDER_BUNGEE_API_KEY", "BUNGEE_API_KEY"),
             ("RPC_PROXY_PROVIDER_LAVA_API_KEY", "LAVA_API_KEY"),
+            ("RPC_PROXY_PROVIDER_TENDERLY_API_KEY", "TENDERLY_KEY"),
+            (
+                "RPC_PROXY_PROVIDER_TENDERLY_ACCOUNT_ID",
+                "TENDERLY_ACCOUNT_ID",
+            ),
+            (
+                "RPC_PROXY_PROVIDER_TENDERLY_PROJECT_ID",
+                "TENDERLY_PROJECT_ID",
+            ),
             (
                 "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL",
                 "PROMETHEUS_QUERY_URL",
@@ -277,6 +286,9 @@ mod test {
                     solscan_api_v2_token: "SOLSCAN_API_V2_TOKEN".to_string(),
                     bungee_api_key: "BUNGEE_API_KEY".to_string(),
                     lava_api_key: "LAVA_API_KEY".to_string(),
+                    tenderly_api_key: "TENDERLY_KEY".to_string(),
+                    tenderly_account_id: "TENDERLY_ACCOUNT_ID".to_string(),
+                    tenderly_project_id: "TENDERLY_PROJECT_ID".to_string(),
                     override_bundler_urls: None,
                 },
                 rate_limiting: RateLimitingConfig {

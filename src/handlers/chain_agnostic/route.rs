@@ -1,8 +1,8 @@
 use {
     super::{
         super::HANDLER_TASK_METRICS, check_bridging_for_erc20_transfer,
-        find_supported_bridging_asset, BridgingStatus, StorageBridgingItem,
-        BRIDGING_AMOUNT_SLIPPAGE, STATUS_POLLING_INTERVAL,
+        find_supported_bridging_asset, get_assets_changes_from_simulation, BridgingStatus,
+        StorageBridgingItem, BRIDGING_AMOUNT_SLIPPAGE, STATUS_POLLING_INTERVAL,
     },
     crate::{
         analytics::MessageSource,
@@ -10,11 +10,11 @@ use {
         state::AppState,
         storage::irn::OperationType,
         utils::crypto::{
-            convert_alloy_address_to_h160, decode_erc20_function_type, decode_erc20_transfer_data,
-            get_erc20_balance, get_gas_price, get_nonce, Erc20FunctionType,
+            convert_alloy_address_to_h160, decode_erc20_transfer_data, get_erc20_balance,
+            get_gas_price, get_nonce,
         },
     },
-    alloy::primitives::{U256, U64},
+    alloy::primitives::{Address, U256, U64},
     axum::{
         extract::{Query, State},
         response::{IntoResponse, Response},
@@ -89,13 +89,69 @@ async fn handler_internal(
         );
         return Ok(no_bridging_needed_response.into_response());
     }
+    let transaction_data = initial_transaction.data.clone();
 
-    // Check if the ERC20 function is the `transfer` function
-    let transaction_data = request_payload.transaction.data;
-    if decode_erc20_function_type(&transaction_data)? != Erc20FunctionType::Transfer {
-        debug!("The transaction data is not a transfer function");
-        return Ok(no_bridging_needed_response.into_response());
-    }
+    // Decode the ERC20 transfer function data or use the simulation
+    // to get the transfer asset and amount
+    let (asset_transfer_contract, asset_transfer_value, asset_transfer_receiver) =
+        match decode_erc20_transfer_data(&transaction_data) {
+            Ok((receiver, erc20_transfer_value)) => {
+                debug!(
+                    "The transaction is an ERC20 transfer with value: {:?}",
+                    erc20_transfer_value
+                );
+
+                // Check if the destination address is supported ERC20 asset contract
+                if find_supported_bridging_asset(
+                    &request_payload.transaction.chain_id.clone(),
+                    to_address,
+                )
+                .is_none()
+                {
+                    error!("The destination address is not a supported bridging asset contract");
+                    return Ok(no_bridging_needed_response.into_response());
+                };
+
+                (to_address, erc20_transfer_value, receiver)
+            }
+            _ => {
+                debug!(
+                    "The transaction data is not an ERC20 transfer function, making a simulation"
+                );
+
+                let simulation_assets_changes = get_assets_changes_from_simulation(
+                    state.providers.simulation_provider.clone(),
+                    &initial_transaction,
+                )
+                .await?;
+                let mut asset_transfer_value = U256::ZERO;
+                let mut asset_transfer_contract = Address::default();
+                let mut asset_transfer_receiver = Address::default();
+                for asset_change in simulation_assets_changes {
+                    if find_supported_bridging_asset(
+                        &asset_change.chain_id.clone(),
+                        asset_change.asset_contract,
+                    )
+                    .is_some()
+                    {
+                        asset_transfer_contract = asset_change.asset_contract;
+                        asset_transfer_value = asset_change.amount;
+                        asset_transfer_receiver = asset_change.receiver;
+                        break;
+                    }
+                }
+                if asset_transfer_value.is_zero() {
+                    error!("The transaction does not change any supported bridging assets");
+                    return Ok(no_bridging_needed_response.into_response());
+                }
+
+                (
+                    asset_transfer_contract,
+                    asset_transfer_value,
+                    asset_transfer_receiver,
+                )
+            }
+        };
 
     // Check if the destination address is supported ERC20 asset contract
     // Attempt to destructure the result into symbol and decimals using a match expression
@@ -108,24 +164,21 @@ async fn handler_internal(
             }
         };
 
-    // Decode the ERC20 transfer function data
-    let (erc20_receiver, erc20_transfer_value) = decode_erc20_transfer_data(&transaction_data)?;
-
     // Get the current balance of the ERC20 token and check if it's enough for the transfer
     // without bridging or calculate the top-up value
     let erc20_balance = get_erc20_balance(
         &request_payload.transaction.chain_id,
-        convert_alloy_address_to_h160(to_address),
+        convert_alloy_address_to_h160(asset_transfer_contract),
         convert_alloy_address_to_h160(from_address),
         query_params.project_id.as_ref(),
         MessageSource::ChainAgnosticCheck,
     )
     .await?;
     let erc20_balance = U256::from_be_bytes(erc20_balance.into());
-    if erc20_balance >= erc20_transfer_value {
+    if erc20_balance >= asset_transfer_value {
         return Ok(no_bridging_needed_response.into_response());
     }
-    let erc20_topup_value = erc20_transfer_value - erc20_balance;
+    let erc20_topup_value = asset_transfer_value - erc20_balance;
 
     // Check for possible bridging funds by iterating over supported assets
     // or return an insufficient funds error
@@ -134,7 +187,7 @@ async fn handler_internal(
         erc20_topup_value,
         from_address,
         initial_transaction.chain_id.clone(),
-        to_address,
+        asset_transfer_contract,
     )
     .await?
     else {
@@ -157,7 +210,7 @@ async fn handler_internal(
             bridge_chain_id.clone(),
             bridge_contract,
             request_payload.transaction.chain_id.clone(),
-            to_address,
+            asset_transfer_contract,
             erc20_topup_value,
             from_address,
             state.metrics.clone(),
@@ -196,7 +249,7 @@ async fn handler_internal(
             bridge_chain_id.clone(),
             bridge_contract,
             request_payload.transaction.chain_id.clone(),
-            to_address,
+            asset_transfer_contract,
             required_topup_amount,
             from_address,
             state.metrics.clone(),
@@ -318,7 +371,7 @@ async fn handler_internal(
         wallet: from_address,
         contract: to_address,
         amount_current: erc20_balance, // The current balance of the ERC20 token
-        amount_expected: erc20_transfer_value, // The total transfer amount expected
+        amount_expected: asset_transfer_value, // The total transfer amount expected
         status: BridgingStatus::Pending,
         error_reason: None,
     };
@@ -350,8 +403,8 @@ async fn handler_internal(
                 }],
                 check_in: STATUS_POLLING_INTERVAL,
                 initial_transaction: InitialTransactionMetadata {
-                    transfer_to: erc20_receiver,
-                    amount: erc20_transfer_value,
+                    transfer_to: asset_transfer_receiver,
+                    amount: asset_transfer_value,
                     token_contract: to_address,
                     symbol: initial_tx_token_symbol,
                     decimals: initial_tx_token_decimals,
