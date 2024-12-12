@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.149.0 - 2024-12-12
+#### Bug Fixes
+- **(tests)** changing Eth address for tests (#866) - (d1a70fe) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(CA)** adding transaction simulation (#859) - (85d9ed5) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.148.0 - 2024-12-11
 #### Features
 - **(providers)** updating Publicnode RPC endpoints (#865) - (9f936db) - Max Kalashnikoff | maksy.eth
