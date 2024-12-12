@@ -59,6 +59,7 @@ mod infura;
 mod lava;
 mod mantle;
 pub mod mock_alto;
+mod morph;
 mod near;
 mod one_inch;
 mod pimlico;
@@ -84,6 +85,7 @@ pub use {
     infura::{InfuraProvider, InfuraWsProvider},
     lava::LavaProvider,
     mantle::MantleProvider,
+    morph::MorphProvider,
     near::NearProvider,
     one_inch::OneInchProvider,
     pimlico::PimlicoProvider,
@@ -511,6 +513,7 @@ pub enum ProviderKind {
     SolScan,
     Unichain,
     Lava,
+    Morph,
     Tenderly,
 }
 
@@ -541,6 +544,7 @@ impl Display for ProviderKind {
                 ProviderKind::SolScan => "SolScan",
                 ProviderKind::Unichain => "Unichain",
                 ProviderKind::Lava => "Lava",
+                ProviderKind::Morph => "Morph",
                 ProviderKind::Tenderly => "Tenderly",
             }
         )
@@ -572,6 +576,7 @@ impl ProviderKind {
             "SolScan" => Some(Self::SolScan),
             "Unichain" => Some(Self::Unichain),
             "Lava" => Some(Self::Lava),
+            "Morph" => Some(Self::Morph),
             "Tenderly" => Some(Self::Tenderly),
             _ => None,
         }
