@@ -3,7 +3,7 @@ import { getTestSetup } from './init';
 describe('Account balance', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
 
-  const fulfilled_eth_address = '0xf3ea39310011333095CFCcCc7c4Ad74034CABA63'
+  const fulfilled_eth_address = '0x2aae531a81461f029cd55cb46703211c9227ba05'
   const fulfilled_solana_address = '5PUrktzVvJPNFYpxNzFkGp4a5Dcj1Dduif5dAzuUUhsr'
 
   const empty_eth_address = '0x5b6262592954B925B510651462b63ddEbcc22eaD'
