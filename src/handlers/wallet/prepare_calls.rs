@@ -6,7 +6,6 @@ use crate::handlers::sessions::get::{
 use crate::handlers::wallet::types::SignatureRequestType;
 use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
 use alloy::network::{Ethereum, Network};
-use alloy::primitives::aliases::U192;
 use alloy::primitives::{address, bytes, keccak256, Address, Bytes, FixedBytes, B256, U256, U64};
 use alloy::providers::{Provider, ReqwestProvider};
 use alloy::sol_types::SolCall;
@@ -21,8 +20,11 @@ use url::Url;
 use uuid::Uuid;
 use wc::future::FutureExt;
 use yttrium::bundler::pimlico::paymaster::client::PaymasterClient;
+use yttrium::erc7579::accounts::safe::encode_validator_key;
 use yttrium::erc7579::smart_sessions::ISmartSession::isPermissionEnabledReturn;
-use yttrium::erc7579::smart_sessions::{enableSessionSigCall, EnableSession, ISmartSession};
+use yttrium::erc7579::smart_sessions::{
+    enableSessionSigCall, encode_use_signature, EnableSession, ISmartSession, SmartSessionMode,
+};
 use yttrium::smart_accounts::account_address::AccountAddress;
 use yttrium::{
     bundler::{config::BundlerConfig, pimlico::client::BundlerClient},
@@ -235,7 +237,7 @@ async fn handler_internal(
             &provider,
             request.from,
             &entry_point_config.address(),
-            key_from_validator_address(validator_address),
+            encode_validator_key(validator_address),
         )
         .await
         .map_err(|e| PrepareCallsError::InternalError(PrepareCallsInternalError::GetNonce(e)))?;
@@ -351,14 +353,6 @@ pub fn split_permissions_context_and_check_validator(
     Ok((validator_address, signature))
 }
 
-fn key_from_validator_address(validator_address: Address) -> U192 {
-    U192::from_be_bytes({
-        let mut key = [0u8; 24];
-        key[..20].copy_from_slice(&validator_address.into_array());
-        key
-    })
-}
-
 // https://github.com/rhinestonewtf/module-sdk/blob/18ef7ca998c0d0a596572f18575e1b4967d9227b/src/account/types.ts#L4
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AccountType {
@@ -385,11 +379,6 @@ pub struct DecodedSmartSessionSignature {
     pub enable_session_data: EnableSessionData,
 }
 
-// https://github.com/rhinestonewtf/module-sdk/blob/18ef7ca998c0d0a596572f18575e1b4967d9227b/src/module/smart-sessions/types.ts#L42
-const MODE_USE: u8 = 0x00;
-const MODE_ENABLE: u8 = 0x01;
-const MODE_UNSAFE_ENABLE: u8 = 0x02;
-
 // https://github.com/rhinestonewtf/module-sdk/blob/main/src/module/smart-sessions/constants.ts#L3
 const SMART_SESSIONS_ADDRESS: Address = address!("DDFF43A42726df11E34123f747bDce0f755F784d");
 
@@ -400,10 +389,12 @@ pub fn decode_smart_session_signature(
 ) -> Result<DecodedSmartSessionSignature, PrepareCallsError> {
     let mode = signature
         .first()
-        .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?;
+        .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?
+        .try_into()
+        .map_err(|_| PrepareCallsError::PermissionContextInvalidMode)?;
 
-    match *mode {
-        MODE_USE => {
+    match mode {
+        SmartSessionMode::Use => {
             let _permission_id: B256 = signature
                 .get(1..33)
                 .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?
@@ -415,7 +406,7 @@ pub fn decode_smart_session_signature(
             // We aren't implementing this currently because it doesn't return the needed value (enableSessionData)
             Err(PrepareCallsError::PermissionContextUnsupportedModeUse)
         }
-        MODE_ENABLE | MODE_UNSAFE_ENABLE => {
+        SmartSessionMode::Enable | SmartSessionMode::UnsafeEnable => {
             let compressed_data = signature
                 .get(1..)
                 .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?;
@@ -465,7 +456,6 @@ pub fn decode_smart_session_signature(
                 },
             })
         }
-        _ => Err(PrepareCallsError::PermissionContextInvalidMode),
     }
 }
 
@@ -494,32 +484,12 @@ where
         })?;
 
     let signature = if session_enabled {
-        encode_use_signature(permission_id, signature)?
+        encode_use_signature(permission_id, signature.into())
     } else {
         encode_enable_signature(account_type, signature, enable_session_data)?
     };
 
     Ok(signature)
-}
-
-fn encode_use_signature(
-    permission_id: FixedBytes<32>,
-    signature: Vec<u8>,
-) -> Result<Bytes, PrepareCallsError> {
-    let signature = signature.abi_encode();
-    let mut compress_state = fastlz_rs::CompressState::new();
-    let compressed = Bytes::from(
-        compress_state
-            .compress_to_vec(&signature, fastlz_rs::CompressionLevel::Level1)
-            .map_err(|e| {
-                PrepareCallsError::InternalError(PrepareCallsInternalError::CompressSessionEnabled(
-                    e,
-                ))
-            })?,
-    );
-    Ok((FixedBytes::from(MODE_USE), permission_id, compressed)
-        .abi_encode_packed()
-        .into())
 }
 
 fn encode_enable_signature_before_compress(
@@ -572,7 +542,10 @@ fn encode_enable_signature(
                 ))
             })?,
     );
-    Ok((FixedBytes::from(MODE_ENABLE), compressed)
+    Ok((
+        FixedBytes::from(SmartSessionMode::Enable.to_u8()),
+        compressed,
+    )
         .abi_encode_packed()
         .into())
 }
@@ -660,22 +633,12 @@ mod tests {
     };
 
     #[test]
-    fn test_key_from_validator_address() {
-        let validator_address = address!("abababababababababababababababababababab");
-        let key = key_from_validator_address(validator_address);
-        assert_eq!(
-            key.to_be_bytes_vec(),
-            bytes!("abababababababababababababababababababab00000000").to_vec()
-        );
-    }
-
-    #[test]
     fn test_encode_use_signature() {
         assert_eq!(
             encode_use_signature(
                 fixed_bytes!("2ec3eb29f3b075c8fed3fb0585947b5f1ae50c2fbe2f8274918bed889f69e342"),
-                bytes!("00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c00000000000000000000000000000000000000000000000000000000000000").to_vec()
-            ).unwrap(),
+                bytes!("00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c00000000000000000000000000000000000000000000000000000000000000")
+            ),
             bytes!("002ec3eb29f3b075c8fed3fb0585947b5f1ae50c2fbe2f8274918bed889f69e3420000e015000020e0151e010180e0151fe0173f0100022003e013000040e0131c200000c02003e013001f41e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfc1fb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839a01f51ce0135de01900e0587f"),
         );
     }
