@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.151.0 - 2024-12-13
+#### Features
+- **(CA)** implementing cached gas estimation for the initial transaction (#869) - (0d1c3dc) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- upgrade alloy & refactor functions into yttrium (#868) - (920428d) - Chris Smith
+
+- - -
+
 ## 0.150.1 - 2024-12-13
 #### Bug Fixes
 - **(tenderly)** making decimals optional in the schema (#870) - (2308f4d) - Max Kalashnikoff | maksy.eth
