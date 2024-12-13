@@ -13,7 +13,7 @@ build = "build.rs"
 [dependencies]
 wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.9.0", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock", "rate_limit"] }
 relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", tag = "v0.32.0", features = ["cacao"] }
-yttrium = { git = "https://github.com/reown-com/yttrium.git", rev = "58f2d00e03f36f65d2138c1693fb931afab450f1" }
+yttrium = { git = "https://github.com/reown-com/yttrium.git", rev = "0684124" }
 
 # Async
 async-trait = "0.1.82"
@@ -81,7 +81,8 @@ rand = "0.8.5"
 rand_core = "0.6"
 prometheus-http-query = "0.6.6"
 ethers = { version = "2.0.11", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
-alloy = { version = "0.6.1", features = ["providers", "json-rpc"] }
+alloy = { version = "0.7.3", features = ["providers", "json-rpc"] }
+fastlz-rs = "0.0.3"
 
 bytes = "1.7.1"
 data-encoding = "2.6.0"
@@ -94,7 +95,6 @@ uuid = { version = "1.10", features = ["serde"] }
 # System CPU and Memory metrics
 sysinfo = "0.30"
 eyre = "0.6.12"
-fastlz-rs = "0.0.3"
 
 [dev-dependencies]
 jsonrpc = "0.18.0"
