@@ -43,6 +43,9 @@ use {
 // Using default with 6x increase
 const DEFAULT_GAS: i64 = 0x029a6b * 0x6;
 
+// Slippage for the gas estimation
+const ESTIMATED_GAS_SLIPPAGE: i8 = 3;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct QuoteRoute {
@@ -184,7 +187,8 @@ async fn handler_internal(
                 )
             }
         };
-    initial_transaction.gas = U64::from(gas_used);
+    // Estimated gas multiplied by the slippage
+    initial_transaction.gas = U64::from((gas_used * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
 
     // Check if the destination address is supported ERC20 asset contract
     // Attempt to destructure the result into symbol and decimals using a match expression
