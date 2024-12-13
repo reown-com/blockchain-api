@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.150.1 - 2024-12-13
+#### Bug Fixes
+- **(tenderly)** making decimals optional in the schema (#870) - (2308f4d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.150.0 - 2024-12-12
 #### Features
 - **(provider)** adding Morph native RPC endpoints (#867) - (fa21fa4) - Max Kalashnikoff | maksy.eth
