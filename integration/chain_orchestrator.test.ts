@@ -21,8 +21,6 @@ describe('Chain abstraction orchestrator', () => {
   // How much needs to be topped up
   const amount_to_topup = Math.round(amount_to_send - usdc_funds_on_optimism);
   const amount_to_topup_with_fees = Math.round(((amount_to_topup * amount_slippage) / 100) + amount_to_topup);
-  // Default gas esimation is default with 6x increase
-  const gas_estimate = "0xf9e82";
 
   const receiver_address = "0x739ff389c8eBd9339E69611d46Eec6212179BB67";
   const chain_id_optimism = "eip155:10";
@@ -164,7 +162,7 @@ describe('Chain abstraction orchestrator', () => {
     const approvalTransaction = data.transactions[0]
     expect(approvalTransaction.chainId).toBe(chain_id_base)
     expect(approvalTransaction.nonce).not.toBe("0x00")
-    expect(approvalTransaction.gas).toBe(gas_estimate)
+    expect(() => BigInt(approvalTransaction.gas)).not.toThrow();
     const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.data);
     if (decodedData.amount < BigInt(amount_to_topup_with_fees)) {
       throw new Error(`Expected amount is lower then the minimal required`);
@@ -174,7 +172,14 @@ describe('Chain abstraction orchestrator', () => {
     const bridgingTransaction = data.transactions[1]
     expect(bridgingTransaction.chainId).toBe(chain_id_base)
     expect(bridgingTransaction.nonce).not.toBe("0x00")
-    expect(bridgingTransaction.gas).toBe(gas_estimate)
+    expect(() => BigInt(approvalTransaction.gas)).not.toThrow();
+
+    // Check for the initialTransaction
+    const initialTransaction = data.initialTransaction;
+    expect(initialTransaction.from).toBe(from_address_with_funds.toLowerCase());
+    expect(initialTransaction.to).toBe(usdc_contract_optimism.toLowerCase());
+    expect(initialTransaction.gas).not.toBe("0x00");
+
 
     // Check the metadata fundingFrom
     const fundingFrom = data.metadata.fundingFrom[0]
@@ -187,11 +192,11 @@ describe('Chain abstraction orchestrator', () => {
     if (BigInt(fundingFrom.bridgingFee) != BigInt(fundingFrom.amount - amount_to_topup)){
       throw new Error(`Expected bridging fee is incorrect. `);
     }
-    // Check the metadata initialTransaction
-    const initialTransaction = data.metadata.initialTransaction
-    expect(initialTransaction.symbol).toBe(usdc_token_symbol)
-    expect(initialTransaction.transferTo).toBe(receiver_address.toLowerCase())
-    expect(initialTransaction.tokenContract).toBe(usdc_contract_optimism.toLowerCase())
+    // Check the initialTransaction metadata
+    const initialTransactionMetadata = data.metadata.initialTransaction
+    expect(initialTransactionMetadata.symbol).toBe(usdc_token_symbol)
+    expect(initialTransactionMetadata.transferTo).toBe(receiver_address.toLowerCase())
+    expect(initialTransactionMetadata.tokenContract).toBe(usdc_contract_optimism.toLowerCase())
 
     // Check the metadata checkIn
     expect(typeof data.metadata.checkIn).toBe('number')

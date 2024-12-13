@@ -69,7 +69,7 @@ async fn handler_internal(
         .validate_project_access_and_quota(query_params.project_id.as_ref())
         .await?;
 
-    let initial_transaction = request_payload.transaction.clone();
+    let mut initial_transaction = request_payload.transaction.clone();
     let from_address = initial_transaction.from;
     let to_address = initial_transaction.to;
     let transfer_value = initial_transaction.value;
@@ -93,7 +93,7 @@ async fn handler_internal(
 
     // Decode the ERC20 transfer function data or use the simulation
     // to get the transfer asset and amount
-    let (asset_transfer_contract, asset_transfer_value, asset_transfer_receiver) =
+    let (asset_transfer_contract, asset_transfer_value, asset_transfer_receiver, gas_used) =
         match decode_erc20_transfer_data(&transaction_data) {
             Ok((receiver, erc20_transfer_value)) => {
                 debug!(
@@ -112,14 +112,45 @@ async fn handler_internal(
                     return Ok(no_bridging_needed_response.into_response());
                 };
 
-                (to_address, erc20_transfer_value, receiver)
+                // Get the ERC20 transfer gas estimation for the token contract
+                // and chain_id, or simulate the transaction to get the gas used
+                let gas_used = match state
+                    .providers
+                    .simulation_provider
+                    .get_cached_erc20_gas_estimation(
+                        &request_payload.transaction.chain_id,
+                        to_address,
+                    )
+                    .await?
+                {
+                    Some(gas) => gas,
+                    None => {
+                        let (_, simulated_gas_used) = get_assets_changes_from_simulation(
+                            state.providers.simulation_provider.clone(),
+                            &initial_transaction,
+                        )
+                        .await?;
+                        state
+                            .providers
+                            .simulation_provider
+                            .set_cached_erc20_gas_estimation(
+                                &request_payload.transaction.chain_id,
+                                to_address,
+                                simulated_gas_used,
+                            )
+                            .await?;
+                        simulated_gas_used
+                    }
+                };
+
+                (to_address, erc20_transfer_value, receiver, gas_used)
             }
             _ => {
                 debug!(
                     "The transaction data is not an ERC20 transfer function, making a simulation"
                 );
 
-                let simulation_assets_changes = get_assets_changes_from_simulation(
+                let (simulation_assets_changes, gas_used) = get_assets_changes_from_simulation(
                     state.providers.simulation_provider.clone(),
                     &initial_transaction,
                 )
@@ -149,9 +180,11 @@ async fn handler_internal(
                     asset_transfer_contract,
                     asset_transfer_value,
                     asset_transfer_receiver,
+                    gas_used,
                 )
             }
         };
+    initial_transaction.gas = U64::from(gas_used);
 
     // Check if the destination address is supported ERC20 asset contract
     // Attempt to destructure the result into symbol and decimals using a match expression

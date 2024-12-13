@@ -199,11 +199,11 @@ pub struct Erc20AssetChange {
     pub receiver: Address,
 }
 
-/// Get the ERC20 assets changes from the transaction simulation result
+/// Get the ERC20 assets changes and gas used from the transaction simulation result
 pub async fn get_assets_changes_from_simulation(
     simulation_provider: Arc<dyn SimulationProvider>,
     transaction: &Transaction,
-) -> Result<Vec<Erc20AssetChange>, RpcError> {
+) -> Result<(Vec<Erc20AssetChange>, u64), RpcError> {
     // Fill the state overrides for the source address for each of the supported
     // assets on the initial tx chain
     let state_overrides = {
@@ -235,6 +235,7 @@ pub async fn get_assets_changes_from_simulation(
             state_overrides,
         )
         .await?;
+    let gas_used = simulation_result.transaction.gas_used;
 
     if simulation_result
         .transaction
@@ -243,7 +244,7 @@ pub async fn get_assets_changes_from_simulation(
         .is_none()
     {
         debug!("The transaction does not change any assets");
-        return Ok(vec![]);
+        return Ok((vec![], gas_used));
     }
 
     let mut asset_changes = Vec::new();
@@ -266,5 +267,5 @@ pub async fn get_assets_changes_from_simulation(
         }
     }
 
-    Ok(asset_changes)
+    Ok((asset_changes, gas_used))
 }
