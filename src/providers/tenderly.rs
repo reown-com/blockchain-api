@@ -1,12 +1,19 @@
 use {
-    crate::{error::RpcError, providers::SimulationProvider, utils::crypto::disassemble_caip2},
+    crate::{
+        error::RpcError, providers::SimulationProvider, storage::error::StorageError,
+        utils::crypto::disassemble_caip2,
+    },
     alloy::primitives::{Address, Bytes, B256, U256},
     async_trait::async_trait,
+    deadpool_redis::{redis::AsyncCommands, Pool},
     reqwest::Url,
     serde::{Deserialize, Serialize},
-    std::collections::HashMap,
+    std::{collections::HashMap, sync::Arc},
     tracing::error,
 };
+
+// Caching TTL paramters
+const ERC20_GAS_ESTIMATE_CACHE_TTL: u64 = 60 * 60 * 24; // 24 hours
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SimulationRequest {
@@ -31,6 +38,7 @@ pub struct SimulationResponse {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ResponseTransaction {
+    pub gas_used: u64,
     pub transaction_info: ResponseTransactionInfo,
 }
 
@@ -70,17 +78,20 @@ pub enum TokenStandard {
     Erc721,
 }
 
-#[derive(Debug)]
 pub struct TenderlyProvider {
-    pub api_key: String,
-    pub account_slug: String,
-    pub project_slug: String,
-    pub base_api_url: String,
-    pub http_client: reqwest::Client,
+    api_key: String,
+    base_api_url: String,
+    http_client: reqwest::Client,
+    redis_caching_pool: Option<Arc<Pool>>,
 }
 
 impl TenderlyProvider {
-    pub fn new(api_key: String, account_slug: String, project_slug: String) -> Self {
+    pub fn new(
+        api_key: String,
+        account_slug: String,
+        project_slug: String,
+        redis_caching_pool: Option<Arc<Pool>>,
+    ) -> Self {
         let base_api_url = format!(
             "https://api.tenderly.co/api/v1/account/{}/project/{}",
             account_slug, project_slug
@@ -88,10 +99,9 @@ impl TenderlyProvider {
         let http_client = reqwest::Client::new();
         Self {
             api_key,
-            account_slug,
-            project_slug,
             base_api_url,
             http_client,
+            redis_caching_pool,
         }
     }
 
@@ -109,6 +119,40 @@ impl TenderlyProvider {
             .header("X-Access-Key", self.api_key.clone())
             .send()
             .await
+    }
+
+    /// Construct the cache key for the ERC20 gas estimate
+    fn format_cache_erc20_gas_key(&self, chain_id: &str, contract_address: Address) -> String {
+        format!("tenderly/erc20gas/{}/{}", chain_id, contract_address)
+    }
+
+    #[allow(dependency_on_unit_never_type_fallback)]
+    async fn set_cache(&self, key: &str, value: &str, ttl: u64) -> Result<(), StorageError> {
+        if let Some(redis_pool) = &self.redis_caching_pool {
+            let mut cache = redis_pool.get().await.map_err(|e| {
+                StorageError::Connection(format!("Error when getting the Redis pool instance {e}"))
+            })?;
+            cache
+                .set_ex(key, value, ttl)
+                .await
+                .map_err(|e| StorageError::Connection(format!("Error when seting cache: {e}")))?;
+        }
+        Ok(())
+    }
+
+    #[allow(dependency_on_unit_never_type_fallback)]
+    async fn get_cache(&self, key: &str) -> Result<Option<String>, StorageError> {
+        if let Some(redis_pool) = &self.redis_caching_pool {
+            let mut cache = redis_pool.get().await.map_err(|e| {
+                StorageError::Connection(format!("Error when getting the Redis pool instance {e}"))
+            })?;
+            let value = cache
+                .get(key)
+                .await
+                .map_err(|e| StorageError::Connection(format!("Error when getting cache: {e}")))?;
+            return Ok(value);
+        }
+        Ok(None)
     }
 }
 
@@ -163,5 +207,32 @@ impl SimulationProvider for TenderlyProvider {
         let response = response.json::<SimulationResponse>().await?;
 
         Ok(response)
+    }
+
+    #[tracing::instrument(skip(self), fields(provider = "Tenderly"), level = "debug")]
+    async fn get_cached_erc20_gas_estimation(
+        &self,
+        chain_id: &str,
+        contract_address: Address,
+    ) -> Result<Option<u64>, RpcError> {
+        let cache_key = self.format_cache_erc20_gas_key(chain_id, contract_address);
+        let cached_value = self.get_cache(&cache_key).await?;
+        if let Some(value) = cached_value {
+            return Ok(Some(value.parse().unwrap()));
+        }
+        Ok(None)
+    }
+
+    #[tracing::instrument(skip(self), fields(provider = "Tenderly"), level = "debug")]
+    async fn set_cached_erc20_gas_estimation(
+        &self,
+        chain_id: &str,
+        contract_address: Address,
+        gas: u64,
+    ) -> Result<(), RpcError> {
+        let cache_key = self.format_cache_erc20_gas_key(chain_id, contract_address);
+        self.set_cache(&cache_key, &gas.to_string(), ERC20_GAS_ESTIMATE_CACHE_TTL)
+            .await?;
+        Ok(())
     }
 }

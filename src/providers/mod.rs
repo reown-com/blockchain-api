@@ -283,6 +283,7 @@ impl ProviderRepository {
             config.tenderly_api_key.clone(),
             config.tenderly_account_id.clone(),
             config.tenderly_project_id.clone(),
+            redis_pool.clone(),
         ));
 
         Self {
@@ -869,7 +870,7 @@ pub trait ChainOrchestrationProvider: Send + Sync + Debug {
 
 /// Provider for the transaction simulation
 #[async_trait]
-pub trait SimulationProvider: Send + Sync + Debug {
+pub trait SimulationProvider: Send + Sync {
     async fn simulate_transaction(
         &self,
         chain_id: String,
@@ -878,4 +879,21 @@ pub trait SimulationProvider: Send + Sync + Debug {
         input: Bytes,
         state_overrides: HashMap<Address, HashMap<B256, B256>>,
     ) -> Result<tenderly::SimulationResponse, RpcError>;
+
+    /// Get the cached gas estimation for ERC20 transfer
+    /// for the token contract and chain_id
+    async fn get_cached_erc20_gas_estimation(
+        &self,
+        chain_id: &str,
+        contract_address: Address,
+    ) -> Result<Option<u64>, RpcError>;
+
+    /// Save to the cahce the gas estimation
+    /// for ERC20 transfer for the token contract and chain_id
+    async fn set_cached_erc20_gas_estimation(
+        &self,
+        chain_id: &str,
+        contract_address: Address,
+        gas: u64,
+    ) -> Result<(), RpcError>;
 }
