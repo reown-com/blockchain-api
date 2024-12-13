@@ -60,8 +60,7 @@ pub enum AssetChangeType {
 pub struct TokenInfo {
     pub standard: TokenStandard,
     pub contract_address: Address,
-    pub decimals: u8,
-    // TODO: Add more fields for the metadata
+    pub decimals: Option<u8>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
