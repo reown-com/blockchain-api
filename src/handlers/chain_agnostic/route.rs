@@ -10,8 +10,7 @@ use {
         state::AppState,
         storage::irn::OperationType,
         utils::crypto::{
-            convert_alloy_address_to_h160, decode_erc20_transfer_data, get_erc20_balance,
-            get_gas_price, get_nonce,
+            convert_alloy_address_to_h160, decode_erc20_transfer_data, get_erc20_balance, get_nonce,
         },
     },
     alloy::primitives::{Address, U256, U64},
@@ -72,10 +71,29 @@ async fn handler_internal(
         .validate_project_access_and_quota(query_params.project_id.as_ref())
         .await?;
 
-    let mut initial_transaction = request_payload.transaction.clone();
+    let mut initial_transaction = Transaction {
+        from: request_payload.transaction.from,
+        to: request_payload.transaction.to,
+        value: request_payload.transaction.value,
+        gas_limit: U64::from(DEFAULT_GAS),
+        data: request_payload.transaction.data.clone(),
+        nonce: U64::ZERO,
+        chain_id: request_payload.transaction.chain_id.clone(),
+    };
+
     let from_address = initial_transaction.from;
     let to_address = initial_transaction.to;
     let transfer_value = initial_transaction.value;
+
+    // Calculate the initial transaction nonce
+    let intial_transaction_nonce = get_nonce(
+        &initial_transaction.chain_id.clone(),
+        from_address,
+        query_params.project_id.as_ref(),
+        MessageSource::ChainAgnosticCheck,
+    )
+    .await?;
+    initial_transaction.nonce = intial_transaction_nonce;
 
     let no_bridging_needed_response: Json<RouteResponse> = Json(RouteResponse::Success(
         RouteResponseSuccess::NotRequired(RouteResponseNotRequired {
@@ -188,7 +206,8 @@ async fn handler_internal(
             }
         };
     // Estimated gas multiplied by the slippage
-    initial_transaction.gas_limit = U64::from((gas_used * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
+    initial_transaction.gas_limit =
+        U64::from((gas_used * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
 
     // Check if the destination address is supported ERC20 asset contract
     // Attempt to destructure the result into symbol and decimals using a match expression
@@ -365,10 +384,10 @@ async fn handler_internal(
                 value: U256::ZERO,
                 gas_limit: U64::from(DEFAULT_GAS),
                 data: approval_tx.data,
-                nonce: U64::from(current_nonce),
+                nonce: current_nonce,
                 chain_id: format!("eip155:{}", bridge_tx.chain_id),
             });
-            current_nonce += 1;
+            current_nonce += U64::from(1);
         }
     }
 
@@ -379,7 +398,7 @@ async fn handler_internal(
         value: bridge_tx.value,
         gas_limit: U64::from(DEFAULT_GAS),
         data: bridge_tx.tx_data,
-        nonce: U64::from(current_nonce),
+        nonce: current_nonce,
         chain_id: format!("eip155:{}", bridge_tx.chain_id),
     });
 
