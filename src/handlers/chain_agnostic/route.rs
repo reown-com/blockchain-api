@@ -188,7 +188,7 @@ async fn handler_internal(
             }
         };
     // Estimated gas multiplied by the slippage
-    initial_transaction.gas = U64::from((gas_used * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
+    initial_transaction.gas_limit = U64::from((gas_used * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
 
     // Check if the destination address is supported ERC20 asset contract
     // Attempt to destructure the result into symbol and decimals using a match expression
@@ -327,14 +327,6 @@ async fn handler_internal(
     )
     .await?;
 
-    // Getting the current gas price
-    let gas_price = get_gas_price(
-        &bridge_chain_id.clone(),
-        query_params.project_id.as_ref(),
-        MessageSource::ChainAgnosticCheck,
-    )
-    .await?;
-
     // TODO: Implement gas estimation using `eth_estimateGas` for each transaction
     let mut routes = Vec::new();
 
@@ -371,12 +363,9 @@ async fn handler_internal(
                 from: approval_tx.from,
                 to: approval_tx.to,
                 value: U256::ZERO,
-                gas_price: U256::from(gas_price),
-                gas: U64::from(DEFAULT_GAS),
+                gas_limit: U64::from(DEFAULT_GAS),
                 data: approval_tx.data,
                 nonce: U64::from(current_nonce),
-                max_fee_per_gas: request_payload.transaction.max_fee_per_gas,
-                max_priority_fee_per_gas: request_payload.transaction.max_priority_fee_per_gas,
                 chain_id: format!("eip155:{}", bridge_tx.chain_id),
             });
             current_nonce += 1;
@@ -388,12 +377,9 @@ async fn handler_internal(
         from: from_address,
         to: bridge_tx.tx_target,
         value: bridge_tx.value,
-        gas_price: U256::from(gas_price),
-        gas: U64::from(DEFAULT_GAS),
+        gas_limit: U64::from(DEFAULT_GAS),
         data: bridge_tx.tx_data,
         nonce: U64::from(current_nonce),
-        max_fee_per_gas: request_payload.transaction.max_fee_per_gas,
-        max_priority_fee_per_gas: request_payload.transaction.max_priority_fee_per_gas,
         chain_id: format!("eip155:{}", bridge_tx.chain_id),
     });
 
