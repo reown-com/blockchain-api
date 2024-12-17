@@ -1,14 +1,17 @@
 use {
     crate::{
-        error::RpcError, providers::SimulationProvider, storage::error::StorageError,
+        error::RpcError,
+        providers::{ProviderKind, SimulationProvider},
+        storage::error::StorageError,
         utils::crypto::disassemble_caip2,
+        Metrics,
     },
     alloy::primitives::{Address, Bytes, B256, U256},
     async_trait::async_trait,
     deadpool_redis::{redis::AsyncCommands, Pool},
     reqwest::Url,
     serde::{Deserialize, Serialize},
-    std::{collections::HashMap, sync::Arc},
+    std::{collections::HashMap, sync::Arc, time::SystemTime},
     tracing::error,
 };
 
@@ -79,6 +82,7 @@ pub enum TokenStandard {
 }
 
 pub struct TenderlyProvider {
+    provider_kind: ProviderKind,
     api_key: String,
     base_api_url: String,
     http_client: reqwest::Client,
@@ -98,6 +102,7 @@ impl TenderlyProvider {
         );
         let http_client = reqwest::Client::new();
         Self {
+            provider_kind: ProviderKind::Tenderly,
             api_key,
             base_api_url,
             http_client,
@@ -166,6 +171,7 @@ impl SimulationProvider for TenderlyProvider {
         to: Address,
         input: Bytes,
         state_overrides: HashMap<Address, HashMap<B256, B256>>,
+        metrics: Arc<Metrics>,
     ) -> Result<SimulationResponse, RpcError> {
         let url = Url::parse(format!("{}/simulate", &self.base_api_url).as_str())
             .map_err(|_| RpcError::ConversionParseURLError)?;
@@ -183,6 +189,7 @@ impl SimulationProvider for TenderlyProvider {
             state_objects.insert(address, account_state);
         }
 
+        let latency_start = SystemTime::now();
         let response = self
             .send_post_request(
                 url,
@@ -197,6 +204,14 @@ impl SimulationProvider for TenderlyProvider {
                 },
             )
             .await?;
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some("simulate".to_string()),
+        );
+
         if !response.status().is_success() {
             error!(
                 "Failed to get the transaction simulation response from Tenderly with status: {}",
