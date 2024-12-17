@@ -7,6 +7,7 @@ use {
             SimulationProvider,
         },
         utils::crypto::get_erc20_contract_balance,
+        Metrics,
     },
     alloy::primitives::{address, Address, B256, U256},
     ethers::{types::H160 as EthersH160, utils::keccak256},
@@ -203,6 +204,7 @@ pub struct Erc20AssetChange {
 pub async fn get_assets_changes_from_simulation(
     simulation_provider: Arc<dyn SimulationProvider>,
     transaction: &Transaction,
+    metrics: Arc<Metrics>,
 ) -> Result<(Vec<Erc20AssetChange>, u64), RpcError> {
     // Fill the state overrides for the source address for each of the supported
     // assets on the initial tx chain
@@ -233,6 +235,7 @@ pub async fn get_assets_changes_from_simulation(
             transaction.to,
             transaction.data.clone(),
             state_overrides,
+            metrics,
         )
         .await?;
     let gas_used = simulation_result.transaction.gas_used;

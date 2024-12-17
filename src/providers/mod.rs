@@ -878,6 +878,7 @@ pub trait SimulationProvider: Send + Sync {
         to: Address,
         input: Bytes,
         state_overrides: HashMap<Address, HashMap<B256, B256>>,
+        metrics: Arc<Metrics>,
     ) -> Result<tenderly::SimulationResponse, RpcError>;
 
     /// Get the cached gas estimation for ERC20 transfer
