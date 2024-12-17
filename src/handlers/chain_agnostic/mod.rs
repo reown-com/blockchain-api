@@ -231,7 +231,7 @@ pub async fn get_assets_changes_from_simulation(
             transaction.chain_id.clone(),
             transaction.from,
             transaction.to,
-            transaction.data.clone(),
+            transaction.input.clone(),
             state_overrides,
         )
         .await?;

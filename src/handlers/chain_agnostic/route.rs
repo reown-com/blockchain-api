@@ -76,7 +76,7 @@ async fn handler_internal(
         to: request_payload.transaction.to,
         value: request_payload.transaction.value,
         gas_limit: U64::from(DEFAULT_GAS),
-        data: request_payload.transaction.data.clone(),
+        input: request_payload.transaction.input.clone(),
         nonce: U64::ZERO,
         chain_id: request_payload.transaction.chain_id.clone(),
     };
@@ -110,7 +110,7 @@ async fn handler_internal(
         );
         return Ok(no_bridging_needed_response.into_response());
     }
-    let transaction_data = initial_transaction.data.clone();
+    let transaction_data = initial_transaction.input.clone();
 
     // Decode the ERC20 transfer function data or use the simulation
     // to get the transfer asset and amount
@@ -383,7 +383,7 @@ async fn handler_internal(
                 to: approval_tx.to,
                 value: U256::ZERO,
                 gas_limit: U64::from(DEFAULT_GAS),
-                data: approval_tx.data,
+                input: approval_tx.data,
                 nonce: current_nonce,
                 chain_id: format!("eip155:{}", bridge_tx.chain_id),
             });
@@ -397,7 +397,7 @@ async fn handler_internal(
         to: bridge_tx.tx_target,
         value: bridge_tx.value,
         gas_limit: U64::from(DEFAULT_GAS),
-        data: bridge_tx.tx_data,
+        input: bridge_tx.tx_data,
         nonce: current_nonce,
         chain_id: format!("eip155:{}", bridge_tx.chain_id),
     });
