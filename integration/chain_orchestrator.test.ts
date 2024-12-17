@@ -43,7 +43,7 @@ describe('Chain abstraction orchestrator', () => {
         from: from_address_with_funds,
         to: usdc_contract_optimism,
         value: "0x00", // Zero native tokens
-        data: data_encoded,
+        input: data_encoded,
         chainId: chain_id_optimism,
       }
     }
@@ -70,7 +70,7 @@ describe('Chain abstraction orchestrator', () => {
         from: empty_wallet_address,
         to: usdc_contract_optimism,
         value: "0x00", // Zero native tokens
-        data: data_encoded,
+        input: data_encoded,
         chainId: chain_id_optimism,
       }
     }
@@ -96,7 +96,7 @@ describe('Chain abstraction orchestrator', () => {
         from: from_address_with_funds,
         to: usdc_contract_optimism,
         value: "0x00", // Zero native tokens
-        data: data_encoded,
+        input: data_encoded,
         chainId: chain_id_optimism,
       }
     }
@@ -122,7 +122,7 @@ describe('Chain abstraction orchestrator', () => {
         from: from_address_with_funds,
         to: usdc_contract_optimism,
         value: "0x00", // Zero native tokens
-        data: data_encoded,
+        input: data_encoded,
         chainId: chain_id_optimism,
       }
     }
@@ -143,7 +143,7 @@ describe('Chain abstraction orchestrator', () => {
     expect(approvalTransaction.chainId).toBe(chain_id_base)
     expect(approvalTransaction.nonce).not.toBe("0x00")
     expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
-    const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.data);
+    const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.input);
     if (decodedData.amount < BigInt(amount_to_topup_with_fees)) {
       throw new Error(`Expected amount is lower then the minimal required`);
     }
