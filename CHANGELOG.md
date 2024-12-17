@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.152.0 - 2024-12-17
+#### Features
+- **(o11y)** adding Tenderly provider monitoring (#873) - (dc44fba) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.151.0 - 2024-12-13
 #### Features
 - **(CA)** implementing cached gas estimation for the initial transaction (#869) - (0d1c3dc) - Max Kalashnikoff | maksy.eth

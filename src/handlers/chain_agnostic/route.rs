@@ -149,6 +149,7 @@ async fn handler_internal(
                         let (_, simulated_gas_used) = get_assets_changes_from_simulation(
                             state.providers.simulation_provider.clone(),
                             &initial_transaction,
+                            state.metrics.clone(),
                         )
                         .await?;
                         state
@@ -174,6 +175,7 @@ async fn handler_internal(
                 let (simulation_assets_changes, gas_used) = get_assets_changes_from_simulation(
                     state.providers.simulation_provider.clone(),
                     &initial_transaction,
+                    state.metrics.clone(),
                 )
                 .await?;
                 let mut asset_transfer_value = U256::ZERO;
