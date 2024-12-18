@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.152.2 - 2024-12-18
+#### Bug Fixes
+- **(revert)** reverting transaction schema change (#876) - (9a40157) - Max Kalashnikoff | maksy.eth
+- **(test)** fixing the CA integration tests on the initial tx schema change (#875) - (0bc557f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.152.1 - 2024-12-17
 #### Bug Fixes
 - refactor txn types (#872) - (5018851) - Chris Smith
