@@ -13,7 +13,7 @@ build = "build.rs"
 [dependencies]
 wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.9.0", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock", "rate_limit"] }
 relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", tag = "v0.32.0", features = ["cacao"] }
-yttrium = { git = "https://github.com/reown-com/yttrium.git", rev = "befa0cb" }
+yttrium = { git = "https://github.com/reown-com/yttrium.git", rev = "0684124" }
 
 # Async
 async-trait = "0.1.82"
