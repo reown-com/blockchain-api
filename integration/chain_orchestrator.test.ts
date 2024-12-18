@@ -43,7 +43,12 @@ describe('Chain abstraction orchestrator', () => {
         from: from_address_with_funds,
         to: usdc_contract_optimism,
         value: "0x00", // Zero native tokens
-        input: data_encoded,
+        gas: "0x00",
+        gasPrice: "0x00",
+        data: data_encoded,
+        nonce: "0x00",
+        maxFeePerGas: "0x00",
+        maxPriorityFeePerGas: "0x00",
         chainId: chain_id_optimism,
       }
     }
@@ -70,7 +75,12 @@ describe('Chain abstraction orchestrator', () => {
         from: empty_wallet_address,
         to: usdc_contract_optimism,
         value: "0x00", // Zero native tokens
-        input: data_encoded,
+        gas: "0x00",
+        gasPrice: "0x00",
+        data: data_encoded,
+        nonce: "0x00",
+        maxFeePerGas: "0x00",
+        maxPriorityFeePerGas: "0x00",
         chainId: chain_id_optimism,
       }
     }
@@ -96,7 +106,12 @@ describe('Chain abstraction orchestrator', () => {
         from: from_address_with_funds,
         to: usdc_contract_optimism,
         value: "0x00", // Zero native tokens
-        input: data_encoded,
+        gas: "0x00",
+        gasPrice: "0x00",
+        data: data_encoded,
+        nonce: "0x00",
+        maxFeePerGas: "0x00",
+        maxPriorityFeePerGas: "0x00",
         chainId: chain_id_optimism,
       }
     }
@@ -122,7 +137,12 @@ describe('Chain abstraction orchestrator', () => {
         from: from_address_with_funds,
         to: usdc_contract_optimism,
         value: "0x00", // Zero native tokens
-        input: data_encoded,
+        gas: "0x00",
+        gasPrice: "0x00",
+        data: data_encoded,
+        nonce: "0x00",
+        maxFeePerGas: "0x00",
+        maxPriorityFeePerGas: "0x00",
         chainId: chain_id_optimism,
       }
     }
@@ -142,8 +162,8 @@ describe('Chain abstraction orchestrator', () => {
     const approvalTransaction = data.transactions[0]
     expect(approvalTransaction.chainId).toBe(chain_id_base)
     expect(approvalTransaction.nonce).not.toBe("0x00")
-    expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
-    const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.input);
+    expect(() => BigInt(approvalTransaction.gas)).not.toThrow();
+    const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.data);
     if (decodedData.amount < BigInt(amount_to_topup_with_fees)) {
       throw new Error(`Expected amount is lower then the minimal required`);
     }
@@ -152,13 +172,14 @@ describe('Chain abstraction orchestrator', () => {
     const bridgingTransaction = data.transactions[1]
     expect(bridgingTransaction.chainId).toBe(chain_id_base)
     expect(bridgingTransaction.nonce).not.toBe("0x00")
-    expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
+    expect(() => BigInt(approvalTransaction.gas)).not.toThrow();
 
     // Check for the initialTransaction
     const initialTransaction = data.initialTransaction;
     expect(initialTransaction.from).toBe(from_address_with_funds.toLowerCase());
     expect(initialTransaction.to).toBe(usdc_contract_optimism.toLowerCase());
-    expect(initialTransaction.gasLimit).not.toBe("0x00");
+    expect(initialTransaction.gas).not.toBe("0x00");
+
 
     // Check the metadata fundingFrom
     const fundingFrom = data.metadata.fundingFrom[0]

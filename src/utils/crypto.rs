@@ -2,7 +2,7 @@ use {
     crate::{analytics::MessageSource, error::RpcError},
     alloy::{
         network::Ethereum,
-        primitives::{Address, U256 as AlloyU256, U64 as AlloyU64},
+        primitives::{Address, U256 as AlloyU256},
         providers::{Provider as AlloyProvider, ReqwestProvider},
         rpc::json_rpc::Id,
         sol,
@@ -514,14 +514,14 @@ pub async fn get_nonce(
     wallet: Address,
     rpc_project_id: &str,
     source: MessageSource,
-) -> Result<AlloyU64, CryptoUitlsError> {
+) -> Result<u64, CryptoUitlsError> {
     let provider =
         ReqwestProvider::<Ethereum>::new_http(get_rpc_url(chain_id, rpc_project_id, source)?);
     let nonce = provider
         .get_transaction_count(wallet)
         .await
         .map_err(|e| CryptoUitlsError::ProviderError(format!("{}", e)))?;
-    Ok(AlloyU64::from(nonce))
+    Ok(nonce)
 }
 
 /// Call entry point v07 getUserOpHash contract and get the userOperation hash

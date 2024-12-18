@@ -233,7 +233,7 @@ pub async fn get_assets_changes_from_simulation(
             transaction.chain_id.clone(),
             transaction.from,
             transaction.to,
-            transaction.input.clone(),
+            transaction.data.clone(),
             state_overrides,
             metrics,
         )
