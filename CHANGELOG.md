@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.152.4 - 2024-12-19
+#### Bug Fixes
+- **(CA)** increasing cached gas slippage to 3 percent (#878) - (06d7e0d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.152.3 - 2024-12-18
 #### Bug Fixes
 - revert back new initial tx types (#877) - (373080c) - Max Kalashnikoff | maksy.eth
