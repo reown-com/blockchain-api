@@ -519,6 +519,7 @@ pub async fn get_nonce(
         ReqwestProvider::<Ethereum>::new_http(get_rpc_url(chain_id, rpc_project_id, source)?);
     let nonce = provider
         .get_transaction_count(wallet)
+        .pending()
         .await
         .map_err(|e| CryptoUitlsError::ProviderError(format!("{}", e)))?;
     Ok(AlloyU64::from(nonce))
