@@ -7552,7 +7552,7 @@ dependencies = [
 
 [[package]]
 name = "rpc-proxy"
-version = "0.152.4"
+version = "0.153.0"
 dependencies = [
  "alloy 0.7.3",
  "anyhow",
