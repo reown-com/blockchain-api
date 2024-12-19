@@ -22,7 +22,7 @@ pub mod route;
 pub mod status;
 
 /// How much to multiply the amount by when bridging to cover bridging differences
-pub const BRIDGING_AMOUNT_SLIPPAGE: i8 = 2; // 2%
+pub const BRIDGING_AMOUNT_SLIPPAGE: i8 = 50; // 50%
 
 /// Bridging timeout in seconds
 pub const BRIDGING_TIMEOUT: u64 = 1800; // 30 minutes
