@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.153.0 - 2024-12-19
+#### Features
+- **(CA)** using the pending latest block for the nonce (#879) - (52fc40d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.152.4 - 2024-12-19
 #### Bug Fixes
 - **(CA)** increasing cached gas slippage to 3 percent (#878) - (06d7e0d) - Max Kalashnikoff | maksy.eth
