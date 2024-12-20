@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.154.0 - 2024-12-20
+#### Features
+- **(CA)** adding logging for the insufficient balance response (#880) - (9e8b09e) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.153.0 - 2024-12-19
 #### Features
 - **(CA)** using the pending latest block for the nonce (#879) - (52fc40d) - Max Kalashnikoff | maksy.eth
