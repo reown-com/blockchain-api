@@ -293,6 +293,10 @@ async fn handler_internal(
         / U256::from(100))
         + required_topup_amount;
     if current_bridging_asset_balance < required_topup_amount {
+        error!(
+            "The current bridging asset balance on {} is {} less than the required topup amount:{}. The bridging fee is:{}",
+            from_address, current_bridging_asset_balance, required_topup_amount, bridging_fee
+        );
         return Ok(Json(RouteResponse::Error(RouteResponseError {
             error: BridgingError::InsufficientFunds,
         }))
