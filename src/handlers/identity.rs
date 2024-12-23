@@ -124,11 +124,6 @@ async fn handler_internal(
             .map(|geo| (geo.country, geo.continent, geo.region))
             .unwrap_or((None, None, None));
 
-        let same_sender = query
-            .sender
-            .as_ref()
-            .map(|sender| sender == &address.to_string());
-
         state.analytics.identity_lookup(IdentityLookupInfo::new(
             &query.0,
             address,
@@ -141,7 +136,7 @@ async fn handler_internal(
             country,
             continent,
             query.client_id.clone(),
-            same_sender,
+            query.sender.clone(),
         ));
     }
 
