@@ -4,6 +4,7 @@ use {
         SupportedCurrencies,
     },
     crate::{
+        env::SolScanConfig,
         error::{RpcError, RpcResult},
         handlers::{
             balance::{BalanceItem, BalanceQuantity, BalanceQueryParams, BalanceResponseBody},
@@ -15,7 +16,7 @@ use {
                 HistoryTransactionURLItem,
             },
         },
-        providers::ProviderKind,
+        providers::{BalanceProviderFactory, ProviderKind},
         storage::error::StorageError,
         utils::crypto::{CaipNamespaces, SOLANA_NATIVE_TOKEN_ADDRESS},
         Metrics,
@@ -474,6 +475,17 @@ impl BalanceProvider for SolScanProvider {
         };
 
         Ok(response)
+    }
+}
+
+impl BalanceProviderFactory<SolScanConfig> for SolScanProvider {
+    fn new(provider_config: &SolScanConfig, cache: Option<Arc<Pool>>) -> Self {
+        Self {
+            provider_kind: ProviderKind::SolScan,
+            api_v2_token: provider_config.api_key.clone(),
+            http_client: reqwest::Client::new(),
+            redis_caching_pool: cache,
+        }
     }
 }
 

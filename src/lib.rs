@@ -20,7 +20,8 @@ use {
     env::{
         ArbitrumConfig, AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig, GetBlockConfig,
         InfuraConfig, LavaConfig, MantleConfig, MorphConfig, NearConfig, PoktConfig,
-        PublicnodeConfig, QuicknodeConfig, UnichainConfig, ZKSyncConfig, ZoraConfig,
+        PublicnodeConfig, QuicknodeConfig, SolScanConfig, UnichainConfig, ZKSyncConfig,
+        ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
@@ -29,7 +30,8 @@ use {
         ArbitrumProvider, AuroraProvider, BaseProvider, BerachainProvider, BinanceProvider,
         GetBlockProvider, InfuraProvider, InfuraWsProvider, LavaProvider, MantleProvider,
         MorphProvider, NearProvider, PoktProvider, ProviderRepository, PublicnodeProvider,
-        QuicknodeProvider, UnichainProvider, ZKSyncProvider, ZoraProvider, ZoraWsProvider,
+        QuicknodeProvider, SolScanProvider, UnichainProvider, ZKSyncProvider, ZerionProvider,
+        ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -44,7 +46,7 @@ use {
         trace::TraceLayer,
         ServiceBuilderExt,
     },
-    tracing::{info, log::warn, Span},
+    tracing::{error, info, log::warn, Span},
     utils::rate_limit::RateLimit,
     wc::{
         geoip::{
@@ -462,36 +464,56 @@ fn create_server(
 }
 
 fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
-    let mut providers = ProviderRepository::new(config);
+    // Redis pool for providers responses caching where needed
+    let mut redis_pool = None;
+    if let Some(redis_addr) = &config.cache_redis_addr {
+        let redis_builder = deadpool_redis::Config::from_url(redis_addr)
+            .builder()
+            .map_err(|e| {
+                error!(
+                    "Failed to create redis pool builder for provider's responses caching: {:?}",
+                    e
+                );
+            })
+            .expect("Failed to create redis pool builder for provider's responses caching, builder is None");
+        redis_pool = Some(Arc::new(
+            redis_builder
+                .runtime(deadpool_redis::Runtime::Tokio1)
+                .build()
+                .expect("Failed to create redis pool"),
+        ));
+    };
 
     // Keep in-sync with SUPPORTED_CHAINS.md
 
-    providers.add_provider::<AuroraProvider, AuroraConfig>(AuroraConfig::default());
-    providers.add_provider::<ArbitrumProvider, ArbitrumConfig>(ArbitrumConfig::default());
-    providers
-        .add_provider::<PoktProvider, PoktConfig>(PoktConfig::new(config.pokt_project_id.clone()));
+    let mut providers = ProviderRepository::new(config);
+    providers.add_rpc_provider::<AuroraProvider, AuroraConfig>(AuroraConfig::default());
+    providers.add_rpc_provider::<ArbitrumProvider, ArbitrumConfig>(ArbitrumConfig::default());
+    providers.add_rpc_provider::<PoktProvider, PoktConfig>(PoktConfig::new(
+        config.pokt_project_id.clone(),
+    ));
 
-    providers.add_provider::<BaseProvider, BaseConfig>(BaseConfig::default());
-    providers.add_provider::<BinanceProvider, BinanceConfig>(BinanceConfig::default());
-    providers.add_provider::<ZKSyncProvider, ZKSyncConfig>(ZKSyncConfig::default());
-    providers.add_provider::<PublicnodeProvider, PublicnodeConfig>(PublicnodeConfig::default());
-    providers.add_provider::<QuicknodeProvider, QuicknodeConfig>(QuicknodeConfig::new(
+    providers.add_rpc_provider::<BaseProvider, BaseConfig>(BaseConfig::default());
+    providers.add_rpc_provider::<BinanceProvider, BinanceConfig>(BinanceConfig::default());
+    providers.add_rpc_provider::<ZKSyncProvider, ZKSyncConfig>(ZKSyncConfig::default());
+    providers.add_rpc_provider::<PublicnodeProvider, PublicnodeConfig>(PublicnodeConfig::default());
+    providers.add_rpc_provider::<QuicknodeProvider, QuicknodeConfig>(QuicknodeConfig::new(
         config.quicknode_api_tokens.clone(),
     ));
-    providers.add_provider::<InfuraProvider, InfuraConfig>(InfuraConfig::new(
+    providers.add_rpc_provider::<InfuraProvider, InfuraConfig>(InfuraConfig::new(
         config.infura_project_id.clone(),
     ));
-    providers.add_provider::<ZoraProvider, ZoraConfig>(ZoraConfig::default());
-    providers.add_provider::<NearProvider, NearConfig>(NearConfig::default());
-    providers.add_provider::<MantleProvider, MantleConfig>(MantleConfig::default());
-    providers.add_provider::<BerachainProvider, BerachainConfig>(BerachainConfig::default());
-    providers.add_provider::<UnichainProvider, UnichainConfig>(UnichainConfig::default());
+    providers.add_rpc_provider::<ZoraProvider, ZoraConfig>(ZoraConfig::default());
+    providers.add_rpc_provider::<NearProvider, NearConfig>(NearConfig::default());
+    providers.add_rpc_provider::<MantleProvider, MantleConfig>(MantleConfig::default());
+    providers.add_rpc_provider::<BerachainProvider, BerachainConfig>(BerachainConfig::default());
+    providers.add_rpc_provider::<UnichainProvider, UnichainConfig>(UnichainConfig::default());
     providers
-        .add_provider::<LavaProvider, LavaConfig>(LavaConfig::new(config.lava_api_key.clone()));
-    providers.add_provider::<MorphProvider, MorphConfig>(MorphConfig::default());
+        .add_rpc_provider::<LavaProvider, LavaConfig>(LavaConfig::new(config.lava_api_key.clone()));
+    providers.add_rpc_provider::<MorphProvider, MorphConfig>(MorphConfig::default());
 
     if let Some(getblock_access_tokens) = &config.getblock_access_tokens {
-        providers.add_provider::<GetBlockProvider, GetBlockConfig>(GetBlockConfig::new(
+        providers.add_rpc_provider::<GetBlockProvider, GetBlockConfig>(GetBlockConfig::new(
             getblock_access_tokens.clone(),
         ));
     };
@@ -500,6 +522,15 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
         config.infura_project_id.clone(),
     ));
     providers.add_ws_provider::<ZoraWsProvider, ZoraConfig>(ZoraConfig::default());
+
+    providers.add_balance_provider::<ZerionProvider, ZerionConfig>(
+        ZerionConfig::new(config.zerion_api_key.clone()),
+        None,
+    );
+    providers.add_balance_provider::<SolScanProvider, SolScanConfig>(
+        SolScanConfig::new(config.solscan_api_v2_token.clone()),
+        redis_pool.clone(),
+    );
 
     providers
 }

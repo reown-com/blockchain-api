@@ -8,15 +8,15 @@ use {
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
         providers::{ProviderKind, ProvidersConfig, Weight},
         storage::irn::Config as IrnConfig,
-        utils::rate_limit::RateLimitingConfig,
+        utils::{crypto::CaipNamespaces, rate_limit::RateLimitingConfig},
     },
     serde::de::DeserializeOwned,
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
     arbitrum::*, aurora::*, base::*, berachain::*, binance::*, getblock::*, infura::*, lava::*,
-    mantle::*, morph::*, near::*, pokt::*, publicnode::*, quicknode::*, server::*, unichain::*,
-    zksync::*, zora::*,
+    mantle::*, morph::*, near::*, pokt::*, publicnode::*, quicknode::*, server::*, solscan::*,
+    unichain::*, zerion::*, zksync::*, zora::*,
 };
 mod arbitrum;
 mod aurora;
@@ -33,7 +33,9 @@ mod pokt;
 mod publicnode;
 mod quicknode;
 mod server;
+pub mod solscan;
 mod unichain;
+pub mod zerion;
 mod zksync;
 mod zora;
 
@@ -84,6 +86,11 @@ fn from_env<T: DeserializeOwned>(prefix: &str) -> Result<T, envy::Error> {
 pub trait ProviderConfig {
     fn supported_chains(self) -> HashMap<String, (String, Weight)>;
     fn supported_ws_chains(self) -> HashMap<String, (String, Weight)>;
+    fn provider_kind(&self) -> ProviderKind;
+}
+
+pub trait BalanceProviderConfig {
+    fn supported_namespaces(self) -> HashMap<CaipNamespaces, Weight>;
     fn provider_kind(&self) -> ProviderKind;
 }
 
@@ -277,7 +284,7 @@ mod test {
                     infura_project_id: "INFURA_PROJECT_ID".to_string(),
                     pokt_project_id: "POKT_PROJECT_ID".to_string(),
                     quicknode_api_tokens: "QUICKNODE_API_TOKENS".to_string(),
-                    zerion_api_key: Some("ZERION_API_KEY".to_owned()),
+                    zerion_api_key: "ZERION_API_KEY".to_owned(),
                     coinbase_api_key: Some("COINBASE_API_KEY".to_owned()),
                     coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),
                     one_inch_api_key: Some("ONE_INCH_API_KEY".to_owned()),

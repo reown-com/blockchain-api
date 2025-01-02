@@ -1,7 +1,7 @@
 use {
-    self::{coinbase::CoinbaseProvider, zerion::ZerionProvider},
+    self::coinbase::CoinbaseProvider,
     crate::{
-        env::ProviderConfig,
+        env::{BalanceProviderConfig, ProviderConfig},
         error::{RpcError, RpcResult},
         handlers::{
             balance::{self, BalanceQueryParams, BalanceResponseBody},
@@ -32,6 +32,7 @@ use {
     async_trait::async_trait,
     axum::response::Response,
     axum_tungstenite::WebSocketUpgrade,
+    deadpool_redis::Pool,
     hyper::http::HeaderValue,
     mock_alto::{MockAltoProvider, MockAltoUrls},
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
@@ -95,13 +96,15 @@ pub use {
     solscan::SolScanProvider,
     tenderly::TenderlyProvider,
     unichain::UnichainProvider,
+    zerion::ZerionProvider,
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
 };
 
 static WS_PROXY_TASK_METRICS: TaskMetrics = TaskMetrics::new("ws_proxy_task");
 
-pub type WeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
+pub type ChainsWeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
+pub type NamespacesWeightResolver = HashMap<CaipNamespaces, HashMap<ProviderKind, Weight>>;
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct ProvidersConfig {
@@ -115,7 +118,7 @@ pub struct ProvidersConfig {
     pub pokt_project_id: String,
     pub quicknode_api_tokens: String,
 
-    pub zerion_api_key: Option<String>,
+    pub zerion_api_key: String,
     pub coinbase_api_key: Option<String>,
     pub coinbase_app_id: Option<String>,
     pub one_inch_api_key: Option<String>,
@@ -147,27 +150,30 @@ pub struct SupportedChains {
 }
 
 pub struct ProviderRepository {
-    pub supported_chains: SupportedChains,
+    pub rpc_supported_chains: SupportedChains,
+    rpc_providers: HashMap<ProviderKind, Arc<dyn RpcProvider>>,
+    rpc_weight_resolver: ChainsWeightResolver,
 
-    providers: HashMap<ProviderKind, Arc<dyn RpcProvider>>,
     ws_providers: HashMap<ProviderKind, Arc<dyn RpcWsProvider>>,
+    ws_weight_resolver: ChainsWeightResolver,
 
-    weight_resolver: WeightResolver,
-    ws_weight_resolver: WeightResolver,
-
-    prometheus_client: prometheus_http_query::Client,
-    prometheus_workspace_header: String,
+    balance_supported_namespaces: HashSet<CaipNamespaces>,
+    balance_providers: HashMap<ProviderKind, Arc<dyn BalanceProvider>>,
+    balance_weight_resolver: NamespacesWeightResolver,
 
     pub history_providers: HashMap<CaipNamespaces, Arc<dyn HistoryProvider>>,
     pub portfolio_provider: Arc<dyn PortfolioProvider>,
     pub coinbase_pay_provider: Arc<dyn HistoryProvider>,
     pub onramp_provider: Arc<dyn OnRampProvider>,
-    pub balance_providers: HashMap<CaipNamespaces, Arc<dyn BalanceProvider>>,
+
     pub conversion_provider: Arc<dyn ConversionProvider>,
     pub fungible_price_providers: HashMap<CaipNamespaces, Arc<dyn FungiblePriceProvider>>,
     pub bundler_ops_provider: Arc<dyn BundlerOpsProvider>,
     pub chain_orchestrator_provider: Arc<dyn ChainOrchestrationProvider>,
     pub simulation_provider: Arc<dyn SimulationProvider>,
+
+    prometheus_client: prometheus_http_query::Client,
+    prometheus_workspace_header: String,
 }
 
 impl ProviderRepository {
@@ -211,10 +217,7 @@ impl ProviderRepository {
 
         // Don't crash the application if the ZERION_API_KEY is not set
         // TODO: find a better way to handle this
-        let zerion_api_key = config
-            .zerion_api_key
-            .clone()
-            .unwrap_or("ZERION_KEY_UNDEFINED".into());
+        let zerion_api_key = config.zerion_api_key.clone();
 
         // Don't crash the application if the COINBASE_API_KEY_UNDEFINED is not set
         // TODO: find a better way to handle this
@@ -287,21 +290,23 @@ impl ProviderRepository {
         ));
 
         Self {
-            supported_chains: SupportedChains {
+            rpc_supported_chains: SupportedChains {
                 http: HashSet::new(),
                 ws: HashSet::new(),
             },
-            providers: HashMap::new(),
+            rpc_providers: HashMap::new(),
+            rpc_weight_resolver: HashMap::new(),
             ws_providers: HashMap::new(),
-            weight_resolver: HashMap::new(),
             ws_weight_resolver: HashMap::new(),
+            balance_supported_namespaces: HashSet::new(),
+            balance_providers: HashMap::new(),
+            balance_weight_resolver: HashMap::new(),
             prometheus_client,
             prometheus_workspace_header,
             history_providers,
             portfolio_provider,
             coinbase_pay_provider: coinbase_pay_provider.clone(),
             onramp_provider: coinbase_pay_provider,
-            balance_providers,
             conversion_provider: one_inch_provider.clone(),
             fungible_price_providers,
             bundler_ops_provider,
@@ -311,12 +316,12 @@ impl ProviderRepository {
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
-    pub fn get_provider_for_chain_id(
+    pub fn get_rpc_provider_for_chain_id(
         &self,
         chain_id: &str,
         max_providers: usize,
     ) -> Result<Vec<Arc<dyn RpcProvider>>, RpcError> {
-        let Some(providers) = self.weight_resolver.get(chain_id) else {
+        let Some(providers) = self.rpc_weight_resolver.get(chain_id) else {
             return Err(RpcError::UnsupportedChain(chain_id.to_string()));
         };
 
@@ -357,7 +362,7 @@ impl ProviderRepository {
                             }
                         };
 
-                        self.providers.get(provider).cloned().ok_or_else(|| {
+                        self.rpc_providers.get(provider).cloned().ok_or_else(|| {
                             RpcError::WeightedProvidersIndex(format!(
                                 "Provider not found during the weighted index check: {}",
                                 provider
@@ -372,6 +377,75 @@ impl ProviderRepository {
                 // a chain providers
                 warn!("Failed to create weighted index: {}", e);
                 Err(RpcError::ChainTemporarilyUnavailable(chain_id.to_string()))
+            }
+        }
+    }
+
+    #[tracing::instrument(skip(self), level = "debug")]
+    pub fn get_balance_provider_for_namespace(
+        &self,
+        namespace: &CaipNamespaces,
+        max_providers: usize,
+    ) -> Result<Vec<Arc<dyn BalanceProvider>>, RpcError> {
+        let Some(providers) = self.balance_weight_resolver.get(namespace) else {
+            return Err(RpcError::UnsupportedChain(namespace.to_string()));
+        };
+
+        if providers.is_empty() {
+            return Err(RpcError::UnsupportedChain(namespace.to_string()));
+        }
+
+        let weights: Vec<_> = providers
+            .iter()
+            .map(|(_, weight)| weight.value())
+            .map(|w| w.min(1))
+            .collect();
+        let non_zero_weight_providers = weights.iter().filter(|&x| *x > 0).count();
+        let keys = providers.keys().cloned().collect::<Vec<_>>();
+
+        match WeightedIndex::new(weights) {
+            Ok(mut dist) => {
+                let providers_to_iterate = std::cmp::min(max_providers, non_zero_weight_providers);
+                let providers_result = (0..providers_to_iterate)
+                    .map(|i| {
+                        let dist_key = dist.sample(&mut OsRng);
+                        let provider = keys.get(dist_key).ok_or_else(|| {
+                            RpcError::WeightedProvidersIndex(format!(
+                                "Failed to get random balanceprovider for namespace: {}",
+                                namespace
+                            ))
+                        })?;
+
+                        // Update the weight of the provider to 0 to remove it from the next
+                        // sampling, as updating weights returns an error if
+                        // all weights are zero
+                        if i < providers_to_iterate - 1 {
+                            if let Err(e) = dist.update_weights(&[(dist_key, &0)]) {
+                                return Err(RpcError::WeightedProvidersIndex(format!(
+                                    "Failed to update weight in sampling iteration: {}",
+                                    e
+                                )));
+                            }
+                        };
+
+                        self.balance_providers
+                            .get(provider)
+                            .cloned()
+                            .ok_or_else(|| {
+                                RpcError::WeightedProvidersIndex(format!(
+                                "Balance provider not found during the weighted index check: {}",
+                                provider
+                            ))
+                            })
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(providers_result)
+            }
+            Err(e) => {
+                // Respond with temporarily unavailable when all weights are 0 for
+                // a chain providers
+                warn!("Failed to create weighted index: {}", e);
+                Err(RpcError::ChainTemporarilyUnavailable(namespace.to_string()))
             }
         }
     }
@@ -420,7 +494,7 @@ impl ProviderRepository {
         supported_ws_chains
             .into_iter()
             .for_each(|(chain_id, (_, weight))| {
-                self.supported_chains.ws.insert(chain_id.clone());
+                self.rpc_supported_chains.ws.insert(chain_id.clone());
                 self.ws_weight_resolver
                     .entry(chain_id)
                     .or_default()
@@ -428,14 +502,14 @@ impl ProviderRepository {
             });
     }
 
-    pub fn add_provider<T: RpcProviderFactory<C> + RpcProvider + 'static, C: ProviderConfig>(
+    pub fn add_rpc_provider<T: RpcProviderFactory<C> + RpcProvider + 'static, C: ProviderConfig>(
         &mut self,
         provider_config: C,
     ) {
         let provider = T::new(&provider_config);
         let arc_provider = Arc::new(provider);
 
-        self.providers
+        self.rpc_providers
             .insert(provider_config.provider_kind(), arc_provider);
 
         let provider_kind = provider_config.provider_kind();
@@ -444,13 +518,42 @@ impl ProviderRepository {
         supported_chains
             .into_iter()
             .for_each(|(chain_id, (_, weight))| {
-                self.supported_chains.http.insert(chain_id.clone());
-                self.weight_resolver
+                self.rpc_supported_chains.http.insert(chain_id.clone());
+                self.rpc_weight_resolver
                     .entry(chain_id)
                     .or_default()
                     .insert(provider_kind, weight);
             });
         debug!("Added provider: {}", provider_kind);
+    }
+
+    pub fn add_balance_provider<
+        T: BalanceProviderFactory<C> + BalanceProvider + 'static,
+        C: BalanceProviderConfig,
+    >(
+        &mut self,
+        provider_config: C,
+        cache: Option<Arc<Pool>>,
+    ) {
+        let provider = T::new(&provider_config, cache);
+        let arc_provider = Arc::new(provider);
+
+        self.balance_providers
+            .insert(provider_config.provider_kind(), arc_provider);
+
+        let provider_kind = provider_config.provider_kind();
+        let supported_namespaces = provider_config.supported_namespaces();
+
+        supported_namespaces
+            .into_iter()
+            .for_each(|(namespace, weight)| {
+                self.balance_supported_namespaces.insert(namespace);
+                self.balance_weight_resolver
+                    .entry(namespace)
+                    .or_default()
+                    .insert(provider_kind, weight);
+            });
+        debug!("Balance provider added: {}", provider_kind);
     }
 
     #[tracing::instrument(skip_all, level = "debug")]
@@ -474,8 +577,8 @@ impl ProviderRepository {
         {
             Ok(data) => {
                 let parsed_weights = weights::parse_weights(data);
-                weights::update_values(&self.weight_resolver, parsed_weights);
-                weights::record_values(&self.weight_resolver, metrics);
+                weights::update_values(&self.rpc_weight_resolver, parsed_weights);
+                weights::record_values(&self.rpc_weight_resolver, metrics);
             }
             Err(e) => {
                 warn!("Failed to update weights from prometheus: {}", e);
@@ -484,10 +587,13 @@ impl ProviderRepository {
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
-    pub fn get_provider_by_provider_id(&self, provider_id: &str) -> Option<Arc<dyn RpcProvider>> {
+    pub fn get_rpc_provider_by_provider_id(
+        &self,
+        provider_id: &str,
+    ) -> Option<Arc<dyn RpcProvider>> {
         let provider = ProviderKind::from_str(provider_id)?;
 
-        self.providers.get(&provider).cloned()
+        self.rpc_providers.get(&provider).cloned()
     }
 }
 
@@ -742,6 +848,10 @@ pub trait BalanceProvider: Send + Sync {
         params: BalanceQueryParams,
         metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody>;
+}
+
+pub trait BalanceProviderFactory<T: BalanceProviderConfig>: BalanceProvider {
+    fn new(provider_config: &T, cache: Option<Arc<Pool>>) -> Self;
 }
 
 #[async_trait]

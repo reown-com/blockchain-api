@@ -1,14 +1,9 @@
-use {
-    parquet_derive::ParquetRecordWriter,
-    serde::Serialize,
-    std::{sync::Arc, time::Duration},
-};
+use {parquet_derive::ParquetRecordWriter, serde::Serialize, std::sync::Arc};
 
 #[derive(Debug, Clone, Serialize, ParquetRecordWriter)]
 #[serde(rename_all = "camelCase")]
 pub struct BalanceLookupInfo {
     pub timestamp: chrono::NaiveDateTime,
-    pub latency_secs: f64,
 
     pub symbol: String,
     pub implementation_chain_id: String,
@@ -29,7 +24,6 @@ pub struct BalanceLookupInfo {
 impl BalanceLookupInfo {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        latency: Duration,
         symbol: String,
         implementation_chain_id: String,
         quantity: String,
@@ -45,7 +39,6 @@ impl BalanceLookupInfo {
     ) -> Self {
         Self {
             timestamp: wc::analytics::time::now(),
-            latency_secs: latency.as_secs_f64(),
             symbol,
             implementation_chain_id,
             quantity,
