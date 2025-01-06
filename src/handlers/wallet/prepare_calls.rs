@@ -688,6 +688,7 @@ mod tests {
                                     ],
                                 }
                             ],
+                            permitERC4337Paymaster: false,
                         },
                         permissionEnableSig: bytes!("821a568f5940148c20779e18f7fa0547c4f53f388eb684678f92774152a728a73be1f82e3f3f37a54f20e686e2a9711c280871aef1f7aa796b790ade00c0f01020"),
                     },
@@ -732,6 +733,7 @@ mod tests {
                                     ],
                                 }
                             ],
+                            permitERC4337Paymaster: false
                         },
                         permissionEnableSig: bytes!("f0c9cba469e26f15ae4c098ff1b474b48673bb75d32e7e360391cb6e6db11c931dcc81986a86b380fcd480464b5f504fd5fa527fd9437e46ea75098adce216c81f"),
                     },
