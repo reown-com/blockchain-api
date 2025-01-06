@@ -166,11 +166,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
-        // Klaytn
+        // Kaia Mainnet
         (
             "eip155:8217".into(),
             (
-                "klaytn-mainnet".into(),
+                "kaia-mainnet".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
@@ -199,7 +199,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         (
             "eip155:534351".into(),
             (
-                "scroll-sepolia-testnet".into(),
+                "scroll-testnet".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
