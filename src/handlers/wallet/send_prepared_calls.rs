@@ -28,6 +28,7 @@ use uuid::Uuid;
 use wc::future::FutureExt;
 use yttrium::bundler::client::BundlerClient;
 use yttrium::bundler::config::BundlerConfig;
+use yttrium::erc7579::smart_sessions::SmartSessionMode;
 use yttrium::{
     chain::ChainId,
     entry_point::{EntryPointConfig, EntryPointVersion},
@@ -64,6 +65,7 @@ pub enum SendPreparedCallsError {
 
     #[error("Permission context not long enough")]
     PermissionContextNotLongEnough,
+
     #[error("Unsupported permission context mode: USE")]
     PermissionContextUnsupportedModeUse,
 
@@ -388,10 +390,22 @@ async fn handler_internal(
                 .map_err(SendPreparedCallsError::SplitPermissionsContextAndCheckValidator)?;
 
         let DecodedSmartSessionSignature {
+            mode,
             permission_id,
+            signature: _,
             enable_session_data,
         } = decode_smart_session_signature(signature, account_type)
             .map_err(SendPreparedCallsError::DecodeSmartSessionSignature)?;
+
+        let enable_session_data = match mode {
+            SmartSessionMode::Enable | SmartSessionMode::UnsafeEnable => {
+                // TODO refactor enum to avoid unwrap
+                enable_session_data.unwrap()
+            }
+            SmartSessionMode::Use => {
+                return Err(SendPreparedCallsError::PermissionContextUnsupportedModeUse)
+            }
+        };
 
         let signature = encode_use_or_enable_smart_session_signature(
             provider.clone(),

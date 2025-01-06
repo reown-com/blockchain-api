@@ -29,10 +29,10 @@ use {
     uuid::Uuid,
     wc::future::FutureExt,
     yttrium::chain_abstraction::api::{
-        route::{
-            BridgingError, FundingMetadata, InitialTransactionMetadata, Metadata, RouteQueryParams,
-            RouteRequest, RouteResponse, RouteResponseAvailable, RouteResponseError,
-            RouteResponseNotRequired, RouteResponseSuccess,
+        prepare::{
+            BridgingError, FundingMetadata, InitialTransactionMetadata, Metadata, PrepareRequest,
+            PrepareResponse, PrepareResponseAvailable, PrepareResponseError,
+            PrepareResponseNotRequired, PrepareResponseSuccess, RouteQueryParams,
         },
         Transaction,
     },
@@ -54,7 +54,7 @@ struct QuoteRoute {
 pub async fn handler(
     state: State<Arc<AppState>>,
     query_params: Query<RouteQueryParams>,
-    Json(request_payload): Json<RouteRequest>,
+    Json(request_payload): Json<PrepareRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query_params, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("ca_route"))
@@ -65,7 +65,7 @@ pub async fn handler(
 async fn handler_internal(
     state: State<Arc<AppState>>,
     Query(query_params): Query<RouteQueryParams>,
-    request_payload: RouteRequest,
+    request_payload: PrepareRequest,
 ) -> Result<Response, RpcError> {
     state
         .validate_project_access_and_quota(query_params.project_id.as_ref())
@@ -95,8 +95,8 @@ async fn handler_internal(
     .await?;
     initial_transaction.nonce = intial_transaction_nonce;
 
-    let no_bridging_needed_response: Json<RouteResponse> = Json(RouteResponse::Success(
-        RouteResponseSuccess::NotRequired(RouteResponseNotRequired {
+    let no_bridging_needed_response: Json<PrepareResponse> = Json(PrepareResponse::Success(
+        PrepareResponseSuccess::NotRequired(PrepareResponseNotRequired {
             initial_transaction: initial_transaction.clone(),
             transactions: vec![],
         }),
@@ -249,7 +249,7 @@ async fn handler_internal(
     )
     .await?
     else {
-        return Ok(Json(RouteResponse::Error(RouteResponseError {
+        return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::InsufficientFunds,
         }))
         .into_response());
@@ -275,7 +275,7 @@ async fn handler_internal(
         )
         .await?;
     let Some(best_route) = quotes.first() else {
-        return Ok(Json(RouteResponse::Error(RouteResponseError {
+        return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::NoRoutesAvailable,
         }))
         .into_response());
@@ -297,7 +297,7 @@ async fn handler_internal(
             "The current bridging asset balance on {} is {} less than the required topup amount:{}. The bridging fee is:{}",
             from_address, current_bridging_asset_balance, required_topup_amount, bridging_fee
         );
-        return Ok(Json(RouteResponse::Error(RouteResponseError {
+        return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::InsufficientFunds,
         }))
         .into_response());
@@ -318,7 +318,7 @@ async fn handler_internal(
         )
         .await?;
     let Some(best_route) = quotes.first() else {
-        return Ok(Json(RouteResponse::Error(RouteResponseError {
+        return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::NoRoutesAvailable,
         }))
         .into_response());
@@ -435,30 +435,32 @@ async fn handler_internal(
         .metrics
         .add_irn_latency(irn_call_start, OperationType::Set);
 
-    return Ok(Json(RouteResponse::Success(RouteResponseSuccess::Available(
-        RouteResponseAvailable {
-            orchestration_id,
-            initial_transaction,
-            transactions: routes,
-            metadata: Metadata {
-                funding_from: vec![FundingMetadata {
-                    chain_id: bridge_chain_id,
-                    token_contract: bridge_contract,
-                    symbol: bridge_token_symbol,
-                    amount: bridging_amount,
-                    bridging_fee: final_bridging_fee,
-                    decimals: bridge_decimals,
-                }],
-                check_in: STATUS_POLLING_INTERVAL,
-                initial_transaction: InitialTransactionMetadata {
-                    transfer_to: asset_transfer_receiver,
-                    amount: asset_transfer_value,
-                    token_contract: to_address,
-                    symbol: initial_tx_token_symbol,
-                    decimals: initial_tx_token_decimals,
+    return Ok(
+        Json(PrepareResponse::Success(PrepareResponseSuccess::Available(
+            PrepareResponseAvailable {
+                orchestration_id,
+                initial_transaction,
+                transactions: routes,
+                metadata: Metadata {
+                    funding_from: vec![FundingMetadata {
+                        chain_id: bridge_chain_id,
+                        token_contract: bridge_contract,
+                        symbol: bridge_token_symbol,
+                        amount: bridging_amount,
+                        bridging_fee: final_bridging_fee,
+                        decimals: bridge_decimals,
+                    }],
+                    check_in: STATUS_POLLING_INTERVAL,
+                    initial_transaction: InitialTransactionMetadata {
+                        transfer_to: asset_transfer_receiver,
+                        amount: asset_transfer_value,
+                        token_contract: to_address,
+                        symbol: initial_tx_token_symbol,
+                        decimals: initial_tx_token_decimals,
+                    },
                 },
             },
-        },
-    )))
-    .into_response());
+        )))
+        .into_response(),
+    );
 }

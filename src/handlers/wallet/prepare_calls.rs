@@ -6,7 +6,7 @@ use crate::handlers::sessions::get::{
 use crate::handlers::wallet::types::SignatureRequestType;
 use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
 use alloy::network::{Ethereum, Network};
-use alloy::primitives::{address, bytes, keccak256, Address, Bytes, FixedBytes, B256, U256, U64};
+use alloy::primitives::{bytes, keccak256, Address, Bytes, FixedBytes, B256, U256, U64};
 use alloy::providers::{Provider, ReqwestProvider};
 use alloy::sol_types::SolCall;
 use alloy::sol_types::SolValue;
@@ -24,14 +24,15 @@ use yttrium::erc7579::accounts::safe::encode_validator_key;
 use yttrium::erc7579::smart_sessions::ISmartSession::isPermissionEnabledReturn;
 use yttrium::erc7579::smart_sessions::{
     enableSessionSigCall, encode_use_signature, EnableSession, ISmartSession, SmartSessionMode,
+    SMART_SESSIONS_ADDRESS,
 };
 use yttrium::smart_accounts::account_address::AccountAddress;
 use yttrium::{
     bundler::{config::BundlerConfig, pimlico::client::BundlerClient},
     chain::ChainId,
     entry_point::{EntryPointConfig, EntryPointVersion},
+    execution::Execution,
     smart_accounts::{nonce::get_nonce_with_key, safe::get_call_data},
-    transaction::Transaction,
     user_operation::{user_operation_hash::UserOperationHash, UserOperationV07},
 };
 
@@ -42,7 +43,7 @@ pub type PrepareCallsRequest = Vec<PrepareCallsRequestItem>;
 pub struct PrepareCallsRequestItem {
     from: AccountAddress,
     chain_id: U64,
-    calls: Vec<Transaction>,
+    calls: Vec<Execution>,
     capabilities: Capabilities,
 }
 
@@ -100,9 +101,6 @@ pub enum PrepareCallsError {
 
     #[error("Permission context signature decompression error: {0}")]
     PermissionContextSignatureDecompression(fastlz_rs::DecompressError),
-
-    #[error("Unsupported permission context mode: USE")]
-    PermissionContextUnsupportedModeUse,
 
     #[error("Invalid permission context mode")]
     PermissionContextInvalidMode,
@@ -375,12 +373,11 @@ pub struct EnableSessionData {
 }
 
 pub struct DecodedSmartSessionSignature {
-    pub permission_id: FixedBytes<32>,
-    pub enable_session_data: EnableSessionData,
+    pub mode: SmartSessionMode,
+    pub permission_id: B256,
+    pub signature: Bytes,
+    pub enable_session_data: Option<EnableSessionData>,
 }
-
-// https://github.com/rhinestonewtf/module-sdk/blob/main/src/module/smart-sessions/constants.ts#L3
-const SMART_SESSIONS_ADDRESS: Address = address!("DDFF43A42726df11E34123f747bDce0f755F784d");
 
 // https://github.com/rhinestonewtf/module-sdk/blob/18ef7ca998c0d0a596572f18575e1b4967d9227b/src/module/smart-sessions/usage.ts#L209
 pub fn decode_smart_session_signature(
@@ -395,16 +392,23 @@ pub fn decode_smart_session_signature(
 
     match mode {
         SmartSessionMode::Use => {
-            let _permission_id: B256 = signature
+            let permission_id: B256 = signature
                 .get(1..33)
                 .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?
                 .try_into() // this error shouldn't happen
                 .map_err(|_| PrepareCallsError::PermissionContextNotLongEnough)?;
-            // TODO compressed data next
+            let signature = signature
+                .get(33..)
+                .ok_or(PrepareCallsError::PermissionContextNotLongEnough)?
+                .to_vec()
+                .into();
 
-            // https://github.com/rhinestonewtf/module-sdk/blob/18ef7ca998c0d0a596572f18575e1b4967d9227b/src/module/smart-sessions/usage.ts#L221
-            // We aren't implementing this currently because it doesn't return the needed value (enableSessionData)
-            Err(PrepareCallsError::PermissionContextUnsupportedModeUse)
+            Ok(DecodedSmartSessionSignature {
+                mode,
+                permission_id,
+                signature,
+                enable_session_data: None, // TODO bad practice to not enforce this as part of the enum variant
+            })
         }
         SmartSessionMode::Enable | SmartSessionMode::UnsafeEnable => {
             let compressed_data = signature
@@ -416,7 +420,7 @@ pub fn decode_smart_session_signature(
 
             let enableSessionSigCall {
                 session: enable_session,
-                signature: _,
+                signature,
             } = enableSessionSigCall::abi_decode_raw(&data, true)
                 .map_err(PrepareCallsError::PermissionContextAbiDecode)?;
             let is_kernel = account_type == AccountType::Kernel;
@@ -443,8 +447,10 @@ pub fn decode_smart_session_signature(
             );
 
             Ok(DecodedSmartSessionSignature {
+                mode,
                 permission_id,
-                enable_session_data: EnableSessionData {
+                signature,
+                enable_session_data: Some(EnableSessionData {
                     // enable_session,
                     enable_session: EnableSession {
                         chainDigestIndex: enable_session.chainDigestIndex,
@@ -453,7 +459,7 @@ pub fn decode_smart_session_signature(
                         permissionEnableSig: permission_enable_sig, // TODO skip all this and just pass-through as-is
                     },
                     validator,
-                },
+                }),
             })
         }
     }
@@ -592,9 +598,14 @@ where
     N: Network,
 {
     let DecodedSmartSessionSignature {
+        mode,
         permission_id,
+        signature: _,
         enable_session_data,
     } = decode_smart_session_signature(signature, account_type)?;
+
+    assert_eq!(mode, SmartSessionMode::Enable);
+    let enable_session_data = enable_session_data.unwrap();
 
     const DUMMY_ECDSA_SIGNATURE: Bytes = bytes!("e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c");
     const DUMMY_PASSKEY_SIGNATURE: Bytes = bytes!("00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000001635bc6d0f68ff895cae8a288ecf7542a6a9cd555df784b73e1e2ea7e9104b1db15e9015d280cb19527881c625fee43fd3a405d5b0d199a8c8e6589a7381209e40000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002549960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f47b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a22746278584e465339585f3442797231634d77714b724947422d5f3330613051685a36793775634d30424f45222c226f726967696e223a22687474703a2f2f6c6f63616c686f73743a33303030222c2263726f73734f726967696e223a66616c73652c20226f746865725f6b6579735f63616e5f62655f61646465645f68657265223a22646f206e6f7420636f6d7061726520636c69656e74446174614a534f4e20616761696e737420612074656d706c6174652e205365652068747470733a2f2f676f6f2e676c2f796162506578227d000000000000000000000000");
@@ -627,7 +638,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloy::primitives::{bytes, fixed_bytes};
+    use alloy::primitives::{address, bytes, fixed_bytes};
     use yttrium::erc7579::smart_sessions::{
         ActionData, ChainDigest, ERC7739Data, PolicyData, Session,
     };
