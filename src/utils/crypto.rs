@@ -804,7 +804,7 @@ pub fn constant_time_eq(a: impl AsRef<[u8]>, b: impl AsRef<[u8]>) -> bool {
 }
 
 /// Format token amount to human readable format according to the token decimals
-pub fn format_token_amount(amount: U256, decimals: u32) -> String {
+pub fn format_token_amount(amount: U256, decimals: u8) -> String {
     let amount_str = amount.to_string();
     let decimals_usize = decimals as usize;
 
@@ -821,7 +821,7 @@ pub fn format_token_amount(amount: U256, decimals: u32) -> String {
 }
 
 /// Convert token amount to value depending on the token price and decimals
-pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u32) -> f64 {
+pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u8) -> f64 {
     let decimals_usize = decimals as usize;
     let scaling_factor = 10_u64.pow(decimals_usize as u32) as f64;
     let balance_f64 = balance.as_u64() as f64 / scaling_factor;

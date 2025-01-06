@@ -213,13 +213,13 @@ async fn handler_internal(
             {
                 balance.quantity.numeric = crypto::format_token_amount(
                     rpc_balance,
-                    balance.quantity.decimals.parse::<u32>().unwrap_or(0),
+                    balance.quantity.decimals.parse::<u8>().unwrap_or(0),
                 );
                 // Recalculating the value with the latest balance
                 balance.value = Some(crypto::convert_token_amount_to_value(
                     rpc_balance,
                     balance.price,
-                    balance.quantity.decimals.parse::<u32>().unwrap_or(0),
+                    balance.quantity.decimals.parse::<u8>().unwrap_or(0),
                 ));
                 continue;
             }
@@ -231,13 +231,13 @@ async fn handler_internal(
                 {
                     balance.quantity.numeric = crypto::format_token_amount(
                         rpc_balance,
-                        balance.quantity.decimals.parse::<u32>().unwrap_or(0),
+                        balance.quantity.decimals.parse::<u8>().unwrap_or(0),
                     );
                     // Recalculate the value with the latest balance
                     balance.value = Some(crypto::convert_token_amount_to_value(
                         rpc_balance,
                         balance.price,
-                        balance.quantity.decimals.parse::<u32>().unwrap_or(0),
+                        balance.quantity.decimals.parse::<u8>().unwrap_or(0),
                     ));
                     continue;
                 }

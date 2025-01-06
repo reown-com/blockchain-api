@@ -55,6 +55,7 @@ mod berachain;
 mod binance;
 mod bungee;
 mod coinbase;
+mod dune;
 mod getblock;
 mod infura;
 mod lava;
@@ -82,6 +83,7 @@ pub use {
     berachain::BerachainProvider,
     binance::BinanceProvider,
     bungee::BungeeProvider,
+    dune::DuneProvider,
     getblock::GetBlockProvider,
     infura::{InfuraProvider, InfuraWsProvider},
     lava::LavaProvider,
@@ -139,6 +141,8 @@ pub struct ProvidersConfig {
     pub tenderly_account_id: String,
     /// Tenderly Project ID
     pub tenderly_project_id: String,
+    /// Dune API key
+    pub dune_api_key: String,
 
     pub override_bundler_urls: Option<MockAltoUrls>,
 }
@@ -622,6 +626,7 @@ pub enum ProviderKind {
     Lava,
     Morph,
     Tenderly,
+    Dune,
 }
 
 impl Display for ProviderKind {
@@ -653,6 +658,7 @@ impl Display for ProviderKind {
                 ProviderKind::Lava => "Lava",
                 ProviderKind::Morph => "Morph",
                 ProviderKind::Tenderly => "Tenderly",
+                ProviderKind::Dune => "Dune",
             }
         )
     }
@@ -685,6 +691,7 @@ impl ProviderKind {
             "Lava" => Some(Self::Lava),
             "Morph" => Some(Self::Morph),
             "Tenderly" => Some(Self::Tenderly),
+            "Dune" => Some(Self::Dune),
             _ => None,
         }
     }
