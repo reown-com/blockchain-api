@@ -10398,7 +10398,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?rev=6a5d2e9#6a5d2e9d69d12a0bd19de58af3237308bf1caa46"
+source = "git+https://github.com/reown-com/yttrium.git?rev=a3401f2#a3401f29cb816a6e1449b59d15594f94f6d6f9a9"
 dependencies = [
  "alloy 0.7.3",
  "alloy-provider 0.7.3",
@@ -10406,7 +10406,6 @@ dependencies = [
  "dotenvy",
  "erc6492",
  "eyre",
- "fastlz-rs",
  "futures",
  "getrandom",
  "hex",
