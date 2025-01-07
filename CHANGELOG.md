@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.155.1 - 2025-01-07
+#### Bug Fixes
+- update yttrium and smart sessions (#886) - (093ddf3) - Chris Smith
+
+- - -
+
 ## 0.155.0 - 2024-12-27
 #### Features
 - **(analytics)** adding identity sender field instead of the same_sender (#881) - (e34b30e) - Max Kalashnikoff | maksy.eth
