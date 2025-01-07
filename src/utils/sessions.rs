@@ -122,13 +122,13 @@ mod tests {
     use {
         super::*,
         alloy::primitives::address,
-        yttrium::{smart_accounts::safe::get_call_data, transaction::Transaction},
+        yttrium::{execution::Execution, smart_accounts::safe::get_call_data},
     };
 
     #[test]
     // Check for the packed calldata format for a single transaction
     fn single_execution_call_data_value() {
-        let encoded_data = get_call_data(vec![Transaction {
+        let encoded_data = get_call_data(vec![Execution {
             to: address!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
             value: U256::from(1010101),
             data: Bytes::new(),
@@ -141,12 +141,12 @@ mod tests {
     // Check for the regular calldata format for multiple transactions
     fn multiple_execution_call_data_value() {
         let encoded_data = get_call_data(vec![
-            Transaction {
+            Execution {
                 to: address!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
                 value: U256::from(1010101),
                 data: Bytes::new(),
             },
-            Transaction {
+            Execution {
                 to: address!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"),
                 value: U256::from(2020202),
                 data: Bytes::new(),

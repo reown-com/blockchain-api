@@ -321,9 +321,9 @@ mod tests {
     };
     use yttrium::{
         config::Config,
+        execution::{send::safe_test::send_transactions, Execution},
         smart_accounts::safe::{get_account_address, Owners},
         test_helpers::{anvil_faucet, use_faucet},
-        transaction::{send::safe_test::send_transactions, Transaction},
     };
 
     #[tokio::test]
@@ -357,7 +357,7 @@ mod tests {
         )
         .await;
 
-        let transaction = vec![Transaction {
+        let transaction = vec![Execution {
             to: destination.address(),
             value: Uint::from(1),
             data: Bytes::new(),
@@ -425,7 +425,7 @@ mod tests {
         )
         .await;
 
-        let transaction = vec![Transaction {
+        let transaction = vec![Execution {
             to: destination.address(),
             value: Uint::from(1),
             data: Bytes::new(),
