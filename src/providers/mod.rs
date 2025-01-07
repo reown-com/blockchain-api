@@ -806,6 +806,10 @@ pub enum SupportedBundlerOps {
     /// Paymaster sponsor UserOp
     #[serde(rename = "pm_sponsorUserOperation")]
     PmSponsorUserOperation,
+    #[serde(rename = "pm_getPaymasterData")]
+    PmGetPaymasterData,
+    #[serde(rename = "pm_getPaymasterStubData")]
+    PmGetPaymasterStubData,
     #[serde(rename = "pimlico_getUserOperationGasPrice")]
     PimlicoGetUserOperationGasPrice,
 }
