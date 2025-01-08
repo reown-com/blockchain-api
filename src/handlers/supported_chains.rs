@@ -16,5 +16,5 @@ pub async fn handler(state: State<Arc<AppState>>) -> Result<Json<SupportedChains
 async fn handler_internal(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<SupportedChains>, RpcError> {
-    Ok(Json(state.providers.supported_chains.clone()))
+    Ok(Json(state.providers.rpc_supported_chains.clone()))
 }

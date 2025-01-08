@@ -71,6 +71,7 @@ $ docker run -p 3000:3000 \
     -e RPC_PROXY_POKT_PROJECT_ID=<some_id> \
     -e RPC_PROXY_INFURA_PROJECT_ID=<some_id> \
     -e RPC_PROXY_QUICKNODE_API_TOKENS=<JSON> \
+    -e RPC_PROXY_ZERION_API_KEY=<some_id> \
     -e RPC_PROXY_REGISTRY_API_URL=<registry_url> \
     -e RPC_PROXY_REGISTRY_API_AUTH_TOKEN=<token> \
     --name rpc -it rpc-proxy

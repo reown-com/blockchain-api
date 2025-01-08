@@ -1,6 +1,7 @@
 use {
-    super::{BalanceProvider, HistoryProvider, PortfolioProvider},
+    super::{BalanceProvider, BalanceProviderFactory, HistoryProvider, PortfolioProvider},
     crate::{
+        env::ZerionConfig,
         error::{RpcError, RpcResult},
         handlers::{
             balance::{BalanceQueryParams, BalanceResponseBody},
@@ -22,6 +23,7 @@ use {
         Metrics,
     },
     async_trait::async_trait,
+    deadpool_redis::Pool,
     serde::{Deserialize, Serialize},
     std::{sync::Arc, time::SystemTime},
     tap::TapFallible,
@@ -526,5 +528,16 @@ impl BalanceProvider for ZerionProvider {
         };
 
         Ok(response)
+    }
+}
+
+impl BalanceProviderFactory<ZerionConfig> for ZerionProvider {
+    fn new(provider_config: &ZerionConfig, _cache: Option<Arc<Pool>>) -> Self {
+        let http_client = reqwest::Client::new();
+        Self {
+            provider_kind: ProviderKind::Zerion,
+            api_key: provider_config.api_key.clone(),
+            http_client,
+        }
     }
 }

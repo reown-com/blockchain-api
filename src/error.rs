@@ -75,6 +75,9 @@ pub enum RpcError {
     #[error("Failed to reach the balance provider")]
     BalanceProviderError,
 
+    #[error("Requested balance provider for the namespace is temporarily unavailable: {0}")]
+    BalanceTemporarilyUnavailable(String),
+
     #[error("Failed to reach the fungible price provider: {0}")]
     FungiblePriceProviderError(String),
 
@@ -279,6 +282,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "chainId".to_string(),
                     format!("Requested {chain_id} chain provider is temporarily unavailable"),
+                )),
+            )
+                .into_response(),
+            Self::BalanceTemporarilyUnavailable(namespace) => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "chainId".to_string(),
+                    format!("Requested namespace {namespace} balance provider is temporarily unavailable"),
                 )),
             )
                 .into_response(),

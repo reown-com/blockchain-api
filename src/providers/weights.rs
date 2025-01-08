@@ -1,5 +1,5 @@
 use {
-    super::{ProviderKind, WeightResolver},
+    super::{ChainsWeightResolver, ProviderKind},
     crate::env::ChainId,
     prometheus_http_query::response::PromqlResult,
     std::collections::HashMap,
@@ -123,7 +123,7 @@ fn calculate_chain_weight(
 }
 
 #[tracing::instrument(skip_all, level = "debug")]
-pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWeights) {
+pub fn update_values(weight_resolver: &ChainsWeightResolver, parsed_weights: ParsedWeights) {
     for (provider, (chain_availabilities, provider_availability)) in parsed_weights {
         for (chain_id, chain_availability) in chain_availabilities {
             let chain_id = chain_id.0;
@@ -150,7 +150,7 @@ pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWei
     }
 }
 
-pub fn record_values(weight_resolver: &WeightResolver, metrics: &crate::Metrics) {
+pub fn record_values(weight_resolver: &ChainsWeightResolver, metrics: &crate::Metrics) {
     for (chain_id, provider_chain_weight) in weight_resolver {
         for (provider_kind, weight) in provider_chain_weight {
             let weight = weight.value();

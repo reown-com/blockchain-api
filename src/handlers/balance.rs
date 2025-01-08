@@ -14,15 +14,13 @@ use {
     ethers::{abi::Address, types::H160},
     hyper::HeaderMap,
     serde::{Deserialize, Serialize},
-    std::{
-        net::SocketAddr,
-        sync::Arc,
-        time::{Duration, SystemTime},
-    },
+    std::{net::SocketAddr, sync::Arc},
     tap::TapFallible,
     tracing::log::{debug, error},
     wc::future::FutureExt,
 };
+
+const PROVIDER_MAX_CALLS: usize = 2;
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -108,20 +106,32 @@ async fn handler_internal(
         return Err(RpcError::InvalidAddress);
     }
 
-    let provider = state
+    let providers = state
         .providers
-        .balance_providers
-        .get(&namespace)
-        .ok_or_else(|| RpcError::UnsupportedNamespace(namespace))?;
+        .get_balance_provider_for_namespace(&namespace, PROVIDER_MAX_CALLS)?;
 
-    let start = SystemTime::now();
-    let mut response = provider
-        .get_balance(address.clone(), query.clone().0, state.metrics.clone())
-        .await
-        .tap_err(|e| {
-            error!("Failed to call balance with {}", e);
-        })?;
-    let latency = start.elapsed().unwrap_or(Duration::from_secs(0));
+    let mut balance_response = None;
+    for provider in providers.iter() {
+        let provider_response = provider
+            .get_balance(address.clone(), query.clone().0, state.metrics.clone())
+            .await
+            .tap_err(|e| {
+                error!("Failed to call balance with {}", e);
+            });
+
+        match provider_response {
+            Ok(response) => {
+                balance_response = Some(response);
+                break;
+            }
+            e => {
+                debug!("Balance provider returned an error {e:?}, trying the next provider");
+            }
+        };
+    }
+    let mut response = balance_response.ok_or(RpcError::BalanceTemporarilyUnavailable(
+        namespace.to_string(),
+    ))?;
 
     {
         let origin = headers
@@ -137,7 +147,6 @@ async fn handler_internal(
             .unwrap_or((None, None, None));
         for balance in &response.balances {
             state.analytics.balance_lookup(BalanceLookupInfo::new(
-                latency,
                 balance.symbol.clone(),
                 balance.chain_id.clone().unwrap_or_default(),
                 balance.quantity.numeric.clone(),

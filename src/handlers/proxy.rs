@@ -73,7 +73,7 @@ pub async fn rpc_call(
         Some(provider_id) => {
             let provider = vec![state
                 .providers
-                .get_provider_by_provider_id(&provider_id)
+                .get_rpc_provider_by_provider_id(&provider_id)
                 .ok_or_else(|| RpcError::UnsupportedProvider(provider_id.clone()))?];
 
             if let Some(ref testing_project_id) = state.config.server.testing_project_id {
@@ -94,7 +94,7 @@ pub async fn rpc_call(
         }
         None => state
             .providers
-            .get_provider_for_chain_id(&chain_id, PROVIDER_PROXY_MAX_CALLS)?,
+            .get_rpc_provider_for_chain_id(&chain_id, PROVIDER_PROXY_MAX_CALLS)?,
     };
 
     for (i, provider) in providers.iter().enumerate() {
