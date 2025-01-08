@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.156.0 - 2025-01-08
+#### Features
+- **(bundler)** extending supported bundler operations (#888) - (a9bc59b) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.155.1 - 2025-01-07
 #### Bug Fixes
 - update yttrium and smart sessions (#886) - (093ddf3) - Chris Smith
