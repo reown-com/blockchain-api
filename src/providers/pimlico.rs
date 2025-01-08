@@ -74,6 +74,8 @@ impl BundlerOpsProvider for PimlicoProvider {
                 "eth_estimateUserOperationGas".into()
             }
             SupportedBundlerOps::PmSponsorUserOperation => "pm_sponsorUserOperation".into(),
+            SupportedBundlerOps::PmGetPaymasterData => "pm_getPaymasterData".into(),
+            SupportedBundlerOps::PmGetPaymasterStubData => "pm_getPaymasterStubData".into(),
             SupportedBundlerOps::PimlicoGetUserOperationGasPrice => {
                 "pimlico_getUserOperationGasPrice".into()
             }
