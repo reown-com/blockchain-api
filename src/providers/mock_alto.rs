@@ -56,7 +56,9 @@ impl BundlerOpsProvider for MockAltoProvider {
             | SupportedBundlerOps::EthGetUserOperationReceipt
             | SupportedBundlerOps::EthEstimateUserOperationGas
             | SupportedBundlerOps::PimlicoGetUserOperationGasPrice => self.bundler_url.clone(),
-            SupportedBundlerOps::PmSponsorUserOperation => self.paymaster_url.clone(),
+            SupportedBundlerOps::PmSponsorUserOperation
+            | SupportedBundlerOps::PmGetPaymasterData
+            | SupportedBundlerOps::PmGetPaymasterStubData => self.paymaster_url.clone(),
         };
         let response = self
             .http_client
@@ -84,6 +86,8 @@ impl BundlerOpsProvider for MockAltoProvider {
                 "eth_estimateUserOperationGas".into()
             }
             SupportedBundlerOps::PmSponsorUserOperation => "pm_sponsorUserOperation".into(),
+            SupportedBundlerOps::PmGetPaymasterData => "pm_getPaymasterData".into(),
+            SupportedBundlerOps::PmGetPaymasterStubData => "pm_getPaymasterStubData".into(),
             SupportedBundlerOps::PimlicoGetUserOperationGasPrice => {
                 "pimlico_getUserOperationGasPrice".into()
             }
