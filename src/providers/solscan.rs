@@ -617,7 +617,7 @@ impl FungiblePriceProvider for SolScanProvider {
                 symbol: info.symbol,
                 icon_url: info.icon.unwrap_or_default(),
                 price,
-                decimals: info.decimals as u32,
+                decimals: info.decimals,
             }],
         };
 

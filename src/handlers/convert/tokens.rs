@@ -34,7 +34,7 @@ pub struct TokenItem {
     pub name: String,
     pub symbol: String,
     pub address: String,
-    pub decimals: u32,
+    pub decimals: u8,
     pub logo_uri: Option<String>,
     pub eip2612: Option<bool>,
 }

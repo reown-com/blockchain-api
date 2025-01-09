@@ -14,15 +14,16 @@ use {
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
-    arbitrum::*, aurora::*, base::*, berachain::*, binance::*, getblock::*, infura::*, lava::*,
-    mantle::*, morph::*, near::*, pokt::*, publicnode::*, quicknode::*, server::*, solscan::*,
-    unichain::*, zerion::*, zksync::*, zora::*,
+    arbitrum::*, aurora::*, base::*, berachain::*, binance::*, dune::*, getblock::*, infura::*,
+    lava::*, mantle::*, morph::*, near::*, pokt::*, publicnode::*, quicknode::*, server::*,
+    solscan::*, unichain::*, zerion::*, zksync::*, zora::*,
 };
 mod arbitrum;
 mod aurora;
 mod base;
 mod berachain;
 mod binance;
+mod dune;
 mod getblock;
 mod infura;
 mod lava;
@@ -192,6 +193,7 @@ mod test {
                 "RPC_PROXY_PROVIDER_TENDERLY_PROJECT_ID",
                 "TENDERLY_PROJECT_ID",
             ),
+            ("RPC_PROXY_PROVIDER_DUNE_API_KEY", "DUNE_API_KEY"),
             (
                 "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL",
                 "PROMETHEUS_QUERY_URL",
@@ -297,6 +299,7 @@ mod test {
                     tenderly_api_key: "TENDERLY_KEY".to_string(),
                     tenderly_account_id: "TENDERLY_ACCOUNT_ID".to_string(),
                     tenderly_project_id: "TENDERLY_PROJECT_ID".to_string(),
+                    dune_api_key: "DUNE_API_KEY".to_string(),
                     override_bundler_urls: None,
                 },
                 rate_limiting: RateLimitingConfig {

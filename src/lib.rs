@@ -18,9 +18,9 @@ use {
         Router,
     },
     env::{
-        ArbitrumConfig, AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig, GetBlockConfig,
-        InfuraConfig, LavaConfig, MantleConfig, MorphConfig, NearConfig, PoktConfig,
-        PublicnodeConfig, QuicknodeConfig, SolScanConfig, UnichainConfig, ZKSyncConfig,
+        ArbitrumConfig, AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig, DuneConfig,
+        GetBlockConfig, InfuraConfig, LavaConfig, MantleConfig, MorphConfig, NearConfig,
+        PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig, UnichainConfig, ZKSyncConfig,
         ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
@@ -28,10 +28,10 @@ use {
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
         ArbitrumProvider, AuroraProvider, BaseProvider, BerachainProvider, BinanceProvider,
-        GetBlockProvider, InfuraProvider, InfuraWsProvider, LavaProvider, MantleProvider,
-        MorphProvider, NearProvider, PoktProvider, ProviderRepository, PublicnodeProvider,
-        QuicknodeProvider, SolScanProvider, UnichainProvider, ZKSyncProvider, ZerionProvider,
-        ZoraProvider, ZoraWsProvider,
+        DuneProvider, GetBlockProvider, InfuraProvider, InfuraWsProvider, LavaProvider,
+        MantleProvider, MorphProvider, NearProvider, PoktProvider, ProviderRepository,
+        PublicnodeProvider, QuicknodeProvider, SolScanProvider, UnichainProvider, ZKSyncProvider,
+        ZerionProvider, ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -525,6 +525,10 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
 
     providers.add_balance_provider::<ZerionProvider, ZerionConfig>(
         ZerionConfig::new(config.zerion_api_key.clone()),
+        None,
+    );
+    providers.add_balance_provider::<DuneProvider, DuneConfig>(
+        DuneConfig::new(config.dune_api_key.clone()),
         None,
     );
     providers.add_balance_provider::<SolScanProvider, SolScanConfig>(

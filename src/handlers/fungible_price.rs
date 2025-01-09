@@ -35,7 +35,7 @@ pub struct FungiblePriceItem {
     pub symbol: String,
     pub icon_url: String,
     pub price: f64,
-    pub decimals: u32,
+    pub decimals: u8,
 }
 
 pub async fn handler(

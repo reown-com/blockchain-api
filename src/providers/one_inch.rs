@@ -189,7 +189,7 @@ struct OneInchTokenItem {
     symbol: String,
     name: String,
     address: String,
-    decimals: u32,
+    decimals: u8,
     #[serde(alias = "logoURI")]
     logo_uri: Option<String>,
     eip2612: Option<bool>,
