@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.158.0 - 2025-01-09
+#### Features
+- **(providers)** adding Dune provider for EVM balances resolution (#887) - (ddcb520) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.157.0 - 2025-01-08
 #### Bug Fixes
 - **(CD)** bumping shared actions workflow version (#889) - (f2197b2) - Max Kalashnikoff | maksy.eth
