@@ -33,8 +33,14 @@ impl BalanceProviderConfig for DuneConfig {
 }
 
 fn default_supported_namespaces() -> HashMap<CaipNamespaces, Weight> {
-    HashMap::from([(
-        CaipNamespaces::Eip155,
-        Weight::new(Priority::Normal).unwrap(),
-    )])
+    HashMap::from([
+        (
+            CaipNamespaces::Eip155,
+            Weight::new(Priority::Normal).unwrap(),
+        ),
+        (
+            CaipNamespaces::Solana,
+            Weight::new(Priority::Normal).unwrap(),
+        ),
+    ])
 }

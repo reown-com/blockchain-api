@@ -55,6 +55,7 @@ describe('Account balance', () => {
     expect(resp.data.balances.length).toBeGreaterThan(1)
 
     for (const item of resp.data.balances) {
+      expect(item.chainId).toEqual(chainId)
       expect(typeof item.name).toBe('string')
       expect(typeof item.symbol).toBe('string')
       expect(typeof item.quantity).toBe('object')
