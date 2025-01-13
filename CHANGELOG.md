@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.160.0 - 2025-01-13
+#### Features
+- **(CA)** extending bridges for routes (#892) - (dd4d33c) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.159.0 - 2025-01-09
 #### Features
 - **(providers)** extending Dune provider to serve Solana balances (#890) - (b913568) - Max Kalashnikoff | maksy.eth
