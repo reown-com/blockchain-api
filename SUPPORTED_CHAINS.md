@@ -23,7 +23,7 @@ Chain name with associated `chainId` query param to use.
 | Morph Mainnet <sup>[1](#footnote1)</sup>                 | eip155:2818          |
 | Mantle <sup>[1](#footnote1)</sup>                        | eip155:5000          |
 | Mantle Testnet <sup>[1](#footnote1)</sup>                | eip155:5003          |
-| Klaytn Mainnet                                           | eip155:8217          |
+| Kaia Mainnet                                             | eip155:8217          |
 | Base                                                     | eip155:8453          |
 | Ethereum Holesky                                         | eip155:17000         |
 | Arbitrum                                                 | eip155:42161         |
