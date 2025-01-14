@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.161.1 - 2025-01-14
+#### Bug Fixes
+- **(providers)** revert Bungee multiple bridges usage (#896) - (361bb6f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.161.0 - 2025-01-14
 #### Features
 - **(providers)** adding Wemix RPC endpoints (#895) - (d1b308c) - Max Kalashnikoff | maksy.eth
