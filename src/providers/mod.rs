@@ -72,6 +72,7 @@ mod solscan;
 pub mod tenderly;
 mod unichain;
 mod weights;
+mod wemix;
 pub mod zerion;
 mod zksync;
 mod zora;
@@ -98,6 +99,7 @@ pub use {
     solscan::SolScanProvider,
     tenderly::TenderlyProvider,
     unichain::UnichainProvider,
+    wemix::WemixProvider,
     zerion::ZerionProvider,
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
@@ -627,6 +629,7 @@ pub enum ProviderKind {
     Morph,
     Tenderly,
     Dune,
+    Wemix,
 }
 
 impl Display for ProviderKind {
@@ -641,6 +644,7 @@ impl Display for ProviderKind {
                 ProviderKind::Pokt => "Pokt",
                 ProviderKind::Binance => "Binance",
                 ProviderKind::Berachain => "Berachain",
+                ProviderKind::Wemix => "Wemix",
                 ProviderKind::Bungee => "Bungee",
                 ProviderKind::ZKSync => "zkSync",
                 ProviderKind::Publicnode => "Publicnode",
@@ -692,6 +696,7 @@ impl ProviderKind {
             "Morph" => Some(Self::Morph),
             "Tenderly" => Some(Self::Tenderly),
             "Dune" => Some(Self::Dune),
+            "Wemix" => Some(Self::Wemix),
             _ => None,
         }
     }
