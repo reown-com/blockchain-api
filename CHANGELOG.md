@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.161.0 - 2025-01-14
+#### Features
+- **(providers)** adding Wemix RPC endpoints (#895) - (d1b308c) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.160.1 - 2025-01-14
 #### Bug Fixes
 - **(providers)** change Klaytn to Kaia endpoint (#885) - (04caa56) - Max Kalashnikoff | maksy.eth
