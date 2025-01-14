@@ -20,8 +20,8 @@ use {
     env::{
         ArbitrumConfig, AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig, DuneConfig,
         GetBlockConfig, InfuraConfig, LavaConfig, MantleConfig, MorphConfig, NearConfig,
-        PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig, UnichainConfig, ZKSyncConfig,
-        ZerionConfig, ZoraConfig,
+        PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig, UnichainConfig, WemixConfig,
+        ZKSyncConfig, ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
@@ -30,8 +30,8 @@ use {
         ArbitrumProvider, AuroraProvider, BaseProvider, BerachainProvider, BinanceProvider,
         DuneProvider, GetBlockProvider, InfuraProvider, InfuraWsProvider, LavaProvider,
         MantleProvider, MorphProvider, NearProvider, PoktProvider, ProviderRepository,
-        PublicnodeProvider, QuicknodeProvider, SolScanProvider, UnichainProvider, ZKSyncProvider,
-        ZerionProvider, ZoraProvider, ZoraWsProvider,
+        PublicnodeProvider, QuicknodeProvider, SolScanProvider, UnichainProvider, WemixProvider,
+        ZKSyncProvider, ZerionProvider, ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -511,6 +511,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers
         .add_rpc_provider::<LavaProvider, LavaConfig>(LavaConfig::new(config.lava_api_key.clone()));
     providers.add_rpc_provider::<MorphProvider, MorphConfig>(MorphConfig::default());
+    providers.add_rpc_provider::<WemixProvider, WemixConfig>(WemixConfig::default());
 
     if let Some(getblock_access_tokens) = &config.getblock_access_tokens {
         providers.add_rpc_provider::<GetBlockProvider, GetBlockConfig>(GetBlockConfig::new(
