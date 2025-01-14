@@ -153,7 +153,7 @@ impl ChainOrchestrationProvider for BungeeProvider {
         );
         // Use only Across bridge for latency reason
         url.query_pairs_mut()
-            .append_pair("includeBridges", "across,hop,stargate");
+            .append_pair("includeBridges", "across");
 
         let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await?;
