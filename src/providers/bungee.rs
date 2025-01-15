@@ -131,29 +131,23 @@ impl ChainOrchestrationProvider for BungeeProvider {
         let (_, evm_from_chain_id) = disassemble_caip2(&from_chain_id)?;
         let (_, evm_to_chain_id) = disassemble_caip2(&to_chain_id)?;
 
-        url.query_pairs_mut()
-            .append_pair("fromChainId", &evm_from_chain_id);
-        url.query_pairs_mut()
-            .append_pair("fromTokenAddress", &from_token_address.to_string());
-        url.query_pairs_mut()
-            .append_pair("toChainId", &evm_to_chain_id);
-        url.query_pairs_mut()
-            .append_pair("toTokenAddress", &to_token_address.to_string());
-        url.query_pairs_mut()
-            .append_pair("fromAmount", &amount.to_string());
-        url.query_pairs_mut()
-            .append_pair("userAddress", &user_address.to_string());
-        url.query_pairs_mut()
-            .append_pair("uniqueRoutesPerBridge", "true");
-        url.query_pairs_mut().append_pair("sort", "output");
-        url.query_pairs_mut().append_pair("singleTxOnly", "true");
-        url.query_pairs_mut().append_pair(
-            "defaultBridgeSlippage",
-            BRIDGING_SLIPPAGE.to_string().as_str(),
-        );
-        // Use only Across bridge for latency reason
-        url.query_pairs_mut()
-            .append_pair("includeBridges", "across");
+        url.query_pairs_mut().extend_pairs([
+            ("fromChainId", &evm_from_chain_id),
+            ("fromTokenAddress", &from_token_address.to_string()),
+            ("toChainId", &evm_to_chain_id),
+            ("toTokenAddress", &to_token_address.to_string()),
+            ("fromAmount", &amount.to_string()),
+            ("userAddress", &user_address.to_string()),
+            ("uniqueRoutesPerBridge", &"true".to_string()),
+            ("sort", &"output".to_string()),
+            ("singleTxOnly", &"true".to_string()),
+            ("defaultBridgeSlippage", &BRIDGING_SLIPPAGE.to_string()),
+            // Using most liquidity bridges
+            ("includeBridges", &"across".to_string()),
+            ("includeBridges", &"cctp".to_string()),
+            ("includeBridges", &"hop".to_string()),
+            ("includeBridges", &"stargate".to_string()),
+        ]);
 
         let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await?;
