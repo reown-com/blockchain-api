@@ -34,8 +34,6 @@ static USDC_CONTRACTS: phf::Map<&'static str, Address> = phf_map! {
 static USDT_CONTRACTS: phf::Map<&'static str, Address> = phf_map! {
     // Optimism
     "eip155:10" => address!("94b008aA00579c1307B0EF2c499aD98a8ce58e58"),
-    // Base
-    "eip155:8453" => address!("fde4C96c8593536E31F229EA8f37b2ADa2699bb2"),
     // Arbitrum
     "eip155:42161" => address!("Fd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"),
 };
