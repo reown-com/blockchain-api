@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.163.0 - 2025-01-15
+#### Features
+- **(CA)** extending Bungee quotes bridges list (#899) - (dc53063) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.162.1 - 2025-01-15
 #### Bug Fixes
 - **(CA)** removing USDT asset Base chain support (#898) - (11d7c57) - Max Kalashnikoff | maksy.eth
