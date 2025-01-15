@@ -9,15 +9,16 @@ use {
         utils::crypto::get_erc20_contract_balance,
         Metrics,
     },
-    alloy::primitives::{address, Address, B256, U256},
+    alloy::primitives::{Address, B256, U256},
+    assets::{SimulationParams, BRIDGING_ASSETS},
     ethers::{types::H160 as EthersH160, utils::keccak256},
-    phf::phf_map,
     serde::{Deserialize, Serialize},
     std::{collections::HashMap, str::FromStr, sync::Arc},
     tracing::debug,
     yttrium::chain_abstraction::api::Transaction,
 };
 
+pub mod assets;
 pub mod route;
 pub mod status;
 
@@ -26,19 +27,6 @@ pub const BRIDGING_AMOUNT_SLIPPAGE: i8 = 50; // 50%
 
 /// Bridging timeout in seconds
 pub const BRIDGING_TIMEOUT: u64 = 1800; // 30 minutes
-
-/// Available assets for Bridging
-pub static BRIDGING_AVAILABLE_ASSETS: phf::Map<&'static str, phf::Map<&'static str, Address>> = phf_map! {
-  "USDC" => phf_map! {
-      // Optimism
-      "eip155:10" => address!("0b2c639c533813f4aa9d7837caf62653d097ff85"),
-      // Base
-      "eip155:8453" => address!("833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"),
-      // Arbitrum
-      "eip155:42161" => address!("af88d065e77c8cC2239327C5EDb3A432268e5831"),
-  },
-};
-pub const USDC_DECIMALS: u8 = 6;
 
 /// The status polling interval in ms for the client
 pub const STATUS_POLLING_INTERVAL: u64 = 3000; // 3 seconds
@@ -66,25 +54,34 @@ pub enum BridgingStatus {
     Error,
 }
 
-/// Return available assets contracts addresses for the given chain_id
-pub fn get_bridging_assets_contracts_for_chain(chain_id: &str) -> Vec<String> {
-    BRIDGING_AVAILABLE_ASSETS
+/// Return available assets names and contract addresses for the given chain_id
+pub fn get_bridging_assets_contracts_for_chain(chain_id: &str) -> Vec<(String, Address)> {
+    BRIDGING_ASSETS
         .entries()
-        .filter_map(|(_token_symbol, chain_map)| {
-            chain_map
+        .filter_map(|(token_symbol, asset_entry)| {
+            asset_entry
+                .contracts
                 .entries()
                 .find(|(chain, _)| **chain == chain_id)
-                .map(|(_, contract_address)| contract_address.to_string())
+                .map(|(_, contract_address)| (token_symbol.to_string(), *contract_address))
         })
         .collect()
 }
 
+/// Returns simulation params for the bridging asset
+pub fn get_simulation_params_for_asset(asset_name: &str) -> Option<&SimulationParams> {
+    BRIDGING_ASSETS
+        .entries()
+        .find(|(name, _)| **name == asset_name)
+        .map(|(_, asset_entry)| &asset_entry.simulation)
+}
+
 /// Check is the address is supported bridging asset and return the token symbol and decimals
 pub fn find_supported_bridging_asset(chain_id: &str, contract: Address) -> Option<(String, u8)> {
-    for (symbol, chain_map) in BRIDGING_AVAILABLE_ASSETS.entries() {
-        for (chain, contract_address) in chain_map.entries() {
+    for (symbol, asset_entry) in BRIDGING_ASSETS.entries() {
+        for (chain, contract_address) in asset_entry.contracts.entries() {
             if *chain == chain_id && contract == *contract_address {
-                return Some((symbol.to_string(), USDC_DECIMALS));
+                return Some((symbol.to_string(), asset_entry.metadata.decimals));
             }
         }
     }
@@ -133,20 +130,25 @@ pub async fn check_bridging_for_erc20_transfer(
     exclude_contract_address: Address,
 ) -> Result<Option<BridgingAsset>, RpcError> {
     // Check ERC20 tokens balance for each of supported assets
-    let mut contracts_per_chain: HashMap<(String, String), Vec<String>> = HashMap::new();
-    for (token_symbol, chain_map) in BRIDGING_AVAILABLE_ASSETS.entries() {
-        for (chain_id, contract_address) in chain_map.entries() {
+    let mut contracts_per_chain: HashMap<(String, String, u8), Vec<String>> = HashMap::new();
+    for (token_symbol, asset_entry) in BRIDGING_ASSETS.entries() {
+        for (chain_id, contract_address) in asset_entry.contracts.entries() {
             if *chain_id == exclude_chain_id && *contract_address == exclude_contract_address {
                 continue;
             }
             contracts_per_chain
-                .entry((token_symbol.to_string(), (*chain_id).to_string()))
+                .entry((
+                    token_symbol.to_string(),
+                    (*chain_id).to_string(),
+                    asset_entry.metadata.decimals,
+                ))
                 .or_default()
                 .push((*contract_address).to_string());
         }
     }
-    // Making the check for each chain_id
-    for ((token_symbol, chain_id), contracts) in contracts_per_chain {
+    // Making the check for each chain_id and use the asset with the highest balance
+    let mut bridging_asset_found = None;
+    for ((token_symbol, chain_id, decimals), contracts) in contracts_per_chain {
         let erc20_balances = check_erc20_balances(
             rpc_project_id.clone(),
             sender,
@@ -159,18 +161,27 @@ pub async fn check_bridging_for_erc20_transfer(
         .await?;
         for (contract_address, current_balance) in erc20_balances {
             if current_balance >= value {
-                return Ok(Some(BridgingAsset {
-                    chain_id,
-                    token_symbol,
+                // Use the asset with the highest found balance
+                if let Some(BridgingAsset {
+                    current_balance: existing_balance,
+                    ..
+                }) = &bridging_asset_found
+                {
+                    if current_balance <= *existing_balance {
+                        continue;
+                    }
+                }
+                bridging_asset_found = Some(BridgingAsset {
+                    chain_id: chain_id.clone(),
+                    token_symbol: token_symbol.clone(),
                     contract_address,
                     current_balance,
-                    // We are supporting only USDC for now which have a fixed decimals
-                    decimals: USDC_DECIMALS,
-                }));
+                    decimals,
+                });
             }
         }
     }
-    Ok(None)
+    Ok(bridging_asset_found)
 }
 
 /// Compute the simulation state override balance for a given balance
@@ -207,23 +218,24 @@ pub async fn get_assets_changes_from_simulation(
     metrics: Arc<Metrics>,
 ) -> Result<(Vec<Erc20AssetChange>, u64), RpcError> {
     // Fill the state overrides for the source address for each of the supported
-    // assets on the initial tx chain
+    // assets on the initial tx chain for the balance slot
     let state_overrides = {
         let mut state_overrides = HashMap::new();
         let assets_contracts =
             get_bridging_assets_contracts_for_chain(&transaction.chain_id.clone());
         let mut account_state = HashMap::new();
-        account_state.insert(
-            // Since we are using only USDC for the bridging,
-            // we can hardcode the storage slot for the contract which is 9
-            compute_simulation_storage_slot(transaction.from, 9),
-            compute_simulation_balance(99000000000),
-        );
-        for contract in assets_contracts {
-            state_overrides.insert(
-                Address::from_str(&contract).unwrap_or_default(),
-                account_state.clone(),
+        for (asset_name, asset_contract) in assets_contracts {
+            let Some(simulation_params) = get_simulation_params_for_asset(&asset_name) else {
+                continue;
+            };
+            account_state.insert(
+                compute_simulation_storage_slot(
+                    transaction.from,
+                    simulation_params.balance_storage_slot,
+                ),
+                compute_simulation_balance(simulation_params.balance),
             );
+            state_overrides.insert(asset_contract, account_state.clone());
         }
         state_overrides
     };
