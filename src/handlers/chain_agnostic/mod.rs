@@ -146,7 +146,8 @@ pub async fn check_bridging_for_erc20_transfer(
                 .push((*contract_address).to_string());
         }
     }
-    // Making the check for each chain_id
+    // Making the check for each chain_id and use the asset with the highest balance
+    let mut bridging_asset_found = None;
     for ((token_symbol, chain_id, decimals), contracts) in contracts_per_chain {
         let erc20_balances = check_erc20_balances(
             rpc_project_id.clone(),
@@ -160,17 +161,27 @@ pub async fn check_bridging_for_erc20_transfer(
         .await?;
         for (contract_address, current_balance) in erc20_balances {
             if current_balance >= value {
-                return Ok(Some(BridgingAsset {
-                    chain_id,
-                    token_symbol,
+                // Use the asset with the highest found balance
+                if let Some(BridgingAsset {
+                    current_balance: existing_balance,
+                    ..
+                }) = &bridging_asset_found
+                {
+                    if current_balance <= *existing_balance {
+                        continue;
+                    }
+                }
+                bridging_asset_found = Some(BridgingAsset {
+                    chain_id: chain_id.clone(),
+                    token_symbol: token_symbol.clone(),
                     contract_address,
                     current_balance,
                     decimals,
-                }));
+                });
             }
         }
     }
-    Ok(None)
+    Ok(bridging_asset_found)
 }
 
 /// Compute the simulation state override balance for a given balance
