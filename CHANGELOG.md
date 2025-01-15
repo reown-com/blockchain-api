@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.162.0 - 2025-01-15
+#### Features
+- **(CA)** adding USDT asset to the chain abstraction (#882) - (70e8426) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.161.1 - 2025-01-14
 #### Bug Fixes
 - **(providers)** revert Bungee multiple bridges usage (#896) - (361bb6f) - Max Kalashnikoff | maksy.eth
