@@ -11,6 +11,7 @@ pub(crate) mod aurora;
 pub(crate) mod base;
 pub(crate) mod berachain;
 pub(crate) mod binance;
+pub(crate) mod drpc;
 pub(crate) mod getblock;
 pub(crate) mod infura;
 pub(crate) mod lava;

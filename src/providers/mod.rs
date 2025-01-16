@@ -55,6 +55,7 @@ mod berachain;
 mod binance;
 mod bungee;
 mod coinbase;
+mod drpc;
 mod dune;
 mod getblock;
 mod infura;
@@ -84,6 +85,7 @@ pub use {
     berachain::BerachainProvider,
     binance::BinanceProvider,
     bungee::BungeeProvider,
+    drpc::DrpcProvider,
     dune::DuneProvider,
     getblock::GetBlockProvider,
     infura::{InfuraProvider, InfuraWsProvider},
@@ -630,6 +632,7 @@ pub enum ProviderKind {
     Tenderly,
     Dune,
     Wemix,
+    Drpc,
 }
 
 impl Display for ProviderKind {
@@ -663,6 +666,7 @@ impl Display for ProviderKind {
                 ProviderKind::Morph => "Morph",
                 ProviderKind::Tenderly => "Tenderly",
                 ProviderKind::Dune => "Dune",
+                ProviderKind::Drpc => "Drpc",
             }
         )
     }
@@ -697,6 +701,7 @@ impl ProviderKind {
             "Tenderly" => Some(Self::Tenderly),
             "Dune" => Some(Self::Dune),
             "Wemix" => Some(Self::Wemix),
+            "Drpc" => Some(Self::Drpc),
             _ => None,
         }
     }
