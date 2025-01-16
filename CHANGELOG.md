@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.164.0 - 2025-01-16
+#### Features
+- **(CA)** prioritizing the same asset for bridging routes (#900) - (b4a1574) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.163.0 - 2025-01-15
 #### Features
 - **(CA)** extending Bungee quotes bridges list (#899) - (dc53063) - Max Kalashnikoff | maksy.eth
