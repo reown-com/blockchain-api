@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.165.0 - 2025-01-16
+#### Features
+- **(providers)** adding dRPC endpoint for Solana (#902) - (ad1ab59) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.164.1 - 2025-01-16
 #### Bug Fixes
 - **(CA)** increasing the default gas limit (#901) - (0147be2) - Max Kalashnikoff | maksy.eth
