@@ -39,8 +39,8 @@ use {
 };
 
 // Default gas estimate
-// Using default with 6x increase
-const DEFAULT_GAS: i64 = 0x029a6b * 0x6;
+// Using default with 9x increase
+const DEFAULT_GAS: i64 = 0x029a6b * 0x9;
 
 // Slippage for the gas estimation
 const ESTIMATED_GAS_SLIPPAGE: i8 = 3;
