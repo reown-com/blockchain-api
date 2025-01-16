@@ -246,6 +246,7 @@ async fn handler_internal(
         from_address,
         initial_transaction.chain_id.clone(),
         asset_transfer_contract,
+        initial_tx_token_symbol.clone(),
     )
     .await?
     else {

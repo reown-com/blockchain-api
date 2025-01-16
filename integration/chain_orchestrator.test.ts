@@ -127,8 +127,8 @@ describe('Chain abstraction orchestrator', () => {
 
   })
 
-  it('bridging routes (routes available, USDC Optimism ⇄ USDT Arbitrum)', async () => {
-    // Sending USDC to Optimism, but having the maximum balance of USDT on Arbitrum chain
+  it('bridging routes (routes available, USDC Optimism ⇄ USDC Base)', async () => {
+    // Sending USDC to Optimism, but having the balance of USDC on Base chain
     // which expected to be used for bridging
 
     // How much needs to be topped up
@@ -163,7 +163,7 @@ describe('Chain abstraction orchestrator', () => {
 
     // First transaction expected to be the approval transaction
     const approvalTransaction = data.transactions[0]
-    expect(approvalTransaction.chainId).toBe(chain_id_arbitrum)
+    expect(approvalTransaction.chainId).toBe(chain_id_base)
     expect(approvalTransaction.nonce).not.toBe("0x00")
     expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
     const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.input);
@@ -171,9 +171,9 @@ describe('Chain abstraction orchestrator', () => {
       throw new Error(`Expected amount is lower then the minimal required`);
     }
 
-    // Second transaction expected to be the bridging to the Arbitrum
+    // Second transaction expected to be the bridging to the Base
     const bridgingTransaction = data.transactions[1]
-    expect(bridgingTransaction.chainId).toBe(chain_id_arbitrum)
+    expect(bridgingTransaction.chainId).toBe(chain_id_base)
     expect(bridgingTransaction.nonce).not.toBe("0x00")
     expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
 
@@ -185,9 +185,9 @@ describe('Chain abstraction orchestrator', () => {
 
     // Check the metadata fundingFrom
     const fundingFrom = data.metadata.fundingFrom[0]
-    expect(fundingFrom.chainId).toBe(chain_id_arbitrum)
-    expect(fundingFrom.symbol).toBe(usdt_token_symbol)
-    expect(fundingFrom.tokenContract).toBe(usdt_contracts[chain_id_arbitrum].toLowerCase())
+    expect(fundingFrom.chainId).toBe(chain_id_base)
+    expect(fundingFrom.symbol).toBe(usdc_token_symbol)
+    expect(fundingFrom.tokenContract).toBe(usdc_contracts[chain_id_base].toLowerCase())
     if (BigInt(fundingFrom.amount) <= BigInt(amount_to_topup_with_fees)) {
       throw new Error(`Expected amount is lower then the minimal required`);
     }

@@ -120,14 +120,18 @@ pub struct BridgingAsset {
     pub current_balance: U256,
 }
 
-/// Check available assets for bridging and return
-/// the chain_id, token symbol and contract_address
+/// Checking available assets amount for bridging excluding the initial transaction
+/// asset, prioritizing the asset with the highest balance or the asset with the
+/// same symbol to avoid unnecessary swapping
 pub async fn check_bridging_for_erc20_transfer(
     rpc_project_id: String,
     value: U256,
     sender: Address,
+    // Exclude the initial transaction asset from the check
     exclude_chain_id: String,
     exclude_contract_address: Address,
+    // Using the same asset as a priority for bridging
+    token_symbol_priority: String,
 ) -> Result<Option<BridgingAsset>, RpcError> {
     // Check ERC20 tokens balance for each of supported assets
     let mut contracts_per_chain: HashMap<(String, String, u8), Vec<String>> = HashMap::new();
@@ -161,7 +165,18 @@ pub async fn check_bridging_for_erc20_transfer(
         .await?;
         for (contract_address, current_balance) in erc20_balances {
             if current_balance >= value {
-                // Use the asset with the highest found balance
+                // Use the priority asset if found
+                if token_symbol == token_symbol_priority {
+                    return Ok(Some(BridgingAsset {
+                        chain_id: chain_id.clone(),
+                        token_symbol: token_symbol.clone(),
+                        contract_address,
+                        current_balance,
+                        decimals,
+                    }));
+                }
+
+                // or use the asset with the highest found balance
                 if let Some(BridgingAsset {
                     current_balance: existing_balance,
                     ..
