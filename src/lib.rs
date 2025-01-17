@@ -20,8 +20,8 @@ use {
     env::{
         ArbitrumConfig, AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig, DrpcConfig,
         DuneConfig, GetBlockConfig, InfuraConfig, LavaConfig, MantleConfig, MorphConfig,
-        NearConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig, UnichainConfig,
-        WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
+        NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig,
+        UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
@@ -29,7 +29,7 @@ use {
     providers::{
         ArbitrumProvider, AuroraProvider, BaseProvider, BerachainProvider, BinanceProvider,
         DrpcProvider, DuneProvider, GetBlockProvider, InfuraProvider, InfuraWsProvider,
-        LavaProvider, MantleProvider, MorphProvider, NearProvider, PoktProvider,
+        LavaProvider, MantleProvider, MorphProvider, NearProvider, OdysseyProvider, PoktProvider,
         ProviderRepository, PublicnodeProvider, QuicknodeProvider, SolScanProvider,
         UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider, ZoraProvider,
         ZoraWsProvider,
@@ -514,6 +514,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_rpc_provider::<MorphProvider, MorphConfig>(MorphConfig::default());
     providers.add_rpc_provider::<WemixProvider, WemixConfig>(WemixConfig::default());
     providers.add_rpc_provider::<DrpcProvider, DrpcConfig>(DrpcConfig::default());
+    providers.add_rpc_provider::<OdysseyProvider, OdysseyConfig>(OdysseyConfig::default());
 
     if let Some(getblock_access_tokens) = &config.getblock_access_tokens {
         providers.add_rpc_provider::<GetBlockProvider, GetBlockConfig>(GetBlockConfig::new(
