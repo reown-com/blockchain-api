@@ -1,7 +1,9 @@
 use {
     crate::{
         env::Config,
-        handlers::{identity::IdentityResponse, rate_limit_middleware},
+        handlers::{
+            balance::TokenMetadataCacheItem, identity::IdentityResponse, rate_limit_middleware,
+        },
         metrics::Metrics,
         project::Registry,
         providers::ProvidersConfig,
@@ -130,6 +132,12 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .map(|addr| redis::Redis::new(&addr, config.storage.redis_max_connections))
         .transpose()?
         .map(|r| Arc::new(r) as Arc<dyn KeyValueStorage<IdentityResponse> + 'static>);
+    let token_metadata_cache = config
+        .storage
+        .project_data_redis_addr()
+        .map(|addr| redis::Redis::new(&addr, config.storage.redis_max_connections))
+        .transpose()?
+        .map(|r| Arc::new(r) as Arc<dyn KeyValueStorage<TokenMetadataCacheItem> + 'static>);
 
     let providers = init_providers(&config.providers);
 
@@ -187,11 +195,12 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         providers,
         metrics.clone(),
         registry,
-        identity_cache,
         analytics,
         http_client,
         rate_limiting,
         irn_client,
+        identity_cache,
+        token_metadata_cache,
     );
 
     let port = state.config.server.port;

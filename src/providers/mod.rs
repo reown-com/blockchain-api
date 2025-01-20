@@ -4,7 +4,7 @@ use {
         env::{BalanceProviderConfig, ProviderConfig},
         error::{RpcError, RpcResult},
         handlers::{
-            balance::{self, BalanceQueryParams, BalanceResponseBody},
+            balance::{self, BalanceQueryParams, BalanceResponseBody, TokenMetadataCacheItem},
             convert::{
                 allowance::{AllowanceQueryParams, AllowanceResponseBody},
                 approve::{ConvertApproveQueryParams, ConvertApproveResponseBody},
@@ -22,6 +22,7 @@ use {
             portfolio::{PortfolioQueryParams, PortfolioResponseBody},
             RpcQueryParams, SupportedCurrencies,
         },
+        storage::KeyValueStorage,
         utils::crypto::CaipNamespaces,
         Metrics,
     },
@@ -863,6 +864,7 @@ pub trait BalanceProvider: Send + Sync {
         &self,
         address: String,
         params: BalanceQueryParams,
+        metadata_cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody>;
 }

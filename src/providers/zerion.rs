@@ -4,7 +4,10 @@ use {
         env::ZerionConfig,
         error::{RpcError, RpcResult},
         handlers::{
-            balance::{BalanceQueryParams, BalanceResponseBody},
+            balance::{
+                get_cached_metadata, set_cached_metadata, BalanceQueryParams, BalanceResponseBody,
+                TokenMetadataCacheItem, H160_EMPTY_ADDRESS,
+            },
             history::{
                 HistoryQueryParams, HistoryResponseBody, HistoryTransaction,
                 HistoryTransactionFungibleInfo, HistoryTransactionMetadata,
@@ -19,6 +22,7 @@ use {
             balance::{BalanceItem, BalanceQuantity},
             ProviderKind,
         },
+        storage::KeyValueStorage,
         utils::crypto,
         Metrics,
     },
@@ -30,6 +34,8 @@ use {
     tracing::log::error,
     url::Url,
 };
+
+const POLYGON_NATIVE_TOKEN_ADDRESS: &str = "0x0000000000000000000000000000000000001010";
 
 #[derive(Debug)]
 pub struct ZerionProvider {
@@ -436,6 +442,7 @@ impl BalanceProvider for ZerionProvider {
         &self,
         address: String,
         params: BalanceQueryParams,
+        metadata_cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody> {
         let base = format!("https://api.zerion.io/v1/wallets/{}/positions/?", &address);
@@ -475,34 +482,57 @@ impl BalanceProvider for ZerionProvider {
             .json::<ZerionResponseBody<Vec<ZerionPosition>>>()
             .await?;
 
-        const POLYGON_NATIVE_TOKEN_ADDRESS: &str = "0x0000000000000000000000000000000000001010";
+        let mut balances_vec = Vec::new();
+        for f in body.data {
+            let chain_id_human = f.relationships.chain.data.id;
+            let token_address = f
+                .attributes
+                .fungible_info
+                .implementations
+                .iter()
+                .find(|impl_| impl_.chain_id == chain_id_human)
+                .and_then(|impl_| impl_.address.clone());
 
-        let balances_vec = body
-            .data
-            .into_iter()
-            .map(|f| BalanceItem {
-                name: f.attributes.fungible_info.name,
-                symbol: f.attributes.fungible_info.symbol,
-                chain_id: crypto::ChainId::to_caip2(&f.relationships.chain.data.id),
+            let token_address_strict = token_address
+                .clone()
+                .unwrap_or_else(|| H160_EMPTY_ADDRESS.to_string());
+            let chain_id = crypto::ChainId::to_caip2(&chain_id_human);
+            let chain_id_strict = chain_id.clone().unwrap_or_else(|| "eip155:1".to_string());
+            let caip10_token_address = format!("{}:{}", chain_id_strict, token_address_strict);
+
+            // Get token metadata from the cache or update it
+            let token_metadata =
+                match get_cached_metadata(metadata_cache, &caip10_token_address).await {
+                    Some(cached) => cached,
+                    None => {
+                        let new_item = TokenMetadataCacheItem {
+                            name: f.attributes.fungible_info.name.clone(),
+                            symbol: f.attributes.fungible_info.symbol.clone(),
+                            icon_url: f
+                                .attributes
+                                .fungible_info
+                                .icon
+                                .map(|icon| icon.url)
+                                .unwrap_or_default(),
+                        };
+                        set_cached_metadata(metadata_cache, &caip10_token_address, &new_item).await;
+                        new_item
+                    }
+                };
+
+            let balance_item = BalanceItem {
+                name: token_metadata.name,
+                symbol: token_metadata.symbol,
+                chain_id: chain_id.clone(),
                 address: {
-                    let chain_id_human = f.relationships.chain.data.id;
-                    let chain_address = f
-                        .attributes
-                        .fungible_info
-                        .implementations
-                        .iter()
-                        .find(|f| f.chain_id == chain_id_human)
-                        .and_then(|f| f.address.clone());
-                    let chain_id = crypto::ChainId::to_caip2(&chain_id_human);
-                    if let Some(chain_address) = chain_address {
-                        // For Polygon native token (POL)
-                        // address is returned, but address should be null
-                        // for native tokens
-                        // https://specs.walletconnect.com/2.0/specs/servers/blockchain/blockchain-server-api#success-response-body-4
-                        if chain_address == POLYGON_NATIVE_TOKEN_ADDRESS {
+                    if let Some(addr) = token_address {
+                        // For Polygon native token (POL) we set address to None
+                        if addr == POLYGON_NATIVE_TOKEN_ADDRESS {
                             None
                         } else {
-                            chain_id.map(|chain_id| format!("{}:{}", &chain_id, chain_address))
+                            chain_id
+                                .as_ref()
+                                .map(|chain_id| format!("{}:{}", chain_id, addr))
                         }
                     } else {
                         None
@@ -514,20 +544,14 @@ impl BalanceProvider for ZerionProvider {
                     decimals: f.attributes.quantity.decimals.to_string(),
                     numeric: f.attributes.quantity.numeric,
                 },
-                icon_url: f
-                    .attributes
-                    .fungible_info
-                    .icon
-                    .map(|f| f.url)
-                    .unwrap_or_default(),
-            })
-            .collect();
+                icon_url: token_metadata.icon_url,
+            };
+            balances_vec.push(balance_item);
+        }
 
-        let response = BalanceResponseBody {
+        Ok(BalanceResponseBody {
             balances: balances_vec,
-        };
-
-        Ok(response)
+        })
     }
 }
 

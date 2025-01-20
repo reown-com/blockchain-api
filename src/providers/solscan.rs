@@ -7,7 +7,10 @@ use {
         env::SolScanConfig,
         error::{RpcError, RpcResult},
         handlers::{
-            balance::{BalanceItem, BalanceQuantity, BalanceQueryParams, BalanceResponseBody},
+            balance::{
+                BalanceItem, BalanceQuantity, BalanceQueryParams, BalanceResponseBody,
+                TokenMetadataCacheItem,
+            },
             fungible_price::FungiblePriceItem,
             history::{
                 HistoryQueryParams, HistoryResponseBody, HistoryTransaction,
@@ -17,7 +20,7 @@ use {
             },
         },
         providers::{BalanceProviderFactory, ProviderKind},
-        storage::error::StorageError,
+        storage::{error::StorageError, KeyValueStorage},
         utils::crypto::{CaipNamespaces, SOLANA_NATIVE_TOKEN_ADDRESS},
         Metrics,
     },
@@ -397,6 +400,7 @@ impl BalanceProvider for SolScanProvider {
         &self,
         address: String,
         _params: BalanceQueryParams,
+        _metadata_cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody> {
         let mut url = Url::parse(ACCOUNT_TOKENS_URL).map_err(|_| RpcError::BalanceParseURLError)?;

@@ -4,6 +4,7 @@ use {
         analytics::{BalanceLookupInfo, MessageSource},
         error::RpcError,
         state::AppState,
+        storage::KeyValueStorage,
         utils::{crypto, network},
     },
     axum::{
@@ -14,13 +15,17 @@ use {
     ethers::{abi::Address, types::H160},
     hyper::HeaderMap,
     serde::{Deserialize, Serialize},
-    std::{net::SocketAddr, sync::Arc},
+    std::{net::SocketAddr, sync::Arc, time::Duration},
     tap::TapFallible,
     tracing::log::{debug, error},
     wc::future::FutureExt,
 };
 
+// Empty address for the contract address mimicking the Ethereum native token
+pub const H160_EMPTY_ADDRESS: H160 = H160::repeat_byte(0xee);
+
 const PROVIDER_MAX_CALLS: usize = 2;
+const METADATA_CACHE_TTL: Duration = Duration::from_secs(60 * 60 * 24 * 7); // 1 week
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -59,6 +64,46 @@ pub struct BalanceItem {
 pub struct BalanceQuantity {
     pub decimals: String,
     pub numeric: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TokenMetadataCacheItem {
+    pub name: String,
+    pub symbol: String,
+    pub icon_url: String,
+}
+
+fn token_metadata_cache_key(caip10_token_address: &str) -> String {
+    format!("token_metadata/{}", caip10_token_address)
+}
+
+pub async fn get_cached_metadata(
+    cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
+    caip10_token_address: &str,
+) -> Option<TokenMetadataCacheItem> {
+    let cache = cache.as_ref()?;
+    cache
+        .get(&token_metadata_cache_key(caip10_token_address))
+        .await
+        .unwrap_or(None)
+}
+
+pub async fn set_cached_metadata(
+    cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
+    caip10_token_address: &str,
+    item: &TokenMetadataCacheItem,
+) {
+    if let Some(cache) = cache {
+        cache
+            .set(
+                &token_metadata_cache_key(caip10_token_address),
+                item,
+                Some(METADATA_CACHE_TTL),
+            )
+            .await
+            .unwrap_or_else(|e| error!("Failed to set metadata cache: {}", e));
+    }
 }
 
 pub async fn handler(
@@ -113,7 +158,12 @@ async fn handler_internal(
     let mut balance_response = None;
     for provider in providers.iter() {
         let provider_response = provider
-            .get_balance(address.clone(), query.clone().0, state.metrics.clone())
+            .get_balance(
+                address.clone(),
+                query.clone().0,
+                &state.token_metadata_cache,
+                state.metrics.clone(),
+            )
             .await
             .tap_err(|e| {
                 error!("Failed to call balance with {}", e);
@@ -170,7 +220,6 @@ async fn handler_internal(
         if namespace != crypto::CaipNamespaces::Eip155 {
             return Err(RpcError::UnsupportedNamespace(namespace));
         }
-        const H160_EMPTY_ADDRESS: H160 = H160::repeat_byte(0xee);
         let rpc_project_id = state
             .config
             .server
