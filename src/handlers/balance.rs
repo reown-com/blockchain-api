@@ -25,7 +25,7 @@ use {
 pub const H160_EMPTY_ADDRESS: H160 = H160::repeat_byte(0xee);
 
 const PROVIDER_MAX_CALLS: usize = 2;
-const METADATA_CACHE_TTL: Duration = Duration::from_secs(60 * 60 * 24 * 7); // 1 week
+const METADATA_CACHE_TTL: Duration = Duration::from_secs(60 * 60 * 24); // 1 day
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
