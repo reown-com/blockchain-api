@@ -3,11 +3,15 @@ use {
     crate::{
         env::DuneConfig,
         error::{RpcError, RpcResult},
-        handlers::balance::{BalanceQueryParams, BalanceResponseBody},
+        handlers::balance::{
+            get_cached_metadata, set_cached_metadata, BalanceQueryParams, BalanceResponseBody,
+            TokenMetadataCacheItem, H160_EMPTY_ADDRESS,
+        },
         providers::{
             balance::{BalanceItem, BalanceQuantity},
             ProviderKind,
         },
+        storage::KeyValueStorage,
         utils::crypto,
         Metrics,
     },
@@ -153,6 +157,7 @@ impl BalanceProvider for DuneProvider {
         &self,
         address: String,
         params: BalanceQueryParams,
+        metadata_cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody> {
         let namespace = params
@@ -175,76 +180,124 @@ impl BalanceProvider for DuneProvider {
             }
         };
 
-        let balances_vec = balance_response
-            .balances
-            .into_iter()
-            .filter_map(|mut f| {
-                // Skip the asset if there are no symbol, decimals, since this
-                // is likely a spam token
-                let symbol = f.symbol.take()?;
-                let price_usd = f.price_usd.take()?;
-                let decimals = f.decimals.take()?;
-                let caip2_chain_id = match f.chain_id {
-                    Some(cid) => format!("{}:{}", namespace, cid),
-                    None => match namespace {
-                        // Using defaul Mainnet chain ids if not provided since
-                        // Dune doesn't provide balances for testnets
-                        crypto::CaipNamespaces::Eip155 => format!("{}:{}", namespace, "1"),
-                        crypto::CaipNamespaces::Solana => {
-                            format!("{}:{}", namespace, "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp")
+        let mut balances_vec = Vec::new();
+        for f in balance_response.balances {
+            // Skip if missing required fields as a possible spam token
+            let (Some(symbol), Some(price_usd), Some(decimals)) =
+                (f.symbol, f.price_usd, f.decimals)
+            else {
+                continue;
+            };
+
+            // Build a CAIP-2 chain ID
+            let caip2_chain_id = match f.chain_id {
+                Some(cid) => format!("{}:{}", namespace, cid),
+                None => match namespace {
+                    // Use default Mainnet chain IDs if not provided
+                    crypto::CaipNamespaces::Eip155 => format!("{}:1", namespace),
+                    crypto::CaipNamespaces::Solana => {
+                        format!("{}:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", namespace)
+                    }
+                },
+            };
+
+            // Determine name
+            let name = if f.address == "native" {
+                f.chain.clone()
+            } else {
+                symbol.clone()
+            };
+
+            // Determine icon URL
+            let icon_url = if f.address == "native" {
+                NATIVE_TOKEN_ICONS.get(&symbol).unwrap_or(&"").to_string()
+            } else {
+                // If there's no token_metadata or no logo, skip
+                match &f.token_metadata {
+                    Some(m) => m.logo.clone(),
+                    None => continue,
+                }
+            };
+
+            // Build the CAIP-10 address
+            let caip10_token_address_strict = if f.address == "native" {
+                match namespace {
+                    crypto::CaipNamespaces::Eip155 => {
+                        format!("{}:{}", caip2_chain_id, H160_EMPTY_ADDRESS)
+                    }
+                    crypto::CaipNamespaces::Solana => {
+                        format!("{}:{}", caip2_chain_id, crypto::SOLANA_NATIVE_TOKEN_ADDRESS)
+                    }
+                }
+            } else {
+                format!("{}:{}", caip2_chain_id, f.address)
+            };
+
+            // Get token metadata from the cache or update it
+            let token_metadata =
+                match get_cached_metadata(metadata_cache, &caip10_token_address_strict).await {
+                    Some(cached) => cached,
+                    None => {
+                        let new_item = TokenMetadataCacheItem {
+                            name: name.clone(),
+                            symbol: symbol.clone(),
+                            icon_url: icon_url.clone(),
+                        };
+                        // Spawn a background task to set the cache without blocking
+                        {
+                            let metadata_cache = metadata_cache.clone();
+                            let address_key = caip10_token_address_strict.clone();
+                            let new_item_to_store = new_item.clone();
+                            tokio::spawn(async move {
+                                set_cached_metadata(
+                                    &metadata_cache,
+                                    &address_key,
+                                    &new_item_to_store,
+                                )
+                                .await;
+                            });
                         }
-                    },
+                        new_item
+                    }
                 };
-                Some(BalanceItem {
-                    name: {
-                        if f.address == "native" {
-                            f.chain
-                        } else {
-                            symbol.clone()
-                        }
-                    },
-                    symbol: symbol.clone(),
-                    chain_id: Some(caip2_chain_id.clone()),
-                    address: {
-                        // Return None if the address is native for the native token
-                        if f.address == "native" {
-                            // UI expecting `None`` for the Eip155 and Solana's native
-                            // token address for Solana
-                            match namespace {
-                                crypto::CaipNamespaces::Eip155 => None,
-                                crypto::CaipNamespaces::Solana => {
-                                    Some(crypto::SOLANA_NATIVE_TOKEN_ADDRESS.to_string())
-                                }
+
+            // Construct the final BalanceItem
+            let balance_item = BalanceItem {
+                name: token_metadata.name,
+                symbol: token_metadata.symbol,
+                chain_id: Some(caip2_chain_id.clone()),
+                address: {
+                    // Return None if the address is native (for EIP-155).
+                    // For Solana’s “native” token, we return the Solana native token address.
+                    if f.address == "native" {
+                        match namespace {
+                            crypto::CaipNamespaces::Eip155 => None,
+                            crypto::CaipNamespaces::Solana => {
+                                Some(crypto::SOLANA_NATIVE_TOKEN_ADDRESS.to_string())
                             }
-                        } else {
-                            Some(format!("{}:{}", caip2_chain_id, f.address.clone()))
                         }
-                    },
-                    value: f.value_usd,
-                    price: price_usd,
-                    quantity: BalanceQuantity {
-                        decimals: decimals.to_string(),
-                        numeric: crypto::format_token_amount(
-                            U256::from_dec_str(&f.amount).unwrap_or_default(),
-                            decimals,
-                        ),
-                    },
-                    icon_url: {
-                        if f.address == "native" {
-                            NATIVE_TOKEN_ICONS.get(&symbol).unwrap_or(&"").to_string()
-                        } else {
-                            f.token_metadata?.logo
-                        }
-                    },
-                })
-            })
-            .collect::<Vec<_>>();
+                    } else {
+                        Some(format!("{}:{}", caip2_chain_id, f.address))
+                    }
+                },
+                value: f.value_usd,
+                price: price_usd,
+                quantity: BalanceQuantity {
+                    decimals: decimals.to_string(),
+                    numeric: crypto::format_token_amount(
+                        U256::from_dec_str(&f.amount).unwrap_or_default(),
+                        decimals,
+                    ),
+                },
+                icon_url: token_metadata.icon_url,
+            };
 
-        let response = BalanceResponseBody {
+            balances_vec.push(balance_item);
+        }
+
+        Ok(BalanceResponseBody {
             balances: balances_vec,
-        };
-
-        Ok(response)
+        })
     }
 }
 

@@ -3,7 +3,7 @@ use {
         analytics::RPCAnalytics,
         env::Config,
         error::RpcError,
-        handlers::identity::IdentityResponse,
+        handlers::{balance::TokenMetadataCacheItem, identity::IdentityResponse},
         metrics::Metrics,
         project::Registry,
         providers::ProviderRepository,
@@ -24,7 +24,6 @@ pub struct AppState {
     pub providers: ProviderRepository,
     pub metrics: Arc<Metrics>,
     pub registry: Registry,
-    pub identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     pub analytics: RPCAnalytics,
     pub compile_info: CompileInfo,
     /// Service instance uptime measurement
@@ -35,6 +34,9 @@ pub struct AppState {
     pub rate_limit: Option<RateLimit>,
     // IRN client
     pub irn: Option<Irn>,
+    // Redis caching
+    pub identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
+    pub token_metadata_cache: Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -44,11 +46,12 @@ pub fn new_state(
     providers: ProviderRepository,
     metrics: Arc<Metrics>,
     registry: Registry,
-    identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     analytics: RPCAnalytics,
     http_client: reqwest::Client,
     rate_limit: Option<RateLimit>,
     irn: Option<Irn>,
+    identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
+    token_metadata_cache: Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
 ) -> AppState {
     AppState {
         config,
@@ -56,13 +59,14 @@ pub fn new_state(
         providers,
         metrics,
         registry,
-        identity_cache,
         analytics,
         compile_info: CompileInfo {},
         uptime: std::time::Instant::now(),
         http_client,
         rate_limit,
         irn,
+        identity_cache,
+        token_metadata_cache,
     }
 }
 
