@@ -501,24 +501,34 @@ impl BalanceProvider for ZerionProvider {
             let caip10_token_address = format!("{}:{}", chain_id_strict, token_address_strict);
 
             // Get token metadata from the cache or update it
-            let token_metadata =
-                match get_cached_metadata(metadata_cache, &caip10_token_address).await {
-                    Some(cached) => cached,
-                    None => {
-                        let new_item = TokenMetadataCacheItem {
-                            name: f.attributes.fungible_info.name.clone(),
-                            symbol: f.attributes.fungible_info.symbol.clone(),
-                            icon_url: f
-                                .attributes
-                                .fungible_info
-                                .icon
-                                .map(|icon| icon.url)
-                                .unwrap_or_default(),
-                        };
-                        set_cached_metadata(metadata_cache, &caip10_token_address, &new_item).await;
-                        new_item
+            let token_metadata = match get_cached_metadata(metadata_cache, &caip10_token_address)
+                .await
+            {
+                Some(cached) => cached,
+                None => {
+                    let new_item = TokenMetadataCacheItem {
+                        name: f.attributes.fungible_info.name.clone(),
+                        symbol: f.attributes.fungible_info.symbol.clone(),
+                        icon_url: f
+                            .attributes
+                            .fungible_info
+                            .icon
+                            .map(|icon| icon.url)
+                            .unwrap_or_default(),
+                    };
+                    // Spawn a background task to set the cache without blocking
+                    {
+                        let metadata_cache = metadata_cache.clone();
+                        let caip10_token_address = caip10_token_address.clone();
+                        let new_item = new_item.clone();
+                        tokio::spawn(async move {
+                            set_cached_metadata(&metadata_cache, &caip10_token_address, &new_item)
+                                .await;
+                        });
                     }
-                };
+                    new_item
+                }
+            };
 
             let balance_item = BalanceItem {
                 name: token_metadata.name,

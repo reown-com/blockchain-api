@@ -243,12 +243,20 @@ impl BalanceProvider for DuneProvider {
                             symbol: symbol.clone(),
                             icon_url: icon_url.clone(),
                         };
-                        set_cached_metadata(
-                            metadata_cache,
-                            &caip10_token_address_strict,
-                            &new_item,
-                        )
-                        .await;
+                        // Spawn a background task to set the cache without blocking
+                        {
+                            let metadata_cache = metadata_cache.clone();
+                            let address_key = caip10_token_address_strict.clone();
+                            let new_item_to_store = new_item.clone();
+                            tokio::spawn(async move {
+                                set_cached_metadata(
+                                    &metadata_cache,
+                                    &address_key,
+                                    &new_item_to_store,
+                                )
+                                .await;
+                            });
+                        }
                         new_item
                     }
                 };
