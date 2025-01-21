@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.166.0 - 2025-01-21
+#### Features
+- **(011y)** adding dRPC Grafana panels (#903) - (1dbf863) - Max Kalashnikoff | maksy.eth
+- **(balance)** implementing tokens metadata caching between Zerion and Dune providers (#906) - (161cd21) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.165.0 - 2025-01-16
 #### Features
 - **(providers)** adding dRPC endpoint for Solana (#902) - (ad1ab59) - Max Kalashnikoff | maksy.eth
