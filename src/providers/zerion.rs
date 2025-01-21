@@ -497,37 +497,41 @@ impl BalanceProvider for ZerionProvider {
                 .clone()
                 .unwrap_or_else(|| H160_EMPTY_ADDRESS.to_string());
             let chain_id = crypto::ChainId::to_caip2(&chain_id_human);
-            let chain_id_strict = chain_id.clone().unwrap_or_else(|| "eip155:1".to_string());
-            let caip10_token_address = format!("{}:{}", chain_id_strict, token_address_strict);
 
-            // Get token metadata from the cache or update it
-            let token_metadata = match get_cached_metadata(metadata_cache, &caip10_token_address)
-                .await
-            {
-                Some(cached) => cached,
-                None => {
-                    let new_item = TokenMetadataCacheItem {
-                        name: f.attributes.fungible_info.name.clone(),
-                        symbol: f.attributes.fungible_info.symbol.clone(),
-                        icon_url: f
-                            .attributes
-                            .fungible_info
-                            .icon
-                            .map(|icon| icon.url)
-                            .unwrap_or_default(),
-                    };
-                    // Spawn a background task to set the cache without blocking
-                    {
-                        let metadata_cache = metadata_cache.clone();
-                        let caip10_token_address = caip10_token_address.clone();
-                        let new_item = new_item.clone();
-                        tokio::spawn(async move {
-                            set_cached_metadata(&metadata_cache, &caip10_token_address, &new_item)
+            // Set the default metadata from the response
+            let mut token_metadata = TokenMetadataCacheItem {
+                name: f.attributes.fungible_info.name.clone(),
+                symbol: f.attributes.fungible_info.symbol.clone(),
+                icon_url: f
+                    .attributes
+                    .fungible_info
+                    .icon
+                    .map(|icon| icon.url)
+                    .unwrap_or_default(),
+            };
+
+            // Update the token metadata from the cache or update the cache if it's not present
+            if let Some(chain_id) = chain_id.clone() {
+                let caip10_token_address = format!("{}:{}", chain_id, token_address_strict);
+                match get_cached_metadata(metadata_cache, &caip10_token_address).await {
+                    Some(cached_metadata) => token_metadata = cached_metadata,
+                    None => {
+                        // Spawn a background task to set the cache without blocking
+                        {
+                            let metadata_cache = metadata_cache.clone();
+                            let caip10_token_address = caip10_token_address.clone();
+                            let token_metadata = token_metadata.clone();
+                            tokio::spawn(async move {
+                                set_cached_metadata(
+                                    &metadata_cache,
+                                    &caip10_token_address,
+                                    &token_metadata,
+                                )
                                 .await;
-                        });
+                            });
+                        }
                     }
-                    new_item
-                }
+                };
             };
 
             let balance_item = BalanceItem {
