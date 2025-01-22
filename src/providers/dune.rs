@@ -182,13 +182,6 @@ impl BalanceProvider for DuneProvider {
 
         let mut balances_vec = Vec::new();
         for f in balance_response.balances {
-            // Skip if missing required fields as a possible spam token
-            let (Some(symbol), Some(price_usd), Some(decimals)) =
-                (f.symbol, f.price_usd, f.decimals)
-            else {
-                continue;
-            };
-
             // Build a CAIP-2 chain ID
             let caip2_chain_id = match f.chain_id {
                 Some(cid) => format!("{}:{}", namespace, cid),
@@ -199,24 +192,6 @@ impl BalanceProvider for DuneProvider {
                         format!("{}:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", namespace)
                     }
                 },
-            };
-
-            // Determine name
-            let name = if f.address == "native" {
-                f.chain.clone()
-            } else {
-                symbol.clone()
-            };
-
-            // Determine icon URL
-            let icon_url = if f.address == "native" {
-                NATIVE_TOKEN_ICONS.get(&symbol).unwrap_or(&"").to_string()
-            } else {
-                // If there's no token_metadata or no logo, skip
-                match &f.token_metadata {
-                    Some(m) => m.logo.clone(),
-                    None => continue,
-                }
             };
 
             // Build the CAIP-10 address
@@ -233,17 +208,55 @@ impl BalanceProvider for DuneProvider {
                 format!("{}:{}", caip2_chain_id, f.address)
             };
 
+            // Skip if no decimals were provided
+            // as a possible spam token
+            let Some(decimals) = f.decimals else {
+                continue;
+            };
+
+            // Force to use zero price if the price is not determined
+            // instead of not showing the asset
+            let price_usd = f.price_usd.unwrap_or(0.0);
+
             // Get token metadata from the cache or update it
+            // Skip the asset if no cached metadata from other providers were added
+            // and the current response metadata is empty as a possible spam token
             let token_metadata =
                 match get_cached_metadata(metadata_cache, &caip10_token_address_strict).await {
                     Some(cached) => cached,
                     None => {
+                        // Skip if missing required fields and no such metadata
+                        // as a possible spam token
+                        let Some(symbol) = f.symbol else {
+                            continue;
+                        };
+
+                        // Determine name
+                        let name = if f.address == "native" {
+                            f.chain.clone()
+                        } else {
+                            symbol.clone()
+                        };
+
+                        // Determine icon URL
+                        let icon_url = if f.address == "native" {
+                            NATIVE_TOKEN_ICONS.get(&symbol).unwrap_or(&"").to_string()
+                        } else {
+                            // If there's no token_metadata or no logo, skip the asset
+                            // as a possible spam token
+                            match &f.token_metadata {
+                                Some(m) => m.logo.clone(),
+                                None => continue,
+                            }
+                        };
+
                         let new_item = TokenMetadataCacheItem {
                             name: name.clone(),
                             symbol: symbol.clone(),
                             icon_url: icon_url.clone(),
                         };
-                        // Spawn a background task to set the cache without blocking
+
+                        // Spawn a background task to update the cache without blocking
                         {
                             let metadata_cache = metadata_cache.clone();
                             let address_key = caip10_token_address_strict.clone();
