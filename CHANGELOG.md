@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.166.1 - 2025-01-22
+#### Bug Fixes
+- **(Dune)** checking for the cached metadata first (#907) - (057f1dc) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.166.0 - 2025-01-21
 #### Features
 - **(011y)** adding dRPC Grafana panels (#903) - (1dbf863) - Max Kalashnikoff | maksy.eth
