@@ -391,6 +391,8 @@ enum HistoryActivityType {
     Mint,
     #[serde(rename = "ACTIVITY_SPL_CREATE_ACCOUNT")]
     CreateAccount,
+    #[serde(rename = "ACTIVITY_SPL_CLOSE_ACCOUNT")]
+    CloseAccount,
 }
 
 #[async_trait]
@@ -553,6 +555,7 @@ impl HistoryProvider for SolScanProvider {
                         HistoryActivityType::Burn => "burn".to_string(),
                         HistoryActivityType::Mint => "mint".to_string(),
                         HistoryActivityType::CreateAccount => "execute".to_string(),
+                        HistoryActivityType::CloseAccount => "close".to_string(),
                     },
                     hash: item.trans_id.clone(),
                     mined_at: item.time.clone(),
