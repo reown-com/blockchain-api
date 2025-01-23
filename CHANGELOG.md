@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.167.0 - 2025-01-23
+#### Features
+- **(providers)** adding Odyssey testnet (#904) - (0f65428) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.166.1 - 2025-01-22
 #### Bug Fixes
 - **(Dune)** checking for the cached metadata first (#907) - (057f1dc) - Max Kalashnikoff | maksy.eth
