@@ -65,6 +65,7 @@ mod mantle;
 pub mod mock_alto;
 mod morph;
 mod near;
+mod odyssey;
 mod one_inch;
 mod pimlico;
 mod pokt;
@@ -94,6 +95,7 @@ pub use {
     mantle::MantleProvider,
     morph::MorphProvider,
     near::NearProvider,
+    odyssey::OdysseyProvider,
     one_inch::OneInchProvider,
     pimlico::PimlicoProvider,
     pokt::PoktProvider,
@@ -634,6 +636,7 @@ pub enum ProviderKind {
     Dune,
     Wemix,
     Drpc,
+    Odyssey,
 }
 
 impl Display for ProviderKind {
@@ -668,6 +671,7 @@ impl Display for ProviderKind {
                 ProviderKind::Tenderly => "Tenderly",
                 ProviderKind::Dune => "Dune",
                 ProviderKind::Drpc => "Drpc",
+                ProviderKind::Odyssey => "Odyssey",
             }
         )
     }
@@ -703,6 +707,7 @@ impl ProviderKind {
             "Dune" => Some(Self::Dune),
             "Wemix" => Some(Self::Wemix),
             "Drpc" => Some(Self::Drpc),
+            "Odyssey" => Some(Self::Odyssey),
             _ => None,
         }
     }

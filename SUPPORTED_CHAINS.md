@@ -39,6 +39,7 @@ Chain name with associated `chainId` query param to use.
 | Arbitrum Sepolia                                         | eip155:421614        |
 | Scroll Mainnet <sup>[1](#footnote1)</sup>                | eip155:534352        |
 | Scroll Sepolia Testnet <sup>[1](#footnote1)</sup>        | eip155:534351        |
+| Odyssey Testnet <sup>[1](#footnote1)</sup>               | eip155:911867        |
 | Zora <sup>[1](#footnote1)</sup>                          | eip155:7777777       |
 | Ethereum Sepolia                                         | eip155:11155111      |
 | Optimism Sepolia                                         | eip155:11155420      |

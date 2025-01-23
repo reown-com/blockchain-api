@@ -15,8 +15,8 @@ use {
 };
 pub use {
     arbitrum::*, aurora::*, base::*, berachain::*, binance::*, drpc::*, dune::*, getblock::*,
-    infura::*, lava::*, mantle::*, morph::*, near::*, pokt::*, publicnode::*, quicknode::*,
-    server::*, solscan::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
+    infura::*, lava::*, mantle::*, morph::*, near::*, odyssey::*, pokt::*, publicnode::*,
+    quicknode::*, server::*, solscan::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
 };
 mod arbitrum;
 mod aurora;
@@ -31,6 +31,7 @@ mod lava;
 mod mantle;
 mod morph;
 mod near;
+mod odyssey;
 mod pokt;
 mod publicnode;
 mod quicknode;

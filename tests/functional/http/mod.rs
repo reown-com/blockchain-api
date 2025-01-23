@@ -18,6 +18,7 @@ pub(crate) mod lava;
 pub(crate) mod mantle;
 pub(crate) mod morph;
 pub(crate) mod near;
+pub(crate) mod odyssey;
 pub(crate) mod pokt;
 pub(crate) mod publicnode;
 pub(crate) mod quicknode;
