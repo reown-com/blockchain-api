@@ -1,7 +1,13 @@
 pub use {
-    account_names_info::AccountNameRegistration, balance_lookup_info::BalanceLookupInfo,
-    config::Config, history_lookup_info::HistoryLookupInfo,
-    identity_lookup_info::IdentityLookupInfo, message_info::*,
+    account_names_info::AccountNameRegistration,
+    balance_lookup_info::BalanceLookupInfo,
+    chain_abstraction_info::{
+        ChainAbstractionBridgingInfo, ChainAbstractionFundingInfo, ChainAbstractionInitialTxInfo,
+    },
+    config::Config,
+    history_lookup_info::HistoryLookupInfo,
+    identity_lookup_info::IdentityLookupInfo,
+    message_info::*,
     onramp_history_lookup_info::OnrampHistoryLookupInfo,
 };
 use {
@@ -22,6 +28,7 @@ use {
 
 mod account_names_info;
 mod balance_lookup_info;
+mod chain_abstraction_info;
 mod config;
 mod history_lookup_info;
 mod identity_lookup_info;
@@ -39,6 +46,7 @@ enum DataKind {
     OnrampHistoryLookups,
     BalanceLookups,
     NameRegistrations,
+    ChainAbstraction,
 }
 
 impl DataKind {
@@ -51,6 +59,7 @@ impl DataKind {
             Self::OnrampHistoryLookups => "onramp_history_lookups",
             Self::BalanceLookups => "balance_lookups",
             Self::NameRegistrations => "name_registrations",
+            Self::ChainAbstraction => "chain_abstraction",
         }
     }
 
@@ -157,6 +166,11 @@ pub struct RPCAnalytics {
     onramp_history_lookups: ArcCollector<OnrampHistoryLookupInfo>,
     balance_lookups: ArcCollector<BalanceLookupInfo>,
     name_registrations: ArcCollector<AccountNameRegistration>,
+
+    chain_abstraction_funding: ArcCollector<ChainAbstractionFundingInfo>,
+    chain_abstraction_bridging: ArcCollector<ChainAbstractionBridgingInfo>,
+    chain_abstraction_initial_tx: ArcCollector<ChainAbstractionInitialTxInfo>,
+
     geoip_resolver: Option<Arc<MaxMindResolver>>,
 }
 
@@ -186,6 +200,11 @@ impl RPCAnalytics {
             onramp_history_lookups: analytics::noop_collector().boxed_shared(),
             balance_lookups: analytics::noop_collector().boxed_shared(),
             name_registrations: analytics::noop_collector().boxed_shared(),
+
+            chain_abstraction_funding: analytics::noop_collector().boxed_shared(),
+            chain_abstraction_bridging: analytics::noop_collector().boxed_shared(),
+            chain_abstraction_initial_tx: analytics::noop_collector().boxed_shared(),
+
             geoip_resolver: None,
         }
     }
@@ -314,6 +333,67 @@ impl RPCAnalytics {
                 node_addr,
                 file_extension: "parquet".to_owned(),
                 bucket_name: export_bucket.to_owned(),
+                s3_client: s3_client.clone(),
+                upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
+            })
+            .with_observer(observer),
+        )
+        .with_observer(observer)
+        .boxed_shared();
+
+        let observer = Observer(DataKind::ChainAbstraction);
+        let chain_abstraction_bridging = BatchCollector::new(
+            CollectorConfig {
+                data_queue_capacity: DATA_QUEUE_CAPACITY,
+                ..Default::default()
+            },
+            ParquetBatchFactory::new(Default::default()).with_observer(observer),
+            AwsExporter::new(AwsConfig {
+                export_prefix: "blockchain-api/chain_abstraction".to_owned(),
+                export_name: "bridging_info".to_owned(),
+                node_addr,
+                file_extension: "parquet".to_owned(),
+                bucket_name: export_bucket.to_owned(),
+                s3_client: s3_client.clone(),
+                upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
+            })
+            .with_observer(observer),
+        )
+        .with_observer(observer)
+        .boxed_shared();
+
+        let chain_abstraction_funding = BatchCollector::new(
+            CollectorConfig {
+                data_queue_capacity: DATA_QUEUE_CAPACITY,
+                ..Default::default()
+            },
+            ParquetBatchFactory::new(Default::default()).with_observer(observer),
+            AwsExporter::new(AwsConfig {
+                export_prefix: "blockchain-api/chain_abstraction".to_owned(),
+                export_name: "funding_info".to_owned(),
+                node_addr,
+                file_extension: "parquet".to_owned(),
+                bucket_name: export_bucket.to_owned(),
+                s3_client: s3_client.clone(),
+                upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
+            })
+            .with_observer(observer),
+        )
+        .with_observer(observer)
+        .boxed_shared();
+
+        let chain_abstraction_initial_tx = BatchCollector::new(
+            CollectorConfig {
+                data_queue_capacity: DATA_QUEUE_CAPACITY,
+                ..Default::default()
+            },
+            ParquetBatchFactory::new(Default::default()).with_observer(observer),
+            AwsExporter::new(AwsConfig {
+                export_prefix: "blockchain-api/chain_abstraction".to_owned(),
+                export_name: "initial_tx".to_owned(),
+                node_addr,
+                file_extension: "parquet".to_owned(),
+                bucket_name: export_bucket.to_owned(),
                 s3_client,
                 upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
             })
@@ -329,6 +409,11 @@ impl RPCAnalytics {
             onramp_history_lookups,
             balance_lookups,
             name_registrations,
+
+            chain_abstraction_bridging,
+            chain_abstraction_funding,
+            chain_abstraction_initial_tx,
+
             geoip_resolver,
         })
     }
@@ -389,6 +474,36 @@ impl RPCAnalytics {
                 ?err,
                 data_kind = DataKind::NameRegistrations.as_str(),
                 "failed to collect analytics"
+            );
+        }
+    }
+
+    pub fn chain_abstraction_funding(&self, data: ChainAbstractionFundingInfo) {
+        if let Err(err) = self.chain_abstraction_funding.collect(data) {
+            tracing::warn!(
+                ?err,
+                data_kind = DataKind::ChainAbstraction.as_str(),
+                "failed to collect analytics for chain abstraction funding"
+            );
+        }
+    }
+
+    pub fn chain_abstraction_bridging(&self, data: ChainAbstractionBridgingInfo) {
+        if let Err(err) = self.chain_abstraction_bridging.collect(data) {
+            tracing::warn!(
+                ?err,
+                data_kind = DataKind::ChainAbstraction.as_str(),
+                "failed to collect analytics for chain abstraction bridging"
+            );
+        }
+    }
+
+    pub fn chain_abstraction_initial_tx(&self, data: ChainAbstractionInitialTxInfo) {
+        if let Err(err) = self.chain_abstraction_initial_tx.collect(data) {
+            tracing::warn!(
+                ?err,
+                data_kind = DataKind::ChainAbstraction.as_str(),
+                "failed to collect analytics for chain abstraction initial tx"
             );
         }
     }

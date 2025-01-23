@@ -5,22 +5,31 @@ use {
         StorageBridgingItem, BRIDGING_AMOUNT_SLIPPAGE, STATUS_POLLING_INTERVAL,
     },
     crate::{
-        analytics::MessageSource,
+        analytics::{
+            ChainAbstractionBridgingInfo, ChainAbstractionFundingInfo,
+            ChainAbstractionInitialTxInfo, MessageSource,
+        },
         error::RpcError,
         state::AppState,
         storage::irn::OperationType,
-        utils::crypto::{
-            convert_alloy_address_to_h160, decode_erc20_transfer_data, get_erc20_balance, get_nonce,
+        utils::{
+            crypto::{
+                convert_alloy_address_to_h160, decode_erc20_transfer_data, get_erc20_balance,
+                get_nonce,
+            },
+            network,
         },
     },
     alloy::primitives::{Address, U256, U64},
     axum::{
-        extract::{Query, State},
+        extract::{ConnectInfo, Query, State},
         response::{IntoResponse, Response},
         Json,
     },
+    hyper::HeaderMap,
     serde::{Deserialize, Serialize},
     std::{
+        net::SocketAddr,
         str::FromStr,
         sync::Arc,
         time::{SystemTime, UNIX_EPOCH},
@@ -53,10 +62,12 @@ struct QuoteRoute {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     query_params: Query<RouteQueryParams>,
     Json(request_payload): Json<PrepareRequest>,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, query_params, request_payload)
+    handler_internal(state, connect_info, headers, query_params, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("ca_route"))
         .await
 }
@@ -64,6 +75,8 @@ pub async fn handler(
 #[tracing::instrument(skip(state), level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     Query(query_params): Query<RouteQueryParams>,
     request_payload: PrepareRequest,
 ) -> Result<Response, RpcError> {
@@ -416,7 +429,7 @@ async fn handler_internal(
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs(),
-        chain_id: request_payload.transaction.chain_id,
+        chain_id: request_payload.transaction.chain_id.clone(),
         wallet: from_address,
         contract: to_address,
         amount_current: erc20_balance, // The current balance of the ERC20 token
@@ -435,6 +448,65 @@ async fn handler_internal(
     state
         .metrics
         .add_irn_latency(irn_call_start, OperationType::Set);
+
+    // Analytics
+    {
+        let origin = headers
+            .get("origin")
+            .map(|v| v.to_str().unwrap_or("invalid_header").to_string());
+        let (country, continent, region) = state
+            .analytics
+            .lookup_geo_data(
+                network::get_forwarded_ip(headers).unwrap_or_else(|| connect_info.0.ip()),
+            )
+            .map(|geo| (geo.country, geo.continent, geo.region))
+            .unwrap_or((None, None, None));
+        state
+            .analytics
+            .chain_abstraction_funding(ChainAbstractionFundingInfo::new(
+                query_params.project_id.as_ref().to_string(),
+                origin.clone(),
+                region.clone(),
+                country.clone(),
+                continent.clone(),
+                bridge_chain_id.clone(),
+                bridge_contract.to_string(),
+                bridge_token_symbol.clone(),
+                bridging_amount.to_string(),
+            ));
+        state
+            .analytics
+            .chain_abstraction_bridging(ChainAbstractionBridgingInfo::new(
+                query_params.project_id.as_ref().to_string(),
+                origin.clone(),
+                region.clone(),
+                country.clone(),
+                continent.clone(),
+                bridge_chain_id.clone(),
+                bridge_contract.to_string(),
+                bridge_token_symbol.clone(),
+                request_payload.transaction.chain_id.clone(),
+                to_address.to_string(),
+                initial_tx_token_symbol.clone(),
+                bridging_amount.to_string(),
+                final_bridging_fee.to_string(),
+            ));
+        state
+            .analytics
+            .chain_abstraction_initial_tx(ChainAbstractionInitialTxInfo::new(
+                query_params.project_id.as_ref().to_string(),
+                origin,
+                region,
+                country,
+                continent,
+                from_address.to_string(),
+                to_address.to_string(),
+                asset_transfer_value.to_string(),
+                request_payload.transaction.chain_id.clone(),
+                to_address.to_string(),
+                initial_tx_token_symbol.clone(),
+            ));
+    }
 
     return Ok(
         Json(PrepareResponse::Success(PrepareResponseSuccess::Available(
