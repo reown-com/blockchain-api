@@ -98,7 +98,7 @@ async fn handler_internal(
         .hset(
             address.clone(),
             pci.clone(),
-            serde_json::to_string(&storage_permissions_item)?.into(),
+            serde_json::to_vec(&storage_permissions_item)?,
         )
         .await?;
     state

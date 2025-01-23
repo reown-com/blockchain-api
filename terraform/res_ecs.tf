@@ -93,7 +93,7 @@ module "ecs" {
   rate_limiting_ip_whitelist    = var.rate_limiting_ip_whitelist
 
   # IRN Client
-  irn_node             = var.irn_node
+  irn_nodes            = var.irn_nodes
   irn_key              = var.irn_key
   irn_namespace        = var.irn_namespace
   irn_namespace_secret = var.irn_namespace_secret

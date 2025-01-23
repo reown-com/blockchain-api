@@ -220,7 +220,7 @@ mod test {
                 "127.0.0.1,127.0.0.2",
             ),
             // IRN config.
-            ("RPC_PROXY_IRN_NODE", "node"),
+            ("RPC_PROXY_IRN_NODES", "node1.id,node2.id"),
             ("RPC_PROXY_IRN_KEY", "key"),
             ("RPC_PROXY_IRN_NAMESPACE", "namespace"),
             ("RPC_PROXY_IRN_NAMESPACE_SECRET", "namespace"),
@@ -312,7 +312,7 @@ mod test {
                     ip_whitelist: Some(vec!["127.0.0.1".into(), "127.0.0.2".into()]),
                 },
                 irn: IrnConfig {
-                    node: Some("node".to_owned()),
+                    nodes: Some(vec!["node1.id".to_owned(), "node2.id".to_owned()]),
                     key: Some("key".to_owned()),
                     namespace: Some("namespace".to_owned()),
                     namespace_secret: Some("namespace".to_owned()),

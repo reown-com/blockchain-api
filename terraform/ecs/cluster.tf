@@ -127,7 +127,7 @@ resource "aws_ecs_task_definition" "app_task" {
 
         { name = "RPC_PROXY_POSTGRES_URI", value = var.postgres_url },
 
-        { name = "RPC_PROXY_IRN_NODE", value = var.irn_node },
+        { name = "RPC_PROXY_IRN_NODES", value = var.irn_nodes },
         { name = "RPC_PROXY_IRN_KEY", value = var.irn_key },
         { name = "RPC_PROXY_IRN_NAMESPACE", value = var.irn_namespace },
         { name = "RPC_PROXY_IRN_NAMESPACE_SECRET", value = var.irn_namespace_secret },

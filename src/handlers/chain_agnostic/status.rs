@@ -54,7 +54,7 @@ async fn handler_internal(
     state
         .metrics
         .add_irn_latency(irn_call_start, OperationType::Get);
-    let mut bridging_status_item = serde_json::from_str::<StorageBridgingItem>(&irn_result)?;
+    let mut bridging_status_item = serde_json::from_slice::<StorageBridgingItem>(&irn_result)?;
 
     // Return without checking the balance if the status is completed or errored
     match bridging_status_item.status {
@@ -91,7 +91,7 @@ async fn handler_internal(
         irn_client
             .set(
                 query_params.orchestration_id,
-                serde_json::to_string(&bridging_status_item)?.into(),
+                serde_json::to_vec(&bridging_status_item)?,
             )
             .await?;
         state
@@ -129,7 +129,7 @@ async fn handler_internal(
         irn_client
             .set(
                 query_params.orchestration_id,
-                serde_json::to_string(&bridging_status_item)?.into(),
+                serde_json::to_vec(&bridging_status_item)?,
             )
             .await?;
         state

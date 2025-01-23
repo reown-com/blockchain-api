@@ -29,12 +29,13 @@ pub enum StorageError {
     /// Wrong UTF8 encoding
     #[error("wrong UTF8 encoding")]
     Utf8Error(#[from] std::string::FromUtf8Error),
-    /// IRN network errors
-    #[error("IRN network error: {0}")]
-    IrnNetworkError(#[from] irn_rpc::quic::Error),
-    /// IRN client errors
-    #[error("IRN client error: {0}")]
-    IrnClientError(#[from] irn_api::client::Error),
+    /// WCN replication client error
+    #[error("WCN client error: {0}")]
+    WcnClientError(#[from] wcn_replication::Error),
+    #[error("WCN auth error: {0}")]
+    WcnAuthError(#[from] wcn_replication::auth::Error),
+    #[error("WCN driver creation error: {0}")]
+    WcnDriverCreationError(#[from] wcn_replication::CreationError),
     /// An unexpected error occurred
     #[error("{0:?}")]
     Other(String),
