@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.168.1 - 2025-01-24
+#### Bug Fixes
+- **(SolScan)** adding new  activity type (#908) - (abf92b5) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.168.0 - 2025-01-23
 #### Features
 - **(analytics)** adding chain abstraction analytics (#905) - (ffaef09) - Max Kalashnikoff | maksy.eth
