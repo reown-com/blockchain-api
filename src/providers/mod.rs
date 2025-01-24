@@ -1019,17 +1019,17 @@ pub trait SimulationProvider: Send + Sync {
         metrics: Arc<Metrics>,
     ) -> Result<tenderly::SimulationResponse, RpcError>;
 
-    /// Get the cached gas estimation for ERC20 transfer
+    /// Get the cached gas estimation
     /// for the token contract and chain_id
-    async fn get_cached_erc20_gas_estimation(
+    async fn get_cached_gas_estimation(
         &self,
         chain_id: &str,
         contract_address: Address,
     ) -> Result<Option<u64>, RpcError>;
 
     /// Save to the cahce the gas estimation
-    /// for ERC20 transfer for the token contract and chain_id
-    async fn set_cached_erc20_gas_estimation(
+    /// for the token contract and chain_id
+    async fn set_cached_gas_estimation(
         &self,
         chain_id: &str,
         contract_address: Address,

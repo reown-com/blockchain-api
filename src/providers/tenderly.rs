@@ -15,8 +15,8 @@ use {
     tracing::error,
 };
 
-// Caching TTL paramters
-const ERC20_GAS_ESTIMATE_CACHE_TTL: u64 = 60 * 60 * 24; // 24 hours
+/// Gas estimation caching TTL paramters
+const GAS_ESTIMATE_CACHE_TTL: u64 = 60 * 60 * 4; // 4 hours
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SimulationRequest {
@@ -126,9 +126,9 @@ impl TenderlyProvider {
             .await
     }
 
-    /// Construct the cache key for the ERC20 gas estimate
-    fn format_cache_erc20_gas_key(&self, chain_id: &str, contract_address: Address) -> String {
-        format!("tenderly/erc20gas/{}/{}", chain_id, contract_address)
+    /// Construct the cache key for the gas estimation
+    fn format_cached_gas_key(&self, chain_id: &str, contract_address: Address) -> String {
+        format!("tenderly/gas/{}/{}", chain_id, contract_address)
     }
 
     #[allow(dependency_on_unit_never_type_fallback)]
@@ -225,12 +225,12 @@ impl SimulationProvider for TenderlyProvider {
     }
 
     #[tracing::instrument(skip(self), fields(provider = "Tenderly"), level = "debug")]
-    async fn get_cached_erc20_gas_estimation(
+    async fn get_cached_gas_estimation(
         &self,
         chain_id: &str,
         contract_address: Address,
     ) -> Result<Option<u64>, RpcError> {
-        let cache_key = self.format_cache_erc20_gas_key(chain_id, contract_address);
+        let cache_key = self.format_cached_gas_key(chain_id, contract_address);
         let cached_value = self.get_cache(&cache_key).await?;
         if let Some(value) = cached_value {
             return Ok(Some(value.parse().unwrap()));
@@ -239,14 +239,14 @@ impl SimulationProvider for TenderlyProvider {
     }
 
     #[tracing::instrument(skip(self), fields(provider = "Tenderly"), level = "debug")]
-    async fn set_cached_erc20_gas_estimation(
+    async fn set_cached_gas_estimation(
         &self,
         chain_id: &str,
         contract_address: Address,
         gas: u64,
     ) -> Result<(), RpcError> {
-        let cache_key = self.format_cache_erc20_gas_key(chain_id, contract_address);
-        self.set_cache(&cache_key, &gas.to_string(), ERC20_GAS_ESTIMATE_CACHE_TTL)
+        let cache_key = self.format_cached_gas_key(chain_id, contract_address);
+        self.set_cache(&cache_key, &gas.to_string(), GAS_ESTIMATE_CACHE_TTL)
             .await?;
         Ok(())
     }

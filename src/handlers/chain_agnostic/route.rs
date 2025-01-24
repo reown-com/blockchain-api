@@ -52,7 +52,7 @@ use {
 const DEFAULT_GAS: i64 = 0x029a6b * 0x9;
 
 // Slippage for the gas estimation
-const ESTIMATED_GAS_SLIPPAGE: i8 = 3;
+const ESTIMATED_GAS_SLIPPAGE: i8 = 10;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -151,10 +151,7 @@ async fn handler_internal(
                 let gas_used = match state
                     .providers
                     .simulation_provider
-                    .get_cached_erc20_gas_estimation(
-                        &request_payload.transaction.chain_id,
-                        to_address,
-                    )
+                    .get_cached_gas_estimation(&request_payload.transaction.chain_id, to_address)
                     .await?
                 {
                     Some(gas) => gas,
@@ -168,7 +165,7 @@ async fn handler_internal(
                         state
                             .providers
                             .simulation_provider
-                            .set_cached_erc20_gas_estimation(
+                            .set_cached_gas_estimation(
                                 &request_payload.transaction.chain_id,
                                 to_address,
                                 simulated_gas_used,
@@ -337,6 +334,7 @@ async fn handler_internal(
         }))
         .into_response());
     };
+
     // Check the final bridging amount from the quote
     let bridging_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
     let bridging_amount =
@@ -411,8 +409,7 @@ async fn handler_internal(
         }
     }
 
-    // Push bridging transaction
-    routes.push(Transaction {
+    let mut bridging_transaction = Transaction {
         from: from_address,
         to: bridge_tx.tx_target,
         value: bridge_tx.value,
@@ -420,7 +417,56 @@ async fn handler_internal(
         input: bridge_tx.tx_data,
         nonce: current_nonce,
         chain_id: format!("eip155:{}", bridge_tx.chain_id),
-    });
+    };
+
+    // Estimate (or get cached) the gas for the bridging transaction above and multiply by the slippage
+    let bridging_gas_limit = match state
+        .providers
+        .simulation_provider
+        .clone()
+        .get_cached_gas_estimation(&bridge_tx.chain_id.to_string(), bridge_tx.tx_target)
+        .await?
+    {
+        Some(cached_gas) => cached_gas,
+        None => {
+            let (_, estimated_gas_used) = get_assets_changes_from_simulation(
+                state.providers.simulation_provider.clone(),
+                &bridging_transaction,
+                state.metrics.clone(),
+            )
+            .await?;
+            // Save the bridging tx gas estimation to the cache
+            {
+                let state = state.clone();
+                let bridging_tx_chain_id = bridge_tx.chain_id.to_string().clone();
+                let bridging_tx_target = bridge_tx.tx_target;
+                tokio::spawn(async move {
+                    state
+                        .providers
+                        .simulation_provider
+                        .clone()
+                        .set_cached_gas_estimation(
+                            &bridging_tx_chain_id,
+                            bridging_tx_target,
+                            estimated_gas_used,
+                        )
+                        .await
+                        .unwrap_or_else(|e| {
+                            error!(
+                                "Failed to save the bridging gas estimation to the cache: {}",
+                                e
+                            )
+                        });
+                });
+            }
+            estimated_gas_used
+        }
+    };
+
+    // Updating the gas limit for the bridging transaction
+    bridging_transaction.gas_limit =
+        U64::from((bridging_gas_limit * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
+    routes.push(bridging_transaction);
 
     // Save the bridging transaction to the IRN
     let orchestration_id = Uuid::new_v4().to_string();
