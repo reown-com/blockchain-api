@@ -1,5 +1,5 @@
 locals {
-  vpc_cidr                = "10.0.0.0/16"
+  vpc_cidr                = module.this.stage == "prod" ? "10.0.0.0/16" : "13.0.0.0/16"
   vpc_azs                 = slice(data.aws_availability_zones.available.names, 0, 3)
   vpc_flow_s3_bucket_name = substr("vpc-flow-logs-${module.this.id}-${random_pet.this.id}", 0, 63)
 }
