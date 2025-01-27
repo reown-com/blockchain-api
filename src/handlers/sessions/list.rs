@@ -80,7 +80,7 @@ async fn handler_internal(
         .add_irn_latency(irn_call_start, OperationType::Hscan);
 
     let mut result_pcis: Vec<Pci> = Vec::new();
-    for (pci, entity) in pcis {
+    for (_, entity) in pcis {
         let storage_permissions_item = serde_json::from_slice::<StoragePermissionsItem>(&entity)?;
 
         // Get project data
@@ -96,7 +96,7 @@ async fn handler_internal(
                 url: None,
                 icon_url: None,
             },
-            pci,
+            pci: storage_permissions_item.pci,
             expiry: storage_permissions_item.expiry,
             created_at: storage_permissions_item.created_at,
             permissions: storage_permissions_item.permissions,

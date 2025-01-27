@@ -55,6 +55,7 @@ pub struct PermissionSubContextSignerData {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StoragePermissionsItem {
+    pci: String,
     expiry: usize,
     created_at: usize,
     project_id: String,

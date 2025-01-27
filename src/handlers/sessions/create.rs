@@ -78,6 +78,9 @@ async fn handler_internal(
 
     // Store the permission item in the IRN database
     let storage_permissions_item = StoragePermissionsItem {
+        // Storing the PCI inside of the item along with the item field
+        // as a temporary hotfix solution for the WCN/IRN field wrong naming
+        pci: pci.clone(),
         expiry: request_payload.expiry,
         created_at: SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
