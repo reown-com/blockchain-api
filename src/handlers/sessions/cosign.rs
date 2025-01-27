@@ -146,7 +146,7 @@ async fn handler_internal(
         .metrics
         .add_irn_latency(irn_call_start, OperationType::Hget);
     let storage_permissions_item =
-        serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
+        serde_json::from_slice::<StoragePermissionsItem>(&storage_permissions_item)?;
 
     // Check if the permission is revoked
     if storage_permissions_item.revoked_at.is_some() {

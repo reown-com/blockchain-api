@@ -395,8 +395,8 @@ variable "rate_limiting_ip_whitelist" {
 #-------------------------------------------------------------------------------
 # IRN client configuration
 
-variable "irn_node" {
-  description = "IRN node address in Address:Socket format"
+variable "irn_nodes" {
+  description = "Comma-separated IRN nodes address in MultiAddr format"
   type        = string
 }
 

@@ -53,7 +53,7 @@ async fn handler_internal(
         .metrics
         .add_irn_latency(irn_call_start, OperationType::Hget);
     let mut storage_permissions_item =
-        serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
+        serde_json::from_slice::<StoragePermissionsItem>(&storage_permissions_item)?;
 
     // Update the context
     storage_permissions_item.context = Some(request_payload.context);
@@ -64,7 +64,7 @@ async fn handler_internal(
         .hset(
             address,
             request_payload.pci,
-            serde_json::to_string(&storage_permissions_item)?.into(),
+            serde_json::to_vec(&storage_permissions_item)?,
         )
         .await?;
     state

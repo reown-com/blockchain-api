@@ -111,11 +111,13 @@ pub async fn get_session_context(
         .ok_or(GetSessionContextError::PermissionNotFound(address, pci))?;
     metrics.add_irn_latency(irn_call_start, OperationType::Hget);
 
-    let storage_permissions_item =
-        serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item).map_err(|e| {
-            GetSessionContextError::InternalGetSessionContextError(
-                InternalGetSessionContextError::Deserializing(e),
-            )
-        })?;
+    let storage_permissions_item = serde_json::from_slice::<StoragePermissionsItem>(
+        &storage_permissions_item,
+    )
+    .map_err(|e| {
+        GetSessionContextError::InternalGetSessionContextError(
+            InternalGetSessionContextError::Deserializing(e),
+        )
+    })?;
     Ok(storage_permissions_item.context)
 }

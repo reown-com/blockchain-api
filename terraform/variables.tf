@@ -263,8 +263,8 @@ variable "irn_aws_account_id" {
 #-------------------------------------------------------------------------------
 # IRN client configuration
 
-variable "irn_node" {
-  description = "IRN node address in Address:Socket format"
+variable "irn_nodes" {
+  description = "Comma-separated IRN nodes address in MultiAddr format"
   type        = string
 }
 

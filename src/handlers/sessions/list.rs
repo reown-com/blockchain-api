@@ -15,6 +15,9 @@ use {
     wc::future::FutureExt,
 };
 
+// Hardcoded maximum number of PCIs to return since currently we don't have a pagination
+const MAX_PCIS_COUNT: u32 = 255;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ListPermissionResponse {
@@ -69,24 +72,16 @@ async fn handler_internal(
 
     // get all permission control identifiers for the address
     let irn_call_start = SystemTime::now();
-    let pcis = irn_client.hfields(address.clone()).await?;
+    let (pcis, _) = irn_client
+        .hscan(address.clone(), MAX_PCIS_COUNT, None)
+        .await?;
     state
         .metrics
-        .add_irn_latency(irn_call_start, OperationType::Hfields);
+        .add_irn_latency(irn_call_start, OperationType::Hscan);
 
-    // get all permissions data for the pcis
     let mut result_pcis: Vec<Pci> = Vec::new();
-    for pci in pcis {
-        let irn_call_start = SystemTime::now();
-        let storage_permissions_item = irn_client
-            .hget(address.clone(), pci.clone())
-            .await?
-            .ok_or_else(|| RpcError::PermissionNotFound(address.clone(), pci.clone()))?;
-        state
-            .metrics
-            .add_irn_latency(irn_call_start, OperationType::Hget);
-        let storage_permissions_item =
-            serde_json::from_str::<StoragePermissionsItem>(&storage_permissions_item)?;
+    for (_, entity) in pcis {
+        let storage_permissions_item = serde_json::from_slice::<StoragePermissionsItem>(&entity)?;
 
         // Get project data
         let project = state
@@ -101,7 +96,7 @@ async fn handler_internal(
                 url: None,
                 icon_url: None,
             },
-            pci,
+            pci: storage_permissions_item.pci,
             expiry: storage_permissions_item.expiry,
             created_at: storage_permissions_item.created_at,
             permissions: storage_permissions_item.permissions,

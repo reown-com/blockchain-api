@@ -172,20 +172,15 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 
     let http_client = reqwest::Client::new();
     let irn_client =
-        if let (Some(node_addr), Some(key_base64), Some(namespace), Some(namespace_secret)) = (
-            config.irn.node.clone(),
+        if let (Some(nodes), Some(key_base64), Some(namespace), Some(namespace_secret)) = (
+            config.irn.nodes.clone(),
             config.irn.key.clone(),
             config.irn.namespace.clone(),
             config.irn.namespace_secret.clone(),
         ) {
-            Some(irn::Irn::new(
-                node_addr,
-                key_base64,
-                namespace,
-                namespace_secret,
-            )?)
+            Some(irn::Irn::new(key_base64, nodes, namespace, namespace_secret).await?)
         } else {
-            warn!("IRN client is disabled (missing env configuration variables)");
+            warn!("IRN client is disabled (missing required environment configuration variables)");
             None
         };
 
