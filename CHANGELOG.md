@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.170.0 - 2025-01-27
+#### Features
+- **(CA)** adding cached bridging transaction gas estimation (#910) - (0aa808f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.169.0 - 2025-01-24
 #### Features
 - **(supported-chains)** adding cache-control header (#911) - (10e1af4) - Max Kalashnikoff | maksy.eth
