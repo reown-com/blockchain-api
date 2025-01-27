@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.172.0 - 2025-01-27
+#### Features
+- **(CA)** increasing the estimated gas slippage (#913) - (53f43b0) - Max Kalashnikoff | maksy.eth
+- **(IRN)** removing Irn VPC peering (#912) - (4f3fe66) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.171.0 - 2025-01-27
 #### Features
 - **(IRN)** updating irn client to `wcn_replication` and switching to the mainnet (#909) - (5e79fa0) - Max Kalashnikoff | maksy.eth
