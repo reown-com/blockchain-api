@@ -52,7 +52,7 @@ use {
 const DEFAULT_GAS: i64 = 0x029a6b * 0x9;
 
 // Slippage for the gas estimation
-const ESTIMATED_GAS_SLIPPAGE: i8 = 10;
+const ESTIMATED_GAS_SLIPPAGE: i8 = 50;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
