@@ -243,24 +243,6 @@ variable "rate_limiting_ip_whitelist" {
 }
 
 #-------------------------------------------------------------------------------
-# IRN VPC peering
-
-variable "irn_vpc_id" {
-  description = "ID of the IRN VPC"
-  type        = string
-}
-
-variable "irn_vpc_cidr" {
-  description = "CIDR block of the IRN VPC"
-  type        = string
-}
-
-variable "irn_aws_account_id" {
-  description = "ID of the AWS account in IRN is being deployed"
-  type        = string
-}
-
-#-------------------------------------------------------------------------------
 # IRN client configuration
 
 variable "irn_nodes" {
