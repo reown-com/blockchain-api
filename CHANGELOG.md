@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.173.0 - 2025-01-28
+#### Features
+- **(CA)** increasing gas estimation slippage and decreasing the cache TTL (#914) - (0692dbd) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.172.0 - 2025-01-27
 #### Features
 - **(CA)** increasing the estimated gas slippage (#913) - (53f43b0) - Max Kalashnikoff | maksy.eth
