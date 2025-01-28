@@ -23,7 +23,7 @@ use {
         ArbitrumConfig, AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig, DrpcConfig,
         DuneConfig, GetBlockConfig, InfuraConfig, LavaConfig, MantleConfig, MorphConfig,
         NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig,
-        UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
+        SyndicaConfig, UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
@@ -33,8 +33,8 @@ use {
         DrpcProvider, DuneProvider, GetBlockProvider, InfuraProvider, InfuraWsProvider,
         LavaProvider, MantleProvider, MorphProvider, NearProvider, OdysseyProvider, PoktProvider,
         ProviderRepository, PublicnodeProvider, QuicknodeProvider, SolScanProvider,
-        UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider, ZoraProvider,
-        ZoraWsProvider,
+        SyndicaProvider, UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider,
+        ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -515,6 +515,9 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_rpc_provider::<UnichainProvider, UnichainConfig>(UnichainConfig::default());
     providers
         .add_rpc_provider::<LavaProvider, LavaConfig>(LavaConfig::new(config.lava_api_key.clone()));
+    providers.add_rpc_provider::<SyndicaProvider, SyndicaConfig>(SyndicaConfig::new(
+        config.syndica_api_key.clone(),
+    ));
     providers.add_rpc_provider::<MorphProvider, MorphConfig>(MorphConfig::default());
     providers.add_rpc_provider::<WemixProvider, WemixConfig>(WemixConfig::default());
     providers.add_rpc_provider::<DrpcProvider, DrpcConfig>(DrpcConfig::default());

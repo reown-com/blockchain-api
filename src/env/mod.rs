@@ -16,7 +16,8 @@ use {
 pub use {
     arbitrum::*, aurora::*, base::*, berachain::*, binance::*, drpc::*, dune::*, getblock::*,
     infura::*, lava::*, mantle::*, morph::*, near::*, odyssey::*, pokt::*, publicnode::*,
-    quicknode::*, server::*, solscan::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
+    quicknode::*, server::*, solscan::*, syndica::*, unichain::*, wemix::*, zerion::*, zksync::*,
+    zora::*,
 };
 mod arbitrum;
 mod aurora;
@@ -37,6 +38,7 @@ mod publicnode;
 mod quicknode;
 mod server;
 pub mod solscan;
+mod syndica;
 mod unichain;
 mod wemix;
 pub mod zerion;
@@ -197,6 +199,7 @@ mod test {
                 "TENDERLY_PROJECT_ID",
             ),
             ("RPC_PROXY_PROVIDER_DUNE_API_KEY", "DUNE_API_KEY"),
+            ("RPC_PROXY_PROVIDER_SYNDICA_API_KEY", "SYNDICA_API_KEY"),
             (
                 "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL",
                 "PROMETHEUS_QUERY_URL",
@@ -303,6 +306,7 @@ mod test {
                     tenderly_account_id: "TENDERLY_ACCOUNT_ID".to_string(),
                     tenderly_project_id: "TENDERLY_PROJECT_ID".to_string(),
                     dune_api_key: "DUNE_API_KEY".to_string(),
+                    syndica_api_key: "SYNDICA_API_KEY".to_string(),
                     override_bundler_urls: None,
                 },
                 rate_limiting: RateLimitingConfig {

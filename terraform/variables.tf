@@ -181,6 +181,12 @@ variable "dune_api_key" {
   sensitive   = true
 }
 
+variable "syndica_api_key" {
+  description = "Syndica API key"
+  type        = string
+  sensitive   = true
+}
+
 variable "testing_project_id" {
   description = "Project ID used in a testing suite"
   type        = string
