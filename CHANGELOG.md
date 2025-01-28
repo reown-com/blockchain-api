@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.174.0 - 2025-01-28
+#### Features
+- **(providers)** Adding Syndica Solana RPC provider (#915) - (ca2ee37) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.173.0 - 2025-01-28
 #### Features
 - **(CA)** increasing gas estimation slippage and decreasing the cache TTL (#914) - (0692dbd) - Max Kalashnikoff | maksy.eth
