@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.175.0 - 2025-01-28
+#### Features
+- **(CA)** adding cached gas estimation for the approval transaction (#916) - (7c83405) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.174.0 - 2025-01-28
 #### Features
 - **(providers)** Adding Syndica Solana RPC provider (#915) - (ca2ee37) - Max Kalashnikoff | maksy.eth
