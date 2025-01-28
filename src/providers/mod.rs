@@ -72,6 +72,7 @@ mod pokt;
 mod publicnode;
 mod quicknode;
 mod solscan;
+mod syndica;
 pub mod tenderly;
 mod unichain;
 mod weights;
@@ -102,6 +103,7 @@ pub use {
     publicnode::PublicnodeProvider,
     quicknode::QuicknodeProvider,
     solscan::SolScanProvider,
+    syndica::SyndicaProvider,
     tenderly::TenderlyProvider,
     unichain::UnichainProvider,
     wemix::WemixProvider,
@@ -150,6 +152,8 @@ pub struct ProvidersConfig {
     pub tenderly_project_id: String,
     /// Dune API key
     pub dune_api_key: String,
+    /// Syndica API key
+    pub syndica_api_key: String,
 
     pub override_bundler_urls: Option<MockAltoUrls>,
 }
@@ -637,6 +641,7 @@ pub enum ProviderKind {
     Wemix,
     Drpc,
     Odyssey,
+    Syndica,
 }
 
 impl Display for ProviderKind {
@@ -672,6 +677,7 @@ impl Display for ProviderKind {
                 ProviderKind::Dune => "Dune",
                 ProviderKind::Drpc => "Drpc",
                 ProviderKind::Odyssey => "Odyssey",
+                ProviderKind::Syndica => "Syndica",
             }
         )
     }
@@ -708,6 +714,7 @@ impl ProviderKind {
             "Wemix" => Some(Self::Wemix),
             "Drpc" => Some(Self::Drpc),
             "Odyssey" => Some(Self::Odyssey),
+            "Syndica" => Some(Self::Syndica),
             _ => None,
         }
     }
