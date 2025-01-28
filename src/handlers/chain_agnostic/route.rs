@@ -15,7 +15,7 @@ use {
         utils::{
             crypto::{
                 convert_alloy_address_to_h160, decode_erc20_transfer_data, get_erc20_balance,
-                get_nonce,
+                get_gas_estimate, get_nonce, Erc20FunctionType,
             },
             network,
         },
@@ -47,10 +47,6 @@ use {
     },
 };
 
-// Default gas estimate
-// Using default with 9x increase
-const DEFAULT_GAS: i64 = 0x029a6b * 0x9;
-
 // Slippage for the gas estimation
 const ESTIMATED_GAS_SLIPPAGE: i8 = 100; // 100%, x2 slippage to cover the volatility
 
@@ -80,15 +76,16 @@ async fn handler_internal(
     Query(query_params): Query<RouteQueryParams>,
     request_payload: PrepareRequest,
 ) -> Result<Response, RpcError> {
+    let rpc_project_id = query_params.project_id;
     state
-        .validate_project_access_and_quota(query_params.project_id.as_ref())
+        .validate_project_access_and_quota(rpc_project_id.as_ref())
         .await?;
 
     let mut initial_transaction = Transaction {
         from: request_payload.transaction.from,
         to: request_payload.transaction.to,
         value: request_payload.transaction.value,
-        gas_limit: U64::from(DEFAULT_GAS),
+        gas_limit: U64::ZERO,
         input: request_payload.transaction.input.clone(),
         nonce: U64::ZERO,
         chain_id: request_payload.transaction.chain_id.clone(),
@@ -102,7 +99,7 @@ async fn handler_internal(
     let intial_transaction_nonce = get_nonce(
         &initial_transaction.chain_id.clone(),
         from_address,
-        query_params.project_id.as_ref(),
+        rpc_project_id.as_ref(),
         MessageSource::ChainAgnosticCheck,
     )
     .await?;
@@ -151,7 +148,11 @@ async fn handler_internal(
                 let gas_used = match state
                     .providers
                     .simulation_provider
-                    .get_cached_gas_estimation(&request_payload.transaction.chain_id, to_address)
+                    .get_cached_gas_estimation(
+                        &request_payload.transaction.chain_id,
+                        to_address,
+                        Some(Erc20FunctionType::Transfer),
+                    )
                     .await?
                 {
                     Some(gas) => gas,
@@ -162,15 +163,29 @@ async fn handler_internal(
                             state.metrics.clone(),
                         )
                         .await?;
-                        state
-                            .providers
-                            .simulation_provider
-                            .set_cached_gas_estimation(
-                                &request_payload.transaction.chain_id,
-                                to_address,
-                                simulated_gas_used,
+                        // Save the initial tx gas estimation to the cache
+                        {
+                            let state = state.clone();
+                            let initial_tx_chain_id = request_payload.transaction.chain_id.clone();
+                            tokio::spawn(async move {
+                                state
+                                    .providers
+                                    .simulation_provider
+                                    .set_cached_gas_estimation(
+                                        &initial_tx_chain_id,
+                                        to_address,
+                                        Some(Erc20FunctionType::Transfer),
+                                        simulated_gas_used,
+                                    )
+                                    .await
+                                    .unwrap_or_else(|e| {
+                                        error!(
+                                "Failed to save the initial ERC20 gas estimation to the cache: {}",
+                                e
                             )
-                            .await?;
+                                    });
+                            });
+                        }
                         simulated_gas_used
                     }
                 };
@@ -238,7 +253,7 @@ async fn handler_internal(
         &request_payload.transaction.chain_id,
         convert_alloy_address_to_h160(asset_transfer_contract),
         convert_alloy_address_to_h160(from_address),
-        query_params.project_id.as_ref(),
+        rpc_project_id.as_ref(),
         MessageSource::ChainAgnosticCheck,
     )
     .await?;
@@ -251,7 +266,7 @@ async fn handler_internal(
     // Check for possible bridging funds by iterating over supported assets
     // or return an insufficient funds error
     let Some(bridging_asset) = check_bridging_for_erc20_transfer(
-        query_params.project_id.as_ref().to_string(),
+        rpc_project_id.as_ref().to_string(),
         erc20_topup_value,
         from_address,
         initial_transaction.chain_id.clone(),
@@ -359,12 +374,11 @@ async fn handler_internal(
     let mut current_nonce = get_nonce(
         format!("eip155:{}", bridge_tx.chain_id).as_str(),
         from_address,
-        query_params.project_id.as_ref(),
+        rpc_project_id.as_ref(),
         MessageSource::ChainAgnosticCheck,
     )
     .await?;
 
-    // TODO: Implement gas estimation using `eth_estimateGas` for each transaction
     let mut routes = Vec::new();
 
     // Check for the allowance
@@ -396,15 +410,74 @@ async fn handler_internal(
                 )
                 .await?;
 
-            routes.push(Transaction {
+            let mut approval_transaction = Transaction {
                 from: approval_tx.from,
                 to: approval_tx.to,
                 value: U256::ZERO,
-                gas_limit: U64::from(DEFAULT_GAS),
+                gas_limit: U64::ZERO,
                 input: approval_tx.data,
                 nonce: current_nonce,
                 chain_id: format!("eip155:{}", bridge_tx.chain_id),
-            });
+            };
+
+            // Estimate (or get cached) the gas for the approval transaction above and multiply by the slippage
+            let approval_gas_limit = match state
+                .providers
+                .simulation_provider
+                .clone()
+                .get_cached_gas_estimation(
+                    &approval_transaction.chain_id,
+                    approval_transaction.to,
+                    Some(Erc20FunctionType::Approve),
+                )
+                .await?
+            {
+                Some(cached_gas) => cached_gas,
+                None => {
+                    let estimated_gas_used = get_gas_estimate(
+                        &approval_transaction.chain_id,
+                        approval_transaction.from,
+                        approval_transaction.to,
+                        approval_transaction.value,
+                        approval_transaction.input.clone(),
+                        rpc_project_id.as_ref(),
+                        MessageSource::ChainAgnosticCheck,
+                    )
+                    .await?;
+                    // Save the approval tx gas estimation to the cache
+                    {
+                        let state = state.clone();
+                        let approval_tx_chain_id = approval_transaction.chain_id.clone();
+                        tokio::spawn(async move {
+                            state
+                                .providers
+                                .simulation_provider
+                                .clone()
+                                .set_cached_gas_estimation(
+                                    &approval_tx_chain_id,
+                                    approval_tx.to,
+                                    Some(Erc20FunctionType::Approve),
+                                    estimated_gas_used,
+                                )
+                                .await
+                                .unwrap_or_else(|e| {
+                                    error!(
+                            "Failed to save the approval gas estimation to the cache: {}",
+                            e
+                        )
+                                });
+                        });
+                    }
+                    estimated_gas_used
+                }
+            };
+
+            // Updating the gas limit for the approval transaction
+            approval_transaction.gas_limit =
+                U64::from((approval_gas_limit * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
+            routes.push(approval_transaction);
+
+            // Increment the nonce
             current_nonce += U64::from(1);
         }
     }
@@ -413,7 +486,7 @@ async fn handler_internal(
         from: from_address,
         to: bridge_tx.tx_target,
         value: bridge_tx.value,
-        gas_limit: U64::from(DEFAULT_GAS),
+        gas_limit: U64::ZERO,
         input: bridge_tx.tx_data,
         nonce: current_nonce,
         chain_id: format!("eip155:{}", bridge_tx.chain_id),
@@ -424,7 +497,7 @@ async fn handler_internal(
         .providers
         .simulation_provider
         .clone()
-        .get_cached_gas_estimation(&bridge_tx.chain_id.to_string(), bridge_tx.tx_target)
+        .get_cached_gas_estimation(&bridge_tx.chain_id.to_string(), bridge_tx.tx_target, None)
         .await?
     {
         Some(cached_gas) => cached_gas,
@@ -439,7 +512,6 @@ async fn handler_internal(
             {
                 let state = state.clone();
                 let bridging_tx_chain_id = bridge_tx.chain_id.to_string().clone();
-                let bridging_tx_target = bridge_tx.tx_target;
                 tokio::spawn(async move {
                     state
                         .providers
@@ -447,7 +519,8 @@ async fn handler_internal(
                         .clone()
                         .set_cached_gas_estimation(
                             &bridging_tx_chain_id,
-                            bridging_tx_target,
+                            bridge_tx.tx_target,
+                            None,
                             estimated_gas_used,
                         )
                         .await
@@ -510,7 +583,7 @@ async fn handler_internal(
         state
             .analytics
             .chain_abstraction_funding(ChainAbstractionFundingInfo::new(
-                query_params.project_id.as_ref().to_string(),
+                rpc_project_id.as_ref().to_string(),
                 origin.clone(),
                 region.clone(),
                 country.clone(),
@@ -523,7 +596,7 @@ async fn handler_internal(
         state
             .analytics
             .chain_abstraction_bridging(ChainAbstractionBridgingInfo::new(
-                query_params.project_id.as_ref().to_string(),
+                rpc_project_id.as_ref().to_string(),
                 origin.clone(),
                 region.clone(),
                 country.clone(),
@@ -540,7 +613,7 @@ async fn handler_internal(
         state
             .analytics
             .chain_abstraction_initial_tx(ChainAbstractionInitialTxInfo::new(
-                query_params.project_id.as_ref().to_string(),
+                rpc_project_id.as_ref().to_string(),
                 origin,
                 region,
                 country,

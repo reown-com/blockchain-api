@@ -23,7 +23,7 @@ use {
             RpcQueryParams, SupportedCurrencies,
         },
         storage::KeyValueStorage,
-        utils::crypto::CaipNamespaces,
+        utils::crypto::{CaipNamespaces, Erc20FunctionType},
         Metrics,
     },
     alloy::{
@@ -1032,6 +1032,7 @@ pub trait SimulationProvider: Send + Sync {
         &self,
         chain_id: &str,
         contract_address: Address,
+        function_type: Option<Erc20FunctionType>,
     ) -> Result<Option<u64>, RpcError>;
 
     /// Save to the cahce the gas estimation
@@ -1040,6 +1041,7 @@ pub trait SimulationProvider: Send + Sync {
         &self,
         chain_id: &str,
         contract_address: Address,
+        function_type: Option<Erc20FunctionType>,
         gas: u64,
     ) -> Result<(), RpcError>;
 }
