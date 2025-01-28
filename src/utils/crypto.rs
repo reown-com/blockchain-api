@@ -2,9 +2,12 @@ use {
     crate::{analytics::MessageSource, error::RpcError},
     alloy::{
         network::Ethereum,
-        primitives::{Address, U256 as AlloyU256, U64 as AlloyU64},
+        primitives::{Address, Bytes as AlloyBytes, TxKind, U256 as AlloyU256, U64 as AlloyU64},
         providers::{Provider as AlloyProvider, ReqwestProvider},
-        rpc::json_rpc::Id,
+        rpc::{
+            json_rpc::Id,
+            types::{TransactionInput, TransactionRequest},
+        },
         sol,
         sol_types::SolCall,
     },
@@ -523,6 +526,35 @@ pub async fn get_nonce(
         .await
         .map_err(|e| CryptoUitlsError::ProviderError(format!("{}", e)))?;
     Ok(AlloyU64::from(nonce))
+}
+
+/// Get the gas estimation for the transaction by `eth_estimateGas` call
+#[tracing::instrument(level = "debug")]
+pub async fn get_gas_estimate(
+    chain_id: &str,
+    from: Address,
+    to: Address,
+    value: AlloyU256,
+    input: AlloyBytes,
+    rpc_project_id: &str,
+    source: MessageSource,
+) -> Result<u64, CryptoUitlsError> {
+    let provider =
+        ReqwestProvider::<Ethereum>::new_http(get_rpc_url(chain_id, rpc_project_id, source)?);
+    let gas_estimate = provider
+        .estimate_gas(&TransactionRequest {
+            from: Some(from),
+            to: Some(TxKind::Call(to)),
+            value: Some(value),
+            input: TransactionInput {
+                data: None,
+                input: Some(input),
+            },
+            ..Default::default()
+        })
+        .await
+        .map_err(|e| CryptoUitlsError::ProviderError(format!("{}", e)))?;
+    Ok(gas_estimate)
 }
 
 /// Call entry point v07 getUserOpHash contract and get the userOperation hash

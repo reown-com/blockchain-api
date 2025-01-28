@@ -3,7 +3,7 @@ use {
         error::RpcError,
         providers::{ProviderKind, SimulationProvider},
         storage::error::StorageError,
-        utils::crypto::disassemble_caip2,
+        utils::crypto::{disassemble_caip2, Erc20FunctionType},
         Metrics,
     },
     alloy::primitives::{Address, Bytes, B256, U256},
@@ -127,7 +127,18 @@ impl TenderlyProvider {
     }
 
     /// Construct the cache key for the gas estimation
-    fn format_cached_gas_key(&self, chain_id: &str, contract_address: Address) -> String {
+    fn format_cached_gas_key(
+        &self,
+        chain_id: &str,
+        contract_address: Address,
+        function_type: Option<Erc20FunctionType>,
+    ) -> String {
+        if let Some(function_type) = function_type {
+            return format!(
+                "tenderly/gas/{}/{}/{:?}",
+                chain_id, contract_address, function_type
+            );
+        };
         format!("tenderly/gas/{}/{}", chain_id, contract_address)
     }
 
@@ -229,8 +240,9 @@ impl SimulationProvider for TenderlyProvider {
         &self,
         chain_id: &str,
         contract_address: Address,
+        function_type: Option<Erc20FunctionType>,
     ) -> Result<Option<u64>, RpcError> {
-        let cache_key = self.format_cached_gas_key(chain_id, contract_address);
+        let cache_key = self.format_cached_gas_key(chain_id, contract_address, function_type);
         let cached_value = self.get_cache(&cache_key).await?;
         if let Some(value) = cached_value {
             return Ok(Some(value.parse().unwrap()));
@@ -243,9 +255,10 @@ impl SimulationProvider for TenderlyProvider {
         &self,
         chain_id: &str,
         contract_address: Address,
+        function_type: Option<Erc20FunctionType>,
         gas: u64,
     ) -> Result<(), RpcError> {
-        let cache_key = self.format_cached_gas_key(chain_id, contract_address);
+        let cache_key = self.format_cached_gas_key(chain_id, contract_address, function_type);
         self.set_cache(&cache_key, &gas.to_string(), GAS_ESTIMATE_CACHE_TTL)
             .await?;
         Ok(())
