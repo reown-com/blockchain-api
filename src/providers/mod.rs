@@ -301,7 +301,9 @@ impl ProviderRepository {
             config.tenderly_api_key.clone(),
             config.tenderly_account_id.clone(),
             config.tenderly_project_id.clone(),
-            redis_pool.clone(),
+            // Todo: Temporary disabling the gas estimation caching
+            // redis_pool.clone(),
+            None,
         ));
 
         Self {
