@@ -247,6 +247,12 @@ pub enum RpcError {
 
     #[error("Bridging final amount is less then expected")]
     BridgingFinalAmountLess,
+
+    #[error("Simulation provider unavailable")]
+    SimulationProviderUnavailable,
+
+    #[error("Simulation failed: {0}")]
+    SimulationFailed(String),
 }
 
 impl IntoResponse for RpcError {
@@ -620,6 +626,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "".to_string(),
                     "Convertion provider is temporarily unavailable".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::SimulationProviderUnavailable => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Simulation provider is temporarily unavailable".to_string(),
                 )),
             )
                 .into_response(),

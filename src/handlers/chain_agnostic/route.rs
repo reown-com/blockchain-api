@@ -15,7 +15,7 @@ use {
         utils::{
             crypto::{
                 convert_alloy_address_to_h160, decode_erc20_transfer_data, get_erc20_balance,
-                get_gas_estimate, get_nonce, Erc20FunctionType,
+                get_nonce, Erc20FunctionType,
             },
             network,
         },
@@ -29,6 +29,7 @@ use {
     hyper::HeaderMap,
     serde::{Deserialize, Serialize},
     std::{
+        collections::HashMap,
         net::SocketAddr,
         str::FromStr,
         sync::Arc,
@@ -48,7 +49,7 @@ use {
 };
 
 // Slippage for the gas estimation
-const ESTIMATED_GAS_SLIPPAGE: i8 = 100; // 100%, x2 slippage to cover the volatility
+const ESTIMATED_GAS_SLIPPAGE: i8 = 20; // 20% slippage to cover the volatility
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -410,7 +411,7 @@ async fn handler_internal(
                 )
                 .await?;
 
-            let mut approval_transaction = Transaction {
+            let approval_transaction = Transaction {
                 from: approval_tx.from,
                 to: approval_tx.to,
                 value: U256::ZERO,
@@ -419,62 +420,6 @@ async fn handler_internal(
                 nonce: current_nonce,
                 chain_id: format!("eip155:{}", bridge_tx.chain_id),
             };
-
-            // Estimate (or get cached) the gas for the approval transaction above and multiply by the slippage
-            let approval_gas_limit = match state
-                .providers
-                .simulation_provider
-                .clone()
-                .get_cached_gas_estimation(
-                    &approval_transaction.chain_id,
-                    approval_transaction.to,
-                    Some(Erc20FunctionType::Approve),
-                )
-                .await?
-            {
-                Some(cached_gas) => cached_gas,
-                None => {
-                    let estimated_gas_used = get_gas_estimate(
-                        &approval_transaction.chain_id,
-                        approval_transaction.from,
-                        approval_transaction.to,
-                        approval_transaction.value,
-                        approval_transaction.input.clone(),
-                        rpc_project_id.as_ref(),
-                        MessageSource::ChainAgnosticCheck,
-                    )
-                    .await?;
-                    // Save the approval tx gas estimation to the cache
-                    {
-                        let state = state.clone();
-                        let approval_tx_chain_id = approval_transaction.chain_id.clone();
-                        tokio::spawn(async move {
-                            state
-                                .providers
-                                .simulation_provider
-                                .clone()
-                                .set_cached_gas_estimation(
-                                    &approval_tx_chain_id,
-                                    approval_tx.to,
-                                    Some(Erc20FunctionType::Approve),
-                                    estimated_gas_used,
-                                )
-                                .await
-                                .unwrap_or_else(|e| {
-                                    error!(
-                            "Failed to save the approval gas estimation to the cache: {}",
-                            e
-                        )
-                                });
-                        });
-                    }
-                    estimated_gas_used
-                }
-            };
-
-            // Updating the gas limit for the approval transaction
-            approval_transaction.gas_limit =
-                U64::from((approval_gas_limit * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
             routes.push(approval_transaction);
 
             // Increment the nonce
@@ -482,7 +427,7 @@ async fn handler_internal(
         }
     }
 
-    let mut bridging_transaction = Transaction {
+    let bridging_transaction = Transaction {
         from: from_address,
         to: bridge_tx.tx_target,
         value: bridge_tx.value,
@@ -491,55 +436,28 @@ async fn handler_internal(
         nonce: current_nonce,
         chain_id: format!("eip155:{}", bridge_tx.chain_id),
     };
+    routes.push(bridging_transaction);
 
-    // Estimate (or get cached) the gas for the bridging transaction above and multiply by the slippage
-    let bridging_gas_limit = match state
+    // Estimate the gas usage for the approval (if present) and bridging transactions
+    // and update gas limits for transactions
+    let simulation_results = state
         .providers
         .simulation_provider
-        .clone()
-        .get_cached_gas_estimation(&bridge_tx.chain_id.to_string(), bridge_tx.tx_target, None)
-        .await?
-    {
-        Some(cached_gas) => cached_gas,
-        None => {
-            let (_, estimated_gas_used) = get_assets_changes_from_simulation(
-                state.providers.simulation_provider.clone(),
-                &bridging_transaction,
-                state.metrics.clone(),
-            )
-            .await?;
-            // Save the bridging tx gas estimation to the cache
-            {
-                let state = state.clone();
-                let bridging_tx_chain_id = bridge_tx.chain_id.to_string().clone();
-                tokio::spawn(async move {
-                    state
-                        .providers
-                        .simulation_provider
-                        .clone()
-                        .set_cached_gas_estimation(
-                            &bridging_tx_chain_id,
-                            bridge_tx.tx_target,
-                            None,
-                            estimated_gas_used,
-                        )
-                        .await
-                        .unwrap_or_else(|e| {
-                            error!(
-                                "Failed to save the bridging gas estimation to the cache: {}",
-                                e
-                            )
-                        });
-                });
-            }
-            estimated_gas_used
+        .simulate_bundled_transactions(routes.clone(), HashMap::new(), state.metrics.clone())
+        .await?;
+    for (index, simulation_result) in simulation_results.simulation_results.iter().enumerate() {
+        // Making sure the nonce matches the transaction nonce
+        if U64::from(simulation_result.transaction.nonce) != routes[index].nonce {
+            return Err(RpcError::SimulationFailed(
+                "The nonce for the simulation result does not match the nonce for the transaction"
+                    .into(),
+            ));
         }
-    };
 
-    // Updating the gas limit for the bridging transaction
-    bridging_transaction.gas_limit =
-        U64::from((bridging_gas_limit * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
-    routes.push(bridging_transaction);
+        routes[index].gas_limit = U64::from(
+            (simulation_result.transaction.gas_used * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100,
+        );
+    }
 
     // Save the bridging transaction to the IRN
     let orchestration_id = Uuid::new_v4().to_string();

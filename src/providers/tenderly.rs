@@ -13,6 +13,7 @@ use {
     serde::{Deserialize, Serialize},
     std::{collections::HashMap, sync::Arc, time::SystemTime},
     tracing::error,
+    yttrium::chain_abstraction::api::Transaction,
 };
 
 /// Gas estimation caching TTL paramters
@@ -26,7 +27,12 @@ pub struct SimulationRequest {
     pub input: Bytes,
     pub estimate_gas: bool,
     pub state_objects: HashMap<Address, StateStorage>,
-    pub save: bool,
+    pub save: bool, // Save the simulation to the dashboard
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct BundledSimulationRequests {
+    pub simulations: Vec<SimulationRequest>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -40,9 +46,17 @@ pub struct SimulationResponse {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct BundledSimulationResponse {
+    pub simulation_results: Vec<SimulationResponse>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ResponseTransaction {
+    pub hash: String,
     pub gas_used: u64,
     pub transaction_info: ResponseTransactionInfo,
+    pub status: bool, // Was simulating transaction successful
+    pub nonce: u64,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -55,7 +69,7 @@ pub struct AssetChange {
     #[serde(rename = "type")]
     pub asset_type: AssetChangeType,
     pub from: Address,
-    pub to: Address,
+    pub to: Option<Address>,
     pub raw_amount: U256,
     pub token_info: TokenInfo,
 }
@@ -228,9 +242,90 @@ impl SimulationProvider for TenderlyProvider {
                 "Failed to get the transaction simulation response from Tenderly with status: {}",
                 response.status()
             );
-            return Err(RpcError::ConversionProviderError);
+            return Err(RpcError::SimulationProviderUnavailable);
         }
         let response = response.json::<SimulationResponse>().await?;
+
+        // The transaction failed if the `status` field is false
+        if !response.transaction.status {
+            return Err(RpcError::SimulationFailed(format!(
+                "Failed to simulate the transaction with Tenderly. Transaction hash: {}",
+                response.transaction.hash
+            )));
+        }
+
+        Ok(response)
+    }
+
+    #[tracing::instrument(skip(self), fields(provider = "Tenderly"), level = "debug")]
+    async fn simulate_bundled_transactions(
+        &self,
+        transactions: Vec<Transaction>,
+        state_overrides: HashMap<Address, HashMap<B256, B256>>,
+        metrics: Arc<Metrics>,
+    ) -> Result<BundledSimulationResponse, RpcError> {
+        let url = Url::parse(format!("{}/simulate-bundle", &self.base_api_url).as_str())
+            .map_err(|_| RpcError::ConversionParseURLError)?;
+
+        let mut bundled_simulations = BundledSimulationRequests {
+            simulations: vec![],
+        };
+
+        for transaction in transactions {
+            let (_, evm_chain_id) = disassemble_caip2(&transaction.chain_id)?;
+
+            // fill the state_objects with the state_overrides
+            let mut state_objects: HashMap<Address, StateStorage> = HashMap::new();
+            for (address, state) in state_overrides.clone() {
+                let mut account_state = StateStorage {
+                    storage: HashMap::new(),
+                };
+                for (key, value) in state {
+                    account_state.storage.insert(key, value);
+                }
+                state_objects.insert(address, account_state);
+            }
+
+            bundled_simulations.simulations.push(SimulationRequest {
+                network_id: evm_chain_id,
+                from: transaction.from,
+                to: transaction.to,
+                input: transaction.input,
+                estimate_gas: true,
+                state_objects,
+                save: true,
+            });
+        }
+
+        let latency_start = SystemTime::now();
+        let response = self.send_post_request(url, &bundled_simulations).await?;
+
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some("simulate_bundled".to_string()),
+        );
+
+        if !response.status().is_success() {
+            error!(
+                "Failed to get the transactions bundled simulation response from Tenderly with status: {}",
+                response.status()
+            );
+            return Err(RpcError::SimulationProviderUnavailable);
+        }
+        let response = response.json::<BundledSimulationResponse>().await?;
+
+        // Check for the status of each transaction
+        for simulation in response.simulation_results.iter() {
+            if !simulation.transaction.status {
+                return Err(RpcError::SimulationFailed(format!(
+                    "Failed to simulate bundled transactions with Tenderly. Failed transaction hash: {}",
+                    simulation.transaction.hash
+                )));
+            }
+        }
 
         Ok(response)
     }
