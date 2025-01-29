@@ -25,7 +25,7 @@ pub struct BungeeResponse<T> {
 #[serde(rename_all = "camelCase")]
 pub struct BungeeQuotes {
     pub routes: Vec<Value>,
-    pub bridge_route_errors: Value,
+    pub bridge_route_errors: Option<Value>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
