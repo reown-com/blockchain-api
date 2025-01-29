@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.175.2 - 2025-01-29
+#### Bug Fixes
+- **(CA)** temporary disabling the cached gas estimation (#918) - (3bf04db) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.175.1 - 2025-01-29
 #### Bug Fixes
 - **(Bungee)** making bridging route errors optional (#917) - (de2c9fb) - Max Kalashnikoff | maksy.eth
