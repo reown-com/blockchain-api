@@ -265,7 +265,7 @@ pub async fn get_assets_changes_from_simulation(
             metrics,
         )
         .await?;
-    let gas_used = simulation_result.transaction.gas_used;
+    let gas_used = simulation_result.transaction.gas;
 
     if simulation_result
         .transaction
