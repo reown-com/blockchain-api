@@ -49,7 +49,7 @@ use {
 };
 
 // Slippage for the gas estimation
-const ESTIMATED_GAS_SLIPPAGE: i8 = 20; // 20% slippage to cover the volatility
+const ESTIMATED_GAS_SLIPPAGE: i16 = 500; // x5 slippage to cover the volatility
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
