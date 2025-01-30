@@ -2,7 +2,7 @@ use {
     super::{
         super::HANDLER_TASK_METRICS, check_bridging_for_erc20_transfer,
         find_supported_bridging_asset, get_assets_changes_from_simulation, BridgingStatus,
-        StorageBridgingItem, BRIDGING_AMOUNT_SLIPPAGE, STATUS_POLLING_INTERVAL,
+        StorageBridgingItem, BRIDGING_FEE_SLIPPAGE, STATUS_POLLING_INTERVAL,
     },
     crate::{
         analytics::{
@@ -314,9 +314,10 @@ async fn handler_internal(
         U256::from_str(&bridging_amount).map_err(|_| RpcError::InvalidValue(bridging_amount))?;
     let bridging_fee = erc20_topup_value - bridging_amount;
 
-    // Calculate the required bridging topup amount with the bridging fee and slippage
+    // Calculate the required bridging topup amount with the bridging fee
+    // and bridging fee * slippage to cover volatility
     let required_topup_amount = erc20_topup_value + bridging_fee;
-    let required_topup_amount = ((required_topup_amount * U256::from(BRIDGING_AMOUNT_SLIPPAGE))
+    let required_topup_amount = ((bridging_fee * U256::from(BRIDGING_FEE_SLIPPAGE))
         / U256::from(100))
         + required_topup_amount;
     if current_bridging_asset_balance < required_topup_amount {
@@ -362,7 +363,7 @@ async fn handler_internal(
         );
         return Err(RpcError::BridgingFinalAmountLess);
     }
-    let final_bridging_fee = bridging_amount - erc20_topup_value;
+    let final_bridging_fee = bridging_amount - required_topup_amount;
 
     // Build bridging transaction
     let bridge_tx = state

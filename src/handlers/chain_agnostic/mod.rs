@@ -22,8 +22,8 @@ pub mod assets;
 pub mod route;
 pub mod status;
 
-/// How much to multiply the amount by when bridging to cover bridging differences
-pub const BRIDGING_AMOUNT_SLIPPAGE: i8 = 50; // 50%
+/// How much to multiply the bridging fee amount to cover bridging fee volatility
+pub const BRIDGING_FEE_SLIPPAGE: i8 = 50; // 50%
 
 /// Bridging timeout in seconds
 pub const BRIDGING_TIMEOUT: u64 = 1800; // 30 minutes
