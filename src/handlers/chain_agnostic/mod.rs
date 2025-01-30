@@ -287,12 +287,13 @@ pub async fn get_assets_changes_from_simulation(
     {
         if asset_changed.asset_type.clone() == AssetChangeType::Transfer
             && asset_changed.token_info.standard.clone() == TokenStandard::Erc20
+            && asset_changed.to.is_some()
         {
             asset_changes.push(Erc20AssetChange {
                 chain_id: transaction.chain_id.clone(),
                 asset_contract: asset_changed.token_info.contract_address,
                 amount: asset_changed.raw_amount,
-                receiver: asset_changed.to,
+                receiver: asset_changed.to.unwrap_or_default(),
             })
         }
     }

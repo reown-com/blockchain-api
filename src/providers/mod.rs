@@ -47,6 +47,7 @@ use {
     },
     tracing::{debug, error, log::warn},
     wc::metrics::TaskMetrics,
+    yttrium::chain_abstraction::api::Transaction,
 };
 
 mod arbitrum;
@@ -1027,6 +1028,13 @@ pub trait SimulationProvider: Send + Sync {
         state_overrides: HashMap<Address, HashMap<B256, B256>>,
         metrics: Arc<Metrics>,
     ) -> Result<tenderly::SimulationResponse, RpcError>;
+
+    async fn simulate_bundled_transactions(
+        &self,
+        transactions: Vec<Transaction>,
+        state_overrides: HashMap<Address, HashMap<B256, B256>>,
+        metrics: Arc<Metrics>,
+    ) -> Result<tenderly::BundledSimulationResponse, RpcError>;
 
     /// Get the cached gas estimation
     /// for the token contract and chain_id
