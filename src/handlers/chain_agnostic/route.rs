@@ -49,7 +49,7 @@ use {
 };
 
 // Slippage for the gas estimation
-const ESTIMATED_GAS_SLIPPAGE: i16 = 500; // x5 slippage to cover the volatility
+const ESTIMATED_GAS_SLIPPAGE: i16 = 500; // Temporarily x5 slippage to cover the volatility
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -456,7 +456,7 @@ async fn handler_internal(
         }
 
         routes[index].gas_limit = U64::from(
-            (simulation_result.transaction.gas_used * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100,
+            (simulation_result.transaction.gas * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100,
         );
     }
 

@@ -53,7 +53,7 @@ pub struct BundledSimulationResponse {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ResponseTransaction {
     pub hash: String,
-    pub gas_used: u64,
+    pub gas: u64,
     pub transaction_info: ResponseTransactionInfo,
     pub status: bool, // Was simulating transaction successful
     pub nonce: u64,
