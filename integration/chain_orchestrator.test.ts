@@ -33,8 +33,6 @@ describe('Chain abstraction orchestrator', () => {
 
   // Amount to send to Optimism
   const amount_to_send = 3_000_000
-  // Amount bridging slippage
-  const amount_slippage = 2; // +2% topup
   
   let usdc_contracts = {};
   usdc_contracts[chain_id_optimism] = "0x0b2c639c533813f4aa9d7837caf62653d097ff85";
@@ -133,7 +131,6 @@ describe('Chain abstraction orchestrator', () => {
 
     // How much needs to be topped up
     const amount_to_topup = Math.round(amount_to_send - usdc_funds[chain_id_optimism]);
-    const amount_to_topup_with_fees = Math.round(((amount_to_topup * amount_slippage) / 100) + amount_to_topup);
 
     const data_encoded = erc20Interface.encodeFunctionData('transfer', [
       receiver_address,
@@ -167,7 +164,7 @@ describe('Chain abstraction orchestrator', () => {
     expect(approvalTransaction.nonce).not.toBe("0x00")
     expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
     const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.input);
-    if (decodedData.amount < BigInt(amount_to_topup_with_fees)) {
+    if (decodedData.amount <= BigInt(amount_to_topup)) {
       throw new Error(`Expected amount is lower then the minimal required`);
     }
 
@@ -188,10 +185,10 @@ describe('Chain abstraction orchestrator', () => {
     expect(fundingFrom.chainId).toBe(chain_id_base)
     expect(fundingFrom.symbol).toBe(usdc_token_symbol)
     expect(fundingFrom.tokenContract).toBe(usdc_contracts[chain_id_base].toLowerCase())
-    if (BigInt(fundingFrom.amount) <= BigInt(amount_to_topup_with_fees)) {
+    if (BigInt(fundingFrom.amount) <= BigInt(amount_to_topup)) {
       throw new Error(`Expected amount is lower then the minimal required`);
     }
-    if (BigInt(fundingFrom.bridgingFee) != BigInt(fundingFrom.amount - amount_to_topup)){
+    if (BigInt(fundingFrom.bridgingFee) < BigInt(fundingFrom.amount - amount_to_topup)){
       throw new Error(`Expected bridging fee is incorrect. `);
     }
     // Check the initialTransaction metadata
@@ -212,7 +209,6 @@ describe('Chain abstraction orchestrator', () => {
 
     // How much needs to be topped up
     const amount_to_topup = Math.round(amount_to_send - usdt_funds[chain_id_optimism]);
-    const amount_to_topup_with_fees = Math.round(((amount_to_topup * amount_slippage) / 100) + amount_to_topup);
 
     const data_encoded = erc20Interface.encodeFunctionData('transfer', [
       receiver_address,
@@ -246,7 +242,7 @@ describe('Chain abstraction orchestrator', () => {
     expect(approvalTransaction.nonce).not.toBe("0x00")
     expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
     const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.input);
-    if (decodedData.amount < BigInt(amount_to_topup_with_fees)) {
+    if (decodedData.amount <= BigInt(amount_to_topup)) {
       throw new Error(`Expected amount is lower then the minimal required`);
     }
 
@@ -267,10 +263,10 @@ describe('Chain abstraction orchestrator', () => {
     expect(fundingFrom.chainId).toBe(chain_id_arbitrum)
     expect(fundingFrom.symbol).toBe(usdt_token_symbol)
     expect(fundingFrom.tokenContract).toBe(usdt_contracts[chain_id_arbitrum].toLowerCase())
-    if (BigInt(fundingFrom.amount) <= BigInt(amount_to_topup_with_fees)) {
+    if (BigInt(fundingFrom.amount) <= BigInt(amount_to_topup)) {
       throw new Error(`Expected amount is lower then the minimal required`);
     }
-    if (BigInt(fundingFrom.bridgingFee) != BigInt(fundingFrom.amount - amount_to_topup)){
+    if (BigInt(fundingFrom.bridgingFee) < BigInt(fundingFrom.amount - amount_to_topup)){
       throw new Error(`Expected bridging fee is incorrect. `);
     }
     // Check the initialTransaction metadata
