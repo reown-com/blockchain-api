@@ -34,14 +34,6 @@ impl ProviderConfig for DrpcConfig {
 fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     // Keep in-sync with SUPPORTED_CHAINS.md
 
-    HashMap::from([
-        // Solana Mainnet
-        (
-            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp".into(),
-            (
-                "https://solana.drpc.org/".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
-        ),
-    ])
+    // TODO: Add EVM only chains
+    HashMap::new()
 }
