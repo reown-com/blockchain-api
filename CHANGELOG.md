@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.176.0 - 2025-01-30
+#### Features
+- **(CA)** temporarily increasing the gas slippage (#922) - (d6f2ec6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.175.4 - 2025-01-30
 #### Bug Fixes
 - **(CA)** proper bridging fee calculation (#921) - (a8607b0) - Max Kalashnikoff | maksy.eth
