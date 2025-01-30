@@ -68,7 +68,7 @@ pub struct ResponseTransactionInfo {
 pub struct AssetChange {
     #[serde(rename = "type")]
     pub asset_type: AssetChangeType,
-    pub from: Address,
+    pub from: Option<Address>,
     pub to: Option<Address>,
     pub raw_amount: U256,
     pub token_info: TokenInfo,
