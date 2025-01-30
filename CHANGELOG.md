@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.175.3 - 2025-01-30
+#### Bug Fixes
+- **(CA)** using the bundled simulation for allowance and bridging transactions (#919) - (eb071ad) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.175.2 - 2025-01-29
 #### Bug Fixes
 - **(CA)** temporary disabling the cached gas estimation (#918) - (3bf04db) - Max Kalashnikoff | maksy.eth
