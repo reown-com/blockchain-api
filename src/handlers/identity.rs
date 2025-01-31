@@ -45,7 +45,7 @@ pub const ETHEREUM_MAINNET: &str = "eip155:1";
 /// Error codes that reflect an `execution reverted` and should proceed with Ok() during
 /// the identity avatar lookup because of an absence of the ERC-721 contract address or
 /// token ID in the ENS avatar record.
-const JSON_RPC_OK_ERROR_CODES: [&str; 3] = ["-32000", "-32015", "3"];
+const JSON_RPC_OK_ERROR_CODES: [&str; 4] = ["-32000", "-32003", "-32015", "3"];
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 #[serde(rename_all = "camelCase")]
