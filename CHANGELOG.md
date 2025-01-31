@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.177.3 - 2025-01-31
+#### Bug Fixes
+- **(Tenderly)** making simulation response from optional (#920) - (0d7b49f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.177.2 - 2025-01-31
 #### Bug Fixes
 - **(CA)** comparing simulated transaction by the input (#925) - (49ed798) - Max Kalashnikoff | maksy.eth
