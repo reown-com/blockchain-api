@@ -90,4 +90,11 @@ local redis  = panels.aws.redis;
     endpoints_latency: (import 'non_rpc/endpoints_latency.libsonnet').new,
     cache_latency: (import 'non_rpc/cache_latency.libsonnet').new,
   },
+
+  chain_abstraction: {
+    gas_estimation: (import 'chain_abstraction/gas_estimation.libsonnet').new,
+    insufficient_funds: (import 'chain_abstraction/insufficient_funds.libsonnet').new,
+    no_bridging: (import 'chain_abstraction/no_bridging.libsonnet').new,
+    no_routes: (import 'chain_abstraction/no_routes.libsonnet').new,
+  },
 }
