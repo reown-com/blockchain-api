@@ -56,7 +56,7 @@ pub struct ResponseTransaction {
     pub gas: u64,
     pub transaction_info: ResponseTransactionInfo,
     pub status: bool, // Was simulating transaction successful
-    pub nonce: u64,
+    pub input: Bytes,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -93,6 +93,7 @@ pub struct TokenInfo {
 pub enum TokenStandard {
     Erc20,
     Erc721,
+    NativeCurrency,
 }
 
 pub struct TenderlyProvider {
