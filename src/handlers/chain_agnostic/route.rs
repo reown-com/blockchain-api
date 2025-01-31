@@ -447,10 +447,13 @@ async fn handler_internal(
         .simulate_bundled_transactions(routes.clone(), HashMap::new(), state.metrics.clone())
         .await?;
     for (index, simulation_result) in simulation_results.simulation_results.iter().enumerate() {
-        // Making sure the nonce matches the transaction nonce
-        if U64::from(simulation_result.transaction.nonce) != routes[index].nonce {
+        // Making sure the simulation input matches the transaction input
+        let curr_route = routes.get(index).ok_or_else(|| {
+            RpcError::SimulationFailed("The route index is out of bounds".to_string())
+        })?;
+        if simulation_result.transaction.input != curr_route.input {
             return Err(RpcError::SimulationFailed(
-                "The nonce for the simulation result does not match the nonce for the transaction"
+                "The input for the simulation result does not match the input for the transaction"
                     .into(),
             ));
         }
