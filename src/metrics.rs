@@ -20,6 +20,20 @@ use {
     },
 };
 
+#[derive(strum_macros::Display)]
+pub enum ChainAbstractionTransactionType {
+    Transfer,
+    Approve,
+    Bridge,
+}
+
+#[derive(strum_macros::Display)]
+pub enum ChainAbstractionNoBridgingNeededType {
+    NativeTokenTransfer,
+    AssetNotSupported,
+    SufficientFunds,
+}
+
 #[derive(Debug)]
 pub struct Metrics {
     pub rpc_call_counter: Counter<u64>,
@@ -70,6 +84,12 @@ pub struct Metrics {
 
     // IRN client
     pub irn_latency_tracker: Histogram<f64>,
+
+    // Chain Abstracton
+    pub ca_gas_estimation_tracker: Histogram<f64>,
+    pub ca_no_routes_found_counter: Counter<u64>,
+    pub ca_insufficient_funds_counter: Counter<u64>,
+    pub ca_no_bridging_needed_counter: Counter<u64>,
 }
 
 impl Metrics {
@@ -266,6 +286,26 @@ impl Metrics {
             .with_description("The number of chain RPC calls that had no available providers")
             .init();
 
+        let ca_gas_estimation_tracker = meter
+            .f64_histogram("gas_estimation")
+            .with_description("The gas estimation for transactions")
+            .init();
+
+        let ca_no_routes_found_counter = meter
+            .u64_counter("ca_no_routes_found")
+            .with_description("The number of times no routes were found for a CA")
+            .init();
+
+        let ca_insufficient_funds_counter = meter
+            .u64_counter("ca_insufficient_funds")
+            .with_description("The number of times insufficient funds were responded for a CA")
+            .init();
+
+        let ca_no_bridging_needed_counter = meter
+            .u64_counter("ca_no_bridging_needed")
+            .with_description("The number of times no bridging was needed for a CA")
+            .init();
+
         Metrics {
             rpc_call_counter,
             rpc_call_retries,
@@ -305,6 +345,10 @@ impl Metrics {
             rate_limiting_latency_tracker,
             rate_limited_entries_counter,
             rate_limited_responses_counter,
+            ca_gas_estimation_tracker,
+            ca_no_routes_found_counter,
+            ca_insufficient_funds_counter,
+            ca_no_bridging_needed_counter,
         }
     }
 }
@@ -639,6 +683,43 @@ impl Metrics {
                 .unwrap_or(Duration::from_secs(0))
                 .as_secs_f64(),
             &[otel::KeyValue::new("operation", operation.as_str())],
+        );
+    }
+
+    pub fn add_ca_gas_estimation(
+        &self,
+        gas: u64,
+        chain_id: String,
+        tx_type: ChainAbstractionTransactionType,
+    ) {
+        self.ca_gas_estimation_tracker.record(
+            &otel::Context::new(),
+            gas as f64,
+            &[
+                otel::KeyValue::new("chain_id", chain_id),
+                otel::KeyValue::new("tx_type", tx_type.to_string()),
+            ],
+        );
+    }
+
+    pub fn add_ca_no_routes_found(&self, route: String) {
+        self.ca_no_routes_found_counter.add(
+            &otel::Context::new(),
+            1,
+            &[otel::KeyValue::new("route", route)],
+        );
+    }
+
+    pub fn add_ca_insufficient_funds(&self) {
+        self.ca_insufficient_funds_counter
+            .add(&otel::Context::new(), 1, &[]);
+    }
+
+    pub fn add_ca_no_bridging_needed(&self, ca_type: ChainAbstractionNoBridgingNeededType) {
+        self.ca_no_bridging_needed_counter.add(
+            &otel::Context::new(),
+            1,
+            &[otel::KeyValue::new("type", ca_type.to_string())],
         );
     }
 

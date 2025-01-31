@@ -10,6 +10,7 @@ use {
             ChainAbstractionInitialTxInfo, MessageSource,
         },
         error::RpcError,
+        metrics::{ChainAbstractionNoBridgingNeededType, ChainAbstractionTransactionType},
         state::AppState,
         storage::irn::OperationType,
         utils::{
@@ -119,6 +120,9 @@ async fn handler_internal(
             "The transaction is a native token transfer with value: {:?}",
             transfer_value
         );
+        state
+            .metrics
+            .add_ca_no_bridging_needed(ChainAbstractionNoBridgingNeededType::NativeTokenTransfer);
         return Ok(no_bridging_needed_response.into_response());
     }
     let transaction_data = initial_transaction.input.clone();
@@ -141,6 +145,9 @@ async fn handler_internal(
                 .is_none()
                 {
                     error!("The destination address is not a supported bridging asset contract");
+                    state.metrics.add_ca_no_bridging_needed(
+                        ChainAbstractionNoBridgingNeededType::AssetNotSupported,
+                    );
                     return Ok(no_bridging_needed_response.into_response());
                 };
 
@@ -164,6 +171,11 @@ async fn handler_internal(
                             state.metrics.clone(),
                         )
                         .await?;
+                        state.metrics.add_ca_gas_estimation(
+                            simulated_gas_used,
+                            initial_transaction.chain_id.clone(),
+                            ChainAbstractionTransactionType::Transfer,
+                        );
                         // Save the initial tx gas estimation to the cache
                         {
                             let state = state.clone();
@@ -222,6 +234,9 @@ async fn handler_internal(
                 }
                 if asset_transfer_value.is_zero() {
                     error!("The transaction does not change any supported bridging assets");
+                    state.metrics.add_ca_no_bridging_needed(
+                        ChainAbstractionNoBridgingNeededType::AssetNotSupported,
+                    );
                     return Ok(no_bridging_needed_response.into_response());
                 }
 
@@ -244,6 +259,9 @@ async fn handler_internal(
             Some((symbol, decimals)) => (symbol, decimals),
             None => {
                 error!("The destination address is not a supported bridging asset contract");
+                state.metrics.add_ca_no_bridging_needed(
+                    ChainAbstractionNoBridgingNeededType::AssetNotSupported,
+                );
                 return Ok(no_bridging_needed_response.into_response());
             }
         };
@@ -260,6 +278,9 @@ async fn handler_internal(
     .await?;
     let erc20_balance = U256::from_be_bytes(erc20_balance.into());
     if erc20_balance >= asset_transfer_value {
+        state
+            .metrics
+            .add_ca_no_bridging_needed(ChainAbstractionNoBridgingNeededType::SufficientFunds);
         return Ok(no_bridging_needed_response.into_response());
     }
     let erc20_topup_value = asset_transfer_value - erc20_balance;
@@ -276,6 +297,7 @@ async fn handler_internal(
     )
     .await?
     else {
+        state.metrics.add_ca_insufficient_funds();
         return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::InsufficientFunds,
         }))
@@ -302,6 +324,14 @@ async fn handler_internal(
         )
         .await?;
     let Some(best_route) = quotes.first() else {
+        state
+            .metrics
+            .add_ca_no_routes_found(construct_metrics_bridging_route(
+                bridge_chain_id.clone(),
+                bridge_contract.to_string(),
+                request_payload.transaction.chain_id.clone(),
+                asset_transfer_contract.to_string(),
+            ));
         return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::NoRoutesAvailable,
         }))
@@ -325,6 +355,7 @@ async fn handler_internal(
             "The current bridging asset balance on {} is {} less than the required topup amount:{}. The bridging fee is:{}",
             from_address, current_bridging_asset_balance, required_topup_amount, bridging_fee
         );
+        state.metrics.add_ca_insufficient_funds();
         return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::InsufficientFunds,
         }))
@@ -346,6 +377,14 @@ async fn handler_internal(
         )
         .await?;
     let Some(best_route) = quotes.first() else {
+        state
+            .metrics
+            .add_ca_no_routes_found(construct_metrics_bridging_route(
+                bridge_chain_id.clone(),
+                bridge_contract.to_string(),
+                request_payload.transaction.chain_id.clone(),
+                asset_transfer_contract.to_string(),
+            ));
         return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::NoRoutesAvailable,
         }))
@@ -448,7 +487,7 @@ async fn handler_internal(
         .await?;
     for (index, simulation_result) in simulation_results.simulation_results.iter().enumerate() {
         // Making sure the simulation input matches the transaction input
-        let curr_route = routes.get(index).ok_or_else(|| {
+        let curr_route = routes.get_mut(index).ok_or_else(|| {
             RpcError::SimulationFailed("The route index is out of bounds".to_string())
         })?;
         if simulation_result.transaction.input != curr_route.input {
@@ -458,8 +497,24 @@ async fn handler_internal(
             ));
         }
 
-        routes[index].gas_limit = U64::from(
+        curr_route.gas_limit = U64::from(
             (simulation_result.transaction.gas * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100,
+        );
+
+        // Get the transaction type for metrics based on the assumption that the first transaction is an approval
+        // and the rest are bridging transactions
+        let tx_type = if simulation_results.simulation_results.len() == 1 {
+            // If there is only one transaction, it's a bridging transaction
+            ChainAbstractionTransactionType::Bridge
+        } else if index == 0 {
+            ChainAbstractionTransactionType::Approve
+        } else {
+            ChainAbstractionTransactionType::Bridge
+        };
+        state.metrics.add_ca_gas_estimation(
+            simulation_result.transaction.gas,
+            curr_route.chain_id.clone(),
+            tx_type,
         );
     }
 
@@ -577,4 +632,16 @@ async fn handler_internal(
         )))
         .into_response(),
     );
+}
+
+fn construct_metrics_bridging_route(
+    from_chain_id: String,
+    from_contract: String,
+    to_chain_id: String,
+    to_contract: String,
+) -> String {
+    format!(
+        "{}:{}->{}:{}",
+        from_chain_id, from_contract, to_chain_id, to_contract
+    )
 }
