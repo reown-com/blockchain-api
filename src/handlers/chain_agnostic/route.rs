@@ -363,7 +363,7 @@ async fn handler_internal(
         );
         return Err(RpcError::BridgingFinalAmountLess);
     }
-    let final_bridging_fee = bridging_amount - required_topup_amount;
+    let final_bridging_fee = required_topup_amount - bridging_amount;
 
     // Build bridging transaction
     let bridge_tx = state
