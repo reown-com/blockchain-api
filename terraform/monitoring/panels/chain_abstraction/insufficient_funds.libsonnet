@@ -14,6 +14,7 @@ local targets   = grafana.targets;
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
       expr          = 'sum(increase(ca_insufficient_funds_total{}[$__rate_interval]))',
+      exemplar      = false,
       legendFormat  = 'Insufficient funds responses counter',
     ))
 }
