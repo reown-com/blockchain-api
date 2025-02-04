@@ -102,6 +102,9 @@ module "ecs" {
   # ENS Names
   names_allowed_zones = var.names_allowed_zones
 
+  # Address balances related configuration
+  balances_denylist_project_ids = var.balances_denylist_project_ids
+
   # Analytics
   analytics_datalake_bucket_name = data.terraform_remote_state.datalake.outputs.datalake_bucket_id
   analytics_datalake_kms_key_arn = data.terraform_remote_state.datalake.outputs.datalake_kms_key_arn
