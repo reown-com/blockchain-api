@@ -4,7 +4,7 @@
 variable "node_type" {
   description = "The instance type to use for the database nodes"
   type        = string
-  default     = "cache.t4g.medium" # https://aws.amazon.com/elasticache/pricing/?nc=sn&loc=5#On-demand_nodes
+  default     = "cache.t4g.small" # https://aws.amazon.com/elasticache/pricing/?nc=sn&loc=5#On-demand_nodes
 }
 
 variable "num_cache_nodes" {
