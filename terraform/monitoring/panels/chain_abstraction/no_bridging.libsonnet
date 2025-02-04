@@ -14,6 +14,7 @@ local targets   = grafana.targets;
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
       expr          = 'sum by(type) (increase(ca_no_bridging_needed_total{}[$__rate_interval]))',
-      legendFormat  = 'No bridging needed responses counter',
+      exemplar      = false,
+      legendFormat  = '__auto',
     ))
 }

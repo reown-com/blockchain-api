@@ -10,10 +10,14 @@ local targets   = grafana.targets;
       title       = 'Gas estimations',
       datasource  = ds.prometheus,
     )
-    .configure(defaults.configuration.timeseries)
+    .configure(
+      defaults.configuration.timeseries
+      .withSpanNulls(true)
+    )
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
       expr          = 'sum by(chain_id) (rate(gas_estimation_sum[$__rate_interval])) / sum by(chain_id) (rate(gas_estimation_count[$__rate_interval]))',
-      legendFormat  = 'Gas estimation',
+      exemplar      = false,
+      legendFormat  = '__auto',
     ))
 }

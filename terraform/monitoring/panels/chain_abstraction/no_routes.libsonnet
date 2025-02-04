@@ -14,6 +14,7 @@ local targets   = grafana.targets;
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
       expr          = 'sum by(route) (increase(ca_no_routes_found_total{}[$__rate_interval]))',
-      legendFormat  = 'No routes responses counter',
+      exemplar      = false,
+      legendFormat  = '__auto',
     ))
 }
