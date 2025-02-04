@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.179.0 - 2025-02-04
+#### Bug Fixes
+- **(o11y)** fixing lables for chain abstraction Grafana panels (#928) - (1584590) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(providers)** decrease SolScan and Zerion priority for the balance request (#929) - (078e121) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.178.1 - 2025-02-03
 #### Bug Fixes
 - **(identity)** expanding JSON-RPC error codes (#927) - (0185682) - Max Kalashnikoff | maksy.eth
