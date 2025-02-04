@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.182.0 - 2025-02-04
+#### Features
+- **(providers)** fine tuning Zerion priority (#933) - (8d7c546) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.181.1 - 2025-02-04
 #### Bug Fixes
 - **(providers)** fixing a bug in weights distribution and tune weights for Dune (#932) - (228c233) - Max Kalashnikoff | maksy.eth
