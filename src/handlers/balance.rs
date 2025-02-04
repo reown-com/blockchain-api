@@ -26,6 +26,7 @@ pub const H160_EMPTY_ADDRESS: H160 = H160::repeat_byte(0xee);
 
 const PROVIDER_MAX_CALLS: usize = 2;
 const METADATA_CACHE_TTL: Duration = Duration::from_secs(60 * 60 * 24); // 1 day
+const BALANCE_CACHE_TTL: Duration = Duration::from_secs(10); // 10 seconds
 
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
 pub struct Config {
@@ -85,6 +86,10 @@ fn token_metadata_cache_key(caip10_token_address: &str) -> String {
     format!("token_metadata/{}", caip10_token_address)
 }
 
+fn address_balance_cache_key(address: &str) -> String {
+    format!("address_balance/{}", address)
+}
+
 pub async fn get_cached_metadata(
     cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
     caip10_token_address: &str,
@@ -110,6 +115,34 @@ pub async fn set_cached_metadata(
             )
             .await
             .unwrap_or_else(|e| error!("Failed to set metadata cache: {}", e));
+    }
+}
+
+pub async fn get_cached_balance(
+    cache: &Option<Arc<dyn KeyValueStorage<BalanceResponseBody>>>,
+    address: &str,
+) -> Option<BalanceResponseBody> {
+    let cache = cache.as_ref()?;
+    cache
+        .get(&address_balance_cache_key(address))
+        .await
+        .unwrap_or(None)
+}
+
+pub async fn set_cached_balance(
+    cache: &Option<Arc<dyn KeyValueStorage<BalanceResponseBody>>>,
+    address: &str,
+    item: &BalanceResponseBody,
+) {
+    if let Some(cache) = cache {
+        cache
+            .set(
+                &address_balance_cache_key(address),
+                item,
+                Some(BALANCE_CACHE_TTL),
+            )
+            .await
+            .unwrap_or_else(|e| error!("Failed to set balance cache: {}", e));
     }
 }
 
@@ -149,6 +182,13 @@ async fn handler_internal(
     // https://github.com/WalletConnect/web3modal/pull/2157
     if !headers.contains_key("x-sdk-version") {
         return Ok(Json(BalanceResponseBody { balances: vec![] }).into_response());
+    }
+
+    // Get the cached balance and return it if found except if force_update is needed
+    if query.force_update.is_none() {
+        if let Some(cached_balance) = get_cached_balance(&state.balance_cache, &address).await {
+            return Ok(Json(cached_balance).into_response());
+        }
     }
 
     // If the namespace is not provided, then default to the Ethereum namespace
@@ -355,6 +395,17 @@ async fn handler_internal(
                 icon_url: token_info.icon_url.clone(),
             });
         }
+    }
+
+    // Spawn a background task to update the balance cache without blocking
+    {
+        tokio::spawn({
+            let address_key = address.clone();
+            let response = response.clone();
+            async move {
+                set_cached_balance(&state.balance_cache, &address_key, &response).await;
+            }
+        });
     }
 
     Ok(Json(response).into_response())
