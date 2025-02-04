@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.181.0 - 2025-02-04
+#### Features
+- **(balance)** adding the balance response caching (#930) - (599e3d6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.180.0 - 2025-02-04
 #### Features
 - **(balances)** adding project IDs denylist (#931) - (5d4e2e5) - Max Kalashnikoff | maksy.eth
