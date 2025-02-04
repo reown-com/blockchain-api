@@ -428,3 +428,10 @@ variable "names_allowed_zones" {
   description = "Comma separated list of allowed zones for names"
   type        = string
 }
+
+#-------------------------------------------------------------------------------
+# Address balances projects denylist
+variable "balances_denylist_project_ids" {
+  description = "Comma separated list of project IDs to denylist"
+  type        = string
+}

@@ -27,6 +27,13 @@ pub const H160_EMPTY_ADDRESS: H160 = H160::repeat_byte(0xee);
 const PROVIDER_MAX_CALLS: usize = 2;
 const METADATA_CACHE_TTL: Duration = Duration::from_secs(60 * 60 * 24); // 1 day
 
+#[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
+pub struct Config {
+    /// List of project ids that are not allowed to use the balance RPC call
+    /// An empty balances list will be returned for the project ids in the denylist
+    pub denylist_project_ids: Option<Vec<String>>,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BalanceQueryParams {
@@ -127,6 +134,14 @@ async fn handler_internal(
     Path(address): Path<String>,
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
+
+    // Check the denylist for the project id
+    if let Some(denylist_project_ids) = &state.config.balances.denylist_project_ids {
+        if denylist_project_ids.contains(&project_id) {
+            return Ok(Json(BalanceResponseBody { balances: vec![] }).into_response());
+        }
+    }
+
     state.validate_project_access_and_quota(&project_id).await?;
 
     // if headers not contains `x-sdk-version` then respond with an empty balance

@@ -3,6 +3,7 @@ use {
         analytics::Config as AnalyticsConfig,
         database::config::PostgresConfig,
         error,
+        handlers::balance::Config as BalanceConfig,
         names::Config as NamesConfig,
         profiler::ProfilerConfig,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
@@ -66,6 +67,7 @@ pub struct Config {
     pub rate_limiting: RateLimitingConfig,
     pub irn: IrnConfig,
     pub names: NamesConfig,
+    pub balances: BalanceConfig,
 }
 
 impl Config {
@@ -81,6 +83,7 @@ impl Config {
             rate_limiting: from_env("RPC_PROXY_RATE_LIMITING_")?,
             irn: from_env("RPC_PROXY_IRN_")?,
             names: from_env("RPC_PROXY_NAMES_")?,
+            balances: from_env("RPC_PROXY_BALANCES_")?,
         })
     }
 }
@@ -108,6 +111,7 @@ mod test {
             analytics,
             database::config::PostgresConfig,
             env::{Config, ServerConfig},
+            handlers::balance::Config as BalanceConfig,
             names::Config as NamesConfig,
             profiler::ProfilerConfig,
             project,
@@ -229,6 +233,8 @@ mod test {
             ("RPC_PROXY_IRN_NAMESPACE_SECRET", "namespace"),
             // Names configuration
             ("RPC_PROXY_NAMES_ALLOWED_ZONES", "test1.id,test2.id"),
+            // Account balances-related configuration
+            ("RPC_PROXY_BALANCES_DENYLIST_PROJECT_IDS", "test_project_id"),
         ];
 
         values.iter().for_each(set_env_var);
@@ -323,7 +329,10 @@ mod test {
                 },
                 names: NamesConfig {
                     allowed_zones: Some(vec!["test1.id".to_owned(), "test2.id".to_owned()]),
-                }
+                },
+                balances: BalanceConfig {
+                    denylist_project_ids: Some(vec!["test_project_id".to_owned()]),
+                },
             }
         );
 
