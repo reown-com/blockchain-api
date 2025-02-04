@@ -3,12 +3,14 @@ use {
         analytics::RPCAnalytics,
         env::Config,
         error::RpcError,
-        handlers::{balance::TokenMetadataCacheItem, identity::IdentityResponse},
+        handlers::{
+            balance::{BalanceResponseBody, TokenMetadataCacheItem},
+            identity::IdentityResponse,
+        },
         metrics::Metrics,
         project::Registry,
         providers::ProviderRepository,
-        storage::irn::Irn,
-        storage::KeyValueStorage,
+        storage::{irn::Irn, KeyValueStorage},
         utils::{build::CompileInfo, rate_limit::RateLimit},
     },
     cerberus::project::ProjectDataWithQuota,
@@ -37,6 +39,7 @@ pub struct AppState {
     // Redis caching
     pub identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     pub token_metadata_cache: Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
+    pub balance_cache: Option<Arc<dyn KeyValueStorage<BalanceResponseBody>>>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -52,6 +55,7 @@ pub fn new_state(
     irn: Option<Irn>,
     identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     token_metadata_cache: Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
+    balance_cache: Option<Arc<dyn KeyValueStorage<BalanceResponseBody>>>,
 ) -> AppState {
     AppState {
         config,
@@ -67,6 +71,7 @@ pub fn new_state(
         irn,
         identity_cache,
         token_metadata_cache,
+        balance_cache,
     }
 }
 
