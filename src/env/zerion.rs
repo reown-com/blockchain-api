@@ -33,5 +33,8 @@ impl BalanceProviderConfig for ZerionConfig {
 }
 
 fn default_supported_namespaces() -> HashMap<CaipNamespaces, Weight> {
-    HashMap::from([(CaipNamespaces::Eip155, Weight::new(Priority::Low).unwrap())])
+    HashMap::from([(
+        CaipNamespaces::Eip155,
+        Weight::new(Priority::Custom(10)).unwrap(),
+    )])
 }
