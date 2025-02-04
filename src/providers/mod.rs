@@ -350,7 +350,7 @@ impl ProviderRepository {
         let weights: Vec<_> = providers
             .iter()
             .map(|(_, weight)| weight.value())
-            .map(|w| w.min(1))
+            .map(|w| w.max(1))
             .collect();
         let non_zero_weight_providers = weights.iter().filter(|&x| *x > 0).count();
         let keys = providers.keys().cloned().collect::<Vec<_>>();
@@ -416,7 +416,7 @@ impl ProviderRepository {
         let weights: Vec<_> = providers
             .iter()
             .map(|(_, weight)| weight.value())
-            .map(|w| w.min(1))
+            .map(|w| w.max(1))
             .collect();
         let non_zero_weight_providers = weights.iter().filter(|&x| *x > 0).count();
         let keys = providers.keys().cloned().collect::<Vec<_>>();
