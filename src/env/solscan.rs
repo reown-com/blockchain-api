@@ -32,8 +32,5 @@ impl BalanceProviderConfig for SolScanConfig {
 }
 
 fn default_supported_namespaces() -> HashMap<CaipNamespaces, Weight> {
-    HashMap::from([(
-        CaipNamespaces::Solana,
-        Weight::new(Priority::Normal).unwrap(),
-    )])
+    HashMap::from([(CaipNamespaces::Solana, Weight::new(Priority::Low).unwrap())])
 }
