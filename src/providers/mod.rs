@@ -50,6 +50,7 @@ use {
     yttrium::chain_abstraction::api::Transaction,
 };
 
+mod allnodes;
 mod arbitrum;
 mod aurora;
 mod base;
@@ -83,6 +84,7 @@ mod zksync;
 mod zora;
 
 pub use {
+    allnodes::AllnodesProvider,
     arbitrum::ArbitrumProvider,
     aurora::AuroraProvider,
     base::BaseProvider,
@@ -155,6 +157,8 @@ pub struct ProvidersConfig {
     pub dune_api_key: String,
     /// Syndica API key
     pub syndica_api_key: String,
+    /// Allnodes API key
+    pub allnodes_api_key: String,
 
     pub override_bundler_urls: Option<MockAltoUrls>,
 }
@@ -645,6 +649,7 @@ pub enum ProviderKind {
     Drpc,
     Odyssey,
     Syndica,
+    Allnodes,
 }
 
 impl Display for ProviderKind {
@@ -681,6 +686,7 @@ impl Display for ProviderKind {
                 ProviderKind::Drpc => "Drpc",
                 ProviderKind::Odyssey => "Odyssey",
                 ProviderKind::Syndica => "Syndica",
+                ProviderKind::Allnodes => "Allnodes",
             }
         )
     }
@@ -718,6 +724,7 @@ impl ProviderKind {
             "Drpc" => Some(Self::Drpc),
             "Odyssey" => Some(Self::Odyssey),
             "Syndica" => Some(Self::Syndica),
+            "Allnodes" => Some(Self::Allnodes),
             _ => None,
         }
     }

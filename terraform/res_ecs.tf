@@ -81,6 +81,7 @@ module "ecs" {
   tenderly_project_id    = var.tenderly_project_id
   dune_api_key           = var.dune_api_key
   syndica_api_key        = var.syndica_api_key
+  allnodes_api_key       = var.allnodes_api_key
 
   # Project Registry
   registry_api_endpoint   = var.registry_api_endpoint
