@@ -193,6 +193,12 @@ variable "testing_project_id" {
   sensitive   = true
 }
 
+variable "allnodes_api_key" {
+  description = "Allnodes API key"
+  type        = string
+  sensitive   = true
+}
+
 #-------------------------------------------------------------------------------
 # Analytics
 

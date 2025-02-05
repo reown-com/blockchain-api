@@ -15,11 +15,12 @@ use {
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
-    arbitrum::*, aurora::*, base::*, berachain::*, binance::*, drpc::*, dune::*, getblock::*,
-    infura::*, lava::*, mantle::*, morph::*, near::*, odyssey::*, pokt::*, publicnode::*,
-    quicknode::*, server::*, solscan::*, syndica::*, unichain::*, wemix::*, zerion::*, zksync::*,
-    zora::*,
+    allnodes::*, arbitrum::*, aurora::*, base::*, berachain::*, binance::*, drpc::*, dune::*,
+    getblock::*, infura::*, lava::*, mantle::*, morph::*, near::*, odyssey::*, pokt::*,
+    publicnode::*, quicknode::*, server::*, solscan::*, syndica::*, unichain::*, wemix::*,
+    zerion::*, zksync::*, zora::*,
 };
+mod allnodes;
 mod arbitrum;
 mod aurora;
 mod base;
@@ -204,6 +205,7 @@ mod test {
             ),
             ("RPC_PROXY_PROVIDER_DUNE_API_KEY", "DUNE_API_KEY"),
             ("RPC_PROXY_PROVIDER_SYNDICA_API_KEY", "SYNDICA_API_KEY"),
+            ("RPC_PROXY_PROVIDER_ALLNODES_API_KEY", "ALLNODES_API_KEY"),
             (
                 "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL",
                 "PROMETHEUS_QUERY_URL",
@@ -314,6 +316,7 @@ mod test {
                     dune_api_key: "DUNE_API_KEY".to_string(),
                     syndica_api_key: "SYNDICA_API_KEY".to_string(),
                     override_bundler_urls: None,
+                    allnodes_api_key: "ALLNODES_API_KEY".to_string(),
                 },
                 rate_limiting: RateLimitingConfig {
                     max_tokens: Some(100),

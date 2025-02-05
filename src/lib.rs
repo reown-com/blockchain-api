@@ -22,21 +22,22 @@ use {
         Router,
     },
     env::{
-        ArbitrumConfig, AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig, DrpcConfig,
-        DuneConfig, GetBlockConfig, InfuraConfig, LavaConfig, MantleConfig, MorphConfig,
-        NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig,
-        SyndicaConfig, UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
+        AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig,
+        DrpcConfig, DuneConfig, GetBlockConfig, InfuraConfig, LavaConfig, MantleConfig,
+        MorphConfig, NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
+        SolScanConfig, SyndicaConfig, UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig,
+        ZoraConfig,
     },
     error::RpcResult,
     http::Request,
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
-        ArbitrumProvider, AuroraProvider, BaseProvider, BerachainProvider, BinanceProvider,
-        DrpcProvider, DuneProvider, GetBlockProvider, InfuraProvider, InfuraWsProvider,
-        LavaProvider, MantleProvider, MorphProvider, NearProvider, OdysseyProvider, PoktProvider,
-        ProviderRepository, PublicnodeProvider, QuicknodeProvider, SolScanProvider,
-        SyndicaProvider, UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider,
-        ZoraProvider, ZoraWsProvider,
+        AllnodesProvider, ArbitrumProvider, AuroraProvider, BaseProvider, BerachainProvider,
+        BinanceProvider, DrpcProvider, DuneProvider, GetBlockProvider, InfuraProvider,
+        InfuraWsProvider, LavaProvider, MantleProvider, MorphProvider, NearProvider,
+        OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider,
+        SolScanProvider, SyndicaProvider, UnichainProvider, WemixProvider, ZKSyncProvider,
+        ZerionProvider, ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -531,6 +532,9 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_rpc_provider::<WemixProvider, WemixConfig>(WemixConfig::default());
     providers.add_rpc_provider::<DrpcProvider, DrpcConfig>(DrpcConfig::default());
     providers.add_rpc_provider::<OdysseyProvider, OdysseyConfig>(OdysseyConfig::default());
+    providers.add_rpc_provider::<AllnodesProvider, AllnodesConfig>(AllnodesConfig::new(
+        config.allnodes_api_key.clone(),
+    ));
 
     if let Some(getblock_access_tokens) = &config.getblock_access_tokens {
         providers.add_rpc_provider::<GetBlockProvider, GetBlockConfig>(GetBlockConfig::new(
