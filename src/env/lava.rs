@@ -40,7 +40,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Ethereum Mainnet
         (
             "eip155:1".into(),
-            ("eth".into(), Weight::new(Priority::Normal).unwrap()),
+            ("eth".into(), Weight::new(Priority::Low).unwrap()),
         ),
         // Ethereum Sepolia
         (

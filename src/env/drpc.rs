@@ -40,7 +40,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:1".into(),
             (
                 "https://eth.drpc.org/".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                Weight::new(Priority::Low).unwrap(),
             ),
         ),
         // Ethereum Sepolia
