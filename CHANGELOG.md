@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.183.0 - 2025-02-05
+#### Features
+- **(providers)** adding Allnodes RPC endpoint (#934) - (29534c5) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.182.0 - 2025-02-04
 #### Features
 - **(providers)** fine tuning Zerion priority (#933) - (8d7c546) - Max Kalashnikoff | maksy.eth
