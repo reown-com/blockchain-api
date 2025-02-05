@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.185.0 - 2025-02-05
+#### Features
+- **(providers)** decrease Infura weight to zero (#936) - (d0fd358) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.184.0 - 2025-02-05
 #### Features
 - **(providers)** routing more traffic to Allnodes (#935) - (9c2e179) - Max Kalashnikoff | maksy.eth
