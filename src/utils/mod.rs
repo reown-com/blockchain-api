@@ -21,3 +21,34 @@ pub fn generate_random_string(len: usize) -> String {
         .take(len)
         .collect()
 }
+
+pub fn capitalize_first_letter(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(first) => {
+            // to_uppercase() returns an iterator because some characters can map to multiple chars
+            first.to_uppercase().collect::<String>() + c.as_str()
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_capitalize_first_letter() {
+        let input = "";
+        let expected = "";
+        assert_eq!(capitalize_first_letter(input), expected);
+
+        let input = "rust";
+        let expected = "Rust";
+        assert_eq!(capitalize_first_letter(input), expected);
+
+        let input = "rust world";
+        let expected = "Rust world";
+        assert_eq!(capitalize_first_letter(input), expected);
+    }
+}

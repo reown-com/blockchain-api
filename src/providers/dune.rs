@@ -12,7 +12,7 @@ use {
             ProviderKind,
         },
         storage::KeyValueStorage,
-        utils::crypto,
+        utils::{capitalize_first_letter, crypto},
         Metrics,
     },
     async_trait::async_trait,
@@ -233,7 +233,7 @@ impl BalanceProvider for DuneProvider {
 
                         // Determine name
                         let name = if f.address == "native" {
-                            f.chain.clone()
+                            capitalize_first_letter(&f.chain)
                         } else {
                             symbol.clone()
                         };
