@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.186.1 - 2025-02-06
+#### Bug Fixes
+- **(CA)** temporarily disabling USDT on Arbitrum (#938) - (27c155b) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.186.0 - 2025-02-06
 #### Features
 - **(providers)** reverting back  weights (#937) - (984d464) - Max Kalashnikoff | maksy.eth
