@@ -35,7 +35,8 @@ static USDT_CONTRACTS: phf::Map<&'static str, Address> = phf_map! {
     // Optimism
     "eip155:10" => address!("94b008aA00579c1307B0EF2c499aD98a8ce58e58"),
     // Arbitrum
-    "eip155:42161" => address!("Fd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"),
+    // Temporarily disabling Arbitrum USDT until the simulation fix
+    // "eip155:42161" => address!("Fd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"),
 };
 
 pub static BRIDGING_ASSETS: phf::Map<&'static str, AssetEntry> = phf_map! {
