@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.186.0 - 2025-02-06
+#### Features
+- **(providers)** reverting back  weights (#937) - (984d464) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.185.0 - 2025-02-05
 #### Features
 - **(providers)** decrease Infura weight to zero (#936) - (d0fd358) - Max Kalashnikoff | maksy.eth
