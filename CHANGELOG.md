@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.190.0 - 2025-02-07
+#### Bug Fixes
+- update WCN client (#944) - (99dd3ae) - Ivan Reshetnikov
+#### Features
+- **(providers)** enabling Allnodes provider and tuning Ethereum Mainnet RPC traffic (#946) - (2b839c2) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.189.0 - 2025-02-07
 #### Features
 - **(providers)** tuning the Quicknode provider priority (#943) - (4da4abc) - Max Kalashnikoff | maksy.eth
