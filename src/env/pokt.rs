@@ -41,90 +41,66 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Solana Mainnet
         (
             "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp".into(),
-            (
-                "solana-mainnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("solana".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         (
             // Incorrect (not CAIP-2), uses block explorer blockhash instead of getGenesisHash RPC
             "solana:4sgjmw1sunhzsxgspuhpqldx6wiyjntz".into(),
-            (
-                "solana-mainnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("solana".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // AVAX mainnet
         (
             "eip155:43114".into(),
-            (
-                "avax-mainnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("avax".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Gnosis
         (
             "eip155:100".into(),
-            (
-                "gnosischain-mainnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("gnosis".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Base mainnet
         (
             "eip155:8453".into(),
-            (
-                "base-mainnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("base".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Base Sepolia
-        // Todo: Temporary disabling Pokt for the Sepolia until the contract call
-        // flaky responses issue will be resolved.
         (
             "eip155:84532".into(),
             (
                 "base-testnet".into(),
-                Weight::new(Priority::Disabled).unwrap(),
+                Weight::new(Priority::Normal).unwrap(),
             ),
         ),
         // Binance Smart Chain
         (
             "eip155:56".into(),
-            ("bsc-mainnet".into(), Weight::new(Priority::Max).unwrap()),
+            ("bsc".into(), Weight::new(Priority::Max).unwrap()),
         ),
         // Ethereum mainnet
         (
             "eip155:1".into(),
-            (
-                "eth-mainnet".into(),
-                // TODO: Temporary disabling Pokt for the mainnet until the issue
-                // with the flaky RPC response with the updated Alloy is resolved.
-                Weight::new(Priority::Disabled).unwrap(),
-            ),
+            ("eth".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Ethereum holesky
         (
             "eip155:17000".into(),
             (
-                "holesky-fullnode-testnet".into(),
+                "eth-holesky-testnet".into(),
                 Weight::new(Priority::High).unwrap(),
             ),
         ),
         // Ethereum sepolia
         (
             "eip155:11155111".into(),
-            ("sepolia".into(), Weight::new(Priority::Normal).unwrap()),
+            (
+                "eth-sepolia-testnet".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
         ),
         // Optimism
         (
             "eip155:10".into(),
-            (
-                "optimism-mainnet".into(),
-                // TODO: Temporary disabling Pokt until the issue
-                // with the flaky RPC response is resolved.
-                Weight::new(Priority::Disabled).unwrap(),
-            ),
+            ("optimism".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Arbitrum
         (
@@ -137,71 +113,43 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Polygon
         (
             "eip155:137".into(),
-            // Temporary removing Pokt for the Polygon mainnet until the issue with the flaky
-            // responses will be resolved.
-            (
-                "poly-mainnet".into(),
-                Weight::new(Priority::Disabled).unwrap(),
-            ),
+            ("polygon".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         (
             "eip155:1101".into(),
-            (
-                "polygon-zkevm-mainnet".into(),
-                Weight::new(Priority::High).unwrap(),
-            ),
+            ("polygon-zkevm".into(), Weight::new(Priority::High).unwrap()),
         ),
         (
             "eip155:80002".into(),
             (
-                "amoy-testnet-archival".into(),
+                "polygon-amoy-testnet".into(),
                 Weight::new(Priority::High).unwrap(),
             ),
         ),
         // Celo
         (
             "eip155:42220".into(),
-            (
-                "celo-mainnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("celo".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Kaia Mainnet
         (
             "eip155:8217".into(),
-            (
-                "kaia-mainnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("kaia".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // zkSync
         (
             "eip155:324".into(),
             ("zksync-era".into(), Weight::new(Priority::Normal).unwrap()),
         ),
-        // Near protocol
-        (
-            "near:mainnet".into(),
-            (
-                "near-mainnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
-        ),
         // Scroll
         (
             "eip155:534352".into(),
-            (
-                "scroll-mainnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            ("scroll".into(), Weight::new(Priority::Normal).unwrap()),
         ),
-        // Scroll sepolia testnet
+        // Near protocol
         (
-            "eip155:534351".into(),
-            (
-                "scroll-testnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
+            "near:mainnet".into(),
+            ("near".into(), Weight::new(Priority::Normal).unwrap()),
         ),
     ])
 }

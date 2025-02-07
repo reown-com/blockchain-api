@@ -38,16 +38,13 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     .await;
 
     // Base Sepolia
-    // Todo: Temporary disabling Pokt for the Sepolia until the contract call
-    // flaky responses issue will be resolved.
-
-    // check_if_rpc_is_responding_correctly_for_supported_chain(
-    //     ctx,
-    //     &provider,
-    //     "eip155:84532",
-    //     "0x14a34",
-    // )
-    // .await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:84532",
+        "0x14a34",
+    )
+    .await;
 
     // Binance mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:56", "0x38")
@@ -76,9 +73,8 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     .await;
 
     // Optimism
-    // Temporary removing Pokt for the Optimism until the issue with the flaky
-    // check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:10", "0xa")
-    //     .await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:10", "0xa")
+        .await;
 
     // Arbitrum
     check_if_rpc_is_responding_correctly_for_supported_chain(
@@ -90,10 +86,8 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     .await;
 
     // Polygon mainnet
-    // Temporary removing Pokt for the Polygon mainnet until the issue with the flaky
-    // responses will be resolved.
-    // check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:137", "0x89")
-    //     .await;
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:137", "0x89")
+        .await;
 
     // Polygon zkevm
     check_if_rpc_is_responding_correctly_for_supported_chain(
@@ -113,7 +107,7 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Polygon celo
+    // Celo
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &provider,
@@ -122,7 +116,7 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Klaytn mainnet
+    // Kaia mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &provider,
@@ -141,15 +135,6 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
         &provider,
         "eip155:534352",
         "0x82750",
-    )
-    .await;
-
-    // Scroll Sepolia
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        &provider,
-        "eip155:534351",
-        "0x8274f",
     )
     .await;
 }
