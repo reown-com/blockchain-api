@@ -155,6 +155,15 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
         "0x138d4",
     )
     .await;
+
+    // Unichain Sepolia
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:1301",
+        "0x515",
+    )
+    .await;
 }
 
 #[test_context(ServerContext)]

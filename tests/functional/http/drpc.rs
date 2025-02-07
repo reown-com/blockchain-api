@@ -60,4 +60,13 @@ async fn drpc_provider_evm(ctx: &mut ServerContext) {
     // Optimism Mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:10", "0xa")
         .await;
+
+    // Unichain Sepolia
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:1301",
+        "0x515",
+    )
+    .await;
 }

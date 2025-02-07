@@ -99,5 +99,13 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Unichain
+        (
+            "eip155:1301".into(),
+            (
+                "https://unichain-sepolia.drpc.org".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
     ])
 }

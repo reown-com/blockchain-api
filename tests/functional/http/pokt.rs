@@ -76,12 +76,30 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:10", "0xa")
         .await;
 
+    // Optimism Sepolia
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:11155420",
+        "0xaa37dc",
+    )
+    .await;
+
     // Arbitrum
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &provider,
         "eip155:42161",
         "0xa4b1",
+    )
+    .await;
+
+    // Arbitrum Sepolia
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:421614",
+        "0x66eee",
     )
     .await;
 
@@ -135,6 +153,15 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
         &provider,
         "eip155:534352",
         "0x82750",
+    )
+    .await;
+
+    // Linea Mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:59144",
+        "0xe708",
     )
     .await;
 }
