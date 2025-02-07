@@ -55,17 +55,17 @@ fn extract_supported_chains_and_subdomains(
     let supported_chain_ids = HashMap::from([
         (
             "eip155:324",
-            ("snowy-chaotic-hill.zksync-mainnet", Priority::High),
+            ("snowy-chaotic-hill.zksync-mainnet", Priority::Custom(1)),
         ),
         (
             "eip155:1101",
-            ("clean-few-meme.zkevm-mainnet", Priority::Normal),
+            ("clean-few-meme.zkevm-mainnet", Priority::Custom(1)),
         ),
         (
             "eip155:42161",
             (
                 "divine-special-snowflake.arbitrum-mainnet",
-                Priority::Normal,
+                Priority::Custom(1),
             ),
         ),
         (
@@ -74,11 +74,14 @@ fn extract_supported_chains_and_subdomains(
         ),
         (
             "eip155:10",
-            ("convincing-dawn-smoke.optimism", Priority::Normal),
+            ("convincing-dawn-smoke.optimism", Priority::Custom(1)),
         ),
         (
             "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
-            ("indulgent-thrumming-bush.solana-mainnet", Priority::Normal),
+            (
+                "indulgent-thrumming-bush.solana-mainnet",
+                Priority::Custom(1),
+            ),
         ),
         (
             "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
