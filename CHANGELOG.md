@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.186.2 - 2025-02-07
+#### Bug Fixes
+- capitalizing the metadata token name, multiply gas estimation from 1Inch (#939) - (849836d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.186.1 - 2025-02-06
 #### Bug Fixes
 - **(CA)** temporarily disabling USDT on Arbitrum (#938) - (27c155b) - Max Kalashnikoff | maksy.eth
