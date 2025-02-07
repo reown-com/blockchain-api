@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.189.0 - 2025-02-07
+#### Features
+- **(providers)** tuning the Quicknode provider priority (#943) - (4da4abc) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.188.1 - 2025-02-07
 #### Bug Fixes
 - **(CA)** increasing the bridging fee slippage (#940) - (532350d) - Max Kalashnikoff | maksy.eth
