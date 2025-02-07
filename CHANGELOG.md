@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.187.0 - 2025-02-07
+#### Features
+- **(providers)** Grove endpoints revising (#941) - (cdcb5f4) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.186.2 - 2025-02-07
 #### Bug Fixes
 - capitalizing the metadata token name, multiply gas estimation from 1Inch (#939) - (849836d) - Max Kalashnikoff | maksy.eth
