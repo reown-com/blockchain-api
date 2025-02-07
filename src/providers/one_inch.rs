@@ -31,6 +31,7 @@ use {
 };
 
 const ONEINCH_FEE: f64 = 0.85;
+const GAS_ESTIMATION_SLIPPAGE: f64 = 1.1; // Increase the estimated gas by 10%
 
 #[derive(Debug)]
 pub struct OneInchProvider {
@@ -626,7 +627,7 @@ impl ConversionProvider for OneInchProvider {
                 data: body.tx.data,
                 amount: body.dst_amount,
                 eip155: Some(ConvertTxEip155 {
-                    gas: body.tx.gas.to_string(),
+                    gas: (body.tx.gas as f64 * GAS_ESTIMATION_SLIPPAGE).to_string(),
                     gas_price: body.tx.gas_price,
                 }),
             },
