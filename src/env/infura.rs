@@ -44,11 +44,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Ethereum
         (
             "eip155:1".into(),
-            ("mainnet".into(), Weight::new(Priority::Custom(1)).unwrap()),
+            ("mainnet".into(), Weight::new(Priority::Minimal).unwrap()),
         ),
         (
             "eip155:11155111".into(),
-            ("sepolia".into(), Weight::new(Priority::Custom(1)).unwrap()),
+            ("sepolia".into(), Weight::new(Priority::Minimal).unwrap()),
         ),
         // Optimism
         (

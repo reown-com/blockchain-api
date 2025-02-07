@@ -1,4 +1,8 @@
-use {super::ProviderConfig, crate::providers::Weight, std::collections::HashMap};
+use {
+    super::ProviderConfig,
+    crate::providers::{Priority, Weight},
+    std::collections::HashMap,
+};
 
 #[derive(Debug)]
 pub struct AllnodesConfig {
@@ -33,11 +37,10 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     // Keep in-sync with SUPPORTED_CHAINS.md
 
     HashMap::from([
-        // Disabling Allnodes until the plan upgrade is complete
         // Ethereum Mainnet
-        // (
-        //     "eip155:1".into(),
-        //     ("eth30082".into(), Weight::new(Priority::Max).unwrap()),
-        // ),
+        (
+            "eip155:1".into(),
+            ("eth57873".into(), Weight::new(Priority::Max).unwrap()),
+        ),
     ])
 }

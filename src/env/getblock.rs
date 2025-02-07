@@ -46,8 +46,8 @@ fn extract_supported_chains(access_tokens_json: String) -> HashMap<String, (Stri
 
     // Keep in-sync with SUPPORTED_CHAINS.md
     let supported_chain_ids = HashMap::from([
-        ("eip155:1", Priority::Low),
-        ("eip155:56", Priority::Low),
+        ("eip155:1", Priority::Minimal),
+        ("eip155:56", Priority::Minimal),
         ("eip155:137", Priority::Normal),
         ("eip155:324", Priority::Normal),
         ("eip155:17000", Priority::Normal),
