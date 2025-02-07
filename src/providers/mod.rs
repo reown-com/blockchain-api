@@ -756,6 +756,7 @@ pub enum Priority {
     High,
     Normal,
     Low,
+    Minimal,
     Disabled,
     Custom(u64),
 }
@@ -769,6 +770,7 @@ impl TryInto<PriorityValue> for Priority {
             Self::High => PriorityValue::new(MAX_PRIORITY / 4 + MAX_PRIORITY / 2),
             Self::Normal => PriorityValue::new(MAX_PRIORITY / 2),
             Self::Low => PriorityValue::new(MAX_PRIORITY / 4),
+            Self::Minimal => PriorityValue::new(1),
             Self::Disabled => PriorityValue::new(0),
             Self::Custom(value) => PriorityValue::new(value),
         }

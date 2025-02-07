@@ -79,7 +79,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Ethereum mainnet
         (
             "eip155:1".into(),
-            ("eth".into(), Weight::new(Priority::Normal).unwrap()),
+            ("eth".into(), Weight::new(Priority::Minimal).unwrap()),
         ),
         // Ethereum holesky
         (
