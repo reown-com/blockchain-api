@@ -162,7 +162,15 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         (
             "eip155:80084".into(),
             (
-                "berachain-testnet-evm-rpc".into(),
+                "berachain-testnet-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        // Unichain Sepolia
+        (
+            "eip155:1301".into(),
+            (
+                "unichain-sepolia-rpc".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
