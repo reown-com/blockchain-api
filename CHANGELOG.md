@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.188.0 - 2025-02-07
+#### Features
+- **(providers)** decreasing traffic from Infura to other providers (#942) - (23b13cf) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.187.0 - 2025-02-07
 #### Features
 - **(providers)** Grove endpoints revising (#941) - (cdcb5f4) - Max Kalashnikoff | maksy.eth
