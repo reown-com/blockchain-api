@@ -5,7 +5,13 @@ use crate::error::RpcError;
 use crate::json_rpc::{
     ErrorResponse, JsonRpcError, JsonRpcRequest, JsonRpcResponse, JsonRpcResult,
 };
-use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
+use crate::{
+    handlers::{
+        wallet::get_calls_status::QueryParams as CallStatusQueryParams, SdkInfoParams,
+        HANDLER_TASK_METRICS,
+    },
+    state::AppState,
+};
 use axum::extract::{ConnectInfo, Query};
 use axum::response::{IntoResponse, Response};
 use axum::{extract::State, Json};
@@ -21,6 +27,8 @@ use wc::future::FutureExt;
 #[serde(rename_all = "camelCase")]
 pub struct WalletQueryParams {
     pub project_id: String,
+    #[serde(flatten)]
+    pub sdk_info: SdkInfoParams,
 }
 
 pub async fn handler(
@@ -189,6 +197,9 @@ async fn handle_rpc(
                 serde_json::from_value(params).map_err(Error::InvalidParams)?,
                 connect_info,
                 headers,
+                Query(CallStatusQueryParams {
+                    sdk_info: query.sdk_info,
+                }),
             )
             .await
             .map_err(Error::GetCallsStatus)?,

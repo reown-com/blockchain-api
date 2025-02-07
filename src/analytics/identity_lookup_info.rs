@@ -29,6 +29,10 @@ pub struct IdentityLookupInfo {
 
     pub client_id: Option<String>,
     pub sender: Option<String>,
+
+    // Sdk info
+    pub sv: Option<String>,
+    pub st: Option<String>,
 }
 
 impl IdentityLookupInfo {
@@ -46,6 +50,8 @@ impl IdentityLookupInfo {
         continent: Option<Arc<str>>,
         client_id: Option<String>,
         sender: Option<String>,
+        sv: Option<String>,
+        st: Option<String>,
     ) -> Self {
         Self {
             timestamp: wc::analytics::time::now(),
@@ -68,6 +74,9 @@ impl IdentityLookupInfo {
 
             client_id,
             sender,
+
+            sv,
+            st,
         }
     }
 }

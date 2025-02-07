@@ -1,5 +1,5 @@
 use {
-    super::{proxy::rpc_call, RpcQueryParams, HANDLER_TASK_METRICS},
+    super::{proxy::rpc_call, RpcQueryParams, SdkInfoParams, HANDLER_TASK_METRICS},
     crate::{
         analytics::IdentityLookupInfo,
         database::helpers::get_names_by_address,
@@ -46,6 +46,21 @@ pub const ETHEREUM_MAINNET: &str = "eip155:1";
 /// the identity avatar lookup because of an absence of the ERC-721 contract address or
 /// token ID in the ENS avatar record.
 const JSON_RPC_OK_ERROR_CODES: [&str; 4] = ["-32000", "-32003", "-32015", "3"];
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct IdentityQueryParams {
+    pub project_id: String,
+    /// Optional flag to control the cache to fetch the data from the provider
+    /// or serve from the cache where applicable
+    pub use_cache: Option<bool>,
+    /// Client ID for analytics
+    pub client_id: Option<String>,
+    /// Request sender address for analytics
+    pub sender: Option<String>,
+    #[serde(flatten)]
+    pub sdk_info: SdkInfoParams,
+}
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -137,6 +152,8 @@ async fn handler_internal(
             continent,
             query.client_id.clone(),
             query.sender.clone(),
+            query.sdk_info.sv.clone(),
+            query.sdk_info.st.clone(),
         ));
     }
 
@@ -174,19 +191,6 @@ impl IdentityLookupSource {
             Self::Local => "local",
         }
     }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct IdentityQueryParams {
-    pub project_id: String,
-    /// Optional flag to control the cache to fetch the data from the provider
-    /// or serve from the cache where applicable
-    pub use_cache: Option<bool>,
-    /// Client ID for analytics
-    pub client_id: Option<String>,
-    /// Request sender address for analytics
-    pub sender: Option<String>,
 }
 
 #[tracing::instrument(skip_all, level = "debug")]
@@ -241,6 +245,7 @@ async fn lookup_identity(
         connect_info,
         query.project_id,
         headers,
+        query.sdk_info,
     )
     .await?;
 
@@ -302,6 +307,7 @@ async fn lookup_identity_rpc(
     connect_info: SocketAddr,
     project_id: String,
     headers: HeaderMap,
+    sdk_info: SdkInfoParams,
 ) -> Result<IdentityResponse, RpcError> {
     let provider = Provider::new(SelfProvider {
         state: state.clone(),
@@ -312,6 +318,7 @@ async fn lookup_identity_rpc(
             chain_id: ETHEREUM_MAINNET.to_owned(),
             provider_id: None,
             source: Some(crate::analytics::MessageSource::Identity),
+            sdk_info,
         },
         headers,
     });

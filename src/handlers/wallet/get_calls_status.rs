@@ -1,7 +1,7 @@
 use super::call_id::CallId;
 use crate::{
     analytics::MessageSource,
-    handlers::{RpcQueryParams, HANDLER_TASK_METRICS},
+    handlers::{RpcQueryParams, SdkInfoParams, HANDLER_TASK_METRICS},
     state::AppState,
 };
 use alloy::{
@@ -11,7 +11,7 @@ use alloy::{
     rpc::client::RpcClient,
 };
 use axum::{
-    extract::{ConnectInfo, State},
+    extract::{ConnectInfo, Query, State},
     response::{IntoResponse, Response},
     Json,
 };
@@ -94,14 +94,22 @@ impl IntoResponse for GetCallsStatusError {
     }
 }
 
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryParams {
+    #[serde(flatten)]
+    pub sdk_info: SdkInfoParams,
+}
+
 pub async fn handler(
     state: State<Arc<AppState>>,
     project_id: String,
     request: GetCallsStatusParams,
     connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
+    query: Query<QueryParams>,
 ) -> Result<GetCallsStatusResult, GetCallsStatusError> {
-    handler_internal(state, project_id, request, connect_info, headers)
+    handler_internal(state, project_id, request, connect_info, headers, query)
         .with_metrics(HANDLER_TASK_METRICS.with_name("wallet_prepare_calls"))
         .await
 }
@@ -113,6 +121,7 @@ async fn handler_internal(
     request: GetCallsStatusParams,
     ConnectInfo(connect_info): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
+    query: Query<QueryParams>,
 ) -> Result<GetCallsStatusResult, GetCallsStatusError> {
     let chain_id = ChainId::new_eip155(request.0 .0.chain_id.to());
     let provider = RootProvider::<_, Ethereum>::new(RpcClient::new(
@@ -125,6 +134,7 @@ async fn handler_internal(
                 project_id,
                 provider_id: None,
                 source: Some(MessageSource::WalletGetCallsStatus),
+                sdk_info: query.sdk_info.clone(),
             },
             chain_id,
         },

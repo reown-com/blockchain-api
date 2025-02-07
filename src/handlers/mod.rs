@@ -33,6 +33,13 @@ pub mod ws_proxy;
 
 static HANDLER_TASK_METRICS: TaskMetrics = TaskMetrics::new("handler_task");
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SdkInfoParams {
+    pub st: Option<String>,
+    pub sv: Option<String>,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RpcQueryParams {
@@ -44,6 +51,8 @@ pub struct RpcQueryParams {
     // TODO remove this param, as it can be set by actual rpc users but it shouldn't be
     /// Optional "source" field to indicate an internal request
     pub source: Option<MessageSource>,
+    #[serde(flatten)]
+    pub sdk_info: SdkInfoParams,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]

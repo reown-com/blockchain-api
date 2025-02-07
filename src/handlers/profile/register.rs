@@ -1,6 +1,7 @@
 use {
     super::{
-        super::HANDLER_TASK_METRICS, RegisterPayload, RegisterRequest, UNIXTIMESTAMP_SYNC_THRESHOLD,
+        super::{SdkInfoParams, HANDLER_TASK_METRICS},
+        RegisterPayload, RegisterRequest, UNIXTIMESTAMP_SYNC_THRESHOLD,
     },
     crate::{
         analytics::{AccountNameRegistration, MessageSource},
@@ -25,24 +26,33 @@ use {
         },
     },
     axum::{
-        extract::{ConnectInfo, State},
+        extract::{ConnectInfo, Query, State},
         response::{IntoResponse, Response},
         Json,
     },
     hyper::{HeaderMap, StatusCode},
+    serde::Deserialize,
     sqlx::Error as SqlxError,
     std::{collections::HashMap, net::SocketAddr, sync::Arc},
     tracing::log::error,
     wc::future::FutureExt,
 };
 
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RegisterQueryParams {
+    #[serde(flatten)]
+    pub sdk_info: SdkInfoParams,
+}
+
 pub async fn handler(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
+    query: Query<RegisterQueryParams>,
     Json(register_request): Json<RegisterRequest>,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, connect_info, headers, register_request)
+    handler_internal(state, connect_info, headers, query, register_request)
         .with_metrics(HANDLER_TASK_METRICS.with_name("profile_register"))
         .await
 }
@@ -52,6 +62,7 @@ pub async fn handler_internal(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
+    query: Query<RegisterQueryParams>,
     register_request: RegisterRequest,
 ) -> Result<Response, RpcError> {
     let allowed_zones = state.config.names.allowed_zones.as_ref().ok_or_else(|| {
@@ -198,6 +209,8 @@ pub async fn handler_internal(
                 region,
                 country,
                 continent,
+                query.sdk_info.sv.clone(),
+                query.sdk_info.st.clone(),
             ));
     }
 

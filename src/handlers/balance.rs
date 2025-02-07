@@ -1,5 +1,5 @@
 use {
-    super::{SupportedCurrencies, HANDLER_TASK_METRICS},
+    super::{SdkInfoParams, SupportedCurrencies, HANDLER_TASK_METRICS},
     crate::{
         analytics::{BalanceLookupInfo, MessageSource},
         error::RpcError,
@@ -43,6 +43,8 @@ pub struct BalanceQueryParams {
     pub chain_id: Option<String>,
     /// Comma separated list of CAIP-10 contract addresses to force update the balance
     pub force_update: Option<String>,
+    #[serde(flatten)]
+    pub sdk_info: SdkInfoParams,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -177,10 +179,10 @@ async fn handler_internal(
 
     state.validate_project_access_and_quota(&project_id).await?;
 
-    // if headers not contains `x-sdk-version` then respond with an empty balance
-    // array to fix the issue of redundant calls in sdk versions <= 4.1.8
+    // if headers not contains `x-sdk-version` and `sv` query parameter then respond
+    // with an empty balance array to fix the issue of redundant calls in sdk versions <= 4.1.8
     // https://github.com/WalletConnect/web3modal/pull/2157
-    if !headers.contains_key("x-sdk-version") {
+    if !headers.contains_key("x-sdk-version") && query.sdk_info.sv.is_none() {
         return Ok(Json(BalanceResponseBody { balances: vec![] }).into_response());
     }
 
@@ -264,6 +266,8 @@ async fn handler_internal(
                 region.clone(),
                 country.clone(),
                 continent.clone(),
+                query.sdk_info.sv.clone(),
+                query.sdk_info.st.clone(),
             ));
         }
     }
