@@ -204,7 +204,8 @@ describe('Chain abstraction orchestrator', () => {
     orchestration_id = data.orchestrationId;
   })
 
-  it('bridging routes (routes available, USDT Optimism ⇄ USDT Arbitrum)', async () => {
+   // Temporary disabled due to the issue with the Arbitrum USDT contract simulation
+  it.skip('bridging routes (routes available, USDT Optimism ⇄ USDT Arbitrum)', async () => {
     // Sending USDT to Optimism, but having the USDT balance on Arbitrum.
 
     // How much needs to be topped up
