@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.191.0 - 2025-02-10
+#### Features
+- adding sv and st query parameters for analytics (#945) - (1bfe9c6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.190.0 - 2025-02-07
 #### Bug Fixes
 - update WCN client (#944) - (99dd3ae) - Ivan Reshetnikov
