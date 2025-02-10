@@ -133,6 +133,7 @@ async fn handler_internal(
                 chain_id: chain_id.into(),
                 project_id,
                 provider_id: None,
+                session_id: None,
                 source: Some(MessageSource::WalletGetCallsStatus),
                 sdk_info: query.sdk_info.clone(),
             },
