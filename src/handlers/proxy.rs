@@ -160,6 +160,8 @@ pub async fn rpc_provider_call(
             continent,
             &provider.provider_kind(),
             origin,
+            query_params.sdk_info.sv.clone(),
+            query_params.sdk_info.st.clone(),
         ));
     }
 

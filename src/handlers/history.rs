@@ -1,5 +1,5 @@
 use {
-    super::HANDLER_TASK_METRICS,
+    super::{SdkInfoParams, HANDLER_TASK_METRICS},
     crate::{
         analytics::{HistoryLookupInfo, OnrampHistoryLookupInfo},
         error::RpcError,
@@ -28,6 +28,8 @@ pub struct HistoryQueryParams {
     pub chain_id: Option<String>,
     pub cursor: Option<String>,
     pub onramp: Option<String>,
+    #[serde(flatten)]
+    pub sdk_info: SdkInfoParams,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -252,6 +254,8 @@ async fn handler_internal(
                 region,
                 country,
                 continent,
+                query.sdk_info.sv.clone(),
+                query.sdk_info.st.clone(),
             ));
         }
         ProviderKind::Coinbase => {
@@ -286,6 +290,8 @@ async fn handler_internal(
                             .as_ref()
                             .map(|v| v[0].quantity.numeric.clone())
                             .unwrap_or_default(),
+                        query.sdk_info.sv.clone(),
+                        query.sdk_info.st.clone(),
                     ));
             }
         }

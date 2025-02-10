@@ -23,6 +23,10 @@ pub struct HistoryLookupInfo {
     pub region: Option<String>,
     pub country: Option<Arc<str>>,
     pub continent: Option<Arc<str>>,
+
+    // Sdk info
+    pub sv: Option<String>,
+    pub st: Option<String>,
 }
 
 impl HistoryLookupInfo {
@@ -39,6 +43,8 @@ impl HistoryLookupInfo {
         region: Option<Vec<String>>,
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
+        sv: Option<String>,
+        st: Option<String>,
     ) -> Self {
         HistoryLookupInfo {
             timestamp: wc::analytics::time::now(),
@@ -53,6 +59,8 @@ impl HistoryLookupInfo {
             region: region.map(|r| r.join(", ")),
             country,
             continent,
+            sv,
+            st,
         }
     }
 }

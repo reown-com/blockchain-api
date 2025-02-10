@@ -22,9 +22,14 @@ pub struct MessageInfo {
     pub region: Option<String>,
     pub country: Option<Arc<str>>,
     pub continent: Option<Arc<str>>,
+
+    // Sdk info
+    pub sv: Option<String>,
+    pub st: Option<String>,
 }
 
 impl MessageInfo {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         query_params: &RpcQueryParams,
         request: &JsonRpcRequest,
@@ -33,6 +38,8 @@ impl MessageInfo {
         continent: Option<Arc<str>>,
         provider: &ProviderKind,
         origin: Option<String>,
+        sv: Option<String>,
+        st: Option<String>,
     ) -> Self {
         Self {
             timestamp: wc::analytics::time::now(),
@@ -52,6 +59,8 @@ impl MessageInfo {
             region: region.map(|r| r.join(", ")),
             country,
             continent,
+            sv,
+            st,
         }
     }
 }
