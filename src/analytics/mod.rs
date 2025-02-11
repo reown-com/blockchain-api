@@ -349,7 +349,7 @@ impl RPCAnalytics {
             },
             ParquetBatchFactory::new(Default::default()).with_observer(observer),
             AwsExporter::new(AwsConfig {
-                export_prefix: "blockchain-api/chain_abstraction".to_owned(),
+                export_prefix: "blockchain-api/chain_abstraction_bridging".to_owned(),
                 export_name: "bridging_info".to_owned(),
                 node_addr,
                 file_extension: "parquet".to_owned(),
@@ -369,7 +369,7 @@ impl RPCAnalytics {
             },
             ParquetBatchFactory::new(Default::default()).with_observer(observer),
             AwsExporter::new(AwsConfig {
-                export_prefix: "blockchain-api/chain_abstraction".to_owned(),
+                export_prefix: "blockchain-api/chain_abstraction_funding".to_owned(),
                 export_name: "funding_info".to_owned(),
                 node_addr,
                 file_extension: "parquet".to_owned(),
@@ -389,7 +389,7 @@ impl RPCAnalytics {
             },
             ParquetBatchFactory::new(Default::default()).with_observer(observer),
             AwsExporter::new(AwsConfig {
-                export_prefix: "blockchain-api/chain_abstraction".to_owned(),
+                export_prefix: "blockchain-api/chain_abstraction_initial_tx".to_owned(),
                 export_name: "initial_tx".to_owned(),
                 node_addr,
                 file_extension: "parquet".to_owned(),
