@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.192.1 - 2025-02-11
+#### Bug Fixes
+- sessionId hardcoded list (#951) - (c38f049) - Chris Smith
+
+- - -
+
 ## 0.192.0 - 2025-02-10
 #### Bug Fixes
 - **(CI)** fixing CI tests (#950) - (5cbd1b9) - Max Kalashnikoff | maksy.eth
