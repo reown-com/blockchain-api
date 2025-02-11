@@ -3,6 +3,7 @@ use {
     crate::{
         analytics::MessageInfo,
         error::RpcError,
+        providers::ProviderKind,
         state::AppState,
         utils::{crypto, network},
     },
@@ -69,10 +70,10 @@ pub async fn rpc_call(
     let chain_id = query_params.chain_id.clone();
 
     if query_params.session_id.is_some() {
-        let provider_id = match chain_id.as_str() {
-            "eip155:10" => Some("quicknode"), // Optimism
-            "eip155:8453" => Some("lava"),    // Base
-            "eip155:42161" => Some("lava"),   // Arbitrum One
+        let provider_kind = match chain_id.as_str() {
+            "eip155:10" => Some(ProviderKind::Quicknode), // Optimism
+            "eip155:8453" => Some(ProviderKind::Lava),    // Base
+            "eip155:42161" => Some(ProviderKind::Lava),   // Arbitrum One
             _ => {
                 debug!(
                     "Requested sessionId for chain {chain_id} but no hardcoded provider was configured"
@@ -81,11 +82,11 @@ pub async fn rpc_call(
             }
         };
 
-        if let Some(provider_id) = provider_id {
+        if let Some(provider_kind) = provider_kind {
             let provider = state
                 .providers
-                .get_rpc_provider_by_provider_id(provider_id)
-                .ok_or_else(|| RpcError::UnsupportedProvider(provider_id.to_owned()))?;
+                .get_rpc_provider_by_provider_kind(&provider_kind)
+                .ok_or_else(|| RpcError::UnsupportedProvider(provider_kind.to_string()))?;
             let response = rpc_provider_call(
                 state.clone(),
                 addr,
