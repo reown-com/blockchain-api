@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.192.2 - 2025-02-12
+#### Bug Fixes
+- fix CA analytics dirs (#952) - (851bd8d) - Chris Smith
+
+- - -
+
 ## 0.192.1 - 2025-02-11
 #### Bug Fixes
 - sessionId hardcoded list (#951) - (c38f049) - Chris Smith
