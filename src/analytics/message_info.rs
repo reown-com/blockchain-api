@@ -17,7 +17,7 @@ pub struct MessageInfo {
     pub method: Arc<str>,
     pub source: String,
 
-    pub request_id: String,
+    pub request_id: Option<String>,
     pub rpc_id: String,
 
     pub origin: Option<String>,
@@ -61,8 +61,7 @@ impl MessageInfo {
             request_id: headers
                 .get("x-request-id")
                 .and_then(|v| v.to_str().ok())
-                .map(|v| v.to_string())
-                .unwrap_or("unknown".to_owned()),
+                .map(|v| v.to_string()),
             rpc_id: request.id.to_string(),
 
             origin,
