@@ -1,4 +1,7 @@
-use {parquet_derive::ParquetRecordWriter, serde::Serialize, std::sync::Arc};
+use {
+    crate::providers::ProviderKind, parquet_derive::ParquetRecordWriter, serde::Serialize,
+    std::sync::Arc,
+};
 
 #[derive(Debug, Clone, Serialize, ParquetRecordWriter)]
 #[serde(rename_all = "camelCase")]
@@ -14,6 +17,8 @@ pub struct BalanceLookupInfo {
 
     pub address: String,
     pub project_id: String,
+
+    pub provider: String,
 
     pub origin: Option<String>,
     pub region: Option<String>,
@@ -36,6 +41,7 @@ impl BalanceLookupInfo {
         currency: String,
         address: String,
         project_id: String,
+        provider: &ProviderKind,
         origin: Option<String>,
         region: Option<Vec<String>>,
         country: Option<Arc<str>>,
@@ -53,6 +59,7 @@ impl BalanceLookupInfo {
             currency,
             address,
             project_id,
+            provider: provider.to_string(),
             origin,
             region: region.map(|r| r.join(", ")),
             country,

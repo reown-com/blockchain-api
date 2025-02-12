@@ -1,4 +1,5 @@
 use {
+    crate::providers::ProviderKind,
     parquet_derive::ParquetRecordWriter,
     serde::Serialize,
     std::{sync::Arc, time::Duration},
@@ -18,6 +19,8 @@ pub struct HistoryLookupInfo {
     pub transfers_count: usize,
     pub fungibles_count: usize,
     pub nft_count: usize,
+
+    pub provider: String,
 
     pub origin: Option<String>,
     pub region: Option<String>,
@@ -39,6 +42,7 @@ impl HistoryLookupInfo {
         transfers_count: usize,
         fungibles_count: usize,
         nft_count: usize,
+        provider: &ProviderKind,
         origin: Option<String>,
         region: Option<Vec<String>>,
         country: Option<Arc<str>>,
@@ -55,6 +59,7 @@ impl HistoryLookupInfo {
             transfers_count,
             fungibles_count,
             nft_count,
+            provider: provider.to_string(),
             origin,
             region: region.map(|r| r.join(", ")),
             country,

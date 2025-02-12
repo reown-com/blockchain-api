@@ -482,6 +482,10 @@ impl BalanceProvider for SolScanProvider {
 
         Ok(response)
     }
+
+    fn provider_kind(&self) -> ProviderKind {
+        self.provider_kind
+    }
 }
 
 impl BalanceProviderFactory<SolScanConfig> for SolScanProvider {
@@ -596,6 +600,10 @@ impl HistoryProvider for SolScanProvider {
             data: transactions,
             next,
         })
+    }
+
+    fn provider_kind(&self) -> ProviderKind {
+        self.provider_kind
     }
 }
 

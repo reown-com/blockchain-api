@@ -383,6 +383,10 @@ impl HistoryProvider for ZerionProvider {
             next,
         })
     }
+
+    fn provider_kind(&self) -> ProviderKind {
+        self.provider_kind
+    }
 }
 
 #[async_trait]
@@ -566,6 +570,10 @@ impl BalanceProvider for ZerionProvider {
         Ok(BalanceResponseBody {
             balances: balances_vec,
         })
+    }
+
+    fn provider_kind(&self) -> ProviderKind {
+        self.provider_kind
     }
 }
 

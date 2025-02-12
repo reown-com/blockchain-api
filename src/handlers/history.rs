@@ -178,12 +178,12 @@ async fn handler_internal(
         }
     } else {
         state.validate_project_access_and_quota(&project_id).await?;
-        history_provider_kind = ProviderKind::Zerion;
         let provider = state
             .providers
             .history_providers
             .get(&namespace)
             .ok_or_else(|| RpcError::UnsupportedNamespace(namespace))?;
+        history_provider_kind = provider.provider_kind();
         provider
             .get_transactions(address.clone(), query.0.clone(), state.metrics.clone())
             .await
@@ -207,9 +207,46 @@ async fn handler_internal(
         .map(|geo| (geo.country, geo.continent, geo.region))
         .unwrap_or((None, None, None));
 
-    // Different analytics for different history providers
+    // Analytics schema exception for Coinbase Onramp
     match history_provider_kind {
-        ProviderKind::Zerion => {
+        ProviderKind::Coinbase => {
+            for transaction in response.clone().data {
+                state
+                    .analytics
+                    .onramp_history_lookup(OnrampHistoryLookupInfo::new(
+                        transaction.id,
+                        latency_tracker,
+                        address.clone(),
+                        project_id.clone(),
+                        origin.clone(),
+                        region.clone(),
+                        country.clone(),
+                        continent.clone(),
+                        transaction.metadata.status,
+                        transaction
+                            .transfers
+                            .as_ref()
+                            .map(|v| {
+                                v.first()
+                                    .and_then(|item| {
+                                        item.fungible_info.as_ref().map(|info| info.name.clone())
+                                    })
+                                    .unwrap_or_default()
+                            })
+                            .unwrap_or(None)
+                            .unwrap_or_default(),
+                        transaction.metadata.chain.clone().unwrap_or_default(),
+                        transaction
+                            .transfers
+                            .as_ref()
+                            .map(|v| v[0].quantity.numeric.clone())
+                            .unwrap_or_default(),
+                        query.sdk_info.sv.clone(),
+                        query.sdk_info.st.clone(),
+                    ));
+            }
+        }
+        _ => {
             state.analytics.history_lookup(HistoryLookupInfo::new(
                 address,
                 project_id,
@@ -250,6 +287,7 @@ async fn handler_internal(
                             .unwrap_or(0)
                     })
                     .sum(),
+                &history_provider_kind,
                 origin,
                 region,
                 country,
@@ -258,44 +296,6 @@ async fn handler_internal(
                 query.sdk_info.st.clone(),
             ));
         }
-        ProviderKind::Coinbase => {
-            for transaction in response.clone().data {
-                state
-                    .analytics
-                    .onramp_history_lookup(OnrampHistoryLookupInfo::new(
-                        transaction.id,
-                        latency_tracker,
-                        address.clone(),
-                        project_id.clone(),
-                        origin.clone(),
-                        region.clone(),
-                        country.clone(),
-                        continent.clone(),
-                        transaction.metadata.status,
-                        transaction
-                            .transfers
-                            .as_ref()
-                            .map(|v| {
-                                v.first()
-                                    .and_then(|item| {
-                                        item.fungible_info.as_ref().map(|info| info.name.clone())
-                                    })
-                                    .unwrap_or_default()
-                            })
-                            .unwrap_or(None)
-                            .unwrap_or_default(),
-                        transaction.metadata.chain.clone().unwrap_or_default(),
-                        transaction
-                            .transfers
-                            .as_ref()
-                            .map(|v| v[0].quantity.numeric.clone())
-                            .unwrap_or_default(),
-                        query.sdk_info.sv.clone(),
-                        query.sdk_info.st.clone(),
-                    ));
-            }
-        }
-        _ => {}
     }
 
     let latency_tracker = latency_tracker_start
