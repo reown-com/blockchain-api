@@ -66,7 +66,7 @@ fn is_public_ip_addr(addr: IpAddr) -> bool {
     RESERVED_NETWORKS.iter().all(|range| !range.contains(&addr))
 }
 
-pub fn get_forwarded_ip(headers: HeaderMap) -> Option<IpAddr> {
+pub fn get_forwarded_ip(headers: &HeaderMap) -> Option<IpAddr> {
     headers
         .get("X-Forwarded-For")
         .and_then(|header| header.to_str().ok())
@@ -84,7 +84,7 @@ mod tests {
         let mut headers_single = HeaderMap::new();
         headers_single.insert("X-Forwarded-For", "10.128.128.1".parse().unwrap());
         assert_eq!(
-            get_forwarded_ip(headers_single).unwrap(),
+            get_forwarded_ip(&headers_single).unwrap(),
             "10.128.128.1".parse::<IpAddr>().unwrap()
         );
 
@@ -95,7 +95,7 @@ mod tests {
             "10.128.128.1, 10.128.128.2".parse().unwrap(),
         );
         assert_eq!(
-            get_forwarded_ip(headers_multiple).unwrap(),
+            get_forwarded_ip(&headers_multiple).unwrap(),
             "10.128.128.2".parse::<IpAddr>().unwrap()
         );
     }

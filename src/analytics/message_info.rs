@@ -1,5 +1,6 @@
 use {
     crate::{handlers::RpcQueryParams, json_rpc::JsonRpcRequest, providers::ProviderKind},
+    hyper::HeaderMap,
     parquet_derive::ParquetRecordWriter,
     serde::{Deserialize, Serialize},
     std::sync::Arc,
@@ -15,6 +16,9 @@ pub struct MessageInfo {
     pub chain_id: String,
     pub method: Arc<str>,
     pub source: String,
+
+    pub request_id: Option<String>,
+    pub rpc_id: String,
 
     pub origin: Option<String>,
     pub provider: String,
@@ -32,6 +36,7 @@ impl MessageInfo {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         query_params: &RpcQueryParams,
+        headers: &HeaderMap,
         request: &JsonRpcRequest,
         region: Option<Vec<String>>,
         country: Option<Arc<str>>,
@@ -53,6 +58,12 @@ impl MessageInfo {
                 .unwrap_or(&MessageSource::Rpc)
                 .to_string(),
 
+            request_id: headers
+                .get("x-request-id")
+                .and_then(|v| v.to_str().ok())
+                .map(|v| v.to_string()),
+            rpc_id: request.id.to_string(),
+
             origin,
             provider: provider.to_string(),
 
@@ -65,6 +76,7 @@ impl MessageInfo {
     }
 }
 
+// Note: these are all INTERNAL sources (except Rpc). While technically the user can override this via query param currently, this is just a technical limitation of the implementation here.
 #[derive(Debug, Clone, EnumString, Display, Deserialize, PartialEq)]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]

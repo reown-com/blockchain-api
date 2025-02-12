@@ -196,12 +196,13 @@ pub async fn rpc_provider_call(
     if let Ok(rpc_request) = serde_json::from_slice(&body) {
         let (country, continent, region) = state
             .analytics
-            .lookup_geo_data(network::get_forwarded_ip(headers).unwrap_or_else(|| addr.ip()))
+            .lookup_geo_data(network::get_forwarded_ip(&headers).unwrap_or_else(|| addr.ip()))
             .map(|geo| (geo.country, geo.continent, geo.region))
             .unwrap_or((None, None, None));
 
         state.analytics.message(MessageInfo::new(
             &query_params,
+            &headers,
             &rpc_request,
             region,
             country,

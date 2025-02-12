@@ -98,7 +98,7 @@ pub async fn rate_limit_middleware<B>(
     next: Next<B>,
 ) -> Response {
     let headers = req.headers().clone();
-    let ip = match network::get_forwarded_ip(headers.clone()) {
+    let ip = match network::get_forwarded_ip(&headers) {
         Some(ip) => ip.to_string(),
         None => {
             error!(
