@@ -601,6 +601,10 @@ impl HistoryProvider for SolScanProvider {
             next,
         })
     }
+
+    fn provider_kind(&self) -> ProviderKind {
+        self.provider_kind
+    }
 }
 
 #[async_trait]

@@ -863,6 +863,8 @@ pub trait HistoryProvider: Send + Sync {
         params: HistoryQueryParams,
         metrics: Arc<Metrics>,
     ) -> RpcResult<HistoryResponseBody>;
+
+    fn provider_kind(&self) -> ProviderKind;
 }
 
 #[async_trait]

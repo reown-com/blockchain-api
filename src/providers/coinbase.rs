@@ -170,6 +170,10 @@ impl HistoryProvider for CoinbaseProvider {
             next: body.next_page_key,
         })
     }
+
+    fn provider_kind(&self) -> ProviderKind {
+        self.provider_kind
+    }
 }
 
 #[async_trait]

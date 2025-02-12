@@ -383,6 +383,10 @@ impl HistoryProvider for ZerionProvider {
             next,
         })
     }
+
+    fn provider_kind(&self) -> ProviderKind {
+        self.provider_kind
+    }
 }
 
 #[async_trait]
