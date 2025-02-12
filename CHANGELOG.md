@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.193.1 - 2025-02-12
+#### Bug Fixes
+- 1Inch gas estimation has decimals (#953) - (f32790a) - Chris Smith
+
+- - -
+
 ## 0.193.0 - 2025-02-12
 #### Features
 - request & RPC ID analytics (#949) - (06c6f44) - Chris Smith
