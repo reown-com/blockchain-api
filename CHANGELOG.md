@@ -2,6 +2,26 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.192.2 - 2025-02-12
+#### Bug Fixes
+- fix CA analytics dirs (#952) - (851bd8d) - Chris Smith
+
+- - -
+
+## 0.192.1 - 2025-02-11
+#### Bug Fixes
+- sessionId hardcoded list (#951) - (c38f049) - Chris Smith
+
+- - -
+
+## 0.192.0 - 2025-02-10
+#### Bug Fixes
+- **(CI)** fixing CI tests (#950) - (5cbd1b9) - Max Kalashnikoff | maksy.eth
+#### Features
+- sessionId and hardcoded provider (#947) - (3c80d85) - Chris Smith
+
+- - -
+
 ## 0.191.0 - 2025-02-10
 #### Features
 - adding sv and st query parameters for analytics (#945) - (1bfe9c6) - Max Kalashnikoff | maksy.eth

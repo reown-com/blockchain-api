@@ -47,6 +47,7 @@ pub struct RpcQueryParams {
     pub project_id: String,
     /// Optional provider ID for the exact provider request
     pub provider_id: Option<String>,
+    pub session_id: Option<String>,
 
     // TODO remove this param, as it can be set by actual rpc users but it shouldn't be
     /// Optional "source" field to indicate an internal request

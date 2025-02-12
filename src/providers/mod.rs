@@ -615,7 +615,15 @@ impl ProviderRepository {
     ) -> Option<Arc<dyn RpcProvider>> {
         let provider = ProviderKind::from_str(provider_id)?;
 
-        self.rpc_providers.get(&provider).cloned()
+        self.get_rpc_provider_by_provider_kind(&provider)
+    }
+
+    #[tracing::instrument(skip(self), level = "debug")]
+    pub fn get_rpc_provider_by_provider_kind(
+        &self,
+        provider_kind: &ProviderKind,
+    ) -> Option<Arc<dyn RpcProvider>> {
+        self.rpc_providers.get(provider_kind).cloned()
     }
 }
 

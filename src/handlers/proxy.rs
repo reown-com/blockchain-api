@@ -3,6 +3,7 @@ use {
     crate::{
         analytics::MessageInfo,
         error::RpcError,
+        providers::ProviderKind,
         state::AppState,
         utils::{crypto, network},
     },
@@ -67,6 +68,53 @@ pub async fn rpc_call(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     let chain_id = query_params.chain_id.clone();
+
+    if query_params.session_id.is_some() {
+        let provider_kind = match chain_id.as_str() {
+            "eip155:10" => Some(ProviderKind::Quicknode), // Optimism
+            "eip155:8453" => Some(ProviderKind::Lava),    // Base
+            "eip155:42161" => Some(ProviderKind::Lava),   // Arbitrum One
+            _ => {
+                debug!(
+                    "Requested sessionId for chain {chain_id} but no hardcoded provider was configured"
+                );
+                None
+            }
+        };
+
+        if let Some(provider_kind) = provider_kind {
+            let provider = state
+                .providers
+                .get_rpc_provider_by_provider_kind(&provider_kind)
+                .ok_or_else(|| RpcError::UnsupportedProvider(provider_kind.to_string()))?;
+            let response = rpc_provider_call(
+                state.clone(),
+                addr,
+                query_params.clone(),
+                headers.clone(),
+                body.clone(),
+                provider.clone(),
+            )
+            .await;
+
+            match response {
+                Ok(response) if !response.status().is_server_error() => {
+                    return Ok(response);
+                }
+                e => {
+                    // Not recording metric since this is a hardcoded provider
+                    // state
+                    //     .metrics
+                    //     .add_rpc_call_retries(0, chain_id.clone());
+                    debug!(
+                        "Provider (via sessionId) '{}' returned an error {e:?}, trying the next provider",
+                        provider.provider_kind()
+                    );
+                }
+            }
+        }
+    }
+
     // Exact provider proxy request for testing suite
     // This request is allowed only for the RPC_PROXY_TESTING_PROJECT_ID
     let providers = match query_params.provider_id.clone() {

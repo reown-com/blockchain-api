@@ -598,3 +598,5 @@ async fn get_geoip_resolver(config: &Config, s3_client: &S3Client) -> Option<Arc
         None
     }
 }
+
+// no-op
