@@ -899,6 +899,8 @@ pub trait BalanceProvider: Send + Sync {
         metadata_cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody>;
+
+    fn provider_kind(&self) -> ProviderKind;
 }
 
 pub trait BalanceProviderFactory<T: BalanceProviderConfig>: BalanceProvider {

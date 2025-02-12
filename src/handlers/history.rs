@@ -250,6 +250,7 @@ async fn handler_internal(
                             .unwrap_or(0)
                     })
                     .sum(),
+                &history_provider_kind,
                 origin,
                 region,
                 country,

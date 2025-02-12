@@ -312,6 +312,10 @@ impl BalanceProvider for DuneProvider {
             balances: balances_vec,
         })
     }
+
+    fn provider_kind(&self) -> ProviderKind {
+        self.provider_kind
+    }
 }
 
 impl BalanceProviderFactory<DuneConfig> for DuneProvider {

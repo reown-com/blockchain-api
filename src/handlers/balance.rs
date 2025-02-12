@@ -228,7 +228,7 @@ async fn handler_internal(
 
         match provider_response {
             Ok(response) => {
-                balance_response = Some(response);
+                balance_response = Some((response, provider.provider_kind()));
                 break;
             }
             e => {
@@ -236,9 +236,9 @@ async fn handler_internal(
             }
         };
     }
-    let mut response = balance_response.ok_or(RpcError::BalanceTemporarilyUnavailable(
-        namespace.to_string(),
-    ))?;
+    let (mut response, provider_kind) = balance_response.ok_or(
+        RpcError::BalanceTemporarilyUnavailable(namespace.to_string()),
+    )?;
 
     {
         let origin = headers
@@ -262,6 +262,7 @@ async fn handler_internal(
                 query.currency.to_string(),
                 address.clone(),
                 project_id.clone(),
+                &provider_kind,
                 origin.clone(),
                 region.clone(),
                 country.clone(),

@@ -567,6 +567,10 @@ impl BalanceProvider for ZerionProvider {
             balances: balances_vec,
         })
     }
+
+    fn provider_kind(&self) -> ProviderKind {
+        self.provider_kind
+    }
 }
 
 impl BalanceProviderFactory<ZerionConfig> for ZerionProvider {
