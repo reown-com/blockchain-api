@@ -13,7 +13,7 @@ build = "build.rs"
 [dependencies]
 wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.9.0", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock", "rate_limit"] }
 relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", tag = "v0.32.0", features = ["cacao"] }
-yttrium = { git = "https://github.com/reown-com/yttrium.git", rev = "4f9def1" }
+yttrium = { git = "https://github.com/reown-com/yttrium.git", branch = "chore/update-deps" }
 
 # Async
 async-trait = "0.1.82"
@@ -80,7 +80,7 @@ rand = "0.8.5"
 rand_core = "0.6"
 prometheus-http-query = "0.6.6"
 ethers = { version = "2.0.11", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
-alloy = { version = "0.9.2", features = ["providers", "json-rpc"] }
+alloy = { version = "0.11.1", features = ["providers", "json-rpc"] }
 fastlz-rs = "0.0.3"
 
 bytes = "1.7.1"
@@ -89,7 +89,7 @@ base64 = "0.22"
 bs58 = "0.5"
 regex = "1.10"
 sha256 = "1.5"
-uuid = { version = "1.10", features = ["serde"] }
+uuid = { version = "1.13.1", features = ["serde"] }
 
 # System CPU and Memory metrics
 sysinfo = "0.30"
@@ -113,4 +113,8 @@ lto = "thin"
 debug = 1
 
 # [patch.'https://github.com/reown-com/yttrium.git']
-# yttrium = { path = "../yttrium/crates/yttrium" }
+# yttrium = { path = "../../reown-com/yttrium/crates/yttrium" }
+
+[patch.crates-io]
+alloy = { git = "https://github.com/alloy-rs/alloy.git", rev = "5dcdf0f" }
+alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "5dcdf0f" }

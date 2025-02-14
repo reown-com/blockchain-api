@@ -1,9 +1,8 @@
 use {
     crate::{analytics::MessageSource, error::RpcError},
     alloy::{
-        network::Ethereum,
         primitives::{Address, Bytes as AlloyBytes, TxKind, U256 as AlloyU256, U64 as AlloyU64},
-        providers::{Provider as AlloyProvider, ReqwestProvider},
+        providers::{Provider as AlloyProvider, ProviderBuilder},
         rpc::{
             json_rpc::Id,
             types::{TransactionInput, TransactionRequest},
@@ -20,7 +19,7 @@ use {
             types::Signature as EthSignature,
         },
         prelude::{abigen, EthAbiCodec, EthAbiType},
-        providers::{Http, Middleware, Provider},
+        providers::{Http, Middleware, Provider as EthersProvider},
         types::{Address as EthersAddress, Bytes, H160, H256, U128, U256},
         utils::keccak256,
     },
@@ -329,6 +328,7 @@ pub async fn verify_message_signature(
     chain_id: &str,
     rpc_project_id: &str,
     source: MessageSource,
+    session_id: Option<String>,
 ) -> Result<bool, CryptoUitlsError> {
     verify_eip6492_message_signature(
         message,
@@ -337,6 +337,7 @@ pub async fn verify_message_signature(
         address,
         rpc_project_id,
         source,
+        session_id,
     )
     .await
 }
@@ -346,6 +347,7 @@ fn get_rpc_url(
     chain_id: &str,
     rpc_project_id: &str,
     source: MessageSource,
+    session_id: Option<String>,
 ) -> Result<Url, CryptoUitlsError> {
     let mut provider = Url::parse("https://rpc.walletconnect.com/v1").map_err(|e| {
         CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e))
@@ -357,6 +359,11 @@ fn get_rpc_url(
     provider
         .query_pairs_mut()
         .append_pair("source", &source.to_string());
+    if let Some(session_id) = session_id {
+        provider
+            .query_pairs_mut()
+            .append_pair("sessionId", &session_id);
+    }
     Ok(provider)
 }
 
@@ -369,12 +376,13 @@ pub async fn verify_eip6492_message_signature(
     address: &str,
     rpc_project_id: &str,
     source: MessageSource,
+    session_id: Option<String>,
 ) -> Result<bool, CryptoUitlsError> {
     let message_hash: [u8; 32] = get_message_hash(message).into();
     let address = Address::parse_checksummed(address, None)
         .map_err(|_| CryptoUitlsError::AddressChecksum(address.into()))?;
 
-    let provider = get_rpc_url(chain_id, rpc_project_id, source)?;
+    let provider = get_rpc_url(chain_id, rpc_project_id, source, session_id)?;
     let hexed_signature = hex::decode(&signature[2..])
         .map_err(|e| CryptoUitlsError::SignatureFormat(format!("Wrong signature format: {}", e)))?;
 
@@ -426,13 +434,22 @@ pub async fn get_erc20_balance(
     wallet: H160,
     rpc_project_id: &str,
     source: MessageSource,
+    session_id: Option<String>,
 ) -> Result<U256, CryptoUitlsError> {
     // Use JSON-RPC call for the balance of the native ERC20 tokens
     // or call the contract for the custom ERC20 tokens
     let balance = if contract == H160::repeat_byte(0xee) {
-        get_balance(chain_id, wallet, rpc_project_id, source).await?
+        get_balance(chain_id, wallet, rpc_project_id, source, session_id).await?
     } else {
-        get_erc20_contract_balance(chain_id, contract, wallet, rpc_project_id, source).await?
+        get_erc20_contract_balance(
+            chain_id,
+            contract,
+            wallet,
+            rpc_project_id,
+            source,
+            session_id,
+        )
+        .await?
     };
 
     Ok(balance)
@@ -446,6 +463,7 @@ pub async fn get_erc20_contract_balance(
     wallet: H160,
     rpc_project_id: &str,
     source: MessageSource,
+    session_id: Option<String>,
 ) -> Result<U256, CryptoUitlsError> {
     abigen!(
         ERC20Contract,
@@ -454,11 +472,10 @@ pub async fn get_erc20_contract_balance(
         ]"#,
     );
 
-    let provider =
-        Provider::<Http>::try_from(get_rpc_url(chain_id, rpc_project_id, source)?.as_str())
-            .map_err(|e| {
-                CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e))
-            })?;
+    let provider = EthersProvider::<Http>::try_from(
+        get_rpc_url(chain_id, rpc_project_id, source, session_id)?.as_str(),
+    )
+    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
     let provider = Arc::new(provider);
 
     let contract = ERC20Contract::new(contract, provider);
@@ -479,12 +496,12 @@ pub async fn get_balance(
     wallet: H160,
     rpc_project_id: &str,
     source: MessageSource,
+    session_id: Option<String>,
 ) -> Result<U256, CryptoUitlsError> {
-    let provider =
-        Provider::<Http>::try_from(get_rpc_url(chain_id, rpc_project_id, source)?.as_str())
-            .map_err(|e| {
-                CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e))
-            })?;
+    let provider = EthersProvider::<Http>::try_from(
+        get_rpc_url(chain_id, rpc_project_id, source, session_id)?.as_str(),
+    )
+    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
     let provider = Arc::new(provider);
 
     let balance = provider
@@ -494,15 +511,24 @@ pub async fn get_balance(
     Ok(balance)
 }
 
+fn self_provider(
+    chain_id: &str,
+    rpc_project_id: &str,
+    source: MessageSource,
+    session_id: Option<String>,
+) -> Result<impl AlloyProvider, CryptoUitlsError> {
+    Ok(ProviderBuilder::new().on_http(get_rpc_url(chain_id, rpc_project_id, source, session_id)?))
+}
+
 /// Get the gas price
 #[tracing::instrument(level = "debug")]
 pub async fn get_gas_price(
     chain_id: &str,
     rpc_project_id: &str,
     source: MessageSource,
+    session_id: Option<String>,
 ) -> Result<u128, CryptoUitlsError> {
-    let provider =
-        ReqwestProvider::<Ethereum>::new_http(get_rpc_url(chain_id, rpc_project_id, source)?);
+    let provider = self_provider(chain_id, rpc_project_id, source, session_id)?;
     let gas_price = provider
         .get_gas_price()
         .await
@@ -517,9 +543,9 @@ pub async fn get_nonce(
     wallet: Address,
     rpc_project_id: &str,
     source: MessageSource,
+    session_id: Option<String>,
 ) -> Result<AlloyU64, CryptoUitlsError> {
-    let provider =
-        ReqwestProvider::<Ethereum>::new_http(get_rpc_url(chain_id, rpc_project_id, source)?);
+    let provider = self_provider(chain_id, rpc_project_id, source, session_id)?;
     let nonce = provider
         .get_transaction_count(wallet)
         .pending()
@@ -529,6 +555,7 @@ pub async fn get_nonce(
 }
 
 /// Get the gas estimation for the transaction by `eth_estimateGas` call
+#[allow(clippy::too_many_arguments)]
 #[tracing::instrument(level = "debug")]
 pub async fn get_gas_estimate(
     chain_id: &str,
@@ -538,9 +565,9 @@ pub async fn get_gas_estimate(
     input: AlloyBytes,
     rpc_project_id: &str,
     source: MessageSource,
+    session_id: Option<String>,
 ) -> Result<u64, CryptoUitlsError> {
-    let provider =
-        ReqwestProvider::<Ethereum>::new_http(get_rpc_url(chain_id, rpc_project_id, source)?);
+    let provider = self_provider(chain_id, rpc_project_id, source, session_id)?;
     let gas_estimate = provider
         .estimate_gas(&TransactionRequest {
             from: Some(from),
@@ -564,6 +591,7 @@ pub async fn call_get_user_op_hash(
     chain_id: &str,
     contract_address: H160,
     user_operation: UserOperation,
+    session_id: Option<String>,
 ) -> Result<[u8; 32], CryptoUitlsError> {
     abigen!(
         EntryPoint,
@@ -573,8 +601,14 @@ pub async fn call_get_user_op_hash(
         ]"#,
     );
 
-    let provider = Provider::<Http>::try_from(
-        get_rpc_url(chain_id, rpc_project_id, MessageSource::ChainAgnosticCheck)?.as_str(),
+    let provider = EthersProvider::<Http>::try_from(
+        get_rpc_url(
+            chain_id,
+            rpc_project_id,
+            MessageSource::ChainAgnosticCheck,
+            None,
+        )?
+        .as_str(),
     )
     .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
     let provider = Arc::new(provider);
@@ -1126,9 +1160,10 @@ mod tests {
             paymaster_verification_gas_limit: None,
         };
 
-        let result = call_get_user_op_hash(rpc_project_id, chain_id, contract_address, user_op)
-            .await
-            .unwrap();
+        let result =
+            call_get_user_op_hash(rpc_project_id, chain_id, contract_address, user_op, None)
+                .await
+                .unwrap();
 
         assert_eq!(
             hex::encode(result),

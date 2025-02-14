@@ -94,6 +94,7 @@ pub async fn check_erc20_balances(
     address: Address,
     chain_id: String,
     erc2_contracts: Vec<Address>,
+    session_id: Option<String>,
 ) -> Result<Vec<(Address, U256)>, RpcError> {
     let mut balances = Vec::new();
     // Check the ERC20 tokens balance for each of supported assets
@@ -105,6 +106,7 @@ pub async fn check_erc20_balances(
             EthersH160::from(<[u8; 20]>::from(address)),
             &project_id,
             MessageSource::ChainAgnosticCheck,
+            session_id.clone(),
         )
         .await?;
         balances.push((contract, U256::from_be_bytes(erc20_balance.into())));
@@ -125,6 +127,7 @@ pub struct BridgingAsset {
 /// same symbol to avoid unnecessary swapping
 pub async fn check_bridging_for_erc20_transfer(
     rpc_project_id: String,
+    session_id: Option<String>,
     value: U256,
     sender: Address,
     // Exclude the initial transaction asset from the check
@@ -161,6 +164,7 @@ pub async fn check_bridging_for_erc20_transfer(
                 .iter()
                 .map(|c| Address::from_str(c).unwrap_or_default())
                 .collect(),
+            session_id.clone(),
         )
         .await?;
         for (contract_address, current_balance) in erc20_balances {

@@ -19,7 +19,7 @@ use {
     wc::future::FutureExt,
     yttrium::chain_abstraction::api::status::{
         StatusQueryParams, StatusResponse, StatusResponseCompleted, StatusResponseError,
-        StatusResponsePending,
+        StatusResponsePendingObject,
     },
 };
 
@@ -81,6 +81,7 @@ async fn handler_internal(
         EthersH160::from(<[u8; 20]>::from(bridging_status_item.wallet)),
         query_params.project_id.as_ref(),
         MessageSource::ChainAgnosticCheck,
+        query_params.session_id.clone(),
     )
     .await?;
 
@@ -144,7 +145,7 @@ async fn handler_internal(
     }
 
     // The balance was not fullfilled return the pending status
-    return Ok(Json(StatusResponse::Pending(StatusResponsePending {
+    return Ok(Json(StatusResponse::Pending(StatusResponsePendingObject {
         created_at: bridging_status_item.created_at,
         check_in: STATUS_POLLING_INTERVAL,
     }))

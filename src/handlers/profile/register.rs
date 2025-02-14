@@ -140,6 +140,7 @@ pub async fn handler_internal(
         &chain_id_caip2,
         rpc_project_id,
         MessageSource::ProfileRegisterSigValidate,
+        None,
     )
     .await
     {

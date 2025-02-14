@@ -5,10 +5,9 @@ use crate::{
     state::AppState,
 };
 use alloy::{
-    network::Ethereum,
-    primitives::{Address, BlockHash, Bytes, TxHash, B256, U128, U64, U8},
-    providers::RootProvider,
-    rpc::client::RpcClient,
+    primitives::{Address, BlockHash, Bytes, TxHash, B256, U64, U8},
+    providers::ProviderBuilder,
+    rpc::{client::RpcClient, types::UserOperationReceipt},
 };
 use axum::{
     extract::{ConnectInfo, Query, State},
@@ -21,10 +20,7 @@ use std::{net::SocketAddr, sync::Arc};
 use thiserror::Error;
 use tracing::error;
 use wc::future::FutureExt;
-use yttrium::{
-    bundler::{client::CustomErc4337Api, models::user_operation_receipt::UserOperationReceipt},
-    chain::ChainId,
-};
+use yttrium::{chain::ChainId, erc4337::get_user_operation_receipt};
 
 pub type GetCallsStatusParams = (CallId,);
 
@@ -51,7 +47,7 @@ pub struct CallReceipt {
     chain_id: U64,
     block_hash: BlockHash,
     block_number: U64,
-    gas_used: U128,
+    gas_used: U64,
     transaction_hash: TxHash,
 }
 
@@ -124,7 +120,7 @@ async fn handler_internal(
     query: Query<QueryParams>,
 ) -> Result<GetCallsStatusResult, GetCallsStatusError> {
     let chain_id = ChainId::new_eip155(request.0 .0.chain_id.to());
-    let provider = RootProvider::<_, Ethereum>::new(RpcClient::new(
+    let provider = ProviderBuilder::default().on_client(RpcClient::new(
         self_transport::SelfBundlerTransport {
             state: state.0.clone(),
             connect_info,
@@ -142,8 +138,7 @@ async fn handler_internal(
         false,
     ));
 
-    let receipt = provider
-        .get_user_operation_receipt(request.0 .0.user_op_hash)
+    let receipt = get_user_operation_receipt(&provider, request.0 .0.user_op_hash)
         .await
         .map_err(|e| {
             GetCallsStatusError::InternalError(
@@ -162,10 +157,10 @@ async fn handler_internal(
     };
 
     Ok(GetCallsStatusResult {
-        status: if receipt.receipt.status == U8::from(1) {
+        status: if receipt.receipt.status() {
             CallStatus::Confirmed
         } else {
-            CallStatus::Pending
+            CallStatus::Pending // FIXME this should be Error instead??
         },
         receipts: Some(vec![user_operation_receipt_to_call_receipt(
             request.0 .0.chain_id,
@@ -183,16 +178,23 @@ fn user_operation_receipt_to_call_receipt(
             .logs
             .into_iter()
             .map(|log| CallReceiptLog {
-                address: log.address,
-                topics: log.topics,
-                data: log.data,
+                address: log.address(),
+                topics: log.topics().to_vec(),
+                data: log.data().data.clone(),
             })
             .collect(),
-        status: receipt.receipt.status,
+        status: match receipt.receipt.status() {
+            true => U8::from(1),
+            false => U8::from(0),
+        },
         chain_id,
-        block_hash: receipt.receipt.block_hash,
-        block_number: receipt.receipt.block_number,
-        gas_used: receipt.receipt.gas_used,
+        block_hash: receipt.receipt.block_hash.unwrap_or_default(), // FIXME
+        block_number: receipt
+            .receipt
+            .block_number
+            .map(U64::from)
+            .unwrap_or_default(), // FIXME
+        gas_used: U64::from(receipt.receipt.gas_used),
         transaction_hash: receipt.receipt.transaction_hash,
     }
 }
