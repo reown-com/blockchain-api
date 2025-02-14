@@ -6443,7 +6443,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e9552f850d5f0964a4e4d0bf306459ac29323ddfbae05e35a7c0d35cb0803cc5"
 dependencies = [
  "anyhow",
- "itertools 0.13.0",
+ "itertools 0.11.0",
  "proc-macro2 1.0.89",
  "quote 1.0.37",
  "syn 2.0.87",
@@ -9695,7 +9695,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -10040,7 +10040,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?branch=chore%2Fupdate-deps#7be65b2c7a5b5dab5b49609edc71a09f952da0a7"
+source = "git+https://github.com/reown-com/yttrium.git?branch=chore%2Fupdate-deps#616eb6a67e8ac08305c6e6c1c0ab909f3d1496fa"
 dependencies = [
  "alloy 0.11.1",
  "alloy-provider 0.11.1",

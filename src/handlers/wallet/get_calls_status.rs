@@ -327,14 +327,13 @@ mod tests {
         test_helpers::spawn_blockchain_api_with_params,
     };
     use alloy::{
-        network::Ethereum,
         primitives::{Bytes, Uint, U256, U64, U8},
-        providers::{Provider, ReqwestProvider},
+        providers::{Provider, ProviderBuilder},
         signers::local::LocalSigner,
     };
     use yttrium::{
+        call::{send::safe_test::send_transactions, Call},
         config::Config,
-        execution::{send::safe_test::send_transactions, Execution},
         smart_accounts::safe::{get_account_address, Owners},
         test_helpers::{anvil_faucet, use_faucet},
     };
@@ -343,10 +342,9 @@ mod tests {
     async fn test_get_calls_status() {
         // let anvil = Anvil::new().spawn();
         let config = Config::local();
-        let faucet = anvil_faucet(config.endpoints.rpc.base_url.clone()).await;
-
         let provider =
-            ReqwestProvider::<Ethereum>::new_http(config.endpoints.rpc.base_url.parse().unwrap());
+            ProviderBuilder::default().on_http(config.endpoints.rpc.base_url.parse().unwrap());
+        let faucet = anvil_faucet(&provider).await;
 
         let destination = LocalSigner::random();
         let balance = provider.get_balance(destination.address()).await.unwrap();
@@ -362,18 +360,12 @@ mod tests {
         )
         .await;
 
-        use_faucet(
-            provider.clone(),
-            faucet.clone(),
-            U256::from(1),
-            sender_address.into(),
-        )
-        .await;
+        use_faucet(&provider, faucet, U256::from(1), sender_address.into()).await;
 
-        let transaction = vec![Execution {
+        let transaction = vec![Call {
             to: destination.address(),
             value: Uint::from(1),
-            data: Bytes::new(),
+            input: Bytes::new(),
         }];
 
         let receipt = send_transactions(transaction, owner.clone(), None, None, config.clone())
@@ -394,7 +386,7 @@ mod tests {
         .await;
         let mut endpoint = url.join("/v1/wallet").unwrap();
         endpoint.query_pairs_mut().append_pair("projectId", "test");
-        let provider = ReqwestProvider::<Ethereum>::new_http(endpoint);
+        let provider = ProviderBuilder::new().on_http(endpoint);
         let result = provider
             .client()
             .request::<_, GetCallsStatusResult>(
@@ -419,10 +411,9 @@ mod tests {
     async fn test_get_calls_status_failed() {
         // let anvil = Anvil::new().spawn();
         let config = Config::local();
-        let _faucet = anvil_faucet(config.endpoints.rpc.base_url.clone()).await;
-
         let provider =
-            ReqwestProvider::<Ethereum>::new_http(config.endpoints.rpc.base_url.parse().unwrap());
+            ProviderBuilder::new().on_http(config.endpoints.rpc.base_url.parse().unwrap());
+        let _faucet = anvil_faucet(&provider);
 
         let destination = LocalSigner::random();
         let balance = provider.get_balance(destination.address()).await.unwrap();
@@ -438,10 +429,10 @@ mod tests {
         )
         .await;
 
-        let transaction = vec![Execution {
+        let transaction = vec![Call {
             to: destination.address(),
             value: Uint::from(1),
-            data: Bytes::new(),
+            input: Bytes::new(),
         }];
 
         let receipt = send_transactions(transaction, owner.clone(), None, None, config.clone())
@@ -462,7 +453,7 @@ mod tests {
         .await;
         let mut endpoint = url.join("/v1/wallet").unwrap();
         endpoint.query_pairs_mut().append_pair("projectId", "test");
-        let provider = ReqwestProvider::<Ethereum>::new_http(endpoint);
+        let provider = ProviderBuilder::new().on_http(endpoint);
         let result = provider
             .client()
             .request::<_, GetCallsStatusResult>(
