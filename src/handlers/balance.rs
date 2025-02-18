@@ -241,6 +241,11 @@ async fn handler_internal(
     )?;
 
     {
+        // Filling the request_id from the `propagate_x_request_id` middleware
+        let request_id = headers
+            .get("x-request-id")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or("unknown");
         let origin = headers
             .get("origin")
             .map(|v| v.to_str().unwrap_or("invalid_header").to_string());
@@ -269,6 +274,7 @@ async fn handler_internal(
                 continent.clone(),
                 query.sdk_info.sv.clone(),
                 query.sdk_info.st.clone(),
+                request_id.to_string(),
             ));
         }
     }
