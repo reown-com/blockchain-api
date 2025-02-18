@@ -10,6 +10,10 @@ pub struct ChainAbstractionFundingInfo {
     pub country: Option<Arc<str>>,
     pub continent: Option<Arc<str>>,
 
+    // Sdk info
+    pub sv: Option<String>,
+    pub st: Option<String>,
+
     pub orchestration_id: String,
 
     pub chain_id: String,
@@ -28,6 +32,9 @@ impl ChainAbstractionFundingInfo {
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
 
+        sv: Option<String>,
+        st: Option<String>,
+
         orchestration_id: String,
 
         chain_id: String,
@@ -43,6 +50,9 @@ impl ChainAbstractionFundingInfo {
             region: region.map(|r| r.join(", ")),
             country,
             continent,
+
+            sv,
+            st,
 
             orchestration_id,
 
@@ -63,6 +73,10 @@ pub struct ChainAbstractionBridgingInfo {
     pub region: Option<String>,
     pub country: Option<Arc<str>>,
     pub continent: Option<Arc<str>>,
+
+    // Sdk info
+    pub sv: Option<String>,
+    pub st: Option<String>,
 
     pub orchestration_id: String,
 
@@ -88,6 +102,9 @@ impl ChainAbstractionBridgingInfo {
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
 
+        sv: Option<String>,
+        st: Option<String>,
+
         orchestration_id: String,
 
         src_chain_id: String,
@@ -109,6 +126,9 @@ impl ChainAbstractionBridgingInfo {
             region: region.map(|r| r.join(", ")),
             country,
             continent,
+
+            st,
+            sv,
 
             orchestration_id,
 
@@ -136,6 +156,10 @@ pub struct ChainAbstractionInitialTxInfo {
     pub country: Option<Arc<str>>,
     pub continent: Option<Arc<str>>,
 
+    // Sdk info
+    pub sv: Option<String>,
+    pub st: Option<String>,
+
     pub orchestration_id: String,
 
     pub transfer_from: String,
@@ -156,6 +180,9 @@ impl ChainAbstractionInitialTxInfo {
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
 
+        sv: Option<String>,
+        st: Option<String>,
+
         orchestration_id: String,
 
         transfer_from: String,
@@ -173,6 +200,9 @@ impl ChainAbstractionInitialTxInfo {
             region: region.map(|r| r.join(", ")),
             country,
             continent,
+
+            sv,
+            st,
 
             orchestration_id,
 
