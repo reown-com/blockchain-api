@@ -1,4 +1,4 @@
-use alloy::primitives::{Bytes, B256, U64};
+use alloy::primitives::{Bytes, U64};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -7,7 +7,7 @@ pub struct CallId(pub CallIdInner);
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CallIdInner {
     pub chain_id: U64,
-    pub user_op_hash: B256,
+    pub user_op_hash: Bytes,
 }
 
 impl Serialize for CallId {

@@ -313,6 +313,7 @@ async fn handler_internal(
                 parsed_address,
                 rpc_project_id,
                 MessageSource::Balance,
+                None,
             )
             .await?;
             if let Some(balance) = response

@@ -5,12 +5,10 @@ use crate::handlers::sessions::get::{
 };
 use crate::handlers::wallet::types::SignatureRequestType;
 use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
-use alloy::network::{Ethereum, Network};
 use alloy::primitives::{bytes, keccak256, Address, Bytes, FixedBytes, B256, U256, U64};
-use alloy::providers::{Provider, ReqwestProvider};
+use alloy::providers::{Provider, ProviderBuilder};
 use alloy::sol_types::SolCall;
 use alloy::sol_types::SolValue;
-use alloy::transports::Transport;
 use axum::extract::State;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -29,9 +27,9 @@ use yttrium::erc7579::smart_sessions::{
 use yttrium::smart_accounts::account_address::AccountAddress;
 use yttrium::{
     bundler::{config::BundlerConfig, pimlico::client::BundlerClient},
+    call::Call,
     chain::ChainId,
     entry_point::{EntryPointConfig, EntryPointVersion},
-    execution::Execution,
     smart_accounts::{nonce::get_nonce_with_key, safe::get_call_data},
     user_operation::{user_operation_hash::UserOperationHash, UserOperationV07},
 };
@@ -43,7 +41,7 @@ pub type PrepareCallsRequest = Vec<PrepareCallsRequestItem>;
 pub struct PrepareCallsRequestItem {
     from: AccountAddress,
     chain_id: U64,
-    calls: Vec<Execution>,
+    calls: Vec<Call>,
     capabilities: Capabilities,
 }
 
@@ -191,7 +189,7 @@ async fn handler_internal(
         };
 
         // TODO refactor to call internal proxy function directly
-        let provider = ReqwestProvider::<Ethereum>::new_http(
+        let provider = ProviderBuilder::default().on_http(
             format!(
                 "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",
                 chain_id.caip2_identifier(),
@@ -228,7 +226,7 @@ async fn handler_internal(
 
         // TODO refactor into yttrium
         let dummy_signature =
-            get_dummy_signature(request.from, signature, account_type, provider.clone()).await?;
+            get_dummy_signature(request.from, signature, account_type, &provider).await?;
 
         // https://github.com/reown-com/web-examples/blob/32f9df464e2fa85ec49c21837d811cfe1437719e/advanced/wallets/react-wallet-v2/src/lib/smart-accounts/builders/SafeUserOpBuilder.ts#L110
         let nonce = get_nonce_with_key(
@@ -465,19 +463,14 @@ pub fn decode_smart_session_signature(
     }
 }
 
-pub async fn encode_use_or_enable_smart_session_signature<P, T, N>(
-    provider: P,
+pub async fn encode_use_or_enable_smart_session_signature(
+    provider: &impl Provider,
     permission_id: FixedBytes<32>,
     address: AccountAddress,
     account_type: AccountType,
     signature: Vec<u8>,
     enable_session_data: EnableSessionData,
-) -> Result<Bytes, PrepareCallsError>
-where
-    T: Transport + Clone,
-    P: Provider<T, N>,
-    N: Network,
-{
+) -> Result<Bytes, PrepareCallsError> {
     let smart_sessions = ISmartSession::new(SMART_SESSIONS_ADDRESS, provider);
     let isPermissionEnabledReturn {
         _0: session_enabled,
@@ -586,17 +579,12 @@ fn decode_signers(data: Bytes) -> Result<Vec<SignerType>, PrepareCallsError> {
     Ok(signers)
 }
 
-async fn get_dummy_signature<P, T, N>(
+async fn get_dummy_signature(
     address: AccountAddress,
     signature: &[u8],
     account_type: AccountType,
-    provider: P,
-) -> Result<Bytes, PrepareCallsError>
-where
-    T: Transport + Clone,
-    P: Provider<T, N>,
-    N: Network,
-{
+    provider: &impl Provider,
+) -> Result<Bytes, PrepareCallsError> {
     let DecodedSmartSessionSignature {
         mode,
         permission_id,

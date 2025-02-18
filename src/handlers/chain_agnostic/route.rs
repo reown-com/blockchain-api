@@ -83,12 +83,20 @@ async fn handler_internal(
         .validate_project_access_and_quota(rpc_project_id.as_ref())
         .await?;
 
+    let first_call = if let Some(first) = request_payload.transaction.calls.into_calls().first() {
+        first.clone()
+    } else {
+        return Err(RpcError::InvalidParameter(
+            "The transaction calls are empty".to_string(),
+        ));
+    };
+
     let mut initial_transaction = Transaction {
         from: request_payload.transaction.from,
-        to: request_payload.transaction.to,
-        value: request_payload.transaction.value,
+        to: first_call.to,
+        value: first_call.value,
+        input: first_call.input.clone(),
         gas_limit: U64::ZERO,
-        input: request_payload.transaction.input.clone(),
         nonce: U64::ZERO,
         chain_id: request_payload.transaction.chain_id.clone(),
     };
@@ -103,6 +111,7 @@ async fn handler_internal(
         from_address,
         rpc_project_id.as_ref(),
         MessageSource::ChainAgnosticCheck,
+        query_params.session_id.clone(),
     )
     .await?;
     initial_transaction.nonce = intial_transaction_nonce;
@@ -274,6 +283,7 @@ async fn handler_internal(
         convert_alloy_address_to_h160(from_address),
         rpc_project_id.as_ref(),
         MessageSource::ChainAgnosticCheck,
+        query_params.session_id.clone(),
     )
     .await?;
     let erc20_balance = U256::from_be_bytes(erc20_balance.into());
@@ -289,6 +299,7 @@ async fn handler_internal(
     // or return an insufficient funds error
     let Some(bridging_asset) = check_bridging_for_erc20_transfer(
         rpc_project_id.as_ref().to_string(),
+        query_params.session_id.clone(),
         erc20_topup_value,
         from_address,
         initial_transaction.chain_id.clone(),
@@ -417,6 +428,7 @@ async fn handler_internal(
         from_address,
         rpc_project_id.as_ref(),
         MessageSource::ChainAgnosticCheck,
+        query_params.session_id.clone(),
     )
     .await?;
 
@@ -565,6 +577,9 @@ async fn handler_internal(
                 region.clone(),
                 country.clone(),
                 continent.clone(),
+                query_params.sdk_version.clone(),
+                query_params.sdk_type.clone(),
+                orchestration_id.clone(),
                 bridge_chain_id.clone(),
                 bridge_contract.to_string(),
                 bridge_token_symbol.clone(),
@@ -578,6 +593,9 @@ async fn handler_internal(
                 region.clone(),
                 country.clone(),
                 continent.clone(),
+                query_params.sdk_version.clone(),
+                query_params.sdk_type.clone(),
+                orchestration_id.clone(),
                 bridge_chain_id.clone(),
                 bridge_contract.to_string(),
                 bridge_token_symbol.clone(),
@@ -595,6 +613,9 @@ async fn handler_internal(
                 region,
                 country,
                 continent,
+                query_params.sdk_version,
+                query_params.sdk_type,
+                orchestration_id.clone(),
                 from_address.to_string(),
                 to_address.to_string(),
                 asset_transfer_value.to_string(),

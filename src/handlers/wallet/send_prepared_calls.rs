@@ -13,9 +13,8 @@ use crate::handlers::sessions::get::{
 use crate::handlers::sessions::CoSignRequest;
 use crate::utils::crypto::UserOperation;
 use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
-use alloy::network::Ethereum;
 use alloy::primitives::{Bytes, U64};
-use alloy::providers::ReqwestProvider;
+use alloy::providers::ProviderBuilder;
 use axum::extract::{Path, Query};
 use axum::{extract::State, response::IntoResponse, Json};
 use hyper::body::to_bytes;
@@ -346,7 +345,7 @@ async fn handler_internal(
         };
 
         // TODO refactor to call internal proxy function directly
-        let provider = ReqwestProvider::<Ethereum>::new_http(
+        let provider = ProviderBuilder::default().on_http(
             format!(
                 "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",
                 chain_id.caip2_identifier(),
@@ -408,7 +407,7 @@ async fn handler_internal(
         };
 
         let signature = encode_use_or_enable_smart_session_signature(
-            provider.clone(),
+            &provider,
             permission_id,
             request.prepared_calls.data.sender,
             account_type,

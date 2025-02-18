@@ -10,6 +10,12 @@ pub struct ChainAbstractionFundingInfo {
     pub country: Option<Arc<str>>,
     pub continent: Option<Arc<str>>,
 
+    // Sdk info
+    pub sv: Option<String>,
+    pub st: Option<String>,
+
+    pub orchestration_id: String,
+
     pub chain_id: String,
     pub token_contract: String,
     pub token_symbol: String,
@@ -26,6 +32,11 @@ impl ChainAbstractionFundingInfo {
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
 
+        sv: Option<String>,
+        st: Option<String>,
+
+        orchestration_id: String,
+
         chain_id: String,
         token_contract: String,
         token_symbol: String,
@@ -39,6 +50,11 @@ impl ChainAbstractionFundingInfo {
             region: region.map(|r| r.join(", ")),
             country,
             continent,
+
+            sv,
+            st,
+
+            orchestration_id,
 
             chain_id,
             token_contract,
@@ -57,6 +73,12 @@ pub struct ChainAbstractionBridgingInfo {
     pub region: Option<String>,
     pub country: Option<Arc<str>>,
     pub continent: Option<Arc<str>>,
+
+    // Sdk info
+    pub sv: Option<String>,
+    pub st: Option<String>,
+
+    pub orchestration_id: String,
 
     pub src_chain_id: String,
     pub src_token_contract: String,
@@ -80,6 +102,11 @@ impl ChainAbstractionBridgingInfo {
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
 
+        sv: Option<String>,
+        st: Option<String>,
+
+        orchestration_id: String,
+
         src_chain_id: String,
         src_token_contract: String,
         src_token_symbol: String,
@@ -99,6 +126,11 @@ impl ChainAbstractionBridgingInfo {
             region: region.map(|r| r.join(", ")),
             country,
             continent,
+
+            st,
+            sv,
+
+            orchestration_id,
 
             src_chain_id,
             src_token_contract,
@@ -124,6 +156,12 @@ pub struct ChainAbstractionInitialTxInfo {
     pub country: Option<Arc<str>>,
     pub continent: Option<Arc<str>>,
 
+    // Sdk info
+    pub sv: Option<String>,
+    pub st: Option<String>,
+
+    pub orchestration_id: String,
+
     pub transfer_from: String,
     pub transfer_to: String,
     pub amount: String,
@@ -142,6 +180,11 @@ impl ChainAbstractionInitialTxInfo {
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
 
+        sv: Option<String>,
+        st: Option<String>,
+
+        orchestration_id: String,
+
         transfer_from: String,
         transfer_to: String,
         amount: String,
@@ -157,6 +200,11 @@ impl ChainAbstractionInitialTxInfo {
             region: region.map(|r| r.join(", ")),
             country,
             continent,
+
+            sv,
+            st,
+
+            orchestration_id,
 
             transfer_from,
             transfer_to,
