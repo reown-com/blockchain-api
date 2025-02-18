@@ -106,7 +106,7 @@ pub async fn handler(
     query: Query<QueryParams>,
 ) -> Result<GetCallsStatusResult, GetCallsStatusError> {
     handler_internal(state, project_id, request, connect_info, headers, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("wallet_prepare_calls"))
+        .with_metrics(HANDLER_TASK_METRICS.with_name("wallet_get_calls_status"))
         .await
 }
 

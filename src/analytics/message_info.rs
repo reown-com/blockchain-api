@@ -91,6 +91,7 @@ pub enum MessageSource {
     WalletPrepareCalls,
     WalletSendPreparedCalls,
     WalletGetCallsStatus,
+    WalletGetAssets,
     ChainAgnosticCheck,
 }
 
