@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.195.0 - 2025-02-18
+#### Features
+- **(o11y)** adding an alert for the RPC providers availability (#948) - (10deab9) - Max Kalashnikoff | maksy.eth
+- use sessionId for server-side RPCs (#956) - (e2d59c7) - Chris Smith
+#### Miscellaneous Chores
+- fix .terraform.lock.hcl (#955) - (9860d2a) - Chris Smith
+
+- - -
+
 ## 0.194.0 - 2025-02-12
 #### Features
 - balance & history provider analytics (#954) - (34cb073) - Chris Smith
