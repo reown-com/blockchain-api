@@ -83,13 +83,13 @@ async fn handler_internal(
         .validate_project_access_and_quota(rpc_project_id.as_ref())
         .await?;
 
-    let first_call = request_payload
-        .transaction
-        .calls
-        .into_calls()
-        .first()
-        .unwrap()
-        .clone();
+    let first_call = if let Some(first) = request_payload.transaction.calls.into_calls().first() {
+        first.clone()
+    } else {
+        return Err(RpcError::InvalidParameter(
+            "The transaction calls are empty".to_string(),
+        ));
+    };
 
     let mut initial_transaction = Transaction {
         from: request_payload.transaction.from,
