@@ -27,7 +27,6 @@ use yttrium::erc7579::smart_sessions::{
 use yttrium::smart_accounts::account_address::AccountAddress;
 use yttrium::{
     bundler::{config::BundlerConfig, pimlico::client::BundlerClient},
-    call::Call,
     chain::ChainId,
     entry_point::{EntryPointConfig, EntryPointVersion},
     smart_accounts::{nonce::get_nonce_with_key, safe::get_call_data},
@@ -41,8 +40,26 @@ pub type PrepareCallsRequest = Vec<PrepareCallsRequestItem>;
 pub struct PrepareCallsRequestItem {
     from: AccountAddress,
     chain_id: U64,
-    calls: Vec<Call>,
+    calls: Vec<CallShim>,
     capabilities: Capabilities,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CallShim {
+    pub to: Address,
+    pub value: U256,
+    pub data: Bytes,
+}
+
+impl From<CallShim> for yttrium::call::Call {
+    fn from(call: CallShim) -> Self {
+        Self {
+            to: call.to,
+            value: call.value,
+            input: call.data,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -264,7 +281,7 @@ async fn handler_internal(
             nonce,
             factory: None,
             factory_data: None,
-            call_data: get_call_data(request.calls),
+            call_data: get_call_data(request.calls.into_iter().map(|c| c.into()).collect()),
             call_gas_limit: U256::ZERO,
             verification_gas_limit: U256::ZERO,
             pre_verification_gas: U256::ZERO,
