@@ -2251,7 +2251,7 @@ dependencies = [
 [[package]]
 name = "cerberus"
 version = "0.2.0"
-source = "git+https://github.com/WalletConnect/cerberus.git?rev=251233e#251233e523dd52015a3bcc389c2be0e666b5b455"
+source = "git+https://github.com/WalletConnect/cerberus.git?branch=fix%2Fadd-origin-header#5b2832bac9fb5d013545623b4c10920c19b93034"
 dependencies = [
  "async-trait",
  "bitflags 2.6.0",
