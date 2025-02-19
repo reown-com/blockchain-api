@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.195.1 - 2025-02-19
+#### Bug Fixes
+- revert breaking change that changed data to input (#959) - (143c25c) - Chris Smith
+
+- - -
+
 ## 0.195.0 - 2025-02-18
 #### Features
 - **(o11y)** adding an alert for the RPC providers availability (#948) - (10deab9) - Max Kalashnikoff | maksy.eth
