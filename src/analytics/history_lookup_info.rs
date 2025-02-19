@@ -30,6 +30,8 @@ pub struct HistoryLookupInfo {
     // Sdk info
     pub sv: Option<String>,
     pub st: Option<String>,
+
+    pub request_id: String,
 }
 
 impl HistoryLookupInfo {
@@ -49,6 +51,7 @@ impl HistoryLookupInfo {
         continent: Option<Arc<str>>,
         sv: Option<String>,
         st: Option<String>,
+        request_id: String,
     ) -> Self {
         HistoryLookupInfo {
             timestamp: wc::analytics::time::now(),
@@ -66,6 +69,7 @@ impl HistoryLookupInfo {
             continent,
             sv,
             st,
+            request_id,
         }
     }
 }

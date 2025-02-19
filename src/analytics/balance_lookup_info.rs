@@ -28,6 +28,8 @@ pub struct BalanceLookupInfo {
     // Sdk info
     pub sv: Option<String>,
     pub st: Option<String>,
+
+    pub request_id: String,
 }
 
 impl BalanceLookupInfo {
@@ -48,6 +50,7 @@ impl BalanceLookupInfo {
         continent: Option<Arc<str>>,
         sv: Option<String>,
         st: Option<String>,
+        request_id: String,
     ) -> Self {
         Self {
             timestamp: wc::analytics::time::now(),
@@ -66,6 +69,7 @@ impl BalanceLookupInfo {
             continent,
             sv,
             st,
+            request_id,
         }
     }
 }

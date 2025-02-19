@@ -207,6 +207,12 @@ async fn handler_internal(
         .map(|geo| (geo.country, geo.continent, geo.region))
         .unwrap_or((None, None, None));
 
+    // Filling the request_id from the `propagate_x_request_id` middleware
+    let request_id = headers
+        .get("x-request-id")
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or("unknown");
+
     // Analytics schema exception for Coinbase Onramp
     match history_provider_kind {
         ProviderKind::Coinbase => {
@@ -243,6 +249,7 @@ async fn handler_internal(
                             .unwrap_or_default(),
                         query.sdk_info.sv.clone(),
                         query.sdk_info.st.clone(),
+                        request_id.to_string(),
                     ));
             }
         }
@@ -294,6 +301,7 @@ async fn handler_internal(
                 continent,
                 query.sdk_info.sv.clone(),
                 query.sdk_info.st.clone(),
+                request_id.to_string(),
             ));
         }
     }
