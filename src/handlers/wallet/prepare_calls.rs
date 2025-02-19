@@ -748,4 +748,45 @@ mod tests {
             bytes!("010000e015000040e0151e0104e0e0151fe018000080e01621e0165f010420e0163f0001e0141f1f014a3464b2d184c4b8517d7f2f59bab7e6269b6aa524e268fcd1eec34a9c8e2702d7389fe0033f12207b90941d9cff79a750c1e5c05ddaa17ea01be0041fe00a0001e031e00a14e021000001e1167f010160e0154b0001e1163fe018001f2b02001b60aa8eb31e11c41279f6a102026edeeb848ec600bae0435ac2bccb870bc2ef2db5e215fac4dec876f4e0184ce02a00e016ff0000e016ffe03800e2153f221203efef39a12007e01c00132e65bafa07238666c3b239e94f32dad3cdd6498de01638e017dfe0189fe0035f139a6c4974dce237e01ff35c602ca9555a3c0fa5efe0031fe00a00e1177fe0045f0366f864d5e00a43e013001f559388056f9cecfa536e70649154db93485a1f3448f0c9cba469e26f15ae4c091f8ff1b474b48673bb75d32e7e360391cb6e6db11c931dcc81986a86b380fcd48015464b5f504fd5fa527fd9437e46ea75098adce216c81fe01371e004000001e4177fe004dfe00a000002e00a13e00300e1173f00c0e0032ce00a001f41e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfc1fb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839a01f51ce00a54e02200e0587f"),
         );
     }
+
+    #[test]
+    fn request_body_encoding_decoding() {
+        let request = vec![PrepareCallsRequestItem {
+            chain_id: U64::from(1),
+            from: address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F").into(),
+            calls: vec![CallShim {
+                to: address!("207b90941d9cff79a750c1e5c05ddaa17ea01b9f"),
+                data: Bytes::new(),
+                value: U256::from(13),
+            }],
+            capabilities: Capabilities {
+                permissions: Permissions {
+                    context: Uuid::nil(),
+                },
+                paymaster_service: None,
+            },
+        }];
+        let value = serde_json::json!([{
+            "chainId": "0x1",
+            "from": "0x207b90941d9cff79a750c1e5c05ddaa17ea01b9f",
+            "calls": [
+                {
+                    "to": "0x207b90941d9cff79a750c1e5c05ddaa17ea01b9f",
+                    "data": "0x",
+                    "value": "0xd"
+                }
+            ],
+            "capabilities": {
+                "permissions": {
+                    "context": "00000000-0000-0000-0000-000000000000",
+                },
+                "paymasterService": null,
+            },
+        }]);
+        assert_eq!(serde_json::to_value(&request).unwrap(), value);
+        assert_eq!(
+            serde_json::from_value::<Vec<PrepareCallsRequestItem>>(value).unwrap(),
+            request
+        );
+    }
 }
