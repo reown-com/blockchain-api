@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.196.0 - 2025-02-19
+#### Features
+- tracking the request_id in analytics for balance and history (#958) - (0e02b5c) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.195.1 - 2025-02-19
 #### Bug Fixes
 - revert breaking change that changed data to input (#959) - (143c25c) - Chris Smith
