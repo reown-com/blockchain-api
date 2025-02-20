@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.197.0 - 2025-02-20
+#### Bug Fixes
+- **(CA)** adding different storage slots per contracts and enabling USDT on Arbitrum (#964) - (76d0263) - Max Kalashnikoff | maksy.eth
+#### Features
+- ERC-7811 support (wallet_getAssets) (#957) - (8261f4c) - Chris Smith
+
+- - -
+
 ## 0.196.2 - 2025-02-20
 #### Bug Fixes
 - pin cerberus (#965) - (5c58750) - Chris Smith
