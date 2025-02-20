@@ -2251,7 +2251,7 @@ dependencies = [
 [[package]]
 name = "cerberus"
 version = "0.2.0"
-source = "git+https://github.com/WalletConnect/cerberus.git?rev=251233e#251233e523dd52015a3bcc389c2be0e666b5b455"
+source = "git+https://github.com/WalletConnect/cerberus.git?tag=v0.13.3#9f6d122cf6f48a7fd2a404c45b5dc2da9cde9f59"
 dependencies = [
  "async-trait",
  "bitflags 2.6.0",
@@ -7064,7 +7064,7 @@ dependencies = [
 
 [[package]]
 name = "rpc-proxy"
-version = "0.195.0"
+version = "0.196.2"
 dependencies = [
  "alloy 0.11.1",
  "anyhow",

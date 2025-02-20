@@ -1,6 +1,6 @@
 [package]
 name = "rpc-proxy"
-version = "0.195.0"
+version = "0.196.2"
 edition = "2021"
 authors = [
     "Derek <derek@walletconnect.com>",
@@ -68,7 +68,7 @@ pnet_datalink = "0.31"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "ansi", "env-filter"] }
 
-cerberus = { git = "https://github.com/WalletConnect/cerberus.git", rev = "251233e" }
+cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.13.3" }
 parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3", default-features = false, features = ["flate2"] }
 parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3" }
 chrono = { version = "0.4", features = ["serde"] }

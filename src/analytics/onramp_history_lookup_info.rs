@@ -26,6 +26,8 @@ pub struct OnrampHistoryLookupInfo {
     // Sdk info
     pub sv: Option<String>,
     pub st: Option<String>,
+
+    pub request_id: String,
 }
 
 impl OnrampHistoryLookupInfo {
@@ -47,6 +49,8 @@ impl OnrampHistoryLookupInfo {
 
         sv: Option<String>,
         st: Option<String>,
+
+        request_id: String,
     ) -> Self {
         OnrampHistoryLookupInfo {
             transaction_id,
@@ -66,6 +70,8 @@ impl OnrampHistoryLookupInfo {
 
             sv,
             st,
+
+            request_id,
         }
     }
 }
