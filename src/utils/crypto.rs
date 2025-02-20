@@ -2,7 +2,7 @@ use {
     crate::{analytics::MessageSource, error::RpcError},
     alloy::{
         primitives::{Address, Bytes as AlloyBytes, TxKind, U256 as AlloyU256, U64 as AlloyU64},
-        providers::{Provider as AlloyProvider, ProviderBuilder},
+        providers::Provider,
         rpc::{
             json_rpc::Id,
             types::{TransactionInput, TransactionRequest},
@@ -511,24 +511,13 @@ pub async fn get_balance(
     Ok(balance)
 }
 
-fn self_provider(
-    chain_id: &str,
-    rpc_project_id: &str,
-    source: MessageSource,
-    session_id: Option<String>,
-) -> Result<impl AlloyProvider, CryptoUitlsError> {
-    Ok(ProviderBuilder::new().on_http(get_rpc_url(chain_id, rpc_project_id, source, session_id)?))
-}
-
 /// Get the gas price
-#[tracing::instrument(level = "debug")]
+#[tracing::instrument(level = "debug", skip(provider))]
 pub async fn get_gas_price(
     chain_id: &str,
     rpc_project_id: &str,
-    source: MessageSource,
-    session_id: Option<String>,
+    provider: &impl Provider,
 ) -> Result<u128, CryptoUitlsError> {
-    let provider = self_provider(chain_id, rpc_project_id, source, session_id)?;
     let gas_price = provider
         .get_gas_price()
         .await
@@ -537,15 +526,11 @@ pub async fn get_gas_price(
 }
 
 /// Get the nonce
-#[tracing::instrument(level = "debug")]
+#[tracing::instrument(level = "debug", skip(provider))]
 pub async fn get_nonce(
-    chain_id: &str,
     wallet: Address,
-    rpc_project_id: &str,
-    source: MessageSource,
-    session_id: Option<String>,
+    provider: &impl Provider,
 ) -> Result<AlloyU64, CryptoUitlsError> {
-    let provider = self_provider(chain_id, rpc_project_id, source, session_id)?;
     let nonce = provider
         .get_transaction_count(wallet)
         .pending()
@@ -556,18 +541,15 @@ pub async fn get_nonce(
 
 /// Get the gas estimation for the transaction by `eth_estimateGas` call
 #[allow(clippy::too_many_arguments)]
-#[tracing::instrument(level = "debug")]
+#[tracing::instrument(level = "debug", skip(provider))]
 pub async fn get_gas_estimate(
     chain_id: &str,
     from: Address,
     to: Address,
     value: AlloyU256,
     input: AlloyBytes,
-    rpc_project_id: &str,
-    source: MessageSource,
-    session_id: Option<String>,
+    provider: &impl Provider,
 ) -> Result<u64, CryptoUitlsError> {
-    let provider = self_provider(chain_id, rpc_project_id, source, session_id)?;
     let gas_estimate = provider
         .estimate_gas(&TransactionRequest {
             from: Some(from),

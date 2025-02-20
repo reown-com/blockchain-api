@@ -10,6 +10,7 @@ use {
             ChainAbstractionInitialTxInfo, MessageSource,
         },
         error::RpcError,
+        handlers::{self_provider, SdkInfoParams},
         metrics::{ChainAbstractionNoBridgingNeededType, ChainAbstractionTransactionType},
         state::AppState,
         storage::irn::OperationType,
@@ -78,10 +79,21 @@ async fn handler_internal(
     Query(query_params): Query<RouteQueryParams>,
     request_payload: PrepareRequest,
 ) -> Result<Response, RpcError> {
-    let rpc_project_id = query_params.project_id;
     state
-        .validate_project_access_and_quota(rpc_project_id.as_ref())
+        .validate_project_access_and_quota(query_params.project_id.as_ref())
         .await?;
+
+    let provider_pool = self_provider::SelfProviderPool {
+        state: state.0.clone(),
+        connect_info: connect_info.0,
+        headers: headers.clone(),
+        project_id: query_params.project_id.as_ref().into(),
+        sdk_info: SdkInfoParams {
+            st: query_params.sdk_type.clone(),
+            sv: query_params.sdk_version.clone(),
+        },
+        session_id: query_params.session_id.clone(),
+    };
 
     let first_call = if let Some(first) = request_payload.transaction.calls.into_calls().first() {
         first.clone()
@@ -107,11 +119,11 @@ async fn handler_internal(
 
     // Calculate the initial transaction nonce
     let intial_transaction_nonce = get_nonce(
-        &initial_transaction.chain_id.clone(),
         from_address,
-        rpc_project_id.as_ref(),
-        MessageSource::ChainAgnosticCheck,
-        query_params.session_id.clone(),
+        &provider_pool.get_provider(
+            initial_transaction.chain_id.clone(),
+            MessageSource::ChainAgnosticCheck,
+        ),
     )
     .await?;
     initial_transaction.nonce = intial_transaction_nonce;
@@ -281,7 +293,7 @@ async fn handler_internal(
         &request_payload.transaction.chain_id,
         convert_alloy_address_to_h160(asset_transfer_contract),
         convert_alloy_address_to_h160(from_address),
-        rpc_project_id.as_ref(),
+        query_params.project_id.as_ref(),
         MessageSource::ChainAgnosticCheck,
         query_params.session_id.clone(),
     )
@@ -298,7 +310,7 @@ async fn handler_internal(
     // Check for possible bridging funds by iterating over supported assets
     // or return an insufficient funds error
     let Some(bridging_asset) = check_bridging_for_erc20_transfer(
-        rpc_project_id.as_ref().to_string(),
+        query_params.project_id.to_string(),
         query_params.session_id.clone(),
         erc20_topup_value,
         from_address,
@@ -424,11 +436,11 @@ async fn handler_internal(
 
     // Getting the current nonce for the address
     let mut current_nonce = get_nonce(
-        format!("eip155:{}", bridge_tx.chain_id).as_str(),
         from_address,
-        rpc_project_id.as_ref(),
-        MessageSource::ChainAgnosticCheck,
-        query_params.session_id.clone(),
+        &provider_pool.get_provider(
+            format!("eip155:{}", bridge_tx.chain_id),
+            MessageSource::ChainAgnosticCheck,
+        ),
     )
     .await?;
 
@@ -572,7 +584,7 @@ async fn handler_internal(
         state
             .analytics
             .chain_abstraction_funding(ChainAbstractionFundingInfo::new(
-                rpc_project_id.as_ref().to_string(),
+                query_params.project_id.to_string(),
                 origin.clone(),
                 region.clone(),
                 country.clone(),
@@ -588,7 +600,7 @@ async fn handler_internal(
         state
             .analytics
             .chain_abstraction_bridging(ChainAbstractionBridgingInfo::new(
-                rpc_project_id.as_ref().to_string(),
+                query_params.project_id.to_string(),
                 origin.clone(),
                 region.clone(),
                 country.clone(),
@@ -608,7 +620,7 @@ async fn handler_internal(
         state
             .analytics
             .chain_abstraction_initial_tx(ChainAbstractionInitialTxInfo::new(
-                rpc_project_id.as_ref().to_string(),
+                query_params.project_id.to_string(),
                 origin,
                 region,
                 country,
