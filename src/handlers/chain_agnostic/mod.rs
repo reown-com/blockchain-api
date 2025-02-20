@@ -247,11 +247,17 @@ pub async fn get_assets_changes_from_simulation(
             let Some(simulation_params) = get_simulation_params_for_asset(&asset_name) else {
                 continue;
             };
+            let balance_storage_slot = *simulation_params
+                .balance_storage_slots
+                .get(&transaction.chain_id)
+                .ok_or_else(|| {
+                    RpcError::InvalidConfiguration(format!(
+                        "Contract balance storage slot for simulation is not present for {} on {}",
+                        asset_name, transaction.chain_id
+                    ))
+                })?;
             account_state.insert(
-                compute_simulation_storage_slot(
-                    transaction.from,
-                    simulation_params.balance_storage_slot,
-                ),
+                compute_simulation_storage_slot(transaction.from, balance_storage_slot),
                 compute_simulation_balance(simulation_params.balance),
             );
             state_overrides.insert(asset_contract, account_state.clone());

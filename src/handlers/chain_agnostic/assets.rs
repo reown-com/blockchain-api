@@ -9,8 +9,8 @@ pub struct AssetMetadata {
 
 /// Asset simulation parameters to override the asset's balance state
 pub struct SimulationParams {
-    /// Asset contract balance storage slot number
-    pub balance_storage_slot: u64,
+    /// Asset contract balance storage slot number per chain
+    pub balance_storage_slots: &'static phf::Map<&'static str, u64>,
     /// Balance override for the asset
     pub balance: u128,
 }
@@ -35,8 +35,7 @@ static USDT_CONTRACTS: phf::Map<&'static str, Address> = phf_map! {
     // Optimism
     "eip155:10" => address!("94b008aA00579c1307B0EF2c499aD98a8ce58e58"),
     // Arbitrum
-    // Temporarily disabling Arbitrum USDT until the simulation fix
-    // "eip155:42161" => address!("Fd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"),
+    "eip155:42161" => address!("Fd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"),
 };
 
 pub static BRIDGING_ASSETS: phf::Map<&'static str, AssetEntry> = phf_map! {
@@ -45,7 +44,12 @@ pub static BRIDGING_ASSETS: phf::Map<&'static str, AssetEntry> = phf_map! {
             decimals: 6,
         },
         simulation: SimulationParams {
-            balance_storage_slot: 9,
+            // Must be in sync with the `USDC_CONTRACTS` from above
+            balance_storage_slots: &phf_map! {
+                "eip155:10" => 9u64,
+                "eip155:8453" => 9u64,
+                "eip155:42161" => 9u64,
+            },
             balance: 99000000000,
         },
         contracts: &USDC_CONTRACTS,
@@ -55,7 +59,11 @@ pub static BRIDGING_ASSETS: phf::Map<&'static str, AssetEntry> = phf_map! {
             decimals: 6,
         },
         simulation: SimulationParams {
-            balance_storage_slot: 0,
+            // Must be in sync with the `USDT_CONTRACTS` from above
+            balance_storage_slots: &phf_map! {
+                "eip155:10" => 0u64,
+                "eip155:42161" => 51u64,
+            },
             balance: 99000000000,
         },
         contracts: &USDT_CONTRACTS,
