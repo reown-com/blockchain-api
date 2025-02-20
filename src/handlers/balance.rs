@@ -9,7 +9,6 @@ use {
     },
     axum::{
         extract::{ConnectInfo, Path, Query, State},
-        response::{IntoResponse, Response},
         Json,
     },
     ethers::{abi::Address, types::H160},
@@ -154,7 +153,7 @@ pub async fn handler(
     connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     address: Path<String>,
-) -> Result<Response, RpcError> {
+) -> Result<Json<BalanceResponseBody>, RpcError> {
     handler_internal(state, query, connect_info, headers, address)
         .with_metrics(HANDLER_TASK_METRICS.with_name("balance"))
         .await
@@ -167,13 +166,13 @@ async fn handler_internal(
     connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     Path(address): Path<String>,
-) -> Result<Response, RpcError> {
+) -> Result<Json<BalanceResponseBody>, RpcError> {
     let project_id = query.project_id.clone();
 
     // Check the denylist for the project id
     if let Some(denylist_project_ids) = &state.config.balances.denylist_project_ids {
         if denylist_project_ids.contains(&project_id) {
-            return Ok(Json(BalanceResponseBody { balances: vec![] }).into_response());
+            return Ok(Json(BalanceResponseBody { balances: vec![] }));
         }
     }
 
@@ -183,13 +182,13 @@ async fn handler_internal(
     // with an empty balance array to fix the issue of redundant calls in sdk versions <= 4.1.8
     // https://github.com/WalletConnect/web3modal/pull/2157
     if !headers.contains_key("x-sdk-version") && query.sdk_info.sv.is_none() {
-        return Ok(Json(BalanceResponseBody { balances: vec![] }).into_response());
+        return Ok(Json(BalanceResponseBody { balances: vec![] }));
     }
 
     // Get the cached balance and return it if found except if force_update is needed
     if query.force_update.is_none() {
         if let Some(cached_balance) = get_cached_balance(&state.balance_cache, &address).await {
-            return Ok(Json(cached_balance).into_response());
+            return Ok(Json(cached_balance));
         }
     }
 
@@ -420,5 +419,5 @@ async fn handler_internal(
         });
     }
 
-    Ok(Json(response).into_response())
+    Ok(Json(response))
 }

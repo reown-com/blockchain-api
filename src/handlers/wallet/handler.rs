@@ -1,3 +1,4 @@
+use super::get_assets::{self, GetAssetsError};
 use super::get_calls_status::{self, GetCallsStatusError};
 use super::prepare_calls::{self, PrepareCallsError};
 use super::send_prepared_calls::{self, SendPreparedCallsError};
@@ -108,6 +109,7 @@ async fn handler_internal(
 pub const WALLET_PREPARE_CALLS: &str = "wallet_prepareCalls";
 pub const WALLET_SEND_PREPARED_CALLS: &str = "wallet_sendPreparedCalls";
 pub const WALLET_GET_CALLS_STATUS: &str = "wallet_getCallsStatus";
+pub const WALLET_GET_ASSETS: &str = "wallet_getAssets";
 
 #[derive(Debug, Error)]
 enum Error {
@@ -122,6 +124,9 @@ enum Error {
 
     #[error("{WALLET_GET_CALLS_STATUS}: {0}")]
     GetCallsStatus(GetCallsStatusError),
+
+    #[error("{WALLET_GET_ASSETS}: {0}")]
+    GetAssets(GetAssetsError),
 
     #[error("Method not found")]
     MethodNotFound,
@@ -146,6 +151,7 @@ impl Error {
             Error::PrepareCalls(_) => -2, // TODO more specific codes
             Error::SendPreparedCalls(_) => -3, // TODO more specific codes
             Error::GetCallsStatus(_) => -4, // TODO more specific codes
+            Error::GetAssets(_) => -5,    // TODO more specific codes
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,
@@ -203,6 +209,21 @@ async fn handle_rpc(
             )
             .await
             .map_err(Error::GetCallsStatus)?,
+        )
+        .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
+        WALLET_GET_ASSETS => serde_json::to_value(
+            &get_assets::handler(
+                state,
+                project_id,
+                serde_json::from_value(params).map_err(Error::InvalidParams)?,
+                connect_info,
+                headers,
+                Query(get_assets::QueryParams {
+                    sdk_info: query.sdk_info,
+                }),
+            )
+            .await
+            .map_err(Error::GetAssets)?,
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
         _ => Err(Error::MethodNotFound),
