@@ -769,6 +769,33 @@ mod ported_tests {
             );
         }
 
+        #[test]
+        fn should_handle_zero_balances_correctly() {
+            let zero_balance_response = BalanceResponseBody {
+                balances: vec![BalanceItem {
+                    quantity: BalanceQuantity {
+                        decimals: "6".to_owned(),
+                        numeric: "0.000000".to_owned(),
+                    },
+                    ..mock_balance_response().balances[0].clone()
+                }],
+            };
+            let result = get_assets(
+                zero_balance_response,
+                GetAssetsFilters {
+                    asset_filter: None,
+                    asset_type_filter: None,
+                    chain_filter: Some(vec![U64::from(0x2105)]),
+                },
+            )
+            .unwrap();
+
+            assert_eq!(
+                result[&U64::from(0x2105)].first().unwrap().balance(),
+                U64::from(0x0)
+            );
+        }
+
         // TODO
     }
 
