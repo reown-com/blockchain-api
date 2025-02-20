@@ -703,6 +703,70 @@ mod ported_tests {
                     .balance(),
                 U64::from(0x26fdd0)
             );
+
+            assert_eq!(
+                result[&U64::from(0x2105)]
+                    .iter()
+                    .find(|a| matches!(
+                        a,
+                        Asset::Native {
+                            data: AssetData {
+                                // metadata: NativeMetadata { symbol, .. },
+                                ..
+                            }
+                        } // if symbol == "ETH"
+                    ))
+                    .unwrap()
+                    .balance(),
+                U64::from(0x102189ccc07ac_u64)
+            );
+        }
+
+        #[test]
+        fn should_aggregate_balances_correctly_for_same_token_across_chains() {
+            let result = get_assets(
+                mock_balance_response(),
+                GetAssetsFilters {
+                    asset_filter: None,
+                    asset_type_filter: Some(vec![AssetType::Erc20]),
+                    chain_filter: None,
+                },
+            )
+            .unwrap();
+
+            assert_eq!(
+                result[&U64::from(0x2105)]
+                    .iter()
+                    .find(|a| matches!(
+                        a,
+                        Asset::Erc20 {
+                            data: AssetData {
+                                metadata: Erc20Metadata { symbol, .. },
+                                ..
+                            }
+                        } if symbol == "USDC"
+                    ))
+                    .unwrap()
+                    .balance(),
+                U64::from(0x26fdd0)
+            );
+
+            assert_eq!(
+                result[&U64::from(0xa)]
+                    .iter()
+                    .find(|a| matches!(
+                        a,
+                        Asset::Erc20 {
+                            data: AssetData {
+                                metadata: Erc20Metadata { symbol, .. },
+                                ..
+                            }
+                        } if symbol == "USDC"
+                    ))
+                    .unwrap()
+                    .balance(),
+                U64::from(0x26fdd0)
+            );
         }
 
         // TODO
