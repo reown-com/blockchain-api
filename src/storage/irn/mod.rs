@@ -5,8 +5,8 @@ use {
     wcn_replication::{
         auth::{client_key_from_secret, peer_id, PublicKey},
         identity::Keypair,
-        storage::{auth::Auth, Entry, Key, MapEntry, Multiaddr},
-        Config as WcnConfig, Driver,
+        storage::{auth::Auth, Entry, Key, MapEntry},
+        Config as WcnConfig, Driver, PeerAddr,
     },
 };
 
@@ -68,7 +68,8 @@ impl Irn {
         let client_key =
             client_key_from_secret(key.as_bytes()).map_err(StorageError::WcnAuthError)?;
 
-        // Safe unwrap as the key is guaranteed to be valid since its created by the `client_key_from_secret``
+        // Safe unwrap as the key is guaranteed to be valid since its created by the
+        // `client_key_from_secret``
         let keypair = Keypair::ed25519_from_bytes(client_key.to_bytes())
             .expect("Failed to create keypair from ed25519 client key");
 
@@ -99,10 +100,10 @@ impl Irn {
         })
     }
 
-    fn parse_node_addresses(addresses: Vec<String>) -> Result<HashSet<Multiaddr>, StorageError> {
-        let mut nodes: HashSet<Multiaddr> = HashSet::new();
+    fn parse_node_addresses(addresses: Vec<String>) -> Result<HashSet<PeerAddr>, StorageError> {
+        let mut nodes = HashSet::new();
         for address in addresses {
-            let addr = Multiaddr::from_str(&address)
+            let addr = PeerAddr::from_str(&address)
                 .map_err(|_| StorageError::WrongNodeAddress(address))?;
             nodes.insert(addr);
         }
@@ -258,9 +259,12 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_irn_client_hashmap() {
+        let addr =
+            "12D3KooWDJrGKPuU1vJLBZv2UXfcZvdBprUgAkjvkUET7q2PzwPp-/ip4/127.0.0.1/udp/3011/quic-v1";
+
         let irn = Irn::new(
             "2SjlbfXx6md6337H63KjOEFlv4XP5g2dl7Qam6ot84o=".into(),
-            vec!["/ip4/127.0.0.1/udp/3011/quic-v1".into()],
+            vec![addr.into()],
             "test_namespace".into(),
             "namespace_secret".into(),
         )
