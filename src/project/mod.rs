@@ -50,7 +50,11 @@ impl Registry {
                 ));
             };
 
-            let client = RegistryHttpClient::new(api_url, api_auth_token)?;
+            let client = RegistryHttpClient::new(
+                api_url,
+                api_auth_token,
+                "https://rpc-service.walletconnect.org",
+            )?;
 
             let cache_addr = cfg_storage.project_data_redis_addr();
             let cache = if let Some(cache_addr) = cache_addr {

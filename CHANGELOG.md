@@ -2,6 +2,20 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.196.2 - 2025-02-20
+#### Bug Fixes
+- pin cerberus (#965) - (5c58750) - Chris Smith
+
+- - -
+
+## 0.196.1 - 2025-02-20
+#### Bug Fixes
+- hardcode origin header for registry API (#960) - (02e2ed1) - Chris Smith
+#### Miscellaneous Chores
+- verifies repository ownership (#963) - (729f6bd) - Derek
+
+- - -
+
 ## 0.196.0 - 2025-02-19
 #### Features
 - tracking the request_id in analytics for balance and history (#958) - (0e02b5c) - Max Kalashnikoff | maksy.eth
