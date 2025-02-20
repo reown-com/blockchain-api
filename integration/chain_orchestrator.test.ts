@@ -125,7 +125,7 @@ describe('Chain abstraction orchestrator', () => {
 
   })
 
-  it('bridging routes (routes available, USDC Optimism ⇄ USDC Base)', async () => {
+  it('bridging routes (routes available, USDC Base → USDC Optimism)', async () => {
     // Sending USDC to Optimism, but having the balance of USDC on Base chain
     // which expected to be used for bridging
 
@@ -204,8 +204,7 @@ describe('Chain abstraction orchestrator', () => {
     orchestration_id = data.orchestrationId;
   })
 
-   // Temporary disabled due to the issue with the Arbitrum USDT contract simulation
-  it.skip('bridging routes (routes available, USDT Optimism ⇄ USDT Arbitrum)', async () => {
+  it('bridging routes (routes available, USDT Arbitrum → USDT Optimism)', async () => {
     // Sending USDT to Optimism, but having the USDT balance on Arbitrum.
 
     // How much needs to be topped up
@@ -281,6 +280,37 @@ describe('Chain abstraction orchestrator', () => {
 
     // Set the Orchestration ID for the next test
     orchestration_id = data.orchestrationId;
+  })
+
+  it('bridging routes (routes available, USDT Optimism → USDT Arbitrum)', async () => {
+    // Sending USDT to Arbitrum, but having the USDT balance on Optimism.
+    let amount_to_send = usdt_funds[chain_id_arbitrum] + 500_000;
+
+    const data_encoded = erc20Interface.encodeFunctionData('transfer', [
+      receiver_address,
+      amount_to_send,
+    ]);
+
+    let transactionObj = {
+      transaction: {
+        from: from_address_with_funds,
+        to: usdt_contracts[chain_id_arbitrum],
+        value: "0x00", // Zero native tokens
+        input: data_encoded,
+        chainId: chain_id_arbitrum,
+      }
+    }
+
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/ca/orchestrator/route?projectId=${projectId}`,
+      transactionObj
+    )
+    expect(resp.status).toBe(200)
+
+    const data = resp.data
+    expect(typeof data.orchestrationId).toBe('string')
+    // Expecting 2 transactions in the route
+    expect(data.transactions.length).toBe(2)
   })
 
   it('bridging status', async () => {
