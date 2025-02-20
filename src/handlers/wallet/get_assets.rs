@@ -7,7 +7,7 @@ use crate::{
     },
     state::AppState,
 };
-use alloy::primitives::{address, Address, BlockHash, Bytes, TxHash, B256, U64, U8};
+use alloy::primitives::{address, Address, U64};
 use axum::{
     extract::{ConnectInfo, Path, Query, State},
     response::{IntoResponse, Response},
@@ -25,7 +25,35 @@ use wc::future::FutureExt;
 #[serde(rename_all = "camelCase")]
 pub struct GetAssetsParams {
     account: Address,
-    // TODO asset_filter, asset_type_filter, chain_filter
+    #[serde(flatten)]
+    filters: GetAssetsFilters,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetAssetsFilters {
+    #[serde(default)]
+    asset_filter: Option<AssetFilter>,
+    #[serde(default)]
+    asset_type_filter: Option<AssetTypeFilter>,
+    #[serde(default)]
+    chain_filter: Option<ChainFilter>,
+}
+
+pub type AssetFilter = HashMap<Eip155ChainId, Vec<AddressOrNative>>;
+pub type AssetTypeFilter = Vec<AssetType>;
+pub type ChainFilter = Vec<Eip155ChainId>;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    tag = "type"
+)]
+pub enum AssetType {
+    Native,
+    Erc20,
+    Erc721,
 }
 
 pub type Eip155ChainId = U64;
@@ -60,12 +88,29 @@ impl Asset {
             Self::Erc721 { data } => data.balance,
         }
     }
+
+    pub fn asset_type(&self) -> AssetType {
+        match self {
+            Self::Native { .. } => AssetType::Native,
+            Self::Erc20 { .. } => AssetType::Erc20,
+            Self::Erc721 { .. } => AssetType::Erc721,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AddressOrNative {
     Address(Address),
     Native,
+}
+
+impl AddressOrNative {
+    pub fn as_address(&self) -> Option<&Address> {
+        match self {
+            Self::Address(address) => Some(address),
+            Self::Native => None,
+        }
+    }
 }
 
 impl Serialize for AddressOrNative {
@@ -123,33 +168,6 @@ pub struct Erc20Metadata {
 pub struct Erc721Metadata {
     name: String,
     symbol: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "UPPERCASE")]
-pub enum CallStatus {
-    Pending,
-    Confirmed,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CallReceipt {
-    logs: Vec<CallReceiptLog>,
-    status: U8,
-    chain_id: U64,
-    block_hash: BlockHash,
-    block_number: U64,
-    gas_used: U64,
-    transaction_hash: TxHash,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CallReceiptLog {
-    address: Address,
-    data: Bytes,
-    topics: Vec<B256>,
 }
 
 #[derive(Error, Debug)]
@@ -228,17 +246,20 @@ async fn handler_internal(
     .await
     .map_err(|e| GetAssetsError::InternalError(GetAssetsErrorInternalError::GetBalance(e)))?;
 
-    get_assets(balance.0)
+    get_assets(balance.0, request.filters)
 }
 
-fn get_assets(balance: BalanceResponseBody) -> Result<GetAssetsResult, GetAssetsError> {
+fn get_assets(
+    balance: BalanceResponseBody,
+    filters: GetAssetsFilters,
+) -> Result<GetAssetsResult, GetAssetsError> {
     let (to_aggregate_balance, not_to_aggregate_balance) = segregate_balances(balance);
     let aggregated_balances = apply_aggregate_balance_value(to_aggregate_balance);
     let balances_to_filter = aggregated_balances
         .into_iter()
         .chain(not_to_aggregate_balance)
         .collect::<Vec<_>>();
-    let filtered_balances = filter_balances(balances_to_filter);
+    let filtered_balances = filter_balances(balances_to_filter, filters);
     Ok(create_response(filtered_balances))
 }
 
@@ -299,6 +320,10 @@ fn get_supported_token_and_chain_pair_key(
     None
 }
 
+fn convert_caip10_to_address(caip10: &str) -> Address {
+    caip10.split(":").last().unwrap().parse().unwrap()
+}
+
 fn group_balances(
     balances: Vec<BalanceItem>,
 ) -> (HashMap<&'static str, Vec<BalanceItem>>, Vec<BalanceItem>) {
@@ -309,13 +334,7 @@ fn group_balances(
         let address = balance
             .address
             .as_ref()
-            .map(|a| {
-                a.strip_prefix("eip155:")
-                    .unwrap()
-                    .to_owned()
-                    .parse()
-                    .unwrap()
-            })
+            .map(|a| convert_caip10_to_address(a.as_ref()))
             .map(AddressOrNative::Address)
             .unwrap_or(AddressOrNative::Native);
 
@@ -416,9 +435,75 @@ fn apply_aggregate_balance_value(
     aggregated_balances
 }
 
-fn filter_balances(balances: Vec<BalanceItem>) -> Vec<BalanceItem> {
-    // TODO
+fn filter_balances(balances: Vec<BalanceItem>, filters: GetAssetsFilters) -> Vec<BalanceItem> {
+    let mut balances = balances;
+    if let Some(asset_filter) = filters.asset_filter {
+        balances = apply_asset_filter(asset_filter, balances);
+
+        // Early return since futher filters should be redundant?
+        return sort_balances_by_value(balances);
+    }
+
+    if let Some(asset_type_filter) = filters.asset_type_filter {
+        balances = apply_asset_type_filter(asset_type_filter, balances);
+    }
+
+    if let Some(chain_filter) = filters.chain_filter {
+        balances = apply_chain_filter(chain_filter, balances);
+    }
+
     sort_balances_by_value(balances)
+}
+
+fn apply_asset_filter(asset_filter: AssetFilter, balances: Vec<BalanceItem>) -> Vec<BalanceItem> {
+    let mut filtered_balances = Vec::with_capacity(balances.len());
+
+    for (chain, addresses) in asset_filter {
+        for address in addresses {
+            let new = balances.clone().into_iter().filter(|balance| {
+                balance.chain_id == Some(format!("eip155:{chain}"))
+                    && balance
+                        .address
+                        .as_ref()
+                        .map(|a| convert_caip10_to_address(a.as_str()))
+                        .map(AddressOrNative::Address)
+                        .unwrap_or(AddressOrNative::Native)
+                        == address
+            });
+            filtered_balances.extend(new);
+        }
+    }
+
+    filtered_balances
+}
+
+fn apply_chain_filter(chain_filter: ChainFilter, balances: Vec<BalanceItem>) -> Vec<BalanceItem> {
+    let chain_filter = chain_filter
+        .into_iter()
+        .map(|chain| Some(format!("eip155:{chain}")))
+        .collect::<Vec<_>>();
+    balances
+        .into_iter()
+        .filter(|balance| chain_filter.contains(&balance.chain_id))
+        .collect()
+}
+
+fn apply_asset_type_filter(
+    asset_type_filter: AssetTypeFilter,
+    balances: Vec<BalanceItem>,
+) -> Vec<BalanceItem> {
+    balances
+        .into_iter()
+        .filter(|balance| {
+            asset_type_filter.contains(
+                &balance
+                    .address
+                    .as_ref()
+                    .map(|_| AssetType::Erc20)
+                    .unwrap_or(AssetType::Native),
+            )
+        })
+        .collect()
 }
 
 fn sort_balances_by_value(mut balances: Vec<BalanceItem>) -> Vec<BalanceItem> {
@@ -453,7 +538,7 @@ fn create_response(balances: Vec<BalanceItem>) -> GetAssetsResult {
                 match balance.address {
                     Some(address) => Asset::Erc20 {
                         data: AssetData {
-                            address: AddressOrNative::Address(address.parse().unwrap()),
+                            address: AddressOrNative::Address(convert_caip10_to_address(&address)),
                             balance: asset_balance,
                             metadata: Erc20Metadata {
                                 name: balance.name,
@@ -492,7 +577,15 @@ mod tests {
     #[test]
     fn empty_assets() {
         let balance = BalanceResponseBody { balances: vec![] };
-        let assets = get_assets(balance).unwrap();
+        let assets = get_assets(
+            balance,
+            GetAssetsFilters {
+                asset_filter: None,
+                asset_type_filter: None,
+                chain_filter: None,
+            },
+        )
+        .unwrap();
         assert!(assets.is_empty());
     }
 }
@@ -583,9 +676,16 @@ mod ported_tests {
         use super::*;
 
         #[test]
-        #[ignore]
         fn should_correctly_convert_balance_to_hex() {
-            let result = get_assets(mock_balance_response()).unwrap();
+            let result = get_assets(
+                mock_balance_response(),
+                GetAssetsFilters {
+                    asset_filter: None,
+                    asset_type_filter: None,
+                    chain_filter: Some(vec![U64::from(0x2105)]),
+                },
+            )
+            .unwrap();
 
             assert_eq!(
                 result[&U64::from(0x2105)]
