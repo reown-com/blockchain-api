@@ -796,6 +796,160 @@ mod ported_tests {
             );
         }
 
+        #[test]
+        fn should_handle_tokens_with_different_decimal_places() {
+            let mixed_decimals_response = BalanceResponseBody {
+                balances: vec![
+                    BalanceItem {
+                        name: "Token8".to_owned(),
+                        symbol: "TK8".to_owned(),
+                        chain_id: Some("eip155:8453".to_owned()),
+                        address: Some(
+                            "eip155:8453:0x1234567890123456789012345678901234567890".to_owned(),
+                        ),
+                        price: 1.0,
+                        icon_url: "https://example.com/token8.png".to_owned(),
+                        quantity: BalanceQuantity {
+                            decimals: "8".to_owned(),
+                            numeric: "1.23456789".to_owned(),
+                        },
+                        value: Some(0.),
+                    },
+                    BalanceItem {
+                        name: "Token18".to_owned(),
+                        symbol: "TK18".to_owned(),
+                        chain_id: Some("eip155:8453".to_owned()),
+                        address: Some(
+                            "eip155:8453:0xabcdef0123456789abcdef0123456789abcdef01".to_owned(),
+                        ),
+                        price: 1.0,
+                        icon_url: "https://example.com/token18.png".to_owned(),
+                        quantity: BalanceQuantity {
+                            decimals: "18".to_owned(),
+                            numeric: "1.23456789".to_owned(),
+                        },
+                        value: Some(0.),
+                    },
+                ],
+            };
+
+            let result = get_assets(
+                mixed_decimals_response,
+                GetAssetsFilters {
+                    asset_filter: None,
+                    asset_type_filter: None,
+                    chain_filter: Some(vec![U64::from(0x2105)]),
+                },
+            )
+            .unwrap();
+
+            assert_eq!(
+                result[&U64::from(0x2105)]
+                    .iter()
+                    .find(|a| matches!(
+                        a,
+                        Asset::Erc20 {
+                            data: AssetData {
+                                metadata: Erc20Metadata { symbol, .. },
+                                ..
+                            }
+                        } if symbol == "TK8"
+                    ))
+                    .unwrap()
+                    .balance(),
+                U64::from(0x75bcd15)
+            );
+
+            assert_eq!(
+                result[&U64::from(0x2105)]
+                    .iter()
+                    .find(|a| matches!(
+                        a,
+                        Asset::Erc20 {
+                            data: AssetData {
+                                metadata: Erc20Metadata { symbol, .. },
+                                ..
+                            }
+                        } if symbol == "TK18"
+                    ))
+                    .unwrap()
+                    .balance(),
+                U64::from(0x112210f4768db400_u64)
+            );
+        }
+
+        #[test]
+        fn should_correctly_calculate_token_balances_with_18_decimals() {
+            let token_18_response = BalanceResponseBody {
+                balances: vec![BalanceItem {
+                    name: "Token18".to_owned(),
+                    symbol: "TK18".to_owned(),
+                    chain_id: Some("eip155:8453".to_owned()),
+                    address: Some(
+                        "eip155:8453:0xabcdef0123456789abcdef0123456789abcdef01".to_owned(),
+                    ),
+                    price: 1.0,
+                    icon_url: "https://example.com/token18.png".to_owned(),
+                    quantity: BalanceQuantity {
+                        decimals: "18".to_owned(),
+                        numeric: "1.0".to_owned(),
+                    },
+                    value: Some(0.),
+                }],
+            };
+
+            let result = get_assets(
+                token_18_response,
+                GetAssetsFilters {
+                    asset_filter: None,
+                    asset_type_filter: None,
+                    chain_filter: Some(vec![U64::from(0x2105)]),
+                },
+            )
+            .unwrap();
+
+            assert_eq!(
+                result[&U64::from(0x2105)].first().unwrap().balance(),
+                U64::from(0xde0b6b3a7640000_u64)
+            );
+        }
+
+        #[test]
+        fn should_correctly_calculate_token_balances_with_6_decimals() {
+            let mixed_decimals_response = BalanceResponseBody {
+                balances: vec![BalanceItem {
+                    name: "Token6".to_owned(),
+                    symbol: "TK6".to_owned(),
+                    chain_id: Some("eip155:8453".to_owned()),
+                    address: Some(
+                        "eip155:8453:0x1234567890123456789012345678901234567890".to_owned(),
+                    ),
+                    price: 1.0,
+                    icon_url: "https://example.com/token6.png".to_owned(),
+                    quantity: BalanceQuantity {
+                        decimals: "6".to_owned(),
+                        numeric: "1.0".to_owned(),
+                    },
+                    value: Some(0.),
+                }],
+            };
+
+            let result = get_assets(
+                mixed_decimals_response,
+                GetAssetsFilters {
+                    asset_filter: None,
+                    asset_type_filter: None,
+                    chain_filter: Some(vec![U64::from(0x2105)]),
+                },
+            )
+            .unwrap();
+
+            assert_eq!(
+                result[&U64::from(0x2105)].first().unwrap().balance(),
+                U64::from(0xf4240)
+            );
+        }
+
         // TODO
     }
 
