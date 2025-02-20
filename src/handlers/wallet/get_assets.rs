@@ -916,7 +916,7 @@ mod ported_tests {
 
         #[test]
         fn should_correctly_calculate_token_balances_with_6_decimals() {
-            let mixed_decimals_response = BalanceResponseBody {
+            let token_6_response = BalanceResponseBody {
                 balances: vec![BalanceItem {
                     name: "Token6".to_owned(),
                     symbol: "TK6".to_owned(),
@@ -935,7 +935,7 @@ mod ported_tests {
             };
 
             let result = get_assets(
-                mixed_decimals_response,
+                token_6_response,
                 GetAssetsFilters {
                     asset_filter: None,
                     asset_type_filter: None,
@@ -948,6 +948,92 @@ mod ported_tests {
                 result[&U64::from(0x2105)].first().unwrap().balance(),
                 U64::from(0xf4240)
             );
+        }
+
+        #[test]
+        fn should_handle_native_tokens_correctly() {
+            let native_token_response = BalanceResponseBody {
+                balances: vec![BalanceItem {
+                    name: "Ethereum".to_owned(),
+                    symbol: "ETH".to_owned(),
+                    chain_id: Some(CHAIN_ID_ARBITRUM.to_owned()),
+                    address: None,
+                    value: Some(2000.),
+                    price: 3000.,
+                    quantity: BalanceQuantity {
+                        decimals: "18".to_owned(),
+                        numeric: "1".to_owned(),
+                    },
+                    icon_url: "https://example.com/eth.png".to_owned(),
+                }],
+            };
+
+            let result = get_assets(
+                native_token_response,
+                GetAssetsFilters {
+                    asset_filter: None,
+                    asset_type_filter: Some(vec![AssetType::Native]),
+                    chain_filter: None,
+                },
+            )
+            .unwrap();
+
+            let asset = result[&U64::from(42161)].first().unwrap();
+
+            assert_eq!(asset.asset_type(), AssetType::Native);
+            assert_eq!(asset.balance(), U64::from(0xde0b6b3a7640000_u64));
+            if let Asset::Native { data } = asset {
+                assert_eq!(data.address, AddressOrNative::Native);
+            } else {
+                panic!("wrong variant");
+            }
+        }
+
+        #[test]
+        fn should_handle_unsupported_tokens() {
+            let native_token_response = BalanceResponseBody {
+                balances: vec![BalanceItem {
+                    name: "Unsupported Token".to_owned(),
+                    symbol: "UNK".to_owned(),
+                    chain_id: Some("eip155:1".to_owned()),
+                    address: Some("eip155:1:0x1234567890123456789012345678901234567890".to_owned()),
+                    value: Some(100.),
+                    price: 1.,
+                    quantity: BalanceQuantity {
+                        decimals: "18".to_owned(),
+                        numeric: "100".to_owned(),
+                    },
+                    icon_url: "https://example.com/unk.png".to_owned(),
+                }],
+            };
+
+            let result = get_assets(
+                native_token_response,
+                GetAssetsFilters {
+                    asset_filter: None,
+                    asset_type_filter: None,
+                    chain_filter: None,
+                },
+            )
+            .unwrap();
+
+            assert_eq!(result.len(), 1);
+            assert_eq!(result[&U64::from(0x1)].len(), 1);
+        }
+
+        #[test]
+        fn should_handle_empty_balance_response() {
+            let native_token_response = BalanceResponseBody { balances: vec![] };
+            let result = get_assets(
+                native_token_response,
+                GetAssetsFilters {
+                    asset_filter: None,
+                    asset_type_filter: None,
+                    chain_filter: None,
+                },
+            )
+            .unwrap();
+            assert!(result.is_empty());
         }
 
         // TODO
