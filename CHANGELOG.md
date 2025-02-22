@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.197.1 - 2025-02-22
+#### Bug Fixes
+- update irn submodule (#966) - (ee28d5c) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.197.0 - 2025-02-20
 #### Bug Fixes
 - **(CA)** adding different storage slots per contracts and enabling USDT on Arbitrum (#964) - (76d0263) - Max Kalashnikoff | maksy.eth
