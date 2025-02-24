@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.198.0 - 2025-02-24
+#### Features
+- self provider (#961) - (6f2c2dc) - Chris Smith
+
+- - -
+
 ## 0.197.1 - 2025-02-22
 #### Bug Fixes
 - update irn submodule (#966) - (ee28d5c) - Max Kalashnikoff | maksy.eth
