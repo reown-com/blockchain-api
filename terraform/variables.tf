@@ -5,6 +5,7 @@ variable "grafana_auth" {
   description = "The API Token for the Grafana instance"
   type        = string
   default     = ""
+  sensitive   = true
 }
 
 #-------------------------------------------------------------------------------
