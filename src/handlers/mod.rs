@@ -26,6 +26,7 @@ pub mod onramp;
 pub mod portfolio;
 pub mod profile;
 pub mod proxy;
+pub mod self_provider;
 pub mod sessions;
 pub mod supported_chains;
 pub mod wallet;
