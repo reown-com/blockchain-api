@@ -259,7 +259,7 @@ variable "rate_limiting_ip_whitelist" {
 # IRN client configuration
 
 variable "irn_nodes" {
-  description = "Comma-separated IRN nodes address in MultiAddr format"
+  description = "Comma-separated IRN nodes address in PeerAddr format"
   type        = string
 }
 
