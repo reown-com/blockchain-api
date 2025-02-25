@@ -82,6 +82,7 @@ module "ecs" {
   dune_api_key           = var.dune_api_key
   syndica_api_key        = var.syndica_api_key
   allnodes_api_key       = var.allnodes_api_key
+  meld_api_key           = var.meld_api_key
 
   # Project Registry
   registry_api_endpoint   = var.registry_api_endpoint

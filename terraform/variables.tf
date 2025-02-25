@@ -200,6 +200,12 @@ variable "allnodes_api_key" {
   sensitive   = true
 }
 
+variable "meld_api_key" {
+  description = "Meld API key"
+  type        = string
+  sensitive   = true
+}
+
 #-------------------------------------------------------------------------------
 # Analytics
 

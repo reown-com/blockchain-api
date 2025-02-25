@@ -17,6 +17,10 @@ use {
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
+                providers::{
+                    ProvidersResponse as OnRampProvidersResponse,
+                    QueryParams as OnRampProvidersQueryParams,
+                },
                 quotes::{OnRampBuyQuotesParams, OnRampBuyQuotesResponse},
             },
             portfolio::{PortfolioQueryParams, PortfolioResponseBody},
@@ -64,6 +68,7 @@ mod getblock;
 mod infura;
 mod lava;
 mod mantle;
+mod meld;
 pub mod mock_alto;
 mod morph;
 mod near;
@@ -97,6 +102,7 @@ pub use {
     infura::{InfuraProvider, InfuraWsProvider},
     lava::LavaProvider,
     mantle::MantleProvider,
+    meld::MeldProvider,
     morph::MorphProvider,
     near::NearProvider,
     odyssey::OdysseyProvider,
@@ -159,6 +165,8 @@ pub struct ProvidersConfig {
     pub syndica_api_key: String,
     /// Allnodes API key
     pub allnodes_api_key: String,
+    /// Meld API key
+    pub meld_api_key: String,
 
     pub override_bundler_urls: Option<MockAltoUrls>,
 }
@@ -185,6 +193,7 @@ pub struct ProviderRepository {
     pub portfolio_provider: Arc<dyn PortfolioProvider>,
     pub coinbase_pay_provider: Arc<dyn HistoryProvider>,
     pub onramp_provider: Arc<dyn OnRampProvider>,
+    pub onramp_multi_provider: Arc<dyn OnRampMultiProvider>,
 
     pub conversion_provider: Arc<dyn ConversionProvider>,
     pub fungible_price_providers: HashMap<CaipNamespaces, Arc<dyn FungiblePriceProvider>>,
@@ -288,6 +297,8 @@ impl ProviderRepository {
             "https://pay.coinbase.com/api/v1".into(),
         ));
 
+        let meld_onramp_provider = Arc::new(MeldProvider::new(config.meld_api_key.clone()));
+
         let bundler_ops_provider: Arc<dyn BundlerOpsProvider> =
             if let Some(override_bundler_url) = config.override_bundler_urls.clone() {
                 Arc::new(MockAltoProvider::new(override_bundler_url))
@@ -329,6 +340,7 @@ impl ProviderRepository {
             portfolio_provider,
             coinbase_pay_provider: coinbase_pay_provider.clone(),
             onramp_provider: coinbase_pay_provider,
+            onramp_multi_provider: meld_onramp_provider,
             conversion_provider: one_inch_provider.clone(),
             fungible_price_providers,
             bundler_ops_provider,
@@ -658,6 +670,7 @@ pub enum ProviderKind {
     Odyssey,
     Syndica,
     Allnodes,
+    Meld,
 }
 
 impl Display for ProviderKind {
@@ -695,6 +708,7 @@ impl Display for ProviderKind {
                 ProviderKind::Odyssey => "Odyssey",
                 ProviderKind::Syndica => "Syndica",
                 ProviderKind::Allnodes => "Allnodes",
+                ProviderKind::Meld => "Meld",
             }
         )
     }
@@ -733,6 +747,7 @@ impl ProviderKind {
             "Odyssey" => Some(Self::Odyssey),
             "Syndica" => Some(Self::Syndica),
             "Allnodes" => Some(Self::Allnodes),
+            "Meld" => Some(Self::Meld),
             _ => None,
         }
     }
@@ -890,6 +905,15 @@ pub trait OnRampProvider: Send + Sync + Debug {
         params: OnRampBuyQuotesParams,
         metrics: Arc<Metrics>,
     ) -> RpcResult<OnRampBuyQuotesResponse>;
+}
+
+#[async_trait]
+pub trait OnRampMultiProvider: Send + Sync + Debug {
+    async fn get_providers(
+        &self,
+        params: OnRampProvidersQueryParams,
+        metrics: Arc<Metrics>,
+    ) -> RpcResult<OnRampProvidersResponse>;
 }
 
 #[async_trait]
