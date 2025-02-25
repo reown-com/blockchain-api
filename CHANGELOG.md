@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.198.1 - 2025-02-25
+#### Bug Fixes
+- update WCN client (#962) - (9ab5a05) - Ivan Reshetnikov
+- make Grafana key sensitive (#968) - (85c21e5) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.198.0 - 2025-02-24
 #### Features
 - self provider (#961) - (6f2c2dc) - Chris Smith
