@@ -55,4 +55,85 @@ describe('OnRamp', () => {
     checkValueAndCurrency(resp.data.coinbaseFee)
     checkValueAndCurrency(resp.data.networkFee)
   })
+
+  it('get providers', async () => {
+    let resp: any = await httpClient.get(
+      `${onRampPath}/providers` +
+      `?projectId=${projectId}`
+    );
+    expect(resp.status).toBe(200)
+    expect(resp.data.length).toBeGreaterThan(0)
+    expect(typeof resp.data[0].name).toBe('string')
+    expect(typeof resp.data[0].serviceProvider).toBe('string')
+    expect(typeof resp.data[0].logos).toBe('object')
+  })
+
+  it('get providers properties', async () => {
+    // Check for `countries` type
+    let type = 'countries'
+    let resp: any = await httpClient.get(
+      `${onRampPath}/providers/properties` +
+      `?projectId=${projectId}` +
+      `&type=${type}`
+    );
+    expect(resp.status).toBe(200)
+    expect(resp.data.length).toBeGreaterThan(0)
+    expect(typeof resp.data[0].countryCode).toBe('string')
+    expect(typeof resp.data[0].name).toBe('string')
+    expect(typeof resp.data[0].flagImageUrl).toBe('string')
+
+    // Check for `crypto-currencies` type
+    type = 'crypto-currencies'
+    resp = await httpClient.get(
+      `${onRampPath}/providers/properties` +
+      `?projectId=${projectId}` +
+      `&type=${type}`
+    );
+    expect(resp.status).toBe(200)
+    expect(resp.data.length).toBeGreaterThan(0)
+    expect(typeof resp.data[0].currencyCode).toBe('string')
+    expect(typeof resp.data[0].name).toBe('string')
+    expect(typeof resp.data[0].chainCode).toBe('string')
+    expect(typeof resp.data[0].symbolImageUrl).toBe('string')
+
+    // Check for `fiat-currencies` type
+    type = 'fiat-currencies'
+    resp = await httpClient.get(
+      `${onRampPath}/providers/properties` +
+      `?projectId=${projectId}` +
+      `&type=${type}`
+    );
+    expect(resp.status).toBe(200)
+    expect(resp.data.length).toBeGreaterThan(0)
+    expect(typeof resp.data[0].currencyCode).toBe('string')
+    expect(typeof resp.data[0].name).toBe('string')
+    expect(typeof resp.data[0].symbolImageUrl).toBe('string')
+
+    // Check for `payment-methods` type
+    type = 'payment-methods'
+    resp = await httpClient.get(
+      `${onRampPath}/providers/properties` +
+      `?projectId=${projectId}` +
+      `&type=${type}`
+    );
+    expect(resp.status).toBe(200)
+    expect(resp.data.length).toBeGreaterThan(0)
+    expect(typeof resp.data[0].paymentMethod).toBe('string')
+    expect(typeof resp.data[0].name).toBe('string')
+    expect(typeof resp.data[0].paymentType).toBe('string')
+
+    // Check for `fiat-purchases-limits` type
+    type = 'fiat-purchases-limits'
+    resp = await httpClient.get(
+      `${onRampPath}/providers/properties` +
+      `?projectId=${projectId}` +
+      `&type=${type}`
+    );
+    expect(resp.status).toBe(200)
+    expect(resp.data.length).toBeGreaterThan(0)
+    expect(typeof resp.data[0].currencyCode).toBe('string')
+    expect(typeof resp.data[0].defaultAmount).toBe('number')
+    expect(typeof resp.data[0].minimumAmount).toBe('number')
+    expect(typeof resp.data[0].maximumAmount).toBe('number')
+  })
 })

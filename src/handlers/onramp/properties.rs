@@ -15,28 +15,19 @@ use {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryParams {
-    pub countries: Option<String>,
+    pub r#type: PropertyType,
     pub project_id: String,
+    pub countries: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct ProvidersResponse {
-    pub categories: Vec<String>,
-    pub logos: Logos,
-    pub name: String,
-    pub service_provider: String,
-    pub status: String,
-    pub website_url: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Logos {
-    pub dark: String,
-    pub dark_short: String,
-    pub light: String,
-    pub light_short: String,
+#[serde(rename_all = "kebab-case")]
+pub enum PropertyType {
+    Countries,
+    CryptoCurrencies,
+    FiatCurrencies,
+    PaymentMethods,
+    FiatPurchasesLimits,
 }
 
 pub async fn handler(
@@ -44,7 +35,7 @@ pub async fn handler(
     query: Query<QueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("onramp_providers"))
+        .with_metrics(HANDLER_TASK_METRICS.with_name("onramp_providers_properties"))
         .await
 }
 
@@ -57,14 +48,14 @@ async fn handler_internal(
         .validate_project_access_and_quota(&query.project_id)
         .await?;
 
-    let providers_response = state
+    let providers_properties = state
         .providers
         .onramp_multi_provider
-        .get_providers(query.0, state.metrics.clone())
+        .get_providers_properties(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call onramp providers with {}", e);
+            error!("Failed to call onramp providers properties with {}", e);
         })?;
 
-    Ok(Json(providers_response).into_response())
+    Ok(Json(providers_properties).into_response())
 }

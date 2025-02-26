@@ -15,28 +15,38 @@ use {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryParams {
-    pub countries: Option<String>,
     pub project_id: String,
+    pub session_data: SessionData,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ProvidersResponse {
-    pub categories: Vec<String>,
-    pub logos: Logos,
-    pub name: String,
+pub struct SessionData {
+    pub country_code: Option<String>,
+    pub destination_currency_code: String,
+    pub lock_fields: Option<Vec<String>>,
+    pub payment_method_type: Option<String>,
+    pub redirect_url: Option<String>,
     pub service_provider: String,
-    pub status: String,
-    pub website_url: String,
+    pub source_amount: String,
+    pub source_currency_code: String,
+    pub wallet_address: String,
+    pub wallet_tag: Option<String>,
+    pub additional_params: Option<AdditionalParams>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Logos {
-    pub dark: String,
-    pub dark_short: String,
-    pub light: String,
-    pub light_short: String,
+pub struct AdditionalParams {
+    pub nft_checkout: bool,
+    pub nft_description: String,
+    pub nft_image_url: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct WidgetResponse {
+    pub widget_url: String,
 }
 
 pub async fn handler(
@@ -44,7 +54,7 @@ pub async fn handler(
     query: Query<QueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("onramp_providers"))
+        .with_metrics(HANDLER_TASK_METRICS.with_name("onramp_widget"))
         .await
 }
 
@@ -57,14 +67,14 @@ async fn handler_internal(
         .validate_project_access_and_quota(&query.project_id)
         .await?;
 
-    let providers_response = state
+    let widget_response = state
         .providers
         .onramp_multi_provider
-        .get_providers(query.0, state.metrics.clone())
+        .get_widget(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call onramp providers with {}", e);
+            error!("Failed to call onramp widget with {}", e);
         })?;
 
-    Ok(Json(providers_response).into_response())
+    Ok(Json(widget_response).into_response())
 }

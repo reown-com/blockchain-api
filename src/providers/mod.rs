@@ -17,11 +17,15 @@ use {
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
+                properties::QueryParams as OnRampProvidersPropertiesQueryParams,
                 providers::{
                     ProvidersResponse as OnRampProvidersResponse,
                     QueryParams as OnRampProvidersQueryParams,
                 },
                 quotes::{OnRampBuyQuotesParams, OnRampBuyQuotesResponse},
+                widget::{
+                    QueryParams as OnRampWidgetQueryParams, WidgetResponse as OnRampWidgetResponse,
+                },
             },
             portfolio::{PortfolioQueryParams, PortfolioResponseBody},
             RpcQueryParams, SupportedCurrencies,
@@ -913,7 +917,19 @@ pub trait OnRampMultiProvider: Send + Sync + Debug {
         &self,
         params: OnRampProvidersQueryParams,
         metrics: Arc<Metrics>,
-    ) -> RpcResult<OnRampProvidersResponse>;
+    ) -> RpcResult<Vec<OnRampProvidersResponse>>;
+
+    async fn get_providers_properties(
+        &self,
+        params: OnRampProvidersPropertiesQueryParams,
+        metrics: Arc<Metrics>,
+    ) -> RpcResult<serde_json::Value>;
+
+    async fn get_widget(
+        &self,
+        params: OnRampWidgetQueryParams,
+        metrics: Arc<Metrics>,
+    ) -> RpcResult<OnRampWidgetResponse>;
 }
 
 #[async_trait]
