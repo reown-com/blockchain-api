@@ -1,10 +1,9 @@
 name: Yttrium integration tests
 
 on:
-  # TODO remove before merge
   push:
     branches:
-      - fix/yttrium-integration-tests
+      - fix/yttrium-integration-tests # TODO remove on:push before merge
   workflow_dispatch:
     inputs:
       stage-url:
@@ -22,8 +21,8 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  e2e:
-    name: E2E
+  e2e-latest:
+    name: E2E (latest)
     runs-on: ubuntu-latest
     concurrency:
       group: yttrium-e2e
@@ -31,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: reown-com/yttrium
-          ref: chore/support-yttrium-integration-blockchain-api
+          ref: chore/support-yttrium-integration-blockchain-api # TODO main before merge
           submodules: recursive
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.4
@@ -43,4 +42,27 @@ jobs:
           RUST_BACKTRACE: 1
           RUST_LOG: yttrium=trace
           # BLOCKCHAIN_API_URL: ${{ inputs.stage-url }}
-          BLOCKCHAIN_API_URL: "https://staging.rpc.walletconnect.org"
+          BLOCKCHAIN_API_URL: "https://staging.rpc.walletconnect.org" # TODO switch to inputs.stage-url before merge
+
+  e2e-pinned:
+    name: E2E (pinned)
+    runs-on: ubuntu-latest
+    concurrency:
+      group: yttrium-e2e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: reown-com/yttrium
+          ref: chore/support-yttrium-integration-blockchain-api # TODO pin to commit ref before merge
+          submodules: recursive
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.4
+      - run: rustup update stable && rustup default stable
+      - run: cargo test -p yttrium --features=test_blockchain_api chain_abstraction::tests::happy_path_execute_method
+        env:
+          REOWN_PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          FAUCET_MNEMONIC: ${{ secrets.FAUCET_MNEMONIC }}
+          RUST_BACKTRACE: 1
+          RUST_LOG: yttrium=trace
+          # BLOCKCHAIN_API_URL: ${{ inputs.stage-url }}
+          BLOCKCHAIN_API_URL: "https://staging.rpc.walletconnect.org" # TODO switch to inputs.stage-url before merge
