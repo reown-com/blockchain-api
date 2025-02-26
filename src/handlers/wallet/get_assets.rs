@@ -1152,14 +1152,13 @@ mod ported_tests {
             });
 
             for (caip2, chain) in supported_chains_for_usdc {
-                assert!(result.get(&chain).is_some());
+                assert!(result.contains_key(&chain));
                 let usdc_asset = result[&chain]
                     .iter()
-                    .filter(|asset| {
+                    .find(|asset| {
                         asset.as_erc20().unwrap().address.as_address().unwrap()
                             == &erc20_groups["USDC"][caip2]
                     })
-                    .next()
                     .unwrap();
                 assert_eq!(usdc_asset.balance(), U64::from(0x5f5e100));
             }
