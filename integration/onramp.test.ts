@@ -6,7 +6,7 @@ describe('OnRamp', () => {
   const country = 'US';
   const subdivision = 'NY';
 
-  it('buy options', async () => {
+  it('get options', async () => {
     let resp: any = await httpClient.get(
       `${onRampPath}/buy/options?projectId=${projectId}&country=${country}&subdivision=${subdivision}`,
     )
@@ -30,7 +30,7 @@ describe('OnRamp', () => {
     expect(typeof firstPurchaseNetworks.chainId).toBe('string')
   })
 
-  it('buy quotes', async () => {
+  it('get quotes', async () => {
     let resp: any = await httpClient.get(
       `${onRampPath}/buy/quotes` +
       `?projectId=${projectId}` +
@@ -135,5 +135,24 @@ describe('OnRamp', () => {
     expect(typeof resp.data[0].defaultAmount).toBe('number')
     expect(typeof resp.data[0].minimumAmount).toBe('number')
     expect(typeof resp.data[0].maximumAmount).toBe('number')
+  })
+
+  it('get multi provider quotes', async () => {
+    const requestData = {
+      projectId: projectId,
+      destinationCurrencyCode: 'BTC',
+      sourceAmount: 100,
+      sourceCurrencyCode: 'USD',
+    };
+
+    let resp: any = await httpClient.post(
+      `${onRampPath}/multi/quotes`, requestData
+    );
+
+    expect(resp.status).toBe(200)
+    expect(resp.data.length).toBeGreaterThan(0)
+    expect(typeof resp.data[0].destinationAmount).toBe('number')
+    expect(resp.data[0].destinationCurrencyCode).toBe('BTC')
+    expect(typeof resp.data[0].sourceAmount).toBe('number')
   })
 })

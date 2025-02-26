@@ -3,6 +3,7 @@ use {
     crate::{
         error::{RpcError, RpcResult},
         handlers::onramp::{
+            multi_quotes::{QueryParams as MultiQuotesQueryParams, QuotesResponse},
             properties::{PropertyType, QueryParams as ProvidersPropertiesQueryParams},
             providers::{ProvidersResponse, QueryParams as ProvidersQueryParams},
             widget::{QueryParams as WidgetQueryParams, SessionData, WidgetResponse},
@@ -11,7 +12,7 @@ use {
         Metrics,
     },
     async_trait::async_trait,
-    serde::Serialize,
+    serde::{Deserialize, Serialize},
     std::{sync::Arc, time::SystemTime},
     tracing::log::error,
     url::Url,
@@ -70,6 +71,12 @@ impl MeldProvider {
 pub struct WidgetRequestParams {
     pub session_data: SessionData,
     pub session_type: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MeldQuotesResponse {
+    pub quotes: Vec<QuotesResponse>,
 }
 
 #[async_trait]
@@ -198,5 +205,36 @@ impl OnRampMultiProvider for MeldProvider {
         }
 
         Ok(response.json::<WidgetResponse>().await?)
+    }
+
+    async fn get_quotes(
+        &self,
+        params: MultiQuotesQueryParams,
+        metrics: Arc<Metrics>,
+    ) -> RpcResult<Vec<QuotesResponse>> {
+        let base = format!("{}/payments/crypto/quote", BASE_URL);
+        let url = Url::parse(&base).map_err(|_| RpcError::OnRampParseURLError)?;
+
+        let latency_start = SystemTime::now();
+        let response = self.send_post_request(url, &params).await?;
+        metrics.add_latency_and_status_code_for_provider(
+            self.provider_kind,
+            response.status().into(),
+            latency_start,
+            None,
+            Some("onramp_multi_quotes".to_string()),
+        );
+
+        if !response.status().is_success() {
+            error!(
+                "Error on Meld get quotes. Status is not OK: {:?}",
+                response.status(),
+            );
+            return Err(RpcError::OnRampProviderError);
+        }
+
+        let response_quotes = response.json::<MeldQuotesResponse>().await?;
+
+        Ok(response_quotes.quotes)
     }
 }

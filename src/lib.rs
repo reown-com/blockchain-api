@@ -327,6 +327,10 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             get(handlers::onramp::quotes::handler),
         )
         .route(
+            "/v1/onramp/multi/quotes",
+            post(handlers::onramp::multi_quotes::handler),
+        )
+        .route(
             "/v1/onramp/providers",
             get(handlers::onramp::providers::handler),
         )

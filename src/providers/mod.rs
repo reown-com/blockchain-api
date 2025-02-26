@@ -16,6 +16,9 @@ use {
             fungible_price::PriceResponseBody,
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
+                multi_quotes::{
+                    QueryParams as MultiQuotesQueryParams, QuotesResponse as MultiQuotesResponse,
+                },
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
                 properties::QueryParams as OnRampProvidersPropertiesQueryParams,
                 providers::{
@@ -930,6 +933,12 @@ pub trait OnRampMultiProvider: Send + Sync + Debug {
         params: OnRampWidgetQueryParams,
         metrics: Arc<Metrics>,
     ) -> RpcResult<OnRampWidgetResponse>;
+
+    async fn get_quotes(
+        &self,
+        params: MultiQuotesQueryParams,
+        metrics: Arc<Metrics>,
+    ) -> RpcResult<Vec<MultiQuotesResponse>>;
 }
 
 #[async_trait]

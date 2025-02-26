@@ -16,37 +16,34 @@ use {
 #[serde(rename_all = "camelCase")]
 pub struct QueryParams {
     pub project_id: String,
-    pub session_data: SessionData,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct SessionData {
     pub country_code: Option<String>,
     pub destination_currency_code: String,
-    pub lock_fields: Option<Vec<String>>,
     pub payment_method_type: Option<String>,
-    pub redirect_url: Option<String>,
-    pub service_provider: String,
-    pub source_amount: String,
+    pub source_amount: f64,
     pub source_currency_code: String,
-    pub wallet_address: String,
-    pub wallet_tag: Option<String>,
-    pub additional_params: Option<AdditionalParams>,
+    pub wallet_address: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct AdditionalParams {
-    pub nft_checkout: bool,
-    pub nft_description: String,
-    pub nft_image_url: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct WidgetResponse {
-    pub widget_url: String,
+pub struct QuotesResponse {
+    pub country_code: Option<String>,
+    pub customer_score: Option<f64>,
+    pub destination_amount: f64,
+    pub destination_amount_without_fees: Option<f64>,
+    pub destination_currency_code: String,
+    pub exchange_rate: Option<f64>,
+    pub fiat_amount_without_fees: Option<f64>,
+    pub low_kyc: Option<bool>,
+    pub network_fee: Option<f64>,
+    pub payment_method_type: Option<String>,
+    pub service_provider: Option<String>,
+    pub source_amount: f64,
+    pub source_amount_without_fees: Option<f64>,
+    pub source_currency_code: Option<String>,
+    pub total_fee: Option<f64>,
+    pub transaction_fee: Option<f64>,
+    pub transaction_type: Option<String>,
 }
 
 pub async fn handler(
@@ -54,7 +51,7 @@ pub async fn handler(
     Json(request_payload): Json<QueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, request_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("onramp_widget"))
+        .with_metrics(HANDLER_TASK_METRICS.with_name("onramp_multiproviders_quotes"))
         .await
 }
 
@@ -67,14 +64,14 @@ async fn handler_internal(
         .validate_project_access_and_quota(&request_payload.project_id)
         .await?;
 
-    let widget_response = state
+    let quotes = state
         .providers
         .onramp_multi_provider
-        .get_widget(request_payload, state.metrics.clone())
+        .get_quotes(request_payload, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call onramp widget with {}", e);
+            error!("Failed to call onramp multi providers quotes with {}", e);
         })?;
 
-    Ok(Json(widget_response).into_response())
+    Ok(Json(quotes).into_response())
 }
