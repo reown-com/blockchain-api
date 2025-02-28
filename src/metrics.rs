@@ -88,6 +88,7 @@ pub struct Metrics {
     // Chain Abstracton
     pub ca_gas_estimation_tracker: Histogram<f64>,
     pub ca_no_routes_found_counter: Counter<u64>,
+    pub ca_routes_found_counter: Counter<u64>,
     pub ca_insufficient_funds_counter: Counter<u64>,
     pub ca_no_bridging_needed_counter: Counter<u64>,
 }
@@ -296,6 +297,11 @@ impl Metrics {
             .with_description("The number of times no routes were found for a CA")
             .init();
 
+        let ca_routes_found_counter = meter
+            .u64_counter("ca_routes_found")
+            .with_description("The number of times of sucess routes were found for a CA")
+            .init();
+
         let ca_insufficient_funds_counter = meter
             .u64_counter("ca_insufficient_funds")
             .with_description("The number of times insufficient funds were responded for a CA")
@@ -347,6 +353,7 @@ impl Metrics {
             rate_limited_responses_counter,
             ca_gas_estimation_tracker,
             ca_no_routes_found_counter,
+            ca_routes_found_counter,
             ca_insufficient_funds_counter,
             ca_no_bridging_needed_counter,
         }
@@ -703,6 +710,14 @@ impl Metrics {
     }
 
     pub fn add_ca_no_routes_found(&self, route: String) {
+        self.ca_no_routes_found_counter.add(
+            &otel::Context::new(),
+            1,
+            &[otel::KeyValue::new("route", route)],
+        );
+    }
+
+    pub fn add_ca_routes_found(&self, route: String) {
         self.ca_no_routes_found_counter.add(
             &otel::Context::new(),
             1,

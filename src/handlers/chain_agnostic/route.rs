@@ -637,6 +637,15 @@ async fn handler_internal(
             ));
     }
 
+    state
+        .metrics
+        .add_ca_routes_found(construct_metrics_bridging_route(
+            bridge_chain_id.clone(),
+            bridge_contract.to_string(),
+            request_payload.transaction.chain_id.clone(),
+            asset_transfer_contract.to_string(),
+        ));
+
     return Ok(
         Json(PrepareResponse::Success(PrepareResponseSuccess::Available(
             PrepareResponseAvailable {
