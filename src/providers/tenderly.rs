@@ -84,7 +84,7 @@ pub enum AssetChangeType {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct TokenInfo {
     pub standard: TokenStandard,
-    pub contract_address: Address,
+    pub contract_address: Option<Address>,
     pub decimals: Option<u8>,
 }
 
@@ -93,6 +93,7 @@ pub struct TokenInfo {
 pub enum TokenStandard {
     Erc20,
     Erc721,
+    #[serde(rename = "NativeCurrency")]
     NativeCurrency,
 }
 
