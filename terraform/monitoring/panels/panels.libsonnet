@@ -96,5 +96,6 @@ local redis  = panels.aws.redis;
     insufficient_funds: (import 'chain_abstraction/insufficient_funds.libsonnet').new,
     no_bridging: (import 'chain_abstraction/no_bridging.libsonnet').new,
     no_routes: (import 'chain_abstraction/no_routes.libsonnet').new,
+    response_types_rates: (import 'chain_abstraction/response_types_rate.libsonnet').new,
   },
 }
