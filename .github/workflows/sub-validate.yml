@@ -111,3 +111,10 @@ jobs:
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
           RPC_URL: ${{ inputs.stage-url }}
+
+  integration-tests-yttrium:
+    name: Yttrium integration Tests - ${{ inputs.stage }}
+    uses: ./.github/workflows/sub-yttrium-integration.yml
+    secrets: inherit
+    with:
+      stage-url: ${{ inputs.stage-url }}
