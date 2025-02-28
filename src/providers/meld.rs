@@ -79,6 +79,13 @@ pub struct MeldQuotesResponse {
     pub quotes: Vec<QuotesResponse>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MeldErrorResponse {
+    pub code: String,
+    pub message: String,
+}
+
 #[async_trait]
 impl OnRampMultiProvider for MeldProvider {
     #[tracing::instrument(skip(self), fields(provider = "Meld"), level = "debug")]
@@ -106,6 +113,22 @@ impl OnRampMultiProvider for MeldProvider {
         );
 
         if !response.status().is_success() {
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = match response.json::<MeldErrorResponse>().await {
+                    Ok(response_error) => response_error.message,
+                    Err(e) => {
+                        error!(
+                            "Error parsing Meld HTTP 400 Bad Request error response {:?}",
+                            e
+                        );
+                        // Respond to the client with a generic error message and HTTP 400 anyway
+                        "Invalid parameter".to_string()
+                    }
+                };
+                return Err(RpcError::ConversionInvalidParameter(response_error));
+            }
             error!(
                 "Error on Meld providers response. Status is not OK: {:?}",
                 response.status(),
@@ -159,6 +182,22 @@ impl OnRampMultiProvider for MeldProvider {
         );
 
         if !response.status().is_success() {
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = match response.json::<MeldErrorResponse>().await {
+                    Ok(response_error) => response_error.message,
+                    Err(e) => {
+                        error!(
+                            "Error parsing Meld HTTP 400 Bad Request error response {:?}",
+                            e
+                        );
+                        // Respond to the client with a generic error message and HTTP 400 anyway
+                        "Invalid parameter".to_string()
+                    }
+                };
+                return Err(RpcError::ConversionInvalidParameter(response_error));
+            }
             error!(
                 "Error on Meld providers properties response. Status is not OK: {:?}",
                 response.status(),
@@ -197,6 +236,22 @@ impl OnRampMultiProvider for MeldProvider {
         );
 
         if !response.status().is_success() {
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = match response.json::<MeldErrorResponse>().await {
+                    Ok(response_error) => response_error.message,
+                    Err(e) => {
+                        error!(
+                            "Error parsing Meld HTTP 400 Bad Request error response {:?}",
+                            e
+                        );
+                        // Respond to the client with a generic error message and HTTP 400 anyway
+                        "Invalid parameter".to_string()
+                    }
+                };
+                return Err(RpcError::ConversionInvalidParameter(response_error));
+            }
             error!(
                 "Error on Meld get widget url response. Status is not OK: {:?}",
                 response.status(),
@@ -226,6 +281,29 @@ impl OnRampMultiProvider for MeldProvider {
         );
 
         if !response.status().is_success() {
+            // Passing through error description for the error context
+            // if user parameter is invalid (got 400 status code from the provider)
+            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+                let response_error = match response.json::<MeldErrorResponse>().await {
+                    Ok(response_error) => response_error,
+                    Err(e) => {
+                        error!(
+                            "Error parsing Meld HTTP 400 Bad Request error response {:?}",
+                            e
+                        );
+                        // Respond to the client with a generic error message and HTTP 400 anyway
+                        MeldErrorResponse {
+                            code: "BAD_REQUEST".to_string(),
+                            message: "Invalid parameter".to_string(),
+                        }
+                    }
+                };
+                return Err(RpcError::ConversionInvalidParameterWithCode(
+                    response_error.code,
+                    response_error.message,
+                ));
+            }
+
             error!(
                 "Error on Meld get quotes. Status is not OK: {:?}",
                 response.status(),

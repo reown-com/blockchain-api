@@ -142,6 +142,9 @@ pub enum RpcError {
     #[error("Invalid conversion parameter: {0}")]
     ConversionInvalidParameter(String),
 
+    #[error("Invalid conversion parameter with code: {0} and description: {1}")]
+    ConversionInvalidParameterWithCode(String, String),
+
     // Profile names errors
     #[error("Name is already registered: {0}")]
     NameAlreadyRegistered(String),
@@ -413,6 +416,14 @@ impl IntoResponse for RpcError {
                     )),
                 )
                     .into_response(),
+            Self::ConversionInvalidParameterWithCode(code, message) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response_with_code(
+                    code.to_string(),
+                    format!("Conversion parameter error: {}", message),
+                )),
+            )
+                .into_response(),
             Self::UnsupportedCoinType(e) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
@@ -698,4 +709,14 @@ pub fn new_error_response(field: String, description: String) -> ErrorResponse {
         status: "FAILED".to_string(),
         reasons: vec![ErrorReason { field, description }],
     }
+}
+
+#[derive(serde::Serialize)]
+pub struct ErrorResponseWithCode {
+    pub code: String,
+    pub message: String,
+}
+
+pub fn new_error_response_with_code(code: String, message: String) -> ErrorResponseWithCode {
+    ErrorResponseWithCode { code, message }
 }
