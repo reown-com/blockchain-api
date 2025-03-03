@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.201.0 - 2025-03-03
+#### Features
+- **(Meld)** passing through bad request errors (#974) - (46c3cb6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.200.0 - 2025-02-28
 #### Features
 - **(Tenderly)** properly handling of the native currency token standard. (#975) - (fdab42d) - Max Kalashnikoff | maksy.eth
