@@ -320,10 +320,10 @@ async fn handler_internal(
         state.metrics.add_ca_insufficient_funds();
         return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::InsufficientFunds,
-            reason: Some(format!(
+            reason: format!(
                 "No supported assets with at least {} amount were found in the address {}",
                 erc20_topup_value, from_address
-            )),
+            ),
         }))
         .into_response());
     };
@@ -358,14 +358,14 @@ async fn handler_internal(
             ));
         return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::NoRoutesAvailable,
-            reason: Some(format!(
+            reason: format!(
                 "No routes were found from {}:{} to {}:{} for an initial amount {}",
                 bridge_chain_id.clone(),
                 bridge_contract,
                 initial_tx_chain_id.clone(),
                 asset_transfer_contract,
                 erc20_topup_value
-            )),
+            ),
         }))
         .into_response());
     };
@@ -391,7 +391,7 @@ async fn handler_internal(
         state.metrics.add_ca_insufficient_funds();
         return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::InsufficientFunds,
-            reason: Some(error_reason),
+            reason: error_reason,
         }))
         .into_response());
     }
@@ -421,14 +421,14 @@ async fn handler_internal(
             ));
         return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::NoRoutesAvailable,
-            reason: Some(format!(
+            reason: format!(
                 "No routes were found from {}:{} to {}:{} for updated (fee included) amount: {}",
                 bridge_chain_id.clone(),
                 bridge_contract,
                 initial_tx_chain_id.clone(),
                 asset_transfer_contract,
                 required_topup_amount
-            )),
+            ),
         }))
         .into_response());
     };
