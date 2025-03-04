@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: reown-com/yttrium
-          ref: chore/support-yttrium-integration-blockchain-api # TODO main before merge
+          ref: main
           submodules: recursive
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.4
@@ -53,7 +53,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: reown-com/yttrium
-          ref: chore/support-yttrium-integration-blockchain-api # TODO pin to commit ref before merge
+          ref: 5cb732c
           submodules: recursive
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.4
