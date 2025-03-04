@@ -2,6 +2,42 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.203.0 - 2025-03-04
+#### Features
+- **(CA)** improving error responses (#976) - (65a1862) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.202.0 - 2025-03-03
+#### Features
+- **(o11y)** adding CA response types rate panel (#977) - (abb86e4) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.201.0 - 2025-03-03
+#### Features
+- **(Meld)** passing through bad request errors (#974) - (46c3cb6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.200.0 - 2025-02-28
+#### Features
+- **(Tenderly)** properly handling of the native currency token standard. (#975) - (fdab42d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.199.0 - 2025-02-26
+#### Features
+- **(OnRamp)** adding Meld API (#969) - (24b81d3) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.198.2 - 2025-02-26
+#### Bug Fixes
+- port fix from JS impl (#970) - (dae25d5) - Chris Smith
+
+- - -
+
 ## 0.198.1 - 2025-02-25
 #### Bug Fixes
 - update WCN client (#962) - (9ab5a05) - Ivan Reshetnikov

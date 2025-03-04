@@ -112,6 +112,7 @@ async fn handler_internal(
         nonce: U64::ZERO,
         chain_id: request_payload.transaction.chain_id.clone(),
     };
+    let initial_tx_chain_id = request_payload.transaction.chain_id.clone();
 
     let from_address = initial_transaction.from;
     let to_address = initial_transaction.to;
@@ -159,11 +160,7 @@ async fn handler_internal(
                 );
 
                 // Check if the destination address is supported ERC20 asset contract
-                if find_supported_bridging_asset(
-                    &request_payload.transaction.chain_id.clone(),
-                    to_address,
-                )
-                .is_none()
+                if find_supported_bridging_asset(&initial_tx_chain_id.clone(), to_address).is_none()
                 {
                     error!("The destination address is not a supported bridging asset contract");
                     state.metrics.add_ca_no_bridging_needed(
@@ -178,7 +175,7 @@ async fn handler_internal(
                     .providers
                     .simulation_provider
                     .get_cached_gas_estimation(
-                        &request_payload.transaction.chain_id,
+                        &initial_tx_chain_id,
                         to_address,
                         Some(Erc20FunctionType::Transfer),
                     )
@@ -200,7 +197,7 @@ async fn handler_internal(
                         // Save the initial tx gas estimation to the cache
                         {
                             let state = state.clone();
-                            let initial_tx_chain_id = request_payload.transaction.chain_id.clone();
+                            let initial_tx_chain_id = initial_tx_chain_id.clone();
                             tokio::spawn(async move {
                                 state
                                     .providers
@@ -276,7 +273,7 @@ async fn handler_internal(
     // Check if the destination address is supported ERC20 asset contract
     // Attempt to destructure the result into symbol and decimals using a match expression
     let (initial_tx_token_symbol, initial_tx_token_decimals) =
-        match find_supported_bridging_asset(&request_payload.transaction.chain_id, to_address) {
+        match find_supported_bridging_asset(&initial_tx_chain_id, to_address) {
             Some((symbol, decimals)) => (symbol, decimals),
             None => {
                 error!("The destination address is not a supported bridging asset contract");
@@ -290,7 +287,7 @@ async fn handler_internal(
     // Get the current balance of the ERC20 token and check if it's enough for the transfer
     // without bridging or calculate the top-up value
     let erc20_balance = get_erc20_balance(
-        &request_payload.transaction.chain_id,
+        &initial_tx_chain_id,
         convert_alloy_address_to_h160(asset_transfer_contract),
         convert_alloy_address_to_h160(from_address),
         query_params.project_id.as_ref(),
@@ -323,6 +320,10 @@ async fn handler_internal(
         state.metrics.add_ca_insufficient_funds();
         return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::InsufficientFunds,
+            reason: format!(
+                "No supported assets with at least {} amount were found in the address {}",
+                erc20_topup_value, from_address
+            ),
         }))
         .into_response());
     };
@@ -339,7 +340,7 @@ async fn handler_internal(
         .get_bridging_quotes(
             bridge_chain_id.clone(),
             bridge_contract,
-            request_payload.transaction.chain_id.clone(),
+            initial_tx_chain_id.clone(),
             asset_transfer_contract,
             erc20_topup_value,
             from_address,
@@ -352,11 +353,19 @@ async fn handler_internal(
             .add_ca_no_routes_found(construct_metrics_bridging_route(
                 bridge_chain_id.clone(),
                 bridge_contract.to_string(),
-                request_payload.transaction.chain_id.clone(),
+                initial_tx_chain_id.clone(),
                 asset_transfer_contract.to_string(),
             ));
         return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::NoRoutesAvailable,
+            reason: format!(
+                "No routes were found from {}:{} to {}:{} for an initial amount {}",
+                bridge_chain_id.clone(),
+                bridge_contract,
+                initial_tx_chain_id.clone(),
+                asset_transfer_contract,
+                erc20_topup_value
+            ),
         }))
         .into_response());
     };
@@ -374,13 +383,15 @@ async fn handler_internal(
         / U256::from(100))
         + required_topup_amount;
     if current_bridging_asset_balance < required_topup_amount {
-        error!(
-            "The current bridging asset balance on {} is {} less than the required topup amount:{}. The bridging fee is:{}",
-            from_address, current_bridging_asset_balance, required_topup_amount, bridging_fee
+        let error_reason = format!(
+            "The current bridging asset balance on {} is {} less than the required topup amount:{}",
+            from_address, current_bridging_asset_balance, required_topup_amount
         );
+        error!(error_reason);
         state.metrics.add_ca_insufficient_funds();
         return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::InsufficientFunds,
+            reason: error_reason,
         }))
         .into_response());
     }
@@ -392,7 +403,7 @@ async fn handler_internal(
         .get_bridging_quotes(
             bridge_chain_id.clone(),
             bridge_contract,
-            request_payload.transaction.chain_id.clone(),
+            initial_tx_chain_id.clone(),
             asset_transfer_contract,
             required_topup_amount,
             from_address,
@@ -405,11 +416,19 @@ async fn handler_internal(
             .add_ca_no_routes_found(construct_metrics_bridging_route(
                 bridge_chain_id.clone(),
                 bridge_contract.to_string(),
-                request_payload.transaction.chain_id.clone(),
+                initial_tx_chain_id.clone(),
                 asset_transfer_contract.to_string(),
             ));
         return Ok(Json(PrepareResponse::Error(PrepareResponseError {
             error: BridgingError::NoRoutesAvailable,
+            reason: format!(
+                "No routes were found from {}:{} to {}:{} for updated (fee included) amount: {}",
+                bridge_chain_id.clone(),
+                bridge_contract,
+                initial_tx_chain_id.clone(),
+                asset_transfer_contract,
+                required_topup_amount
+            ),
         }))
         .into_response());
     };
@@ -549,7 +568,7 @@ async fn handler_internal(
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs(),
-        chain_id: request_payload.transaction.chain_id.clone(),
+        chain_id: initial_tx_chain_id.clone(),
         wallet: from_address,
         contract: to_address,
         amount_current: erc20_balance, // The current balance of the ERC20 token
@@ -611,7 +630,7 @@ async fn handler_internal(
                 bridge_chain_id.clone(),
                 bridge_contract.to_string(),
                 bridge_token_symbol.clone(),
-                request_payload.transaction.chain_id.clone(),
+                initial_tx_chain_id.clone(),
                 to_address.to_string(),
                 initial_tx_token_symbol.clone(),
                 bridging_amount.to_string(),
@@ -631,11 +650,20 @@ async fn handler_internal(
                 from_address.to_string(),
                 to_address.to_string(),
                 asset_transfer_value.to_string(),
-                request_payload.transaction.chain_id.clone(),
+                initial_tx_chain_id.clone(),
                 to_address.to_string(),
                 initial_tx_token_symbol.clone(),
             ));
     }
+
+    state
+        .metrics
+        .add_ca_routes_found(construct_metrics_bridging_route(
+            bridge_chain_id.clone(),
+            bridge_contract.to_string(),
+            request_payload.transaction.chain_id.clone(),
+            asset_transfer_contract.to_string(),
+        ));
 
     return Ok(
         Json(PrepareResponse::Success(PrepareResponseSuccess::Available(

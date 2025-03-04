@@ -206,6 +206,7 @@ mod test {
             ("RPC_PROXY_PROVIDER_DUNE_API_KEY", "DUNE_API_KEY"),
             ("RPC_PROXY_PROVIDER_SYNDICA_API_KEY", "SYNDICA_API_KEY"),
             ("RPC_PROXY_PROVIDER_ALLNODES_API_KEY", "ALLNODES_API_KEY"),
+            ("RPC_PROXY_PROVIDER_MELD_API_KEY", "MELD_API_KEY"),
             (
                 "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL",
                 "PROMETHEUS_QUERY_URL",
@@ -317,6 +318,7 @@ mod test {
                     syndica_api_key: "SYNDICA_API_KEY".to_string(),
                     override_bundler_urls: None,
                     allnodes_api_key: "ALLNODES_API_KEY".to_string(),
+                    meld_api_key: "MELD_API_KEY".to_string(),
                 },
                 rate_limiting: RateLimitingConfig {
                     max_tokens: Some(100),

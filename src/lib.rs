@@ -326,6 +326,22 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/onramp/buy/quotes",
             get(handlers::onramp::quotes::handler),
         )
+        .route(
+            "/v1/onramp/multi/quotes",
+            post(handlers::onramp::multi_quotes::handler),
+        )
+        .route(
+            "/v1/onramp/providers",
+            get(handlers::onramp::providers::handler),
+        )
+        .route(
+            "/v1/onramp/providers/properties",
+            get(handlers::onramp::properties::handler),
+        )
+        .route(
+            "/v1/onramp/widget",
+            post(handlers::onramp::widget::handler),
+        )
         // Conversion
         .route(
             "/v1/convert/tokens",

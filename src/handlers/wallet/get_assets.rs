@@ -211,6 +211,7 @@ fn fill_missing_chains(to_aggregate_balance: &mut HashMap<&'static str, Vec<Bala
                 !to_aggregate_balance_clone[token_key]
                     .iter()
                     .any(|b| b.chain_id.as_deref() == Some(*chain))
+                    && get_erc20_groups()[token_key].contains_key(*chain)
             });
             for chain in missing_chains {
                 let template_balance = chain_pairs[0].clone();
@@ -247,10 +248,6 @@ fn apply_aggregate_balance_value(
     let mut aggregated_balances = Vec::new();
 
     for (_, balances) in to_aggregate_balance {
-        if balances.is_empty() {
-            continue;
-        }
-
         let new_balances = balances
             .clone()
             .into_iter()
@@ -886,7 +883,183 @@ mod ported_tests {
             assert!(result.is_empty());
         }
 
-        // TODO
+        #[test]
+        fn should_handle_balance_aggregation_across_chains() {
+            let aggregation_response = BalanceResponseBody {
+                balances: vec![
+                    BalanceItem {
+                        name: "USDC".to_owned(),
+                        symbol: "USDC".to_owned(),
+                        chain_id: Some(CHAIN_ID_ARBITRUM.to_owned()),
+                        address: Some(format!(
+                            "{CHAIN_ID_ARBITRUM}:{}",
+                            address!("af88d065e77c8cC2239327C5EDb3A432268e5831")
+                        )),
+                        value: Some(100.),
+                        price: 1.,
+                        quantity: BalanceQuantity {
+                            decimals: "6".to_owned(),
+                            numeric: "100".to_owned(),
+                        },
+                        icon_url: "https://example.com/usdc.png".to_owned(),
+                    },
+                    BalanceItem {
+                        name: "USDC".to_owned(),
+                        symbol: "USDC".to_owned(),
+                        chain_id: Some(CHAIN_ID_OPTIMISM.to_owned()),
+                        address: Some(format!(
+                            "{CHAIN_ID_OPTIMISM}:{}",
+                            address!("0b2c639c533813f4aa9d7837caf62653d097ff85")
+                        )),
+                        value: Some(200.),
+                        price: 1.,
+                        quantity: BalanceQuantity {
+                            decimals: "6".to_owned(),
+                            numeric: "200".to_owned(),
+                        },
+                        icon_url: "https://example.com/usdc.png".to_owned(),
+                    },
+                ],
+            };
+
+            let result = get_assets(
+                aggregation_response,
+                GetAssetsFilters {
+                    asset_filter: None,
+                    asset_type_filter: None,
+                    chain_filter: None,
+                },
+            )
+            .unwrap();
+
+            assert_eq!(
+                result[&U64::from(0xa4b1)].first().unwrap().balance(),
+                U64::from(0x11e1a300)
+            );
+            assert_eq!(
+                result[&U64::from(10)].first().unwrap().balance(),
+                U64::from(0x11e1a300)
+            );
+
+            // Since BASE is missing, an entry with zero balance should be created
+            assert_eq!(
+                result[&U64::from(8453)].first().unwrap().balance(),
+                U64::from(0xbebc200)
+            );
+        }
+
+        #[test]
+        fn should_fill_missing_chains_for_supported_tokens() {
+            let aggregation_response = BalanceResponseBody {
+                balances: vec![BalanceItem {
+                    name: "USDC".to_owned(),
+                    symbol: "USDC".to_owned(),
+                    chain_id: Some(CHAIN_ID_ARBITRUM.to_owned()),
+                    address: Some(format!(
+                        "{CHAIN_ID_ARBITRUM}:{}",
+                        address!("af88d065e77c8cC2239327C5EDb3A432268e5831")
+                    )),
+                    value: Some(100.),
+                    price: 1.,
+                    quantity: BalanceQuantity {
+                        decimals: "6".to_owned(),
+                        numeric: "100".to_owned(),
+                    },
+                    icon_url: "https://example.com/usdc.png".to_owned(),
+                }],
+            };
+
+            let result = get_assets(
+                aggregation_response,
+                GetAssetsFilters {
+                    asset_filter: None,
+                    asset_type_filter: None,
+                    chain_filter: None,
+                },
+            )
+            .unwrap();
+
+            let erc20_groups = get_erc20_groups();
+
+            let supported_chains_for_usdc = erc20_groups["USDC"].keys().map(|chain_id| {
+                (
+                    chain_id,
+                    U64::from(
+                        chain_id
+                            .strip_prefix("eip155:")
+                            .unwrap()
+                            .parse::<u64>()
+                            .unwrap(),
+                    ),
+                )
+            });
+
+            for (caip2, chain) in supported_chains_for_usdc {
+                assert!(result.contains_key(&chain));
+                let usdc_asset = result[&chain]
+                    .iter()
+                    .find(|asset| {
+                        asset.as_erc20().unwrap().address.as_address().unwrap()
+                            == &erc20_groups["USDC"][caip2]
+                    })
+                    .unwrap();
+                assert_eq!(usdc_asset.balance(), U64::from(0x5f5e100));
+            }
+        }
+
+        #[test]
+        fn should_only_create_entries_for_chains_where_token_is_supported() {
+            let single_chain_response = BalanceResponseBody {
+                balances: vec![BalanceItem {
+                    name: "USDT".to_owned(),
+                    symbol: "USDT".to_owned(),
+                    chain_id: Some(CHAIN_ID_ARBITRUM.to_owned()),
+                    address: Some(format!(
+                        "{CHAIN_ID_ARBITRUM}:{}",
+                        address!("Fd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9")
+                    )),
+                    value: Some(100.),
+                    price: 1.,
+                    quantity: BalanceQuantity {
+                        decimals: "6".to_owned(),
+                        numeric: "100".to_owned(),
+                    },
+                    icon_url: "https://example.com/usdt.png".to_owned(),
+                }],
+            };
+
+            let result = get_assets(
+                single_chain_response,
+                GetAssetsFilters {
+                    asset_filter: None,
+                    asset_type_filter: None,
+                    chain_filter: None,
+                },
+            )
+            .unwrap();
+
+            let erc20_groups = get_erc20_groups();
+
+            for caip2 in SUPPORTED_CHAINS {
+                let chain = U64::from(
+                    caip2
+                        .strip_prefix("eip155:")
+                        .unwrap()
+                        .parse::<u64>()
+                        .unwrap(),
+                );
+                if result.contains_key(&chain) {
+                    let has_usdt = result[&chain]
+                        .iter()
+                        .any(|asset| asset.as_erc20().unwrap().metadata.symbol == "USDT");
+                    if erc20_groups["USDT"].contains_key(caip2) {
+                        assert!(has_usdt);
+                    } else {
+                        assert!(!has_usdt);
+                    }
+                }
+            }
+        }
     }
 
     // TOOD

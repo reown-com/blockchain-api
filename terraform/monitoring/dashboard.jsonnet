@@ -196,10 +196,11 @@ dashboard.new(
     panels.names.registered(ds, vars)                { gridPos: pos_short._3 },
 
   row.new('Chain Abstraction'),
-    panels.chain_abstraction.gas_estimation(ds, vars)     { gridPos: pos_short._4 },
-    panels.chain_abstraction.insufficient_funds(ds, vars) { gridPos: pos_short._4 },
-    panels.chain_abstraction.no_bridging(ds, vars)        { gridPos: pos_short._4 },
-    panels.chain_abstraction.no_routes(ds, vars)          { gridPos: pos_short._4 },
+    panels.chain_abstraction.gas_estimation(ds, vars)       { gridPos: pos_short._4 },
+    panels.chain_abstraction.insufficient_funds(ds, vars)   { gridPos: pos_short._4 },
+    panels.chain_abstraction.no_bridging(ds, vars)          { gridPos: pos_short._4 },
+    panels.chain_abstraction.no_routes(ds, vars)            { gridPos: pos_short._4 },
+    panels.chain_abstraction.response_types_rates(ds, vars) { gridPos: pos_short._2 },
 
   row.new('Redis'),
     panels.redis.cpu(ds, vars)                    { gridPos: pos._2 },
