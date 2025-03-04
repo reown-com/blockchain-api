@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.203.0 - 2025-03-04
+#### Features
+- **(CA)** improving error responses (#976) - (65a1862) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.202.0 - 2025-03-03
 #### Features
 - **(o11y)** adding CA response types rate panel (#977) - (abb86e4) - Max Kalashnikoff | maksy.eth
