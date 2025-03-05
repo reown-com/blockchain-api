@@ -53,7 +53,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: reown-com/yttrium
-          ref: 5cb732c
+          ref: 5cb732c871161dadf6562956e87b9dcac154e568
           submodules: recursive
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.4
