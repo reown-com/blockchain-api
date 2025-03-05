@@ -7,18 +7,22 @@ use crate::{
     },
     state::AppState,
 };
-use alloy::primitives::{address, Address, U64};
+use alloy::primitives::{address, Address, U256};
 use axum::{
     extract::{ConnectInfo, Path, Query, State},
     response::{IntoResponse, Response},
     Json,
 };
 use hyper::{HeaderMap, StatusCode};
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::Deserialize;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use thiserror::Error;
 use tracing::error;
 use wc::future::FutureExt;
+use yttrium::wallet_service_api::{
+    AddressOrNative, Asset, AssetData, AssetFilter, AssetType, AssetTypeFilter, ChainFilter,
+    Erc20Metadata, GetAssetsFilters, GetAssetsParams, GetAssetsResult, NativeMetadata,
+};
 
 #[derive(Error, Debug)]
 pub enum GetAssetsError {
@@ -373,8 +377,8 @@ fn create_response(balances: Vec<BalanceItem>) -> GetAssetsResult {
             )
             .or_insert_with(Vec::new)
             .push({
-                fn convert_balance_to_hex(quantity: &BalanceQuantity) -> U64 {
-                    U64::from(
+                fn convert_balance_to_hex(quantity: &BalanceQuantity) -> U256 {
+                    U256::from(
                         (quantity.numeric.parse::<f64>().unwrap()
                             * 10f64.powf(quantity.decimals.parse::<f64>().unwrap()))
                         .round() as u64,
@@ -521,6 +525,7 @@ mod ported_tests {
 
     mod aggregation_and_conversion {
         use super::*;
+        use alloy::primitives::U64;
 
         #[test]
         fn should_correctly_convert_balance_to_hex() {
@@ -548,7 +553,7 @@ mod ported_tests {
                     ))
                     .unwrap()
                     .balance(),
-                U64::from(0x26fdd0)
+                U256::from(0x26fdd0)
             );
 
             assert_eq!(
@@ -565,7 +570,7 @@ mod ported_tests {
                     ))
                     .unwrap()
                     .balance(),
-                U64::from(0x102189ccc07ac_u64)
+                U256::from(0x102189ccc07ac_u64)
             );
         }
 
@@ -595,7 +600,7 @@ mod ported_tests {
                     ))
                     .unwrap()
                     .balance(),
-                U64::from(0x26fdd0)
+                U256::from(0x26fdd0)
             );
 
             assert_eq!(
@@ -612,7 +617,7 @@ mod ported_tests {
                     ))
                     .unwrap()
                     .balance(),
-                U64::from(0x26fdd0)
+                U256::from(0x26fdd0)
             );
         }
 
@@ -639,7 +644,7 @@ mod ported_tests {
 
             assert_eq!(
                 result[&U64::from(0x2105)].first().unwrap().balance(),
-                U64::from(0x0)
+                U256::from(0x0)
             );
         }
 
@@ -704,7 +709,7 @@ mod ported_tests {
                     ))
                     .unwrap()
                     .balance(),
-                U64::from(0x75bcd15)
+                U256::from(0x75bcd15)
             );
 
             assert_eq!(
@@ -721,7 +726,7 @@ mod ported_tests {
                     ))
                     .unwrap()
                     .balance(),
-                U64::from(0x112210f4768db400_u64)
+                U256::from(0x112210f4768db400_u64)
             );
         }
 
@@ -757,7 +762,7 @@ mod ported_tests {
 
             assert_eq!(
                 result[&U64::from(0x2105)].first().unwrap().balance(),
-                U64::from(0xde0b6b3a7640000_u64)
+                U256::from(0xde0b6b3a7640000_u64)
             );
         }
 
@@ -793,7 +798,7 @@ mod ported_tests {
 
             assert_eq!(
                 result[&U64::from(0x2105)].first().unwrap().balance(),
-                U64::from(0xf4240)
+                U256::from(0xf4240)
             );
         }
 
@@ -828,7 +833,7 @@ mod ported_tests {
             let asset = result[&U64::from(42161)].first().unwrap();
 
             assert_eq!(asset.asset_type(), AssetType::Native);
-            assert_eq!(asset.balance(), U64::from(0xde0b6b3a7640000_u64));
+            assert_eq!(asset.balance(), U256::from(0xde0b6b3a7640000_u64));
             if let Asset::Native { data } = asset {
                 assert_eq!(data.address, AddressOrNative::Native);
             } else {
@@ -934,17 +939,17 @@ mod ported_tests {
 
             assert_eq!(
                 result[&U64::from(0xa4b1)].first().unwrap().balance(),
-                U64::from(0x11e1a300)
+                U256::from(0x11e1a300)
             );
             assert_eq!(
                 result[&U64::from(10)].first().unwrap().balance(),
-                U64::from(0x11e1a300)
+                U256::from(0x11e1a300)
             );
 
             // Since BASE is missing, an entry with zero balance should be created
             assert_eq!(
                 result[&U64::from(8453)].first().unwrap().balance(),
-                U64::from(0xbebc200)
+                U256::from(0xbebc200)
             );
         }
 
@@ -1003,7 +1008,7 @@ mod ported_tests {
                             == &erc20_groups["USDC"][caip2]
                     })
                     .unwrap();
-                assert_eq!(usdc_asset.balance(), U64::from(0x5f5e100));
+                assert_eq!(usdc_asset.balance(), U256::from(0x5f5e100));
             }
         }
 

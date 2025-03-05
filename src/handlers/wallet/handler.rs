@@ -125,7 +125,7 @@ enum Error {
     #[error("{WALLET_GET_CALLS_STATUS}: {0}")]
     GetCallsStatus(GetCallsStatusError),
 
-    #[error("{WALLET_GET_ASSETS}: {0}")]
+    #[error("{}: {0}", wallet_service_api::WALLET_GET_ASSETS)]
     GetAssets(GetAssetsError),
 
     #[error("Method not found")]
