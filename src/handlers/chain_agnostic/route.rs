@@ -1,6 +1,6 @@
 use {
     super::{
-        super::HANDLER_TASK_METRICS, check_bridging_for_erc20_transfer,
+        super::HANDLER_TASK_METRICS, check_bridging_for_erc20_transfer, convert_amount,
         find_supported_bridging_asset, get_assets_changes_from_simulation, BridgingStatus,
         StorageBridgingItem, BRIDGING_FEE_SLIPPAGE, STATUS_POLLING_INTERVAL,
     },
@@ -302,7 +302,7 @@ async fn handler_internal(
             .add_ca_no_bridging_needed(ChainAbstractionNoBridgingNeededType::SufficientFunds);
         return Ok(no_bridging_needed_response.into_response());
     }
-    let erc20_topup_value = asset_transfer_value - erc20_balance;
+    let mut erc20_topup_value = asset_transfer_value - erc20_balance;
 
     // Check for possible bridging funds by iterating over supported assets
     // or return an insufficient funds error
@@ -314,6 +314,7 @@ async fn handler_internal(
         initial_transaction.chain_id.clone(),
         asset_transfer_contract,
         initial_tx_token_symbol.clone(),
+        initial_tx_token_decimals,
     )
     .await?
     else {
@@ -332,6 +333,13 @@ async fn handler_internal(
     let bridge_contract = bridging_asset.contract_address;
     let bridge_decimals = bridging_asset.decimals;
     let current_bridging_asset_balance = bridging_asset.current_balance;
+
+    // Applying decimals differences between initial token and bridging token
+    erc20_topup_value = convert_amount(
+        erc20_topup_value,
+        initial_tx_token_decimals,
+        bridge_decimals,
+    );
 
     // Get Quotes for the bridging
     let quotes = state
@@ -374,7 +382,8 @@ async fn handler_internal(
     let bridging_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
     let bridging_amount =
         U256::from_str(&bridging_amount).map_err(|_| RpcError::InvalidValue(bridging_amount))?;
-    let bridging_fee = erc20_topup_value - bridging_amount;
+    let bridging_fee = erc20_topup_value
+        - convert_amount(bridging_amount, initial_tx_token_decimals, bridge_decimals);
 
     // Calculate the required bridging topup amount with the bridging fee
     // and bridging fee * slippage to cover volatility
@@ -437,7 +446,9 @@ async fn handler_internal(
     let bridging_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
     let bridging_amount =
         U256::from_str(&bridging_amount).map_err(|_| RpcError::InvalidValue(bridging_amount))?;
-    if erc20_topup_value > bridging_amount {
+    if erc20_topup_value
+        > convert_amount(bridging_amount, initial_tx_token_decimals, bridge_decimals)
+    {
         error!(
             "The final bridging amount:{} is less than the topup amount:{}",
             bridging_amount, erc20_topup_value

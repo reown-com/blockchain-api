@@ -13,7 +13,7 @@ use {
     assets::{SimulationParams, BRIDGING_ASSETS},
     ethers::{types::H160 as EthersH160, utils::keccak256},
     serde::{Deserialize, Serialize},
-    std::{collections::HashMap, str::FromStr, sync::Arc},
+    std::{cmp::Ordering, collections::HashMap, str::FromStr, sync::Arc},
     tracing::debug,
     yttrium::chain_abstraction::api::Transaction,
 };
@@ -23,7 +23,7 @@ pub mod route;
 pub mod status;
 
 /// How much to multiply the bridging fee amount to cover bridging fee volatility
-pub const BRIDGING_FEE_SLIPPAGE: i8 = 75; // 75%
+pub const BRIDGING_FEE_SLIPPAGE: i16 = 200; // 200%
 
 /// Bridging timeout in seconds
 pub const BRIDGING_TIMEOUT: u64 = 1800; // 30 minutes
@@ -125,6 +125,7 @@ pub struct BridgingAsset {
 /// Checking available assets amount for bridging excluding the initial transaction
 /// asset, prioritizing the asset with the highest balance or the asset with the
 /// same symbol to avoid unnecessary swapping
+#[allow(clippy::too_many_arguments)]
 pub async fn check_bridging_for_erc20_transfer(
     rpc_project_id: String,
     session_id: Option<String>,
@@ -135,6 +136,8 @@ pub async fn check_bridging_for_erc20_transfer(
     exclude_contract_address: Address,
     // Using the same asset as a priority for bridging
     token_symbol_priority: String,
+    // Applying token decimals for the value to compare between different tokens
+    amount_token_decimals: u8,
 ) -> Result<Option<BridgingAsset>, RpcError> {
     // Check ERC20 tokens balance for each of supported assets
     let mut contracts_per_chain: HashMap<(String, String, u8), Vec<String>> = HashMap::new();
@@ -168,7 +171,8 @@ pub async fn check_bridging_for_erc20_transfer(
         )
         .await?;
         for (contract_address, current_balance) in erc20_balances {
-            if current_balance >= value {
+            // Check if the balance compared to the transfer value is enough, applied to the transfer token decimals
+            if convert_amount(current_balance, decimals, amount_token_decimals) >= value {
                 // Use the priority asset if found
                 if token_symbol == token_symbol_priority {
                     return Ok(Some(BridgingAsset {
@@ -313,4 +317,50 @@ pub async fn get_assets_changes_from_simulation(
     }
 
     Ok((asset_changes, gas_used))
+}
+
+/// Convert the amount between different decimals
+pub fn convert_amount(amount: U256, from_decimals: u8, to_decimals: u8) -> U256 {
+    match from_decimals.cmp(&to_decimals) {
+        Ordering::Equal => amount,
+        Ordering::Greater => {
+            // Reducing decimals: divide by 10^(from_decimals - to_decimals)
+            let diff = from_decimals - to_decimals;
+            let exp = U256::from(diff as u64);
+            let factor = U256::from(10).pow(exp);
+            amount / factor
+        }
+        Ordering::Less => {
+            // Increasing decimals: multiply by 10^(to_decimals - from_decimals)
+            let diff = to_decimals - from_decimals;
+            let exp = U256::from(diff as u64);
+            let factor = U256::from(10).pow(exp);
+            amount * factor
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_convert_amount() {
+        let amount = U256::from_str("12345678901234567890").unwrap();
+        let converted = convert_amount(amount, 18, 18);
+        assert_eq!(converted, amount);
+
+        // Converting 500 USDT (6 decimals) to 18 decimals.
+        let usdt_amount = U256::from(500_000_000u64);
+        let converted = convert_amount(usdt_amount, 6, 18);
+        let expected = U256::from_str("500000000000000000000").unwrap();
+        assert_eq!(converted, expected);
+
+        // Converting 500 DAI (18 decimals) to 6 decimals.
+        let dai_amount = U256::from_str("500000000000000000000").unwrap();
+        let converted = convert_amount(dai_amount, 18, 6);
+        let expected = U256::from(500_000_000u64);
+        assert_eq!(converted, expected);
+    }
 }

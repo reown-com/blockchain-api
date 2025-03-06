@@ -31,6 +31,11 @@ describe('Chain abstraction orchestrator', () => {
   usdt_funds[chain_id_arbitrum] = 3_388_000;
   usdt_funds[chain_id_optimism] = 1_050_000;
 
+  const usds_token_symbol = "USDS";
+  let usds_funds = {};
+  // Using string amouns for USDS, as it has 18 decimals
+  usds_funds[chain_id_optimism] = "902165684795715063";
+
   // Amount to send to Optimism
   const amount_to_send = 3_000_000
   
@@ -42,6 +47,9 @@ describe('Chain abstraction orchestrator', () => {
   usdt_contracts[chain_id_optimism] = "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58";
   usdt_contracts[chain_id_arbitrum] = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9";
   usdt_contracts[chain_id_base] = "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2";
+  let usds_contracts = {};
+  usds_contracts[chain_id_optimism] = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1";
+  usds_contracts[chain_id_arbitrum] = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1";
 
   let orchestration_id = "";
 
@@ -283,7 +291,7 @@ describe('Chain abstraction orchestrator', () => {
   })
 
   it('bridging routes (routes available, USDT Optimism → USDT Arbitrum)', async () => {
-    // Sending USDT to Arbitrum, but having the USDT balance on Optimism.
+    // Sending USDT on Arbitrum, but having the USDT balance on Optimism.
     let amount_to_send = usdt_funds[chain_id_arbitrum] + 500_000;
 
     const data_encoded = erc20Interface.encodeFunctionData('transfer', [
@@ -309,6 +317,38 @@ describe('Chain abstraction orchestrator', () => {
 
     const data = resp.data
     expect(typeof data.orchestrationId).toBe('string')
+    // Expecting 2 transactions in the route
+    expect(data.transactions.length).toBe(2)
+  })
+
+  it('bridging routes (routes available, USDC Base → USDS(DAI) Optimism)', async () => {
+    // Sending USDS on Optimism, but having the USDC balance on Base.
+    let amount_to_send = "2802165684795715100";
+
+    const data_encoded = erc20Interface.encodeFunctionData('transfer', [
+      receiver_address,
+      amount_to_send,
+    ]);
+
+    let transactionObj = {
+      transaction: {
+        from: from_address_with_funds,
+        to: usds_contracts[chain_id_optimism],
+        value: "0x00", // Zero native tokens
+        input: data_encoded,
+        chainId: chain_id_optimism,
+      }
+    }
+
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/ca/orchestrator/route?projectId=${projectId}`,
+      transactionObj
+    )
+    expect(resp.status).toBe(200)
+
+    const data = resp.data
+    expect(typeof data.orchestrationId).toBe('string')
+
     // Expecting 2 transactions in the route
     expect(data.transactions.length).toBe(2)
   })
