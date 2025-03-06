@@ -1,9 +1,6 @@
 name: Yttrium integration tests
 
 on:
-  push:
-    branches:
-      - fix/yttrium-integration-tests # TODO remove on:push before merge
   workflow_dispatch:
     inputs:
       stage-url:
@@ -64,5 +61,4 @@ jobs:
           FAUCET_MNEMONIC: ${{ secrets.FAUCET_MNEMONIC }}
           RUST_BACKTRACE: 1
           RUST_LOG: yttrium=trace
-          # BLOCKCHAIN_API_URL: ${{ inputs.stage-url }}
-          BLOCKCHAIN_API_URL: "https://staging.rpc.walletconnect.org" # TODO switch to inputs.stage-url before merge
+          BLOCKCHAIN_API_URL: ${{ inputs.stage-url }}
