@@ -23,6 +23,7 @@ use std::sync::Arc;
 use thiserror::Error;
 use tracing::error;
 use wc::future::FutureExt;
+use yttrium::wallet_service_api;
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -109,7 +110,6 @@ async fn handler_internal(
 pub const WALLET_PREPARE_CALLS: &str = "wallet_prepareCalls";
 pub const WALLET_SEND_PREPARED_CALLS: &str = "wallet_sendPreparedCalls";
 pub const WALLET_GET_CALLS_STATUS: &str = "wallet_getCallsStatus";
-pub const WALLET_GET_ASSETS: &str = "wallet_getAssets";
 
 #[derive(Debug, Error)]
 enum Error {
@@ -125,7 +125,7 @@ enum Error {
     #[error("{WALLET_GET_CALLS_STATUS}: {0}")]
     GetCallsStatus(GetCallsStatusError),
 
-    #[error("{WALLET_GET_ASSETS}: {0}")]
+    #[error("{}: {0}", wallet_service_api::WALLET_GET_ASSETS)]
     GetAssets(GetAssetsError),
 
     #[error("Method not found")]
@@ -211,7 +211,7 @@ async fn handle_rpc(
             .map_err(Error::GetCallsStatus)?,
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
-        WALLET_GET_ASSETS => serde_json::to_value(
+        wallet_service_api::WALLET_GET_ASSETS => serde_json::to_value(
             &get_assets::handler(
                 state,
                 project_id,

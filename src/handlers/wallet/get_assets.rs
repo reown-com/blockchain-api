@@ -7,175 +7,22 @@ use crate::{
     },
     state::AppState,
 };
-use alloy::primitives::{address, Address, U64};
+use alloy::primitives::{address, Address, U256};
 use axum::{
     extract::{ConnectInfo, Path, Query, State},
     response::{IntoResponse, Response},
     Json,
 };
 use hyper::{HeaderMap, StatusCode};
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::Deserialize;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use thiserror::Error;
 use tracing::error;
 use wc::future::FutureExt;
-
-// https://github.com/ethereum/ERCs/pull/709/files#diff-be675f3ce6b6aa5616dd1bccf5e50f44ad65775afb967a47aaffb8f5eb51b849R35
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GetAssetsParams {
-    account: Address,
-    #[serde(flatten)]
-    filters: GetAssetsFilters,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GetAssetsFilters {
-    #[serde(default)]
-    asset_filter: Option<AssetFilter>,
-    #[serde(default)]
-    asset_type_filter: Option<AssetTypeFilter>,
-    #[serde(default)]
-    chain_filter: Option<ChainFilter>,
-}
-
-pub type AssetFilter = HashMap<Eip155ChainId, Vec<AddressOrNative>>;
-pub type AssetTypeFilter = Vec<AssetType>;
-pub type ChainFilter = Vec<Eip155ChainId>;
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(
-    rename_all = "camelCase",
-    rename_all_fields = "camelCase",
-    tag = "type"
-)]
-pub enum AssetType {
-    Native,
-    Erc20,
-    Erc721,
-}
-
-pub type Eip155ChainId = U64;
-pub type GetAssetsResult = HashMap<Eip155ChainId, Vec<Asset>>;
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(
-    rename_all = "camelCase",
-    rename_all_fields = "camelCase",
-    tag = "type"
-)]
-pub enum Asset {
-    Native {
-        #[serde(flatten)]
-        data: AssetData<NativeMetadata>,
-    },
-    Erc20 {
-        #[serde(flatten)]
-        data: AssetData<Erc20Metadata>,
-    },
-    Erc721 {
-        #[serde(flatten)]
-        data: AssetData<Erc721Metadata>,
-    },
-}
-
-impl Asset {
-    pub fn balance(&self) -> U64 {
-        match self {
-            Self::Native { data } => data.balance,
-            Self::Erc20 { data } => data.balance,
-            Self::Erc721 { data } => data.balance,
-        }
-    }
-
-    pub fn asset_type(&self) -> AssetType {
-        match self {
-            Self::Native { .. } => AssetType::Native,
-            Self::Erc20 { .. } => AssetType::Erc20,
-            Self::Erc721 { .. } => AssetType::Erc721,
-        }
-    }
-
-    pub fn as_erc20(&self) -> Option<&AssetData<Erc20Metadata>> {
-        match self {
-            Self::Erc20 { data } => Some(data),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AddressOrNative {
-    Address(Address),
-    Native,
-}
-
-impl AddressOrNative {
-    pub fn as_address(&self) -> Option<&Address> {
-        match self {
-            Self::Address(address) => Some(address),
-            Self::Native => None,
-        }
-    }
-}
-
-impl Serialize for AddressOrNative {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            AddressOrNative::Native => serializer.serialize_str("native"),
-            AddressOrNative::Address(address) => address.serialize(serializer),
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for AddressOrNative {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        // Deserialize the input as a string.
-        let s = String::deserialize(deserializer)?;
-
-        if s == "native" {
-            Ok(AddressOrNative::Native)
-        } else {
-            s.parse::<Address>()
-                .map_err(de::Error::custom)
-                .map(AddressOrNative::Address)
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AssetData<M> {
-    address: AddressOrNative,
-    balance: U64,
-    metadata: M,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct NativeMetadata {}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Erc20Metadata {
-    name: String,
-    symbol: String,
-    decimals: u8,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Erc721Metadata {
-    name: String,
-    symbol: String,
-}
+use yttrium::wallet_service_api::{
+    AddressOrNative, Asset, AssetData, AssetFilter, AssetType, AssetTypeFilter, ChainFilter,
+    Erc20Metadata, GetAssetsFilters, GetAssetsParams, GetAssetsResult, NativeMetadata,
+};
 
 #[derive(Error, Debug)]
 pub enum GetAssetsError {
@@ -530,8 +377,8 @@ fn create_response(balances: Vec<BalanceItem>) -> GetAssetsResult {
             )
             .or_insert_with(Vec::new)
             .push({
-                fn convert_balance_to_hex(quantity: &BalanceQuantity) -> U64 {
-                    U64::from(
+                fn convert_balance_to_hex(quantity: &BalanceQuantity) -> U256 {
+                    U256::from(
                         (quantity.numeric.parse::<f64>().unwrap()
                             * 10f64.powf(quantity.decimals.parse::<f64>().unwrap()))
                         .round() as u64,
@@ -678,6 +525,7 @@ mod ported_tests {
 
     mod aggregation_and_conversion {
         use super::*;
+        use alloy::primitives::U64;
 
         #[test]
         fn should_correctly_convert_balance_to_hex() {
@@ -705,7 +553,7 @@ mod ported_tests {
                     ))
                     .unwrap()
                     .balance(),
-                U64::from(0x26fdd0)
+                U256::from(0x26fdd0)
             );
 
             assert_eq!(
@@ -722,7 +570,7 @@ mod ported_tests {
                     ))
                     .unwrap()
                     .balance(),
-                U64::from(0x102189ccc07ac_u64)
+                U256::from(0x102189ccc07ac_u64)
             );
         }
 
@@ -752,7 +600,7 @@ mod ported_tests {
                     ))
                     .unwrap()
                     .balance(),
-                U64::from(0x26fdd0)
+                U256::from(0x26fdd0)
             );
 
             assert_eq!(
@@ -769,7 +617,7 @@ mod ported_tests {
                     ))
                     .unwrap()
                     .balance(),
-                U64::from(0x26fdd0)
+                U256::from(0x26fdd0)
             );
         }
 
@@ -796,7 +644,7 @@ mod ported_tests {
 
             assert_eq!(
                 result[&U64::from(0x2105)].first().unwrap().balance(),
-                U64::from(0x0)
+                U256::from(0x0)
             );
         }
 
@@ -861,7 +709,7 @@ mod ported_tests {
                     ))
                     .unwrap()
                     .balance(),
-                U64::from(0x75bcd15)
+                U256::from(0x75bcd15)
             );
 
             assert_eq!(
@@ -878,7 +726,7 @@ mod ported_tests {
                     ))
                     .unwrap()
                     .balance(),
-                U64::from(0x112210f4768db400_u64)
+                U256::from(0x112210f4768db400_u64)
             );
         }
 
@@ -914,7 +762,7 @@ mod ported_tests {
 
             assert_eq!(
                 result[&U64::from(0x2105)].first().unwrap().balance(),
-                U64::from(0xde0b6b3a7640000_u64)
+                U256::from(0xde0b6b3a7640000_u64)
             );
         }
 
@@ -950,7 +798,7 @@ mod ported_tests {
 
             assert_eq!(
                 result[&U64::from(0x2105)].first().unwrap().balance(),
-                U64::from(0xf4240)
+                U256::from(0xf4240)
             );
         }
 
@@ -985,7 +833,7 @@ mod ported_tests {
             let asset = result[&U64::from(42161)].first().unwrap();
 
             assert_eq!(asset.asset_type(), AssetType::Native);
-            assert_eq!(asset.balance(), U64::from(0xde0b6b3a7640000_u64));
+            assert_eq!(asset.balance(), U256::from(0xde0b6b3a7640000_u64));
             if let Asset::Native { data } = asset {
                 assert_eq!(data.address, AddressOrNative::Native);
             } else {
@@ -1091,17 +939,17 @@ mod ported_tests {
 
             assert_eq!(
                 result[&U64::from(0xa4b1)].first().unwrap().balance(),
-                U64::from(0x11e1a300)
+                U256::from(0x11e1a300)
             );
             assert_eq!(
                 result[&U64::from(10)].first().unwrap().balance(),
-                U64::from(0x11e1a300)
+                U256::from(0x11e1a300)
             );
 
             // Since BASE is missing, an entry with zero balance should be created
             assert_eq!(
                 result[&U64::from(8453)].first().unwrap().balance(),
-                U64::from(0xbebc200)
+                U256::from(0xbebc200)
             );
         }
 
@@ -1160,7 +1008,7 @@ mod ported_tests {
                             == &erc20_groups["USDC"][caip2]
                     })
                     .unwrap();
-                assert_eq!(usdc_asset.balance(), U64::from(0x5f5e100));
+                assert_eq!(usdc_asset.balance(), U256::from(0x5f5e100));
             }
         }
 

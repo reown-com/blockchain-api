@@ -1,0 +1,64 @@
+name: Yttrium integration tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage-url:
+        description: 'RPC URL'
+        required: false
+        default: 'https://staging.rpc.walletconnect.org'
+  workflow_call:
+    inputs:
+      stage-url:
+        type: string
+        required: true
+        description: 'Stage RPC URL'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  e2e-latest:
+    name: E2E (latest)
+    runs-on: ubuntu-latest
+    concurrency:
+      group: yttrium-e2e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: reown-com/yttrium
+          ref: main
+          submodules: recursive
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.4
+      - run: rustup update stable && rustup default stable
+      - run: cargo test -p yttrium --features=test_blockchain_api chain_abstraction::tests::happy_path_execute_method
+        env:
+          REOWN_PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          FAUCET_MNEMONIC: ${{ secrets.FAUCET_MNEMONIC }}
+          RUST_BACKTRACE: 1
+          RUST_LOG: yttrium=trace
+          # BLOCKCHAIN_API_URL: ${{ inputs.stage-url }}
+          BLOCKCHAIN_API_URL: "https://staging.rpc.walletconnect.org" # TODO switch to inputs.stage-url before merge
+
+  e2e-pinned:
+    name: E2E (pinned)
+    runs-on: ubuntu-latest
+    concurrency:
+      group: yttrium-e2e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: reown-com/yttrium
+          ref: 5cb732c871161dadf6562956e87b9dcac154e568
+          submodules: recursive
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.4
+      - run: rustup update stable && rustup default stable
+      - run: cargo test -p yttrium --features=test_blockchain_api chain_abstraction::tests::happy_path_execute_method
+        env:
+          REOWN_PROJECT_ID: ${{ secrets.PROJECT_ID }}
+          FAUCET_MNEMONIC: ${{ secrets.FAUCET_MNEMONIC }}
+          RUST_BACKTRACE: 1
+          RUST_LOG: yttrium=trace
+          BLOCKCHAIN_API_URL: ${{ inputs.stage-url }}
