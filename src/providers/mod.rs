@@ -174,6 +174,8 @@ pub struct ProvidersConfig {
     pub allnodes_api_key: String,
     /// Meld API key
     pub meld_api_key: String,
+    /// Meld API Base URL
+    pub meld_api_url: String,
 
     pub override_bundler_urls: Option<MockAltoUrls>,
 }
@@ -304,7 +306,10 @@ impl ProviderRepository {
             "https://pay.coinbase.com/api/v1".into(),
         ));
 
-        let meld_onramp_provider = Arc::new(MeldProvider::new(config.meld_api_key.clone()));
+        let meld_onramp_provider = Arc::new(MeldProvider::new(
+            config.meld_api_url.clone(),
+            config.meld_api_key.clone(),
+        ));
 
         let bundler_ops_provider: Arc<dyn BundlerOpsProvider> =
             if let Some(override_bundler_url) = config.override_bundler_urls.clone() {

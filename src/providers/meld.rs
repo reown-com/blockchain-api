@@ -18,7 +18,6 @@ use {
     url::Url,
 };
 
-const BASE_URL: &str = "https://api.meld.io";
 const API_VERSION: &str = "2023-12-19";
 const DEFAULT_CATEGORY: &str = "CRYPTO_ONRAMP";
 const DEFAULT_SESSION_TYPE: &str = "BUY";
@@ -27,14 +26,16 @@ const DEFAULT_SESSION_TYPE: &str = "BUY";
 pub struct MeldProvider {
     pub provider_kind: ProviderKind,
     pub api_key: String,
+    pub api_base_url: String,
     pub http_client: reqwest::Client,
 }
 
 impl MeldProvider {
-    pub fn new(api_key: String) -> Self {
+    pub fn new(api_base_url: String, api_key: String) -> Self {
         Self {
             provider_kind: ProviderKind::Meld,
             api_key,
+            api_base_url,
             http_client: reqwest::Client::new(),
         }
     }
@@ -94,7 +95,7 @@ impl OnRampMultiProvider for MeldProvider {
         params: ProvidersQueryParams,
         metrics: Arc<Metrics>,
     ) -> RpcResult<Vec<ProvidersResponse>> {
-        let base = format!("{}/service-providers", BASE_URL);
+        let base = format!("{}/service-providers", self.api_base_url);
         let mut url = Url::parse(&base).map_err(|_| RpcError::OnRampParseURLError)?;
         if let Some(countries) = params.countries {
             url.query_pairs_mut().append_pair("countries", &countries);
@@ -147,21 +148,30 @@ impl OnRampMultiProvider for MeldProvider {
     ) -> RpcResult<serde_json::Value> {
         let base_url = match params.r#type {
             PropertyType::Countries => {
-                format!("{}/service-providers/properties/countries", BASE_URL)
+                format!(
+                    "{}/service-providers/properties/countries",
+                    self.api_base_url
+                )
             }
             PropertyType::CryptoCurrencies => format!(
                 "{}/service-providers/properties/crypto-currencies",
-                BASE_URL
+                self.api_base_url
             ),
             PropertyType::FiatCurrencies => {
-                format!("{}/service-providers/properties/fiat-currencies", BASE_URL)
+                format!(
+                    "{}/service-providers/properties/fiat-currencies",
+                    self.api_base_url
+                )
             }
             PropertyType::PaymentMethods => {
-                format!("{}/service-providers/properties/payment-methods", BASE_URL)
+                format!(
+                    "{}/service-providers/properties/payment-methods",
+                    self.api_base_url
+                )
             }
             PropertyType::FiatPurchasesLimits => format!(
                 "{}/service-providers/limits/fiat-currency-purchases",
-                BASE_URL
+                self.api_base_url
             ),
         };
         let mut url = Url::parse(&base_url).map_err(|_| RpcError::OnRampParseURLError)?;
@@ -214,7 +224,7 @@ impl OnRampMultiProvider for MeldProvider {
         params: WidgetQueryParams,
         metrics: Arc<Metrics>,
     ) -> RpcResult<WidgetResponse> {
-        let base = format!("{}/crypto/session/widget", BASE_URL);
+        let base = format!("{}/crypto/session/widget", self.api_base_url);
         let url = Url::parse(&base).map_err(|_| RpcError::OnRampParseURLError)?;
 
         let latency_start = SystemTime::now();
@@ -267,7 +277,7 @@ impl OnRampMultiProvider for MeldProvider {
         params: MultiQuotesQueryParams,
         metrics: Arc<Metrics>,
     ) -> RpcResult<Vec<QuotesResponse>> {
-        let base = format!("{}/payments/crypto/quote", BASE_URL);
+        let base = format!("{}/payments/crypto/quote", self.api_base_url);
         let url = Url::parse(&base).map_err(|_| RpcError::OnRampParseURLError)?;
 
         let latency_start = SystemTime::now();

@@ -206,6 +206,12 @@ variable "meld_api_key" {
   sensitive   = true
 }
 
+variable "meld_api_url" {
+  description = "Meld API base URL. e.g. https://api.meld.io"
+  type        = string
+  sensitive   = true
+}
+
 #-------------------------------------------------------------------------------
 # Analytics
 
