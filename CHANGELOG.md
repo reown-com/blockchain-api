@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.204.0 - 2025-03-06
+#### Features
+- **(Meld)** adding Meld API base url as a variable (#980) - (2f7587a) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.203.0 - 2025-03-04
 #### Features
 - **(CA)** improving error responses (#976) - (65a1862) - Max Kalashnikoff | maksy.eth
