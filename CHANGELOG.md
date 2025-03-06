@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.205.0 - 2025-03-06
+#### Features
+- **(CA)** adding USDS asset support (#981) - (00c1106) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.204.1 - 2025-03-06
 #### Bug Fixes
 - run yttrium integration tests in CD (#971) - (76f3182) - Chris Smith
