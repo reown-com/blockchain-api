@@ -83,6 +83,7 @@ module "ecs" {
   syndica_api_key        = var.syndica_api_key
   allnodes_api_key       = var.allnodes_api_key
   meld_api_key           = var.meld_api_key
+  meld_api_url           = var.meld_api_url
 
   # Project Registry
   registry_api_endpoint   = var.registry_api_endpoint
