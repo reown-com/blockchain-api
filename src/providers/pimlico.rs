@@ -6,6 +6,7 @@ use {
     },
     alloy::rpc::json_rpc::Id,
     async_trait::async_trait,
+    serde::{Deserialize, Serialize},
     std::sync::Arc,
 };
 
@@ -14,6 +15,11 @@ pub struct PimlicoProvider {
     pub api_key: String,
     pub base_api_url: String,
     http_client: reqwest::Client,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BalanceOverride {
+    balance: String,
 }
 
 impl PimlicoProvider {
@@ -36,8 +42,25 @@ impl BundlerOpsProvider for PimlicoProvider {
         id: Id,
         jsonrpc: Arc<str>,
         method: &SupportedBundlerOps,
-        params: serde_json::Value,
+        mut params: serde_json::Value,
     ) -> RpcResult<serde_json::Value> {
+        // Adding an exclusion for the `eth_estimateUserOperationGas`` to add the
+        // balance override during estimation to prevent AA21 errors
+        if method == &SupportedBundlerOps::EthEstimateUserOperationGas {
+            if let Some(array) = params.as_array_mut() {
+                if let Some(sender) = array
+                    .first()
+                    .and_then(|first| first.get("sender"))
+                    .and_then(serde_json::Value::as_str)
+                {
+                    // Adding 100 ETH to the smart account
+                    let new_param = serde_json::json!({
+                        sender: BalanceOverride { balance: "0x56BC75E2D63100000".into() },
+                    });
+                    array.push(new_param);
+                }
+            }
+        }
         let jsonrpc_send_userop_request = crypto::JsonRpcRequest {
             id,
             jsonrpc,
