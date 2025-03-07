@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.206.0 - 2025-03-07
+#### Features
+- **(Pimlico)** adding an exclusion to the eth_estimateUserOperationGas operation (#982) - (55fde63) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.205.0 - 2025-03-06
 #### Features
 - **(CA)** adding USDS asset support (#981) - (00c1106) - Max Kalashnikoff | maksy.eth
