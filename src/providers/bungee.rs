@@ -131,6 +131,8 @@ impl ChainOrchestrationProvider for BungeeProvider {
         let (_, evm_from_chain_id) = disassemble_caip2(&from_chain_id)?;
         let (_, evm_to_chain_id) = disassemble_caip2(&to_chain_id)?;
 
+        error!("Amount: {}", amount.to_string());
+
         url.query_pairs_mut().extend_pairs([
             ("fromChainId", &evm_from_chain_id),
             ("fromTokenAddress", &from_token_address.to_string()),

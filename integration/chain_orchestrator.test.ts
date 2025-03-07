@@ -321,7 +321,7 @@ describe('Chain abstraction orchestrator', () => {
     expect(data.transactions.length).toBe(2)
   })
 
-  it('bridging routes (routes available, USDC Base → USDS(DAI) Optimism)', async () => {
+  it.only('bridging routes (routes available, USDC Base → USDS(DAI) Optimism)', async () => {
     // Sending USDS on Optimism, but having the USDC balance on Base.
     let amount_to_send = "2802165684795715100";
 
@@ -344,6 +344,7 @@ describe('Chain abstraction orchestrator', () => {
       `${baseUrl}/v1/ca/orchestrator/route?projectId=${projectId}`,
       transactionObj
     )
+    console.log(resp.data)
     expect(resp.status).toBe(200)
 
     const data = resp.data

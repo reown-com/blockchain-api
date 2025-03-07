@@ -5,6 +5,7 @@ use {
 
 pub struct AssetMetadata {
     pub decimals: u8,
+    pub stablecoin: bool,
 }
 
 /// Asset simulation parameters to override the asset's balance state
@@ -45,10 +46,16 @@ static USDS_CONTRACTS: phf::Map<&'static str, Address> = phf_map! {
     "eip155:42161" => address!("DA10009cBd5D07dd0CeCc66161FC93D7c9000da1"),
 };
 
+static ETH_CONTRACTS: phf::Map<&'static str, Address> = phf_map! {
+    // Base
+    "eip155:8453" => address!("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
+};
+
 pub static BRIDGING_ASSETS: phf::Map<&'static str, AssetEntry> = phf_map! {
     "USDC" => AssetEntry {
         metadata: AssetMetadata {
             decimals: 6,
+            stablecoin: true,
         },
         simulation: SimulationParams {
             // Must be in sync with the `USDC_CONTRACTS` from above
@@ -64,6 +71,7 @@ pub static BRIDGING_ASSETS: phf::Map<&'static str, AssetEntry> = phf_map! {
     "USDT" => AssetEntry {
         metadata: AssetMetadata {
             decimals: 6,
+            stablecoin: true,
         },
         simulation: SimulationParams {
             // Must be in sync with the `USDT_CONTRACTS` from above
@@ -78,6 +86,7 @@ pub static BRIDGING_ASSETS: phf::Map<&'static str, AssetEntry> = phf_map! {
     "USDS" => AssetEntry {
         metadata: AssetMetadata {
             decimals: 18,
+            stablecoin: true,
         },
         simulation: SimulationParams {
             // Must be in sync with the `USDS_CONTRACTS` from above
@@ -89,4 +98,18 @@ pub static BRIDGING_ASSETS: phf::Map<&'static str, AssetEntry> = phf_map! {
         },
         contracts: &USDS_CONTRACTS,
     },
+    // "ETH" => AssetEntry {
+    //     metadata: AssetMetadata {
+    //         decimals: 18,
+    //         stablecoin: false,
+    //     },
+    //     simulation: SimulationParams {
+    //         // Must be in sync with the `USDS_CONTRACTS` from above
+    //         balance_storage_slots: &phf_map! {
+    //             "eip155:10" => 0u64,
+    //         },
+    //         balance: 99000000000000000000000,
+    //     },
+    //     contracts: &ETH_CONTRACTS,
+    // },
 };

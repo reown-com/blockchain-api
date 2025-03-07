@@ -869,11 +869,22 @@ pub fn format_token_amount(amount: U256, decimals: u8) -> String {
 }
 
 /// Convert token amount to value depending on the token price and decimals
-pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u8) -> f64 {
-    let decimals_usize = decimals as usize;
-    let scaling_factor = 10_u64.pow(decimals_usize as u32) as f64;
-    let balance_f64 = balance.as_u64() as f64 / scaling_factor;
-    balance_f64 * price
+pub fn convert_token_amount_to_value(balance: AlloyU256, price: f64, decimals: u8) -> f64 {
+    let scaling_factor = 10u64.pow(decimals as u32) as f64;
+    let balance_f64: f64 = balance.to_string().parse().unwrap_or_default();
+    balance_f64 / scaling_factor * price
+}
+
+pub fn float_to_u256(amount: f64, decimals: u8) -> AlloyU256 {
+    // Calculate the scaling factor (10^decimals)
+    let factor = 10_f64.powi(decimals as i32);
+
+    // Multiply the amount by the factor; you can use round(), floor(), or ceil()
+    // depending on how you want to handle fractional remainders.
+    let scaled_amount = (amount * factor).round();
+
+    // Convert the scaled float to u128 first (ensure that the value fits in u128)
+    AlloyU256::from(scaled_amount as u128)
 }
 
 /// Convert Alloy Address type to Ethers H160
@@ -1021,7 +1032,9 @@ mod tests {
 
     #[test]
     fn test_convert_token_amount_to_value() {
-        let balance = U256::from_dec_str("959694527317077690").unwrap();
+        let balance: AlloyU256 = "959694527317077690"
+            .parse()
+            .expect("Cannot parse string to Alloy U256");
         let price = 10000.05;
         let decimals = 18;
         assert_eq!(

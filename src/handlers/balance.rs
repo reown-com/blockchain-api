@@ -7,6 +7,7 @@ use {
         storage::KeyValueStorage,
         utils::{crypto, network},
     },
+    alloy::primitives::U256,
     axum::{
         extract::{ConnectInfo, Path, Query, State},
         Json,
@@ -332,7 +333,7 @@ async fn handler_internal(
                 );
                 // Recalculating the value with the latest balance
                 balance.value = Some(crypto::convert_token_amount_to_value(
-                    rpc_balance,
+                    U256::from_be_bytes(rpc_balance.into()),
                     balance.price,
                     balance.quantity.decimals.parse::<u8>().unwrap_or(0),
                 ));
@@ -350,7 +351,7 @@ async fn handler_internal(
                     );
                     // Recalculate the value with the latest balance
                     balance.value = Some(crypto::convert_token_amount_to_value(
-                        rpc_balance,
+                        U256::from_be_bytes(rpc_balance.into()),
                         balance.price,
                         balance.quantity.decimals.parse::<u8>().unwrap_or(0),
                     ));
@@ -394,7 +395,7 @@ async fn handler_internal(
                     Some(caip_contract_address.to_string())
                 },
                 value: Some(crypto::convert_token_amount_to_value(
-                    rpc_balance,
+                    U256::from_be_bytes(rpc_balance.into()),
                     token_info.price,
                     token_info.decimals,
                 )),

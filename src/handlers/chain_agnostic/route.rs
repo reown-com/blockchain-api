@@ -1,8 +1,9 @@
 use {
     super::{
         super::HANDLER_TASK_METRICS, check_bridging_for_erc20_transfer, convert_amount,
-        find_supported_bridging_asset, get_assets_changes_from_simulation, BridgingStatus,
-        StorageBridgingItem, BRIDGING_FEE_SLIPPAGE, STATUS_POLLING_INTERVAL,
+        convert_token_amount_to_value, find_supported_bridging_asset,
+        get_assets_changes_from_simulation, BridgingStatus, StorageBridgingItem,
+        BRIDGING_FEE_SLIPPAGE, STATUS_POLLING_INTERVAL,
     },
     crate::{
         analytics::{
@@ -16,8 +17,8 @@ use {
         storage::irn::OperationType,
         utils::{
             crypto::{
-                convert_alloy_address_to_h160, decode_erc20_transfer_data, get_erc20_balance,
-                get_nonce, Erc20FunctionType,
+                convert_alloy_address_to_h160, decode_erc20_transfer_data, float_to_u256,
+                get_erc20_balance, get_nonce, CaipNamespaces, Erc20FunctionType,
             },
             network,
         },
@@ -102,6 +103,9 @@ async fn handler_internal(
             "The transaction calls are empty".to_string(),
         ));
     };
+
+    // Only Ethereum is currently supported
+    let namespace = CaipNamespaces::Eip155;
 
     let mut initial_transaction = Transaction {
         from: request_payload.transaction.from,
@@ -304,6 +308,13 @@ async fn handler_internal(
     }
     let mut erc20_topup_value = asset_transfer_value - erc20_balance;
 
+    let price_provider = state
+        .providers
+        .fungible_price_providers
+        .get(&namespace)
+        .ok_or_else(|| RpcError::UnsupportedNamespace(namespace))?
+        .clone();
+
     // Check for possible bridging funds by iterating over supported assets
     // or return an insufficient funds error
     let Some(bridging_asset) = check_bridging_for_erc20_transfer(
@@ -315,6 +326,9 @@ async fn handler_internal(
         asset_transfer_contract,
         initial_tx_token_symbol.clone(),
         initial_tx_token_decimals,
+        true, // TODO: allow initial tx to be a native coin (Eth)
+        price_provider,
+        state.metrics.clone(),
     )
     .await?
     else {
@@ -334,11 +348,33 @@ async fn handler_internal(
     let bridge_decimals = bridging_asset.decimals;
     let current_bridging_asset_balance = bridging_asset.current_balance;
 
+    error!(
+        "Bridging asset token {} chain {} contract {} current balance {}",
+        bridge_token_symbol, bridge_chain_id, bridge_contract, current_bridging_asset_balance
+    );
+
     // Applying decimals differences between initial token and bridging token
-    erc20_topup_value = convert_amount(
+    // erc20_topup_value = convert_amount(
+    //     erc20_topup_value,
+    //     initial_tx_token_decimals,
+    //     bridge_decimals,
+    // );
+    let intial_asset_price = 1.0; // Assuming the initial tx is always a stablecoin
+    let bridging_asset_price = bridging_asset.price;
+    let top_up_value_required = convert_token_amount_to_value(
         erc20_topup_value,
+        intial_asset_price,
         initial_tx_token_decimals,
-        bridge_decimals,
+    );
+    // Calculate how much bridging asset we need based on the price
+    let bridging_asset_topup_amount =
+        intial_asset_price / bridging_asset_price * top_up_value_required;
+    let bridging_asset_topup_amount_u256 =
+        float_to_u256(bridging_asset_topup_amount, bridge_decimals);
+
+    error!(
+        "Top up value required:{} bridging asset topup value:{} bridging asset topup U256 amount: {}",
+        top_up_value_required, bridging_asset_topup_amount, bridging_asset_topup_amount_u256
     );
 
     // Get Quotes for the bridging
@@ -350,7 +386,7 @@ async fn handler_internal(
             bridge_contract,
             initial_tx_chain_id.clone(),
             asset_transfer_contract,
-            erc20_topup_value,
+            bridging_asset_topup_amount_u256,
             from_address,
             state.metrics.clone(),
         )
@@ -382,12 +418,23 @@ async fn handler_internal(
     let bridging_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
     let bridging_amount =
         U256::from_str(&bridging_amount).map_err(|_| RpcError::InvalidValue(bridging_amount))?;
-    let bridging_fee = erc20_topup_value
-        - convert_amount(bridging_amount, initial_tx_token_decimals, bridge_decimals);
+    let bridging_value = convert_token_amount_to_value(
+        bridging_amount,
+        intial_asset_price,
+        initial_tx_token_decimals,
+    );
+    let bridging_result_bridging_tx_amount =
+        float_to_u256(bridging_value / bridging_asset_price, bridge_decimals);
+    let bridging_fee = bridging_asset_topup_amount_u256 - bridging_result_bridging_tx_amount;
+
+    error!(
+        "Requested amount: {} Bridging amount:{} bridging fee:{}",
+        bridging_asset_topup_amount_u256, bridging_amount, bridging_fee
+    );
 
     // Calculate the required bridging topup amount with the bridging fee
     // and bridging fee * slippage to cover volatility
-    let required_topup_amount = erc20_topup_value + bridging_fee;
+    let required_topup_amount = bridging_asset_topup_amount_u256 + bridging_fee;
     let required_topup_amount = ((bridging_fee * U256::from(BRIDGING_FEE_SLIPPAGE))
         / U256::from(100))
         + required_topup_amount;
@@ -404,6 +451,11 @@ async fn handler_internal(
         }))
         .into_response());
     }
+
+    error!(
+        "Erc20 topup value:{} required topup amount:{}",
+        erc20_topup_value, required_topup_amount
+    );
 
     // Get quotes for updated topup amount
     let quotes = state
@@ -443,19 +495,19 @@ async fn handler_internal(
     };
 
     // Check the final bridging amount from the quote
+
+    // Calculate the bridging fee based on the amount given from quotes
     let bridging_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
     let bridging_amount =
         U256::from_str(&bridging_amount).map_err(|_| RpcError::InvalidValue(bridging_amount))?;
-    if erc20_topup_value
-        > convert_amount(bridging_amount, initial_tx_token_decimals, bridge_decimals)
-    {
-        error!(
-            "The final bridging amount:{} is less than the topup amount:{}",
-            bridging_amount, erc20_topup_value
-        );
-        return Err(RpcError::BridgingFinalAmountLess);
-    }
-    let final_bridging_fee = required_topup_amount - bridging_amount;
+    let bridging_value = convert_token_amount_to_value(
+        bridging_amount,
+        intial_asset_price,
+        initial_tx_token_decimals,
+    );
+    let bridging_result_bridging_tx_amount =
+        float_to_u256(bridging_value / bridging_asset_price, bridge_decimals);
+    let final_bridging_fee = bridging_asset_topup_amount_u256 - bridging_result_bridging_tx_amount;
 
     // Build bridging transaction
     let bridge_tx = state

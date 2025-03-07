@@ -1,26 +1,28 @@
 use {
     crate::{
         error::RpcError,
-        handlers::MessageSource,
+        handlers::{MessageSource, SupportedCurrencies},
         providers::{
             tenderly::{AssetChangeType, TokenStandard},
-            SimulationProvider,
+            FungiblePriceProvider, SimulationProvider,
         },
-        utils::crypto::get_erc20_contract_balance,
+        utils::crypto::{convert_token_amount_to_value, disassemble_caip2, get_erc20_balance},
         Metrics,
     },
-    alloy::primitives::{Address, B256, U256},
+    alloy::primitives::{address, Address, B256, U256},
     assets::{SimulationParams, BRIDGING_ASSETS},
     ethers::{types::H160 as EthersH160, utils::keccak256},
     serde::{Deserialize, Serialize},
     std::{cmp::Ordering, collections::HashMap, str::FromStr, sync::Arc},
-    tracing::debug,
+    tracing::{debug, error},
     yttrium::chain_abstraction::api::Transaction,
 };
 
 pub mod assets;
 pub mod route;
 pub mod status;
+
+pub const NATIVE_TOKEN_ADDRESS: Address = address!("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
 
 /// How much to multiply the bridging fee amount to cover bridging fee volatility
 pub const BRIDGING_FEE_SLIPPAGE: i16 = 200; // 200%
@@ -100,7 +102,7 @@ pub async fn check_erc20_balances(
     // Check the ERC20 tokens balance for each of supported assets
     // TODO: Use the balance provider instead of looping
     for contract in erc2_contracts {
-        let erc20_balance = get_erc20_contract_balance(
+        let erc20_balance = get_erc20_balance(
             &chain_id,
             EthersH160::from(<[u8; 20]>::from(contract)),
             EthersH160::from(<[u8; 20]>::from(address)),
@@ -120,6 +122,7 @@ pub struct BridgingAsset {
     pub contract_address: Address,
     pub decimals: u8,
     pub current_balance: U256,
+    pub price: f64,
 }
 
 /// Checking available assets amount for bridging excluding the initial transaction
@@ -138,12 +141,27 @@ pub async fn check_bridging_for_erc20_transfer(
     token_symbol_priority: String,
     // Applying token decimals for the value to compare between different tokens
     amount_token_decimals: u8,
+    // Is the initial transaction asset a stablecoin
+    initial_asset_stablecoin: bool,
+    // Pricing provider
+    pricing_provider: Arc<dyn FungiblePriceProvider>,
+    // Metrics
+    metrics: Arc<Metrics>,
 ) -> Result<Option<BridgingAsset>, RpcError> {
+    error!(
+        "Excluding asset: {}:{}",
+        exclude_chain_id, exclude_contract_address
+    );
     // Check ERC20 tokens balance for each of supported assets
-    let mut contracts_per_chain: HashMap<(String, String, u8), Vec<String>> = HashMap::new();
+    let mut contracts_per_chain: HashMap<(String, String, u8, bool), Vec<String>> = HashMap::new();
     for (token_symbol, asset_entry) in BRIDGING_ASSETS.entries() {
         for (chain_id, contract_address) in asset_entry.contracts.entries() {
+            error!(
+                "excluding: {}:{}  {}:{}",
+                chain_id, exclude_chain_id, contract_address, exclude_contract_address
+            );
             if *chain_id == exclude_chain_id && *contract_address == exclude_contract_address {
+                error!("Skipping the excluded asset");
                 continue;
             }
             contracts_per_chain
@@ -151,14 +169,31 @@ pub async fn check_bridging_for_erc20_transfer(
                     token_symbol.to_string(),
                     (*chain_id).to_string(),
                     asset_entry.metadata.decimals,
+                    asset_entry.metadata.stablecoin,
                 ))
                 .or_default()
                 .push((*contract_address).to_string());
         }
     }
+    error!("Contracts per chain: {:?}", contracts_per_chain);
+    let initial_asset_price;
+    if initial_asset_stablecoin {
+        initial_asset_price = 1.0;
+    } else {
+        initial_asset_price = get_token_usd_price(
+            pricing_provider.clone(),
+            exclude_chain_id.clone(),
+            exclude_contract_address,
+            metrics.clone(),
+        )
+        .await
+        .unwrap_or(0.0);
+    };
     // Making the check for each chain_id and use the asset with the highest balance
     let mut bridging_asset_found = None;
-    for ((token_symbol, chain_id, decimals), contracts) in contracts_per_chain {
+    for ((token_symbol, chain_id, decimals, current_asset_stablecoin), contracts) in
+        contracts_per_chain
+    {
         let erc20_balances = check_erc20_balances(
             rpc_project_id.clone(),
             sender,
@@ -170,9 +205,39 @@ pub async fn check_bridging_for_erc20_transfer(
             session_id.clone(),
         )
         .await?;
+
+        // TODO:
+        error!("Check ERC20 balances: {:?}", erc20_balances);
+
         for (contract_address, current_balance) in erc20_balances {
-            // Check if the balance compared to the transfer value is enough, applied to the transfer token decimals
-            if convert_amount(current_balance, decimals, amount_token_decimals) >= value {
+            let current_asset_price;
+
+            if current_asset_stablecoin {
+                current_asset_price = 1.0;
+            } else {
+                current_asset_price = get_token_usd_price(
+                    pricing_provider.clone(),
+                    chain_id.clone(),
+                    contract_address,
+                    metrics.clone(),
+                )
+                .await
+                .unwrap_or(0.0);
+            }
+
+            error!("The price for the current asset: {}", current_asset_price);
+            error!("The price for the initial asset: {}", initial_asset_price);
+
+            error!(
+                "converted token amounts: {} {}",
+                convert_token_amount_to_value(current_balance, current_asset_price, decimals),
+                convert_token_amount_to_value(value, initial_asset_price, amount_token_decimals)
+            );
+
+            // Comparing the calulated value of the current asset and the initial asset
+            if convert_token_amount_to_value(current_balance, current_asset_price, decimals)
+                >= convert_token_amount_to_value(value, initial_asset_price, amount_token_decimals)
+            {
                 // Use the priority asset if found
                 if token_symbol == token_symbol_priority {
                     return Ok(Some(BridgingAsset {
@@ -181,6 +246,7 @@ pub async fn check_bridging_for_erc20_transfer(
                         contract_address,
                         current_balance,
                         decimals,
+                        price: current_asset_price,
                     }));
                 }
 
@@ -200,6 +266,7 @@ pub async fn check_bridging_for_erc20_transfer(
                     contract_address,
                     current_balance,
                     decimals,
+                    price: current_asset_price,
                 });
             }
         }
@@ -338,6 +405,47 @@ pub fn convert_amount(amount: U256, from_decimals: u8, to_decimals: u8) -> U256 
             amount * factor
         }
     }
+}
+
+pub async fn get_token_usd_price(
+    pricing_provider: Arc<dyn FungiblePriceProvider>,
+    chain_id: String,
+    token_address: Address,
+    metrics: Arc<Metrics>,
+) -> Option<f64> {
+    error!(
+        "Getting price for token: {}:{}...",
+        chain_id,
+        token_address.to_string()
+    );
+    let chain_id = match disassemble_caip2(&chain_id) {
+        Ok((_, chain_id)) => chain_id,
+        Err(e) => {
+            error!("Failed to disassemble chain ID: {}", e);
+            return None;
+        }
+    };
+    let get_price_info = pricing_provider
+        .get_price(
+            &chain_id.clone(),
+            &token_address.to_string().to_lowercase(),
+            &SupportedCurrencies::USD,
+            metrics.clone(),
+        )
+        .await
+        .unwrap();
+    let token_info = match get_price_info.fungibles.first() {
+        Some(token_info) => token_info,
+        None => {
+            error!(
+                "No token price info found for the token address: {}:{}",
+                chain_id,
+                token_address.to_string()
+            );
+            return None;
+        }
+    };
+    Some(token_info.price)
 }
 
 #[cfg(test)]
