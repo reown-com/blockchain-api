@@ -23,7 +23,7 @@ use {
     },
     env::{
         AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig,
-        DrpcConfig, DuneConfig, GetBlockConfig, InfuraConfig, LavaConfig, MantleConfig,
+        DrpcConfig, DuneConfig, EtherlinkConfig, GetBlockConfig, InfuraConfig, LavaConfig, MantleConfig,
         MorphConfig, NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
         SolScanConfig, SyndicaConfig, UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig,
         ZoraConfig,
@@ -33,7 +33,7 @@ use {
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
         AllnodesProvider, ArbitrumProvider, AuroraProvider, BaseProvider, BerachainProvider,
-        BinanceProvider, DrpcProvider, DuneProvider, GetBlockProvider, InfuraProvider,
+        BinanceProvider, DrpcProvider, DuneProvider, EtherlinkProvider, GetBlockProvider, InfuraProvider,
         InfuraWsProvider, LavaProvider, MantleProvider, MorphProvider, NearProvider,
         OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider,
         SolScanProvider, SyndicaProvider, UnichainProvider, WemixProvider, ZKSyncProvider,
@@ -526,6 +526,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
 
     providers.add_rpc_provider::<BaseProvider, BaseConfig>(BaseConfig::default());
     providers.add_rpc_provider::<BinanceProvider, BinanceConfig>(BinanceConfig::default());
+    providers.add_rpc_provider::<EtherlinkProvider, EtherlinkConfig>(EtherlinkConfig::default());
     providers.add_rpc_provider::<ZKSyncProvider, ZKSyncConfig>(ZKSyncConfig::default());
     providers.add_rpc_provider::<PublicnodeProvider, PublicnodeConfig>(PublicnodeConfig::default());
     providers.add_rpc_provider::<QuicknodeProvider, QuicknodeConfig>(QuicknodeConfig::new(
