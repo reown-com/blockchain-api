@@ -30,12 +30,14 @@ Chain name with associated `chainId` query param to use.
 | Ethereum Holesky                                         | eip155:17000         |
 | Arbitrum                                                 | eip155:42161         |
 | Celo                                                     | eip155:42220         |
+| Etherlink                                                | eip155:42793         |
 | Avalanche Fuji Testnet <sup>[1](#footnote1)</sup>        | eip155:43113         |
 | Avalanche C-Chain                                        | eip155:43114         |
 | Linea <sup>[1](#footnote1)</sup>                         | eip155:59144         |
 | Polygon Amoy <sup>[1](#footnote1)</sup>                  | eip155:80002         |
 | Berachain bArtio <sup>[1](#footnote1)</sup>              | eip155:80084         |
 | Base Sepolia                                             | eip155:84532         |
+| Etherlink Testnet                                        | eip155:128123        |
 | Arbitrum Sepolia                                         | eip155:421614        |
 | Scroll Mainnet <sup>[1](#footnote1)</sup>                | eip155:534352        |
 | Scroll Sepolia Testnet <sup>[1](#footnote1)</sup>        | eip155:534351        |
