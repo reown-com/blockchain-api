@@ -35,6 +35,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     // Keep in-sync with SUPPORTED_CHAINS.md
 
     HashMap::from([
+        // Berachain Mainnet
+        (
+            "eip155:80094".into(),
+            (
+                "https://rpc.berachain.com/".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
         // Berachain bArtio
         (
             "eip155:80084".into(),
