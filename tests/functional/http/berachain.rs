@@ -6,7 +6,15 @@ use {
 #[test_context(ServerContext)]
 #[tokio::test]
 #[ignore]
-async fn berachain_provider_eip155_80084(ctx: &mut ServerContext) {
+async fn berachain_provider(ctx: &mut ServerContext) {
+    // Berachain Mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &ProviderKind::Berachain,
+        "eip155:80094",
+        "0x138de",
+    )
+    .await;
     // Berachain bArtio
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
