@@ -162,7 +162,7 @@ async fn handler_internal(
                 // Check if the destination address is supported ERC20 asset contract
                 if find_supported_bridging_asset(&initial_tx_chain_id.clone(), to_address).is_none()
                 {
-                    error!("The destination address is not a supported bridging asset contract");
+                    error!("The destination address from the initial tx ERC20 transfer is not a supported bridging asset contract");
                     state.metrics.add_ca_no_bridging_needed(
                         ChainAbstractionNoBridgingNeededType::AssetNotSupported,
                     );
@@ -273,10 +273,10 @@ async fn handler_internal(
     // Check if the destination address is supported ERC20 asset contract
     // Attempt to destructure the result into symbol and decimals using a match expression
     let (initial_tx_token_symbol, initial_tx_token_decimals) =
-        match find_supported_bridging_asset(&initial_tx_chain_id, to_address) {
+        match find_supported_bridging_asset(&initial_tx_chain_id, asset_transfer_contract) {
             Some((symbol, decimals)) => (symbol, decimals),
             None => {
-                error!("The destination address is not a supported bridging asset contract");
+                error!("The changed asset is not a supported for the bridging");
                 state.metrics.add_ca_no_bridging_needed(
                     ChainAbstractionNoBridgingNeededType::AssetNotSupported,
                 );
