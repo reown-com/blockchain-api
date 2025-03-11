@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.207.1 - 2025-03-11
+#### Bug Fixes
+- **(Meld)** changing the source amount type to be f64 (#988) - (fa647f2) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.207.0 - 2025-03-11
 #### Features
 - **(Providers)** adding Berachain Mainnet support (#989) - (cedda6c) - Max Kalashnikoff | maksy.eth
