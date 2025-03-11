@@ -55,7 +55,7 @@ use {
             Transaction,
         },
         solana::{
-            self, usdc_mint, SolanaCommitmentConfig, SolanaPubkey, SolanaRpcClient,
+            self, SolanaCommitmentConfig, SolanaPubkey, SolanaRpcClient,
             SolanaVersionedTransaction, SOLANA_CHAIN_ID,
         },
     },
@@ -778,7 +778,7 @@ async fn handler_internal(
             //     .unwrap();
 
             let quote = reqwest::Client::new()
-                .get("https://li.quest/v1/quote")
+                .get("https://li.quest/v1/quote/toAmount")
                 .query(&json!({
                     "fromChain": match bridge_chain_id.as_str() {
                         solana::SOLANA_CHAIN_ID => "SOL",
@@ -792,7 +792,7 @@ async fn handler_internal(
                     },
                     "fromToken": bridge_contract.to_string(),
                     "toToken": asset_transfer_contract.to_string(),
-                    "fromAmount": erc20_topup_value.to_string(),
+                    "toAmount": erc20_topup_value.to_string(),
                     "fromAddress": found_account.to_string(),
                     "toAddress": from_address.to_string(),
                 }))
@@ -874,6 +874,7 @@ async fn handler_internal(
                     .into_iter()
                     .map(|t| {
                         Transactions::Solana(vec![SolanaTransaction {
+                            from: **found_account,
                             chain_id: chain_id.to_owned(),
                             transaction: t,
                         }])
