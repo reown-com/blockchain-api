@@ -48,16 +48,20 @@ impl BundlerOpsProvider for PimlicoProvider {
         // balance override during estimation to prevent AA21 errors
         if method == &SupportedBundlerOps::EthEstimateUserOperationGas {
             if let Some(array) = params.as_array_mut() {
-                if let Some(sender) = array
-                    .first()
-                    .and_then(|first| first.get("sender"))
-                    .and_then(serde_json::Value::as_str)
-                {
-                    // Adding 100 ETH to the smart account
-                    let new_param = serde_json::json!({
-                        sender: BalanceOverride { balance: "0x56BC75E2D63100000".into() },
-                    });
-                    array.push(new_param);
+                // Apply the balance override injection only if the array
+                // length is 2 parameters (no status override passed as a third parameter)
+                if array.len() == 2 {
+                    if let Some(sender) = array
+                        .first()
+                        .and_then(|first| first.get("sender"))
+                        .and_then(serde_json::Value::as_str)
+                    {
+                        // Adding 100 ETH to the smart account
+                        let new_param = serde_json::json!({
+                            sender: BalanceOverride { balance: "0x56BC75E2D63100000".into() },
+                        });
+                        array.push(new_param);
+                    }
                 }
             }
         }
