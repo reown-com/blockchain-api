@@ -28,7 +28,7 @@ pub struct SessionData {
     pub payment_method_type: Option<String>,
     pub redirect_url: Option<String>,
     pub service_provider: String,
-    pub source_amount: String,
+    pub source_amount: f64,
     pub source_currency_code: String,
     pub wallet_address: String,
     pub wallet_tag: Option<String>,
