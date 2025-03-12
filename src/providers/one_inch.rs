@@ -563,6 +563,10 @@ impl ConversionProvider for OneInchProvider {
             url.query_pairs_mut()
                 .append_pair("fee", ONEINCH_FEE.to_string().as_str());
         }
+        if let Some(disable_estimate) = &params.disable_estimate {
+            url.query_pairs_mut()
+                .append_pair("disableEstimate", &disable_estimate.to_string());
+        }
 
         if let Some(eip155) = &params.eip155 {
             url.query_pairs_mut()

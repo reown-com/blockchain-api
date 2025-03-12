@@ -22,6 +22,7 @@ pub struct ConvertTransactionQueryParams {
     pub to: String,
     pub user_address: String,
     pub eip155: Option<ConvertTransactionQueryEip155>,
+    pub disable_estimate: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
