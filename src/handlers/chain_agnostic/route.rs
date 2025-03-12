@@ -162,7 +162,11 @@ async fn handler_internal(
                 // Check if the destination address is supported ERC20 asset contract
                 if find_supported_bridging_asset(&initial_tx_chain_id.clone(), to_address).is_none()
                 {
-                    error!("The destination address from the initial tx ERC20 transfer is not a supported bridging asset contract");
+                    error!(
+                        "The destination address is not a supported bridging asset contract {}:{}",
+                        initial_tx_chain_id.clone(),
+                        to_address
+                    );
                     state.metrics.add_ca_no_bridging_needed(
                         ChainAbstractionNoBridgingNeededType::AssetNotSupported,
                     );
@@ -446,16 +450,18 @@ async fn handler_internal(
     let bridging_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
     let bridging_amount =
         U256::from_str(&bridging_amount).map_err(|_| RpcError::InvalidValue(bridging_amount))?;
-    if erc20_topup_value
-        > convert_amount(bridging_amount, initial_tx_token_decimals, bridge_decimals)
-    {
+    let bridging_amount =
+        convert_amount(bridging_amount, initial_tx_token_decimals, bridge_decimals);
+
+    if erc20_topup_value > bridging_amount {
         error!(
             "The final bridging amount:{} is less than the topup amount:{}",
             bridging_amount, erc20_topup_value
         );
         return Err(RpcError::BridgingFinalAmountLess);
     }
-    let final_bridging_fee = required_topup_amount - bridging_amount;
+
+    let final_bridging_fee = bridging_amount - erc20_topup_value;
 
     // Build bridging transaction
     let bridge_tx = state

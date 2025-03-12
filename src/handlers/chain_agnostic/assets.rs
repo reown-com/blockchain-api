@@ -39,10 +39,8 @@ static USDT_CONTRACTS: phf::Map<&'static str, Address> = phf_map! {
 };
 
 static USDS_CONTRACTS: phf::Map<&'static str, Address> = phf_map! {
-    // Optimism
-    "eip155:10" => address!("DA10009cBd5D07dd0CeCc66161FC93D7c9000da1"),
-    // Arbitrum
-    "eip155:42161" => address!("DA10009cBd5D07dd0CeCc66161FC93D7c9000da1"),
+    // Base
+    "eip155:8453" => address!("820c137fa70c8691f0e44dc420a5e53c168921dc"),
 };
 
 pub static BRIDGING_ASSETS: phf::Map<&'static str, AssetEntry> = phf_map! {
@@ -82,8 +80,7 @@ pub static BRIDGING_ASSETS: phf::Map<&'static str, AssetEntry> = phf_map! {
         simulation: SimulationParams {
             // Must be in sync with the `USDS_CONTRACTS` from above
             balance_storage_slots: &phf_map! {
-                "eip155:10" => 2u64,
-                "eip155:42161" => 2u64,
+                "eip155:8453" => 2u64,
             },
             balance: 99000000000000000000000,
         },
