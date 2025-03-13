@@ -6,7 +6,7 @@ use {
             tenderly::{AssetChangeType, TokenStandard},
             SimulationProvider,
         },
-        utils::crypto::get_erc20_contract_balance,
+        utils::crypto::get_erc20_balance,
         Metrics,
     },
     alloy::primitives::{Address, B256, U256},
@@ -100,7 +100,7 @@ pub async fn check_erc20_balances(
     // Check the ERC20 tokens balance for each of supported assets
     // TODO: Use the balance provider instead of looping
     for contract in erc2_contracts {
-        let erc20_balance = get_erc20_contract_balance(
+        let erc20_balance = get_erc20_balance(
             &chain_id,
             EthersH160::from(<[u8; 20]>::from(contract)),
             EthersH160::from(<[u8; 20]>::from(address)),
@@ -138,13 +138,30 @@ pub async fn check_bridging_for_erc20_transfer(
     token_symbol_priority: String,
     // Applying token decimals for the value to compare between different tokens
     amount_token_decimals: u8,
+    // Use a single asset with symbol
+    only_token_symbol: Option<String>,
+    // Exclude token symbol
+    exclude_token_symbol: Option<String>,
 ) -> Result<Option<BridgingAsset>, RpcError> {
     // Check ERC20 tokens balance for each of supported assets
     let mut contracts_per_chain: HashMap<(String, String, u8), Vec<String>> = HashMap::new();
     for (token_symbol, asset_entry) in BRIDGING_ASSETS.entries() {
         for (chain_id, contract_address) in asset_entry.contracts.entries() {
+            // Exclude the initial transaction asset
             if *chain_id == exclude_chain_id && *contract_address == exclude_contract_address {
                 continue;
+            }
+            // Check for the single token symbol if provided
+            if let Some(only_token_symbol) = only_token_symbol.clone() {
+                if *token_symbol != only_token_symbol {
+                    continue;
+                }
+            }
+            // Exclude token symbol
+            if let Some(exclude_token_symbol) = exclude_token_symbol.clone() {
+                if *token_symbol == exclude_token_symbol {
+                    continue;
+                }
             }
             contracts_per_chain
                 .entry((

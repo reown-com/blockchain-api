@@ -3,6 +3,8 @@ use {
     phf::phf_map,
 };
 
+pub const NATIVE_TOKEN_ADDRESS: Address = address!("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+
 pub struct AssetMetadata {
     pub decimals: u8,
 }
@@ -41,6 +43,15 @@ static USDT_CONTRACTS: phf::Map<&'static str, Address> = phf_map! {
 static USDS_CONTRACTS: phf::Map<&'static str, Address> = phf_map! {
     // Base
     "eip155:8453" => address!("820c137fa70c8691f0e44dc420a5e53c168921dc"),
+};
+
+static ETH_CONTRACTS: phf::Map<&'static str, Address> = phf_map! {
+    // Optimism
+    "eip155:10" => NATIVE_TOKEN_ADDRESS,
+    // Base
+    "eip155:8453" => NATIVE_TOKEN_ADDRESS,
+    // Arbitrum
+    "eip155:42161" => NATIVE_TOKEN_ADDRESS,
 };
 
 pub static BRIDGING_ASSETS: phf::Map<&'static str, AssetEntry> = phf_map! {
@@ -85,5 +96,20 @@ pub static BRIDGING_ASSETS: phf::Map<&'static str, AssetEntry> = phf_map! {
             balance: 99000000000000000000000,
         },
         contracts: &USDS_CONTRACTS,
+    },
+    "ETH" => AssetEntry {
+        metadata: AssetMetadata {
+            decimals: 18,
+        },
+        simulation: SimulationParams {
+            // Must be in sync with the `ETH_CONTRACTS` from above
+            balance_storage_slots: &phf_map! {
+                "eip155:10" => 0u64,
+                "eip155:8453" => 0u64,
+                "eip155:42161" => 0u64,
+            },
+            balance: 99000000000000000000000,
+        },
+        contracts: &ETH_CONTRACTS,
     },
 };
