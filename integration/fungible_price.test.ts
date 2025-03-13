@@ -49,7 +49,7 @@ describe('Fungible price', () => {
 
     for (const item of resp.data.fungibles) {
       expect(item.name).toBe('Wrapped SOL')
-      expect(item.symbol).toBe('SOL')
+      expect(item.symbol).toBe('WSOL')
       expect(typeof item.iconUrl).toBe('string')
       expect(typeof item.price).toBe('number')
       expect(item.address).toBe(wsol_token_address)
