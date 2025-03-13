@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.208.0 - 2025-03-13
+#### Features
+- **(Swaps)** adding optional disableEstimate parameter (#991) - (303c53d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.207.2 - 2025-03-12
 #### Bug Fixes
 - **(CA)** fixing the changed asset from the simulation support (#987) - (32144d2) - Max Kalashnikoff | maksy.eth
