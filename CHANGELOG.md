@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.209.0 - 2025-03-14
+#### Features
+- **(CA)** adding ETH support (#992) - (c5004c2) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.208.1 - 2025-03-13
 #### Bug Fixes
 - **(CA)** adding proper USDs contract, fixing decimals amount convertion (#990) - (540703e) - Max Kalashnikoff | maksy.eth
