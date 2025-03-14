@@ -452,7 +452,7 @@ async fn handler_internal(
             for result in results {
                 let (namespace, reference, address) = result;
                 accounts.push((
-                    format!("{namespace}:{reference}"),
+                    Some(format!("{namespace}:{reference}")),
                     match namespace {
                         "eip155" => Eip155OrSolanaAddress::Eip155(
                             Address::from_str(address).map_err(|_| {
@@ -476,6 +476,7 @@ async fn handler_internal(
                     },
                 ));
             }
+            accounts.push((None, Eip155OrSolanaAddress::Eip155(from_address)));
             accounts
         },
         initial_transaction.chain_id.clone(),
@@ -790,10 +791,7 @@ async fn handler_internal(
             }
 
             (
-                routes
-                    .into_iter()
-                    .map(|t| Transactions::Eip155(vec![t]))
-                    .collect(),
+                vec![Transactions::Eip155(routes)],
                 bridging_amount,
                 final_bridging_fee,
             )

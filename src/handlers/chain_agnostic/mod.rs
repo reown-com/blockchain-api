@@ -125,7 +125,7 @@ pub async fn get_balances_of_all_source_tokens(
                             .into(),
                         ),
                         Eip155OrSolanaAddress::Solana(_) => {
-                            panic!("Mis-matched branches, expected contract address to be eip155 address since passed in array of EVM accounts");
+                            continue;
                         }
                     };
                     balances.push((account.clone(), contract, erc20_balance));
@@ -158,7 +158,7 @@ pub async fn get_balances_of_all_source_tokens(
                                 )
                             })?,
                         Eip155OrSolanaAddress::Eip155(_) => {
-                            panic!("Mis-matched branches, expected contract address to be solana address since passed in array of solana accounts");
+                            continue;
                         }
                     };
                     balances.push((account.clone(), contract, erc20_balance));
@@ -186,7 +186,8 @@ pub async fn check_bridging_for_erc20_transfer(
     rpc_project_id: String,
     session_id: Option<String>,
     value: U256,
-    accounts: Vec<(String, Eip155OrSolanaAddress)>,
+    // List of CAIP-10 accounts to check for funds to bridge. Empty CAIP-2 field indicates any chain that matches the address type
+    accounts: Vec<(Option<String>, Eip155OrSolanaAddress)>,
     // Exclude the initial transaction asset from the check
     exclude_chain_id: String,
     exclude_contract_address: Eip155OrSolanaAddress,
@@ -241,10 +242,14 @@ pub async fn check_bridging_for_erc20_transfer(
             accounts
                 .iter()
                 .filter_map(|(cid, address)| {
-                    if cid == &chain_id {
-                        Some(address.clone())
+                    if let Some(cid) = cid {
+                        if cid == &chain_id {
+                            Some(address.clone())
+                        } else {
+                            None
+                        }
                     } else {
-                        None
+                        Some(address.clone())
                     }
                 })
                 .collect(),
