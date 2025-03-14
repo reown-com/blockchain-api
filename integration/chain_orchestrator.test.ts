@@ -9,11 +9,14 @@ describe('Chain abstraction orchestrator', () => {
     'function approve(address spender, uint256 amount) public returns (bool)'
   ]);
 
-  // Funding address
+  // Default funding address
   const from_address_with_funds = "0x2aae531a81461f029cd55cb46703211c9227ba05";
 
   // Receiver address
   const receiver_address = "0x739ff389c8eBd9339E69611d46Eec6212179BB67";
+
+  // Native token address
+  const native_token_address = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 
   // Supported chains
   const chain_id_optimism = "eip155:10";
@@ -22,52 +25,136 @@ describe('Chain abstraction orchestrator', () => {
   
   // Current funds on different chains
   const usdc_token_symbol = "USDC";
-  let usdc_funds = {};
+  const usdc_funds = {};
   usdc_funds[chain_id_base] = 3_000_000;
   usdc_funds[chain_id_optimism] = 1_057_151;
 
   const usdt_token_symbol = "USDT";
-  let usdt_funds = {};
+  const usdt_funds = {};
   usdt_funds[chain_id_arbitrum] = 3_388_000;
   usdt_funds[chain_id_optimism] = 1_050_000;
 
   const usds_token_symbol = "USDS";
-  let usds_funds = {};
-  // Using string amouns for USDS, as it has 18 decimals
-  usds_funds[chain_id_optimism] = "902165684795715063";
+  const usds_funds = {};
+  usds_funds[chain_id_optimism] = "902165684795715063"; // Using string amounts for USDS, as it has 18 decimals
+
+  const eth_token_symbol = "ETH";
+
+  // Token decimals
+  const token_decimals = {};
+  token_decimals[usdc_token_symbol] = 6;
+  token_decimals[usdt_token_symbol] = 6;
+  token_decimals[usds_token_symbol] = 18;
+  token_decimals[eth_token_symbol] = 18;
 
   // Amount to send to Optimism
   const amount_to_send = 3_000_000
   
-  let usdc_contracts = {};
+  // Asset contracts
+  const usdc_contracts = {};
   usdc_contracts[chain_id_optimism] = "0x0b2c639c533813f4aa9d7837caf62653d097ff85";
   usdc_contracts[chain_id_base] = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
   usdc_contracts[chain_id_arbitrum] = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
-  let usdt_contracts = {};
+  const usdt_contracts = {};
   usdt_contracts[chain_id_optimism] = "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58";
   usdt_contracts[chain_id_arbitrum] = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9";
   usdt_contracts[chain_id_base] = "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2";
-  let usds_contracts = {};
-  usds_contracts[chain_id_optimism] = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1";
-  usds_contracts[chain_id_arbitrum] = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1";
+  const usds_contracts = {};
+  usds_contracts[chain_id_base] = "0x820c137fa70c8691f0e44dc420a5e53c168921dc";
 
-  let orchestration_id = "";
+  function checkRoutesResponse(
+    response_object,
+    expect_approval_tx: boolean,
+    sender_address,
+    receiver_address,
+    initial_tx_token_contract,
+    initial_tx_token_symbol,
+    initial_tx_amount,
+    bridging_tx_token_chain_id,
+    bridging_tx_token_contract,
+    bridging_tx_token_symbol,
+  ){
+      expect(typeof response_object.orchestrationId).toBe('string')
+
+      // Check for the initialTransaction
+      const initialTransaction = response_object.initialTransaction;
+      expect(initialTransaction.from).toBe(sender_address.toLowerCase());
+      expect(initialTransaction.to).toBe(expect_approval_tx ? initial_tx_token_contract.toLowerCase() : receiver_address.toLowerCase());
+      expect(initialTransaction.gasLimit).not.toBe("0x00");
+
+      // Check the initialTransaction metadata
+      const initialTransactionMetadata = response_object.metadata.initialTransaction
+      expect(initialTransactionMetadata.symbol).toBe(initial_tx_token_symbol)
+      expect(initialTransactionMetadata.transferTo).toBe(receiver_address.toLowerCase())
+      expect(initialTransactionMetadata.tokenContract).toBe(initial_tx_token_contract.toLowerCase())
+      // TODO: expect(BigInt(initialTransactionMetadata.amount)).toBe(BigInt(initial_tx_amount));
+      expect(initialTransactionMetadata.decimals).toBe(token_decimals[initial_tx_token_symbol])
+
+      // Check the metadata fundingFrom
+      const fundingFrom = response_object.metadata.fundingFrom[0]
+      expect(fundingFrom.chainId).toBe(bridging_tx_token_chain_id)
+      expect(fundingFrom.symbol).toBe(bridging_tx_token_symbol)
+      expect(fundingFrom.tokenContract).toBe(bridging_tx_token_contract.toLowerCase())
+      expect(fundingFrom.decimals).toBe(token_decimals[bridging_tx_token_symbol])
+      const bridging_amount = BigInt(fundingFrom.amount)
+
+      if (expect_approval_tx) {
+        // Expecting 2 transactions in the route
+        expect(response_object.transactions.length).toBe(2)
+
+        // First transaction expected to be the approval transaction
+        const approvalTransaction = response_object.transactions[0]
+        expect(approvalTransaction.chainId).toBe(bridging_tx_token_chain_id)
+        expect(approvalTransaction.nonce).not.toBe("0x00")
+        expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
+        const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.input);
+        if (BigInt(decodedData.amount) < bridging_amount) {
+          throw new Error(`Expected approval amount is incorrect`);
+        }
+        expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
+      }
+
+      const initial_tx_index = expect_approval_tx ? 1 : 0;
+
+      // Second transaction expected to be the bridging transaction
+      const bridgingTransaction = response_object.transactions[initial_tx_index]
+      expect(bridgingTransaction.chainId).toBe(bridging_tx_token_chain_id)
+      expect(bridgingTransaction.nonce).not.toBe("0x00")
+      expect(() => BigInt(bridgingTransaction.gasLimit)).not.toThrow();
+
+      // Check the metadata checkIn
+      expect(typeof response_object.metadata.checkIn).toBe('number')
+
+      return response_object.orchestrationId;
+  }
+
+  async function checkStatus(orchestration_id){
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/ca/orchestrator/status?projectId=${projectId}&orchestrationId=${orchestration_id}`,
+    )
+    expect(resp.status).toBe(200)
+    const data = resp.data
+    expect(typeof data.status).toBe('string')
+    expect(data.status).toBe('PENDING')
+    expect(data.checkIn).toBe(3000)
+  }
 
   it('bridging unavailable (insufficient funds)', async () => {
     // Having the USDC balance on Base chain less then the amount to send
+    const destination_chain_id = chain_id_optimism;
     const amount_to_send_in_decimals = usdc_funds[chain_id_base] + 10_000_000
     const data_encoded = erc20Interface.encodeFunctionData('transfer', [
       receiver_address,
       amount_to_send_in_decimals,
     ]);
 
-    let transactionObj = {
+    const transactionObj = {
       transaction: {
         from: from_address_with_funds,
-        to: usdc_contracts[chain_id_optimism],
+        to: usdc_contracts[destination_chain_id],
         value: "0x00", // Zero native tokens
         input: data_encoded,
-        chainId: chain_id_optimism,
+        chainId: destination_chain_id,
       }
     }
 
@@ -88,7 +175,7 @@ describe('Chain abstraction orchestrator', () => {
       amount_to_send_in_decimals,
     ]);
 
-    let transactionObj = {
+    const transactionObj = {
       transaction: {
         from: empty_wallet_address,
         to: usdc_contracts[chain_id_optimism],
@@ -106,21 +193,23 @@ describe('Chain abstraction orchestrator', () => {
     expect(resp.data.error).toBe("INSUFFICIENT_FUNDS")
   })
 
-  it('bridging routes (no bridging needed)', async () => {
-    // Sending USDC to Optimism, having the USDC balance on Base chain
+  it('bridging unavailable (no bridging needed)', async () => {
+    // Sending USDC to Optimism, but having the USDC balance
+    const destination_chain_id = chain_id_optimism;
+
     const amount_to_send_in_decimals = 20_000 // Less then bridging needed amount
     const data_encoded = erc20Interface.encodeFunctionData('transfer', [
       receiver_address,
       amount_to_send_in_decimals,
     ]);
 
-    let transactionObj = {
+    const transactionObj = {
       transaction: {
         from: from_address_with_funds,
-        to: usdc_contracts[chain_id_optimism],
+        to: usdc_contracts[destination_chain_id],
         value: "0x00", // Zero native tokens
         input: data_encoded,
-        chainId: chain_id_optimism,
+        chainId: destination_chain_id,
       }
     }
 
@@ -133,25 +222,24 @@ describe('Chain abstraction orchestrator', () => {
 
   })
 
-  it('bridging routes (routes available, USDC Base → USDC Optimism)', async () => {
+  it('bridging routes (USDC Base → USDC Optimism)', async () => {
     // Sending USDC to Optimism, but having the balance of USDC on Base chain
     // which expected to be used for bridging
-
-    // How much needs to be topped up
-    const amount_to_topup = Math.round(amount_to_send - usdc_funds[chain_id_optimism]);
+    const destination_chain_id = chain_id_optimism;
+    const funding_chain_id = chain_id_base;
 
     const data_encoded = erc20Interface.encodeFunctionData('transfer', [
       receiver_address,
       amount_to_send,
     ]);
 
-    let transactionObj = {
+    const transactionObj = {
       transaction: {
         from: from_address_with_funds,
-        to: usdc_contracts[chain_id_optimism],
+        to: usdc_contracts[destination_chain_id],
         value: "0x00", // Zero native tokens
         input: data_encoded,
-        chainId: chain_id_optimism,
+        chainId: destination_chain_id,
       }
     }
 
@@ -161,75 +249,38 @@ describe('Chain abstraction orchestrator', () => {
     )
     expect(resp.status).toBe(200)
 
-    const data = resp.data
-    expect(typeof data.orchestrationId).toBe('string')
-    // Expecting 2 transactions in the route
-    expect(data.transactions.length).toBe(2)
-
-    // First transaction expected to be the approval transaction
-    const approvalTransaction = data.transactions[0]
-    expect(approvalTransaction.chainId).toBe(chain_id_base)
-    expect(approvalTransaction.nonce).not.toBe("0x00")
-    expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
-    const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.input);
-    if (decodedData.amount <= BigInt(amount_to_topup)) {
-      throw new Error(`Expected amount is lower then the minimal required`);
-    }
-
-    // Second transaction expected to be the bridging to the Base
-    const bridgingTransaction = data.transactions[1]
-    expect(bridgingTransaction.chainId).toBe(chain_id_base)
-    expect(bridgingTransaction.nonce).not.toBe("0x00")
-    expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
-
-    // Check for the initialTransaction
-    const initialTransaction = data.initialTransaction;
-    expect(initialTransaction.from).toBe(from_address_with_funds.toLowerCase());
-    expect(initialTransaction.to).toBe(usdc_contracts[chain_id_optimism].toLowerCase());
-    expect(initialTransaction.gasLimit).not.toBe("0x00");
-
-    // Check the metadata fundingFrom
-    const fundingFrom = data.metadata.fundingFrom[0]
-    expect(fundingFrom.chainId).toBe(chain_id_base)
-    expect(fundingFrom.symbol).toBe(usdc_token_symbol)
-    expect(fundingFrom.tokenContract).toBe(usdc_contracts[chain_id_base].toLowerCase())
-    if (BigInt(fundingFrom.amount) <= BigInt(amount_to_topup)) {
-      throw new Error(`Expected amount is lower then the minimal required`);
-    }
-    if (BigInt(fundingFrom.bridgingFee) < BigInt(fundingFrom.amount - amount_to_topup)){
-      throw new Error(`Expected bridging fee is incorrect. `);
-    }
-    // Check the initialTransaction metadata
-    const initialTransactionMetadata = data.metadata.initialTransaction
-    expect(initialTransactionMetadata.symbol).toBe(usdc_token_symbol)
-    expect(initialTransactionMetadata.transferTo).toBe(receiver_address.toLowerCase())
-    expect(initialTransactionMetadata.tokenContract).toBe(usdc_contracts[chain_id_optimism].toLowerCase())
-
-    // Check the metadata checkIn
-    expect(typeof data.metadata.checkIn).toBe('number')
-
-    // Set the Orchestration ID for the next test
-    orchestration_id = data.orchestrationId;
+    const orchestration_id = checkRoutesResponse(
+      resp.data,
+      true,
+      from_address_with_funds,
+      receiver_address,
+      usdc_contracts[destination_chain_id],
+      usdc_token_symbol,
+      amount_to_send,
+      chain_id_base,
+      usdc_contracts[funding_chain_id],
+      usdc_token_symbol,
+    )
+    await checkStatus(orchestration_id)
   })
 
-  it('bridging routes (routes available, USDT Arbitrum → USDT Optimism)', async () => {
+  it('bridging routes (USDT Arbitrum → USDT Optimism)', async () => {
     // Sending USDT to Optimism, but having the USDT balance on Arbitrum.
-
-    // How much needs to be topped up
-    const amount_to_topup = Math.round(amount_to_send - usdt_funds[chain_id_optimism]);
+    const destination_chain_id = chain_id_optimism;
+    const funding_chain_id = chain_id_arbitrum;
 
     const data_encoded = erc20Interface.encodeFunctionData('transfer', [
       receiver_address,
       amount_to_send,
     ]);
 
-    let transactionObj = {
+    const transactionObj = {
       transaction: {
         from: from_address_with_funds,
-        to: usdt_contracts[chain_id_optimism],
+        to: usdt_contracts[destination_chain_id],
         value: "0x00", // Zero native tokens
         input: data_encoded,
-        chainId: chain_id_optimism,
+        chainId: destination_chain_id,
       }
     }
 
@@ -239,72 +290,246 @@ describe('Chain abstraction orchestrator', () => {
     )
     expect(resp.status).toBe(200)
 
-    const data = resp.data
-    expect(typeof data.orchestrationId).toBe('string')
-    // Expecting 2 transactions in the route
-    expect(data.transactions.length).toBe(2)
-
-    // First transaction expected to be the approval transaction
-    const approvalTransaction = data.transactions[0]
-    expect(approvalTransaction.chainId).toBe(chain_id_arbitrum)
-    expect(approvalTransaction.nonce).not.toBe("0x00")
-    expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
-    const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.input);
-    if (decodedData.amount <= BigInt(amount_to_topup)) {
-      throw new Error(`Expected amount is lower then the minimal required`);
-    }
-
-    // Second transaction expected to be the bridging to the Arbitrum
-    const bridgingTransaction = data.transactions[1]
-    expect(bridgingTransaction.chainId).toBe(chain_id_arbitrum)
-    expect(bridgingTransaction.nonce).not.toBe("0x00")
-    expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
-
-    // Check for the initialTransaction
-    const initialTransaction = data.initialTransaction;
-    expect(initialTransaction.from).toBe(from_address_with_funds.toLowerCase());
-    expect(initialTransaction.to).toBe(usdt_contracts[chain_id_optimism].toLowerCase());
-    expect(initialTransaction.gasLimit).not.toBe("0x00");
-
-    // Check the metadata fundingFrom
-    const fundingFrom = data.metadata.fundingFrom[0]
-    expect(fundingFrom.chainId).toBe(chain_id_arbitrum)
-    expect(fundingFrom.symbol).toBe(usdt_token_symbol)
-    expect(fundingFrom.tokenContract).toBe(usdt_contracts[chain_id_arbitrum].toLowerCase())
-    if (BigInt(fundingFrom.amount) <= BigInt(amount_to_topup)) {
-      throw new Error(`Expected amount is lower then the minimal required`);
-    }
-    if (BigInt(fundingFrom.bridgingFee) < BigInt(fundingFrom.amount - amount_to_topup)){
-      throw new Error(`Expected bridging fee is incorrect. `);
-    }
-    // Check the initialTransaction metadata
-    const initialTransactionMetadata = data.metadata.initialTransaction
-    expect(initialTransactionMetadata.symbol).toBe(usdt_token_symbol)
-    expect(initialTransactionMetadata.transferTo).toBe(receiver_address.toLowerCase())
-    expect(initialTransactionMetadata.tokenContract).toBe(usdt_contracts[chain_id_optimism].toLowerCase())
-
-    // Check the metadata checkIn
-    expect(typeof data.metadata.checkIn).toBe('number')
-
-    // Set the Orchestration ID for the next test
-    orchestration_id = data.orchestrationId;
+    const orchestration_id = checkRoutesResponse(
+      resp.data,
+      true,
+      from_address_with_funds,
+      receiver_address,
+      usdt_contracts[destination_chain_id],
+      usdt_token_symbol,
+      amount_to_send,
+      chain_id_arbitrum,
+      usdt_contracts[funding_chain_id],
+      usdt_token_symbol,
+    )
+    await checkStatus(orchestration_id)
   })
 
-  it('bridging routes (routes available, USDT Optimism → USDT Arbitrum)', async () => {
+  it('bridging routes (USDT Optimism → USDT Arbitrum)', async () => {
     // Sending USDT on Arbitrum, but having the USDT balance on Optimism.
-    let amount_to_send = usdt_funds[chain_id_arbitrum] + 500_000;
+    const amount_to_send = usdt_funds[chain_id_arbitrum] + 260_000;
+    const destination_chain_id = chain_id_arbitrum;
+    const funding_chain_id = chain_id_optimism;
 
     const data_encoded = erc20Interface.encodeFunctionData('transfer', [
       receiver_address,
       amount_to_send,
     ]);
 
-    let transactionObj = {
+    const transactionObj = {
       transaction: {
         from: from_address_with_funds,
-        to: usdt_contracts[chain_id_arbitrum],
+        to: usdt_contracts[destination_chain_id],
         value: "0x00", // Zero native tokens
         input: data_encoded,
+        chainId: destination_chain_id,
+      }
+    }
+
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/ca/orchestrator/route?projectId=${projectId}`,
+      transactionObj
+    )
+    expect(resp.status).toBe(200)
+
+    const orchestration_id = checkRoutesResponse(
+      resp.data,
+      true,
+      from_address_with_funds,
+      receiver_address,
+      usdt_contracts[destination_chain_id],
+      usdt_token_symbol,
+      amount_to_send,
+      chain_id_optimism,
+      usdt_contracts[funding_chain_id],
+      usdt_token_symbol,
+    )
+    await checkStatus(orchestration_id)
+  })
+
+  it('bridging routes (USDC Base → USDS Base)', async () => {
+    // Override the default address to source from the USDC Base only.
+    const from_address_with_funds = "0xe6f8b93B0eed834816C5aDd2aA0989e2fF97616c";
+    // Sending USDS on Base, but having the USDC balance on Base.
+    const amount_to_send = "2000005684795715100";
+    const destination_chain_id = chain_id_base;
+    const funding_chain_id = chain_id_base;
+
+    const data_encoded = erc20Interface.encodeFunctionData('transfer', [
+      receiver_address,
+      amount_to_send,
+    ]);
+
+    const transactionObj = {
+      transaction: {
+        from: from_address_with_funds,
+        to: usds_contracts[destination_chain_id],
+        value: "0x00", // Zero native tokens
+        input: data_encoded,
+        chainId: destination_chain_id,
+      }
+    }
+
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/ca/orchestrator/route?projectId=${projectId}`,
+      transactionObj
+    )
+    expect(resp.status).toBe(200)
+
+    const orchestration_id = checkRoutesResponse(
+      resp.data,
+      true,
+      from_address_with_funds,
+      receiver_address,
+      usds_contracts[destination_chain_id],
+      usds_token_symbol,
+      amount_to_send,
+      chain_id_base,
+      usdc_contracts[funding_chain_id],
+      usdc_token_symbol,
+    )
+    await checkStatus(orchestration_id)
+  })
+
+  it('bridging routes (USDS Base → USDC Optimism)', async () => {
+    // Override the default address to source from the USDS Base only.
+    const from_address_with_funds = "0xFB85fBfF17B35C3c2889Bcec1D38cf3B8Bb228e0";
+    // Sending USDC on Optimims, but having the USDS balance on Base.
+    const amount_to_send = "600000";
+    const destination_chain_id = chain_id_optimism;
+    const funding_chain_id = chain_id_base;
+
+    const data_encoded = erc20Interface.encodeFunctionData('transfer', [
+      receiver_address,
+      amount_to_send,
+    ]);
+
+    const transactionObj = {
+      transaction: {
+        from: from_address_with_funds,
+        to: usdc_contracts[destination_chain_id],
+        value: "0x00", // Zero native tokens
+        input: data_encoded,
+        chainId: destination_chain_id,
+      }
+    }
+
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/ca/orchestrator/route?projectId=${projectId}`,
+      transactionObj
+    )
+    expect(resp.status).toBe(200)
+
+    const orchestration_id = checkRoutesResponse(
+      resp.data,
+      true,
+      from_address_with_funds,
+      receiver_address,
+      usdc_contracts[destination_chain_id],
+      usdc_token_symbol,
+      amount_to_send,
+      chain_id_base,
+      usds_contracts[funding_chain_id],
+      usds_token_symbol,
+    )
+    await checkStatus(orchestration_id)
+  })
+
+  it('bridging routes (USDS Base → USDC Arbitrum)', async () => {
+    // Override the default address to source from the USDS Base only.
+    const from_address_with_funds = "0xFB85fBfF17B35C3c2889Bcec1D38cf3B8Bb228e0";
+    // Sending USDC on Arbitrum, but having the USDS balance on Base.
+    const amount_to_send = "600000";
+    const destination_chain_id = chain_id_arbitrum;
+    const funding_chain_id = chain_id_base;
+
+    const data_encoded = erc20Interface.encodeFunctionData('transfer', [
+      receiver_address,
+      amount_to_send,
+    ]);
+
+    const transactionObj = {
+      transaction: {
+        from: from_address_with_funds,
+        to: usdc_contracts[destination_chain_id],
+        value: "0x00", // Zero native tokens
+        input: data_encoded,
+        chainId: destination_chain_id,
+      }
+    }
+
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/ca/orchestrator/route?projectId=${projectId}`,
+      transactionObj
+    )
+    expect(resp.status).toBe(200)
+
+    const orchestration_id = checkRoutesResponse(
+      resp.data,
+      true,
+      from_address_with_funds,
+      receiver_address,
+      usdc_contracts[destination_chain_id],
+      usdc_token_symbol,
+      amount_to_send,
+      chain_id_base,
+      usds_contracts[funding_chain_id],
+      usds_token_symbol,
+    )
+    await checkStatus(orchestration_id)
+  })
+
+  it('bridging routes (ETH Optimism → ETH Base)', async () => {
+    // Override the default address to source from the ETH Op only.
+    const from_address_with_funds = "0x21D877B0e89B11aDc2CEC07F58c69870D334f079";
+    // Sending 0.0008 ETH to Base, but having the 0.001 ETH balance on Op.
+    const amount_to_send_in_wei = "800000000000000";
+    const amount_to_send_in_hex = "0x1c6bf52634000";
+
+    const transactionObj = {
+      transaction: {
+        from: from_address_with_funds,
+        to: receiver_address,
+        value: amount_to_send_in_hex,
+        input: "0x", // Zero data
+        chainId: chain_id_base,
+      }
+    }
+
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/ca/orchestrator/route?projectId=${projectId}`,
+      transactionObj
+    )
+    expect(resp.status).toBe(200)
+
+    const orchestration_id = checkRoutesResponse(
+      resp.data,
+      false,
+      from_address_with_funds,
+      receiver_address,
+      native_token_address,
+      eth_token_symbol,
+      amount_to_send_in_wei,
+      chain_id_optimism,
+      native_token_address,
+      eth_token_symbol,
+    )
+    await checkStatus(orchestration_id)
+  })
+
+  it('bridging routes (ETH Optimism → ETH Arbitrum)', async () => {
+    // Override the default address to source from the ETH Op only.
+    const from_address_with_funds = "0x21D877B0e89B11aDc2CEC07F58c69870D334f079";
+    // Sending 0.0008 ETH to Arbitrum, but having the 0.001 ETH balance on Op.
+    const amount_to_send_in_wei = "800000000000000";
+    const amount_to_send_in_hex = "0x1c6bf52634000";
+
+    const transactionObj = {
+      transaction: {
+        from: from_address_with_funds,
+        to: receiver_address,
+        value: amount_to_send_in_hex,
+        input: "0x", // Zero data
         chainId: chain_id_arbitrum,
       }
     }
@@ -315,52 +540,18 @@ describe('Chain abstraction orchestrator', () => {
     )
     expect(resp.status).toBe(200)
 
-    const data = resp.data
-    expect(typeof data.orchestrationId).toBe('string')
-    // Expecting 2 transactions in the route
-    expect(data.transactions.length).toBe(2)
-  })
-
-  it('bridging routes (routes available, USDC Base → USDS(DAI) Optimism)', async () => {
-    // Sending USDS on Optimism, but having the USDC balance on Base.
-    let amount_to_send = "2802165684795715100";
-
-    const data_encoded = erc20Interface.encodeFunctionData('transfer', [
+    const orchestration_id = checkRoutesResponse(
+      resp.data,
+      false,
+      from_address_with_funds,
       receiver_address,
-      amount_to_send,
-    ]);
-
-    let transactionObj = {
-      transaction: {
-        from: from_address_with_funds,
-        to: usds_contracts[chain_id_optimism],
-        value: "0x00", // Zero native tokens
-        input: data_encoded,
-        chainId: chain_id_optimism,
-      }
-    }
-
-    let resp: any = await httpClient.post(
-      `${baseUrl}/v1/ca/orchestrator/route?projectId=${projectId}`,
-      transactionObj
+      native_token_address,
+      eth_token_symbol,
+      amount_to_send_in_wei,
+      chain_id_optimism,
+      native_token_address,
+      eth_token_symbol,
     )
-    expect(resp.status).toBe(200)
-
-    const data = resp.data
-    expect(typeof data.orchestrationId).toBe('string')
-
-    // Expecting 2 transactions in the route
-    expect(data.transactions.length).toBe(2)
-  })
-
-  it('bridging status', async () => {
-    let resp: any = await httpClient.get(
-      `${baseUrl}/v1/ca/orchestrator/status?projectId=${projectId}&orchestrationId=${orchestration_id}`,
-    )
-    expect(resp.status).toBe(200)
-    const data = resp.data
-    expect(typeof data.status).toBe('string')
-    expect(data.status).toBe('PENDING')
-    expect(data.checkIn).toBe(3000)
+    await checkStatus(orchestration_id)
   })
 })

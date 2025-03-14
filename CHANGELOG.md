@@ -2,6 +2,42 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.209.0 - 2025-03-14
+#### Features
+- **(CA)** adding ETH support (#992) - (c5004c2) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.208.1 - 2025-03-13
+#### Bug Fixes
+- **(CA)** adding proper USDs contract, fixing decimals amount convertion (#990) - (540703e) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.208.0 - 2025-03-13
+#### Features
+- **(Swaps)** adding optional disableEstimate parameter (#991) - (303c53d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.207.2 - 2025-03-12
+#### Bug Fixes
+- **(CA)** fixing the changed asset from the simulation support (#987) - (32144d2) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.207.1 - 2025-03-11
+#### Bug Fixes
+- **(Meld)** changing the source amount type to be f64 (#988) - (fa647f2) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.207.0 - 2025-03-11
+#### Features
+- **(Providers)** adding Berachain Mainnet support (#989) - (cedda6c) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.206.1 - 2025-03-10
 #### Bug Fixes
 - **(Pimlico)** injecting state overrides only if not provided (#984) - (e284046) - Max Kalashnikoff | maksy.eth

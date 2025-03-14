@@ -1,8 +1,9 @@
 use {
     super::{
-        super::HANDLER_TASK_METRICS, check_bridging_for_erc20_transfer, convert_amount,
-        find_supported_bridging_asset, get_assets_changes_from_simulation, BridgingStatus,
-        StorageBridgingItem, BRIDGING_FEE_SLIPPAGE, STATUS_POLLING_INTERVAL,
+        super::HANDLER_TASK_METRICS, assets::NATIVE_TOKEN_ADDRESS,
+        check_bridging_for_erc20_transfer, convert_amount, find_supported_bridging_asset,
+        get_assets_changes_from_simulation, BridgingStatus, StorageBridgingItem,
+        BRIDGING_FEE_SLIPPAGE, STATUS_POLLING_INTERVAL,
     },
     crate::{
         analytics::{
@@ -21,7 +22,7 @@ use {
         utils::{
             crypto::{
                 convert_alloy_address_to_h160, decode_erc20_transfer_data, get_erc20_balance,
-                get_nonce, Erc20FunctionType,
+                get_gas_estimate, get_nonce, Erc20FunctionType,
             },
             network,
         },
@@ -225,23 +226,36 @@ async fn handler_internal(
         }),
     ));
 
+    let asset_transfer_value;
+    let asset_transfer_contract;
+    let asset_transfer_receiver;
+    let transaction_data = initial_transaction.input.clone();
+    let gas_used;
+    let is_initial_tx_native_token_transfer;
+
     // Check if the transaction value is non zero it's a native token transfer
     if transfer_value > U256::ZERO {
-        debug!(
-            "The transaction is a native token transfer with value: {:?}",
-            transfer_value
-        );
-        state
-            .metrics
-            .add_ca_no_bridging_needed(ChainAbstractionNoBridgingNeededType::NativeTokenTransfer);
-        return Ok(no_bridging_needed_response);
-    }
-    let transaction_data = initial_transaction.input.clone();
-
-    // Decode the ERC20 transfer function data or use the simulation
-    // to get the transfer asset and amount
-    let (asset_transfer_contract, asset_transfer_value, asset_transfer_receiver, gas_used) =
-        match decode_erc20_transfer_data(&transaction_data) {
+        is_initial_tx_native_token_transfer = true;
+        asset_transfer_value = transfer_value;
+        asset_transfer_contract = NATIVE_TOKEN_ADDRESS;
+        asset_transfer_receiver = to_address;
+        let (_, simulated_gas_used) = get_assets_changes_from_simulation(
+            state.providers.simulation_provider.clone(),
+            &initial_transaction,
+            state.metrics.clone(),
+        )
+        .await?;
+        gas_used = simulated_gas_used;
+    } else {
+        is_initial_tx_native_token_transfer = false;
+        // Decode the ERC20 transfer function data or use the simulation
+        // to get the transfer asset and amount
+        (
+            asset_transfer_contract,
+            asset_transfer_value,
+            asset_transfer_receiver,
+            gas_used,
+        ) = match decode_erc20_transfer_data(&transaction_data) {
             Ok((receiver, erc20_transfer_value)) => {
                 debug!(
                     "The transaction is an ERC20 transfer with value: {:?}",
@@ -255,7 +269,11 @@ async fn handler_internal(
                 )
                 .is_none()
                 {
-                    error!("The destination address is not a supported bridging asset contract");
+                    error!(
+                        "The destination address is not a supported bridging asset contract {}:{}",
+                        initial_tx_chain_id.clone(),
+                        to_address
+                    );
                     state.metrics.add_ca_no_bridging_needed(
                         ChainAbstractionNoBridgingNeededType::AssetNotSupported,
                     );
@@ -359,6 +377,8 @@ async fn handler_internal(
                 )
             }
         };
+    };
+
     // Estimated gas multiplied by the slippage
     initial_transaction.gas_limit =
         U64::from((gas_used * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
@@ -367,11 +387,11 @@ async fn handler_internal(
     // Attempt to destructure the result into symbol and decimals using a match expression
     let (initial_tx_token_symbol, initial_tx_token_decimals) = match find_supported_bridging_asset(
         &initial_tx_chain_id,
-        Eip155OrSolanaAddress::Eip155(to_address),
+        Eip155OrSolanaAddress::Eip155(asset_transfer_contract),
     ) {
         Some((symbol, decimals)) => (symbol, decimals),
         None => {
-            error!("The destination address is not a supported bridging asset contract");
+            error!("The changed asset is not a supported for the bridging");
             state
                 .metrics
                 .add_ca_no_bridging_needed(ChainAbstractionNoBridgingNeededType::AssetNotSupported);
@@ -379,7 +399,7 @@ async fn handler_internal(
         }
     };
 
-    // Get the current balance of the ERC20 token and check if it's enough for the transfer
+    // Get the current balance of the ERC20 or native token and check if it's enough for the transfer
     // without bridging or calculate the top-up value
     let erc20_balance = get_erc20_balance(
         &initial_tx_chain_id,
@@ -462,6 +482,16 @@ async fn handler_internal(
         Eip155OrSolanaAddress::Eip155(asset_transfer_contract),
         initial_tx_token_symbol.clone(),
         initial_tx_token_decimals,
+        if is_initial_tx_native_token_transfer {
+            Some("ETH".to_string())
+        } else {
+            None
+        },
+        if !is_initial_tx_native_token_transfer {
+            Some("ETH".to_string())
+        } else {
+            None
+        },
         solana_rpc_client.clone(),
     )
     .await?
@@ -601,16 +631,18 @@ async fn handler_internal(
                 serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
             let bridging_amount = U256::from_str(&bridging_amount)
                 .map_err(|_| RpcError::InvalidValue(bridging_amount))?;
-            if erc20_topup_value
-                > convert_amount(bridging_amount, initial_tx_token_decimals, bridge_decimals)
-            {
+            let bridging_amount =
+                convert_amount(bridging_amount, initial_tx_token_decimals, bridge_decimals);
+
+            if erc20_topup_value > bridging_amount {
                 error!(
                     "The final bridging amount:{} is less than the topup amount:{}",
                     bridging_amount, erc20_topup_value
                 );
                 return Err(RpcError::BridgingFinalAmountLess);
             }
-            let final_bridging_fee = required_topup_amount - bridging_amount;
+
+            let final_bridging_fee = bridging_amount - erc20_topup_value;
 
             // Build bridging transaction
             let bridge_tx = state
@@ -676,7 +708,7 @@ async fn handler_internal(
                 }
             }
 
-            let bridging_transaction = Transaction {
+            let mut bridging_transaction = Transaction {
                 from: from_address,
                 to: bridge_tx.tx_target,
                 value: bridge_tx.value,
@@ -685,53 +717,76 @@ async fn handler_internal(
                 nonce: current_nonce,
                 chain_id: format!("eip155:{}", bridge_tx.chain_id),
             };
-            routes.push(bridging_transaction);
+
+            // If the bridging transaction value is non zero, it's a native token transfer
+            // and we can get the gas estimation by calling `eth_estimateGas` RPC method
+            // instead of the simulation
+            if !bridging_transaction.value.is_zero() {
+                let gas_estimation = get_gas_estimate(
+                    &bridging_transaction.chain_id.clone(),
+                    bridging_transaction.from,
+                    bridging_transaction.to,
+                    bridging_transaction.value,
+                    bridging_transaction.input.clone(),
+                    &provider_pool.get_provider(
+                        bridging_transaction.chain_id.clone(),
+                        MessageSource::ChainAgnosticCheck,
+                    ),
+                )
+                .await?;
+                bridging_transaction.gas_limit =
+                    U64::from((gas_estimation * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
+            };
+            routes.push(bridging_transaction.clone());
 
             // Estimate the gas usage for the approval (if present) and bridging transactions
             // and update gas limits for transactions
-            let simulation_results = state
-                .providers
-                .simulation_provider
-                .simulate_bundled_transactions(
-                    routes.clone(),
-                    HashMap::new(),
-                    state.metrics.clone(),
-                )
-                .await?;
-            for (index, simulation_result) in
-                simulation_results.simulation_results.iter().enumerate()
-            {
-                // Making sure the simulation input matches the transaction input
-                let curr_route = routes.get_mut(index).ok_or_else(|| {
-                    RpcError::SimulationFailed("The route index is out of bounds".to_string())
-                })?;
-                if simulation_result.transaction.input != curr_route.input {
-                    return Err(RpcError::SimulationFailed(
-                        "The input for the simulation result does not match the input for the transaction"
-                            .into(),
-                    ));
+            // Skip the simulation if the bridging transaction is a native token transfer
+            if routes.len() != 1 || bridging_transaction.gas_limit.is_zero() {
+                let simulation_results = state
+                    .providers
+                    .simulation_provider
+                    .simulate_bundled_transactions(
+                        routes.clone(),
+                        HashMap::new(),
+                        state.metrics.clone(),
+                    )
+                    .await?;
+                for (index, simulation_result) in
+                    simulation_results.simulation_results.iter().enumerate()
+                {
+                    // Making sure the simulation input matches the transaction input
+                    let curr_route = routes.get_mut(index).ok_or_else(|| {
+                        RpcError::SimulationFailed("The route index is out of bounds".to_string())
+                    })?;
+                    if simulation_result.transaction.input != curr_route.input {
+                        return Err(RpcError::SimulationFailed(
+                "The input for the simulation result does not match the input for the transaction"
+                    .into(),
+            ));
+                    }
+
+                    curr_route.gas_limit = U64::from(
+                        (simulation_result.transaction.gas * (100 + ESTIMATED_GAS_SLIPPAGE as u64))
+                            / 100,
+                    );
+
+                    // Get the transaction type for metrics based on the assumption that the first transaction is an approval
+                    // and the rest are bridging transactions
+                    let tx_type = if simulation_results.simulation_results.len() == 1 {
+                        // If there is only one transaction, it's a bridging transaction
+                        ChainAbstractionTransactionType::Bridge
+                    } else if index == 0 {
+                        ChainAbstractionTransactionType::Approve
+                    } else {
+                        ChainAbstractionTransactionType::Bridge
+                    };
+                    state.metrics.add_ca_gas_estimation(
+                        simulation_result.transaction.gas,
+                        curr_route.chain_id.clone(),
+                        tx_type,
+                    );
                 }
-
-                curr_route.gas_limit = U64::from(
-                    (simulation_result.transaction.gas * (100 + ESTIMATED_GAS_SLIPPAGE as u64))
-                        / 100,
-                );
-
-                // Get the transaction type for metrics based on the assumption that the first transaction is an approval
-                // and the rest are bridging transactions
-                let tx_type = if simulation_results.simulation_results.len() == 1 {
-                    // If there is only one transaction, it's a bridging transaction
-                    ChainAbstractionTransactionType::Bridge
-                } else if index == 0 {
-                    ChainAbstractionTransactionType::Approve
-                } else {
-                    ChainAbstractionTransactionType::Bridge
-                };
-                state.metrics.add_ca_gas_estimation(
-                    simulation_result.transaction.gas,
-                    curr_route.chain_id.clone(),
-                    tx_type,
-                );
             }
 
             (
@@ -895,7 +950,7 @@ async fn handler_internal(
             .as_secs(),
         chain_id: initial_tx_chain_id.clone(),
         wallet: from_address,
-        contract: to_address,
+        contract: asset_transfer_contract,
         amount_current: erc20_balance, // The current balance of the ERC20 token
         amount_expected: asset_transfer_value, // The total transfer amount expected
         status: BridgingStatus::Pending,
@@ -1008,7 +1063,7 @@ async fn handler_internal(
                 initial_transaction: InitialTransactionMetadata {
                     transfer_to: asset_transfer_receiver,
                     amount: asset_transfer_value,
-                    token_contract: to_address,
+                    token_contract: asset_transfer_contract,
                     symbol: initial_tx_token_symbol,
                     decimals: initial_tx_token_decimals,
                 },
