@@ -496,7 +496,7 @@ async fn handler_internal(
         .build_bridging_tx(best_route.clone(), state.metrics.clone())
         .await?;
 
-    // Getting the current nonce for the address
+    // Getting the current nonce for the address for the bridging transaction
     let mut current_nonce = get_nonce(
         from_address,
         &provider_pool.get_provider(
@@ -505,7 +505,6 @@ async fn handler_internal(
         ),
     )
     .await?;
-
     let mut routes = Vec::new();
 
     // Check for the allowance
@@ -562,6 +561,14 @@ async fn handler_internal(
         nonce: current_nonce,
         chain_id: format!("eip155:{}", bridge_tx.chain_id),
     };
+
+    // Checking if it's a swap only on the same chain
+    // and increase the initial transaction nonce for this case
+    // since we have an approval (optional) and a bridging transactions
+    // before the initial transaction
+    if bridge_chain_id == initial_tx_chain_id {
+        initial_transaction.nonce = bridging_transaction.nonce + U64::from(1);
+    }
 
     // If the bridging transaction value is non zero, it's a native token transfer
     // and we can get the gas estimation by calling `eth_estimateGas` RPC method
