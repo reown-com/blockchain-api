@@ -124,7 +124,54 @@ pub struct PrepareResponseAvailableV1 {
     pub orchestration_id: String,
     pub initial_transaction: Transaction,
     pub transactions: Vec<Transaction>,
-    pub metadata: Metadata,
+    pub metadata: MetadataV1,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MetadataV1 {
+    pub funding_from: Vec<FundingMetadataV1>,
+    pub initial_transaction: InitialTransactionMetadata,
+    pub check_in: u64,
+}
+
+impl From<Metadata> for MetadataV1 {
+    fn from(value: Metadata) -> Self {
+        Self {
+            funding_from: value.funding_from.into_iter().map(|f| f.into()).collect(),
+            initial_transaction: value.initial_transaction,
+            check_in: value.check_in,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FundingMetadataV1 {
+    pub chain_id: String,
+    pub token_contract: String,
+    pub symbol: String,
+    pub amount: U256,
+    pub bridging_fee: U256,
+    pub decimals: u8,
+}
+
+impl From<FundingMetadata> for FundingMetadataV1 {
+    fn from(value: FundingMetadata) -> Self {
+        Self {
+            chain_id: value.chain_id,
+            token_contract: value
+                .token_contract
+                .as_eip155()
+                .expect("V1 response only supports EIP155 funding token contracts")
+                .to_string()
+                .to_ascii_lowercase(),
+            symbol: value.symbol,
+            amount: value.amount,
+            bridging_fee: value.bridging_fee,
+            decimals: value.decimals,
+        }
+    }
 }
 
 impl From<PrepareResponseAvailable> for PrepareResponseAvailableV1 {
@@ -144,7 +191,7 @@ impl From<PrepareResponseAvailable> for PrepareResponseAvailableV1 {
                     }
                 })
                 .collect(),
-            metadata: value.metadata,
+            metadata: value.metadata.into(),
         }
     }
 }
