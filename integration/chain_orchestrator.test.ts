@@ -388,6 +388,14 @@ describe('Chain abstraction orchestrator', () => {
       usdc_contracts[funding_chain_id],
       usdc_token_symbol,
     )
+
+    // Check nonce for the same chain swap
+    const approval_nonce = Number(resp.data.transactions[0].nonce);
+    const bridging_nonce = Number(resp.data.transactions[1].nonce);
+    const initial_tx_nonce = Number(resp.data.initialTransaction.nonce);
+    expect(bridging_nonce).toBe(approval_nonce + 1);
+    expect(initial_tx_nonce).toBe(bridging_nonce + 1);
+
     await checkStatus(orchestration_id)
   })
 
