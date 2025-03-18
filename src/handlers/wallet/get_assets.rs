@@ -117,11 +117,11 @@ fn get_assets(
     Ok(create_response(filtered_balances))
 }
 
-const CHAIN_ID_OPTIMISM: &str = "eip155:10";
-const CHAIN_ID_BASE: &str = "eip155:8453";
-const CHAIN_ID_ARBITRUM: &str = "eip155:42161";
+pub const CHAIN_ID_OPTIMISM: &str = "eip155:10";
+pub const CHAIN_ID_BASE: &str = "eip155:8453";
+pub const CHAIN_ID_ARBITRUM: &str = "eip155:42161";
 
-const SUPPORTED_CHAINS: [&str; 3] = [CHAIN_ID_OPTIMISM, CHAIN_ID_BASE, CHAIN_ID_ARBITRUM];
+pub const SUPPORTED_CHAINS: [&str; 3] = [CHAIN_ID_OPTIMISM, CHAIN_ID_BASE, CHAIN_ID_ARBITRUM];
 
 fn get_erc20_groups() -> HashMap<&'static str, HashMap<&'static str, Address>> {
     HashMap::from([
