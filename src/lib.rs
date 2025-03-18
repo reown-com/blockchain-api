@@ -384,7 +384,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         // Wallet
         .route("/v1/wallet", post(handlers::wallet::handler::handler))
         // Chain agnostic orchestration
-        .route("/v1/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler))
+        .route("/v1/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler_v1))
+        .route("/v2/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler_v2))
         .route("/v1/ca/orchestrator/status", get(handlers::chain_agnostic::status::handler))
         // Health
         .route("/health", get(handlers::health::handler))

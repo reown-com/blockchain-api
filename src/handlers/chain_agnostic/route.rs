@@ -11,7 +11,11 @@ use {
             ChainAbstractionInitialTxInfo, MessageSource,
         },
         error::RpcError,
-        handlers::{self_provider, SdkInfoParams},
+        handlers::{
+            self_provider,
+            wallet::get_assets::{self},
+            SdkInfoParams,
+        },
         metrics::{ChainAbstractionNoBridgingNeededType, ChainAbstractionTransactionType},
         state::AppState,
         storage::irn::OperationType,
@@ -26,11 +30,11 @@ use {
     alloy::primitives::{Address, U256, U64},
     axum::{
         extract::{ConnectInfo, Query, State},
-        response::{IntoResponse, Response},
         Json,
     },
     hyper::HeaderMap,
     serde::{Deserialize, Serialize},
+    serde_json::json,
     std::{
         collections::HashMap,
         net::SocketAddr,
@@ -41,13 +45,20 @@ use {
     tracing::{debug, error},
     uuid::Uuid,
     wc::future::FutureExt,
-    yttrium::chain_abstraction::api::{
-        prepare::{
-            BridgingError, FundingMetadata, InitialTransactionMetadata, Metadata, PrepareRequest,
-            PrepareResponse, PrepareResponseAvailable, PrepareResponseError,
-            PrepareResponseNotRequired, PrepareResponseSuccess, RouteQueryParams,
+    yttrium::chain_abstraction::{
+        api::{
+            prepare::{
+                BridgingError, Eip155OrSolanaAddress, FundingMetadata, InitialTransactionMetadata,
+                Metadata, PrepareRequest, PrepareResponse, PrepareResponseAvailable,
+                PrepareResponseError, PrepareResponseNotRequired, PrepareResponseSuccess,
+                RouteQueryParams, SolanaTransaction, Transactions,
+            },
+            Transaction,
         },
-        Transaction,
+        solana::{
+            self, SolanaCommitmentConfig, SolanaPubkey, SolanaRpcClient,
+            SolanaVersionedTransaction, SOLANA_CHAIN_ID,
+        },
     },
 };
 
@@ -60,13 +71,138 @@ struct QuoteRoute {
     pub to_amount: String,
 }
 
-pub async fn handler(
+pub async fn handler_v1(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     query_params: Query<RouteQueryParams>,
     Json(request_payload): Json<PrepareRequest>,
-) -> Result<Response, RpcError> {
+) -> Result<Json<PrepareResponseV1>, RpcError> {
+    handler_internal(state, connect_info, headers, query_params, request_payload)
+        .with_metrics(HANDLER_TASK_METRICS.with_name("ca_route"))
+        .await
+        .map(|Json(j)| Json(j.into()))
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PrepareResponseV1 {
+    Success(PrepareResponseSuccessV1),
+    Error(PrepareResponseError),
+}
+
+impl From<PrepareResponse> for PrepareResponseV1 {
+    fn from(value: PrepareResponse) -> Self {
+        match value {
+            PrepareResponse::Success(success) => PrepareResponseV1::Success(success.into()),
+            PrepareResponse::Error(error) => PrepareResponseV1::Error(error),
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PrepareResponseSuccessV1 {
+    Available(PrepareResponseAvailableV1),
+    NotRequired(PrepareResponseNotRequired),
+}
+
+impl From<PrepareResponseSuccess> for PrepareResponseSuccessV1 {
+    fn from(value: PrepareResponseSuccess) -> Self {
+        match value {
+            PrepareResponseSuccess::Available(available) => {
+                PrepareResponseSuccessV1::Available(available.into())
+            }
+            PrepareResponseSuccess::NotRequired(not_required) => {
+                PrepareResponseSuccessV1::NotRequired(not_required)
+            }
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PrepareResponseAvailableV1 {
+    pub orchestration_id: String,
+    pub initial_transaction: Transaction,
+    pub transactions: Vec<Transaction>,
+    pub metadata: MetadataV1,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MetadataV1 {
+    pub funding_from: Vec<FundingMetadataV1>,
+    pub initial_transaction: InitialTransactionMetadata,
+    pub check_in: u64,
+}
+
+impl From<Metadata> for MetadataV1 {
+    fn from(value: Metadata) -> Self {
+        Self {
+            funding_from: value.funding_from.into_iter().map(|f| f.into()).collect(),
+            initial_transaction: value.initial_transaction,
+            check_in: value.check_in,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FundingMetadataV1 {
+    pub chain_id: String,
+    pub token_contract: String,
+    pub symbol: String,
+    pub amount: U256,
+    pub bridging_fee: U256,
+    pub decimals: u8,
+}
+
+impl From<FundingMetadata> for FundingMetadataV1 {
+    fn from(value: FundingMetadata) -> Self {
+        Self {
+            chain_id: value.chain_id,
+            token_contract: value
+                .token_contract
+                .as_eip155()
+                .expect("V1 response only supports EIP155 funding token contracts")
+                .to_string()
+                .to_ascii_lowercase(),
+            symbol: value.symbol,
+            amount: value.amount,
+            bridging_fee: value.bridging_fee,
+            decimals: value.decimals,
+        }
+    }
+}
+
+impl From<PrepareResponseAvailable> for PrepareResponseAvailableV1 {
+    fn from(value: PrepareResponseAvailable) -> Self {
+        PrepareResponseAvailableV1 {
+            orchestration_id: value.orchestration_id,
+            initial_transaction: value.initial_transaction,
+            transactions: value
+                .transactions
+                .into_iter()
+                // NOTE: this is a temporary solution to support the legacy transactions format. However it will break in the future when multiple "routes" are returned
+                .flat_map(|t| match t {
+                    Transactions::Eip155(transactions) => transactions,
+                    Transactions::Solana(_transactions) => {
+                        error!("Solana txns not supported in v1 format");
+                        Vec::new()
+                    }
+                })
+                .collect(),
+            metadata: value.metadata.into(),
+        }
+    }
+}
+
+pub async fn handler_v2(
+    state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    query_params: Query<RouteQueryParams>,
+    Json(request_payload): Json<PrepareRequest>,
+) -> Result<Json<PrepareResponse>, RpcError> {
     handler_internal(state, connect_info, headers, query_params, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("ca_route"))
         .await
@@ -79,7 +215,7 @@ async fn handler_internal(
     headers: HeaderMap,
     Query(query_params): Query<RouteQueryParams>,
     request_payload: PrepareRequest,
-) -> Result<Response, RpcError> {
+) -> Result<Json<PrepareResponse>, RpcError> {
     state
         .validate_project_access_and_quota(query_params.project_id.as_ref())
         .await?;
@@ -130,7 +266,7 @@ async fn handler_internal(
     .await?;
     initial_transaction.nonce = intial_transaction_nonce;
 
-    let no_bridging_needed_response: Json<PrepareResponse> = Json(PrepareResponse::Success(
+    let no_bridging_needed_response = Json(PrepareResponse::Success(
         PrepareResponseSuccess::NotRequired(PrepareResponseNotRequired {
             initial_transaction: initial_transaction.clone(),
             transactions: vec![],
@@ -174,7 +310,11 @@ async fn handler_internal(
                 );
 
                 // Check if the destination address is supported ERC20 asset contract
-                if find_supported_bridging_asset(&initial_tx_chain_id.clone(), to_address).is_none()
+                if find_supported_bridging_asset(
+                    &initial_tx_chain_id.clone(),
+                    Eip155OrSolanaAddress::Eip155(to_address),
+                )
+                .is_none()
                 {
                     error!(
                         "The destination address is not a supported bridging asset contract {}:{}",
@@ -184,7 +324,7 @@ async fn handler_internal(
                     state.metrics.add_ca_no_bridging_needed(
                         ChainAbstractionNoBridgingNeededType::AssetNotSupported,
                     );
-                    return Ok(no_bridging_needed_response.into_response());
+                    return Ok(no_bridging_needed_response);
                 };
 
                 // Get the ERC20 transfer gas estimation for the token contract
@@ -258,7 +398,7 @@ async fn handler_internal(
                 for asset_change in simulation_assets_changes {
                     if find_supported_bridging_asset(
                         &asset_change.chain_id.clone(),
-                        asset_change.asset_contract,
+                        Eip155OrSolanaAddress::Eip155(asset_change.asset_contract),
                     )
                     .is_some()
                     {
@@ -273,7 +413,7 @@ async fn handler_internal(
                     state.metrics.add_ca_no_bridging_needed(
                         ChainAbstractionNoBridgingNeededType::AssetNotSupported,
                     );
-                    return Ok(no_bridging_needed_response.into_response());
+                    return Ok(no_bridging_needed_response);
                 }
 
                 (
@@ -292,17 +432,19 @@ async fn handler_internal(
 
     // Check if the destination address is supported ERC20 asset contract
     // Attempt to destructure the result into symbol and decimals using a match expression
-    let (initial_tx_token_symbol, initial_tx_token_decimals) =
-        match find_supported_bridging_asset(&initial_tx_chain_id, asset_transfer_contract) {
-            Some((symbol, decimals)) => (symbol, decimals),
-            None => {
-                error!("The changed asset is not a supported for the bridging");
-                state.metrics.add_ca_no_bridging_needed(
-                    ChainAbstractionNoBridgingNeededType::AssetNotSupported,
-                );
-                return Ok(no_bridging_needed_response.into_response());
-            }
-        };
+    let (initial_tx_token_symbol, initial_tx_token_decimals) = match find_supported_bridging_asset(
+        &initial_tx_chain_id,
+        Eip155OrSolanaAddress::Eip155(asset_transfer_contract),
+    ) {
+        Some((symbol, decimals)) => (symbol, decimals),
+        None => {
+            error!("The changed asset is not a supported for the bridging");
+            state
+                .metrics
+                .add_ca_no_bridging_needed(ChainAbstractionNoBridgingNeededType::AssetNotSupported);
+            return Ok(no_bridging_needed_response);
+        }
+    };
 
     // Get the current balance of the ERC20 or native token and check if it's enough for the transfer
     // without bridging or calculate the top-up value
@@ -320,9 +462,15 @@ async fn handler_internal(
         state
             .metrics
             .add_ca_no_bridging_needed(ChainAbstractionNoBridgingNeededType::SufficientFunds);
-        return Ok(no_bridging_needed_response.into_response());
+        return Ok(no_bridging_needed_response);
     }
     let mut erc20_topup_value = asset_transfer_value - erc20_balance;
+
+    let sol_rpc = "https://api.mainnet-beta.solana.com";
+    let solana_rpc_client = Arc::new(SolanaRpcClient::new_with_commitment(
+        sol_rpc.to_string(),
+        SolanaCommitmentConfig::confirmed(), // TODO what commitment level should we use?
+    ));
 
     // Check for possible bridging funds by iterating over supported assets
     // or return an insufficient funds error
@@ -330,9 +478,56 @@ async fn handler_internal(
         query_params.project_id.to_string(),
         query_params.session_id.clone(),
         erc20_topup_value,
-        from_address,
+        {
+            let results = request_payload
+                .accounts.iter()
+                .map(|a| {
+                    let caip10_parts = a.splitn(3, ":").collect::<Vec<_>>();
+                    let namespace = caip10_parts.first().ok_or(RpcError::InvalidParameter(
+                        "The account is not a valid CAIP-10 address: missing namespace".to_string(),
+                    ))?;
+                    let reference = caip10_parts.get(1).ok_or(RpcError::InvalidParameter(
+                        "The account is not a valid CAIP-10 address: missing reference".to_string(),
+                    ))?;
+                    let address = caip10_parts.get(2).ok_or(RpcError::InvalidParameter(
+                        "The account is not a valid CAIP-10 address: missing address".to_string(),
+                    ))?;
+                    Ok((namespace.to_owned(), reference.to_owned(), address.to_owned()))
+                })
+                .collect::<Result<Vec<_>, RpcError>>()?;
+            let mut accounts = Vec::with_capacity(results.len());
+            for result in results {
+                let (namespace, reference, address) = result;
+                accounts.push((
+                    Some(format!("{namespace}:{reference}")),
+                    match namespace {
+                        "eip155" => Eip155OrSolanaAddress::Eip155(
+                            Address::from_str(address).map_err(|_| {
+                                RpcError::InvalidParameter(
+                                    "The account is not a valid CAIP-10 address: invalid eip155 address".to_string(),
+                                )
+                            })?,
+                        ),
+                        "solana" => Eip155OrSolanaAddress::Solana(
+                            SolanaPubkey::from_str(address).map_err(|_| {
+                                RpcError::InvalidParameter(
+                                    "The account is not a valid CAIP-10 address: invalid solana address".to_string(),
+                                )
+                            })?,
+                        ),
+                        namespace => {
+                            return Err(RpcError::InvalidParameter(format!(
+                                "The account is not a valid CAIP-10 address: invalid namespace: {namespace}",
+                            )));
+                        }
+                    },
+                ));
+            }
+            accounts.push((None, Eip155OrSolanaAddress::Eip155(from_address)));
+            accounts
+        },
         initial_transaction.chain_id.clone(),
-        asset_transfer_contract,
+        Eip155OrSolanaAddress::Eip155(asset_transfer_contract),
         initial_tx_token_symbol.clone(),
         initial_tx_token_decimals,
         if is_initial_tx_native_token_transfer {
@@ -345,6 +540,7 @@ async fn handler_internal(
         } else {
             None
         },
+        solana_rpc_client.clone(),
     )
     .await?
     else {
@@ -355,8 +551,7 @@ async fn handler_internal(
                 "No supported assets with at least {} amount were found in the address {}",
                 erc20_topup_value, from_address
             ),
-        }))
-        .into_response());
+        })));
     };
     let bridge_chain_id = bridging_asset.chain_id;
     let bridge_token_symbol = bridging_asset.token_symbol;
@@ -371,107 +566,109 @@ async fn handler_internal(
         bridge_decimals,
     );
 
-    // Get Quotes for the bridging
-    let quotes = state
-        .providers
-        .chain_orchestrator_provider
-        .get_bridging_quotes(
-            bridge_chain_id.clone(),
-            bridge_contract,
-            initial_tx_chain_id.clone(),
-            asset_transfer_contract,
-            erc20_topup_value,
-            from_address,
-            state.metrics.clone(),
-        )
-        .await?;
-    let Some(best_route) = quotes.first() else {
-        state
-            .metrics
-            .add_ca_no_routes_found(construct_metrics_bridging_route(
-                bridge_chain_id.clone(),
-                bridge_contract.to_string(),
-                initial_tx_chain_id.clone(),
-                asset_transfer_contract.to_string(),
-            ));
-        return Ok(Json(PrepareResponse::Error(PrepareResponseError {
-            error: BridgingError::NoRoutesAvailable,
-            reason: format!(
-                "No routes were found from {}:{} to {}:{} for an initial amount {}",
-                bridge_chain_id.clone(),
-                bridge_contract,
-                initial_tx_chain_id.clone(),
-                asset_transfer_contract,
-                erc20_topup_value
-            ),
-        }))
-        .into_response());
-    };
+    let (routes, bridged_amount, final_bridging_fee) = match bridge_contract {
+        Eip155OrSolanaAddress::Eip155(bridge_contract) => {
+            // Get Quotes for the bridging
+            let quotes = state
+                .providers
+                .chain_orchestrator_provider
+                .get_bridging_quotes(
+                    bridge_chain_id.clone(),
+                    bridge_contract,
+                    initial_tx_chain_id.clone(),
+                    asset_transfer_contract,
+                    erc20_topup_value,
+                    from_address,
+                    state.metrics.clone(),
+                )
+                .await?;
+            let Some(best_route) = quotes.first() else {
+                state
+                    .metrics
+                    .add_ca_no_routes_found(construct_metrics_bridging_route(
+                        bridge_chain_id.clone(),
+                        bridge_contract.to_string(),
+                        initial_tx_chain_id.clone(),
+                        asset_transfer_contract.to_string(),
+                    ));
+                return Ok(Json(PrepareResponse::Error(PrepareResponseError {
+                    error: BridgingError::NoRoutesAvailable,
+                    reason: format!(
+                        "No routes were found from {}:{} to {}:{} for an initial amount {}",
+                        bridge_chain_id.clone(),
+                        bridge_contract,
+                        initial_tx_chain_id.clone(),
+                        asset_transfer_contract,
+                        erc20_topup_value
+                    ),
+                })));
+            };
 
-    // Calculate the bridging fee based on the amount given from quotes
-    let bridged_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
-    let bridged_amount =
-        U256::from_str(&bridged_amount).map_err(|_| RpcError::InvalidValue(bridged_amount))?;
-    let bridged_amount = convert_amount(bridged_amount, initial_tx_token_decimals, bridge_decimals);
+            // Calculate the bridging fee based on the amount given from quotes
+            let bridged_amount =
+                serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
+            let bridged_amount = U256::from_str(&bridged_amount)
+                .map_err(|_| RpcError::InvalidValue(bridged_amount))?;
+            let bridged_amount =
+                convert_amount(bridged_amount, initial_tx_token_decimals, bridge_decimals);
 
-    // Handle negatie bridging fee on USDs swaps considering it as 0 fee
-    // or calculate the bridging fee
-    let bridging_fee = if bridged_amount > erc20_topup_value {
-        error!(
-            "The bridged amount {} is higher than the requested amount {}",
-            bridged_amount, erc20_topup_value
-        );
-        U256::ZERO
-    } else {
-        erc20_topup_value - bridged_amount
-    };
+            // Handle negatie bridging fee on USDs swaps considering it as 0 fee
+            // or calculate the bridging fee
+            let bridging_fee = if bridged_amount > erc20_topup_value {
+                error!(
+                    "The bridged amount {} is higher than the requested amount {}",
+                    bridged_amount, erc20_topup_value
+                );
+                U256::ZERO
+            } else {
+                erc20_topup_value - bridged_amount
+            };
 
-    // Calculate the required bridging topup amount with the bridging fee
-    // and bridging fee * slippage to cover volatility
-    let required_topup_amount = erc20_topup_value + bridging_fee;
-    let required_topup_amount = ((bridging_fee * U256::from(BRIDGING_FEE_SLIPPAGE))
-        / U256::from(100))
-        + required_topup_amount;
-    if current_bridging_asset_balance < required_topup_amount {
-        let error_reason = format!(
-            "The current bridging asset balance on {} is {} less than the required topup amount:{}",
-            from_address, current_bridging_asset_balance, required_topup_amount
-        );
-        error!(error_reason);
-        state.metrics.add_ca_insufficient_funds();
-        return Ok(Json(PrepareResponse::Error(PrepareResponseError {
-            error: BridgingError::InsufficientFunds,
-            reason: error_reason,
-        }))
-        .into_response());
-    }
+            // Calculate the required bridging topup amount with the bridging fee
+            // and bridging fee * slippage to cover volatility
+            let required_topup_amount = erc20_topup_value + bridging_fee;
+            let required_topup_amount = ((bridging_fee * U256::from(BRIDGING_FEE_SLIPPAGE))
+                / U256::from(100))
+                + required_topup_amount;
+            if current_bridging_asset_balance < required_topup_amount {
+                let error_reason = format!(
+                    "The current bridging asset balance on {} is {} less than the required topup amount:{}",
+                    from_address, current_bridging_asset_balance, required_topup_amount
+                );
+                error!(error_reason);
+                state.metrics.add_ca_insufficient_funds();
+                return Ok(Json(PrepareResponse::Error(PrepareResponseError {
+                    error: BridgingError::InsufficientFunds,
+                    reason: error_reason,
+                })));
+            }
 
-    // Get quotes for updated topup amount
-    let quotes = state
-        .providers
-        .chain_orchestrator_provider
-        .get_bridging_quotes(
-            bridge_chain_id.clone(),
-            bridge_contract,
-            initial_tx_chain_id.clone(),
-            asset_transfer_contract,
-            required_topup_amount,
-            from_address,
-            state.metrics.clone(),
-        )
-        .await?;
-    let Some(best_route) = quotes.first() else {
-        state
-            .metrics
-            .add_ca_no_routes_found(construct_metrics_bridging_route(
-                bridge_chain_id.clone(),
-                bridge_contract.to_string(),
-                initial_tx_chain_id.clone(),
-                asset_transfer_contract.to_string(),
-            ));
-        return Ok(Json(PrepareResponse::Error(PrepareResponseError {
-            error: BridgingError::NoRoutesAvailable,
-            reason: format!(
+            // Get quotes for updated topup amount
+            let quotes = state
+                .providers
+                .chain_orchestrator_provider
+                .get_bridging_quotes(
+                    bridge_chain_id.clone(),
+                    bridge_contract,
+                    initial_tx_chain_id.clone(),
+                    asset_transfer_contract,
+                    required_topup_amount,
+                    from_address,
+                    state.metrics.clone(),
+                )
+                .await?;
+            let Some(best_route) = quotes.first() else {
+                state
+                    .metrics
+                    .add_ca_no_routes_found(construct_metrics_bridging_route(
+                        bridge_chain_id.clone(),
+                        bridge_contract.to_string(),
+                        initial_tx_chain_id.clone(),
+                        asset_transfer_contract.to_string(),
+                    ));
+                return Ok(Json(PrepareResponse::Error(PrepareResponseError {
+                    error: BridgingError::NoRoutesAvailable,
+                    reason: format!(
                 "No routes were found from {}:{} to {}:{} for updated (fee included) amount: {}",
                 bridge_chain_id.clone(),
                 bridge_contract,
@@ -479,170 +676,273 @@ async fn handler_internal(
                 asset_transfer_contract,
                 required_topup_amount
             ),
-        }))
-        .into_response());
-    };
+                })));
+            };
 
-    // Check the final bridging amount from the quote
-    let bridged_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
-    let bridged_amount =
-        U256::from_str(&bridged_amount).map_err(|_| RpcError::InvalidValue(bridged_amount))?;
-    let bridged_amount = convert_amount(bridged_amount, initial_tx_token_decimals, bridge_decimals);
+            // Check the final bridging amount from the quote
+            let bridged_amount =
+                serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
+            let bridged_amount = U256::from_str(&bridged_amount)
+                .map_err(|_| RpcError::InvalidValue(bridged_amount))?;
+            let bridged_amount =
+                convert_amount(bridged_amount, initial_tx_token_decimals, bridge_decimals);
 
-    if erc20_topup_value > bridged_amount {
-        error!(
-            "The final bridged amount:{} is less than the topup amount:{}",
-            bridged_amount, erc20_topup_value
-        );
-        return Err(RpcError::BridgingFinalAmountLess);
-    }
+            if erc20_topup_value > bridged_amount {
+                error!(
+                    "The final bridged amount:{} is less than the topup amount:{}",
+                    bridged_amount, erc20_topup_value
+                );
+                return Err(RpcError::BridgingFinalAmountLess);
+            }
 
-    let final_bridging_fee = bridged_amount - erc20_topup_value;
+            let final_bridging_fee = bridged_amount - erc20_topup_value;
 
-    // Build bridging transaction
-    let bridge_tx = state
-        .providers
-        .chain_orchestrator_provider
-        .build_bridging_tx(best_route.clone(), state.metrics.clone())
-        .await?;
-
-    // Getting the current nonce for the address for the bridging transaction
-    let mut current_nonce = get_nonce(
-        from_address,
-        &provider_pool.get_provider(
-            format!("eip155:{}", bridge_tx.chain_id),
-            MessageSource::ChainAgnosticCheck,
-        ),
-    )
-    .await?;
-    let mut routes = Vec::new();
-
-    // Check for the allowance
-    if let Some(approval_data) = bridge_tx.approval_data {
-        let allowance = state
-            .providers
-            .chain_orchestrator_provider
-            .check_allowance(
-                format!("eip155:{}", bridge_tx.chain_id),
-                approval_data.owner,
-                approval_data.allowance_target,
-                approval_data.approval_token_address,
-                state.metrics.clone(),
-            )
-            .await?;
-
-        // Check if the approval transaction injection is needed
-        if approval_data.minimum_approval_amount >= allowance {
-            let approval_tx = state
+            // Build bridging transaction
+            let bridge_tx = state
                 .providers
                 .chain_orchestrator_provider
-                .build_approval_tx(
-                    format!("eip155:{}", bridge_tx.chain_id),
-                    approval_data.owner,
-                    approval_data.allowance_target,
-                    approval_data.approval_token_address,
-                    required_topup_amount,
-                    state.metrics.clone(),
-                )
+                .build_bridging_tx(best_route.clone(), state.metrics.clone())
                 .await?;
 
-            let approval_transaction = Transaction {
-                from: approval_tx.from,
-                to: approval_tx.to,
-                value: U256::ZERO,
+            // Getting the current nonce for the address for the bridging transaction
+            let mut current_nonce = get_nonce(
+                from_address,
+                &provider_pool.get_provider(
+                    format!("eip155:{}", bridge_tx.chain_id),
+                    MessageSource::ChainAgnosticCheck,
+                ),
+            )
+            .await?;
+            let mut routes = Vec::new();
+
+            // Check for the allowance
+            if let Some(approval_data) = bridge_tx.approval_data {
+                let allowance = state
+                    .providers
+                    .chain_orchestrator_provider
+                    .check_allowance(
+                        format!("eip155:{}", bridge_tx.chain_id),
+                        approval_data.owner,
+                        approval_data.allowance_target,
+                        approval_data.approval_token_address,
+                        state.metrics.clone(),
+                    )
+                    .await?;
+
+                // Check if the approval transaction injection is needed
+                if approval_data.minimum_approval_amount >= allowance {
+                    let approval_tx = state
+                        .providers
+                        .chain_orchestrator_provider
+                        .build_approval_tx(
+                            format!("eip155:{}", bridge_tx.chain_id),
+                            approval_data.owner,
+                            approval_data.allowance_target,
+                            approval_data.approval_token_address,
+                            required_topup_amount,
+                            state.metrics.clone(),
+                        )
+                        .await?;
+
+                    let approval_transaction = Transaction {
+                        from: approval_tx.from,
+                        to: approval_tx.to,
+                        value: U256::ZERO,
+                        gas_limit: U64::ZERO,
+                        input: approval_tx.data,
+                        nonce: current_nonce,
+                        chain_id: format!("eip155:{}", bridge_tx.chain_id),
+                    };
+                    routes.push(approval_transaction);
+
+                    // Increment the nonce
+                    current_nonce += U64::from(1);
+                }
+            }
+
+            let mut bridging_transaction = Transaction {
+                from: from_address,
+                to: bridge_tx.tx_target,
+                value: bridge_tx.value,
                 gas_limit: U64::ZERO,
-                input: approval_tx.data,
+                input: bridge_tx.tx_data,
                 nonce: current_nonce,
                 chain_id: format!("eip155:{}", bridge_tx.chain_id),
             };
-            routes.push(approval_transaction);
 
-            // Increment the nonce
-            current_nonce += U64::from(1);
-        }
-    }
+            // Checking if it's a swap only on the same chain
+            // and increase the initial transaction nonce for this case
+            // since we have an approval (optional) and a bridging transactions
+            // before the initial transaction
+            if bridge_chain_id == initial_tx_chain_id {
+                initial_transaction.nonce = bridging_transaction.nonce + U64::from(1);
+            }
 
-    let mut bridging_transaction = Transaction {
-        from: from_address,
-        to: bridge_tx.tx_target,
-        value: bridge_tx.value,
-        gas_limit: U64::ZERO,
-        input: bridge_tx.tx_data,
-        nonce: current_nonce,
-        chain_id: format!("eip155:{}", bridge_tx.chain_id),
-    };
+            // If the bridging transaction value is non zero, it's a native token transfer
+            // and we can get the gas estimation by calling `eth_estimateGas` RPC method
+            // instead of the simulation
+            if !bridging_transaction.value.is_zero() {
+                let gas_estimation = get_gas_estimate(
+                    &bridging_transaction.chain_id.clone(),
+                    bridging_transaction.from,
+                    bridging_transaction.to,
+                    bridging_transaction.value,
+                    bridging_transaction.input.clone(),
+                    &provider_pool.get_provider(
+                        bridging_transaction.chain_id.clone(),
+                        MessageSource::ChainAgnosticCheck,
+                    ),
+                )
+                .await?;
+                bridging_transaction.gas_limit =
+                    U64::from((gas_estimation * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
+            };
+            routes.push(bridging_transaction.clone());
 
-    // Checking if it's a swap only on the same chain
-    // and increase the initial transaction nonce for this case
-    // since we have an approval (optional) and a bridging transactions
-    // before the initial transaction
-    if bridge_chain_id == initial_tx_chain_id {
-        initial_transaction.nonce = bridging_transaction.nonce + U64::from(1);
-    }
-
-    // If the bridging transaction value is non zero, it's a native token transfer
-    // and we can get the gas estimation by calling `eth_estimateGas` RPC method
-    // instead of the simulation
-    if !bridging_transaction.value.is_zero() {
-        let gas_estimation = get_gas_estimate(
-            &bridging_transaction.chain_id.clone(),
-            bridging_transaction.from,
-            bridging_transaction.to,
-            bridging_transaction.value,
-            bridging_transaction.input.clone(),
-            &provider_pool.get_provider(
-                bridging_transaction.chain_id.clone(),
-                MessageSource::ChainAgnosticCheck,
-            ),
-        )
-        .await?;
-        bridging_transaction.gas_limit =
-            U64::from((gas_estimation * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
-    };
-    routes.push(bridging_transaction.clone());
-
-    // Estimate the gas usage for the approval (if present) and bridging transactions
-    // and update gas limits for transactions
-    // Skip the simulation if the bridging transaction is a native token transfer
-    if routes.len() != 1 || bridging_transaction.gas_limit.is_zero() {
-        let simulation_results = state
-            .providers
-            .simulation_provider
-            .simulate_bundled_transactions(routes.clone(), HashMap::new(), state.metrics.clone())
-            .await?;
-        for (index, simulation_result) in simulation_results.simulation_results.iter().enumerate() {
-            // Making sure the simulation input matches the transaction input
-            let curr_route = routes.get_mut(index).ok_or_else(|| {
-                RpcError::SimulationFailed("The route index is out of bounds".to_string())
-            })?;
-            if simulation_result.transaction.input != curr_route.input {
-                return Err(RpcError::SimulationFailed(
+            // Estimate the gas usage for the approval (if present) and bridging transactions
+            // and update gas limits for transactions
+            // Skip the simulation if the bridging transaction is a native token transfer
+            if routes.len() != 1 || bridging_transaction.gas_limit.is_zero() {
+                let simulation_results = state
+                    .providers
+                    .simulation_provider
+                    .simulate_bundled_transactions(
+                        routes.clone(),
+                        HashMap::new(),
+                        state.metrics.clone(),
+                    )
+                    .await?;
+                for (index, simulation_result) in
+                    simulation_results.simulation_results.iter().enumerate()
+                {
+                    // Making sure the simulation input matches the transaction input
+                    let curr_route = routes.get_mut(index).ok_or_else(|| {
+                        RpcError::SimulationFailed("The route index is out of bounds".to_string())
+                    })?;
+                    if simulation_result.transaction.input != curr_route.input {
+                        return Err(RpcError::SimulationFailed(
                 "The input for the simulation result does not match the input for the transaction"
                     .into(),
             ));
+                    }
+
+                    curr_route.gas_limit = U64::from(
+                        (simulation_result.transaction.gas * (100 + ESTIMATED_GAS_SLIPPAGE as u64))
+                            / 100,
+                    );
+
+                    // Get the transaction type for metrics based on the assumption that the first transaction is an approval
+                    // and the rest are bridging transactions
+                    let tx_type = if simulation_results.simulation_results.len() == 1 {
+                        // If there is only one transaction, it's a bridging transaction
+                        ChainAbstractionTransactionType::Bridge
+                    } else if index == 0 {
+                        ChainAbstractionTransactionType::Approve
+                    } else {
+                        ChainAbstractionTransactionType::Bridge
+                    };
+                    state.metrics.add_ca_gas_estimation(
+                        simulation_result.transaction.gas,
+                        curr_route.chain_id.clone(),
+                        tx_type,
+                    );
+                }
             }
 
-            curr_route.gas_limit = U64::from(
-                (simulation_result.transaction.gas * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100,
-            );
-
-            // Get the transaction type for metrics based on the assumption that the first transaction is an approval
-            // and the rest are bridging transactions
-            let tx_type = if simulation_results.simulation_results.len() == 1 {
-                // If there is only one transaction, it's a bridging transaction
-                ChainAbstractionTransactionType::Bridge
-            } else if index == 0 {
-                ChainAbstractionTransactionType::Approve
-            } else {
-                ChainAbstractionTransactionType::Bridge
-            };
-            state.metrics.add_ca_gas_estimation(
-                simulation_result.transaction.gas,
-                curr_route.chain_id.clone(),
-                tx_type,
-            );
+            (
+                vec![Transactions::Eip155(routes)],
+                bridged_amount,
+                final_bridging_fee,
+            )
         }
-    }
+        Eip155OrSolanaAddress::Solana(_contract) => {
+            let mut solana_accounts = Vec::with_capacity(request_payload.accounts.len());
+            for (chain_id, account) in request_payload
+                .accounts
+                .iter()
+                .filter_map(|a| a.strip_prefix("solana:"))
+                .filter_map(|a| a.split_once(":"))
+            // skip any malformed CAIP-10 addresses without 3 colons
+            {
+                let account_sol = SolanaPubkey::from_str(account).unwrap();
+                solana_accounts.push((chain_id, account_sol));
+            }
+
+            let chain_id = SOLANA_CHAIN_ID; // TODO: make this dynamic
+
+            let solana_mainnet = chain_id.strip_prefix("solana:").unwrap();
+            let mainnet_solana_accounts = solana_accounts
+                .iter()
+                .filter(|(chain_id, _)| chain_id == &solana_mainnet)
+                .map(|(_, account)| account)
+                .collect::<Vec<_>>();
+
+            let found_account = mainnet_solana_accounts
+                .iter()
+                .find(|a| bridging_asset.account.as_solana() == Some(a))
+                .expect("Internal bug: the account should be found");
+
+            let quote = reqwest::Client::new()
+                .get("https://li.quest/v1/quote/toAmount")
+                .query(&json!({
+                    "fromChain": match bridge_chain_id.as_str() {
+                        solana::SOLANA_CHAIN_ID => "SOL",
+                        _ => return Err(RpcError::InvalidValue(bridge_chain_id)),
+                    },
+                    "toChain": match initial_tx_chain_id.as_str() {
+                        get_assets::CHAIN_ID_BASE => "8453",
+                        get_assets::CHAIN_ID_OPTIMISM => "10",
+                        get_assets::CHAIN_ID_ARBITRUM => "42161",
+                        _ => return Err(RpcError::InvalidValue(initial_tx_chain_id)),
+                    },
+                    "fromToken": bridge_contract.to_string(),
+                    "toToken": asset_transfer_contract.to_string(),
+                    "toAmount": erc20_topup_value.to_string(),
+                    "fromAddress": found_account.to_string(),
+                    "toAddress": from_address.to_string(),
+                }))
+                .send()
+                .await
+                .unwrap() // TODO handle unwrap error
+                .json::<serde_json::Value>()
+                .await
+                .unwrap(); // TODO handle unwrap error
+            debug!("Quote: {}", serde_json::to_string_pretty(&quote).unwrap());
+
+            #[derive(Debug, Serialize, Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct Quote {
+                transaction_request: TransactionRequest,
+            }
+
+            #[derive(Debug, Serialize, Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct TransactionRequest {
+                data: String,
+            }
+
+            let quote = serde_json::from_value::<Quote>(quote).unwrap(); // TODO handle unwrap error
+            let data = data_encoding::BASE64
+                .decode(quote.transaction_request.data.as_bytes())
+                .unwrap(); // TODO handle unwrap error
+            let tx = solana::bincode::deserialize::<SolanaVersionedTransaction>(&data).unwrap(); // TODO handle unwrap error
+
+            (
+                vec![tx]
+                    .into_iter()
+                    .map(|t| {
+                        Transactions::Solana(vec![SolanaTransaction {
+                            from: **found_account,
+                            chain_id: chain_id.to_owned(),
+                            transaction: t,
+                        }])
+                    })
+                    .collect(),
+                U256::ZERO,
+                U256::ZERO,
+            )
+        }
+    };
 
     // Save the bridging transaction to the IRN
     let orchestration_id = Uuid::new_v4().to_string();
@@ -748,34 +1048,31 @@ async fn handler_internal(
             asset_transfer_contract.to_string(),
         ));
 
-    return Ok(
-        Json(PrepareResponse::Success(PrepareResponseSuccess::Available(
-            PrepareResponseAvailable {
-                orchestration_id,
-                initial_transaction,
-                transactions: routes,
-                metadata: Metadata {
-                    funding_from: vec![FundingMetadata {
-                        chain_id: bridge_chain_id,
-                        token_contract: bridge_contract,
-                        symbol: bridge_token_symbol,
-                        amount: bridged_amount,
-                        bridging_fee: final_bridging_fee,
-                        decimals: bridge_decimals,
-                    }],
-                    check_in: STATUS_POLLING_INTERVAL,
-                    initial_transaction: InitialTransactionMetadata {
-                        transfer_to: asset_transfer_receiver,
-                        amount: asset_transfer_value,
-                        token_contract: asset_transfer_contract,
-                        symbol: initial_tx_token_symbol,
-                        decimals: initial_tx_token_decimals,
-                    },
+    return Ok(Json(PrepareResponse::Success(
+        PrepareResponseSuccess::Available(PrepareResponseAvailable {
+            orchestration_id,
+            initial_transaction,
+            transactions: routes,
+            metadata: Metadata {
+                funding_from: vec![FundingMetadata {
+                    chain_id: bridge_chain_id,
+                    token_contract: bridge_contract,
+                    symbol: bridge_token_symbol,
+                    amount: bridged_amount,
+                    bridging_fee: final_bridging_fee,
+                    decimals: bridge_decimals,
+                }],
+                check_in: STATUS_POLLING_INTERVAL,
+                initial_transaction: InitialTransactionMetadata {
+                    transfer_to: asset_transfer_receiver,
+                    amount: asset_transfer_value,
+                    token_contract: asset_transfer_contract,
+                    symbol: initial_tx_token_symbol,
+                    decimals: initial_tx_token_decimals,
                 },
             },
-        )))
-        .into_response(),
-    );
+        }),
+    )));
 }
 
 fn construct_metrics_bridging_route(
