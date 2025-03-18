@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.209.1 - 2025-03-18
+#### Bug Fixes
+- **(CA)** proper nonce calculation for the same chain swaps (#993) - (fc40b02) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.209.0 - 2025-03-14
 #### Features
 - **(CA)** adding ETH support (#992) - (c5004c2) - Max Kalashnikoff | maksy.eth
