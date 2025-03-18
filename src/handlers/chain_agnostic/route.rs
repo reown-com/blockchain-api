@@ -409,11 +409,22 @@ async fn handler_internal(
     };
 
     // Calculate the bridging fee based on the amount given from quotes
-    let bridging_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
-    let bridging_amount =
-        U256::from_str(&bridging_amount).map_err(|_| RpcError::InvalidValue(bridging_amount))?;
-    let bridging_fee = erc20_topup_value
-        - convert_amount(bridging_amount, initial_tx_token_decimals, bridge_decimals);
+    let bridged_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
+    let bridged_amount =
+        U256::from_str(&bridged_amount).map_err(|_| RpcError::InvalidValue(bridged_amount))?;
+    let bridged_amount = convert_amount(bridged_amount, initial_tx_token_decimals, bridge_decimals);
+
+    // Handle negatie bridging fee on USDs swaps considering it as 0 fee
+    // or calculate the bridging fee
+    let bridging_fee = if bridged_amount > erc20_topup_value {
+        error!(
+            "The bridged amount {} is higher than the requested amount {}",
+            bridged_amount, erc20_topup_value
+        );
+        U256::ZERO
+    } else {
+        erc20_topup_value - bridged_amount
+    };
 
     // Calculate the required bridging topup amount with the bridging fee
     // and bridging fee * slippage to cover volatility
@@ -473,21 +484,20 @@ async fn handler_internal(
     };
 
     // Check the final bridging amount from the quote
-    let bridging_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
-    let bridging_amount =
-        U256::from_str(&bridging_amount).map_err(|_| RpcError::InvalidValue(bridging_amount))?;
-    let bridging_amount =
-        convert_amount(bridging_amount, initial_tx_token_decimals, bridge_decimals);
+    let bridged_amount = serde_json::from_value::<QuoteRoute>(best_route.clone())?.to_amount;
+    let bridged_amount =
+        U256::from_str(&bridged_amount).map_err(|_| RpcError::InvalidValue(bridged_amount))?;
+    let bridged_amount = convert_amount(bridged_amount, initial_tx_token_decimals, bridge_decimals);
 
-    if erc20_topup_value > bridging_amount {
+    if erc20_topup_value > bridged_amount {
         error!(
-            "The final bridging amount:{} is less than the topup amount:{}",
-            bridging_amount, erc20_topup_value
+            "The final bridged amount:{} is less than the topup amount:{}",
+            bridged_amount, erc20_topup_value
         );
         return Err(RpcError::BridgingFinalAmountLess);
     }
 
-    let final_bridging_fee = bridging_amount - erc20_topup_value;
+    let final_bridging_fee = bridged_amount - erc20_topup_value;
 
     // Build bridging transaction
     let bridge_tx = state
@@ -687,7 +697,7 @@ async fn handler_internal(
                 bridge_chain_id.clone(),
                 bridge_contract.to_string(),
                 bridge_token_symbol.clone(),
-                bridging_amount.to_string(),
+                bridged_amount.to_string(),
             ));
         state
             .analytics
@@ -706,7 +716,7 @@ async fn handler_internal(
                 initial_tx_chain_id.clone(),
                 to_address.to_string(),
                 initial_tx_token_symbol.clone(),
-                bridging_amount.to_string(),
+                bridged_amount.to_string(),
                 final_bridging_fee.to_string(),
             ));
         state
@@ -749,7 +759,7 @@ async fn handler_internal(
                         chain_id: bridge_chain_id,
                         token_contract: bridge_contract,
                         symbol: bridge_token_symbol,
-                        amount: bridging_amount,
+                        amount: bridged_amount,
                         bridging_fee: final_bridging_fee,
                         decimals: bridge_decimals,
                     }],
