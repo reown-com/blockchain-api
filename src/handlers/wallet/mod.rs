@@ -1,4 +1,5 @@
 pub mod call_id;
+pub mod exchanges;
 pub mod get_assets;
 pub mod get_calls_status;
 pub mod get_exchanges;

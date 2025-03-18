@@ -1,4 +1,5 @@
 use {
+    crate::handlers::wallet::exchanges::{get_supported_exchanges, Exchange},
     crate::{
         handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
         state::AppState,
@@ -24,14 +25,6 @@ pub struct GetExchangesRequest {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Exchange {
-    pub id: String,
-    pub name: String,
-    pub image_url: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct GetExchangesResponse {
     pub total: u32,
     pub exchanges: Vec<Exchange>,
@@ -46,6 +39,9 @@ pub struct QueryParams {
 
 #[derive(Error, Debug)]
 pub enum GetExchangesError {
+    #[error("Validation error: {0}")]
+    ValidationError(String),
+
     #[error("Internal error")]
     InternalError(GetExchangesInternalError),
 }
@@ -64,7 +60,7 @@ pub async fn handler(
     Json(request): Json<GetExchangesRequest>,
 ) -> Result<GetExchangesResponse, GetExchangesError> {
     handler_internal(state, connect_info, headers, query, request)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("wallet_get_exchanges"))
+        .with_metrics(HANDLER_TASK_METRICS.with_name("pay_get_exchanges"))
         .await
 }
 
@@ -76,20 +72,25 @@ async fn handler_internal(
     query: Query<QueryParams>,
     request: GetExchangesRequest,
 ) -> Result<GetExchangesResponse, GetExchangesError> {
-    // For now, return hardcoded response
+    let mut exchanges = get_supported_exchanges();
+
+    match (&request.include_only, &request.exclude) {
+        (Some(_), Some(_)) => {
+            return Err(GetExchangesError::ValidationError(
+                "includeOnly and exclude are mutually exclusive".to_string(),
+            ));
+        }
+        (Some(include_only), None) => {
+            exchanges.retain(|exchange| include_only.contains(&exchange.id));
+        }
+        (None, Some(exclude)) => {
+            exchanges.retain(|exchange| !exclude.contains(&exchange.id));
+        }
+        _ => {}
+    }
+
     Ok(GetExchangesResponse {
-        total: 2,
-        exchanges: vec![
-            Exchange {
-                id: "binance".to_string(),
-                name: "Binance".to_string(),
-                image_url: Some("https://example.com/binance-logo.png".to_string()),
-            },
-            Exchange {
-                id: "coinbase".to_string(),
-                name: "Coinbase".to_string(),
-                image_url: Some("https://example.com/coinbase-logo.png".to_string()),
-            },
-        ],
+        total: exchanges.len() as u32,
+        exchanges,
     })
 }
