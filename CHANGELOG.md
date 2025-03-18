@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.210.0 - 2025-03-18
+#### Features
+- solana CA support (#986) - (07c1e5d) - Chris Smith
+
+- - -
+
 ## 0.209.2 - 2025-03-18
 #### Bug Fixes
 - update the wcn version (#979) - (33a6b96) - Max Kalashnikoff | maksy.eth
