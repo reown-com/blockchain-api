@@ -1,5 +1,6 @@
 use super::get_assets::{self, GetAssetsError};
 use super::get_calls_status::{self, GetCallsStatusError};
+use super::get_exchanges::{self, GetExchangesError};
 use super::prepare_calls::{self, PrepareCallsError};
 use super::send_prepared_calls::{self, SendPreparedCallsError};
 use crate::error::RpcError;
@@ -110,6 +111,7 @@ async fn handler_internal(
 pub const WALLET_PREPARE_CALLS: &str = "wallet_prepareCalls";
 pub const WALLET_SEND_PREPARED_CALLS: &str = "wallet_sendPreparedCalls";
 pub const WALLET_GET_CALLS_STATUS: &str = "wallet_getCallsStatus";
+pub const PAY_GET_EXCHANGES: &str = "pay_getExchanges";
 
 #[derive(Debug, Error)]
 enum Error {
@@ -124,6 +126,9 @@ enum Error {
 
     #[error("{WALLET_GET_CALLS_STATUS}: {0}")]
     GetCallsStatus(GetCallsStatusError),
+
+    #[error("{PAY_GET_EXCHANGES}: {0}")]
+    GetExchanges(GetExchangesError),
 
     #[error("{}: {0}", wallet_service_api::WALLET_GET_ASSETS)]
     GetAssets(GetAssetsError),
@@ -155,6 +160,7 @@ impl Error {
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,
+            Error::GetExchanges(_) => -32603,
         }
     }
 }
@@ -224,6 +230,23 @@ async fn handle_rpc(
             )
             .await
             .map_err(Error::GetAssets)?,
+        )
+        .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
+        PAY_GET_EXCHANGES => serde_json::to_value(
+            &get_exchanges::handler(
+                state,
+                connect_info,
+                headers,
+                Query(get_exchanges::QueryParams {
+                    sdk_info: query.sdk_info,
+                }),
+                Json(
+                    serde_json::from_value::<get_exchanges::GetExchangesRequest>(params)
+                        .map_err(Error::InvalidParams)?,
+                ),
+            )
+            .await
+            .map_err(Error::GetExchanges)?,
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
         _ => Err(Error::MethodNotFound),
