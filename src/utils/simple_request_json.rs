@@ -22,13 +22,75 @@ where
     type Rejection = JsonRejection;
 
     async fn from_request(mut req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
-        // Fake the header to make the extractor happy
-        req.headers_mut()
-            .entry("content-type")
-            .or_insert(HeaderValue::from_static("application/json"));
+        // Always set the header to application/json, regardless of what was there before
+        req.headers_mut().insert(
+            "content-type",
+            HeaderValue::from_static("application/json"),
+        );
 
         let inner = Json::from_request(req, state).await?;
 
         Ok(Self(inner.0))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body::Body;
+    use serde::Deserialize;
+    use serde_json::json;
+
+    #[derive(Debug, Deserialize, PartialEq)]
+    struct TestStruct {
+        field: String,
+    }
+
+    #[tokio::test]
+    async fn test_with_content_type() {
+        let json = json!({ "field": "test" });
+        let body = Body::from(serde_json::to_string(&json).unwrap());
+        let mut request = Request::new(body);
+        request
+            .headers_mut()
+            .insert("content-type", HeaderValue::from_static("application/json"));
+
+        let result = SimpleRequestJson::<TestStruct>::from_request(request, &()).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().0.field, "test");
+    }
+
+    #[tokio::test]
+    async fn test_without_content_type() {
+        let json = json!({ "field": "test" });
+        let body = Body::from(serde_json::to_string(&json).unwrap());
+        let request = Request::new(body);
+
+        let result = SimpleRequestJson::<TestStruct>::from_request(request, &()).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().0.field, "test");
+    }
+
+    #[tokio::test]
+    async fn test_with_wrong_content_type() {
+        let json = json!({ "field": "test" });
+        let body = Body::from(serde_json::to_string(&json).unwrap());
+        let mut request = Request::new(body);
+        request
+            .headers_mut()
+            .insert("content-type", HeaderValue::from_static("text/plain"));
+
+        let result = SimpleRequestJson::<TestStruct>::from_request(request, &()).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().0.field, "test");
+    }
+
+    #[tokio::test]
+    async fn test_invalid_json() {
+        let body = Body::from("invalid json");
+        let request = Request::new(body);
+
+        let result = SimpleRequestJson::<TestStruct>::from_request(request, &()).await;
+        assert!(result.is_err());
     }
 }
