@@ -23,10 +23,8 @@ where
 
     async fn from_request(mut req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
         // Always set the header to application/json, regardless of what was there before
-        req.headers_mut().insert(
-            "content-type",
-            HeaderValue::from_static("application/json"),
-        );
+        req.headers_mut()
+            .insert("content-type", HeaderValue::from_static("application/json"));
 
         let inner = Json::from_request(req, state).await?;
 
