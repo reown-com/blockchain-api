@@ -1,0 +1,87 @@
+use {
+    crate::handlers::wallet::exchanges::get_exchange_buy_url,
+    crate::{
+        handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
+        state::AppState,
+    },
+    axum::{
+        extract::{ConnectInfo, Query, State},
+        Json,
+    },
+    hyper::HeaderMap,
+    serde::{Deserialize, Serialize},
+    std::{net::SocketAddr, sync::Arc},
+    thiserror::Error,
+    wc::future::FutureExt,
+};
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GeneratePayUrlRequest {
+    pub exchange_id: String,
+    pub asset: String,
+    pub amount: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GeneratePayUrlResponse {
+    pub url: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryParams {
+    #[serde(flatten)]
+    pub sdk_info: SdkInfoParams,
+}
+
+#[derive(Error, Debug)]
+pub enum GetExchangeUrlError {
+    #[error("Validation error: {0}")]
+    ValidationError(String),
+
+    #[error("Exchange not found: {0}")]
+    ExchangeNotFound(String),
+
+    #[error("Internal error")]
+    InternalError(GetExchangeUrlInternalError),
+}
+
+#[derive(Error, Debug)]
+pub enum GetExchangeUrlInternalError {
+    #[error("Internal error")]
+    InternalError(String),
+}
+
+pub async fn handler(
+    state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    query: Query<QueryParams>,
+    Json(request): Json<GeneratePayUrlRequest>,
+) -> Result<GeneratePayUrlResponse, GetExchangeUrlError> {
+    handler_internal(state, connect_info, headers, query, request)
+        .with_metrics(HANDLER_TASK_METRICS.with_name("pay_get_exchange_url"))
+        .await
+}
+
+#[tracing::instrument(skip(state), level = "debug")]
+async fn handler_internal(
+    state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    query: Query<QueryParams>,
+    request: GeneratePayUrlRequest,
+) -> Result<GeneratePayUrlResponse, GetExchangeUrlError> {
+    // Get exchange URL
+    let url = get_exchange_buy_url(&request.exchange_id, &request.asset, &request.amount)
+        .ok_or_else(|| {
+            GetExchangeUrlError::ExchangeNotFound(format!(
+                "Exchange {} not found",
+                request.exchange_id
+            ))
+        })?;
+
+    Ok(GeneratePayUrlResponse { url })
+}

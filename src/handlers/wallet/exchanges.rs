@@ -42,6 +42,17 @@ impl ExchangeType {
             _ => None,
         }
     }
+
+    pub fn get_buy_url(&self, asset: &str, amount: &str) -> String {
+        match self {
+            ExchangeType::Binance => {
+                format!("https://binance.com/buy?asset={asset}&amount={amount}")
+            }
+            ExchangeType::Coinbase => {
+                format!("https://coinbase.com/buy?asset={asset}&amount={amount}")
+            }
+        }
+    }
 }
 
 /// Returns a list of all supported exchanges
@@ -52,4 +63,9 @@ pub fn get_supported_exchanges() -> Vec<Exchange> {
 /// Returns a specific exchange by ID if it exists
 pub fn get_exchange_by_id(id: &str) -> Option<Exchange> {
     ExchangeType::from_id(id).map(|e| e.to_exchange())
+}
+
+/// Get exchange buy URL
+pub fn get_exchange_buy_url(id: &str, asset: &str, amount: &str) -> Option<String> {
+    ExchangeType::from_id(id).map(|e| e.get_buy_url(asset, amount))
 }

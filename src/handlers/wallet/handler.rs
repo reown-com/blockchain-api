@@ -1,5 +1,6 @@
 use super::get_assets::{self, GetAssetsError};
 use super::get_calls_status::{self, GetCallsStatusError};
+use super::get_exchange_url::{self, GetExchangeUrlError};
 use super::get_exchanges::{self, GetExchangesError};
 use super::prepare_calls::{self, PrepareCallsError};
 use super::send_prepared_calls::{self, SendPreparedCallsError};
@@ -112,6 +113,7 @@ pub const WALLET_PREPARE_CALLS: &str = "wallet_prepareCalls";
 pub const WALLET_SEND_PREPARED_CALLS: &str = "wallet_sendPreparedCalls";
 pub const WALLET_GET_CALLS_STATUS: &str = "wallet_getCallsStatus";
 pub const PAY_GET_EXCHANGES: &str = "pay_getExchanges";
+pub const PAY_GET_EXCHANGE_URL: &str = "pay_getUrl";
 
 #[derive(Debug, Error)]
 enum Error {
@@ -129,6 +131,9 @@ enum Error {
 
     #[error("{PAY_GET_EXCHANGES}: {0}")]
     GetExchanges(GetExchangesError),
+
+    #[error("{PAY_GET_EXCHANGE_URL}: {0}")]
+    GetUrl(GetExchangeUrlError),
 
     #[error("{}: {0}", wallet_service_api::WALLET_GET_ASSETS)]
     GetAssets(GetAssetsError),
@@ -161,6 +166,7 @@ impl Error {
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,
             Error::GetExchanges(_) => -32603,
+            Error::GetUrl(_) => -32604,
         }
     }
 }
@@ -247,6 +253,23 @@ async fn handle_rpc(
             )
             .await
             .map_err(Error::GetExchanges)?,
+        )
+        .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
+        PAY_GET_EXCHANGE_URL => serde_json::to_value(
+            &get_exchange_url::handler(
+                state,
+                connect_info,
+                headers,
+                Query(get_exchange_url::QueryParams {
+                    sdk_info: query.sdk_info,
+                }),
+                Json(
+                    serde_json::from_value::<get_exchange_url::GeneratePayUrlRequest>(params)
+                        .map_err(Error::InvalidParams)?,
+                ),
+            )
+            .await
+            .map_err(Error::GetUrl)?,
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
         _ => Err(Error::MethodNotFound),
