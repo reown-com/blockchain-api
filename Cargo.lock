@@ -2187,17 +2187,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bip39"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33415e24172c1b7d6066f6d999545375ab8e1d95421d6784bdfff9496f292387"
-dependencies = [
- "bitcoin_hashes",
- "serde",
- "unicode-normalization",
-]
-
-[[package]]
 name = "bit-set"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2226,22 +2215,6 @@ name = "bit-vec"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e764a1d40d510daf35e07be9eb06e75770908c27d411ee6c92109c9840eaaf7"
-
-[[package]]
-name = "bitcoin-internals"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9425c3bf7089c983facbae04de54513cce73b41c7f9ff8c845b54e7bc64ebbfb"
-
-[[package]]
-name = "bitcoin_hashes"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1930a4dabfebb8d7d9992db18ebe3ae2876f0a305fab206fd168df931ede293b"
-dependencies = [
- "bitcoin-internals",
- "hex-conservative",
-]
 
 [[package]]
 name = "bitflags"
@@ -4894,12 +4867,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hex-conservative"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "212ab92002354b4819390025006c897e8140934349e8635c9b077f47b4dcbd20"
-
-[[package]]
 name = "hex_fmt"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7076,7 +7043,7 @@ dependencies = [
 [[package]]
 name = "phi-accrual-failure-detector"
 version = "0.1.0"
-source = "git+https://github.com/heilhead/phi-accrual-failure-detector.git?rev=01e5706#01e5706e73cbb3f29fb5542a1bfb359502503a24"
+source = "git+https://github.com/heilhead/phi-accrual-failure-detector.git?rev=30fb190#30fb190da0127fa2fa14b833d44c4e39872f81b7"
 dependencies = [
  "thiserror 1.0.69",
 ]
@@ -7444,6 +7411,24 @@ name = "protobuf"
 version = "2.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
+
+[[package]]
+name = "pulse_monitor"
+version = "0.1.0"
+dependencies = [
+ "arc-swap",
+ "futures",
+ "phi-accrual-failure-detector",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tracing",
+ "wc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1)",
+ "wcn_domain",
+ "wcn_echo_api",
+ "wcn_rpc",
+]
 
 [[package]]
 name = "qstring"
@@ -8072,7 +8057,7 @@ dependencies = [
 
 [[package]]
 name = "rpc-proxy"
-version = "0.209.1"
+version = "0.209.2"
 dependencies = [
  "alloy 0.11.1",
  "anyhow",
@@ -13003,18 +12988,19 @@ name = "wcn_client_api"
 version = "0.1.0"
 dependencies = [
  "arc-swap",
+ "futures",
  "futures-util",
- "postcard",
+ "pulse_monitor",
  "rand 0.8.5",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
+ "tokio-stream",
  "tracing",
  "wc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1)",
  "wcn_auth",
  "wcn_domain",
- "wcn_echo_api",
  "wcn_rpc",
 ]
 
@@ -13074,7 +13060,6 @@ dependencies = [
  "chrono",
  "futures",
  "governor 0.8.1",
- "phi-accrual-failure-detector",
  "serde",
  "tap",
  "thiserror 1.0.69",
@@ -13642,13 +13627,11 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?rev=e305639fb44832b1c2ce834c240b63dfac692bec#e305639fb44832b1c2ce834c240b63dfac692bec"
 dependencies = [
  "alloy 0.11.1",
  "alloy-provider 0.11.1",
  "async-trait",
  "bincode",
- "bip39",
  "data-encoding",
  "dotenvy",
  "erc6492",
