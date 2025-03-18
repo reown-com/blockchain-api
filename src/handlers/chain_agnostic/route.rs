@@ -566,13 +566,6 @@ async fn handler_internal(
         bridge_decimals,
     );
 
-    // Applying decimals differences between initial token and bridging token
-    erc20_topup_value = convert_amount(
-        erc20_topup_value,
-        initial_tx_token_decimals,
-        bridge_decimals,
-    );
-
     let (routes, bridged_amount, final_bridging_fee) = match bridge_contract {
         Eip155OrSolanaAddress::Eip155(bridge_contract) => {
             // Get Quotes for the bridging
