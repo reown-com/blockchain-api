@@ -856,8 +856,6 @@ async fn handler_internal(
             )
         }
         Eip155OrSolanaAddress::Solana(_contract) => {
-            // TODO: Implement the Solana bridging
-
             let mut solana_accounts = Vec::with_capacity(request_payload.accounts.len());
             for (chain_id, account) in request_payload
                 .accounts
@@ -883,11 +881,6 @@ async fn handler_internal(
                 .iter()
                 .find(|a| bridging_asset.account.as_solana() == Some(a))
                 .expect("Internal bug: the account should be found");
-
-            // let account_sol_usdc_balance = client_sol
-            //     .get_token_account_balance(found_account)
-            //     .await
-            //     .unwrap();
 
             let quote = reqwest::Client::new()
                 .get("https://li.quest/v1/quote/toAmount")
@@ -929,57 +922,10 @@ async fn handler_internal(
             }
 
             let quote = serde_json::from_value::<Quote>(quote).unwrap(); // TODO handle unwrap error
-
-            // let route = quote["action"].clone();
-            // assert_eq!(
-            //     route["fromAddress"].as_str().unwrap(),
-            //     account_sol.pubkey().to_string()
-            // );
-            // assert_eq!(route["fromChainId"].as_u64().unwrap(), 1151111081099710);
-            // assert_eq!(route["fromAmount"].as_str().unwrap(), "1000000");
-            // let from_token = route["fromToken"].clone();
-            // assert_eq!(
-            //     from_token["address"].as_str().unwrap(),
-            //     usdc_mint.to_string()
-            // );
-            // assert_eq!(from_token["chainId"].as_u64().unwrap(), 1151111081099710);
-            // assert_eq!(from_token["symbol"].as_str().unwrap(), "USDC");
-            // assert_eq!(from_token["decimals"].as_u64().unwrap(), 6);
-
-            // let to_token = route["toToken"].clone();
-            // assert_eq!(
-            //     to_token["address"].as_str().unwrap(),
-            //     USDC_CONTRACT_BASE.to_string()
-            // );
-            // assert_eq!(to_token["chainId"].as_u64().unwrap(), 8453);
-            // assert_eq!(to_token["symbol"].as_str().unwrap(), "USDC");
-            // assert_eq!(to_token["decimals"].as_u64().unwrap(), 6);
-
-            // println!("Preparing transfer transaction...");
             let data = data_encoding::BASE64
                 .decode(quote.transaction_request.data.as_bytes())
                 .unwrap(); // TODO handle unwrap error
-
-            // Get recent blockhash
-            // let recent_blockhash = client_sol.get_latest_blockhash().await.unwrap();
-
             let tx = solana::bincode::deserialize::<SolanaVersionedTransaction>(&data).unwrap(); // TODO handle unwrap error
-                                                                                                 // println!("tx: {:?}", tx);
-
-            // let serialized_message = tx.message.serialize();
-            // let signature = account_sol.sign_message(&serialized_message);
-            // println!("signature: {:?}", signature);
-            // let transaction = VersionedTransaction {
-            //     signatures: vec![signature],
-            //     message: tx.message,
-            // };
-
-            // println!("Sending transaction...");
-            // // Send and confirm transaction
-            // match client_sol.send_and_confirm_transaction(&transaction).await {
-            //     Ok(signature) => println!("Transfer successful! Signature: {}", signature),
-            //     Err(e) => println!("Error sending transaction: {}", e),
-            // }
 
             (
                 vec![tx]
