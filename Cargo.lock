@@ -13627,13 +13627,20 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/reown-com/yttrium.git?rev=a190c18#a190c18c4c97b5e38159b833be01d8b217bddc99"
+=======
+source = "git+https://github.com/reown-com/yttrium.git?branch=feat%2Fadding_asset_not_supported_ca_error#23738fa40ee0b7e40f938cef0912929c3756146e"
+>>>>>>> 897212a (feat(CA): adding AssetNotSupported error type)
 dependencies = [
  "alloy 0.11.1",
  "alloy-provider 0.11.1",
  "async-trait",
  "bincode",
+<<<<<<< HEAD
  "const_format",
+=======
+>>>>>>> 897212a (feat(CA): adding AssetNotSupported error type)
  "data-encoding",
  "dotenvy",
  "erc6492",
