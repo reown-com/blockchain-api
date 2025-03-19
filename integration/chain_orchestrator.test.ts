@@ -219,6 +219,7 @@ describe('Chain abstraction orchestrator', () => {
     )
     expect(resp.status).toBe(200)
     expect(resp.data.transactions.length).toBe(0)
+    expect(resp.data.initialTransaction.gasLimit).not.toBe("0x00")
   })
 
   it('bridging unavailable (asset is not supported)', async () => {
