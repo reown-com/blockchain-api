@@ -66,12 +66,11 @@ pub async fn handler(
         .await
 }
 
-#[tracing::instrument(skip(state), level = "debug")]
 async fn handler_internal(
-    state: State<Arc<AppState>>,
-    connect_info: ConnectInfo<SocketAddr>,
-    headers: HeaderMap,
-    query: Query<QueryParams>,
+    _state: State<Arc<AppState>>,
+    _connect_info: ConnectInfo<SocketAddr>,
+    _headers: HeaderMap,
+    _query: Query<QueryParams>,
     request: GeneratePayUrlRequest,
 ) -> Result<GeneratePayUrlResponse, GetExchangeUrlError> {
     // Get exchange URL

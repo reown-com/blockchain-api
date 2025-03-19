@@ -31,10 +31,6 @@ pub trait ExchangeProvider {
     }
 }
 
-// Define static instances for each exchange to avoid repeated instantiation
-const BINANCE: BinanceExchange = BinanceExchange;
-const COINBASE: CoinbaseExchange = CoinbaseExchange;
-
 #[derive(Debug, Clone, Copy, EnumIter, AsRefStr)]
 #[strum(serialize_all = "lowercase")]
 pub enum ExchangeType {
@@ -43,10 +39,10 @@ pub enum ExchangeType {
 }
 
 impl ExchangeType {
-    pub fn provider(&self) -> &'static dyn ExchangeProvider {
+    pub fn provider(&self) -> Box<dyn ExchangeProvider> {
         match self {
-            ExchangeType::Binance => &BINANCE,
-            ExchangeType::Coinbase => &COINBASE,
+            ExchangeType::Binance => Box::new(BinanceExchange),
+            ExchangeType::Coinbase => Box::new(CoinbaseExchange),
         }
     }
 

@@ -18,15 +18,17 @@ use {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetExchangesRequest {
-    pub page: u32,
+    pub page: usize,
+    #[serde(default)]
     pub include_only: Option<Vec<String>>,
+    #[serde(default)]
     pub exclude: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetExchangesResponse {
-    pub total: u32,
+    pub total: usize,
     pub exchanges: Vec<Exchange>,
 }
 
@@ -64,33 +66,34 @@ pub async fn handler(
         .await
 }
 
-#[tracing::instrument(skip(state), level = "debug")]
 async fn handler_internal(
-    state: State<Arc<AppState>>,
-    connect_info: ConnectInfo<SocketAddr>,
-    headers: HeaderMap,
-    query: Query<QueryParams>,
+    _state: State<Arc<AppState>>,
+    _connect_info: ConnectInfo<SocketAddr>,
+    _headers: HeaderMap,
+    _query: Query<QueryParams>,
     request: GetExchangesRequest,
 ) -> Result<GetExchangesResponse, GetExchangesError> {
-    let mut exchanges = get_supported_exchanges();
+    let all_exchanges = get_supported_exchanges();
 
-    match (&request.include_only, &request.exclude) {
+    let exchanges = match (&request.include_only, &request.exclude) {
         (Some(_), Some(_)) => {
             return Err(GetExchangesError::ValidationError(
                 "includeOnly and exclude are mutually exclusive".to_string(),
             ));
         }
-        (Some(include_only), None) => {
-            exchanges.retain(|exchange| include_only.contains(&exchange.id));
-        }
-        (None, Some(exclude)) => {
-            exchanges.retain(|exchange| !exclude.contains(&exchange.id));
-        }
-        _ => {}
-    }
+        (Some(include_only), None) => all_exchanges
+            .into_iter()
+            .filter(|exchange| include_only.contains(&exchange.id))
+            .collect(),
+        (None, Some(exclude)) => all_exchanges
+            .into_iter()
+            .filter(|exchange| !exclude.contains(&exchange.id))
+            .collect(),
+        _ => all_exchanges,
+    };
 
     Ok(GetExchangesResponse {
-        total: exchanges.len() as u32,
+        total: exchanges.len(),
         exchanges,
     })
 }

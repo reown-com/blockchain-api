@@ -112,8 +112,8 @@ async fn handler_internal(
 pub const WALLET_PREPARE_CALLS: &str = "wallet_prepareCalls";
 pub const WALLET_SEND_PREPARED_CALLS: &str = "wallet_sendPreparedCalls";
 pub const WALLET_GET_CALLS_STATUS: &str = "wallet_getCallsStatus";
-pub const PAY_GET_EXCHANGES: &str = "pay_getExchanges";
-pub const PAY_GET_EXCHANGE_URL: &str = "pay_getUrl";
+pub const PAY_GET_EXCHANGES: &str = "reown_getExchanges";
+pub const PAY_GET_EXCHANGE_URL: &str = "reown_getExchangePayUrl";
 
 #[derive(Debug, Error)]
 enum Error {
@@ -162,11 +162,11 @@ impl Error {
             Error::SendPreparedCalls(_) => -3, // TODO more specific codes
             Error::GetCallsStatus(_) => -4, // TODO more specific codes
             Error::GetAssets(_) => -5,    // TODO more specific codes
+            Error::GetExchanges(_) => -6,
+            Error::GetUrl(_) => -7,
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,
-            Error::GetExchanges(_) => -32603,
-            Error::GetUrl(_) => -32604,
         }
     }
 }
@@ -246,10 +246,7 @@ async fn handle_rpc(
                 Query(get_exchanges::QueryParams {
                     sdk_info: query.sdk_info,
                 }),
-                Json(
-                    serde_json::from_value::<get_exchanges::GetExchangesRequest>(params)
-                        .map_err(Error::InvalidParams)?,
-                ),
+                Json(serde_json::from_value(params).map_err(Error::InvalidParams)?),
             )
             .await
             .map_err(Error::GetExchanges)?,
@@ -263,10 +260,7 @@ async fn handle_rpc(
                 Query(get_exchange_url::QueryParams {
                     sdk_info: query.sdk_info,
                 }),
-                Json(
-                    serde_json::from_value::<get_exchange_url::GeneratePayUrlRequest>(params)
-                        .map_err(Error::InvalidParams)?,
-                ),
+                Json(serde_json::from_value(params).map_err(Error::InvalidParams)?),
             )
             .await
             .map_err(Error::GetUrl)?,
