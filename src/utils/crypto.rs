@@ -27,7 +27,7 @@ use {
     regex::Regex,
     relay_rpc::auth::cacao::{signature::eip6492::verify_eip6492, CacaoError},
     serde::{Deserialize, Serialize},
-    std::{str::FromStr, sync::Arc},
+    std::{fmt::Display, str::FromStr, sync::Arc},
     strum::IntoEnumIterator,
     strum_macros::{Display, EnumIter, EnumString},
     tracing::{error, warn},
@@ -45,6 +45,25 @@ static CAIP_ETH_ADDRESS_REGEX: Lazy<Regex> = Lazy::new(|| {
 static CAIP_SOLANA_ADDRESS_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"[1-9A-HJ-NP-Za-km-z]{32,44}")
         .expect("Failed to initialize regexp for the solana address format")
+});
+
+// CAIP-19 regex validation patterns
+static CAIP19_ASSET_NAMESPACE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^[-a-z0-9]{3,8}$")
+        .expect("Failed to initialize regexp for the CAIP-19 asset namespace format")
+});
+static CAIP19_ASSET_REFERENCE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^[-.%a-zA-Z0-9]{1,128}$")
+        .expect("Failed to initialize regexp for the CAIP-19 asset reference format")
+});
+static CAIP19_TOKEN_ID_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^[-.%a-zA-Z0-9]{1,78}$")
+        .expect("Failed to initialize regexp for the CAIP-19 token ID format")
+});
+
+static CAIP2_NAMESPACE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^[-a-z0-9]{3,8}$")
+        .expect("Failed to initialize regexp for the CAIP-2 namespace format")
 });
 
 pub const SOLANA_NATIVE_TOKEN_ADDRESS: &str = "So11111111111111111111111111111111111111111";
@@ -65,6 +84,8 @@ pub enum CryptoUitlsError {
     WrongCaip2Format(String),
     #[error("Wrong CAIP-10 format: {0}")]
     WrongCaip10Format(String),
+    #[error("Wrong CAIP-19 format: {0}")]
+    WrongCaip19Format(String),
     #[error("Provider call error: {0}")]
     ProviderError(String),
     #[error("Contract call error: {0}")]
@@ -779,6 +800,200 @@ pub enum CaipNamespaces {
     Solana,
 }
 
+/// A struct representing a CAIP-2 Chain ID with format:
+/// `{namespace}:{reference}`
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Caip2ChainId {
+    namespace: String,
+    reference: String,
+}
+
+impl Caip2ChainId {
+    /// Create a new Caip2ChainId from namespace and reference parts
+    pub fn new(namespace: String, reference: String) -> Result<Self, CryptoUitlsError> {
+        if !CAIP2_NAMESPACE_REGEX.is_match(&namespace) {
+            return Err(CryptoUitlsError::WrongCaip2Format(format!(
+                "CAIP-2 namespace must be 3-8 characters of lowercase letters, digits, or hyphens: {}",
+                namespace
+            )));
+        }
+        if !CAIP_CHAIN_ID_REGEX.is_match(&reference) {
+            return Err(CryptoUitlsError::WrongChainIdFormat(format!(
+                "CAIP-2 reference must be 1-32 characters of letters, digits, hyphens, or underscores: {}",
+                reference
+            )));
+        }
+
+        Ok(Self {
+            namespace,
+            reference,
+        })
+    }
+
+    /// Parse a CAIP-2 chain ID string
+    pub fn parse(chain_id: &str) -> Result<Self, CryptoUitlsError> {
+        let parts: Vec<&str> = chain_id.split(':').collect();
+        if parts.len() != 2 {
+            return Err(CryptoUitlsError::WrongCaip2Format(format!(
+                "CAIP-2 chain ID must have exactly one ':' separator: {}",
+                chain_id
+            )));
+        }
+
+        Self::new(parts[0].to_string(), parts[1].to_string())
+    }
+
+    /// Get the namespace part of the chain ID (e.g., "eip155" from "eip155:1")
+    pub fn namespace(&self) -> &str {
+        &self.namespace
+    }
+
+    /// Get the reference part of the chain ID (e.g., "1" from "eip155:1")
+    pub fn reference(&self) -> &str {
+        &self.reference
+    }
+}
+
+impl FromStr for Caip2ChainId {
+    type Err = CryptoUitlsError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s)
+    }
+}
+
+impl Display for Caip2ChainId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.namespace, self.reference)
+    }
+}
+
+/// A struct representing a CAIP-19 Asset Type Identifier with format:
+/// `{caip2_chain_id}/{asset_namespace}:{asset_reference}`
+///
+/// And optional asset ID extension with format:
+/// `{caip2_chain_id}/{asset_namespace}:{asset_reference}/{token_id}`
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Caip19Asset {
+    chain_id: Caip2ChainId,
+    asset_namespace: String,
+    asset_reference: String,
+    token_id: Option<String>,
+}
+
+impl Caip19Asset {
+    /// Create a new Caip19Asset with the given components
+    pub fn new(
+        chain_id: Caip2ChainId,
+        asset_namespace: String,
+        asset_reference: String,
+        token_id: Option<String>,
+    ) -> Result<Self, CryptoUitlsError> {
+        // Validate asset namespace format
+        if !CAIP19_ASSET_NAMESPACE_REGEX.is_match(&asset_namespace) {
+            return Err(CryptoUitlsError::WrongCaip19Format(format!(
+                "Invalid asset namespace format (must be 3-8 lowercase alphanumeric or hyphen characters): {}",
+                asset_namespace
+            )));
+        }
+
+        // Validate asset reference format
+        if !CAIP19_ASSET_REFERENCE_REGEX.is_match(&asset_reference) {
+            return Err(CryptoUitlsError::WrongCaip19Format(format!(
+                "Invalid asset reference format (must be 1-128 alphanumeric characters or -,%,.): {}",
+                asset_reference
+            )));
+        }
+
+        // Validate token ID format if present
+        if let Some(token_id) = &token_id {
+            if !CAIP19_TOKEN_ID_REGEX.is_match(token_id) {
+                return Err(CryptoUitlsError::WrongCaip19Format(format!(
+                    "Invalid token ID format (must be 1-78 alphanumeric characters or -,%,.): {}",
+                    token_id
+                )));
+            }
+        }
+
+        Ok(Self {
+            chain_id,
+            asset_namespace,
+            asset_reference,
+            token_id,
+        })
+    }
+
+    /// Parse a CAIP-19 asset ID string
+    pub fn parse(asset_id: &str) -> Result<Self, CryptoUitlsError> {
+        let parts: Vec<&str> = asset_id.splitn(2, '/').collect();
+        if parts.len() != 2 {
+            return Err(CryptoUitlsError::WrongCaip19Format(format!(
+                "Invalid CAIP-19 format (missing '/'): {}",
+                asset_id
+            )));
+        }
+        let chain_id = Caip2ChainId::parse(parts[0])?;
+        let asset_parts: Vec<&str> = parts[1].splitn(2, '/').collect();
+        let namespace_ref_part = asset_parts[0];
+
+        let namespace_ref_parts: Vec<&str> = namespace_ref_part.splitn(2, ':').collect();
+        if namespace_ref_parts.len() != 2 {
+            return Err(CryptoUitlsError::WrongCaip19Format(format!(
+                "Invalid asset namespace/reference format (missing ':'): {}",
+                namespace_ref_part
+            )));
+        }
+        let asset_namespace = namespace_ref_parts[0].to_string();
+        let asset_reference = namespace_ref_parts[1].to_string();
+        let token_id = asset_parts.get(1).map(|&s| s.to_string());
+
+        Self::new(chain_id, asset_namespace, asset_reference, token_id)
+    }
+
+    /// Returns the asset ID in the format "{asset_namespace}:{asset_reference}"
+    pub fn asset_id(&self) -> String {
+        format!("{}:{}", self.asset_namespace, self.asset_reference)
+    }
+
+    /// Get a reference to the CAIP-2 chain ID
+    pub fn chain_id(&self) -> &Caip2ChainId {
+        &self.chain_id
+    }
+
+    /// Get the asset namespace
+    pub fn asset_namespace(&self) -> &str {
+        &self.asset_namespace
+    }
+
+    /// Get the asset reference
+    pub fn asset_reference(&self) -> &str {
+        &self.asset_reference
+    }
+
+    /// Get the token ID if present
+    pub fn token_id(&self) -> Option<&str> {
+        self.token_id.as_deref()
+    }
+}
+
+impl FromStr for Caip19Asset {
+    type Err = CryptoUitlsError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s)
+    }
+}
+
+impl Display for Caip19Asset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(token_id) = &self.token_id {
+            write!(f, "{}/{}/{}", self.chain_id, self.asset_id(), token_id)
+        } else {
+            write!(f, "{}/{}", self.chain_id, self.asset_id())
+        }
+    }
+}
+
 pub fn format_to_caip10(namespace: CaipNamespaces, chain_id: &str, address: &str) -> String {
     format!("{}:{}:{}", namespace, chain_id, address)
 }
@@ -1004,6 +1219,105 @@ mod tests {
     }
 
     #[test]
+    fn test_caip19_asset_parsing() {
+        // Test parsing valid CAIP-19 identifiers without token ID
+        let eth_asset_str = "eip155:1/slip44:60";
+        let eth_asset = Caip19Asset::parse(eth_asset_str).unwrap();
+        assert_eq!(eth_asset.chain_id().namespace(), "eip155");
+        assert_eq!(eth_asset.chain_id().reference(), "1");
+        assert_eq!(eth_asset.asset_namespace(), "slip44");
+        assert_eq!(eth_asset.asset_reference(), "60");
+        assert!(eth_asset.token_id().is_none());
+        assert!(!eth_asset.token_id().is_some());
+        assert_eq!(eth_asset.to_string(), eth_asset_str);
+
+        let erc20_address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+        let erc20_asset_str = format!("eip155:1/erc20:{}", erc20_address);
+        let erc20_asset = Caip19Asset::parse(&erc20_asset_str).unwrap();
+        assert_eq!(erc20_asset.chain_id().namespace(), "eip155");
+        assert_eq!(erc20_asset.chain_id().reference(), "1");
+        assert_eq!(erc20_asset.asset_namespace(), "erc20");
+        assert_eq!(erc20_asset.asset_reference(), erc20_address);
+        assert!(erc20_asset.token_id().is_none());
+        assert!(!erc20_asset.token_id().is_some());
+        assert_eq!(erc20_asset.to_string(), erc20_asset_str);
+
+        // Test parsing valid CAIP-19 identifiers with token ID
+        let nft_address = "0x06012c8cf97BEaD5deAe237070F9587f8E7A266d";
+        let token_id = "771769";
+        let nft_asset_str = format!("eip155:1/erc721:{}/{}", nft_address, token_id);
+        let nft_asset = Caip19Asset::parse(&nft_asset_str).unwrap();
+        assert_eq!(nft_asset.chain_id().namespace(), "eip155");
+        assert_eq!(nft_asset.chain_id().reference(), "1");
+        assert_eq!(nft_asset.asset_namespace(), "erc721");
+        assert_eq!(nft_asset.asset_reference(), nft_address);
+        assert_eq!(nft_asset.token_id(), Some(token_id));
+        assert!(nft_asset.token_id().is_some());
+        assert_eq!(nft_asset.to_string(), nft_asset_str);
+
+        // Test parsing invalid CAIP-19 identifiers
+        let invalid_caip19_no_separator = "eip155:1-slip44:60";
+        let result = Caip19Asset::parse(invalid_caip19_no_separator);
+        assert!(result.is_err());
+
+        let invalid_caip19_no_namespace_separator = "eip155:1/slip4460";
+        let result = Caip19Asset::parse(invalid_caip19_no_namespace_separator);
+        assert!(result.is_err());
+
+        let invalid_caip19_invalid_chain_id = "eip155/slip44:60";
+        let result = Caip19Asset::parse(invalid_caip19_invalid_chain_id);
+        assert!(result.is_err());
+
+        // Test invalid asset namespace
+        let invalid_namespace = "eip155:1/INVALIDA:reference";
+        let result = Caip19Asset::parse(invalid_namespace);
+        assert!(result.is_err());
+
+        // Test invalid asset reference
+        let invalid_reference = "eip155:1/erc20:invalid/reference/with/slashes";
+        let result = Caip19Asset::parse(invalid_reference);
+        assert!(result.is_err());
+
+        // Test invalid token ID
+        let invalid_token_id = "eip155:1/erc721:0xaddress/invalid:tokenid";
+        let result = Caip19Asset::parse(invalid_token_id);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_caip19_from_str() {
+        let eth_asset_str = "eip155:1/slip44:60";
+        let eth_asset = Caip19Asset::from_str(eth_asset_str).unwrap();
+        assert_eq!(eth_asset.to_string(), eth_asset_str);
+
+        let erc20_address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+        let erc20_asset_str = format!("eip155:1/erc20:{}", erc20_address);
+        let erc20_asset = Caip19Asset::from_str(&erc20_asset_str).unwrap();
+        assert_eq!(erc20_asset.to_string(), erc20_asset_str);
+
+        // Test with token ID
+        let nft_address = "0x06012c8cf97BEaD5deAe237070F9587f8E7A266d";
+        let token_id = "771769";
+        let nft_asset_str = format!("eip155:1/erc721:{}/{}", nft_address, token_id);
+        let nft_asset = Caip19Asset::from_str(&nft_asset_str).unwrap();
+        assert_eq!(nft_asset.to_string(), nft_asset_str);
+    }
+
+    #[test]
+    fn test_caip19_chain_parts() {
+        let eth_asset_str = "eip155:1/slip44:60";
+        let eth_asset = Caip19Asset::from_str(eth_asset_str).unwrap();
+        assert_eq!(eth_asset.chain_id().to_string(), "eip155:1");
+
+        let sol_asset_str = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/slip44:501";
+        let sol_asset = Caip19Asset::from_str(sol_asset_str).unwrap();
+        assert_eq!(
+            sol_asset.chain_id().to_string(),
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"
+        );
+    }
+
+    #[test]
     fn test_format_token_amount() {
         // Test case for ethereum 18 decimals
         let amount_18 = U256::from_dec_str("959694527317077690").unwrap();
@@ -1151,5 +1465,43 @@ mod tests {
             hex::encode(result),
             "a5e787e98d421a0e62b2457e525bc8a4b1bde14cc71d48c0cf139b0b1fadb1cc"
         );
+    }
+
+    #[test]
+    fn test_caip2_chain_id() {
+        // Test valid CAIP-2 chain IDs
+        let eth_chain_id = "eip155:1";
+        let caip2 = Caip2ChainId::parse(eth_chain_id).unwrap();
+        assert_eq!(caip2.namespace(), "eip155");
+        assert_eq!(caip2.reference(), "1");
+        assert_eq!(caip2.to_string(), eth_chain_id);
+
+        let sol_chain_id = "solana:mainnet";
+        let caip2 = Caip2ChainId::parse(sol_chain_id).unwrap();
+        assert_eq!(caip2.namespace(), "solana");
+        assert_eq!(caip2.reference(), "mainnet");
+        assert_eq!(caip2.to_string(), sol_chain_id);
+
+        // Test invalid CAIP-2 chain IDs
+
+        // Missing separator
+        let invalid_no_separator = "eip1551";
+        assert!(Caip2ChainId::parse(invalid_no_separator).is_err());
+
+        // Invalid namespace (uppercase)
+        let invalid_namespace = "EIP155:1";
+        assert!(Caip2ChainId::parse(invalid_namespace).is_err());
+
+        // Invalid namespace (too short)
+        let invalid_namespace_short = "e:1";
+        assert!(Caip2ChainId::parse(invalid_namespace_short).is_err());
+
+        // Invalid namespace (too long)
+        let invalid_namespace_long = "eip155toooolong:1";
+        assert!(Caip2ChainId::parse(invalid_namespace_long).is_err());
+
+        // Invalid reference (special characters)
+        let invalid_reference = "eip155:1/2";
+        assert!(Caip2ChainId::parse(invalid_reference).is_err());
     }
 }
