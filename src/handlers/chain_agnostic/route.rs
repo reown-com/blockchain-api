@@ -201,7 +201,7 @@ impl From<PrepareResponseAvailable> for PrepareResponseAvailableV1 {
 fn no_bridging_needed_response(initial_transaction: Transaction) -> Json<PrepareResponse> {
     Json(PrepareResponse::Success(
         PrepareResponseSuccess::NotRequired(PrepareResponseNotRequired {
-            initial_transaction: initial_transaction.clone(),
+            initial_transaction,
             transactions: vec![],
         }),
     ))
