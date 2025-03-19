@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.210.1 - 2025-03-19
+#### Bug Fixes
+- bump to run CD - (4e49b64) - Chris Smith
+- yttrium e2e tests (#995) - (dff369a) - Chris Smith
+
+- - -
+
 ## 0.210.0 - 2025-03-18
 #### Features
 - solana CA support (#986) - (07c1e5d) - Chris Smith
