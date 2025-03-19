@@ -71,6 +71,7 @@ mod bungee;
 mod coinbase;
 mod drpc;
 mod dune;
+mod etherlink;
 mod getblock;
 mod infura;
 mod lava;
@@ -105,6 +106,7 @@ pub use {
     bungee::BungeeProvider,
     drpc::DrpcProvider,
     dune::DuneProvider,
+    etherlink::EtherlinkProvider,
     getblock::GetBlockProvider,
     infura::{InfuraProvider, InfuraWsProvider},
     lava::LavaProvider,
@@ -676,6 +678,7 @@ pub enum ProviderKind {
     Binance,
     Berachain,
     Bungee,
+    Etherlink,
     ZKSync,
     Publicnode,
     Base,
@@ -715,6 +718,7 @@ impl Display for ProviderKind {
                 ProviderKind::Berachain => "Berachain",
                 ProviderKind::Wemix => "Wemix",
                 ProviderKind::Bungee => "Bungee",
+                ProviderKind::Etherlink => "Etherlink",
                 ProviderKind::ZKSync => "zkSync",
                 ProviderKind::Publicnode => "Publicnode",
                 ProviderKind::Base => "Base",
@@ -753,6 +757,7 @@ impl ProviderKind {
             "Binance" => Some(Self::Binance),
             "Berachain" => Some(Self::Berachain),
             "Bungee" => Some(Self::Bungee),
+            "Etherlink" => Some(Self::Etherlink),
             "zkSync" => Some(Self::ZKSync),
             "Publicnode" => Some(Self::Publicnode),
             "Base" => Some(Self::Base),
