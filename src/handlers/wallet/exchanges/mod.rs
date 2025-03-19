@@ -1,7 +1,9 @@
+use crate::state::AppState;
+use axum::extract::State;
 use serde::Serialize;
+use std::sync::Arc;
 use strum::IntoEnumIterator;
 use strum_macros::{AsRefStr, EnumIter};
-
 pub mod binance;
 pub mod coinbase;
 
@@ -20,7 +22,6 @@ pub trait ExchangeProvider {
     fn id(&self) -> &'static str;
     fn name(&self) -> &'static str;
     fn image_url(&self) -> Option<&'static str>;
-    fn get_buy_url(&self, asset: &str, amount: &str) -> String;
 
     fn to_exchange(&self) -> Exchange {
         Exchange {
@@ -54,8 +55,16 @@ impl ExchangeType {
         Self::iter().find(|e| e.provider().id() == id)
     }
 
-    pub fn get_buy_url(&self, asset: &str, amount: &str) -> String {
-        self.provider().get_buy_url(asset, amount)
+    pub async fn get_buy_url(
+        &self,
+        state: State<Arc<AppState>>,
+        asset: &str,
+        amount: &str,
+    ) -> Option<String> {
+        match self {
+            ExchangeType::Binance => BinanceExchange::get_buy_url(state, asset, amount).await,
+            ExchangeType::Coinbase => CoinbaseExchange::get_buy_url(state, asset, amount).await,
+        }
     }
 }
 
@@ -65,8 +74,4 @@ pub fn get_supported_exchanges() -> Vec<Exchange> {
 
 pub fn get_exchange_by_id(id: &str) -> Option<Exchange> {
     ExchangeType::from_id(id).map(|e| e.to_exchange())
-}
-
-pub fn get_exchange_buy_url(id: &str, asset: &str, amount: &str) -> Option<String> {
-    ExchangeType::from_id(id).map(|e| e.get_buy_url(asset, amount))
 }

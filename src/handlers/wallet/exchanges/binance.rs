@@ -1,4 +1,8 @@
 use crate::handlers::wallet::exchanges::ExchangeProvider;
+use crate::state::AppState;
+use axum::extract::State;
+use std::sync::Arc;
+
 pub struct BinanceExchange;
 
 impl ExchangeProvider for BinanceExchange {
@@ -13,8 +17,17 @@ impl ExchangeProvider for BinanceExchange {
     fn image_url(&self) -> Option<&'static str> {
         Some("https://cryptologos.cc/logos/binance-coin-bnb-logo.png")
     }
+}
 
-    fn get_buy_url(&self, asset: &str, amount: &str) -> String {
-        format!("https://binance.com/buy?asset={asset}&amount={amount}")
+impl BinanceExchange {
+    pub async fn get_buy_url(
+        _state: State<Arc<AppState>>,
+        asset: &str,
+        amount: &str,
+    ) -> Option<String> {
+        // TODO: Communicate with the Binance API to get the buy URL
+        Some(format!(
+            "https://binance.com/buy?asset={asset}&amount={amount}"
+        ))
     }
 }

@@ -1,5 +1,5 @@
 use {
-    crate::handlers::wallet::exchanges::get_exchange_buy_url,
+    crate::handlers::wallet::exchanges::ExchangeType,
     crate::{
         handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
         state::AppState,
@@ -67,17 +67,23 @@ pub async fn handler(
 }
 
 async fn handler_internal(
-    _state: State<Arc<AppState>>,
+    state: State<Arc<AppState>>,
     _connect_info: ConnectInfo<SocketAddr>,
     _headers: HeaderMap,
     _query: Query<QueryParams>,
     request: GeneratePayUrlRequest,
 ) -> Result<GeneratePayUrlResponse, GetExchangeUrlError> {
     // Get exchange URL
-    let url = get_exchange_buy_url(&request.exchange_id, &request.asset, &request.amount)
+    let exchange = ExchangeType::from_id(&request.exchange_id).ok_or_else(|| {
+        GetExchangeUrlError::ExchangeNotFound(format!("Exchange {} not found", request.exchange_id))
+    })?;
+
+    let url = exchange
+        .get_buy_url(state, &request.asset, &request.amount)
+        .await
         .ok_or_else(|| {
             GetExchangeUrlError::ExchangeNotFound(format!(
-                "Exchange {} not found",
+                "Failed to generate URL for exchange {}",
                 request.exchange_id
             ))
         })?;
