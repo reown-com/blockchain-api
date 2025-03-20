@@ -16,6 +16,7 @@ pub(crate) mod getblock;
 pub(crate) mod infura;
 pub(crate) mod lava;
 pub(crate) mod mantle;
+pub(crate) mod monad;
 pub(crate) mod morph;
 pub(crate) mod near;
 pub(crate) mod odyssey;

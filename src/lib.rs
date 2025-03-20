@@ -24,9 +24,9 @@ use {
     env::{
         AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig,
         DrpcConfig, DuneConfig, GetBlockConfig, InfuraConfig, LavaConfig, MantleConfig,
-        MorphConfig, NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
-        SolScanConfig, SyndicaConfig, UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig,
-        ZoraConfig,
+        MonadConfig, MorphConfig, NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig,
+        QuicknodeConfig, SolScanConfig, SyndicaConfig, UnichainConfig, WemixConfig, ZKSyncConfig,
+        ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
@@ -34,7 +34,7 @@ use {
     providers::{
         AllnodesProvider, ArbitrumProvider, AuroraProvider, BaseProvider, BerachainProvider,
         BinanceProvider, DrpcProvider, DuneProvider, GetBlockProvider, InfuraProvider,
-        InfuraWsProvider, LavaProvider, MantleProvider, MorphProvider, NearProvider,
+        InfuraWsProvider, LavaProvider, MantleProvider, MonadProvider, MorphProvider, NearProvider,
         OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider,
         SolScanProvider, SyndicaProvider, UnichainProvider, WemixProvider, ZKSyncProvider,
         ZerionProvider, ZoraProvider, ZoraWsProvider,
@@ -552,6 +552,7 @@ async fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_rpc_provider::<AllnodesProvider, AllnodesConfig>(AllnodesConfig::new(
         config.allnodes_api_key.clone(),
     ));
+    providers.add_rpc_provider::<MonadProvider, MonadConfig>(MonadConfig::default());
 
     if let Some(getblock_access_tokens) = &config.getblock_access_tokens {
         providers.add_rpc_provider::<GetBlockProvider, GetBlockConfig>(GetBlockConfig::new(

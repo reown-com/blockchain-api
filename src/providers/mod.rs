@@ -77,6 +77,7 @@ mod lava;
 mod mantle;
 mod meld;
 pub mod mock_alto;
+mod monad;
 mod morph;
 mod near;
 mod odyssey;
@@ -110,6 +111,7 @@ pub use {
     lava::LavaProvider,
     mantle::MantleProvider,
     meld::MeldProvider,
+    monad::MonadProvider,
     morph::MorphProvider,
     near::NearProvider,
     odyssey::OdysseyProvider,
@@ -699,6 +701,7 @@ pub enum ProviderKind {
     Syndica,
     Allnodes,
     Meld,
+    Monad,
 }
 
 impl Display for ProviderKind {
@@ -737,6 +740,7 @@ impl Display for ProviderKind {
                 ProviderKind::Syndica => "Syndica",
                 ProviderKind::Allnodes => "Allnodes",
                 ProviderKind::Meld => "Meld",
+                ProviderKind::Monad => "Monad",
             }
         )
     }
@@ -776,6 +780,7 @@ impl ProviderKind {
             "Syndica" => Some(Self::Syndica),
             "Allnodes" => Some(Self::Allnodes),
             "Meld" => Some(Self::Meld),
+            "Monad" => Some(Self::Monad),
             _ => None,
         }
     }
