@@ -807,7 +807,7 @@ pub enum CaipNamespaces {
 
 /// A struct representing a CAIP-2 Chain ID with format:
 /// `{namespace}:{reference}`
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Caip2ChainId {
     namespace: String,
     reference: String,
@@ -815,23 +815,23 @@ pub struct Caip2ChainId {
 
 impl Caip2ChainId {
     /// Create a new Caip2ChainId from namespace and reference parts
-    pub fn new(namespace: String, reference: String) -> Result<Self, CryptoUitlsError> {
-        if !CAIP2_NAMESPACE_REGEX.is_match(&namespace) {
+    pub fn new(namespace: &str, reference: &str) -> Result<Self, CryptoUitlsError> {
+        if !CAIP2_NAMESPACE_REGEX.is_match(namespace) {
             return Err(CryptoUitlsError::WrongCaip2Format(format!(
                 "CAIP-2 namespace must be 3-8 characters of lowercase letters, digits, or hyphens: {}",
                 namespace
             )));
         }
-        if !CAIP2_REFERENCE_REGEX.is_match(&reference) {
+        if !CAIP2_REFERENCE_REGEX.is_match(reference) {
             return Err(CryptoUitlsError::WrongChainIdFormat(format!(
-                "CAIP-2 reference must be 1-32 characters of letters, digits, hyphens, or underscores: {}",
+                "CAIP-2 reference must be 1-32 characters of letters, digits, or hyphens: {}",
                 reference
             )));
         }
 
         Ok(Self {
-            namespace,
-            reference,
+            namespace: namespace.to_string(),
+            reference: reference.to_string(),
         })
     }
 
@@ -845,7 +845,7 @@ impl Caip2ChainId {
             )));
         }
 
-        Self::new(parts[0].to_string(), parts[1].to_string())
+        Self::new(parts[0], parts[1])
     }
 
     /// Get the namespace part of the chain ID (e.g., "eip155" from "eip155:1")
@@ -890,12 +890,12 @@ impl Caip19Asset {
     /// Create a new Caip19Asset with the given components
     pub fn new(
         chain_id: Caip2ChainId,
-        asset_namespace: String,
-        asset_reference: String,
-        token_id: Option<String>,
+        asset_namespace: &str,
+        asset_reference: &str,
+        token_id: Option<&str>,
     ) -> Result<Self, CryptoUitlsError> {
         // Validate asset namespace format
-        if !CAIP19_ASSET_NAMESPACE_REGEX.is_match(&asset_namespace) {
+        if !CAIP19_ASSET_NAMESPACE_REGEX.is_match(asset_namespace) {
             return Err(CryptoUitlsError::WrongCaip19Format(format!(
                 "Invalid asset namespace format (must be 3-8 lowercase alphanumeric or hyphen characters): {}",
                 asset_namespace
@@ -903,7 +903,7 @@ impl Caip19Asset {
         }
 
         // Validate asset reference format
-        if !CAIP19_ASSET_REFERENCE_REGEX.is_match(&asset_reference) {
+        if !CAIP19_ASSET_REFERENCE_REGEX.is_match(asset_reference) {
             return Err(CryptoUitlsError::WrongCaip19Format(format!(
                 "Invalid asset reference format (must be 1-128 alphanumeric characters or -,%,.): {}",
                 asset_reference
@@ -911,7 +911,7 @@ impl Caip19Asset {
         }
 
         // Validate token ID format if present
-        if let Some(token_id) = &token_id {
+        if let Some(token_id) = token_id {
             if !CAIP19_TOKEN_ID_REGEX.is_match(token_id) {
                 return Err(CryptoUitlsError::WrongCaip19Format(format!(
                     "Invalid token ID format (must be 1-78 alphanumeric characters or -,%,.): {}",
@@ -922,9 +922,9 @@ impl Caip19Asset {
 
         Ok(Self {
             chain_id,
-            asset_namespace,
-            asset_reference,
-            token_id,
+            asset_namespace: asset_namespace.to_string(),
+            asset_reference: asset_reference.to_string(),
+            token_id: token_id.map(ToString::to_string),
         })
     }
 
@@ -948,9 +948,9 @@ impl Caip19Asset {
                 namespace_ref_part
             )));
         }
-        let asset_namespace = namespace_ref_parts[0].to_string();
-        let asset_reference = namespace_ref_parts[1].to_string();
-        let token_id = asset_parts.get(1).map(|&s| s.to_string());
+        let asset_namespace = namespace_ref_parts[0];
+        let asset_reference = namespace_ref_parts[1];
+        let token_id = asset_parts.get(1).copied();
 
         Self::new(chain_id, asset_namespace, asset_reference, token_id)
     }
@@ -991,10 +991,17 @@ impl FromStr for Caip19Asset {
 
 impl Display for Caip19Asset {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(token_id) = &self.token_id {
-            write!(f, "{}/{}/{}", self.chain_id, self.asset_id(), token_id)
-        } else {
-            write!(f, "{}/{}", self.chain_id, self.asset_id())
+        match &self.token_id {
+            Some(token_id) => write!(
+                f,
+                "{}/{}:{}/{}",
+                self.chain_id, self.asset_namespace, self.asset_reference, token_id
+            ),
+            None => write!(
+                f,
+                "{}/{}:{}",
+                self.chain_id, self.asset_namespace, self.asset_reference
+            ),
         }
     }
 }
