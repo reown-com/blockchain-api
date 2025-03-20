@@ -1233,7 +1233,7 @@ mod tests {
         assert_eq!(eth_asset.asset_namespace(), "slip44");
         assert_eq!(eth_asset.asset_reference(), "60");
         assert!(eth_asset.token_id().is_none());
-        assert!(!eth_asset.token_id().is_some());
+        assert!(eth_asset.token_id().is_none());
         assert_eq!(eth_asset.to_string(), eth_asset_str);
 
         let erc20_address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
@@ -1244,7 +1244,7 @@ mod tests {
         assert_eq!(erc20_asset.asset_namespace(), "erc20");
         assert_eq!(erc20_asset.asset_reference(), erc20_address);
         assert!(erc20_asset.token_id().is_none());
-        assert!(!erc20_asset.token_id().is_some());
+        assert!(erc20_asset.token_id().is_none());
         assert_eq!(erc20_asset.to_string(), erc20_asset_str);
 
         // Test parsing valid CAIP-19 identifiers with token ID
