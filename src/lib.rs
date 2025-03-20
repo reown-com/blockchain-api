@@ -24,9 +24,9 @@ use {
     env::{
         AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig,
         DrpcConfig, DuneConfig, GetBlockConfig, InfuraConfig, LavaConfig, MantleConfig,
-        MorphConfig, NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
-        SolScanConfig, SyndicaConfig, UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig,
-        ZoraConfig,
+        MonadConfig, MorphConfig, NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig,
+        QuicknodeConfig, SolScanConfig, SyndicaConfig, UnichainConfig, WemixConfig, ZKSyncConfig,
+        ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
@@ -34,7 +34,7 @@ use {
     providers::{
         AllnodesProvider, ArbitrumProvider, AuroraProvider, BaseProvider, BerachainProvider,
         BinanceProvider, DrpcProvider, DuneProvider, GetBlockProvider, InfuraProvider,
-        InfuraWsProvider, LavaProvider, MantleProvider, MorphProvider, NearProvider,
+        InfuraWsProvider, LavaProvider, MantleProvider, MonadProvider, MorphProvider, NearProvider,
         OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider,
         SolScanProvider, SyndicaProvider, UnichainProvider, WemixProvider, ZKSyncProvider,
         ZerionProvider, ZoraProvider, ZoraWsProvider,
@@ -148,7 +148,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .transpose()?
         .map(|r| Arc::new(r) as Arc<dyn KeyValueStorage<BalanceResponseBody> + 'static>);
 
-    let providers = init_providers(&config.providers);
+    let providers = init_providers(&config.providers).await;
 
     let external_ip = config
         .server
@@ -386,7 +386,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         // Same handler as the Wallet 
         .route("/v1/json-rpc", post(handlers::wallet::handler::handler))
         // Chain agnostic orchestration
-        .route("/v1/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler))
+        .route("/v1/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler_v1))
+        .route("/v2/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler_v2))
         .route("/v1/ca/orchestrator/status", get(handlers::chain_agnostic::status::handler))
         // Health
         .route("/health", get(handlers::health::handler))
@@ -496,7 +497,7 @@ fn create_server(
     axum::Server::bind(addr).serve(app.into_make_service_with_connect_info::<SocketAddr>())
 }
 
-fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
+async fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     // Redis pool for providers responses caching where needed
     let mut redis_pool = None;
     if let Some(redis_addr) = &config.cache_redis_addr {
@@ -519,7 +520,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
 
     // Keep in-sync with SUPPORTED_CHAINS.md
 
-    let mut providers = ProviderRepository::new(config);
+    let mut providers = ProviderRepository::new(config).await;
     providers.add_rpc_provider::<AuroraProvider, AuroraConfig>(AuroraConfig::default());
     providers.add_rpc_provider::<ArbitrumProvider, ArbitrumConfig>(ArbitrumConfig::default());
     providers.add_rpc_provider::<PoktProvider, PoktConfig>(PoktConfig::new(
@@ -553,6 +554,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_rpc_provider::<AllnodesProvider, AllnodesConfig>(AllnodesConfig::new(
         config.allnodes_api_key.clone(),
     ));
+    providers.add_rpc_provider::<MonadProvider, MonadConfig>(MonadConfig::default());
 
     if let Some(getblock_access_tokens) = &config.getblock_access_tokens {
         providers.add_rpc_provider::<GetBlockProvider, GetBlockConfig>(GetBlockConfig::new(
@@ -616,5 +618,3 @@ async fn get_geoip_resolver(config: &Config, s3_client: &S3Client) -> Option<Arc
         None
     }
 }
-
-// no-op

@@ -10,12 +10,15 @@ use {
         Metrics,
     },
     alloy::primitives::{Address, B256, U256},
-    assets::{SimulationParams, BRIDGING_ASSETS},
+    assets::{Eip155OrSolanaStatic, SimulationParams, BRIDGING_ASSETS},
     ethers::{types::H160 as EthersH160, utils::keccak256},
     serde::{Deserialize, Serialize},
-    std::{cmp::Ordering, collections::HashMap, str::FromStr, sync::Arc},
+    std::{cmp::Ordering, collections::HashMap, sync::Arc},
     tracing::debug,
-    yttrium::chain_abstraction::api::Transaction,
+    yttrium::chain_abstraction::{
+        api::{prepare::Eip155OrSolanaAddress, Transaction},
+        solana::{self, SolanaRpcClient},
+    },
 };
 
 pub mod assets;
@@ -55,7 +58,9 @@ pub enum BridgingStatus {
 }
 
 /// Return available assets names and contract addresses for the given chain_id
-pub fn get_bridging_assets_contracts_for_chain(chain_id: &str) -> Vec<(String, Address)> {
+pub fn get_bridging_assets_contracts_for_chain(
+    chain_id: &str,
+) -> Vec<(String, Eip155OrSolanaStatic)> {
     BRIDGING_ASSETS
         .entries()
         .filter_map(|(token_symbol, asset_entry)| {
@@ -77,10 +82,13 @@ pub fn get_simulation_params_for_asset(asset_name: &str) -> Option<&SimulationPa
 }
 
 /// Check is the address is supported bridging asset and return the token symbol and decimals
-pub fn find_supported_bridging_asset(chain_id: &str, contract: Address) -> Option<(String, u8)> {
+pub fn find_supported_bridging_asset(
+    chain_id: &str,
+    contract: Eip155OrSolanaAddress,
+) -> Option<(String, u8)> {
     for (symbol, asset_entry) in BRIDGING_ASSETS.entries() {
         for (chain, contract_address) in asset_entry.contracts.entries() {
-            if *chain == chain_id && contract == *contract_address {
+            if *chain == chain_id && contract == contract_address.into_eip155_or_solana_address() {
                 return Some((symbol.to_string(), asset_entry.metadata.decimals));
             }
         }
@@ -88,36 +96,84 @@ pub fn find_supported_bridging_asset(chain_id: &str, contract: Address) -> Optio
     None
 }
 
-/// Checking ERC20 balances for given address for provided ERC20 contracts
-pub async fn check_erc20_balances(
+pub async fn get_balances_of_all_source_tokens(
     project_id: String,
-    address: Address,
+    accounts: Vec<Eip155OrSolanaAddress>,
     chain_id: String,
-    erc2_contracts: Vec<Address>,
+    token_addresses: Vec<Eip155OrSolanaAddress>,
     session_id: Option<String>,
-) -> Result<Vec<(Address, U256)>, RpcError> {
+    solana_rpc_client: Arc<SolanaRpcClient>,
+) -> Result<Vec<(Eip155OrSolanaAddress, Eip155OrSolanaAddress, U256)>, RpcError> {
     let mut balances = Vec::new();
     // Check the ERC20 tokens balance for each of supported assets
     // TODO: Use the balance provider instead of looping
-    for contract in erc2_contracts {
-        let erc20_balance = get_erc20_balance(
-            &chain_id,
-            EthersH160::from(<[u8; 20]>::from(contract)),
-            EthersH160::from(<[u8; 20]>::from(address)),
-            &project_id,
-            MessageSource::ChainAgnosticCheck,
-            session_id.clone(),
-        )
-        .await?;
-        balances.push((contract, U256::from_be_bytes(erc20_balance.into())));
+    for account in accounts {
+        match account {
+            Eip155OrSolanaAddress::Eip155(address) => {
+                for contract in token_addresses.clone() {
+                    let erc20_balance = match contract {
+                        Eip155OrSolanaAddress::Eip155(contract) => U256::from_be_bytes(
+                            get_erc20_balance(
+                                &chain_id,
+                                EthersH160::from(<[u8; 20]>::from(*contract)),
+                                EthersH160::from(<[u8; 20]>::from(address)),
+                                &project_id,
+                                MessageSource::ChainAgnosticCheck,
+                                session_id.clone(),
+                            )
+                            .await?
+                            .into(),
+                        ),
+                        Eip155OrSolanaAddress::Solana(_) => {
+                            continue;
+                        }
+                    };
+                    balances.push((account.clone(), contract, erc20_balance));
+                }
+            }
+            Eip155OrSolanaAddress::Solana(address) => {
+                for contract in token_addresses.clone() {
+                    let erc20_balance = match contract {
+                        Eip155OrSolanaAddress::Solana(contract) => solana_rpc_client
+                            .get_token_account_balance(&solana::get_associated_token_address(
+                                &address, &contract,
+                            ))
+                            .await
+                            .map_err(|e| {
+                                RpcError::CryptoUitlsError(
+                                    crate::utils::crypto::CryptoUitlsError::ProviderError(format!(
+                                        "Failed to get solana token account balance: {}",
+                                        e
+                                    )),
+                                )
+                            })?
+                            .amount
+                            .parse::<U256>()
+                            .map_err(|e| {
+                                RpcError::CryptoUitlsError(
+                                    crate::utils::crypto::CryptoUitlsError::ProviderError(format!(
+                                        "Failed to parse solana token account balance: {}",
+                                        e
+                                    )),
+                                )
+                            })?,
+                        Eip155OrSolanaAddress::Eip155(_) => {
+                            continue;
+                        }
+                    };
+                    balances.push((account.clone(), contract, erc20_balance));
+                }
+            }
+        }
     }
     Ok(balances)
 }
 
 pub struct BridgingAsset {
     pub chain_id: String,
+    pub account: Eip155OrSolanaAddress,
     pub token_symbol: String,
-    pub contract_address: Address,
+    pub contract_address: Eip155OrSolanaAddress,
     pub decimals: u8,
     pub current_balance: U256,
 }
@@ -130,10 +186,11 @@ pub async fn check_bridging_for_erc20_transfer(
     rpc_project_id: String,
     session_id: Option<String>,
     value: U256,
-    sender: Address,
+    // List of CAIP-10 accounts to check for funds to bridge. Empty CAIP-2 field indicates any chain that matches the address type
+    accounts: Vec<(Option<String>, Eip155OrSolanaAddress)>,
     // Exclude the initial transaction asset from the check
     exclude_chain_id: String,
-    exclude_contract_address: Address,
+    exclude_contract_address: Eip155OrSolanaAddress,
     // Using the same asset as a priority for bridging
     token_symbol_priority: String,
     // Applying token decimals for the value to compare between different tokens
@@ -142,13 +199,17 @@ pub async fn check_bridging_for_erc20_transfer(
     only_token_symbol: Option<String>,
     // Exclude token symbol
     exclude_token_symbol: Option<String>,
+    solana_rpc_client: Arc<SolanaRpcClient>,
 ) -> Result<Option<BridgingAsset>, RpcError> {
     // Check ERC20 tokens balance for each of supported assets
-    let mut contracts_per_chain: HashMap<(String, String, u8), Vec<String>> = HashMap::new();
+    let mut contracts_per_chain: HashMap<(String, String, u8), Vec<Eip155OrSolanaAddress>> =
+        HashMap::new();
     for (token_symbol, asset_entry) in BRIDGING_ASSETS.entries() {
         for (chain_id, contract_address) in asset_entry.contracts.entries() {
             // Exclude the initial transaction asset
-            if *chain_id == exclude_chain_id && *contract_address == exclude_contract_address {
+            if *chain_id == exclude_chain_id
+                && contract_address.into_eip155_or_solana_address() == exclude_contract_address
+            {
                 continue;
             }
             // Check for the single token symbol if provided
@@ -170,30 +231,42 @@ pub async fn check_bridging_for_erc20_transfer(
                     asset_entry.metadata.decimals,
                 ))
                 .or_default()
-                .push((*contract_address).to_string());
+                .push(contract_address.into_eip155_or_solana_address());
         }
     }
     // Making the check for each chain_id and use the asset with the highest balance
-    let mut bridging_asset_found = None;
+    let mut bridging_asset_found: Option<BridgingAsset> = None;
     for ((token_symbol, chain_id, decimals), contracts) in contracts_per_chain {
-        let erc20_balances = check_erc20_balances(
+        let erc20_balances = get_balances_of_all_source_tokens(
             rpc_project_id.clone(),
-            sender,
-            chain_id.clone(),
-            contracts
+            accounts
                 .iter()
-                .map(|c| Address::from_str(c).unwrap_or_default())
+                .filter_map(|(cid, address)| {
+                    if let Some(cid) = cid {
+                        if cid == &chain_id {
+                            Some(address.clone())
+                        } else {
+                            None
+                        }
+                    } else {
+                        Some(address.clone())
+                    }
+                })
                 .collect(),
+            chain_id.clone(),
+            contracts,
             session_id.clone(),
+            solana_rpc_client.clone(),
         )
         .await?;
-        for (contract_address, current_balance) in erc20_balances {
+        for (account, contract_address, current_balance) in erc20_balances {
             // Check if the balance compared to the transfer value is enough, applied to the transfer token decimals
             if convert_amount(current_balance, decimals, amount_token_decimals) >= value {
                 // Use the priority asset if found
                 if token_symbol == token_symbol_priority {
                     return Ok(Some(BridgingAsset {
                         chain_id: chain_id.clone(),
+                        account,
                         token_symbol: token_symbol.clone(),
                         contract_address,
                         current_balance,
@@ -213,6 +286,7 @@ pub async fn check_bridging_for_erc20_transfer(
                 }
                 bridging_asset_found = Some(BridgingAsset {
                     chain_id: chain_id.clone(),
+                    account,
                     token_symbol: token_symbol.clone(),
                     contract_address,
                     current_balance,
@@ -265,6 +339,11 @@ pub async fn get_assets_changes_from_simulation(
             get_bridging_assets_contracts_for_chain(&transaction.chain_id.clone());
         let mut account_state = HashMap::new();
         for (asset_name, asset_contract) in assets_contracts {
+            let asset_contract = if let Eip155OrSolanaStatic::Eip155(contract) = asset_contract {
+                contract
+            } else {
+                continue;
+            };
             let Some(simulation_params) = get_simulation_params_for_asset(&asset_name) else {
                 continue;
             };
