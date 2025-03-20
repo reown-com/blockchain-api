@@ -3,13 +3,14 @@ use {
         super::HANDLER_TASK_METRICS, PermissionRevokeRequest, QueryParams, StoragePermissionsItem,
     },
     crate::{
-        error::RpcError, state::AppState, storage::irn::OperationType,
-        utils::crypto::disassemble_caip10,
+        error::RpcError,
+        state::AppState,
+        storage::irn::OperationType,
+        utils::{crypto::disassemble_caip10, simple_request_json::SimpleRequestJson},
     },
     axum::{
         extract::{Path, Query, State},
         response::{IntoResponse, Response},
-        Json,
     },
     std::{sync::Arc, time::SystemTime},
     wc::future::FutureExt,
@@ -19,7 +20,7 @@ pub async fn handler(
     state: State<Arc<AppState>>,
     address: Path<String>,
     query_params: Query<QueryParams>,
-    Json(request_payload): Json<PermissionRevokeRequest>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<PermissionRevokeRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, query_params, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("sessions_revoke"))

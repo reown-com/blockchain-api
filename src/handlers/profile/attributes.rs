@@ -7,12 +7,17 @@ use {
         analytics::MessageSource,
         database::helpers::{get_name_and_addresses_by_name, update_name_attributes},
         error::RpcError,
-        names::utils::{check_attributes, is_timestamp_within_interval},
-        names::{ATTRIBUTES_VALUE_MAX_LENGTH, SUPPORTED_ATTRIBUTES},
+        names::{
+            utils::{check_attributes, is_timestamp_within_interval},
+            ATTRIBUTES_VALUE_MAX_LENGTH, SUPPORTED_ATTRIBUTES,
+        },
         state::AppState,
-        utils::crypto::{
-            constant_time_eq, convert_coin_type_to_evm_chain_id, is_coin_type_supported,
-            verify_message_signature,
+        utils::{
+            crypto::{
+                constant_time_eq, convert_coin_type_to_evm_chain_id, is_coin_type_supported,
+                verify_message_signature,
+            },
+            simple_request_json::SimpleRequestJson,
         },
     },
     axum::{
@@ -29,7 +34,7 @@ use {
 pub async fn handler(
     state: State<Arc<AppState>>,
     name: Path<String>,
-    Json(request_payload): Json<RegisterRequest>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<RegisterRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, name, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("profile_attributes_update"))
