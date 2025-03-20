@@ -61,6 +61,11 @@ static CAIP19_TOKEN_ID_REGEX: Lazy<Regex> = Lazy::new(|| {
         .expect("Failed to initialize regexp for the CAIP-19 token ID format")
 });
 
+static CAIP2_REFERENCE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^[-a-zA-Z0-9]{1,32}$")
+        .expect("Failed to initialize regexp for the CAIP-2 reference format")
+});
+
 static CAIP2_NAMESPACE_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"^[-a-z0-9]{3,8}$")
         .expect("Failed to initialize regexp for the CAIP-2 namespace format")
@@ -817,7 +822,7 @@ impl Caip2ChainId {
                 namespace
             )));
         }
-        if !CAIP_CHAIN_ID_REGEX.is_match(&reference) {
+        if !CAIP2_REFERENCE_REGEX.is_match(&reference) {
             return Err(CryptoUitlsError::WrongChainIdFormat(format!(
                 "CAIP-2 reference must be 1-32 characters of letters, digits, hyphens, or underscores: {}",
                 reference
