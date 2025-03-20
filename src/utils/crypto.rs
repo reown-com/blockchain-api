@@ -837,15 +837,22 @@ impl Caip2ChainId {
 
     /// Parse a CAIP-2 chain ID string
     pub fn parse(chain_id: &str) -> Result<Self, CryptoUitlsError> {
-        let parts: Vec<&str> = chain_id.split(':').collect();
-        if parts.len() != 2 {
-            return Err(CryptoUitlsError::WrongCaip2Format(format!(
-                "CAIP-2 chain ID must have exactly one ':' separator: {}",
-                chain_id
-            )));
-        }
+        let mut parts = chain_id.splitn(2, ':');
 
-        Self::new(parts[0], parts[1])
+        let namespace = parts.next().ok_or_else(|| {
+            CryptoUitlsError::WrongCaip2Format(format!(
+                "CAIP-2 chain ID must have a namespace component: {}",
+                chain_id
+            ))
+        })?;
+
+        let reference = parts.next().ok_or_else(|| {
+            CryptoUitlsError::WrongCaip2Format(format!(
+                "CAIP-2 chain ID must have a reference component: {}",
+                chain_id
+            ))
+        })?;
+        Self::new(namespace, reference)
     }
 
     /// Get the namespace part of the chain ID (e.g., "eip155" from "eip155:1")
@@ -930,27 +937,48 @@ impl Caip19Asset {
 
     /// Parse a CAIP-19 asset ID string
     pub fn parse(asset_id: &str) -> Result<Self, CryptoUitlsError> {
-        let parts: Vec<&str> = asset_id.splitn(2, '/').collect();
-        if parts.len() != 2 {
-            return Err(CryptoUitlsError::WrongCaip19Format(format!(
+        let mut parts = asset_id.splitn(2, '/');
+
+        let chain_id_str = parts.next().ok_or_else(|| {
+            CryptoUitlsError::WrongCaip19Format(format!(
+                "Invalid CAIP-19 format (missing chain ID): {}",
+                asset_id
+            ))
+        })?;
+
+        let asset_part = parts.next().ok_or_else(|| {
+            CryptoUitlsError::WrongCaip19Format(format!(
                 "Invalid CAIP-19 format (missing '/'): {}",
                 asset_id
-            )));
-        }
-        let chain_id = Caip2ChainId::parse(parts[0])?;
-        let asset_parts: Vec<&str> = parts[1].splitn(2, '/').collect();
-        let namespace_ref_part = asset_parts[0];
+            ))
+        })?;
 
-        let namespace_ref_parts: Vec<&str> = namespace_ref_part.splitn(2, ':').collect();
-        if namespace_ref_parts.len() != 2 {
-            return Err(CryptoUitlsError::WrongCaip19Format(format!(
+        let chain_id = Caip2ChainId::parse(chain_id_str)?;
+
+        let mut asset_parts = asset_part.splitn(2, '/');
+        let namespace_ref_part = asset_parts.next().ok_or_else(|| {
+            CryptoUitlsError::WrongCaip19Format(format!(
+                "Invalid CAIP-19 format (missing asset part): {}",
+                asset_id
+            ))
+        })?;
+
+        let token_id = asset_parts.next();
+
+        let mut namespace_ref_parts = namespace_ref_part.splitn(2, ':');
+        let asset_namespace = namespace_ref_parts.next().ok_or_else(|| {
+            CryptoUitlsError::WrongCaip19Format(format!(
+                "Invalid asset namespace/reference format (missing namespace): {}",
+                namespace_ref_part
+            ))
+        })?;
+
+        let asset_reference = namespace_ref_parts.next().ok_or_else(|| {
+            CryptoUitlsError::WrongCaip19Format(format!(
                 "Invalid asset namespace/reference format (missing ':'): {}",
                 namespace_ref_part
-            )));
-        }
-        let asset_namespace = namespace_ref_parts[0];
-        let asset_reference = namespace_ref_parts[1];
-        let token_id = asset_parts.get(1).copied();
+            ))
+        })?;
 
         Self::new(chain_id, asset_namespace, asset_reference, token_id)
     }
