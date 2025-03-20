@@ -483,17 +483,17 @@ async fn handler_internal(
             let results = request_payload
                 .accounts.iter()
                 .map(|a| {
-                    let caip10_parts = a.splitn(3, ":").collect::<Vec<_>>();
-                    let namespace = caip10_parts.first().ok_or(RpcError::InvalidParameter(
+                    let mut caip10_parts = a.splitn(3, ":");
+                    let namespace = caip10_parts.next().ok_or(RpcError::InvalidParameter(
                         "The account is not a valid CAIP-10 address: missing namespace".to_string(),
                     ))?;
-                    let reference = caip10_parts.get(1).ok_or(RpcError::InvalidParameter(
+                    let reference = caip10_parts.next().ok_or(RpcError::InvalidParameter(
                         "The account is not a valid CAIP-10 address: missing reference".to_string(),
                     ))?;
-                    let address = caip10_parts.get(2).ok_or(RpcError::InvalidParameter(
+                    let address = caip10_parts.next().ok_or(RpcError::InvalidParameter(
                         "The account is not a valid CAIP-10 address: missing address".to_string(),
                     ))?;
-                    Ok((namespace.to_owned(), reference.to_owned(), address.to_owned()))
+                    Ok((namespace, reference, address))
                 })
                 .collect::<Result<Vec<_>, RpcError>>()?;
             let mut accounts = Vec::with_capacity(results.len());
