@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.211.0 - 2025-03-20
+#### Features
+- **(providers)** adding Monad provider for Monad testnet (#1001) - (9309072) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.210.2 - 2025-03-19
 #### Bug Fixes
 - **(Prometheus)** adding check for the Prometheus server in a constructor (#996) - (e21db12) - Max Kalashnikoff | maksy.eth
