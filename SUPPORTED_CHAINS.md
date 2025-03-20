@@ -27,6 +27,7 @@ Chain name with associated `chainId` query param to use.
 | Mantle Testnet <sup>[1](#footnote1)</sup>                | eip155:5003          |
 | Kaia Mainnet                                             | eip155:8217          |
 | Base                                                     | eip155:8453          |
+| Monad Testnet                                            | eip155:10143         |
 | Ethereum Holesky                                         | eip155:17000         |
 | Arbitrum                                                 | eip155:42161         |
 | Celo                                                     | eip155:42220         |
