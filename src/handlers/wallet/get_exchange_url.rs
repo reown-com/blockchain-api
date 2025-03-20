@@ -44,13 +44,7 @@ pub enum GetExchangeUrlError {
     #[error("Exchange not found: {0}")]
     ExchangeNotFound(String),
 
-    #[error("Internal error")]
-    InternalError(GetExchangeUrlInternalError),
-}
-
-#[derive(Error, Debug)]
-pub enum GetExchangeUrlInternalError {
-    #[error("Internal error")]
+    #[error("Internal error: {0}")]
     InternalError(String),
 }
 
@@ -81,12 +75,7 @@ async fn handler_internal(
     let url = exchange
         .get_buy_url(state, &request.asset, &request.amount)
         .await
-        .ok_or_else(|| {
-            GetExchangeUrlError::ExchangeNotFound(format!(
-                "Failed to generate URL for exchange {}",
-                request.exchange_id
-            ))
-        })?;
+        .map_err(|e| GetExchangeUrlError::InternalError(e.to_string()))?;
 
     Ok(GeneratePayUrlResponse { url })
 }

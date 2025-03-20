@@ -1,14 +1,21 @@
 use crate::state::AppState;
 use axum::extract::State;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use strum::IntoEnumIterator;
 use strum_macros::{AsRefStr, EnumIter};
+use thiserror::Error;
 pub mod binance;
 pub mod coinbase;
 
 use binance::BinanceExchange;
 use coinbase::CoinbaseExchange;
+
+#[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
+pub struct Config {
+    pub coinbase_key_name: Option<String>,
+    pub coinbase_key_secret: Option<String>,
+}
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -39,6 +46,15 @@ pub enum ExchangeType {
     Coinbase,
 }
 
+#[derive(Error, Debug)]
+pub enum ExchangeError {
+    #[error("Configuration error: {0}")]
+    ConfigurationError(String),
+
+    #[error("Internal error")]
+    InternalError(String),
+}
+
 impl ExchangeType {
     pub fn provider(&self) -> Box<dyn ExchangeProvider> {
         match self {
@@ -60,7 +76,7 @@ impl ExchangeType {
         state: State<Arc<AppState>>,
         asset: &str,
         amount: &str,
-    ) -> Option<String> {
+    ) -> Result<String, ExchangeError> {
         match self {
             ExchangeType::Binance => BinanceExchange::get_buy_url(state, asset, amount).await,
             ExchangeType::Coinbase => CoinbaseExchange::get_buy_url(state, asset, amount).await,

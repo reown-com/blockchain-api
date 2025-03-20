@@ -4,6 +4,7 @@ use {
         database::config::PostgresConfig,
         error,
         handlers::balance::Config as BalanceConfig,
+        handlers::wallet::exchanges::Config as ExchangesConfig,
         names::Config as NamesConfig,
         profiler::ProfilerConfig,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
@@ -69,6 +70,7 @@ pub struct Config {
     pub irn: IrnConfig,
     pub names: NamesConfig,
     pub balances: BalanceConfig,
+    pub exchanges: ExchangesConfig,
 }
 
 impl Config {
@@ -85,6 +87,7 @@ impl Config {
             irn: from_env("RPC_PROXY_IRN_")?,
             names: from_env("RPC_PROXY_NAMES_")?,
             balances: from_env("RPC_PROXY_BALANCES_")?,
+            exchanges: from_env("RPC_PROXY_EXCHANGES_")?,
         })
     }
 }
@@ -113,6 +116,7 @@ mod test {
             database::config::PostgresConfig,
             env::{Config, ServerConfig},
             handlers::balance::Config as BalanceConfig,
+            handlers::wallet::exchanges::Config as ExchangesConfig,
             names::Config as NamesConfig,
             profiler::ProfilerConfig,
             project,
@@ -239,6 +243,12 @@ mod test {
             ("RPC_PROXY_NAMES_ALLOWED_ZONES", "test1.id,test2.id"),
             // Account balances-related configuration
             ("RPC_PROXY_BALANCES_DENYLIST_PROJECT_IDS", "test_project_id"),
+            // Exchanges configuration
+            ("RPC_PROXY_EXCHANGES_COINBASE_KEY_NAME", "COINBASE_KEY_NAME"),
+            (
+                "RPC_PROXY_EXCHANGES_COINBASE_KEY_SECRET",
+                "COINBASE_KEY_SECRET",
+            ),
         ];
 
         values.iter().for_each(set_env_var);
@@ -339,6 +349,10 @@ mod test {
                 },
                 balances: BalanceConfig {
                     denylist_project_ids: Some(vec!["test_project_id".to_owned()]),
+                },
+                exchanges: ExchangesConfig {
+                    coinbase_key_name: Some("COINBASE_KEY_NAME".to_owned()),
+                    coinbase_key_secret: Some("COINBASE_KEY_SECRET".to_owned()),
                 },
             }
         );

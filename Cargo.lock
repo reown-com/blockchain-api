@@ -7252,6 +7252,7 @@ dependencies = [
  "deadpool-redis",
  "derive_more 1.0.0",
  "dotenv",
+ "ed25519-dalek",
  "envy",
  "ethers",
  "eyre",

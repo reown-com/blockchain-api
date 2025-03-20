@@ -1,4 +1,4 @@
-use crate::handlers::wallet::exchanges::ExchangeProvider;
+use crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider};
 use crate::state::AppState;
 use axum::extract::State;
 use std::sync::Arc;
@@ -24,9 +24,9 @@ impl BinanceExchange {
         _state: State<Arc<AppState>>,
         asset: &str,
         amount: &str,
-    ) -> Option<String> {
+    ) -> Result<String, ExchangeError> {
         // TODO: Communicate with the Binance API to get the buy URL
-        Some(format!(
+        Ok(format!(
             "https://binance.com/buy?asset={asset}&amount={amount}"
         ))
     }
