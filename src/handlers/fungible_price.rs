@@ -1,6 +1,10 @@
 use {
     super::{SupportedCurrencies, HANDLER_TASK_METRICS},
-    crate::{error::RpcError, state::AppState, utils::crypto},
+    crate::{
+        error::RpcError,
+        state::AppState,
+        utils::{crypto, simple_request_json::SimpleRequestJson},
+    },
     axum::{
         extract::State,
         response::{IntoResponse, Response},
@@ -40,7 +44,7 @@ pub struct FungiblePriceItem {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
-    Json(query): Json<PriceQueryParams>,
+    SimpleRequestJson(query): SimpleRequestJson<PriceQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
         .with_metrics(HANDLER_TASK_METRICS.with_name("fungible_price"))

@@ -1,8 +1,10 @@
 use {
     super::HANDLER_TASK_METRICS,
     crate::{
-        error::RpcError, providers::SupportedBundlerOps, state::AppState,
-        utils::crypto::disassemble_caip2,
+        error::RpcError,
+        providers::SupportedBundlerOps,
+        state::AppState,
+        utils::{crypto::disassemble_caip2, simple_request_json::SimpleRequestJson},
     },
     alloy::rpc::json_rpc::Id,
     axum::{
@@ -40,7 +42,7 @@ pub struct BundlerJsonRpcRequest {
 pub async fn handler(
     state: State<Arc<AppState>>,
     query_params: Query<BundlerQueryParams>,
-    Json(request_payload): Json<BundlerJsonRpcRequest>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<BundlerJsonRpcRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query_params, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("bundler_ops"))

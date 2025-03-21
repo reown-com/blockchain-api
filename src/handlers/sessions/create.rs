@@ -3,8 +3,10 @@ use {
         super::HANDLER_TASK_METRICS, NewPermissionPayload, QueryParams, StoragePermissionsItem,
     },
     crate::{
-        error::RpcError, state::AppState, storage::irn::OperationType,
-        utils::crypto::disassemble_caip10,
+        error::RpcError,
+        state::AppState,
+        storage::irn::OperationType,
+        utils::{crypto::disassemble_caip10, simple_request_json::SimpleRequestJson},
     },
     axum::{
         extract::{Path, Query, State},
@@ -41,7 +43,7 @@ pub async fn handler(
     state: State<Arc<AppState>>,
     address: Path<String>,
     query_params: Query<QueryParams>,
-    Json(request_payload): Json<NewPermissionPayload>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<NewPermissionPayload>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, query_params, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("sessions_create"))

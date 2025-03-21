@@ -15,6 +15,7 @@ use {
                 ContractCallPermissionData, NativeTokenAllowancePermissionData, PermissionType,
             },
             sessions::extract_execution_batch_components,
+            simple_request_json::SimpleRequestJson,
         },
     },
     axum::{
@@ -70,7 +71,7 @@ pub async fn handler(
     state: State<Arc<AppState>>,
     address: Path<String>,
     query_payload: Query<CoSignQueryParams>,
-    Json(request_payload): Json<CoSignRequest>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<CoSignRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, request_payload, query_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("sessions_co_sign"))
