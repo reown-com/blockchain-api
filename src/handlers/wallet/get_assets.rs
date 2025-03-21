@@ -395,9 +395,9 @@ fn create_response(balances: Vec<BalanceItem>) -> GetAssetsResult {
                                 name: balance.name,
                                 symbol: balance.symbol,
                                 decimals: balance.quantity.decimals.parse().unwrap(),
-                                // TODO value
-                                // TODO price
-                                // TODO iconUrl
+                                icon_url: balance.icon_url,
+                                price: balance.price, // TODO using float here is bad practice
+                                value: balance.value,
                             },
                         },
                     },
@@ -406,12 +406,12 @@ fn create_response(balances: Vec<BalanceItem>) -> GetAssetsResult {
                             address: AddressOrNative::Native,
                             balance: asset_balance,
                             metadata: NativeMetadata {
-                                // TODO name
-                                // TODO symbol
-                                // TODO decimals
-                                // TODO value
-                                // TODO price
-                                // TODO iconUrl
+                                name: balance.name,
+                                symbol: balance.symbol,
+                                decimals: balance.quantity.decimals.parse().unwrap(),
+                                icon_url: balance.icon_url,
+                                price: balance.price, // TODO using float here is bad practice
+                                value: balance.value,
                             },
                         },
                     },
