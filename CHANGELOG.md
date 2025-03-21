@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.211.1 - 2025-03-21
+#### Bug Fixes
+- allow simple requests with JSON (#994) - (24ccf37) - Chris Smith
+#### Miscellaneous Chores
+- add Caip19Asset and Caip2ChainId (#1000) - (b739dee) - Luka Isailovic
+
+- - -
+
 ## 0.211.0 - 2025-03-20
 #### Features
 - **(providers)** adding Monad provider for Monad testnet (#1001) - (9309072) - Max Kalashnikoff | maksy.eth
