@@ -12,6 +12,53 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::info;
 
 const COINBASE_API_HOST: &str = "api.developer.coinbase.com";
+const COINBASE_GENERATE_BUY_QUOTE_PATH: &str = "/onramp/v1/buy/quote";
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+enum PaymentMethod {
+    Unspecified,
+    Card,
+    AchBankAccount,
+    ApplePay,
+    FiatWallet,
+    CryptoAccount,
+    GuestCheckoutCard,
+    PayPal,
+    Rtp,
+    GuestCheckoutApplePay,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct GenerateBuyQuoteRequest {
+    country: String,
+    payment_amount: String,
+    payment_currency: String,
+    payment_method: PaymentMethod,
+    purchase_currency: String,
+    purcase_network: String,
+    #[serde(default)]
+    subdivision: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CurrencyAmount {
+    currency: String,
+    value: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct GenerateBuyQuoteResponse {
+    coinbase_fee: CurrencyAmount,
+    network_fee: CurrencyAmount,
+    payment_subtotal: CurrencyAmount,
+    payment_total: CurrencyAmount,
+    purchase_amount: CurrencyAmount,
+    quote_id: String,
+}
 
 pub struct CoinbaseExchange;
 
@@ -97,31 +144,63 @@ impl CoinbaseExchange {
         Ok(res)
     }
 
+    async fn generate_buy_quote(
+        &self,
+        state: &Arc<AppState>,
+        request: GenerateBuyQuoteRequest,
+    ) -> Result<GenerateBuyQuoteResponse, ExchangeError> {
+        let res = self
+            .send_post_request(state, COINBASE_GENERATE_BUY_QUOTE_PATH, &request)
+            .await?;
+
+        let status = res.status();
+
+        if !status.is_success() {
+            info!("Request failed with status: {}", status);
+            let body = res.text().await.unwrap();
+            info!("Response: {:?}", body);
+            return Err(ExchangeError::InternalError(format!(
+                "Request failed with status: {}",
+                status
+            )));
+        }
+        let quote: GenerateBuyQuoteResponse = res
+            .json()
+            .await
+            .map_err(|e| ExchangeError::InternalError("Failed to parse response".to_string()))?;
+
+        Ok(quote)
+    }
     pub async fn get_buy_url(
         state: State<Arc<AppState>>,
         _asset: &str,
         _amount: &str,
     ) -> Result<String, ExchangeError> {
         let exchange = CoinbaseExchange;
-        let path = "/onramp/v1/buy/config";
 
-        let res = exchange.send_get_request(&state, path).await?;
+        let request = GenerateBuyQuoteRequest {
+            country: "US".to_string(),
+            payment_amount: "2.00".to_string(),
+            payment_currency: "USD".to_string(),
+            payment_method: PaymentMethod::Card,
+            purchase_currency: "d85dce9b-5b73-5c3c-8978-522ce1d1c1b4".to_string(),
+            purcase_network: "ethereum".to_string(),
+            subdivision: Some("NY".to_string()),
+        };
 
-        let status = res.status();
+        info!("Request: {:?}", serde_json::to_string(&request).unwrap());
 
-        if !status.is_success() {
-            return Err(ExchangeError::InternalError(format!(
-                "Request failed with status: {}",
-                status
-            )));
-        }
+        let res = exchange.generate_buy_quote(&state, request).await;
 
-        match res.text().await {
-            Ok(body) => {
-                info!("body: {:?}", body);
-                Ok(body)
+        match res {
+            Ok(res) => Ok(res.quote_id),
+            Err(e) => {
+                info!(
+                    "Response: {:?}",
+                    serde_json::to_string(&e.to_string()).unwrap()
+                );
+                Err(e)
             }
-            Err(e) => Err(ExchangeError::InternalError(e.to_string())),
         }
     }
 }

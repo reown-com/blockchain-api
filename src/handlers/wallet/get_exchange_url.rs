@@ -12,6 +12,7 @@ use {
     serde::{Deserialize, Serialize},
     std::{net::SocketAddr, sync::Arc},
     thiserror::Error,
+    tracing::info,
     wc::future::FutureExt,
 };
 
@@ -72,10 +73,21 @@ async fn handler_internal(
         GetExchangeUrlError::ExchangeNotFound(format!("Exchange {} not found", request.exchange_id))
     })?;
 
-    let url = exchange
+    let result = exchange
         .get_buy_url(state, &request.asset, &request.amount)
-        .await
-        .map_err(|e| GetExchangeUrlError::InternalError(e.to_string()))?;
+        .await;
 
-    Ok(GeneratePayUrlResponse { url })
+    match result {
+        Ok(url) => Ok(GeneratePayUrlResponse { url }),
+        Err(e) => {
+            info!(
+                error = %e,
+                exchange_id = %request.exchange_id,
+                asset = %request.asset,
+                amount = %request.amount,
+                "Failed to get exchange URL"
+            );
+            Err(GetExchangeUrlError::InternalError(e.to_string()))
+        }
+    }
 }
