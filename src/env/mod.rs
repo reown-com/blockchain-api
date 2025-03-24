@@ -250,6 +250,9 @@ mod test {
                 "RPC_PROXY_EXCHANGES_COINBASE_KEY_SECRET",
                 "COINBASE_KEY_SECRET",
             ),
+            ("RPC_PROXY_EXCHANGES_BINANCE_CLIENT_ID", "BINANCE_CLIENT_ID"),
+            ("RPC_PROXY_EXCHANGES_BINANCE_TOKEN", "BINANCE_TOKEN"),
+            ("RPC_PROXY_EXCHANGES_BINANCE_KEY", "BINANCE_KEY"),
         ];
 
         values.iter().for_each(set_env_var);
@@ -354,6 +357,9 @@ mod test {
                 exchanges: ExchangesConfig {
                     coinbase_key_name: Some("COINBASE_KEY_NAME".to_owned()),
                     coinbase_key_secret: Some("COINBASE_KEY_SECRET".to_owned()),
+                    binance_client_id: Some("BINANCE_CLIENT_ID".to_owned()),
+                    binance_token: Some("BINANCE_TOKEN".to_owned()),
+                    binance_key: Some("BINANCE_KEY".to_owned()),
                 },
             }
         );

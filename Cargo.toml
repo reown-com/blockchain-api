@@ -123,6 +123,7 @@ regex = "1.10"
 sha256 = "1.5"
 uuid = { version = "1.13.1", features = ["serde"] }
 ed25519-dalek = "2.1"
+rsa = "0.9"
 
 # System CPU and Memory metrics
 sysinfo = "0.30"

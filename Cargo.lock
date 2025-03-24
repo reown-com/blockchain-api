@@ -8134,6 +8134,7 @@ dependencies = [
  "relay_rpc 0.1.0 (git+https://github.com/WalletConnect/WalletConnectRust.git?tag=v0.32.0)",
  "reqwest 0.12.12",
  "rmp-serde",
+ "rsa",
  "serde",
  "serde-aux 3.1.0",
  "serde_json",

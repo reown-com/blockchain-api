@@ -15,6 +15,9 @@ use coinbase::CoinbaseExchange;
 pub struct Config {
     pub coinbase_key_name: Option<String>,
     pub coinbase_key_secret: Option<String>,
+    pub binance_client_id: Option<String>,
+    pub binance_token: Option<String>,
+    pub binance_key: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
