@@ -253,6 +253,7 @@ mod test {
             ("RPC_PROXY_EXCHANGES_BINANCE_CLIENT_ID", "BINANCE_CLIENT_ID"),
             ("RPC_PROXY_EXCHANGES_BINANCE_TOKEN", "BINANCE_TOKEN"),
             ("RPC_PROXY_EXCHANGES_BINANCE_KEY", "BINANCE_KEY"),
+            ("RPC_PROXY_EXCHANGES_BINANCE_HOST", "BINANCE_HOST"),
         ];
 
         values.iter().for_each(set_env_var);
@@ -360,6 +361,7 @@ mod test {
                     binance_client_id: Some("BINANCE_CLIENT_ID".to_owned()),
                     binance_token: Some("BINANCE_TOKEN".to_owned()),
                     binance_key: Some("BINANCE_KEY".to_owned()),
+                    binance_host: Some("BINANCE_HOST".to_owned()),
                 },
             }
         );

@@ -18,6 +18,7 @@ pub struct Config {
     pub binance_client_id: Option<String>,
     pub binance_token: Option<String>,
     pub binance_key: Option<String>,
+    pub binance_host: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -53,6 +54,9 @@ pub enum ExchangeType {
 pub enum ExchangeError {
     #[error("Configuration error: {0}")]
     ConfigurationError(String),
+
+    #[error("Get pay url error: {0}")]
+    GetPayUrlError(String),
 
     #[error("Internal error")]
     InternalError(String),
