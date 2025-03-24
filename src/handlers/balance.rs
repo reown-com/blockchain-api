@@ -27,6 +27,10 @@ const PROVIDER_MAX_CALLS: usize = 2;
 const METADATA_CACHE_TTL: Duration = Duration::from_secs(60 * 60 * 24); // 1 day
 const BALANCE_CACHE_TTL: Duration = Duration::from_secs(10); // 10 seconds
 
+// List of SDK versions that should return an empty balance response
+// to fix the issue of redundant calls in SDK versions
+const EMPTY_BALANCE_RESPONSE_SDK_VERSIONS: [&str; 2] = ["1.6.4", "1.6.5"];
+
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
 pub struct Config {
     /// List of project ids that are not allowed to use the balance RPC call
@@ -183,6 +187,18 @@ async fn handler_internal(
     // https://github.com/WalletConnect/web3modal/pull/2157
     if !headers.contains_key("x-sdk-version") && query.sdk_info.sv.is_none() {
         return Ok(Json(BalanceResponseBody { balances: vec![] }));
+    }
+
+    // Respond with an empty balance array if the sdk version is in the empty balance response list
+    // because the sdk version has a bug that causes excessive amount of calls to the balance RPC
+    if let Some(sdk_version) = query.sdk_info.sv.as_ref() {
+        if EMPTY_BALANCE_RESPONSE_SDK_VERSIONS.contains(&sdk_version.as_str()) {
+            debug!(
+                "Responding with an empty balance array for sdk version: {}",
+                sdk_version
+            );
+            return Ok(Json(BalanceResponseBody { balances: vec![] }));
+        }
     }
 
     // Get the cached balance and return it if found except if force_update is needed
