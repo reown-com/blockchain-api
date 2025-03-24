@@ -79,14 +79,16 @@ describe('Account balance', () => {
   })
 
   it('empty balance Ethereum address affected SDK version', async () => {
-    const affected_sdk_version = '1.6.4'
-    let resp: any = await httpClient.get(
-      `${baseUrl}/v1/account/${fulfilled_eth_address}/balance?projectId=${projectId}&currency=${currency}&sv=${affected_sdk_version}`
-    )
-    // We should expect the empty balance response for the affected SDK version
-    expect(resp.status).toBe(200)
-    expect(typeof resp.data.balances).toBe('object')
-    expect(resp.data.balances).toHaveLength(0)
+    const affected_sdk_versions = ['1.6.4', '1.6.5']
+    for (const affected_sdk_version of affected_sdk_versions) {
+      let resp: any = await httpClient.get(
+        `${baseUrl}/v1/account/${fulfilled_eth_address}/balance?projectId=${projectId}&currency=${currency}&sv=${affected_sdk_version}`
+      )
+      // We should expect the empty balance response for the affected SDK version
+      expect(resp.status).toBe(200)
+      expect(typeof resp.data.balances).toBe('object')
+      expect(resp.data.balances).toHaveLength(0)
+    }
   })
 
   it('empty balance Ethereum address', async () => {
