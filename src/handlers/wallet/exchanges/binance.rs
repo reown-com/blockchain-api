@@ -6,7 +6,7 @@ use serde::Serialize;
 use rsa::{
     RsaPrivateKey, 
     pkcs8::DecodePrivateKey,
-    Pkcs1v15Sign
+    Pkcs1v15Sign,
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
 use tracing::info;
@@ -65,9 +65,15 @@ impl BinanceExchange {
 
         let private_key = RsaPrivateKey::from_pkcs8_der(&key_bytes)
             .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to parse private key: {}", e)))?;
-
-        let data_to_sign = format!("{}{}", body, timestamp);
         
+        // For empty bodies, we only sign the timestamp
+        let data_to_sign = if body.is_empty() || body == "{}" {
+            timestamp.to_string()
+        } else {
+            format!("{}{}", body, timestamp)
+        };
+        info!("Data to sign: {}", data_to_sign);
+
         let hashed_data = sha256::digest(data_to_sign.as_bytes());
         let hashed_bytes = hex::decode(hashed_data)
             .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to decode hash: {}", e)))?;
@@ -86,6 +92,7 @@ impl BinanceExchange {
     ) -> Result<reqwest::Response, ExchangeError> {
         let (client_id, private_key, token, host) = self.get_api_credentials(state)?;
         
+        // Get timestamp in milliseconds, matching Java's System.currentTimeMillis()
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(|_| ExchangeError::GetPayUrlError("Failed to get current time".to_string()))?
@@ -96,6 +103,13 @@ impl BinanceExchange {
         let signature = self.generate_signature(body, timestamp, &private_key)?;
         
         let url = format!("{}{}", host, path);
+        
+        info!("Request URL: {}", url);
+        info!("Request headers:");
+        info!("X-Tesla-ClientId: {}", client_id);
+        info!("X-Tesla-Timestamp: {}", timestamp.to_string());
+        info!("X-Tesla-Signature: {}", signature);
+        info!("X-Tesla-SignAccessToken: {}", token);
         
         let res = state
             .http_client
@@ -133,6 +147,14 @@ impl BinanceExchange {
         
         let url = format!("{}{}", host, path);
         
+        info!("Request URL: {}", url);
+        info!("Request headers:");
+        info!("  X-Tesla-ClientId: {}", client_id);
+        info!("  X-Tesla-Timestamp: {}", timestamp);
+        info!("  X-Tesla-Signature: {}", signature);
+        info!("  X-Tesla-SignAccessToken: {}", token);
+        info!("Request body: {}", body);
+
         let res = state
             .http_client
             .post(url)
@@ -156,25 +178,17 @@ impl BinanceExchange {
     ) -> Result<String, ExchangeError> {
         let exchange = BinanceExchange;
         
-        // Define request payload for generating buy URL
-        #[derive(Debug, Serialize)]
-        struct BuyQuoteRequest {
-            asset: String,
-            amount: String,
-            fiat_currency: String,
-        }
-        
-        let request = BuyQuoteRequest {
-            asset: asset.to_string(),
-            amount: amount.to_string(),
-            fiat_currency: "USD".to_string(),
-        };
-        
         // Path for the buy quote endpoint
-        const BUY_QUOTE_PATH: &str = "/api/v1/buy/quote";
+        const TRAIDING_PAIRS_PATH: &str = "/papi/v1/ramp/connect/buy/trading-pairs";
+        
+        // Create an empty request struct
+        #[derive(serde::Serialize)]
+        struct EmptyRequest {}
+        
+        let empty_request = EmptyRequest {};
         
         // Make the API request
-        let response = exchange.send_post_request(&state, BUY_QUOTE_PATH, &request).await?;
+        let response = exchange.send_post_request(&state, TRAIDING_PAIRS_PATH, &empty_request).await?;
         
         // Check if the request was successful
         let status = response.status();
@@ -189,19 +203,37 @@ impl BinanceExchange {
         
         // Parse the response
         #[derive(Debug, serde::Deserialize)]
-        struct BuyQuoteResponse {
-            quote_id: String,
-            payment_url: String,
+        struct TradingPairsResponse {
+            success: bool,
+            code: String,
+            message: String,
+            data: TradingPairsData,
+        }
+
+        #[derive(Debug, serde::Deserialize)]
+        struct TradingPairsData {
+            fiatCurrencies: Vec<String>,
+            cryptoCurrencies: Vec<String>,
         }
         
-        let quote: BuyQuoteResponse = response
+        let response: TradingPairsResponse = response
             .json()
             .await
             .map_err(|e| {
                 ExchangeError::InternalError(format!("Failed to parse Binance response: {}", e))
             })?;
-        
-        // Return the payment URL
-        Ok(quote.payment_url)
+
+        // Validate the response
+        if !response.success {
+            return Err(ExchangeError::InternalError(format!(
+                "Binance API request failed with code: {}, message: {}",
+                response.code, response.message
+            )));
+        }
+
+        // Return the trading pairs data
+        Ok(format!("Fiat currencies: {:?}, Crypto currencies: {:?}", 
+            response.data.fiatCurrencies, 
+            response.data.cryptoCurrencies))
     }
 }
