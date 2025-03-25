@@ -148,7 +148,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .transpose()?
         .map(|r| Arc::new(r) as Arc<dyn KeyValueStorage<BalanceResponseBody> + 'static>);
 
-    let providers = init_providers(&config.providers).await;
+    let providers = init_providers(&config.providers);
 
     let external_ip = config
         .server
@@ -495,7 +495,7 @@ fn create_server(
     axum::Server::bind(addr).serve(app.into_make_service_with_connect_info::<SocketAddr>())
 }
 
-async fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
+fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     // Redis pool for providers responses caching where needed
     let mut redis_pool = None;
     if let Some(redis_addr) = &config.cache_redis_addr {
@@ -518,7 +518,7 @@ async fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
 
     // Keep in-sync with SUPPORTED_CHAINS.md
 
-    let mut providers = ProviderRepository::new(config).await;
+    let mut providers = ProviderRepository::new(config);
     providers.add_rpc_provider::<AuroraProvider, AuroraConfig>(AuroraConfig::default());
     providers.add_rpc_provider::<ArbitrumProvider, ArbitrumConfig>(ArbitrumConfig::default());
     providers.add_rpc_provider::<PoktProvider, PoktConfig>(PoktConfig::new(
