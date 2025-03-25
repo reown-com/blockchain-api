@@ -87,6 +87,7 @@ async fn handler_internal(
                 amount = %request.amount,
                 "Failed to get exchange URL"
             );
+            info!("Error: {:?}", e);
             Err(GetExchangeUrlError::InternalError("Unable to get exchange URL".to_string()))
         }
     }

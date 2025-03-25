@@ -2,20 +2,98 @@ use crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider};
 use crate::state::AppState;
 use axum::extract::State;
 use std::sync::Arc;
-use serde::Serialize;
-use rsa::{
-    RsaPrivateKey, 
-    pkcs8::DecodePrivateKey,
-    Pkcs1v15Sign,
-};
+use serde::{Serialize, Deserialize};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use tracing::info;
-use sha256;
-use hex;
-
+use openssl::pkey::PKey;
+use openssl::sign::Signer;
+use openssl::hash::MessageDigest;
 pub struct BinanceExchange;
 
+const PRE_ORDER_PATH: &str = "/papi/v1/ramp/connect/buy/pre-order";
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PreOrderRequest {
+    /// The unique order id from the partner side. Supports only letters and numbers.
+    pub external_order_id: String,
+    
+    /// Fiat currency. If not specified, Binance Connect will automatically select/recommend a default fiat currency.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fiat_currency: Option<String>,
+    
+    /// Crypto currency. If not specified, Binance Connect will automatically select/recommend a default crypto currency.
+    /// Required for SEND_PRIMARY.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub crypto_currency: Option<String>,
+    
+    /// Specify whether the requested amount is in fiat:1 or crypto:2
+    pub amount_type: i32,
+
+    
+    /// Requested amount. Fraction is 8
+    pub requested_amount: String,
+    
+    /// The payment method code from payment method list API.
+
+    pub pay_method_code: Option<String>,
+    
+    /// The payment method subcode from payment method list API.
+    pub pay_method_sub_code: Option<String>,
+    
+    /// Crypto network
+    pub network: String,
+    
+    /// Wallet address
+    pub address: String,
+    
+    /// If blockchain required
+
+    pub memo: Option<String>,
+    
+    /// The redirectUrl is for redirecting to your website if order is completed
+    pub redirect_url: Option<String>,
+    
+    /// The redirectUrl is for redirecting to your website if order is failed
+
+    pub fail_redirect_url: Option<String>,
+    
+    /// The redirectDeepLink is for redirecting to your APP if order is completed
+    pub redirect_deep_link: Option<String>,
+    
+    /// The failRedirectDeepLink is for redirecting to your APP if order is failed
+    pub fail_redirect_deep_link: Option<String>,
+    
+    /// The original client IP
+    pub client_ip: Option<String>,
+    
+    /// The original client type: web/mobile
+    pub client_type: Option<String>,
+    
+    /// Customization settings for the current order
+    pub customization: Option<Customization>,
+}
+
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Customization {
+
+}
+
+#[derive(Debug, Deserialize)]
+struct PreOrderResponse {
+    success: bool,
+    code: String,
+    message: String,
+    data: Option<PreOrderResponseData>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PreOrderResponseData {
+    link: String,
+    link_expire_time: u64,
+}
 
 impl ExchangeProvider for BinanceExchange {
     fn id(&self) -> &'static str {
@@ -63,9 +141,9 @@ impl BinanceExchange {
         let key_bytes = STANDARD.decode(private_key)
             .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to decode private key: {}", e)))?;
 
-        let private_key = RsaPrivateKey::from_pkcs8_der(&key_bytes)
+        let pkey = PKey::private_key_from_pkcs8(&key_bytes)
             .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to parse private key: {}", e)))?;
-        
+
         // For empty bodies, we only sign the timestamp
         let data_to_sign = if body.is_empty() || body == "{}" {
             timestamp.to_string()
@@ -74,13 +152,11 @@ impl BinanceExchange {
         };
         info!("Data to sign: {}", data_to_sign);
 
-        let hashed_data = sha256::digest(data_to_sign.as_bytes());
-        let hashed_bytes = hex::decode(hashed_data)
-            .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to decode hash: {}", e)))?;
-        
-        let signing_key = private_key;
-        let signature = signing_key.sign(Pkcs1v15Sign::new_unprefixed(), &hashed_bytes)
-            .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to sign data: {}", e)))?;
+        let mut signer = Signer::new(MessageDigest::sha256(), &pkey)
+            .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to create signer: {}", e)))?;
+
+        signer.update(data_to_sign.as_bytes()).map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to update signer: {}", e)))?;
+        let signature = signer.sign_to_vec().map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to sign data: {}", e)))?;
         
         Ok(STANDARD.encode(&signature))
     }
@@ -103,13 +179,6 @@ impl BinanceExchange {
         let signature = self.generate_signature(body, timestamp, &private_key)?;
         
         let url = format!("{}{}", host, path);
-        
-        info!("Request URL: {}", url);
-        info!("Request headers:");
-        info!("X-Tesla-ClientId: {}", client_id);
-        info!("X-Tesla-Timestamp: {}", timestamp.to_string());
-        info!("X-Tesla-Signature: {}", signature);
-        info!("X-Tesla-SignAccessToken: {}", token);
         
         let res = state
             .http_client
@@ -147,13 +216,6 @@ impl BinanceExchange {
         
         let url = format!("{}{}", host, path);
         
-        info!("Request URL: {}", url);
-        info!("Request headers:");
-        info!("  X-Tesla-ClientId: {}", client_id);
-        info!("  X-Tesla-Timestamp: {}", timestamp);
-        info!("  X-Tesla-Signature: {}", signature);
-        info!("  X-Tesla-SignAccessToken: {}", token);
-        info!("Request body: {}", body);
 
         let res = state
             .http_client
@@ -177,21 +239,39 @@ impl BinanceExchange {
         amount: &str,
     ) -> Result<String, ExchangeError> {
         let exchange = BinanceExchange;
+        let request = PreOrderRequest {
+            external_order_id: "1234567890".to_string(),
+            fiat_currency: Some("USD".to_string()),
+            crypto_currency: Some("USDC".to_string()),
+            amount_type: 2,
+            requested_amount: "100".to_string(),
+            pay_method_code: Some("BUY_P2P".to_string()),
+            pay_method_sub_code: Some("BANK".to_string()),
+            network: "BASE".to_string(),
+            address: "0x81D8C68Be5EcDC5f927eF020Da834AA57cc3Bd24".to_string(),
+            memo: None,
+            redirect_url: None,
+            fail_redirect_url: None,
+            redirect_deep_link: None,
+            fail_redirect_deep_link: None,
+            client_ip: None,
+            client_type: None,
+            customization: None,
+        };
+        let url = exchange.create_pre_order(&state, request).await?;
+        Ok(url)
+    }
+
+    pub async fn create_pre_order(
+        &self,
+        state: &Arc<AppState>,
+        request: PreOrderRequest,
+    ) -> Result<String, ExchangeError> {
         
-        // Path for the buy quote endpoint
-        const TRAIDING_PAIRS_PATH: &str = "/papi/v1/ramp/connect/buy/trading-pairs";
+        let response = self.send_post_request(state, PRE_ORDER_PATH, &request).await?;
         
-        // Create an empty request struct
-        #[derive(serde::Serialize)]
-        struct EmptyRequest {}
-        
-        let empty_request = EmptyRequest {};
-        
-        // Make the API request
-        let response = exchange.send_post_request(&state, TRAIDING_PAIRS_PATH, &empty_request).await?;
-        
-        // Check if the request was successful
         let status = response.status();
+        info!("Binance response status: {}", status);
         if !status.is_success() {
             let error_body = response.text().await.unwrap_or_default();
             info!("Binance API error: {}", error_body);
@@ -200,30 +280,15 @@ impl BinanceExchange {
                 status, error_body
             )));
         }
-        
-        // Parse the response
-        #[derive(Debug, serde::Deserialize)]
-        struct TradingPairsResponse {
-            success: bool,
-            code: String,
-            message: String,
-            data: TradingPairsData,
-        }
-
-        #[derive(Debug, serde::Deserialize)]
-        struct TradingPairsData {
-            fiatCurrencies: Vec<String>,
-            cryptoCurrencies: Vec<String>,
-        }
-        
-        let response: TradingPairsResponse = response
-            .json()
-            .await
-            .map_err(|e| {
-                ExchangeError::InternalError(format!("Failed to parse Binance response: {}", e))
-            })?;
-
-        // Validate the response
+   
+        let response: PreOrderResponse = response
+        .json()
+        .await
+        .map_err(|e| {
+            ExchangeError::InternalError(format!("Failed to parse Binance response: {}", e))
+        })?;
+        info!("Binance response: {:?}", response);
+            
         if !response.success {
             return Err(ExchangeError::InternalError(format!(
                 "Binance API request failed with code: {}, message: {}",
@@ -231,9 +296,10 @@ impl BinanceExchange {
             )));
         }
 
-        // Return the trading pairs data
-        Ok(format!("Fiat currencies: {:?}, Crypto currencies: {:?}", 
-            response.data.fiatCurrencies, 
-            response.data.cryptoCurrencies))
+        if let Some(data) = response.data {
+            Ok(data.link)
+        } else {
+            Err(ExchangeError::InternalError("No data returned from Binance".to_string()))
+        }
     }
 }
