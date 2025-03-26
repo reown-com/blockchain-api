@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.211.4 - 2025-03-26
+#### Bug Fixes
+- proper SDK version check for an empty balance response (#1005) - (8665dcb) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.211.3 - 2025-03-26
 #### Bug Fixes
 - **(prometheus)** making prometheus url optional instead of one time (#1004) - (979a6f6) - Max Kalashnikoff | maksy.eth
