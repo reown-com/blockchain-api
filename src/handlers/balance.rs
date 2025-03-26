@@ -189,15 +189,23 @@ async fn handler_internal(
         return Ok(Json(BalanceResponseBody { balances: vec![] }));
     }
 
+    let sdk_version = query
+        .sdk_info
+        .sv
+        .as_deref()
+        .or_else(|| headers.get("x-sdk-version").and_then(|v| v.to_str().ok()));
+
     // Respond with an empty balance array if the sdk version is in the empty balance response list
     // because the sdk version has a bug that causes excessive amount of calls to the balance RPC
-    if let Some(sdk_version) = query.sdk_info.sv.as_ref() {
-        if EMPTY_BALANCE_RESPONSE_SDK_VERSIONS.contains(&sdk_version.as_str()) {
-            debug!(
-                "Responding with an empty balance array for sdk version: {}",
-                sdk_version
-            );
-            return Ok(Json(BalanceResponseBody { balances: vec![] }));
+    if let Some(version) = sdk_version {
+        for &v in &EMPTY_BALANCE_RESPONSE_SDK_VERSIONS {
+            if version == v || version.ends_with(v) {
+                debug!(
+                    "Responding with empty balance array for sdk version: {}",
+                    version
+                );
+                return Ok(Json(BalanceResponseBody { balances: vec![] }));
+            }
         }
     }
 
