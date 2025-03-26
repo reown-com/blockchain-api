@@ -218,31 +218,20 @@ pub struct ProviderRepository {
 
 impl ProviderRepository {
     #[allow(clippy::new_without_default)]
-    pub async fn new(config: &ProvidersConfig) -> Self {
-        let prometheus_client = {
-            let prometheus_query_url = config
+    pub fn new(config: &ProvidersConfig) -> Self {
+        let prometheus_client =
+            config
                 .prometheus_query_url
                 .clone()
-                .unwrap_or("http://localhost:8080/".into());
-
-            let client = prometheus_http_query::Client::try_from(prometheus_query_url)
-                .expect("Failed to create Prometheus client from URL");
-
-            match client.is_server_ready().await {
-                Ok(true) => {
-                    debug!("Prometheus client is ready");
-                    Some(client)
-                }
-                Ok(false) => {
-                    error!("Prometheus client is connected, but not ready");
-                    None
-                }
-                Err(e) => {
-                    error!("Prometheus server is not ready: {}", e);
-                    None
-                }
-            }
-        };
+                .and_then(|prometheus_query_url| {
+                    match prometheus_http_query::Client::try_from(prometheus_query_url) {
+                        Ok(client) => Some(client),
+                        Err(err) => {
+                            error!("Failed to connect to prometheus: {}", err);
+                            None
+                        }
+                    }
+                });
 
         let prometheus_workspace_header = config
             .prometheus_workspace_header
@@ -623,30 +612,33 @@ impl ProviderRepository {
     pub async fn update_weights(&self, metrics: &crate::Metrics) {
         debug!("Updating weights");
 
+        let Some(prometheus_client) = &self.prometheus_client else {
+            debug!("Prometheus client not configured, skipping weight update");
+            return;
+        };
+
         let Ok(header_value) = HeaderValue::from_str(&self.prometheus_workspace_header) else {
-            warn!(
+            error!(
                 "Failed to parse prometheus workspace header from {}",
                 self.prometheus_workspace_header
             );
             return;
         };
 
-        if let Some(client) = &self.prometheus_client {
-            match client
-                .query("round(increase(provider_status_code_counter_total[3h]))")
-                .header("host", header_value)
-                .get()
-                .await
-            {
-                Ok(data) => {
-                    let parsed = weights::parse_weights(data);
-                    weights::update_values(&self.rpc_weight_resolver, parsed);
-                    weights::record_values(&self.rpc_weight_resolver, metrics);
-                }
-                Err(e) => error!("Failed to update weights from prometheus: {}", e),
+        match prometheus_client
+            .query("round(increase(provider_status_code_counter_total[3h]))")
+            .header("host", header_value)
+            .get()
+            .await
+        {
+            Ok(data) => {
+                let parsed_weights = weights::parse_weights(data);
+                weights::update_values(&self.rpc_weight_resolver, parsed_weights);
+                weights::record_values(&self.rpc_weight_resolver, metrics);
             }
-        } else {
-            debug!("Prometheus client is not available");
+            Err(e) => {
+                warn!("Failed to update weights from prometheus: {}", e);
+            }
         }
     }
 
