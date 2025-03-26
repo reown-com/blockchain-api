@@ -1,5 +1,7 @@
 use super::get_assets::{self, GetAssetsError};
 use super::get_calls_status::{self, GetCallsStatusError};
+use super::get_exchange_url::{self, GetExchangeUrlError};
+use super::get_exchanges::{self, GetExchangesError};
 use super::prepare_calls::{self, PrepareCallsError};
 use super::send_prepared_calls::{self, SendPreparedCallsError};
 use crate::error::RpcError;
@@ -111,6 +113,8 @@ async fn handler_internal(
 pub const WALLET_PREPARE_CALLS: &str = "wallet_prepareCalls";
 pub const WALLET_SEND_PREPARED_CALLS: &str = "wallet_sendPreparedCalls";
 pub const WALLET_GET_CALLS_STATUS: &str = "wallet_getCallsStatus";
+pub const PAY_GET_EXCHANGES: &str = "reown_getExchanges";
+pub const PAY_GET_EXCHANGE_URL: &str = "reown_getExchangePayUrl";
 
 #[derive(Debug, Error)]
 enum Error {
@@ -125,6 +129,12 @@ enum Error {
 
     #[error("{WALLET_GET_CALLS_STATUS}: {0}")]
     GetCallsStatus(GetCallsStatusError),
+
+    #[error("{PAY_GET_EXCHANGES}: {0}")]
+    GetExchanges(GetExchangesError),
+
+    #[error("{PAY_GET_EXCHANGE_URL}: {0}")]
+    GetUrl(GetExchangeUrlError),
 
     #[error("{}: {0}", wallet_service_api::WALLET_GET_ASSETS)]
     GetAssets(GetAssetsError),
@@ -153,6 +163,8 @@ impl Error {
             Error::SendPreparedCalls(_) => -3, // TODO more specific codes
             Error::GetCallsStatus(_) => -4, // TODO more specific codes
             Error::GetAssets(_) => -5,    // TODO more specific codes
+            Error::GetExchanges(_) => -6,
+            Error::GetUrl(_) => -7,
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,
@@ -225,6 +237,34 @@ async fn handle_rpc(
             )
             .await
             .map_err(Error::GetAssets)?,
+        )
+        .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
+        PAY_GET_EXCHANGES => serde_json::to_value(
+            &get_exchanges::handler(
+                state,
+                connect_info,
+                headers,
+                Query(get_exchanges::QueryParams {
+                    sdk_info: query.sdk_info,
+                }),
+                Json(serde_json::from_value(params).map_err(Error::InvalidParams)?),
+            )
+            .await
+            .map_err(Error::GetExchanges)?,
+        )
+        .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
+        PAY_GET_EXCHANGE_URL => serde_json::to_value(
+            &get_exchange_url::handler(
+                state,
+                connect_info,
+                headers,
+                Query(get_exchange_url::QueryParams {
+                    sdk_info: query.sdk_info,
+                }),
+                Json(serde_json::from_value(params).map_err(Error::InvalidParams)?),
+            )
+            .await
+            .map_err(Error::GetUrl)?,
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
         _ => Err(Error::MethodNotFound),
