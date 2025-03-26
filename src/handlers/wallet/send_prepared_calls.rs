@@ -12,11 +12,12 @@ use crate::handlers::sessions::get::{
 };
 use crate::handlers::sessions::CoSignRequest;
 use crate::utils::crypto::UserOperation;
+use crate::utils::simple_request_json::SimpleRequestJson;
 use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
 use alloy::primitives::{Bytes, U64};
 use alloy::providers::ProviderBuilder;
 use axum::extract::{Path, Query};
-use axum::{extract::State, response::IntoResponse, Json};
+use axum::{extract::State, response::IntoResponse};
 use hyper::body::to_bytes;
 use parquet::data_type::AsBytes;
 use serde::{Deserialize, Serialize};
@@ -178,7 +179,7 @@ async fn handler_internal(
                         project_id: project_id.clone(),
                         version: None,
                     }),
-                    Json(CoSignRequest {
+                    SimpleRequestJson(CoSignRequest {
                         pci: request.context.to_string(),
                         user_op: UserOperation {
                             sender: ethers::types::H160::from_slice(

@@ -2,6 +2,38 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.211.4 - 2025-03-26
+#### Bug Fixes
+- proper SDK version check for an empty balance response (#1005) - (8665dcb) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.211.3 - 2025-03-26
+#### Bug Fixes
+- **(prometheus)** making prometheus url optional instead of one time (#1004) - (979a6f6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.211.2 - 2025-03-24
+#### Bug Fixes
+- **(balances)** adding an exclusion for the affected SDK version (#1003) - (229bfc6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.211.1 - 2025-03-21
+#### Bug Fixes
+- allow simple requests with JSON (#994) - (24ccf37) - Chris Smith
+#### Miscellaneous Chores
+- add Caip19Asset and Caip2ChainId (#1000) - (b739dee) - Luka Isailovic
+
+- - -
+
+## 0.211.0 - 2025-03-20
+#### Features
+- **(providers)** adding Monad provider for Monad testnet (#1001) - (9309072) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.210.2 - 2025-03-19
 #### Bug Fixes
 - **(Prometheus)** adding check for the Prometheus server in a constructor (#996) - (e21db12) - Max Kalashnikoff | maksy.eth

@@ -23,6 +23,7 @@ use {
                 convert_coin_type_to_evm_chain_id, is_coin_type_supported, verify_message_signature,
             },
             network,
+            simple_request_json::SimpleRequestJson,
         },
     },
     axum::{
@@ -50,7 +51,7 @@ pub async fn handler(
     connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     query: Query<RegisterQueryParams>,
-    Json(register_request): Json<RegisterRequest>,
+    SimpleRequestJson(register_request): SimpleRequestJson<RegisterRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, connect_info, headers, query, register_request)
         .with_metrics(HANDLER_TASK_METRICS.with_name("profile_register"))

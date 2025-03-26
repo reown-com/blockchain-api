@@ -1,6 +1,6 @@
 use {
     super::super::HANDLER_TASK_METRICS,
-    crate::{error::RpcError, state::AppState},
+    crate::{error::RpcError, state::AppState, utils::simple_request_json::SimpleRequestJson},
     axum::{
         extract::State,
         response::{IntoResponse, Response},
@@ -57,7 +57,7 @@ pub struct ConvertTxEip155 {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
-    Json(request_payload): Json<ConvertTransactionQueryParams>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<ConvertTransactionQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("convert_build_transaction"))

@@ -6,6 +6,7 @@ use crate::error::RpcError;
 use crate::json_rpc::{
     ErrorResponse, JsonRpcError, JsonRpcRequest, JsonRpcResponse, JsonRpcResult,
 };
+use crate::utils::simple_request_json::SimpleRequestJson;
 use crate::{
     handlers::{
         wallet::get_calls_status::QueryParams as CallStatusQueryParams, SdkInfoParams,
@@ -38,7 +39,7 @@ pub async fn handler(
     connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     query: Query<WalletQueryParams>,
-    Json(request_payload): Json<JsonRpcRequest>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<JsonRpcRequest>,
 ) -> Response {
     handler_internal(state, connect_info, headers, query, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("wallet"))

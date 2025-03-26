@@ -25,6 +25,7 @@ use {
                 get_gas_estimate, get_nonce, Erc20FunctionType,
             },
             network,
+            simple_request_json::SimpleRequestJson,
         },
     },
     alloy::primitives::{Address, U256, U64},
@@ -77,7 +78,7 @@ pub async fn handler_v1(
     connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     query_params: Query<RouteQueryParams>,
-    Json(request_payload): Json<PrepareRequest>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<PrepareRequest>,
 ) -> Result<Json<PrepareResponseV1>, RpcError> {
     handler_internal(state, connect_info, headers, query_params, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("ca_route"))
@@ -202,7 +203,7 @@ pub async fn handler_v2(
     connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     query_params: Query<RouteQueryParams>,
-    Json(request_payload): Json<PrepareRequest>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<PrepareRequest>,
 ) -> Result<Json<PrepareResponse>, RpcError> {
     handler_internal(state, connect_info, headers, query_params, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("ca_route"))
