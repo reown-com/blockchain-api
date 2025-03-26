@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.211.3 - 2025-03-26
+#### Bug Fixes
+- **(prometheus)** making prometheus url optional instead of one time (#1004) - (979a6f6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.211.2 - 2025-03-24
 #### Bug Fixes
 - **(balances)** adding an exclusion for the affected SDK version (#1003) - (229bfc6) - Max Kalashnikoff | maksy.eth
