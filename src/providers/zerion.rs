@@ -5,8 +5,7 @@ use {
         error::{RpcError, RpcResult},
         handlers::{
             balance::{
-                get_cached_metadata, set_cached_metadata, BalanceQueryParams, BalanceResponseBody,
-                TokenMetadataCacheItem, H160_EMPTY_ADDRESS,
+                BalanceQueryParams, BalanceResponseBody, TokenMetadataCacheItem, H160_EMPTY_ADDRESS,
             },
             history::{
                 HistoryQueryParams, HistoryResponseBody, HistoryTransaction,
@@ -20,9 +19,8 @@ use {
         },
         providers::{
             balance::{BalanceItem, BalanceQuantity},
-            ProviderKind,
+            ProviderKind, TokenMetadataCacheProvider,
         },
-        storage::KeyValueStorage,
         utils::crypto,
         Metrics,
     },
@@ -241,11 +239,11 @@ fn add_filter_non_trash_only(url: &mut Url) {
 
 #[async_trait]
 impl HistoryProvider for ZerionProvider {
-    #[tracing::instrument(skip(self, params), fields(provider = "Zerion"), level = "debug")]
     async fn get_transactions(
         &self,
         address: String,
         params: HistoryQueryParams,
+        _metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<HistoryResponseBody> {
         let base = format!(
@@ -441,12 +439,11 @@ impl PortfolioProvider for ZerionProvider {
 
 #[async_trait]
 impl BalanceProvider for ZerionProvider {
-    #[tracing::instrument(skip(self, params), fields(provider = "Zerion"), level = "debug")]
     async fn get_balance(
         &self,
         address: String,
         params: BalanceQueryParams,
-        metadata_cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody> {
         let base = format!("https://api.zerion.io/v1/wallets/{}/positions/?", &address);
@@ -512,31 +509,32 @@ impl BalanceProvider for ZerionProvider {
                     .icon
                     .map(|icon| icon.url)
                     .unwrap_or_default(),
+                decimals: f.attributes.quantity.decimals as u8,
             };
 
             // Update the token metadata from the cache or update the cache if it's not present
             if let Some(chain_id) = chain_id.clone() {
                 let caip10_token_address = format!("{}:{}", chain_id, token_address_strict);
-                match get_cached_metadata(metadata_cache, &caip10_token_address).await {
-                    Some(cached_metadata) => token_metadata = cached_metadata,
-                    None => {
-                        // Spawn a background task to set the cache without blocking
-                        {
-                            let metadata_cache = metadata_cache.clone();
-                            let caip10_token_address = caip10_token_address.clone();
-                            let token_metadata = token_metadata.clone();
-                            tokio::spawn(async move {
-                                set_cached_metadata(
-                                    &metadata_cache,
-                                    &caip10_token_address,
-                                    &token_metadata,
-                                )
-                                .await;
-                            });
-                        }
+                match metadata_cache.get_metadata(&caip10_token_address).await {
+                    Ok(Some(cached_metadata)) => token_metadata = cached_metadata,
+                    Ok(None) => {
+                        let metadata_cache = metadata_cache.clone();
+                        let token_metadata_clone = token_metadata.clone();
+                        tokio::spawn(async move {
+                            if let Err(e) = metadata_cache
+                                .set_metadata(&caip10_token_address, &token_metadata_clone)
+                                .await
+                            {
+                                error!(
+                                    "Error setting metadata in cache for {}: {}",
+                                    caip10_token_address, e
+                                );
+                            }
+                        });
                     }
-                };
-            };
+                    Err(e) => error!("Error getting metadata from cache: {}", e),
+                }
+            }
 
             let balance_item = BalanceItem {
                 name: token_metadata.name,

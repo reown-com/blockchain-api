@@ -3,10 +3,7 @@ use {
         analytics::RPCAnalytics,
         env::Config,
         error::RpcError,
-        handlers::{
-            balance::{BalanceResponseBody, TokenMetadataCacheItem},
-            identity::IdentityResponse,
-        },
+        handlers::{balance::BalanceResponseBody, identity::IdentityResponse},
         metrics::Metrics,
         project::Registry,
         providers::ProviderRepository,
@@ -38,7 +35,6 @@ pub struct AppState {
     pub irn: Option<Irn>,
     // Redis caching
     pub identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
-    pub token_metadata_cache: Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
     pub balance_cache: Option<Arc<dyn KeyValueStorage<BalanceResponseBody>>>,
 }
 
@@ -54,7 +50,6 @@ pub fn new_state(
     rate_limit: Option<RateLimit>,
     irn: Option<Irn>,
     identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
-    token_metadata_cache: Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
     balance_cache: Option<Arc<dyn KeyValueStorage<BalanceResponseBody>>>,
 ) -> AppState {
     AppState {
@@ -70,7 +65,6 @@ pub fn new_state(
         rate_limit,
         irn,
         identity_cache,
-        token_metadata_cache,
         balance_cache,
     }
 }
