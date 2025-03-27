@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.211.5 - 2025-03-27
+#### Bug Fixes
+- add custom metadata to wallet_getAssets response & remove unwraps() (#999) - (d546243) - Chris Smith
+
+- - -
+
 ## 0.211.4 - 2025-03-26
 #### Bug Fixes
 - proper SDK version check for an empty balance response (#1005) - (8665dcb) - Max Kalashnikoff | maksy.eth
