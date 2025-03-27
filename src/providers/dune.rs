@@ -30,14 +30,6 @@ const DUNE_API_BASE_URL: &str = "https://api.dune.com/api";
 /// Native token icons, since Dune doesn't provide them yet
 /// TODO: Hardcoding icon urls temporarily until Dune provides them
 pub static NATIVE_TOKEN_ICONS: phf::Map<&'static str, &'static str> = phf_map! {
-      // Ethereum
-      "ETH" => "https://cdn.jsdelivr.net/gh/trustwallet/assets@master/blockchains/ethereum/info/logo.png",
-      // Polygon
-      "POL" => "https://cdn.jsdelivr.net/gh/trustwallet/assets@master/blockchains/polygon/info/logo.png",
-      // xDAI
-      "XDAI" => "https://cdn.jsdelivr.net/gh/trustwallet/assets@master/blockchains/xdai/info/logo.png",
-      // BNB
-      "BNB" => "https://cdn.jsdelivr.net/gh/trustwallet/assets@master/blockchains/binance/info/logo.png",
       // Solana
       "SOL" => "https://cdn.jsdelivr.net/gh/trustwallet/assets@master/blockchains/solana/info/logo.png",
 };
@@ -239,15 +231,20 @@ impl BalanceProvider for DuneProvider {
                         };
 
                         // Determine icon URL
-                        let icon_url = if f.address == "native" {
+                        let icon_url = if let Some(m) = &f.token_metadata {
+                            if !m.logo.is_empty() {
+                                m.logo.clone()
+                            } else if f.address == "native" {
+                                NATIVE_TOKEN_ICONS.get(&symbol).unwrap_or(&"").to_string()
+                            } else {
+                                // Skip if no logo is available for non-native tokens
+                                continue;
+                            }
+                        } else if f.address == "native" {
                             NATIVE_TOKEN_ICONS.get(&symbol).unwrap_or(&"").to_string()
                         } else {
-                            // If there's no token_metadata or no logo, skip the asset
-                            // as a possible spam token
-                            match &f.token_metadata {
-                                Some(m) => m.logo.clone(),
-                                None => continue,
-                            }
+                            // Skip if no token_metadata for non-native tokens
+                            continue;
                         };
 
                         let new_item = TokenMetadataCacheItem {
