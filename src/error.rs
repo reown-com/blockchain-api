@@ -1,6 +1,8 @@
 use {
     crate::{
-        handlers::sessions::get::InternalGetSessionContextError,
+        handlers::{
+            chain_agnostic::route::RouteSolanaError, sessions::get::InternalGetSessionContextError,
+        },
         project::ProjectDataError,
         storage::error::StorageError,
         utils::crypto::{CaipNamespaces, CryptoUitlsError},
@@ -256,6 +258,9 @@ pub enum RpcError {
 
     #[error("Simulation failed: {0}")]
     SimulationFailed(String),
+
+    #[error("Route solana: {0}")]
+    RouteSolana(#[from] RouteSolanaError),
 }
 
 impl IntoResponse for RpcError {
@@ -672,6 +677,7 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+            Self::RouteSolana(e) => e.into_response(),
             // Any other errors considering as 500
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,

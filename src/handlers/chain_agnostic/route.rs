@@ -31,9 +31,10 @@ use {
     alloy::primitives::{Address, U256, U64},
     axum::{
         extract::{ConnectInfo, Query, State},
+        response::{IntoResponse, Response},
         Json,
     },
-    hyper::HeaderMap,
+    hyper::{HeaderMap, StatusCode},
     serde::{Deserialize, Serialize},
     serde_json::json,
     std::{
@@ -57,8 +58,8 @@ use {
             Transaction,
         },
         solana::{
-            self, SolanaCommitmentConfig, SolanaPubkey, SolanaRpcClient,
-            SolanaVersionedTransaction, SOLANA_CHAIN_ID,
+            self, SolanaCommitmentConfig, SolanaParsePubkeyError, SolanaPubkey, SolanaRpcClient,
+            SolanaVersionedTransaction, SOLANA_MAINNET_CAIP2, SOLANA_MAINNET_CHAIN_ID,
         },
     },
 };
@@ -483,17 +484,17 @@ async fn handler_internal(
             let results = request_payload
                 .accounts.iter()
                 .map(|a| {
-                    let caip10_parts = a.splitn(3, ":").collect::<Vec<_>>();
-                    let namespace = caip10_parts.first().ok_or(RpcError::InvalidParameter(
+                    let mut caip10_parts = a.splitn(3, ":");
+                    let namespace = caip10_parts.next().ok_or(RpcError::InvalidParameter(
                         "The account is not a valid CAIP-10 address: missing namespace".to_string(),
                     ))?;
-                    let reference = caip10_parts.get(1).ok_or(RpcError::InvalidParameter(
+                    let reference = caip10_parts.next().ok_or(RpcError::InvalidParameter(
                         "The account is not a valid CAIP-10 address: missing reference".to_string(),
                     ))?;
-                    let address = caip10_parts.get(2).ok_or(RpcError::InvalidParameter(
+                    let address = caip10_parts.next().ok_or(RpcError::InvalidParameter(
                         "The account is not a valid CAIP-10 address: missing address".to_string(),
                     ))?;
-                    Ok((namespace.to_owned(), reference.to_owned(), address.to_owned()))
+                    Ok((namespace, reference, address))
                 })
                 .collect::<Result<Vec<_>, RpcError>>()?;
             let mut accounts = Vec::with_capacity(results.len());
@@ -865,13 +866,14 @@ async fn handler_internal(
                 .filter_map(|a| a.split_once(":"))
             // skip any malformed CAIP-10 addresses without 3 colons
             {
-                let account_sol = SolanaPubkey::from_str(account).unwrap();
+                let account_sol = SolanaPubkey::from_str(account).map_err(|e| {
+                    RouteSolanaError::Request(RouteSolanaRequestError::MalformedSolanaAccount(e))
+                })?;
                 solana_accounts.push((chain_id, account_sol));
             }
 
-            let chain_id = SOLANA_CHAIN_ID; // TODO: make this dynamic
+            let (chain_id, solana_mainnet) = (SOLANA_MAINNET_CAIP2, SOLANA_MAINNET_CHAIN_ID); // TODO: make this dynamic
 
-            let solana_mainnet = chain_id.strip_prefix("solana:").unwrap();
             let mainnet_solana_accounts = solana_accounts
                 .iter()
                 .filter(|(chain_id, _)| chain_id == &solana_mainnet)
@@ -887,7 +889,7 @@ async fn handler_internal(
                 .get("https://li.quest/v1/quote/toAmount")
                 .query(&json!({
                     "fromChain": match bridge_chain_id.as_str() {
-                        solana::SOLANA_CHAIN_ID => "SOL",
+                        solana::SOLANA_MAINNET_CAIP2 => "SOL",
                         _ => return Err(RpcError::InvalidValue(bridge_chain_id)),
                     },
                     "toChain": match initial_tx_chain_id.as_str() {
@@ -904,10 +906,12 @@ async fn handler_internal(
                 }))
                 .send()
                 .await
-                .unwrap() // TODO handle unwrap error
+                .map_err(|e| RouteSolanaError::Internal(RouteSolanaInternalError::Request(e)))?
                 .json::<serde_json::Value>()
                 .await
-                .unwrap(); // TODO handle unwrap error
+                .map_err(|e| {
+                    RouteSolanaError::Internal(RouteSolanaInternalError::JsonDeserialization(e))
+                })?;
             debug!("Quote: {}", serde_json::to_string_pretty(&quote).unwrap());
 
             #[derive(Debug, Serialize, Deserialize)]
@@ -922,11 +926,22 @@ async fn handler_internal(
                 data: String,
             }
 
-            let quote = serde_json::from_value::<Quote>(quote).unwrap(); // TODO handle unwrap error
+            let quote = serde_json::from_value::<Quote>(quote).map_err(|e| {
+                RouteSolanaError::Internal(RouteSolanaInternalError::QuoteDeserialization(e))
+            })?;
             let data = data_encoding::BASE64
                 .decode(quote.transaction_request.data.as_bytes())
-                .unwrap(); // TODO handle unwrap error
-            let tx = solana::bincode::deserialize::<SolanaVersionedTransaction>(&data).unwrap(); // TODO handle unwrap error
+                .map_err(|e| {
+                    RouteSolanaError::Internal(RouteSolanaInternalError::TransactionRequestDecode(
+                        e,
+                    ))
+                })?;
+            let tx =
+                solana::bincode::deserialize::<SolanaVersionedTransaction>(&data).map_err(|e| {
+                    RouteSolanaError::Internal(
+                        RouteSolanaInternalError::TransactionRequestDeserialization(e),
+                    )
+                })?;
 
             (
                 vec![tx]
@@ -1086,4 +1101,46 @@ fn construct_metrics_bridging_route(
         "{}:{}->{}:{}",
         from_chain_id, from_contract, to_chain_id, to_contract
     )
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum RouteSolanaError {
+    #[error("Internal: {0}")]
+    Internal(RouteSolanaInternalError),
+
+    #[error("Request: {0}")]
+    Request(RouteSolanaRequestError),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum RouteSolanaInternalError {
+    #[error("Request: {0}")]
+    Request(reqwest::Error),
+
+    #[error("JSON deserialization: {0}")]
+    JsonDeserialization(reqwest::Error),
+
+    #[error("Quote deserialization: {0}")]
+    QuoteDeserialization(serde_json::Error),
+
+    #[error("Transaction request decode: {0}")]
+    TransactionRequestDecode(data_encoding::DecodeError),
+
+    #[error("Transaction request deserialization: {0}")]
+    TransactionRequestDeserialization(solana::bincode::Error),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum RouteSolanaRequestError {
+    #[error("Malformed Solana account: {0}")]
+    MalformedSolanaAccount(SolanaParsePubkeyError),
+}
+
+impl RouteSolanaError {
+    pub fn into_response(&self) -> Response {
+        match self {
+            Self::Internal(_e) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            Self::Request(e) => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
+        }
+    }
 }
