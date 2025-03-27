@@ -19,8 +19,8 @@ use {
                 HistoryTransactionURLItem,
             },
         },
-        providers::{BalanceProviderFactory, ProviderKind},
-        storage::{error::StorageError, KeyValueStorage},
+        providers::{BalanceProviderFactory, ProviderKind, TokenMetadataCacheProvider},
+        storage::error::StorageError,
         utils::crypto::{CaipNamespaces, SOLANA_NATIVE_TOKEN_ADDRESS},
         Metrics,
     },
@@ -42,7 +42,6 @@ const TOKEN_PRICE_URL: &str = "https://pro-api.solscan.io/v2.0/token/price";
 const ACCOUNT_DETAIL_URL: &str = "https://pro-api.solscan.io/v2.0/account/detail";
 
 // Caching TTL paramters
-const METADATA_CACHE_TTL: u64 = 60 * 60 * 24; // 24 hours
 const PRICING_CACHE_TTL: u64 = 60 * 5; // 5 minutes
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -62,7 +61,6 @@ struct TokenInfoResponse {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 struct TokenMetaData {
-    pub address: String,
     pub name: String,
     pub symbol: String,
     pub decimals: u8,
@@ -103,11 +101,6 @@ impl SolScanProvider {
             .header("token", self.api_v2_token.clone())
             .send()
             .await
-    }
-
-    /// Construct the cache key for the metadata
-    fn format_cache_metadata_key(&self, address: &str) -> String {
-        format!("solscan/metadata/{}", address)
     }
 
     /// Construct the cache key for the pricing
@@ -222,15 +215,6 @@ impl SolScanProvider {
         address: &str,
         metrics: Arc<Metrics>,
     ) -> Result<TokenMetaData, RpcError> {
-        // Check the metadata from the cache first
-        if let Some(redis_pool) = self
-            .get_cache(&self.format_cache_metadata_key(address), metrics.clone())
-            .await?
-        {
-            let metadata: TokenMetaData = serde_json::from_str(&redis_pool)?;
-            return Ok(metadata);
-        }
-
         let mut url =
             Url::parse(TOKEN_METADATA_URL).map_err(|_| RpcError::FungiblePriceParseURLError)?;
         url.query_pairs_mut().append_pair("address", address);
@@ -256,40 +240,28 @@ impl SolScanProvider {
         }
         let body = response.json::<TokenInfoResponse>().await?;
         let response = TokenMetaData {
-            address: body.data.address,
             name: body.data.name,
             symbol: body.data.symbol,
             decimals: body.data.decimals,
             icon: body.data.icon,
             price: body.data.price,
         };
-
-        // Cache the metadata from the response
-        self.set_cache(
-            &self.format_cache_metadata_key(address),
-            &serde_json::to_string(&response)?,
-            METADATA_CACHE_TTL,
-            metrics,
-        )
-        .await?;
-
         Ok(response)
     }
 
     async fn get_token_info(
         &self,
         address: &str,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> Result<TokenMetaData, RpcError> {
+        let price = self
+            .token_price_request(SOLANA_NATIVE_TOKEN_ADDRESS, metrics.clone())
+            .await?;
         // Respond instantly for the native token (SOL) metadata with making just a price request
         // since metadata is static
         if address == SOLANA_NATIVE_TOKEN_ADDRESS {
-            let price = self
-                .token_price_request(SOLANA_NATIVE_TOKEN_ADDRESS, metrics.clone())
-                .await?;
-
             return Ok(TokenMetaData {
-                address: SOLANA_NATIVE_TOKEN_ADDRESS.to_string(),
                 name: "Solana".to_string(),
                 symbol: "SOL".to_string(),
                 decimals: 9,
@@ -298,7 +270,45 @@ impl SolScanProvider {
             });
         }
 
+        let caip10_address = format!("{}:{}", SOLANA_MAINNET_CHAIN_ID, address);
+        match metadata_cache.get_metadata(&caip10_address).await {
+            Ok(Some(metadata)) => {
+                return Ok(TokenMetaData {
+                    name: metadata.name,
+                    symbol: metadata.symbol,
+                    decimals: metadata.decimals,
+                    icon: Some(metadata.icon_url),
+                    price,
+                });
+            }
+            Ok(None) => {}
+            Err(_) => {
+                error!("Error when getting the token metadata from the cache");
+            }
+        }
+
         let metadata = self.token_metadata_request(address, metrics).await?;
+
+        // Cache the metadata
+        let token_metadata = TokenMetadataCacheItem {
+            name: metadata.name.clone(),
+            symbol: metadata.symbol.clone(),
+            decimals: metadata.decimals,
+            icon_url: metadata.icon.clone().unwrap_or_default(),
+        };
+        {
+            let metadata_cache = metadata_cache.clone();
+            let caip10_address = caip10_address.clone();
+            tokio::spawn(async move {
+                if let Err(e) = metadata_cache
+                    .set_metadata(&caip10_address, &token_metadata)
+                    .await
+                {
+                    error!("Error when setting the token metadata to the cache: {e}");
+                }
+            });
+        }
+
         Ok(metadata)
     }
 
@@ -397,12 +407,11 @@ enum HistoryActivityType {
 
 #[async_trait]
 impl BalanceProvider for SolScanProvider {
-    #[tracing::instrument(skip(self), fields(provider = "SolScan"), level = "debug")]
     async fn get_balance(
         &self,
         address: String,
         _params: BalanceQueryParams,
-        _metadata_cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody> {
         let mut url = Url::parse(ACCOUNT_TOKENS_URL).map_err(|_| RpcError::BalanceParseURLError)?;
@@ -435,7 +444,7 @@ impl BalanceProvider for SolScanProvider {
                 .await
                 .unwrap_or(0.0);
             let token_metadata = self
-                .get_token_info(&item.token_address, metrics.clone())
+                .get_token_info(&item.token_address, metadata_cache, metrics.clone())
                 .await?;
             let decimal_amount = item.amount as f64 / 10f64.powf(item.token_decimals as f64);
             let balance_item = BalanceItem {
@@ -458,13 +467,13 @@ impl BalanceProvider for SolScanProvider {
         let sol_balance = self.get_sol_balance(&address, metrics.clone()).await?;
         if sol_balance > 0.0 {
             let sol_metadata = self
-                .get_token_info(SOLANA_NATIVE_TOKEN_ADDRESS, metrics)
+                .get_token_info(SOLANA_NATIVE_TOKEN_ADDRESS, metadata_cache, metrics)
                 .await?;
             let sol_balance_item = BalanceItem {
                 name: sol_metadata.name,
                 symbol: sol_metadata.symbol,
                 chain_id: Some(SOLANA_MAINNET_CHAIN_ID.to_string()),
-                address: sol_metadata.address.into(),
+                address: Some(SOLANA_NATIVE_TOKEN_ADDRESS.to_string()),
                 value: Some(sol_balance * sol_metadata.price),
                 price: sol_metadata.price,
                 quantity: BalanceQuantity {
@@ -501,11 +510,11 @@ impl BalanceProviderFactory<SolScanConfig> for SolScanProvider {
 
 #[async_trait]
 impl HistoryProvider for SolScanProvider {
-    #[tracing::instrument(skip(self, params), fields(provider = "SolScan"), level = "debug")]
     async fn get_transactions(
         &self,
         address: String,
         params: HistoryQueryParams,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<HistoryResponseBody> {
         let page_size = 100;
@@ -542,7 +551,7 @@ impl HistoryProvider for SolScanProvider {
         let mut transactions: Vec<HistoryTransaction> = Vec::new();
         for item in &body.data {
             let token_info = self
-                .get_token_info(&item.token_address, metrics.clone())
+                .get_token_info(&item.token_address, metadata_cache, metrics.clone())
                 .await?;
             let decimal_amount = item.amount as f64 / 10f64.powf(token_info.decimals as f64);
             let transaction = HistoryTransaction {
@@ -609,12 +618,12 @@ impl HistoryProvider for SolScanProvider {
 
 #[async_trait]
 impl FungiblePriceProvider for SolScanProvider {
-    #[tracing::instrument(skip(self), fields(provider = "SolScan"), level = "debug")]
     async fn get_price(
         &self,
         chain_id: &str,
         address: &str,
         currency: &SupportedCurrencies,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<PriceResponseBody> {
         if currency != &SupportedCurrencies::USD {
@@ -623,7 +632,9 @@ impl FungiblePriceProvider for SolScanProvider {
             ));
         }
 
-        let info = self.get_token_info(address, metrics.clone()).await?;
+        let info = self
+            .get_token_info(address, metadata_cache, metrics.clone())
+            .await?;
         let price = self.token_price_request(address, metrics).await?;
         let response = PriceResponseBody {
             fungibles: vec![FungiblePriceItem {

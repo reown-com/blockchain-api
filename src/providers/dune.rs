@@ -4,14 +4,12 @@ use {
         env::DuneConfig,
         error::{RpcError, RpcResult},
         handlers::balance::{
-            get_cached_metadata, set_cached_metadata, BalanceQueryParams, BalanceResponseBody,
-            TokenMetadataCacheItem, H160_EMPTY_ADDRESS,
+            BalanceQueryParams, BalanceResponseBody, TokenMetadataCacheItem, H160_EMPTY_ADDRESS,
         },
         providers::{
             balance::{BalanceItem, BalanceQuantity},
-            ProviderKind,
+            ProviderKind, TokenMetadataCacheProvider,
         },
-        storage::KeyValueStorage,
         utils::{capitalize_first_letter, crypto},
         Metrics,
     },
@@ -152,12 +150,11 @@ impl DuneProvider {
 
 #[async_trait]
 impl BalanceProvider for DuneProvider {
-    #[tracing::instrument(skip(self, params), fields(provider = "Dune"), level = "debug")]
     async fn get_balance(
         &self,
         address: String,
         params: BalanceQueryParams,
-        metadata_cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody> {
         let namespace = params
@@ -221,58 +218,65 @@ impl BalanceProvider for DuneProvider {
             // Get token metadata from the cache or update it
             // Skip the asset if no cached metadata from other providers were added
             // and the current response metadata is empty as a possible spam token
-            let token_metadata =
-                match get_cached_metadata(metadata_cache, &caip10_token_address_strict).await {
-                    Some(cached) => cached,
-                    None => {
-                        // Skip if missing required fields and no such metadata
+            let token_metadata = match metadata_cache
+                .get_metadata(&caip10_token_address_strict)
+                .await
+            {
+                Ok(Some(cached)) => cached,
+                Ok(None) => {
+                    // Skip if missing required fields and no such metadata
+                    // as a possible spam token
+                    let Some(symbol) = f.symbol else {
+                        continue;
+                    };
+
+                    // Determine name
+                    let name = if f.address == "native" {
+                        capitalize_first_letter(&f.chain)
+                    } else {
+                        symbol.clone()
+                    };
+
+                    // Determine icon URL
+                    let icon_url = if f.address == "native" {
+                        NATIVE_TOKEN_ICONS.get(&symbol).unwrap_or(&"").to_string()
+                    } else {
+                        // If there's no token_metadata or no logo, skip the asset
                         // as a possible spam token
-                        let Some(symbol) = f.symbol else {
-                            continue;
-                        };
-
-                        // Determine name
-                        let name = if f.address == "native" {
-                            capitalize_first_letter(&f.chain)
-                        } else {
-                            symbol.clone()
-                        };
-
-                        // Determine icon URL
-                        let icon_url = if f.address == "native" {
-                            NATIVE_TOKEN_ICONS.get(&symbol).unwrap_or(&"").to_string()
-                        } else {
-                            // If there's no token_metadata or no logo, skip the asset
-                            // as a possible spam token
-                            match &f.token_metadata {
-                                Some(m) => m.logo.clone(),
-                                None => continue,
-                            }
-                        };
-
-                        let new_item = TokenMetadataCacheItem {
-                            name: name.clone(),
-                            symbol: symbol.clone(),
-                            icon_url: icon_url.clone(),
-                        };
-
-                        // Spawn a background task to update the cache without blocking
-                        {
-                            let metadata_cache = metadata_cache.clone();
-                            let address_key = caip10_token_address_strict.clone();
-                            let new_item_to_store = new_item.clone();
-                            tokio::spawn(async move {
-                                set_cached_metadata(
-                                    &metadata_cache,
-                                    &address_key,
-                                    &new_item_to_store,
-                                )
-                                .await;
-                            });
+                        match &f.token_metadata {
+                            Some(m) => m.logo.clone(),
+                            None => continue,
                         }
-                        new_item
+                    };
+
+                    let new_item = TokenMetadataCacheItem {
+                        name: name.clone(),
+                        symbol: symbol.clone(),
+                        icon_url: icon_url.clone(),
+                        decimals,
+                    };
+
+                    // Spawn a background task to update the cache without blocking
+                    {
+                        let metadata_cache = metadata_cache.clone();
+                        let address_key = caip10_token_address_strict.clone();
+                        let new_item_to_store = new_item.clone();
+                        tokio::spawn(async move {
+                            if let Err(e) = metadata_cache
+                                .set_metadata(&address_key, &new_item_to_store)
+                                .await
+                            {
+                                error!("Failed to update token metadata cache: {:?}", e);
+                            }
+                        });
                     }
-                };
+                    new_item
+                }
+                Err(e) => {
+                    error!("Error getting token metadata: {:?}", e);
+                    continue;
+                }
+            };
 
             // Construct the final BalanceItem
             let balance_item = BalanceItem {
