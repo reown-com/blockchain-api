@@ -4,7 +4,10 @@ use {
         env::{BalanceProviderConfig, ProviderConfig},
         error::{RpcError, RpcResult},
         handlers::{
-            balance::{self, BalanceQueryParams, BalanceResponseBody, TokenMetadataCacheItem},
+            balance::{
+                self, BalanceQueryParams, BalanceResponseBody, TokenMetadataCache,
+                TokenMetadataCacheItem,
+            },
             convert::{
                 allowance::{AllowanceQueryParams, AllowanceResponseBody},
                 approve::{ConvertApproveQueryParams, ConvertApproveResponseBody},
@@ -33,7 +36,6 @@ use {
             portfolio::{PortfolioQueryParams, PortfolioResponseBody},
             RpcQueryParams, SupportedCurrencies,
         },
-        storage::KeyValueStorage,
         utils::crypto::{CaipNamespaces, Erc20FunctionType},
         Metrics,
     },
@@ -212,6 +214,8 @@ pub struct ProviderRepository {
     pub chain_orchestrator_provider: Arc<dyn ChainOrchestrationProvider>,
     pub simulation_provider: Arc<dyn SimulationProvider>,
 
+    pub token_metadata_cache: Arc<dyn TokenMetadataCacheProvider>,
+
     prometheus_client: Option<prometheus_http_query::Client>,
     prometheus_workspace_header: String,
 }
@@ -340,6 +344,8 @@ impl ProviderRepository {
             None,
         ));
 
+        let token_metadata_cache = Arc::new(TokenMetadataCache::new(redis_pool.clone()));
+
         Self {
             rpc_supported_chains: SupportedChains {
                 http: HashSet::new(),
@@ -364,6 +370,7 @@ impl ProviderRepository {
             bundler_ops_provider,
             chain_orchestrator_provider,
             simulation_provider,
+            token_metadata_cache,
         }
     }
 
@@ -901,6 +908,7 @@ pub trait HistoryProvider: Send + Sync {
         &self,
         address: String,
         params: HistoryQueryParams,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<HistoryResponseBody>;
 
@@ -965,7 +973,7 @@ pub trait BalanceProvider: Send + Sync {
         &self,
         address: String,
         params: BalanceQueryParams,
-        metadata_cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody>;
 
@@ -983,6 +991,7 @@ pub trait FungiblePriceProvider: Send + Sync {
         chain_id: &str,
         address: &str,
         currency: &SupportedCurrencies,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<PriceResponseBody>;
 }
@@ -1141,5 +1150,22 @@ pub trait SimulationProvider: Send + Sync {
         contract_address: Address,
         function_type: Option<Erc20FunctionType>,
         gas: u64,
+    ) -> Result<(), RpcError>;
+}
+
+/// Provider for Tokens metadata caching
+#[async_trait]
+pub trait TokenMetadataCacheProvider: Send + Sync {
+    /// Get the cached metadata for the token
+    async fn get_metadata(
+        &self,
+        caip10_token_address: &str,
+    ) -> Result<Option<TokenMetadataCacheItem>, RpcError>;
+
+    /// Save to the cache the metadata for the token
+    async fn set_metadata(
+        &self,
+        caip10_token_address: &str,
+        item: &TokenMetadataCacheItem,
     ) -> Result<(), RpcError>;
 }

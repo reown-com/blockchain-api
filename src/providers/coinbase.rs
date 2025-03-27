@@ -13,7 +13,7 @@ use {
                 quotes::{OnRampBuyQuotesParams, OnRampBuyQuotesResponse},
             },
         },
-        providers::ProviderKind,
+        providers::{ProviderKind, TokenMetadataCacheProvider},
         utils::crypto::ChainId,
         Metrics,
     },
@@ -96,11 +96,11 @@ pub struct CoinbasePurchaseAmount {
 
 #[async_trait]
 impl HistoryProvider for CoinbaseProvider {
-    #[tracing::instrument(skip(self, params), fields(provider = "Coinbase"), level = "debug")]
     async fn get_transactions(
         &self,
         address: String,
         params: HistoryQueryParams,
+        _metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<HistoryResponseBody> {
         let base = format!("{}/buy/user/{}/transactions", &self.base_api_url, &address);
