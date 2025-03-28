@@ -146,7 +146,7 @@ dashboard.new(
   row.new('RPC Proxy Metrics'),
     panels.proxy.calls(ds, vars)                     { gridPos: pos._3 },
     panels.proxy.latency(ds, vars)                   { gridPos: pos._3 },
-    panels.proxy.chains_unavailability(ds, vars)       { gridPos: pos._3 },
+    panels.proxy.chains_unavailability(ds, vars)     { gridPos: pos._3 },
     panels.proxy.errors_provider(ds, vars)           { gridPos: pos._3 },
     panels.proxy.provider_retries(ds, vars)          { gridPos: pos._3 },
     panels.proxy.http_codes(ds, vars)                { gridPos: pos._3 },
@@ -159,6 +159,7 @@ dashboard.new(
     panels.status.provider(ds, vars, 'Bungee')       { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Tenderly')     { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Dune')         { gridPos: pos._4 },
+    panels.status.provider(ds, vars, 'Meld')         { gridPos: pos._4 },
   
   row.new('Non-RPC providers Latency'),
     panels.non_rpc.endpoints_latency(ds, vars, 'Zerion')       { gridPos: pos._4 },
@@ -168,6 +169,7 @@ dashboard.new(
     panels.non_rpc.endpoints_latency(ds, vars, 'Bungee')       { gridPos: pos._4 },
     panels.non_rpc.endpoints_latency(ds, vars, 'Tenderly')     { gridPos: pos._4 },
     panels.non_rpc.endpoints_latency(ds, vars, 'Dune')         { gridPos: pos._4 },
+    panels.non_rpc.endpoints_latency(ds, vars, 'Meld')         { gridPos: pos._4 },
 
   row.new('Non-RPC providers Cache'),
     panels.non_rpc.cache_latency(ds, vars)      { gridPos: pos._2 },
