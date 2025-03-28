@@ -28,12 +28,14 @@ pub struct PreOrderRequest {
     pub crypto_currency: Option<String>,
     
     /// Specify whether the requested amount is in fiat:1 or crypto:2
-    pub amount_type: i32,
+    //pub amount_type: i32,
 
     
     /// Requested amount. Fraction is 8
-    pub requested_amount: String,
+    //pub requested_amount: String,
     
+    pub fiat_amount: String,
+
     /// The payment method code from payment method list API.
 
     pub pay_method_code: Option<String>,
@@ -243,10 +245,9 @@ impl BinanceExchange {
             external_order_id: "1234567890".to_string(),
             fiat_currency: Some("USD".to_string()),
             crypto_currency: Some("USDC".to_string()),
-            amount_type: 2,
-            requested_amount: "100".to_string(),
-            pay_method_code: Some("BUY_P2P".to_string()),
-            pay_method_sub_code: Some("BANK".to_string()),
+            fiat_amount: "20".to_string(),
+            pay_method_code: Some("BUY_WALLET".to_string()),
+            pay_method_sub_code: Some("Wallet".to_string()),
             network: "BASE".to_string(),
             address: "0x81D8C68Be5EcDC5f927eF020Da834AA57cc3Bd24".to_string(),
             memo: None,
