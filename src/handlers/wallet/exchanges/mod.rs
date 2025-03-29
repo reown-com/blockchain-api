@@ -1,4 +1,4 @@
-use crate::state::AppState;
+use crate::{state::AppState, utils::crypto::Caip19Asset};
 use axum::extract::State;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -27,6 +27,13 @@ pub struct Exchange {
     pub name: String,
     pub image_url: Option<String>,
 }
+
+pub struct GetBuyUrlParams {
+    pub asset: Caip19Asset,
+    pub amount: usize,
+    pub recipient: String
+}
+
 
 pub trait ExchangeProvider {
     fn id(&self) -> &'static str;
@@ -80,12 +87,11 @@ impl ExchangeType {
     pub async fn get_buy_url(
         &self,
         state: State<Arc<AppState>>,
-        asset: &str,
-        amount: &str,
+        params: GetBuyUrlParams,
     ) -> Result<String, ExchangeError> {
         match self {
-            ExchangeType::Binance => BinanceExchange::get_buy_url(state, asset, amount).await,
-            ExchangeType::Coinbase => CoinbaseExchange::get_buy_url(state, asset, amount).await,
+            ExchangeType::Binance => BinanceExchange::get_buy_url(state, params).await,
+            ExchangeType::Coinbase => CoinbaseExchange::get_buy_url(state, params).await,
         }
     }
 }

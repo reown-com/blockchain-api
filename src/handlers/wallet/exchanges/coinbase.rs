@@ -1,4 +1,4 @@
-use crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider};
+use crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider, GetBuyUrlParams};
 use crate::state::AppState;
 use axum::extract::State;
 use serde::{Deserialize, Serialize};
@@ -77,8 +77,7 @@ impl CoinbaseExchange {
     
     pub async fn get_buy_url(
         state: State<Arc<AppState>>,
-        _asset: &str,
-        _amount: &str,
+        params: GetBuyUrlParams,
     ) -> Result<String, ExchangeError> {
 
         let project_id = state.config.exchanges.coinbase_project_id.as_ref()
@@ -86,11 +85,10 @@ impl CoinbaseExchange {
 
         let mut url = Url::parse(COINBASE_ONE_CLICK_BUY_URL).map_err(|e| ExchangeError::InternalError(e.to_string()))?;
         
-
         let mut addresses = HashMap::new();
         addresses.insert(
-            "0x81D8C68Be5EcDC5f927eF020Da834AA57cc3Bd24".to_string(),
-            vec!["base".to_string(), "ethereum".to_string()]
+            params.recipient,
+            vec!["base".to_string()]
         );
         let addresses_json = serde_json::to_string(&addresses)
             .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize addresses: {}", e)))?;
@@ -99,13 +97,10 @@ impl CoinbaseExchange {
         let assets_json = serde_json::to_string(&assets)
             .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize assets: {}", e)))?;
 
-        
-
         url.query_pairs_mut().append_pair("appId", &project_id);
         url.query_pairs_mut().append_pair("defaultAsset", &"USDC");
         url.query_pairs_mut().append_pair("defaultPaymentMethod", &"CRYPTO_ACCOUNT");
-        url.query_pairs_mut().append_pair("fiatCurrency", &"USD");
-        url.query_pairs_mut().append_pair("presetFiatAmount", &"10");
+        url.query_pairs_mut().append_pair("presetCryptoAmount", &params.amount.to_string());
         url.query_pairs_mut().append_pair("defaultNetwork", &"base");
         url.query_pairs_mut().append_pair("addresses", &addresses_json);
         url.query_pairs_mut().append_pair("assets", &assets_json);

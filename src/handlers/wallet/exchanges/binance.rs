@@ -1,4 +1,4 @@
-use crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider};
+use crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider, GetBuyUrlParams};
 use crate::state::AppState;
 use axum::extract::State;
 use std::sync::Arc;
@@ -237,8 +237,7 @@ impl BinanceExchange {
 
     pub async fn get_buy_url(
         state: State<Arc<AppState>>,
-        asset: &str,
-        amount: &str,
+        params: GetBuyUrlParams,
     ) -> Result<String, ExchangeError> {
         let exchange = BinanceExchange;
         let request = PreOrderRequest {

@@ -1,8 +1,9 @@
 use {
-    crate::handlers::wallet::exchanges::ExchangeType,
+    crate::handlers::wallet::exchanges::{ExchangeType, GetBuyUrlParams},
     crate::{
         handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
         state::AppState,
+        utils::crypto::{Caip19Asset, disassemble_caip10},
     },
     axum::{
         extract::{ConnectInfo, Query, State},
@@ -22,6 +23,7 @@ pub struct GeneratePayUrlRequest {
     pub exchange_id: String,
     pub asset: String,
     pub amount: String,
+    pub recipient: String
 }
 
 #[derive(Debug, Serialize)]
@@ -68,13 +70,36 @@ async fn handler_internal(
     _query: Query<QueryParams>,
     request: GeneratePayUrlRequest,
 ) -> Result<GeneratePayUrlResponse, GetExchangeUrlError> {
-    // Get exchange URL
     let exchange = ExchangeType::from_id(&request.exchange_id).ok_or_else(|| {
         GetExchangeUrlError::ExchangeNotFound(format!("Exchange {} not found", request.exchange_id))
     })?;
 
+    let asset = Caip19Asset::parse(&request.asset).map_err(|e| GetExchangeUrlError::ValidationError(e.to_string()))?;
+
+    let (namespace, chain_id, address) = disassemble_caip10(&request.recipient).map_err(|e| GetExchangeUrlError::ValidationError(e.to_string()))?;
+    if namespace.to_string() != asset.chain_id().namespace() {
+        return Err(GetExchangeUrlError::ValidationError(
+            format!("Invalid recipient. CAIP-10 namespace must match asset namespace: {} != {}", namespace, asset.asset_namespace())
+        ));
+    }
+    if chain_id != asset.chain_id().reference() {
+        return Err(GetExchangeUrlError::ValidationError(
+            format!("Invalid recipient. CAIP-10 chainId must match asset chainId: {} != {}", chain_id, asset.asset_id())
+        ));
+    }
+
+    let amount = match usize::from_str_radix(
+        request.amount.trim_start_matches("0x"),
+        16
+    ) {
+        Ok(amount) => amount,
+        Err(_) => return Err(GetExchangeUrlError::ValidationError(
+            format!("Invalid amount. Expected a valid hexadecimal number: {}", request.amount)
+        )),
+    };
+
     let result = exchange
-        .get_buy_url(state, &request.asset, &request.amount)
+        .get_buy_url(state, GetBuyUrlParams { asset, amount, recipient: address })
         .await;
 
     match result {
@@ -82,12 +107,8 @@ async fn handler_internal(
         Err(e) => {
             info!(
                 error = %e,
-                exchange_id = %request.exchange_id,
-                asset = %request.asset,
-                amount = %request.amount,
                 "Failed to get exchange URL"
             );
-            info!("Error: {:?}", e);
             Err(GetExchangeUrlError::InternalError("Unable to get exchange URL".to_string()))
         }
     }
