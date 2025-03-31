@@ -80,7 +80,13 @@ async fn handler_internal(
         .ok_or_else(|| RpcError::UnsupportedNamespace(namespace))?;
 
     let response = provider
-        .get_price(&chain_id, &address, &query.currency, state.metrics.clone())
+        .get_price(
+            &chain_id,
+            &address,
+            &query.currency,
+            &state.providers.token_metadata_cache,
+            state.metrics.clone(),
+        )
         .await
         .tap_err(|e| {
             error!("Failed to call fungible price with {}", e);
