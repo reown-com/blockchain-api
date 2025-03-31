@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.212.1 - 2025-03-31
+#### Bug Fixes
+- refactoring the token metadata cache to become a global accessible (#1008) - (81a6ff3) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.212.0 - 2025-03-31
 #### Features
 - **(providers)** removing hardcoded EVM native token icons for Dune, decreasing Zerion priority (#1007) - (4024ecc) - Max Kalashnikoff | maksy.eth
