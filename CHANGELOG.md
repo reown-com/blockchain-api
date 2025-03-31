@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.212.0 - 2025-03-31
+#### Features
+- **(providers)** removing hardcoded EVM native token icons for Dune, decreasing Zerion priority (#1007) - (4024ecc) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.211.5 - 2025-03-27
 #### Bug Fixes
 - add custom metadata to wallet_getAssets response & remove unwraps() (#999) - (d546243) - Chris Smith
