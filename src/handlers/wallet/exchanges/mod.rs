@@ -1,10 +1,13 @@
-use crate::{state::AppState, utils::crypto::Caip19Asset};
-use axum::extract::State;
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
-use strum::IntoEnumIterator;
-use strum_macros::{AsRefStr, EnumIter};
-use thiserror::Error;
+use {
+    crate::{state::AppState, utils::crypto::Caip19Asset},
+    axum::extract::State,
+    serde::{Deserialize, Serialize},
+    std::sync::Arc,
+    strum::IntoEnumIterator,
+    strum_macros::{AsRefStr, EnumIter},
+    thiserror::Error,
+};
+
 pub mod binance;
 pub mod coinbase;
 
@@ -39,7 +42,7 @@ pub trait ExchangeProvider {
     fn id(&self) -> &'static str;
     fn name(&self) -> &'static str;
     fn image_url(&self) -> Option<&'static str>;
-
+    fn is_asset_supported(&self, asset: &Caip19Asset) -> bool;
     fn to_exchange(&self) -> Exchange {
         Exchange {
             id: self.id().to_string(),
@@ -97,10 +100,25 @@ impl ExchangeType {
             ExchangeType::Coinbase => CoinbaseExchange.get_buy_url(state, params).await,
         }
     }
+
+    pub fn is_asset_supported(&self, asset: &Caip19Asset) -> bool {
+        self.provider().is_asset_supported(asset)
+    }
 }
 
-pub fn get_supported_exchanges() -> Vec<Exchange> {
-    ExchangeType::iter().map(|e| e.to_exchange()).collect()
+pub fn get_supported_exchanges(asset: Option<String>) -> Result<Vec<Exchange>, ExchangeError> {
+    match asset {
+        Some(asset_str) => {
+            let asset = Caip19Asset::parse(&asset_str).map_err(|e| ExchangeError::ValidationError(e.to_string()))?;
+            Ok(ExchangeType::iter()
+                .filter(|e| e.is_asset_supported(&asset))
+                .map(|e| e.to_exchange())
+                .collect())
+        },
+        None => Ok(ExchangeType::iter()
+            .map(|e| e.to_exchange())
+            .collect())
+    }
 }
 
 pub fn get_exchange_by_id(id: &str) -> Option<Exchange> {

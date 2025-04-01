@@ -1,16 +1,18 @@
-use crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider, GetBuyUrlParams};
-use crate::state::AppState;
-use crate::utils::crypto::Caip19Asset;
-use axum::extract::State;
-use std::sync::Arc;
-use std::collections::HashMap;
-use once_cell::sync::Lazy;
-use serde::{Serialize, Deserialize};
-use base64::{Engine, engine::general_purpose::STANDARD};
-use tracing::debug;
-use openssl::pkey::PKey;
-use openssl::sign::Signer;
-use openssl::hash::MessageDigest;
+use {
+    crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider, GetBuyUrlParams},
+    crate::state::AppState,
+    crate::utils::crypto::Caip19Asset,
+    axum::extract::State,
+    std::sync::Arc,
+    std::collections::HashMap,
+    once_cell::sync::Lazy,
+    serde::{Serialize, Deserialize},
+    base64::{Engine, engine::general_purpose::STANDARD},
+    tracing::debug,
+    openssl::{pkey::PKey, sign::Signer, hash::MessageDigest},
+    uuid::Uuid,
+};
+
 pub struct BinanceExchange;
 
 const PRE_ORDER_PATH: &str = "/papi/v1/ramp/connect/buy/pre-order";
@@ -59,15 +61,12 @@ pub struct PreOrderRequest {
     pub crypto_currency: Option<String>,
     
     /// Specify whether the requested amount is in fiat:1 or crypto:2
-    //pub amount_type: i32,
-
+    //pub amount_type: i32, // TODO: Unsupported by Binance ATM
     /// Requested amount. Fraction is 8
     //pub requested_amount: String,
-    
     pub fiat_amount: String,
 
     /// The payment method code from payment method list API.
-
     pub pay_method_code: Option<String>,
     
     /// The payment method subcode from payment method list API.
@@ -80,14 +79,12 @@ pub struct PreOrderRequest {
     pub address: String,
     
     /// If blockchain required
-
     pub memo: Option<String>,
     
     /// The redirectUrl is for redirecting to your website if order is completed
     pub redirect_url: Option<String>,
     
     /// The redirectUrl is for redirecting to your website if order is failed
-
     pub fail_redirect_url: Option<String>,
     
     /// The redirectDeepLink is for redirecting to your APP if order is completed
@@ -175,6 +172,10 @@ impl ExchangeProvider for BinanceExchange {
 
     fn image_url(&self) -> Option<&'static str> {
         Some("https://cryptologos.cc/logos/binance-coin-bnb-logo.png")
+    }
+
+    fn is_asset_supported(&self, asset: &Caip19Asset) -> bool {
+        self.map_asset_to_binance_format(asset).is_ok()
     }
 }
 
@@ -327,18 +328,13 @@ impl BinanceExchange {
         params: GetBuyUrlParams,
     ) -> Result<String, ExchangeError> {
 
-        let (crypto_currency, network) = match self.map_asset_to_binance_format(&params.asset) {
-            Ok(result) => result,
-            Err(e) => return Err(e),
-        };
-        
-        let fiat_amount = "20".to_string();
+        let (crypto_currency, network) = self.map_asset_to_binance_format(&params.asset).map_err(|e| ExchangeError::ValidationError(e.to_string()))?;
         
         let is_supported = self.is_payment_method_supported(
             &state,
             DEFAULT_PAYMENT_METHOD_CODE,
             DEFAULT_PAYMENT_METHOD_SUB_CODE,
-            &fiat_amount,
+            &params.amount.to_string(),
             &crypto_currency
         ).await?;
         
@@ -347,12 +343,14 @@ impl BinanceExchange {
                 "Selected payment method is not supported for this transaction".to_string()
             ));
         }
-  
+
+        let order_id = Uuid::new_v4().to_string().replace("-", "");
+
         let request = PreOrderRequest {
-            external_order_id: "1234567890".to_string(),
+            external_order_id: order_id,
             fiat_currency: Some(DEFAULT_FIAT_CURRENCY.to_string()),
             crypto_currency: Some(crypto_currency),
-            fiat_amount,
+            fiat_amount: params.amount.to_string(), // USING CRYPTO AMOUNT AS FIAT AMOUNT - This is indended atm
             pay_method_code: Some(DEFAULT_PAYMENT_METHOD_CODE.to_string()),
             pay_method_sub_code: Some(DEFAULT_PAYMENT_METHOD_SUB_CODE.to_string()),
             network,
@@ -397,7 +395,6 @@ impl BinanceExchange {
         };
         
         let data: PaymentMethodListResponseData = self.send_post_request(state, PAYMENT_METHOD_LIST_PATH, &request).await?;
-        debug!("Payment method list response: {:?}", data);
 
         let method = data.payment_methods
             .iter()
@@ -432,4 +429,6 @@ impl BinanceExchange {
         
         Ok(true)
     }
+
+    
 }

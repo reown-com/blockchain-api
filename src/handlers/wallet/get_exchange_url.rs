@@ -1,5 +1,5 @@
 use {
-    crate::handlers::wallet::exchanges::{ExchangeType, GetBuyUrlParams},
+    crate::handlers::wallet::exchanges::{ExchangeType, GetBuyUrlParams, ExchangeError},
     crate::{
         handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
         state::AppState,
@@ -13,7 +13,7 @@ use {
     serde::{Deserialize, Serialize},
     std::{net::SocketAddr, sync::Arc},
     thiserror::Error,
-    tracing::info,
+    tracing::debug,
     wc::future::FutureExt,
 };
 
@@ -88,6 +88,12 @@ async fn handler_internal(
         ));
     }
 
+    if !exchange.is_asset_supported(&asset) {
+        return Err(GetExchangeUrlError::ValidationError(
+            format!("Asset {} is not supported by exchange {}", asset, request.exchange_id)
+        ));
+    }
+
     let amount = match usize::from_str_radix(
         request.amount.trim_start_matches("0x"),
         16
@@ -105,11 +111,18 @@ async fn handler_internal(
     match result {
         Ok(url) => Ok(GeneratePayUrlResponse { url }),
         Err(e) => {
-            info!(
-                error = %e,
-                "Failed to get exchange URL"
-            );
-            Err(GetExchangeUrlError::InternalError("Unable to get exchange URL".to_string()))
+            match e {
+                ExchangeError::ValidationError(msg) => {
+                    Err(GetExchangeUrlError::ValidationError(msg))
+                },
+                _ => {
+                    debug!(
+                        error = %e,
+                        "Internal error, unable to get exchange URL"
+                    );
+                    Err(GetExchangeUrlError::InternalError("Unable to get exchange URL".to_string()))
+                }
+            }
         }
     }
 }

@@ -1,12 +1,30 @@
-use crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider, GetBuyUrlParams};
-use crate::state::AppState;
-use axum::extract::State;
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
-use url::Url;
-use std::collections::HashMap;
+use {
+    crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider, GetBuyUrlParams},
+    crate::state::AppState,
+    crate::utils::crypto::Caip19Asset,
+    axum::extract::State,
+    serde::{Deserialize, Serialize},
+    std::sync::Arc,
+    url::Url,
+    std::collections::HashMap,
+    once_cell::sync::Lazy,
+};
 
 const COINBASE_ONE_CLICK_BUY_URL: &str = "https://pay.coinbase.com/buy/select-asset";
+const DEFAULT_PAYMENT_METHOD: &str = "CRYPTO_ACCOUNT";
+
+// CAIP-19 asset mappings to Coinbase assets
+static CAIP19_TO_COINBASE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
+    HashMap::from([
+        ("eip155:8453/erc20:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", "USDC"), // USDC on Base
+    ])
+});
+
+static CHAIN_ID_TO_COINBASE_NETWORK: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
+    HashMap::from([
+        ("eip155:8453", "base"), // Base
+    ])
+});
 
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -69,45 +87,70 @@ impl ExchangeProvider for CoinbaseExchange {
     fn image_url(&self) -> Option<&'static str> {
         Some("https://cdn.iconscout.com/icon/free/png-256/free-coinbase-logo-icon-download-in-svg-png-gif-file-formats--web-crypro-trading-platform-logos-pack-icons-7651204.png")
     }
+
+    fn is_asset_supported(&self, asset: &Caip19Asset) -> bool {
+        CAIP19_TO_COINBASE_CRYPTO.contains_key(asset.to_string().as_str())
+    }
 }
 
 impl CoinbaseExchange {
-   
 
-    
+    fn map_asset_to_coinbase_format(&self, asset: &Caip19Asset) -> Result<(String, String), ExchangeError> {
+        let full_caip19 = asset.to_string();
+        let chain_id = asset.chain_id().to_string();
+           
+        let crypto = CAIP19_TO_COINBASE_CRYPTO
+            .get(full_caip19.as_str())
+            .ok_or_else(|| ExchangeError::ValidationError(
+                format!("Unsupported asset: {}", full_caip19)
+            ))?
+            .to_string();   
+
+        let network = CHAIN_ID_TO_COINBASE_NETWORK
+            .get(chain_id.as_str())
+            .ok_or_else(|| ExchangeError::ValidationError(
+                format!("Unsupported chain ID: {}", chain_id)
+            ))?
+            .to_string();
+
+        Ok((crypto, network))
+    }
+
     pub async fn get_buy_url(
         &self,
         state: State<Arc<AppState>>,
         params: GetBuyUrlParams,
     ) -> Result<String, ExchangeError> {
-
         let project_id = state.config.exchanges.coinbase_project_id.as_ref()
-            .ok_or_else(|| ExchangeError::ConfigurationError("Coinbas exchange is not configured".to_string()))?;
+            .ok_or_else(|| ExchangeError::ConfigurationError("Coinbase exchange is not configured".to_string()))?;
 
-        let mut url = Url::parse(COINBASE_ONE_CLICK_BUY_URL).map_err(|e| ExchangeError::InternalError(e.to_string()))?;
+        let (crypto, network) = self.map_asset_to_coinbase_format(&params.asset)?;
         
-        let mut addresses = HashMap::new();
-        addresses.insert(
-            params.recipient,
-            vec!["base".to_string()]
-        );
-        let addresses_json = serde_json::to_string(&addresses)
-            .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize addresses: {}", e)))?;
+        let addresses = serde_json::to_string(&HashMap::from([(
+            params.recipient.clone(), 
+            vec![network.clone()]
+        )]))
+        .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize addresses: {}", e)))?;
         
-        let assets = vec!["USDC".to_string()];
-        let assets_json = serde_json::to_string(&assets)
+        let assets = serde_json::to_string(&vec![crypto.clone()])
             .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize assets: {}", e)))?;
 
-        url.query_pairs_mut().append_pair("appId", &project_id);
-        url.query_pairs_mut().append_pair("defaultAsset", &"USDC");
-        url.query_pairs_mut().append_pair("defaultPaymentMethod", &"CRYPTO_ACCOUNT");
-        url.query_pairs_mut().append_pair("presetCryptoAmount", &params.amount.to_string());
-        url.query_pairs_mut().append_pair("defaultNetwork", &"base");
-        url.query_pairs_mut().append_pair("addresses", &addresses_json);
-        url.query_pairs_mut().append_pair("assets", &assets_json);
+        let mut url = Url::parse(COINBASE_ONE_CLICK_BUY_URL)
+            .map_err(|e| ExchangeError::InternalError(format!("Failed to parse URL: {}", e)))?;
+        
+        url.query_pairs_mut()
+            .append_pair("appId", project_id)
+            .append_pair("defaultAsset", &crypto)
+            .append_pair("defaultPaymentMethod", DEFAULT_PAYMENT_METHOD)
+            .append_pair("presetCryptoAmount", &params.amount.to_string())
+            .append_pair("defaultNetwork", &network)
+            .append_pair("addresses", &addresses)
+            .append_pair("assets", &assets);
         
         Ok(url.to_string())
     }
+
+    
 }
 
 #[derive(Debug, Serialize, Deserialize)]

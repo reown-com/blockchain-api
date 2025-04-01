@@ -13,6 +13,7 @@ use {
     std::{net::SocketAddr, sync::Arc},
     thiserror::Error,
     wc::future::FutureExt,
+    tracing::debug,
 };
 
 #[derive(Debug, Deserialize)]
@@ -23,6 +24,10 @@ pub struct GetExchangesRequest {
     pub include_only: Option<Vec<String>>,
     #[serde(default)]
     pub exclude: Option<Vec<String>>,
+    #[serde(default)]
+    pub asset: Option<String>,
+    #[serde(default)]
+    pub amount: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -73,7 +78,16 @@ async fn handler_internal(
     _query: Query<QueryParams>,
     request: GetExchangesRequest,
 ) -> Result<GetExchangesResponse, GetExchangesError> {
-    let all_exchanges = get_supported_exchanges();
+    let all_exchanges = match get_supported_exchanges(request.asset.clone()) {
+        Ok(exchanges) => exchanges,
+        Err(err) => {
+            debug!("Error getting supported exchanges: {:?}, asset: {:?}", err, request.asset);
+            return Ok(GetExchangesResponse {
+                total: 0,
+                exchanges: vec![],
+            });
+        }
+    };
 
     let exchanges = match (&request.include_only, &request.exclude) {
         (Some(_), Some(_)) => {
