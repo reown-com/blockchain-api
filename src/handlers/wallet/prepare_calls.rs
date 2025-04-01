@@ -17,6 +17,7 @@ use tracing::error;
 use url::Url;
 use uuid::Uuid;
 use wc::future::FutureExt;
+use yttrium::bundler::pimlico::paymaster::client::PaymasterClient;
 use yttrium::erc7579::accounts::safe::encode_validator_key;
 use yttrium::erc7579::smart_sessions::ISmartSession::isPermissionEnabledReturn;
 use yttrium::erc7579::smart_sessions::{
@@ -179,10 +180,6 @@ async fn handler_internal(
     for request in request {
         let chain_id = ChainId::new_eip155(request.chain_id.to::<u64>());
 
-        if request.capabilities.paymaster_service.is_some() {
-            return Err(PrepareCallsError::PaymasterServiceUnsupported);
-        }
-
         // TODO check isSafe for request.from:
         // https://github.com/reown-com/web-examples/blob/32f9df464e2fa85ec49c21837d811cfe1437719e/advanced/wallets/react-wallet-v2/src/utils/UserOpBuilderUtil.ts#L39
         // What if it's not deployed yet?
@@ -275,7 +272,7 @@ async fn handler_internal(
                 )
             })?;
 
-        let user_operation = UserOperationV07 {
+        let user_op = UserOperationV07 {
             sender: request.from,
             nonce,
             factory: None,
@@ -293,45 +290,39 @@ async fn handler_internal(
             signature: dummy_signature,
         };
 
-        // TODO: Enable it after the Paymaster bundler error fix
-        // let user_op = {
-        //     let paymaster_client = PaymasterClient::new(BundlerConfig::new(
-        //         format!(
-        //             "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
-        //             chain_id.caip2_identifier(),
-        //             project_id,
-        //         )
-        //         .parse()
-        //         .unwrap(),
-        //     ));
+        let user_op = if let Some(paymaster_service) = request.capabilities.paymaster_service {
+            let paymaster_client = PaymasterClient::new(BundlerConfig::new(paymaster_service.url));
 
-        //     let sponsor_user_op_result = paymaster_client
-        //         .sponsor_user_operation_v07(
-        //             &user_operation.clone().into(),
-        //             &entry_point_config.address(),
-        //             None,
-        //         )
-        //         .await
-        //         .map_err(|e| {
-        //             PrepareCallsError::InternalError(PrepareCallsInternalError::Sponsorship(e))
-        //         })?;
-        //     UserOperationV07 {
-        //         call_gas_limit: sponsor_user_op_result.call_gas_limit,
-        //         verification_gas_limit: sponsor_user_op_result.verification_gas_limit,
-        //         pre_verification_gas: sponsor_user_op_result.pre_verification_gas,
-        //         paymaster: Some(sponsor_user_op_result.paymaster),
-        //         paymaster_verification_gas_limit: Some(
-        //             sponsor_user_op_result.paymaster_verification_gas_limit,
-        //         ),
-        //         paymaster_post_op_gas_limit: Some(
-        //             sponsor_user_op_result.paymaster_post_op_gas_limit,
-        //         ),
-        //         paymaster_data: Some(sponsor_user_op_result.paymaster_data),
-        //         ..user_operation
-        //     }
-        // };
+            let sponsor_user_op_result = paymaster_client
+                .sponsor_user_operation_v07(
+                    &user_op.clone().into(),
+                    &entry_point_config.address(),
+                    None,
+                )
+                .await
+                .map_err(|e| {
+                    PrepareCallsError::InternalError(PrepareCallsInternalError::Sponsorship(e))
+                })?;
 
-        let hash = user_operation.hash(
+            UserOperationV07 {
+                call_gas_limit: sponsor_user_op_result.call_gas_limit,
+                verification_gas_limit: sponsor_user_op_result.verification_gas_limit,
+                pre_verification_gas: sponsor_user_op_result.pre_verification_gas,
+                paymaster: Some(sponsor_user_op_result.paymaster),
+                paymaster_verification_gas_limit: Some(
+                    sponsor_user_op_result.paymaster_verification_gas_limit,
+                ),
+                paymaster_post_op_gas_limit: Some(
+                    sponsor_user_op_result.paymaster_post_op_gas_limit,
+                ),
+                paymaster_data: Some(sponsor_user_op_result.paymaster_data),
+                ..user_op
+            }
+        } else {
+            user_op
+        };
+
+        let hash = user_op.hash(
             &entry_point_config.address().to_address(),
             chain_id.eip155_chain_id(),
         );
@@ -339,7 +330,7 @@ async fn handler_internal(
         response.push(PrepareCallsResponseItem {
             prepared_calls: PreparedCalls {
                 r#type: SignatureRequestType::UserOpV7,
-                data: user_operation,
+                data: user_op,
                 chain_id: request.chain_id,
             },
             signature_request: SignatureRequest { hash },
