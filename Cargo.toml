@@ -122,7 +122,6 @@ bs58 = "0.5"
 regex = "1.10"
 sha256 = "1.5"
 uuid = { version = "1.13.1", features = ["serde"] }
-ed25519-dalek = "2.1"
 openssl = "0.10"
 
 
