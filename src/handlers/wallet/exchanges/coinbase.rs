@@ -76,6 +76,7 @@ impl CoinbaseExchange {
 
     
     pub async fn get_buy_url(
+        &self,
         state: State<Arc<AppState>>,
         params: GetBuyUrlParams,
     ) -> Result<String, ExchangeError> {

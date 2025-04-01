@@ -61,6 +61,9 @@ pub enum ExchangeError {
     #[error("Configuration error: {0}")]
     ConfigurationError(String),
 
+    #[error("Validation error: {0}")]
+    ValidationError(String),
+
     #[error("Get pay url error: {0}")]
     GetPayUrlError(String),
 
@@ -90,8 +93,8 @@ impl ExchangeType {
         params: GetBuyUrlParams,
     ) -> Result<String, ExchangeError> {
         match self {
-            ExchangeType::Binance => BinanceExchange::get_buy_url(state, params).await,
-            ExchangeType::Coinbase => CoinbaseExchange::get_buy_url(state, params).await,
+            ExchangeType::Binance => BinanceExchange.get_buy_url(state, params).await,
+            ExchangeType::Coinbase => CoinbaseExchange.get_buy_url(state, params).await,
         }
     }
 }

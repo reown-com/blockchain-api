@@ -1,16 +1,47 @@
 use crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider, GetBuyUrlParams};
 use crate::state::AppState;
+use crate::utils::crypto::Caip19Asset;
 use axum::extract::State;
 use std::sync::Arc;
+use std::collections::HashMap;
+use once_cell::sync::Lazy;
 use serde::{Serialize, Deserialize};
 use base64::{Engine, engine::general_purpose::STANDARD};
-use tracing::info;
+use tracing::debug;
 use openssl::pkey::PKey;
 use openssl::sign::Signer;
 use openssl::hash::MessageDigest;
 pub struct BinanceExchange;
 
 const PRE_ORDER_PATH: &str = "/papi/v1/ramp/connect/buy/pre-order";
+const PAYMENT_METHOD_LIST_PATH: &str = "/papi/v1/ramp/connect/buy/payment-method-list"; 
+const DEFAULT_FIAT_CURRENCY: &str = "USD";
+const DEFAULT_PAYMENT_METHOD_CODE: &str = "BUY_WALLET";
+const DEFAULT_PAYMENT_METHOD_SUB_CODE: &str = "Wallet";
+
+// CAIP-19 asset mappings to Binance assets
+static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
+    HashMap::from([
+        ("eip155:1/erc20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", "USDC"), // USDC on Ethereum
+        ("eip155:137/erc20:0x2791bca1f2de4661ed88a30c99a7a9449aa84174", "USDC"), // USDC on Polygon
+        ("eip155:8453/erc20:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", "USDC"), // USDC on Base
+        ("eip155:42161/erc20:0xaf88d065e77c8cc2239327c5edb3a432268e5831", "USDC"), // USDC on Arbitrum
+        ("eip155:1/slip44:60", "ETH"),  // Native ETH
+        ("solana:4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ/slip44:501", "SOL"), // Native SOL
+    ])
+});
+
+// CAIP-2 chain ID mappings to Binance networks
+static CHAIN_ID_TO_BINANCE_NETWORK: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
+    HashMap::from([
+        ("eip155:1", "ETH"),       // Ethereum
+        ("eip155:137", "MATIC"),   // Polygon
+        ("eip155:8453", "BASE"),   // Base
+        ("eip155:42161", "ARBITRUM"),   // Arbitrum
+        ("eip155:10", "OPTIMISM"),   // Optimism
+        ("solana:4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ", "SOL"), // Solana
+    ])
+});
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -30,7 +61,6 @@ pub struct PreOrderRequest {
     /// Specify whether the requested amount is in fiat:1 or crypto:2
     //pub amount_type: i32,
 
-    
     /// Requested amount. Fraction is 8
     //pub requested_amount: String,
     
@@ -82,19 +112,56 @@ pub struct Customization {
 
 }
 
-#[derive(Debug, Deserialize)]
-struct PreOrderResponse {
-    success: bool,
-    code: String,
-    message: String,
-    data: Option<PreOrderResponseData>,
-}
-
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct PreOrderResponseData {
     link: String,
     link_expire_time: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PaymentMethodListRequest {
+    pub fiat_currency: String,
+    pub crypto_currency: String,
+    pub total_amount: String,
+    pub amount_type: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+enum AmountType {
+    Fiat = 1,
+    Crypto = 2,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PaymentMethodListResponseData {
+    payment_methods: Vec<PaymentMethod>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PaymentMethod {
+    pay_method_code: Option<String>,
+    pay_method_sub_code: Option<String>,
+    payment_method: Option<String>,
+    fiat_min_limit: Option<String>,
+    fiat_max_limit: Option<String>,
+    crypto_min_limit: Option<String>,
+    crypto_max_limit: Option<String>,
+    p2p: Option<bool>,
+    withdraw_restriction: Option<i32>,
+}
+
+/// Base response structure for Binance API responses
+#[derive(Debug, Deserialize, Serialize)]
+struct BinanceResponse<T> {
+    success: Option<bool>,
+    code: String,
+    message: Option<String>,
+    data: Option<T>,
+    status: Option<String>,
 }
 
 impl ExchangeProvider for BinanceExchange {
@@ -146,13 +213,12 @@ impl BinanceExchange {
         let pkey = PKey::private_key_from_pkcs8(&key_bytes)
             .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to parse private key: {}", e)))?;
 
-        // For empty bodies, we only sign the timestamp
         let data_to_sign = if body.is_empty() || body == "{}" {
             timestamp.to_string()
         } else {
             format!("{}{}", body, timestamp)
         };
-        info!("Data to sign: {}", data_to_sign);
+        debug!("Data to sign: {}", data_to_sign);
 
         let mut signer = Signer::new(MessageDigest::sha256(), &pkey)
             .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to create signer: {}", e)))?;
@@ -163,46 +229,15 @@ impl BinanceExchange {
         Ok(STANDARD.encode(&signature))
     }
 
-    async fn send_get_request(
-        &self,
-        state: &Arc<AppState>,
-        path: &str,
-    ) -> Result<reqwest::Response, ExchangeError> {
-        let (client_id, private_key, token, host) = self.get_api_credentials(state)?;
-        
-        // Get timestamp in milliseconds, matching Java's System.currentTimeMillis()
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|_| ExchangeError::GetPayUrlError("Failed to get current time".to_string()))?
-            .as_millis() as u64;
-        
-        let body = "";
-        
-        let signature = self.generate_signature(body, timestamp, &private_key)?;
-        
-        let url = format!("{}{}", host, path);
-        
-        let res = state
-            .http_client
-            .get(url)
-            .header("X-Tesla-ClientId", &client_id)
-            .header("X-Tesla-Timestamp", timestamp.to_string())
-            .header("X-Tesla-Signature", signature)
-            .header("X-Tesla-SignAccessToken", token)
-            .send()
-            .await
-            .map_err(|e| ExchangeError::GetPayUrlError(e.to_string()))?;
-        Ok(res)
-    }
-
-    async fn send_post_request<T>(
+    async fn send_post_request<T, R>(
         &self,
         state: &Arc<AppState>,
         path: &str,
         payload: &T,
-    ) -> Result<reqwest::Response, ExchangeError>
+    ) -> Result<R, ExchangeError>
     where
         T: Serialize,
+        R: serde::de::DeserializeOwned + std::fmt::Debug,
     {
         let (client_id, private_key, token, host) = self.get_api_credentials(state)?;
         
@@ -218,8 +253,7 @@ impl BinanceExchange {
         
         let url = format!("{}{}", host, path);
         
-
-        let res = state
+        let response = state
             .http_client
             .post(url)
             .json(payload)
@@ -232,23 +266,97 @@ impl BinanceExchange {
             .await
             .map_err(|e| ExchangeError::GetPayUrlError(e.to_string()))?;
         
-        Ok(res)
+        let status = response.status();
+        if !status.is_success() {
+            let error_body = response.text().await.unwrap_or_default();
+            return Err(ExchangeError::InternalError(format!(
+                "Binance API request failed with status: {}, body: {}",
+                status, error_body
+            )));
+        }
+    
+        let parsed_response: BinanceResponse<R> = response
+            .json()
+            .await
+            .map_err(|e| {
+                debug!("Unable to parse Binance response: {}", e);
+                ExchangeError::InternalError(format!("Failed to parse Binance response: {}", e))
+            })?;
+        debug!("Parsed response: {:?}", parsed_response);
+        if let Some(success) = parsed_response.success {
+            if !success {
+                return Err(ExchangeError::InternalError(format!(
+                    "Binance API request failed with code: {}, message: {}",
+                    parsed_response.code, parsed_response.message.unwrap_or_default()
+                )));
+            }
+        }
+
+        parsed_response.data.ok_or_else(|| 
+            ExchangeError::InternalError("No data returned from Binance".to_string())
+        )
+    }
+
+    pub fn map_asset_to_binance_format(
+        &self,
+        asset: &Caip19Asset,
+    ) -> Result<(String, String), ExchangeError> {
+        let full_caip19 = asset.to_string();
+        let chain_id = asset.chain_id().to_string();
+        
+        let crypto = CAIP19_TO_BINANCE_CRYPTO
+            .get(full_caip19.as_str())
+            .ok_or_else(|| ExchangeError::ValidationError(
+                format!("Unsupported asset: {}", full_caip19)
+            ))?
+            .to_string();
+        
+        let network = CHAIN_ID_TO_BINANCE_NETWORK
+            .get(chain_id.as_str())
+            .ok_or_else(|| ExchangeError::ValidationError(
+                format!("Unsupported chain ID: {}", chain_id)
+            ))?
+            .to_string();
+        
+        Ok((crypto, network))
     }
 
     pub async fn get_buy_url(
+        &self,
         state: State<Arc<AppState>>,
         params: GetBuyUrlParams,
     ) -> Result<String, ExchangeError> {
-        let exchange = BinanceExchange;
+
+        let (crypto_currency, network) = match self.map_asset_to_binance_format(&params.asset) {
+            Ok(result) => result,
+            Err(e) => return Err(e),
+        };
+        
+        let fiat_amount = "20".to_string();
+        
+        let is_supported = self.is_payment_method_supported(
+            &state,
+            DEFAULT_PAYMENT_METHOD_CODE,
+            DEFAULT_PAYMENT_METHOD_SUB_CODE,
+            &fiat_amount,
+            &crypto_currency
+        ).await?;
+        
+        if !is_supported {
+            return Err(ExchangeError::ValidationError(
+                "Selected payment method is not supported for this transaction".to_string()
+            ));
+        }
+  
         let request = PreOrderRequest {
             external_order_id: "1234567890".to_string(),
-            fiat_currency: Some("USD".to_string()),
-            crypto_currency: Some("USDC".to_string()),
-            fiat_amount: "20".to_string(),
-            pay_method_code: Some("BUY_WALLET".to_string()),
-            pay_method_sub_code: Some("Wallet".to_string()),
-            network: "BASE".to_string(),
-            address: "0x81D8C68Be5EcDC5f927eF020Da834AA57cc3Bd24".to_string(),
+            fiat_currency: Some(DEFAULT_FIAT_CURRENCY.to_string()),
+            crypto_currency: Some(crypto_currency),
+            fiat_amount,
+            pay_method_code: Some(DEFAULT_PAYMENT_METHOD_CODE.to_string()),
+            pay_method_sub_code: Some(DEFAULT_PAYMENT_METHOD_SUB_CODE.to_string()),
+            network,
+            address: params.recipient,
             memo: None,
             redirect_url: None,
             fail_redirect_url: None,
@@ -258,7 +366,8 @@ impl BinanceExchange {
             client_type: None,
             customization: None,
         };
-        let url = exchange.create_pre_order(&state, request).await?;
+
+        let url = self.create_pre_order(&state, request).await?;
         Ok(url)
     }
 
@@ -267,39 +376,60 @@ impl BinanceExchange {
         state: &Arc<AppState>,
         request: PreOrderRequest,
     ) -> Result<String, ExchangeError> {
-        
-        let response = self.send_post_request(state, PRE_ORDER_PATH, &request).await?;
-        
-        let status = response.status();
-        info!("Binance response status: {}", status);
-        if !status.is_success() {
-            let error_body = response.text().await.unwrap_or_default();
-            info!("Binance API error: {}", error_body);
-            return Err(ExchangeError::InternalError(format!(
-                "Binance API request failed with status: {}, body: {}",
-                status, error_body
-            )));
-        }
-   
-        let response: PreOrderResponse = response
-        .json()
-        .await
-        .map_err(|e| {
-            ExchangeError::InternalError(format!("Failed to parse Binance response: {}", e))
-        })?;
-        info!("Binance response: {:?}", response);
-            
-        if !response.success {
-            return Err(ExchangeError::InternalError(format!(
-                "Binance API request failed with code: {}, message: {}",
-                response.code, response.message
-            )));
-        }
+        let data: PreOrderResponseData = self.send_post_request(state, PRE_ORDER_PATH, &request).await?;
+        Ok(data.link)
+    }
 
-        if let Some(data) = response.data {
-            Ok(data.link)
-        } else {
-            Err(ExchangeError::InternalError("No data returned from Binance".to_string()))
+
+    pub async fn is_payment_method_supported(
+        &self,
+        state: &Arc<AppState>,
+        payment_method_code: &str,
+        payment_method_sub_code: &str,
+        amount: &str,
+        crypto_currency: &str,
+    ) -> Result<bool, ExchangeError> {
+        let request = PaymentMethodListRequest {
+            fiat_currency: DEFAULT_FIAT_CURRENCY.to_string(),
+            crypto_currency: crypto_currency.to_string(),
+            total_amount: amount.to_string(),
+            amount_type: AmountType::Crypto as usize,
+        };
+        
+        let data: PaymentMethodListResponseData = self.send_post_request(state, PAYMENT_METHOD_LIST_PATH, &request).await?;
+        debug!("Payment method list response: {:?}", data);
+
+        let method = data.payment_methods
+            .iter()
+            .find(|method| 
+                method.pay_method_code.as_deref() == Some(payment_method_code) && 
+                method.pay_method_sub_code.as_deref() == Some(payment_method_sub_code))
+            .ok_or_else(|| ExchangeError::ValidationError("Payment method is not supported".to_string()))?;
+
+        let amount_value = amount.parse::<f64>()
+            .map_err(|_| ExchangeError::ValidationError("Invalid amount format".to_string()))?;
+        
+        if let Some(min_limit_str) = &method.crypto_min_limit {
+            let min_limit = min_limit_str.parse::<f64>()
+                .map_err(|_| ExchangeError::ValidationError("Invalid min limit format".to_string()))?;
+            
+            if amount_value < min_limit {
+                return Err(ExchangeError::ValidationError(
+                    format!("Amount is below minimum limit of {}", min_limit_str)
+                ));
+            }
         }
+        if let Some(max_limit_str) = &method.crypto_max_limit {
+            let max_limit = max_limit_str.parse::<f64>()
+                .map_err(|_| ExchangeError::ValidationError("Invalid max limit format".to_string()))?;
+            
+            if amount_value > max_limit {
+                return Err(ExchangeError::ValidationError(
+                    format!("Amount exceeds maximum limit of {}", max_limit_str)
+                ));
+            }
+        }
+        
+        Ok(true)
     }
 }
