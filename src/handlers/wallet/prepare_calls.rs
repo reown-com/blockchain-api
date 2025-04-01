@@ -17,7 +17,6 @@ use tracing::error;
 use url::Url;
 use uuid::Uuid;
 use wc::future::FutureExt;
-use yttrium::bundler::pimlico::paymaster::client::PaymasterClient;
 use yttrium::erc7579::accounts::safe::encode_validator_key;
 use yttrium::erc7579::smart_sessions::ISmartSession::isPermissionEnabledReturn;
 use yttrium::erc7579::smart_sessions::{
@@ -294,45 +293,45 @@ async fn handler_internal(
             signature: dummy_signature,
         };
 
-        let user_op = {
-            let paymaster_client = PaymasterClient::new(BundlerConfig::new(
-                format!(
-                    "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
-                    chain_id.caip2_identifier(),
-                    project_id,
-                )
-                .parse()
-                .unwrap(),
-            ));
+        // TODO: Enable it after the Paymaster bundler error fix
+        // let user_op = {
+        //     let paymaster_client = PaymasterClient::new(BundlerConfig::new(
+        //         format!(
+        //             "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
+        //             chain_id.caip2_identifier(),
+        //             project_id,
+        //         )
+        //         .parse()
+        //         .unwrap(),
+        //     ));
 
-            let sponsor_user_op_result = paymaster_client
-                .sponsor_user_operation_v07(
-                    &user_operation.clone().into(),
-                    &entry_point_config.address(),
-                    None,
-                )
-                .await
-                .map_err(|e| {
-                    PrepareCallsError::InternalError(PrepareCallsInternalError::Sponsorship(e))
-                })?;
+        //     let sponsor_user_op_result = paymaster_client
+        //         .sponsor_user_operation_v07(
+        //             &user_operation.clone().into(),
+        //             &entry_point_config.address(),
+        //             None,
+        //         )
+        //         .await
+        //         .map_err(|e| {
+        //             PrepareCallsError::InternalError(PrepareCallsInternalError::Sponsorship(e))
+        //         })?;
+        //     UserOperationV07 {
+        //         call_gas_limit: sponsor_user_op_result.call_gas_limit,
+        //         verification_gas_limit: sponsor_user_op_result.verification_gas_limit,
+        //         pre_verification_gas: sponsor_user_op_result.pre_verification_gas,
+        //         paymaster: Some(sponsor_user_op_result.paymaster),
+        //         paymaster_verification_gas_limit: Some(
+        //             sponsor_user_op_result.paymaster_verification_gas_limit,
+        //         ),
+        //         paymaster_post_op_gas_limit: Some(
+        //             sponsor_user_op_result.paymaster_post_op_gas_limit,
+        //         ),
+        //         paymaster_data: Some(sponsor_user_op_result.paymaster_data),
+        //         ..user_operation
+        //     }
+        // };
 
-            UserOperationV07 {
-                call_gas_limit: sponsor_user_op_result.call_gas_limit,
-                verification_gas_limit: sponsor_user_op_result.verification_gas_limit,
-                pre_verification_gas: sponsor_user_op_result.pre_verification_gas,
-                paymaster: Some(sponsor_user_op_result.paymaster),
-                paymaster_verification_gas_limit: Some(
-                    sponsor_user_op_result.paymaster_verification_gas_limit,
-                ),
-                paymaster_post_op_gas_limit: Some(
-                    sponsor_user_op_result.paymaster_post_op_gas_limit,
-                ),
-                paymaster_data: Some(sponsor_user_op_result.paymaster_data),
-                ..user_operation
-            }
-        };
-
-        let hash = user_op.hash(
+        let hash = user_operation.hash(
             &entry_point_config.address().to_address(),
             chain_id.eip155_chain_id(),
         );
@@ -340,7 +339,7 @@ async fn handler_internal(
         response.push(PrepareCallsResponseItem {
             prepared_calls: PreparedCalls {
                 r#type: SignatureRequestType::UserOpV7,
-                data: user_op,
+                data: user_operation,
                 chain_id: request.chain_id,
             },
             signature_request: SignatureRequest { hash },
