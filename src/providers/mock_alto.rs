@@ -69,12 +69,6 @@ impl BundlerOpsProvider for MockAltoProvider {
             .json::<serde_json::Value>()
             .await?;
 
-        // Check if there was an error in the response
-        if let Some(error) = response.get("error") {
-            return Err(
-                crypto::CryptoUitlsError::BundlerRpcResponseError(error.to_string()).into(),
-            );
-        }
         Ok(response)
     }
 
