@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.212.3 - 2025-04-02
+#### Bug Fixes
+- forward bundler errors (#1012) - (66d222a) - Chris Smith
+
+- - -
+
 ## 0.212.2 - 2025-04-01
 #### Bug Fixes
 - **(walletService)** disabling paymaster sponsorship (#1010) - (e84cc2d) - Max Kalashnikoff | maksy.eth
