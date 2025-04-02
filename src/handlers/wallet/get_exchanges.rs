@@ -12,8 +12,8 @@ use {
     serde::{Deserialize, Serialize},
     std::{net::SocketAddr, sync::Arc},
     thiserror::Error,
-    wc::future::FutureExt,
     tracing::debug,
+    wc::future::FutureExt,
 };
 
 #[derive(Debug, Deserialize)]
@@ -81,7 +81,10 @@ async fn handler_internal(
     let all_exchanges = match get_supported_exchanges(request.asset.clone()) {
         Ok(exchanges) => exchanges,
         Err(err) => {
-            debug!("Error getting supported exchanges: {:?}, asset: {:?}", err, request.asset);
+            debug!(
+                "Error getting supported exchanges: {:?}, asset: {:?}",
+                err, request.asset
+            );
             return Ok(GetExchangesResponse {
                 total: 0,
                 exchanges: vec![],

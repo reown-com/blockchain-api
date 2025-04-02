@@ -34,9 +34,8 @@ pub struct Exchange {
 pub struct GetBuyUrlParams {
     pub asset: Caip19Asset,
     pub amount: usize,
-    pub recipient: String
+    pub recipient: String,
 }
-
 
 pub trait ExchangeProvider {
     fn id(&self) -> &'static str;
@@ -109,15 +108,14 @@ impl ExchangeType {
 pub fn get_supported_exchanges(asset: Option<String>) -> Result<Vec<Exchange>, ExchangeError> {
     match asset {
         Some(asset_str) => {
-            let asset = Caip19Asset::parse(&asset_str).map_err(|e| ExchangeError::ValidationError(e.to_string()))?;
+            let asset = Caip19Asset::parse(&asset_str)
+                .map_err(|e| ExchangeError::ValidationError(e.to_string()))?;
             Ok(ExchangeType::iter()
                 .filter(|e| e.is_asset_supported(&asset))
                 .map(|e| e.to_exchange())
                 .collect())
-        },
-        None => Ok(ExchangeType::iter()
-            .map(|e| e.to_exchange())
-            .collect())
+        }
+        None => Ok(ExchangeType::iter().map(|e| e.to_exchange()).collect()),
     }
 }
 

@@ -1,9 +1,9 @@
 use {
-    crate::handlers::wallet::exchanges::{ExchangeType, GetBuyUrlParams, ExchangeError},
+    crate::handlers::wallet::exchanges::{ExchangeError, ExchangeType, GetBuyUrlParams},
     crate::{
         handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
         state::AppState,
-        utils::crypto::{Caip19Asset, disassemble_caip10},
+        utils::crypto::{disassemble_caip10, Caip19Asset},
     },
     axum::{
         extract::{ConnectInfo, Query, State},
@@ -23,7 +23,7 @@ pub struct GeneratePayUrlRequest {
     pub exchange_id: String,
     pub asset: String,
     pub amount: String,
-    pub recipient: String
+    pub recipient: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -74,55 +74,67 @@ async fn handler_internal(
         GetExchangeUrlError::ExchangeNotFound(format!("Exchange {} not found", request.exchange_id))
     })?;
 
-    let asset = Caip19Asset::parse(&request.asset).map_err(|e| GetExchangeUrlError::ValidationError(e.to_string()))?;
+    let asset = Caip19Asset::parse(&request.asset)
+        .map_err(|e| GetExchangeUrlError::ValidationError(e.to_string()))?;
 
-    let (namespace, chain_id, address) = disassemble_caip10(&request.recipient).map_err(|e| GetExchangeUrlError::ValidationError(e.to_string()))?;
+    let (namespace, chain_id, address) = disassemble_caip10(&request.recipient)
+        .map_err(|e| GetExchangeUrlError::ValidationError(e.to_string()))?;
     if namespace.to_string() != asset.chain_id().namespace() {
-        return Err(GetExchangeUrlError::ValidationError(
-            format!("Invalid recipient. CAIP-10 namespace must match asset namespace: {} != {}", namespace, asset.asset_namespace())
-        ));
+        return Err(GetExchangeUrlError::ValidationError(format!(
+            "Invalid recipient. CAIP-10 namespace must match asset namespace: {} != {}",
+            namespace,
+            asset.asset_namespace()
+        )));
     }
     if chain_id != asset.chain_id().reference() {
-        return Err(GetExchangeUrlError::ValidationError(
-            format!("Invalid recipient. CAIP-10 chainId must match asset chainId: {} != {}", chain_id, asset.asset_id())
-        ));
+        return Err(GetExchangeUrlError::ValidationError(format!(
+            "Invalid recipient. CAIP-10 chainId must match asset chainId: {} != {}",
+            chain_id,
+            asset.asset_id()
+        )));
     }
 
     if !exchange.is_asset_supported(&asset) {
-        return Err(GetExchangeUrlError::ValidationError(
-            format!("Asset {} is not supported by exchange {}", asset, request.exchange_id)
-        ));
+        return Err(GetExchangeUrlError::ValidationError(format!(
+            "Asset {} is not supported by exchange {}",
+            asset, request.exchange_id
+        )));
     }
 
-    let amount = match usize::from_str_radix(
-        request.amount.trim_start_matches("0x"),
-        16
-    ) {
+    let amount = match usize::from_str_radix(request.amount.trim_start_matches("0x"), 16) {
         Ok(amount) => amount,
-        Err(_) => return Err(GetExchangeUrlError::ValidationError(
-            format!("Invalid amount. Expected a valid hexadecimal number: {}", request.amount)
-        )),
+        Err(_) => {
+            return Err(GetExchangeUrlError::ValidationError(format!(
+                "Invalid amount. Expected a valid hexadecimal number: {}",
+                request.amount
+            )))
+        }
     };
 
     let result = exchange
-        .get_buy_url(state, GetBuyUrlParams { asset, amount, recipient: address })
+        .get_buy_url(
+            state,
+            GetBuyUrlParams {
+                asset,
+                amount,
+                recipient: address,
+            },
+        )
         .await;
 
     match result {
         Ok(url) => Ok(GeneratePayUrlResponse { url }),
-        Err(e) => {
-            match e {
-                ExchangeError::ValidationError(msg) => {
-                    Err(GetExchangeUrlError::ValidationError(msg))
-                },
-                _ => {
-                    debug!(
-                        error = %e,
-                        "Internal error, unable to get exchange URL"
-                    );
-                    Err(GetExchangeUrlError::InternalError("Unable to get exchange URL".to_string()))
-                }
+        Err(e) => match e {
+            ExchangeError::ValidationError(msg) => Err(GetExchangeUrlError::ValidationError(msg)),
+            _ => {
+                debug!(
+                    error = %e,
+                    "Internal error, unable to get exchange URL"
+                );
+                Err(GetExchangeUrlError::InternalError(
+                    "Unable to get exchange URL".to_string(),
+                ))
             }
-        }
+        },
     }
 }

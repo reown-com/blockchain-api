@@ -245,7 +245,10 @@ mod test {
             // Account balances-related configuration
             ("RPC_PROXY_BALANCES_DENYLIST_PROJECT_IDS", "test_project_id"),
             // Exchanges configuration
-            ("RPC_PROXY_EXCHANGES_COINBASE_PROJECT_ID", "COINBASE_PROJECT_ID"),
+            (
+                "RPC_PROXY_EXCHANGES_COINBASE_PROJECT_ID",
+                "COINBASE_PROJECT_ID",
+            ),
             ("RPC_PROXY_EXCHANGES_BINANCE_CLIENT_ID", "BINANCE_CLIENT_ID"),
             ("RPC_PROXY_EXCHANGES_BINANCE_TOKEN", "BINANCE_TOKEN"),
             ("RPC_PROXY_EXCHANGES_BINANCE_KEY", "BINANCE_KEY"),
