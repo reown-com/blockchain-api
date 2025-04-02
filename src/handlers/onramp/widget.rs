@@ -1,5 +1,8 @@
 use {
-    crate::{error::RpcError, handlers::HANDLER_TASK_METRICS, state::AppState},
+    crate::{
+        error::RpcError, handlers::HANDLER_TASK_METRICS, state::AppState,
+        utils::simple_request_json::SimpleRequestJson,
+    },
     axum::{
         extract::State,
         response::{IntoResponse, Response},
@@ -51,7 +54,7 @@ pub struct WidgetResponse {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
-    Json(request_payload): Json<QueryParams>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<QueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("onramp_widget"))

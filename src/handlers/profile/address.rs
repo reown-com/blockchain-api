@@ -12,9 +12,12 @@ use {
         error::RpcError,
         names::utils::is_timestamp_within_interval,
         state::AppState,
-        utils::crypto::{
-            constant_time_eq, convert_coin_type_to_evm_chain_id, is_coin_type_supported,
-            verify_message_signature,
+        utils::{
+            crypto::{
+                constant_time_eq, convert_coin_type_to_evm_chain_id, is_coin_type_supported,
+                verify_message_signature,
+            },
+            simple_request_json::SimpleRequestJson,
         },
     },
     axum::{
@@ -33,7 +36,7 @@ use {
 pub async fn handler(
     state: State<Arc<AppState>>,
     name: Path<String>,
-    Json(request_payload): Json<RegisterRequest>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<RegisterRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, name, request_payload)
         .with_metrics(HANDLER_TASK_METRICS.with_name("profile_address_update"))

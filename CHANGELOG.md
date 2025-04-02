@@ -2,6 +2,62 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.212.3 - 2025-04-02
+#### Bug Fixes
+- forward bundler errors (#1012) - (66d222a) - Chris Smith
+
+- - -
+
+## 0.212.2 - 2025-04-01
+#### Bug Fixes
+- **(walletService)** disabling paymaster sponsorship (#1010) - (e84cc2d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.212.1 - 2025-03-31
+#### Bug Fixes
+- refactoring the token metadata cache to become a global accessible (#1008) - (81a6ff3) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.212.0 - 2025-03-31
+#### Features
+- **(providers)** removing hardcoded EVM native token icons for Dune, decreasing Zerion priority (#1007) - (4024ecc) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.211.5 - 2025-03-27
+#### Bug Fixes
+- add custom metadata to wallet_getAssets response & remove unwraps() (#999) - (d546243) - Chris Smith
+
+- - -
+
+## 0.211.4 - 2025-03-26
+#### Bug Fixes
+- proper SDK version check for an empty balance response (#1005) - (8665dcb) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.211.3 - 2025-03-26
+#### Bug Fixes
+- **(prometheus)** making prometheus url optional instead of one time (#1004) - (979a6f6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.211.2 - 2025-03-24
+#### Bug Fixes
+- **(balances)** adding an exclusion for the affected SDK version (#1003) - (229bfc6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.211.1 - 2025-03-21
+#### Bug Fixes
+- allow simple requests with JSON (#994) - (24ccf37) - Chris Smith
+#### Miscellaneous Chores
+- add Caip19Asset and Caip2ChainId (#1000) - (b739dee) - Luka Isailovic
+
+- - -
+
 ## 0.211.0 - 2025-03-20
 #### Features
 - **(providers)** adding Monad provider for Monad testnet (#1001) - (9309072) - Max Kalashnikoff | maksy.eth

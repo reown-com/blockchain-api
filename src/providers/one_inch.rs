@@ -19,7 +19,10 @@ use {
             fungible_price::FungiblePriceItem,
             SupportedCurrencies,
         },
-        providers::{ConversionProvider, FungiblePriceProvider, PriceResponseBody, ProviderKind},
+        providers::{
+            ConversionProvider, FungiblePriceProvider, PriceResponseBody, ProviderKind,
+            TokenMetadataCacheProvider,
+        },
         utils::crypto,
         Metrics,
     },
@@ -769,12 +772,12 @@ impl ConversionProvider for OneInchProvider {
 
 #[async_trait]
 impl FungiblePriceProvider for OneInchProvider {
-    #[tracing::instrument(skip(self), fields(provider = "1inch"), level = "debug")]
     async fn get_price(
         &self,
         chain_id: &str,
         address: &str,
         currency: &SupportedCurrencies,
+        _metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<PriceResponseBody> {
         let price = self

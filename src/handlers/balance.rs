@@ -3,14 +3,17 @@ use {
     crate::{
         analytics::{BalanceLookupInfo, MessageSource},
         error::RpcError,
+        providers::TokenMetadataCacheProvider,
         state::AppState,
-        storage::KeyValueStorage,
+        storage::{error::StorageError, KeyValueStorage},
         utils::{crypto, network},
     },
+    async_trait::async_trait,
     axum::{
         extract::{ConnectInfo, Path, Query, State},
         Json,
     },
+    deadpool_redis::{redis::AsyncCommands, Pool},
     ethers::{abi::Address, types::H160},
     hyper::HeaderMap,
     serde::{Deserialize, Serialize},
@@ -24,8 +27,12 @@ use {
 pub const H160_EMPTY_ADDRESS: H160 = H160::repeat_byte(0xee);
 
 const PROVIDER_MAX_CALLS: usize = 2;
-const METADATA_CACHE_TTL: Duration = Duration::from_secs(60 * 60 * 24); // 1 day
+const METADATA_CACHE_TTL: u64 = 60 * 60 * 24; // 1 day
 const BALANCE_CACHE_TTL: Duration = Duration::from_secs(10); // 10 seconds
+
+// List of SDK versions that should return an empty balance response
+// to fix the issue of redundant calls in SDK versions
+const EMPTY_BALANCE_RESPONSE_SDK_VERSIONS: [&str; 2] = ["1.6.4", "1.6.5"];
 
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
 pub struct Config {
@@ -81,42 +88,11 @@ pub struct TokenMetadataCacheItem {
     pub name: String,
     pub symbol: String,
     pub icon_url: String,
-}
-
-fn token_metadata_cache_key(caip10_token_address: &str) -> String {
-    format!("token_metadata/{}", caip10_token_address)
+    pub decimals: u8,
 }
 
 fn address_balance_cache_key(address: &str) -> String {
     format!("address_balance/{}", address)
-}
-
-pub async fn get_cached_metadata(
-    cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
-    caip10_token_address: &str,
-) -> Option<TokenMetadataCacheItem> {
-    let cache = cache.as_ref()?;
-    cache
-        .get(&token_metadata_cache_key(caip10_token_address))
-        .await
-        .unwrap_or(None)
-}
-
-pub async fn set_cached_metadata(
-    cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
-    caip10_token_address: &str,
-    item: &TokenMetadataCacheItem,
-) {
-    if let Some(cache) = cache {
-        cache
-            .set(
-                &token_metadata_cache_key(caip10_token_address),
-                item,
-                Some(METADATA_CACHE_TTL),
-            )
-            .await
-            .unwrap_or_else(|e| error!("Failed to set metadata cache: {}", e));
-    }
 }
 
 pub async fn get_cached_balance(
@@ -185,6 +161,26 @@ async fn handler_internal(
         return Ok(Json(BalanceResponseBody { balances: vec![] }));
     }
 
+    let sdk_version = query
+        .sdk_info
+        .sv
+        .as_deref()
+        .or_else(|| headers.get("x-sdk-version").and_then(|v| v.to_str().ok()));
+
+    // Respond with an empty balance array if the sdk version is in the empty balance response list
+    // because the sdk version has a bug that causes excessive amount of calls to the balance RPC
+    if let Some(version) = sdk_version {
+        for &v in &EMPTY_BALANCE_RESPONSE_SDK_VERSIONS {
+            if version == v || version.ends_with(v) {
+                debug!(
+                    "Responding with empty balance array for sdk version: {}",
+                    version
+                );
+                return Ok(Json(BalanceResponseBody { balances: vec![] }));
+            }
+        }
+    }
+
     // Get the cached balance and return it if found except if force_update is needed
     if query.force_update.is_none() {
         if let Some(cached_balance) = get_cached_balance(&state.balance_cache, &address).await {
@@ -217,7 +213,7 @@ async fn handler_internal(
             .get_balance(
                 address.clone(),
                 query.clone().0,
-                &state.token_metadata_cache,
+                &state.providers.token_metadata_cache,
                 state.metrics.clone(),
             )
             .await
@@ -370,6 +366,7 @@ async fn handler_internal(
                     &chain_id.clone(),
                     format!("{:#x}", contract_address).as_str(),
                     &query.currency,
+                    &state.providers.token_metadata_cache,
                     state.metrics.clone(),
                 )
                 .await
@@ -418,6 +415,78 @@ async fn handler_internal(
             }
         });
     }
-
     Ok(Json(response))
+}
+
+pub struct TokenMetadataCache {
+    cache_pool: Option<Arc<Pool>>,
+}
+
+impl TokenMetadataCache {
+    pub fn new(cache_pool: Option<Arc<Pool>>) -> Self {
+        Self { cache_pool }
+    }
+    fn token_metadata_cache_key(&self, caip10_token_address: &str) -> String {
+        format!("token_metadata/{}", caip10_token_address)
+    }
+
+    #[allow(dependency_on_unit_never_type_fallback)]
+    async fn set_cache(&self, key: &str, value: &str, ttl: u64) -> Result<(), StorageError> {
+        if let Some(redis_pool) = &self.cache_pool {
+            let mut cache = redis_pool.get().await.map_err(|e| {
+                StorageError::Connection(format!("Error when getting the Redis pool instance {e}"))
+            })?;
+            cache
+                .set_ex(key, value, ttl)
+                .await
+                .map_err(|e| StorageError::Connection(format!("Error when seting cache: {e}")))?;
+        }
+        Ok(())
+    }
+
+    #[allow(dependency_on_unit_never_type_fallback)]
+    async fn get_cache(&self, key: &str) -> Result<Option<String>, StorageError> {
+        if let Some(redis_pool) = &self.cache_pool {
+            let mut cache = redis_pool.get().await.map_err(|e| {
+                StorageError::Connection(format!("Error when getting the Redis pool instance {e}"))
+            })?;
+            let value = cache
+                .get(key)
+                .await
+                .map_err(|e| StorageError::Connection(format!("Error when getting cache: {e}")))?;
+            return Ok(value);
+        }
+        Ok(None)
+    }
+}
+
+#[async_trait]
+impl TokenMetadataCacheProvider for TokenMetadataCache {
+    async fn get_metadata(
+        &self,
+        caip10_token_address: &str,
+    ) -> Result<Option<TokenMetadataCacheItem>, RpcError> {
+        if let Some(redis_pool) = self
+            .get_cache(&self.token_metadata_cache_key(caip10_token_address))
+            .await?
+        {
+            let metadata: TokenMetadataCacheItem = serde_json::from_str(&redis_pool)?;
+            return Ok(Some(metadata));
+        }
+        Ok(None)
+    }
+
+    async fn set_metadata(
+        &self,
+        caip10_token_address: &str,
+        item: &TokenMetadataCacheItem,
+    ) -> Result<(), RpcError> {
+        self.set_cache(
+            &self.token_metadata_cache_key(caip10_token_address),
+            &serde_json::to_string(&item)?,
+            METADATA_CACHE_TTL,
+        )
+        .await?;
+        Ok(())
+    }
 }

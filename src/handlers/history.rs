@@ -168,7 +168,12 @@ async fn handler_internal(
             state
                 .providers
                 .coinbase_pay_provider
-                .get_transactions(address.clone(), query.clone().0, state.metrics.clone())
+                .get_transactions(
+                    address.clone(),
+                    query.clone().0,
+                    &state.providers.token_metadata_cache,
+                    state.metrics.clone(),
+                )
                 .await
                 .tap_err(|e| {
                     error!("Failed to call coinbase transactions history with {}", e);
@@ -185,7 +190,12 @@ async fn handler_internal(
             .ok_or_else(|| RpcError::UnsupportedNamespace(namespace))?;
         history_provider_kind = provider.provider_kind();
         provider
-            .get_transactions(address.clone(), query.0.clone(), state.metrics.clone())
+            .get_transactions(
+                address.clone(),
+                query.0.clone(),
+                &state.providers.token_metadata_cache,
+                state.metrics.clone(),
+            )
             .await
             .tap_err(|e| {
                 error!("Failed to call transactions history with {}", e);

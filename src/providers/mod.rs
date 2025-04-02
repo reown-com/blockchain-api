@@ -4,7 +4,10 @@ use {
         env::{BalanceProviderConfig, ProviderConfig},
         error::{RpcError, RpcResult},
         handlers::{
-            balance::{self, BalanceQueryParams, BalanceResponseBody, TokenMetadataCacheItem},
+            balance::{
+                self, BalanceQueryParams, BalanceResponseBody, TokenMetadataCache,
+                TokenMetadataCacheItem,
+            },
             convert::{
                 allowance::{AllowanceQueryParams, AllowanceResponseBody},
                 approve::{ConvertApproveQueryParams, ConvertApproveResponseBody},
@@ -33,7 +36,6 @@ use {
             portfolio::{PortfolioQueryParams, PortfolioResponseBody},
             RpcQueryParams, SupportedCurrencies,
         },
-        storage::KeyValueStorage,
         utils::crypto::{CaipNamespaces, Erc20FunctionType},
         Metrics,
     },
@@ -212,37 +214,28 @@ pub struct ProviderRepository {
     pub chain_orchestrator_provider: Arc<dyn ChainOrchestrationProvider>,
     pub simulation_provider: Arc<dyn SimulationProvider>,
 
+    pub token_metadata_cache: Arc<dyn TokenMetadataCacheProvider>,
+
     prometheus_client: Option<prometheus_http_query::Client>,
     prometheus_workspace_header: String,
 }
 
 impl ProviderRepository {
     #[allow(clippy::new_without_default)]
-    pub async fn new(config: &ProvidersConfig) -> Self {
-        let prometheus_client = {
-            let prometheus_query_url = config
+    pub fn new(config: &ProvidersConfig) -> Self {
+        let prometheus_client =
+            config
                 .prometheus_query_url
                 .clone()
-                .unwrap_or("http://localhost:8080/".into());
-
-            let client = prometheus_http_query::Client::try_from(prometheus_query_url)
-                .expect("Failed to create Prometheus client from URL");
-
-            match client.is_server_ready().await {
-                Ok(true) => {
-                    debug!("Prometheus client is ready");
-                    Some(client)
-                }
-                Ok(false) => {
-                    error!("Prometheus client is connected, but not ready");
-                    None
-                }
-                Err(e) => {
-                    error!("Prometheus server is not ready: {}", e);
-                    None
-                }
-            }
-        };
+                .and_then(|prometheus_query_url| {
+                    match prometheus_http_query::Client::try_from(prometheus_query_url) {
+                        Ok(client) => Some(client),
+                        Err(err) => {
+                            error!("Failed to connect to prometheus: {}", err);
+                            None
+                        }
+                    }
+                });
 
         let prometheus_workspace_header = config
             .prometheus_workspace_header
@@ -351,6 +344,8 @@ impl ProviderRepository {
             None,
         ));
 
+        let token_metadata_cache = Arc::new(TokenMetadataCache::new(redis_pool.clone()));
+
         Self {
             rpc_supported_chains: SupportedChains {
                 http: HashSet::new(),
@@ -375,6 +370,7 @@ impl ProviderRepository {
             bundler_ops_provider,
             chain_orchestrator_provider,
             simulation_provider,
+            token_metadata_cache,
         }
     }
 
@@ -623,30 +619,33 @@ impl ProviderRepository {
     pub async fn update_weights(&self, metrics: &crate::Metrics) {
         debug!("Updating weights");
 
+        let Some(prometheus_client) = &self.prometheus_client else {
+            debug!("Prometheus client not configured, skipping weight update");
+            return;
+        };
+
         let Ok(header_value) = HeaderValue::from_str(&self.prometheus_workspace_header) else {
-            warn!(
+            error!(
                 "Failed to parse prometheus workspace header from {}",
                 self.prometheus_workspace_header
             );
             return;
         };
 
-        if let Some(client) = &self.prometheus_client {
-            match client
-                .query("round(increase(provider_status_code_counter_total[3h]))")
-                .header("host", header_value)
-                .get()
-                .await
-            {
-                Ok(data) => {
-                    let parsed = weights::parse_weights(data);
-                    weights::update_values(&self.rpc_weight_resolver, parsed);
-                    weights::record_values(&self.rpc_weight_resolver, metrics);
-                }
-                Err(e) => error!("Failed to update weights from prometheus: {}", e),
+        match prometheus_client
+            .query("round(increase(provider_status_code_counter_total[3h]))")
+            .header("host", header_value)
+            .get()
+            .await
+        {
+            Ok(data) => {
+                let parsed_weights = weights::parse_weights(data);
+                weights::update_values(&self.rpc_weight_resolver, parsed_weights);
+                weights::record_values(&self.rpc_weight_resolver, metrics);
             }
-        } else {
-            debug!("Prometheus client is not available");
+            Err(e) => {
+                warn!("Failed to update weights from prometheus: {}", e);
+            }
         }
     }
 
@@ -909,6 +908,7 @@ pub trait HistoryProvider: Send + Sync {
         &self,
         address: String,
         params: HistoryQueryParams,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<HistoryResponseBody>;
 
@@ -973,7 +973,7 @@ pub trait BalanceProvider: Send + Sync {
         &self,
         address: String,
         params: BalanceQueryParams,
-        metadata_cache: &Option<Arc<dyn KeyValueStorage<TokenMetadataCacheItem>>>,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody>;
 
@@ -991,6 +991,7 @@ pub trait FungiblePriceProvider: Send + Sync {
         chain_id: &str,
         address: &str,
         currency: &SupportedCurrencies,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
         metrics: Arc<Metrics>,
     ) -> RpcResult<PriceResponseBody>;
 }
@@ -1149,5 +1150,22 @@ pub trait SimulationProvider: Send + Sync {
         contract_address: Address,
         function_type: Option<Erc20FunctionType>,
         gas: u64,
+    ) -> Result<(), RpcError>;
+}
+
+/// Provider for Tokens metadata caching
+#[async_trait]
+pub trait TokenMetadataCacheProvider: Send + Sync {
+    /// Get the cached metadata for the token
+    async fn get_metadata(
+        &self,
+        caip10_token_address: &str,
+    ) -> Result<Option<TokenMetadataCacheItem>, RpcError>;
+
+    /// Save to the cache the metadata for the token
+    async fn set_metadata(
+        &self,
+        caip10_token_address: &str,
+        item: &TokenMetadataCacheItem,
     ) -> Result<(), RpcError>;
 }

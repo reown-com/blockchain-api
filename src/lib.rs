@@ -2,9 +2,7 @@ use {
     crate::{
         env::Config,
         handlers::{
-            balance::{BalanceResponseBody, TokenMetadataCacheItem},
-            identity::IdentityResponse,
-            rate_limit_middleware,
+            balance::BalanceResponseBody, identity::IdentityResponse, rate_limit_middleware,
         },
         metrics::Metrics,
         project::Registry,
@@ -135,12 +133,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .map(|addr| redis::Redis::new(&addr, config.storage.redis_max_connections))
         .transpose()?
         .map(|r| Arc::new(r) as Arc<dyn KeyValueStorage<IdentityResponse> + 'static>);
-    let token_metadata_cache = config
-        .storage
-        .project_data_redis_addr()
-        .map(|addr| redis::Redis::new(&addr, config.storage.redis_max_connections))
-        .transpose()?
-        .map(|r| Arc::new(r) as Arc<dyn KeyValueStorage<TokenMetadataCacheItem> + 'static>);
     let balance_cache = config
         .storage
         .project_data_redis_addr()
@@ -148,7 +140,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .transpose()?
         .map(|r| Arc::new(r) as Arc<dyn KeyValueStorage<BalanceResponseBody> + 'static>);
 
-    let providers = init_providers(&config.providers).await;
+    let providers = init_providers(&config.providers);
 
     let external_ip = config
         .server
@@ -204,7 +196,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         rate_limiting,
         irn_client,
         identity_cache,
-        token_metadata_cache,
         balance_cache,
     );
 
@@ -497,7 +488,7 @@ fn create_server(
     axum::Server::bind(addr).serve(app.into_make_service_with_connect_info::<SocketAddr>())
 }
 
-async fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
+fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     // Redis pool for providers responses caching where needed
     let mut redis_pool = None;
     if let Some(redis_addr) = &config.cache_redis_addr {
@@ -520,7 +511,7 @@ async fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
 
     // Keep in-sync with SUPPORTED_CHAINS.md
 
-    let mut providers = ProviderRepository::new(config).await;
+    let mut providers = ProviderRepository::new(config);
     providers.add_rpc_provider::<AuroraProvider, AuroraConfig>(AuroraConfig::default());
     providers.add_rpc_provider::<ArbitrumProvider, ArbitrumConfig>(ArbitrumConfig::default());
     providers.add_rpc_provider::<PoktProvider, PoktConfig>(PoktConfig::new(
