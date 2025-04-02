@@ -107,8 +107,6 @@ pub enum CryptoUitlsError {
     HttpRequest(#[from] reqwest::Error),
     #[error("No result JSON-RPC call response")]
     NoResultInRpcResponse,
-    #[error("Error in JSON-RPC call to the Bundler: {0}")]
-    BundlerRpcResponseError(String),
     #[error("Error when decoding ERC20 call: {0}")]
     Erc20DecodeError(String),
 }
