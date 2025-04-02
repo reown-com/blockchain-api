@@ -98,4 +98,9 @@ local redis  = panels.aws.redis;
     no_routes: (import 'chain_abstraction/no_routes.libsonnet').new,
     response_types_rates: (import 'chain_abstraction/response_types_rate.libsonnet').new,
   },
+
+  balance: {
+    requests_distribution_evm: (import 'balance/requests_distribution_evm.libsonnet').new,
+    requests_distribution_solana: (import 'balance/requests_distribution_solana.libsonnet').new,
+  },
 }

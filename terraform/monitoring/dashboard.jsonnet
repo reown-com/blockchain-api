@@ -205,6 +205,10 @@ dashboard.new(
     panels.chain_abstraction.no_routes(ds, vars)            { gridPos: pos_short._4 },
     panels.chain_abstraction.response_types_rates(ds, vars) { gridPos: pos_short._2 },
 
+  row.new('Accounts balance'),
+    panels.balance.requests_distribution_evm(ds, vars)      { gridPos: pos_short._2 },
+    panels.balance.requests_distribution_solana(ds, vars)   { gridPos: pos_short._2 },
+
   row.new('Redis'),
     panels.redis.cpu(ds, vars)                    { gridPos: pos._2 },
     panels.redis.memory(ds, vars)                 { gridPos: pos._2 },
