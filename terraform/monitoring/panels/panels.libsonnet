@@ -103,4 +103,8 @@ local redis  = panels.aws.redis;
     requests_distribution_evm: (import 'balance/requests_distribution_evm.libsonnet').new,
     requests_distribution_solana: (import 'balance/requests_distribution_solana.libsonnet').new,
   },
+
+  swaps: {
+    availability: (import 'swaps/availability.libsonnet').new,
+  },
 }

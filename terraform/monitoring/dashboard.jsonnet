@@ -211,6 +211,9 @@ dashboard.new(
     panels.balance.requests_distribution_evm(ds, vars)      { gridPos: pos_short._2 },
     panels.balance.requests_distribution_solana(ds, vars)   { gridPos: pos_short._2 },
 
+  row.new('Swaps'),
+    panels.swaps.availability(ds, vars)           { gridPos: pos._1 },
+
   row.new('Redis'),
     panels.redis.cpu(ds, vars)                    { gridPos: pos._2 },
     panels.redis.memory(ds, vars)                 { gridPos: pos._2 },
