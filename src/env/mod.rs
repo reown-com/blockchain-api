@@ -4,6 +4,7 @@ use {
         database::config::PostgresConfig,
         error,
         handlers::balance::Config as BalanceConfig,
+        handlers::wallet::exchanges::Config as ExchangesConfig,
         names::Config as NamesConfig,
         profiler::ProfilerConfig,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
@@ -70,6 +71,7 @@ pub struct Config {
     pub irn: IrnConfig,
     pub names: NamesConfig,
     pub balances: BalanceConfig,
+    pub exchanges: ExchangesConfig,
 }
 
 impl Config {
@@ -86,6 +88,7 @@ impl Config {
             irn: from_env("RPC_PROXY_IRN_")?,
             names: from_env("RPC_PROXY_NAMES_")?,
             balances: from_env("RPC_PROXY_BALANCES_")?,
+            exchanges: from_env("RPC_PROXY_EXCHANGES_")?,
         })
     }
 }
@@ -114,6 +117,7 @@ mod test {
             database::config::PostgresConfig,
             env::{Config, ServerConfig},
             handlers::balance::Config as BalanceConfig,
+            handlers::wallet::exchanges::Config as ExchangesConfig,
             names::Config as NamesConfig,
             profiler::ProfilerConfig,
             project,
@@ -240,6 +244,15 @@ mod test {
             ("RPC_PROXY_NAMES_ALLOWED_ZONES", "test1.id,test2.id"),
             // Account balances-related configuration
             ("RPC_PROXY_BALANCES_DENYLIST_PROJECT_IDS", "test_project_id"),
+            // Exchanges configuration
+            (
+                "RPC_PROXY_EXCHANGES_COINBASE_PROJECT_ID",
+                "COINBASE_PROJECT_ID",
+            ),
+            ("RPC_PROXY_EXCHANGES_BINANCE_CLIENT_ID", "BINANCE_CLIENT_ID"),
+            ("RPC_PROXY_EXCHANGES_BINANCE_TOKEN", "BINANCE_TOKEN"),
+            ("RPC_PROXY_EXCHANGES_BINANCE_KEY", "BINANCE_KEY"),
+            ("RPC_PROXY_EXCHANGES_BINANCE_HOST", "BINANCE_HOST"),
         ];
 
         values.iter().for_each(set_env_var);
@@ -340,6 +353,13 @@ mod test {
                 },
                 balances: BalanceConfig {
                     denylist_project_ids: Some(vec!["test_project_id".to_owned()]),
+                },
+                exchanges: ExchangesConfig {
+                    coinbase_project_id: Some("COINBASE_PROJECT_ID".to_owned()),
+                    binance_client_id: Some("BINANCE_CLIENT_ID".to_owned()),
+                    binance_token: Some("BINANCE_TOKEN".to_owned()),
+                    binance_key: Some("BINANCE_KEY".to_owned()),
+                    binance_host: Some("BINANCE_HOST".to_owned()),
                 },
             }
         );

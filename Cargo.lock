@@ -8089,6 +8089,7 @@ dependencies = [
  "moka",
  "num_enum",
  "once_cell",
+ "openssl",
  "parquet",
  "parquet_derive",
  "phf",
