@@ -51,6 +51,7 @@ use {
         ServiceBuilderExt,
     },
     tracing::{error, info, log::warn, Span},
+    tracing_subscriber::registry::LookupSpan,
     utils::rate_limit::RateLimit,
     wc::{
         geoip::{
@@ -223,31 +224,57 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .set_x_request_id(MakeRequestUuid)
         .layer(
             TraceLayer::new_for_http()
-            .make_span_with(|request: &Request<Body>| {
-                let request_id = match request.headers().get("x-request-id") {
-                    Some(value) => value.to_str().unwrap_or_default().to_string(),
-                    None => {
-                        // If this warning is triggered, it means that the `x-request-id` was not
-                        // propagated to headers properly. This is a bug in the middleware chain.
-                        warn!("Missing x-request-id header in a middleware");
-                        String::new()
-                    }
-                };
-                tracing::info_span!("http-request", "method" = ?request.method(), "request_id" = ?request_id, "uri" = ?request.uri())
-            })
-            .on_response(
-                move |response: &Response, latency: Duration, _span: &Span| {
+                .make_span_with(|request: &Request<Body>| {
+                    let request_id = request
+                        .headers()
+                        .get("x-request-id")
+                        .and_then(|value| value.to_str().ok())
+                        .unwrap_or_default()
+                        .to_string();
+
+                    tracing::info_span!(
+                        "http-request",
+                        method = ?request.method(),
+                        request_id = ?request_id,
+                        uri = tracing::field::Empty // Placeholder, will be filled in `on_request`
+                    )
+                })
+                .on_request(|request: &Request<Body>, span: &Span| {
+                    let uri = request.uri().path().to_string();
+                    span.record("uri", tracing::field::display(&uri));
+
+                    span.with_subscriber(|(id, dispatcher)| {
+                        if let Some(span) = dispatcher
+                            .downcast_ref::<tracing_subscriber::Registry>()
+                            .and_then(|registry| registry.span(id))
+                        {
+                            span.extensions_mut().insert(uri);
+                        }
+                    });
+                })
+                .on_response(move |response: &Response, latency: Duration, span: &Span| {
+                    let mut uri_value = "unknown".to_string();
+
+                    span.with_subscriber(|(id, dispatcher)| {
+                        if let Some(span) = dispatcher
+                            .downcast_ref::<tracing_subscriber::Registry>()
+                            .and_then(|registry| registry.span(id))
+                        {
+                            if let Some(uri) = span.extensions().get::<String>() {
+                                uri_value = uri.clone();
+                            }
+                        }
+                    });
+
                     proxy_state
                         .metrics
-                        .add_http_call(response.status().into(), "proxy".to_owned());
-
+                        .add_http_call(response.status().into(), uri_value.clone());
                     proxy_state.metrics.add_http_latency(
                         response.status().into(),
-                        "proxy".to_owned(),
+                        uri_value,
                         latency.as_secs_f64(),
-                    )
-                },
-            ),
+                    );
+                }),
         )
         .propagate_x_request_id();
 
