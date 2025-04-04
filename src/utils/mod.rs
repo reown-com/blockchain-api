@@ -7,6 +7,7 @@ pub mod permissions;
 pub mod rate_limit;
 pub mod sessions;
 pub mod simple_request_json;
+pub mod token_amount;
 
 pub fn generate_random_string(len: usize) -> String {
     let rng = rand::thread_rng();
