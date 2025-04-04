@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.213.0 - 2025-04-04
+#### Features
+- **(o11y)** adding swaps availability chart and monitoring (#1014) - (0cd18c0) - Max Kalashnikoff | maksy.eth
+- **(o11y)** adding requests distribution by provider charts for balances (#1013) - (13a5029) - Max Kalashnikoff | maksy.eth
+- **(o11y)** adding Meld responses and latency tracking (#1009) - (1f3aaa3) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.212.3 - 2025-04-02
 #### Bug Fixes
 - forward bundler errors (#1012) - (66d222a) - Chris Smith
