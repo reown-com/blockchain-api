@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.214.0 - 2025-04-04
+#### Features
+- ERC-7677 paymasterService capability (#1011) - (124a6f5) - Chris Smith
+
+- - -
+
 ## 0.213.0 - 2025-04-04
 #### Features
 - **(o11y)** adding swaps availability chart and monitoring (#1014) - (0cd18c0) - Max Kalashnikoff | maksy.eth
