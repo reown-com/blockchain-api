@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.214.1 - 2025-04-07
+#### Bug Fixes
+- moving latency and status codes metrics to the middleware (#1016) - (fa8363e) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.214.0 - 2025-04-04
 #### Features
 - ERC-7677 paymasterService capability (#1011) - (124a6f5) - Chris Smith
