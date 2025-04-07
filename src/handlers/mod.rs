@@ -157,14 +157,17 @@ pub async fn status_latency_metrics_middleware<B>(
     let response = next.run(req).await;
     let request_latency = request_started.elapsed();
 
-    // Record metrics
-    state
-        .metrics
-        .add_http_call(response.status().as_u16(), uri.clone());
-    state.metrics.add_http_latency(
-        response.status().as_u16(),
-        uri,
-        request_latency.as_secs_f64(),
-    );
+    // Record metrics async
+    let state_clone = state.clone();
+    let uri_clone = uri.clone();
+    let status = response.status().as_u16();
+    let latency_secs = request_latency.as_secs_f64();
+    tokio::spawn(async move {
+        state_clone.metrics.add_http_call(status, uri_clone.clone());
+        state_clone
+            .metrics
+            .add_http_latency(status, uri_clone, latency_secs);
+    });
+
     response
 }

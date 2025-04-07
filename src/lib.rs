@@ -368,17 +368,17 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         // Health
         .route("/health", get(handlers::health::handler))
         .route_layer(tracing_layer)
-        .layer(cors);
+        .route_layer(cors);
 
     // Response statuses and latency metrics middleware
-    let app = app.route_layer(middleware::from_fn_with_state(
+    let app = app.layer(middleware::from_fn_with_state(
         state_arc.clone(),
         status_latency_metrics_middleware,
     ));
 
     // GeoBlock middleware
     let app = if let Some(geoblock) = geoblock {
-        app.layer(geoblock)
+        app.route_layer(geoblock)
     } else {
         app
     };
