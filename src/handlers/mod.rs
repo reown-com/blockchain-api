@@ -7,7 +7,7 @@ use {
         response::{IntoResponse, Response},
     },
     serde::{Deserialize, Serialize},
-    std::{fmt::Display, sync::Arc},
+    std::{fmt::Display, sync::Arc, time::Instant},
     tracing::error,
     wc::metrics::TaskMetrics,
 };
@@ -142,4 +142,29 @@ pub async fn rate_limit_middleware<B>(
         Ok(_) => next.run(req).await,
         Err(e) => RpcError::from(e).into_response(),
     }
+}
+
+/// Endpoints latency and response status metrics middleware
+pub async fn status_latency_metrics_middleware<B>(
+    State(state): State<Arc<AppState>>,
+    req: Request<B>,
+    next: Next<B>,
+) -> Response {
+    let uri = req.uri().path().to_string();
+    let request_started = Instant::now();
+
+    // Execute the request and get the response.
+    let response = next.run(req).await;
+    let request_latency = request_started.elapsed();
+
+    // Record metrics
+    state
+        .metrics
+        .add_http_call(response.status().as_u16(), uri.clone());
+    state.metrics.add_http_latency(
+        response.status().as_u16(),
+        uri,
+        request_latency.as_secs_f64(),
+    );
+    response
 }
