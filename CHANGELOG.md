@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.215.0 - 2025-04-07
+#### Features
+- middlewares reordering, writing metrics async (#1017) - (a83ad4d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.214.1 - 2025-04-07
 #### Bug Fixes
 - moving latency and status codes metrics to the middleware (#1016) - (fa8363e) - Max Kalashnikoff | maksy.eth
