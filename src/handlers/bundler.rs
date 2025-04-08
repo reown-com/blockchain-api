@@ -18,17 +18,10 @@ use {
 };
 
 #[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "lowercase")]
-pub enum SupportedBundlers {
-    Pimlico,
-}
-
-#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BundlerQueryParams {
     pub project_id: String,
     pub chain_id: String,
-    pub bundler: SupportedBundlers,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
