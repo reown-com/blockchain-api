@@ -361,6 +361,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/v1/bundler", post(handlers::bundler::handler))
         // Wallet
         .route("/v1/wallet", post(handlers::wallet::handler::handler))
+        // Same handler as the Wallet 
+        .route("/v1/json-rpc", post(handlers::wallet::handler::handler))
         // Chain agnostic orchestration
         .route("/v1/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler_v1))
         .route("/v2/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler_v2))
