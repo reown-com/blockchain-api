@@ -124,7 +124,7 @@ module "ecs" {
   testing_project_id = var.testing_project_id
 
   # Exchanges
-  coinbase_projet_id = var.coinbase_project_id
+  coinbase_project_id = var.coinbase_project_id
   binance_client_id  = var.binance_client_id
   binance_token      = var.binance_token
   binance_key        = var.binance_key
