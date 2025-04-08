@@ -11,11 +11,7 @@ use {
             ChainAbstractionInitialTxInfo, MessageSource,
         },
         error::RpcError,
-        handlers::{
-            self_provider,
-            wallet::get_assets::{self},
-            SdkInfoParams,
-        },
+        handlers::{chain_agnostic::lifi::caip2_to_lifi_chain_id, self_provider, SdkInfoParams},
         metrics::{ChainAbstractionNoBridgingNeededType, ChainAbstractionTransactionType},
         state::AppState,
         storage::irn::OperationType,
@@ -59,7 +55,7 @@ use {
         },
         solana::{
             self, SolanaCommitmentConfig, SolanaParsePubkeyError, SolanaPubkey, SolanaRpcClient,
-            SolanaVersionedTransaction, SOLANA_MAINNET_CAIP2, SOLANA_MAINNET_CHAIN_ID,
+            SolanaVersionedTransaction,
         },
     },
 };
@@ -568,8 +564,11 @@ async fn handler_internal(
         bridge_decimals,
     );
 
+    // TODO query param
+    let always_use_lifi = false;
+
     let (routes, bridged_amount, final_bridging_fee) = match bridge_contract {
-        Eip155OrSolanaAddress::Eip155(bridge_contract) => {
+        Eip155OrSolanaAddress::Eip155(bridge_contract) if !always_use_lifi => {
             // Get Quotes for the bridging
             let quotes = state
                 .providers
@@ -823,9 +822,9 @@ async fn handler_internal(
                     })?;
                     if simulation_result.transaction.input != curr_route.input {
                         return Err(RpcError::SimulationFailed(
-                "The input for the simulation result does not match the input for the transaction"
-                    .into(),
-            ));
+                            "The input for the simulation result does not match the input for the transaction"
+                                .into(),
+                        ));
                     }
 
                     curr_route.gas_limit = U64::from(
@@ -857,51 +856,43 @@ async fn handler_internal(
                 final_bridging_fee,
             )
         }
-        Eip155OrSolanaAddress::Solana(_contract) => {
-            let mut solana_accounts = Vec::with_capacity(request_payload.accounts.len());
-            for (chain_id, account) in request_payload
-                .accounts
-                .iter()
-                .filter_map(|a| a.strip_prefix("solana:"))
-                .filter_map(|a| a.split_once(":"))
-            // skip any malformed CAIP-10 addresses without 3 colons
-            {
-                let account_sol = SolanaPubkey::from_str(account).map_err(|e| {
-                    RouteSolanaError::Request(RouteSolanaRequestError::MalformedSolanaAccount(e))
-                })?;
-                solana_accounts.push((chain_id, account_sol));
-            }
+        _ => {
+            // let mut solana_accounts = Vec::with_capacity(request_payload.accounts.len());
+            // for (chain_id, account) in request_payload
+            //     .accounts
+            //     .iter()
+            //     .filter_map(|a| a.strip_prefix("solana:"))
+            //     .filter_map(|a| a.split_once(":"))
+            // // skip any malformed CAIP-10 addresses without 3 colons
+            // {
+            //     let account_sol = SolanaPubkey::from_str(account).map_err(|e| {
+            //         RouteSolanaError::Request(RouteSolanaRequestError::MalformedSolanaAccount(e))
+            //     })?;
+            //     solana_accounts.push((chain_id, account_sol));
+            // }
 
-            let (chain_id, solana_mainnet) = (SOLANA_MAINNET_CAIP2, SOLANA_MAINNET_CHAIN_ID); // TODO: make this dynamic
+            // let (chain_id, solana_mainnet) = (SOLANA_MAINNET_CAIP2, SOLANA_MAINNET_CHAIN_ID); // TODO: make this dynamic
 
-            let mainnet_solana_accounts = solana_accounts
-                .iter()
-                .filter(|(chain_id, _)| chain_id == &solana_mainnet)
-                .map(|(_, account)| account)
-                .collect::<Vec<_>>();
+            // let mainnet_solana_accounts = solana_accounts
+            //     .iter()
+            //     .filter(|(chain_id, _)| chain_id == &solana_mainnet)
+            //     .map(|(_, account)| account)
+            //     .collect::<Vec<_>>();
 
-            let found_account = mainnet_solana_accounts
-                .iter()
-                .find(|a| bridging_asset.account.as_solana() == Some(a))
-                .expect("Internal bug: the account should be found");
+            // let _found_account = mainnet_solana_accounts
+            //     .iter()
+            //     .find(|a| bridging_asset.account.as_solana() == Some(a))
+            //     .expect("Internal bug: the account should be found");
 
             let quote = reqwest::Client::new()
                 .get("https://li.quest/v1/quote/toAmount")
                 .query(&json!({
-                    "fromChain": match bridge_chain_id.as_str() {
-                        solana::SOLANA_MAINNET_CAIP2 => "SOL",
-                        _ => return Err(RpcError::InvalidValue(bridge_chain_id)),
-                    },
-                    "toChain": match initial_tx_chain_id.as_str() {
-                        get_assets::CHAIN_ID_BASE => "8453",
-                        get_assets::CHAIN_ID_OPTIMISM => "10",
-                        get_assets::CHAIN_ID_ARBITRUM => "42161",
-                        _ => return Err(RpcError::InvalidValue(initial_tx_chain_id)),
-                    },
+                    "fromChain": caip2_to_lifi_chain_id(bridge_chain_id.as_str())?,
+                    "toChain": caip2_to_lifi_chain_id(initial_tx_chain_id.as_str())?,
                     "fromToken": bridge_contract.to_string(),
                     "toToken": asset_transfer_contract.to_string(),
                     "toAmount": erc20_topup_value.to_string(),
-                    "fromAddress": found_account.to_string(),
+                    "fromAddress": bridging_asset.account.to_string(),
                     "toAddress": from_address.to_string(),
                 }))
                 .send()
@@ -929,34 +920,37 @@ async fn handler_internal(
             let quote = serde_json::from_value::<Quote>(quote).map_err(|e| {
                 RouteSolanaError::Internal(RouteSolanaInternalError::QuoteDeserialization(e))
             })?;
-            let data = data_encoding::BASE64
-                .decode(quote.transaction_request.data.as_bytes())
-                .map_err(|e| {
-                    RouteSolanaError::Internal(RouteSolanaInternalError::TransactionRequestDecode(
-                        e,
-                    ))
-                })?;
-            let tx =
-                solana::bincode::deserialize::<SolanaVersionedTransaction>(&data).map_err(|e| {
-                    RouteSolanaError::Internal(
-                        RouteSolanaInternalError::TransactionRequestDeserialization(e),
-                    )
-                })?;
 
-            (
-                vec![tx]
-                    .into_iter()
-                    .map(|t| {
-                        Transactions::Solana(vec![SolanaTransaction {
-                            from: **found_account,
-                            chain_id: chain_id.to_owned(),
-                            transaction: t,
-                        }])
-                    })
-                    .collect(),
-                U256::ZERO,
-                U256::ZERO,
-            )
+            if bridge_chain_id.starts_with("solana:") {
+                let data = data_encoding::BASE64
+                    .decode(quote.transaction_request.data.as_bytes())
+                    .map_err(|e| {
+                        RouteSolanaError::Internal(
+                            RouteSolanaInternalError::TransactionRequestDecode(e),
+                        )
+                    })?;
+                let tx = solana::bincode::deserialize::<SolanaVersionedTransaction>(&data)
+                    .map_err(|e| {
+                        RouteSolanaError::Internal(
+                            RouteSolanaInternalError::TransactionRequestDeserialization(e),
+                        )
+                    })?;
+
+                (
+                    vec![Transactions::Solana(vec![SolanaTransaction {
+                        from: *bridging_asset.account.as_solana().unwrap(),
+                        chain_id: bridge_chain_id.clone(),
+                        transaction: tx,
+                    }])],
+                    U256::ZERO,
+                    U256::ZERO,
+                )
+            } else if bridge_chain_id.starts_with("eip155:") {
+                // (vec![Transactions::Eip155(vec![tx])], U256::ZERO, U256::ZERO)
+                unimplemented!("Unsupported chain ID: {}", bridge_chain_id)
+            } else {
+                unimplemented!("Unsupported chain ID: {}", bridge_chain_id)
+            }
         }
     };
 
