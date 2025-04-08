@@ -180,7 +180,7 @@ impl ExchangeProvider for BinanceExchange {
     }
 
     fn image_url(&self) -> Option<&'static str> {
-        Some("https://cryptologos.cc/logos/binance-coin-bnb-logo.png")
+        Some("https://pay-assets.reown.com/binance_128_128.webp")
     }
 
     fn is_asset_supported(&self, asset: &Caip19Asset) -> bool {

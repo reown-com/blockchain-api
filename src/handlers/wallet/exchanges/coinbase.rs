@@ -87,7 +87,7 @@ impl ExchangeProvider for CoinbaseExchange {
     }
 
     fn image_url(&self) -> Option<&'static str> {
-        Some("https://cdn.iconscout.com/icon/free/png-256/free-coinbase-logo-icon-download-in-svg-png-gif-file-formats--web-crypro-trading-platform-logos-pack-icons-7651204.png")
+        Some("https://pay-assets.reown.com/coinbase_128_128.webp")
     }
 
     fn is_asset_supported(&self, asset: &Caip19Asset) -> bool {
