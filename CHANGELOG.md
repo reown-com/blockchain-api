@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.216.1 - 2025-04-08
+#### Bug Fixes
+- prepare use op (#1022) - (9db935a) - Chris Smith
+
+- - -
+
 ## 0.216.0 - 2025-04-08
 #### Features
 - pay with exchange (#998) - (1cd7620) - Luka Isailovic
