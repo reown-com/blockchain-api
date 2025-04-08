@@ -150,11 +150,7 @@ pub async fn status_latency_metrics_middleware<B>(
     req: Request<B>,
     next: Next<B>,
 ) -> Response {
-    // Extract the matched path from the request
-    let path = req
-        .extensions()
-        .get::<MatchedPath>()
-        .map_or("/unknown".to_string(), |mp| mp.as_str().to_string());
+    let uri = req.uri().path().to_string();
     let request_started = Instant::now();
 
     // Execute the request and get the response.
@@ -163,16 +159,14 @@ pub async fn status_latency_metrics_middleware<B>(
 
     // Record metrics async
     let state_clone = state.clone();
-    let path_clone = path.clone();
+    let uri_clone = uri.clone();
     let status = response.status().as_u16();
     let latency_secs = request_latency.as_secs_f64();
     tokio::spawn(async move {
+        state_clone.metrics.add_http_call(status, uri_clone.clone());
         state_clone
             .metrics
-            .add_http_call(status, path_clone.clone());
-        state_clone
-            .metrics
-            .add_http_latency(status, path_clone, latency_secs);
+            .add_http_latency(status, uri_clone, latency_secs);
     });
 
     response
