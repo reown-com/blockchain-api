@@ -140,6 +140,14 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_BALANCES_DENYLIST_PROJECT_IDS", value = var.balances_denylist_project_ids },
 
         { name = "RPC_PROXY_ANALYTICS_EXPORT_BUCKET", value = var.analytics_datalake_bucket_name },
+
+        { name = "RPC_PROXY_EXCHANGES_COINBASE_PROJECT_ID", value = var.coinbase_project_id },
+        { name = "RPC_PROXY_EXCHANGES_BINANCE_CLIENT_ID", value = var.binance_client_id },
+        { name = "RPC_PROXY_EXCHANGES_BINANCE_TOKEN", value = var.binance_token },
+        { name = "RPC_PROXY_EXCHANGES_BINANCE_KEY", value = var.binance_key },
+        { name = "RPC_PROXY_EXCHANGES_BINANCE_HOST", value = var.binance_host },
+
+
       ],
 
       portMappings = [
