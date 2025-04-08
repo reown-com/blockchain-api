@@ -2,6 +2,8 @@ use rand::{distributions::Alphanumeric, Rng};
 
 pub mod build;
 pub mod crypto;
+pub mod erc4337;
+pub mod erc7677;
 pub mod network;
 pub mod permissions;
 pub mod rate_limit;
