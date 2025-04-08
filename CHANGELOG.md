@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.216.0 - 2025-04-08
+#### Features
+- pay with exchange (#998) - (1cd7620) - Luka Isailovic
+
+- - -
+
 ## 0.215.1 - 2025-04-07
 #### Bug Fixes
 - **(metrics)** using the matched path instead of the URI in status and latency metrics (#1019) - (598c3e8) - Max Kalashnikoff | maksy.eth
