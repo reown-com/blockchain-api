@@ -214,7 +214,11 @@ pub async fn rpc_provider_call(
                         for req in reqs {
                             if !ids.insert(&req.id) {
                                 // TODO turn this into a 4xx error after validating with data that this behavior isn't widely depended on
-                                error!("Duplicate RPC ID: {:?} for body {}", req.id, String::from_utf8_lossy(&body));
+                                error!(
+                                    "Duplicate RPC ID: {:?} for body {}",
+                                    req.id,
+                                    String::from_utf8_lossy(&body)
+                                );
                             }
                         }
                     }
