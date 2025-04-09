@@ -32,14 +32,10 @@ jobs:
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.4
       - run: rustup update stable && rustup default stable
-      - run: cargo test -p yttrium --features=test_blockchain_api chain_abstraction::tests::happy_path_execute_method -- --nocapture
-        env:
-          REOWN_PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          FAUCET_MNEMONIC: ${{ secrets.FAUCET_MNEMONIC }}
-          RUST_BACKTRACE: 1
-          RUST_LOG: yttrium=trace
-          BLOCKCHAIN_API_URL: ${{ inputs.stage-url }}
-      - run: cargo test -p yttrium --features=test_blockchain_api,solana chain_abstraction::solana::tests::solana_happy_path -- --nocapture
+      - run: |
+          cargo test -p yttrium --features=test_blockchain_api chain_abstraction::tests::happy_path_execute_method -- --nocapture
+          cargo test -p yttrium --features=test_blockchain_api,solana chain_abstraction::solana::tests::solana_happy_path -- --nocapture
+          cargo test -p yttrium --features=test_blockchain_api chain_abstraction::tests::happy_path_lifi -- --nocapture
         env:
           REOWN_PROJECT_ID: ${{ secrets.PROJECT_ID }}
           FAUCET_MNEMONIC: ${{ secrets.FAUCET_MNEMONIC }}
