@@ -219,7 +219,36 @@ describe('Chain abstraction orchestrator', () => {
     )
     expect(resp.status).toBe(200)
     expect(resp.data.transactions.length).toBe(0)
+    expect(resp.data.initialTransaction.gasLimit).not.toBe("0x00")
+  })
 
+  it('bridging unavailable (asset is not supported)', async () => {
+    // Sending to the DAI contract, which is not supported
+    // having the USDC balance on Base.
+    const amount_to_send = "2000005684795715100";
+    const destination_chain_id = chain_id_optimism;
+    const dai_contract = "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1";
+    const data_encoded = erc20Interface.encodeFunctionData('transfer', [
+      receiver_address,
+      amount_to_send,
+    ]);
+
+    const transactionObj = {
+      transaction: {
+        from: from_address_with_funds,
+        to: dai_contract,
+        value: "0x00", // Zero native tokens
+        input: data_encoded,
+        chainId: destination_chain_id,
+      }
+    }
+
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/ca/orchestrator/route?projectId=${projectId}`,
+      transactionObj
+    )
+    expect(resp.status).toBe(200)
+    expect(resp.data.error).toBe("ASSET_NOT_SUPPORTED")
   })
 
   it('bridging routes (USDC Base → USDC Optimism)', async () => {
@@ -307,9 +336,11 @@ describe('Chain abstraction orchestrator', () => {
 
   it('bridging routes (USDT Optimism → USDT Arbitrum)', async () => {
     // Sending USDT on Arbitrum, but having the USDT balance on Optimism.
-    const amount_to_send = usdt_funds[chain_id_arbitrum] + 260_000;
+    const amount_to_send = 1_000_000;
     const destination_chain_id = chain_id_arbitrum;
     const funding_chain_id = chain_id_optimism;
+    // Override the default address to source from the USDT Op only.
+    const from_address_with_funds = "0x739ff389c8eBd9339E69611d46Eec6212179BB67";
 
     const data_encoded = erc20Interface.encodeFunctionData('transfer', [
       receiver_address,
