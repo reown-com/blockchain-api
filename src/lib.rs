@@ -3,6 +3,7 @@ use {
         env::Config,
         handlers::{
             balance::BalanceResponseBody, identity::IdentityResponse, rate_limit_middleware,
+            status_latency_metrics_middleware,
         },
         metrics::Metrics,
         project::Registry,
@@ -15,7 +16,6 @@ use {
     axum::{
         extract::connect_info::IntoMakeServiceWithConnectInfo,
         middleware,
-        response::Response,
         routing::{get, post},
         Router,
     },
@@ -50,8 +50,7 @@ use {
         trace::TraceLayer,
         ServiceBuilderExt,
     },
-    tracing::{error, info, log::warn, Span},
-    tracing_subscriber::registry::LookupSpan,
+    tracing::{error, info, log::warn},
     utils::rate_limit::RateLimit,
     wc::{
         geoip::{
@@ -219,62 +218,23 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         HeaderName::from_static("x-sdk-version"),
     ]);
 
-    let proxy_state = state_arc.clone();
-    let tracing_and_metrics_layer = ServiceBuilder::new()
+    let tracing_layer = ServiceBuilder::new()
         .set_x_request_id(MakeRequestUuid)
         .layer(
-            TraceLayer::new_for_http()
-                .make_span_with(|request: &Request<Body>| {
-                    let request_id = request
-                        .headers()
-                        .get("x-request-id")
-                        .and_then(|value| value.to_str().ok())
-                        .unwrap_or_default()
-                        .to_string();
-
-                    tracing::info_span!(
-                        "http-request",
-                        method = ?request.method(),
-                        request_id = ?request_id,
-                        uri = tracing::field::Empty // Placeholder, will be filled in `on_request`
-                    )
-                })
-                .on_request(|request: &Request<Body>, span: &Span| {
-                    let uri = request.uri().path().to_string();
-                    span.record("uri", tracing::field::display(&uri));
-
-                    span.with_subscriber(|(id, dispatcher)| {
-                        if let Some(span) = dispatcher
-                            .downcast_ref::<tracing_subscriber::Registry>()
-                            .and_then(|registry| registry.span(id))
-                        {
-                            span.extensions_mut().insert(uri);
-                        }
-                    });
-                })
-                .on_response(move |response: &Response, latency: Duration, span: &Span| {
-                    let mut uri_value = "unknown".to_string();
-
-                    span.with_subscriber(|(id, dispatcher)| {
-                        if let Some(span) = dispatcher
-                            .downcast_ref::<tracing_subscriber::Registry>()
-                            .and_then(|registry| registry.span(id))
-                        {
-                            if let Some(uri) = span.extensions().get::<String>() {
-                                uri_value = uri.clone();
-                            }
-                        }
-                    });
-
-                    proxy_state
-                        .metrics
-                        .add_http_call(response.status().into(), uri_value.clone());
-                    proxy_state.metrics.add_http_latency(
-                        response.status().into(),
-                        uri_value,
-                        latency.as_secs_f64(),
-                    );
-                }),
+            TraceLayer::new_for_http().make_span_with(|request: &Request<Body>| {
+                let request_id = request
+                    .headers()
+                    .get("x-request-id")
+                    .and_then(|value| value.to_str().ok())
+                    .unwrap_or_default()
+                    .to_string();
+                tracing::info_span!(
+                    "http-request",
+                    method = ?request.method(),
+                    request_id = ?request_id,
+                    uri = request.uri().path()
+                )
+            }),
         )
         .propagate_x_request_id();
 
@@ -401,20 +361,31 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/v1/bundler", post(handlers::bundler::handler))
         // Wallet
         .route("/v1/wallet", post(handlers::wallet::handler::handler))
+        // Same handler as the Wallet 
+        .route("/v1/json-rpc", post(handlers::wallet::handler::handler))
         // Chain agnostic orchestration
         .route("/v1/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler_v1))
         .route("/v2/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler_v2))
         .route("/v1/ca/orchestrator/status", get(handlers::chain_agnostic::status::handler))
         // Health
         .route("/health", get(handlers::health::handler))
-        .route_layer(tracing_and_metrics_layer)
-        .layer(cors);
+        .route_layer(tracing_layer)
+        .route_layer(cors);
 
+    // Response statuses and latency metrics middleware
+    let app = app.layer(middleware::from_fn_with_state(
+        state_arc.clone(),
+        status_latency_metrics_middleware,
+    ));
+
+    // GeoBlock middleware
     let app = if let Some(geoblock) = geoblock {
-        app.layer(geoblock)
+        app.route_layer(geoblock)
     } else {
         app
     };
+
+    // Rate-limiting middleware
     let app = if state_arc.rate_limit.is_some() {
         app.route_layer(middleware::from_fn_with_state(
             state_arc.clone(),

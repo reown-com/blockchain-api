@@ -4,6 +4,8 @@ use crate::handlers::sessions::get::{
     get_session_context, GetSessionContextError, InternalGetSessionContextError,
 };
 use crate::handlers::wallet::types::SignatureRequestType;
+use crate::utils::erc4337::BundlerRpcClient;
+use crate::utils::erc7677::{PaymasterRpcClient, PmGetPaymasterDataParams};
 use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
 use alloy::primitives::{bytes, keccak256, Address, Bytes, FixedBytes, B256, U256, U64};
 use alloy::providers::{Provider, ProviderBuilder};
@@ -11,13 +13,13 @@ use alloy::sol_types::SolCall;
 use alloy::sol_types::SolValue;
 use axum::extract::State;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::Arc;
 use thiserror::Error;
 use tracing::error;
 use url::Url;
 use uuid::Uuid;
 use wc::future::FutureExt;
-use yttrium::bundler::pimlico::paymaster::client::PaymasterClient;
 use yttrium::erc7579::accounts::safe::encode_validator_key;
 use yttrium::erc7579::smart_sessions::ISmartSession::isPermissionEnabledReturn;
 use yttrium::erc7579::smart_sessions::{
@@ -132,6 +134,15 @@ pub enum PrepareCallsError {
     #[error("Paymaster service capability is not supported")]
     PaymasterServiceUnsupported,
 
+    #[error("pm_getPaymasterStubData: {0}")]
+    PmGetPaymasterStubData(alloy::transports::RpcError<alloy::transports::TransportErrorKind>),
+
+    #[error("Estimate user operation gas: {0}")]
+    EstimateUserOperationGas(alloy::transports::RpcError<alloy::transports::TransportErrorKind>),
+
+    #[error("pm_getPaymasterData: {0}")]
+    PmGetPaymasterData(alloy::transports::RpcError<alloy::transports::TransportErrorKind>),
+
     #[error("Internal error")]
     InternalError(PrepareCallsInternalError),
 }
@@ -149,9 +160,6 @@ pub enum PrepareCallsInternalError {
 
     #[error("Compress session enabled: {0}")]
     CompressSessionEnabled(fastlz_rs::CompressError),
-
-    #[error("Sponsorship: {0}")]
-    Sponsorship(eyre::Error),
 
     #[error("IRN not configured")]
     IrnNotConfigured,
@@ -210,7 +218,7 @@ async fn handler_internal(
                 MessageSource::WalletPrepareCalls,
             )
             .parse()
-            .unwrap(),
+            .expect("Failed to parse provider URL"),
         );
 
         let irn_client = state.irn.as_ref().ok_or(PrepareCallsError::InternalError(
@@ -252,15 +260,15 @@ async fn handler_internal(
         .map_err(|e| PrepareCallsError::InternalError(PrepareCallsInternalError::GetNonce(e)))?;
 
         // TODO refactor to use bundler_rpc_call directly: https://github.com/WalletConnect/blockchain-api/blob/8be3ca5b08dec2387ee2c2ffcb4b7ca739443bcb/src/handlers/bundler.rs#L62
-        let pimlico_client = BundlerClient::new(BundlerConfig::new(
-            format!(
-                "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
-                chain_id.caip2_identifier(),
-                project_id,
-            )
-            .parse()
-            .unwrap(),
-        ));
+        let bundler_url = format!(
+            "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
+            chain_id.caip2_identifier(),
+            project_id,
+        )
+        .parse::<Url>()
+        .expect("Failed to parse bundler URL");
+        let pimlico_client = BundlerClient::new(BundlerConfig::new(bundler_url.clone()));
+        let bundler_provider = BundlerRpcClient::new(bundler_url);
 
         // TODO cache this
         let gas_price = pimlico_client
@@ -290,33 +298,73 @@ async fn handler_internal(
             signature: dummy_signature,
         };
 
-        let user_op = if let Some(paymaster_service) = request.capabilities.paymaster_service {
-            let paymaster_client = PaymasterClient::new(BundlerConfig::new(paymaster_service.url));
+        let (user_op, is_final) =
+            if let Some(paymaster_service) = &request.capabilities.paymaster_service {
+                let paymaster_client = PaymasterRpcClient::new(paymaster_service.url.clone());
 
-            let sponsor_user_op_result = paymaster_client
-                .sponsor_user_operation_v07(
-                    &user_op.clone().into(),
-                    &entry_point_config.address(),
-                    None,
+                let sponsor_user_op_result = paymaster_client
+                    .pm_get_paymaster_stub_data(PmGetPaymasterDataParams {
+                        user_op: user_op.clone(),
+                        entrypoint: entry_point_config.address().into(),
+                        chain_id: U64::from(chain_id.eip155_chain_id()),
+                        context: HashMap::new(),
+                    })
+                    .await
+                    .map_err(PrepareCallsError::PmGetPaymasterStubData)?;
+
+                (
+                    UserOperationV07 {
+                        paymaster: Some(sponsor_user_op_result.paymaster),
+                        paymaster_data: Some(sponsor_user_op_result.paymaster_data),
+                        paymaster_verification_gas_limit: Some(
+                            sponsor_user_op_result.paymaster_verification_gas_limit,
+                        ),
+                        paymaster_post_op_gas_limit: Some(
+                            sponsor_user_op_result.paymaster_post_op_gas_limit,
+                        ),
+                        ..user_op
+                    },
+                    sponsor_user_op_result.is_final,
                 )
+            } else {
+                (user_op, false)
+            };
+
+        let user_op = {
+            let response = bundler_provider
+                .eth_estimate_user_operation_gas_v07(&user_op, entry_point_config.address().into())
                 .await
-                .map_err(|e| {
-                    PrepareCallsError::InternalError(PrepareCallsInternalError::Sponsorship(e))
-                })?;
+                .map_err(PrepareCallsError::EstimateUserOperationGas)?;
 
             UserOperationV07 {
-                call_gas_limit: sponsor_user_op_result.call_gas_limit,
-                verification_gas_limit: sponsor_user_op_result.verification_gas_limit,
-                pre_verification_gas: sponsor_user_op_result.pre_verification_gas,
-                paymaster: Some(sponsor_user_op_result.paymaster),
-                paymaster_verification_gas_limit: Some(
-                    sponsor_user_op_result.paymaster_verification_gas_limit,
-                ),
-                paymaster_post_op_gas_limit: Some(
-                    sponsor_user_op_result.paymaster_post_op_gas_limit,
-                ),
-                paymaster_data: Some(sponsor_user_op_result.paymaster_data),
+                call_gas_limit: response.call_gas_limit,
+                verification_gas_limit: response.verification_gas_limit,
+                pre_verification_gas: response.pre_verification_gas,
                 ..user_op
+            }
+        };
+
+        let user_op = if let Some(paymaster_service) = request.capabilities.paymaster_service {
+            if !is_final {
+                let paymaster_client = PaymasterRpcClient::new(paymaster_service.url);
+
+                let sponsor_user_op_result = paymaster_client
+                    .pm_get_paymaster_data(PmGetPaymasterDataParams {
+                        user_op: user_op.clone(),
+                        entrypoint: entry_point_config.address().into(),
+                        chain_id: U64::from(chain_id.eip155_chain_id()),
+                        context: HashMap::new(),
+                    })
+                    .await
+                    .map_err(PrepareCallsError::PmGetPaymasterData)?;
+
+                UserOperationV07 {
+                    paymaster: Some(sponsor_user_op_result.paymaster),
+                    paymaster_data: Some(sponsor_user_op_result.paymaster_data),
+                    ..user_op
+                }
+            } else {
+                user_op
             }
         } else {
             user_op

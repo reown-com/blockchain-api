@@ -8057,7 +8057,7 @@ dependencies = [
 
 [[package]]
 name = "rpc-proxy"
-version = "0.213.0"
+version = "0.216.1"
 dependencies = [
  "alloy 0.11.1",
  "anyhow",
@@ -8089,6 +8089,7 @@ dependencies = [
  "moka",
  "num_enum",
  "once_cell",
+ "openssl",
  "parquet",
  "parquet_derive",
  "phf",
@@ -13627,7 +13628,6 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?rev=a190c18#a190c18c4c97b5e38159b833be01d8b217bddc99"
 dependencies = [
  "alloy 0.11.1",
  "alloy-provider 0.11.1",

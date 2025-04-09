@@ -123,5 +123,12 @@ module "ecs" {
   # Project ID used in a testing suite
   testing_project_id = var.testing_project_id
 
+  # Exchanges
+  coinbase_project_id = var.coinbase_project_id
+  binance_client_id   = var.binance_client_id
+  binance_token       = var.binance_token
+  binance_key         = var.binance_key
+  binance_host        = var.binance_host
+
   depends_on = [aws_iam_role.application_role]
 }

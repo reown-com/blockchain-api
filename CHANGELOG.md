@@ -2,6 +2,42 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.216.1 - 2025-04-08
+#### Bug Fixes
+- prepare use op (#1022) - (9db935a) - Chris Smith
+
+- - -
+
+## 0.216.0 - 2025-04-08
+#### Features
+- pay with exchange (#998) - (1cd7620) - Luka Isailovic
+
+- - -
+
+## 0.215.1 - 2025-04-07
+#### Bug Fixes
+- **(metrics)** using the matched path instead of the URI in status and latency metrics (#1019) - (598c3e8) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.215.0 - 2025-04-07
+#### Features
+- middlewares reordering, writing metrics async (#1017) - (a83ad4d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.214.1 - 2025-04-07
+#### Bug Fixes
+- moving latency and status codes metrics to the middleware (#1016) - (fa8363e) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.214.0 - 2025-04-04
+#### Features
+- ERC-7677 paymasterService capability (#1011) - (124a6f5) - Chris Smith
+
+- - -
+
 ## 0.213.0 - 2025-04-04
 #### Features
 - **(o11y)** adding swaps availability chart and monitoring (#1014) - (0cd18c0) - Max Kalashnikoff | maksy.eth

@@ -7,7 +7,7 @@ use {
         response::{IntoResponse, Response},
     },
     serde::{Deserialize, Serialize},
-    std::{fmt::Display, sync::Arc},
+    std::{fmt::Display, sync::Arc, time::Instant},
     tracing::error,
     wc::metrics::TaskMetrics,
 };
@@ -142,4 +142,38 @@ pub async fn rate_limit_middleware<B>(
         Ok(_) => next.run(req).await,
         Err(e) => RpcError::from(e).into_response(),
     }
+}
+
+/// Endpoints latency and response status metrics middleware
+pub async fn status_latency_metrics_middleware<B>(
+    State(state): State<Arc<AppState>>,
+    req: Request<B>,
+    next: Next<B>,
+) -> Response {
+    // Extract the matched path from the request
+    let path = req
+        .extensions()
+        .get::<MatchedPath>()
+        .map_or("/unknown".to_string(), |mp| mp.as_str().to_string());
+    let request_started = Instant::now();
+
+    // Execute the request and get the response.
+    let response = next.run(req).await;
+    let request_latency = request_started.elapsed();
+
+    // Record metrics async
+    let state_clone = state.clone();
+    let path_clone = path.clone();
+    let status = response.status().as_u16();
+    let latency_secs = request_latency.as_secs_f64();
+    tokio::spawn(async move {
+        state_clone
+            .metrics
+            .add_http_call(status, path_clone.clone());
+        state_clone
+            .metrics
+            .add_http_latency(status, path_clone, latency_secs);
+    });
+
+    response
 }
