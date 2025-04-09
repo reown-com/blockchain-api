@@ -134,6 +134,15 @@ pub enum PrepareCallsError {
     #[error("Paymaster service capability is not supported")]
     PaymasterServiceUnsupported,
 
+    #[error("pm_getPaymasterStubData: {0}")]
+    PmGetPaymasterStubData(alloy::transports::RpcError<alloy::transports::TransportErrorKind>),
+
+    #[error("Estimate user operation gas: {0}")]
+    EstimateUserOperationGas(alloy::transports::RpcError<alloy::transports::TransportErrorKind>),
+
+    #[error("pm_getPaymasterData: {0}")]
+    PmGetPaymasterData(alloy::transports::RpcError<alloy::transports::TransportErrorKind>),
+
     #[error("Internal error")]
     InternalError(PrepareCallsInternalError),
 }
@@ -145,15 +154,6 @@ pub enum PrepareCallsInternalError {
 
     #[error("Estimate user operation gas price: {0}")]
     EstimateUserOperationGasPrice(eyre::Error),
-
-    #[error("pm_getPaymasterStubData: {0}")]
-    PmGetPaymasterStubData(alloy::transports::RpcError<alloy::transports::TransportErrorKind>),
-
-    #[error("Estimate user operation gas: {0}")]
-    EstimateUserOperationGas(alloy::transports::RpcError<alloy::transports::TransportErrorKind>),
-
-    #[error("pm_getPaymasterData: {0}")]
-    PmGetPaymasterData(alloy::transports::RpcError<alloy::transports::TransportErrorKind>),
 
     #[error("isSessionEnabled: {0}")]
     IsSessionEnabled(alloy::contract::Error),
@@ -310,11 +310,7 @@ async fn handler_internal(
                         context: HashMap::new(),
                     })
                     .await
-                    .map_err(|e| {
-                        PrepareCallsError::InternalError(
-                            PrepareCallsInternalError::PmGetPaymasterStubData(e),
-                        )
-                    })?;
+                    .map_err(PrepareCallsError::PmGetPaymasterStubData)?;
 
                 (
                     UserOperationV07 {
@@ -338,11 +334,7 @@ async fn handler_internal(
             let response = bundler_provider
                 .eth_estimate_user_operation_gas_v07(&user_op, entry_point_config.address().into())
                 .await
-                .map_err(|e| {
-                    PrepareCallsError::InternalError(
-                        PrepareCallsInternalError::EstimateUserOperationGas(e),
-                    )
-                })?;
+                .map_err(PrepareCallsError::EstimateUserOperationGas)?;
 
             UserOperationV07 {
                 call_gas_limit: response.call_gas_limit,
@@ -364,11 +356,7 @@ async fn handler_internal(
                         context: HashMap::new(),
                     })
                     .await
-                    .map_err(|e| {
-                        PrepareCallsError::InternalError(
-                            PrepareCallsInternalError::PmGetPaymasterData(e),
-                        )
-                    })?;
+                    .map_err(PrepareCallsError::PmGetPaymasterData)?;
 
                 UserOperationV07 {
                     paymaster: Some(sponsor_user_op_result.paymaster),

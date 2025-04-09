@@ -94,6 +94,9 @@ pub enum SendPreparedCallsError {
     #[error("Paymaster service capability is not supported")]
     PaymasterServiceUnsupported,
 
+    #[error("eth_sendUserOperation: {0}")]
+    SendUserOperation(eyre::Report),
+
     #[error("Internal error")]
     InternalError(SendPreparedCallsInternalError),
 }
@@ -127,16 +130,8 @@ pub enum SendPreparedCallsInternalError {
     #[error("Get session context: {0}")]
     GetSessionContextError(InternalGetSessionContextError),
 
-    #[error("Get nonce: {0}")]
-    GetNonce(alloy::contract::Error),
-
-    #[error("Estimate user operation gas price: {0}")]
-    EstimateUserOperationGasPrice(eyre::Error),
-
     #[error("isSessionEnabled: {0}")]
     IsSessionEnabled(alloy::contract::Error),
-    #[error("SendUserOperation: {0}")]
-    SendUserOperation(eyre::Error),
 }
 
 pub async fn handler(
@@ -438,11 +433,7 @@ async fn handler_internal(
         let user_op_hash = bundler_client
             .send_user_operation(entry_point_config.address(), user_op)
             .await
-            .map_err(|e| {
-                SendPreparedCallsError::InternalError(
-                    SendPreparedCallsInternalError::SendUserOperation(e),
-                )
-            })?;
+            .map_err(SendPreparedCallsError::SendUserOperation)?;
 
         response.push(CallId(CallIdInner {
             chain_id: U64::from(chain_id.eip155_chain_id()),
