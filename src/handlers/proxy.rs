@@ -213,10 +213,8 @@ pub async fn rpc_provider_call(
                         let mut ids = HashSet::new();
                         for req in reqs {
                             if !ids.insert(&req.id) {
-                                return Err(RpcError::InvalidParameter(format!(
-                                    "Duplicate RPC ID: {:?}",
-                                    req.id
-                                )));
+                                // TODO turn this into a 4xx error after validating with data that this behavior isn't widely depended on
+                                error!("Duplicate RPC ID: {:?} for body {}", req.id, String::from_utf8_lossy(&body));
                             }
                         }
                     }
@@ -245,6 +243,7 @@ pub async fn rpc_provider_call(
             }
         }
         Err(e) => {
+            // TODO turn this into a 4xx error after validating with data that this behavior isn't widely depended on
             error!(
                 "TRIAGE: Invalid JSON-RPC request: {} for body: {}",
                 e,
