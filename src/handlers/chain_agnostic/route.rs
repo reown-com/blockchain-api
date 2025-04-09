@@ -197,6 +197,15 @@ impl From<PrepareResponseAvailable> for PrepareResponseAvailableV1 {
     }
 }
 
+fn no_bridging_needed_response(initial_transaction: Transaction) -> Json<PrepareResponse> {
+    Json(PrepareResponse::Success(
+        PrepareResponseSuccess::NotRequired(PrepareResponseNotRequired {
+            initial_transaction,
+            transactions: vec![],
+        }),
+    ))
+}
+
 pub async fn handler_v2(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
@@ -267,13 +276,6 @@ async fn handler_internal(
     .await?;
     initial_transaction.nonce = intial_transaction_nonce;
 
-    let no_bridging_needed_response = Json(PrepareResponse::Success(
-        PrepareResponseSuccess::NotRequired(PrepareResponseNotRequired {
-            initial_transaction: initial_transaction.clone(),
-            transactions: vec![],
-        }),
-    ));
-
     let asset_transfer_value;
     let asset_transfer_contract;
     let asset_transfer_receiver;
@@ -311,6 +313,8 @@ async fn handler_internal(
                 );
 
                 // Check if the destination address is supported ERC20 asset contract
+                // return an error if not, since the simulation for the gas estimation
+                // will fail
                 if find_supported_bridging_asset(
                     &initial_tx_chain_id.clone(),
                     Eip155OrSolanaAddress::Eip155(to_address),
@@ -325,7 +329,14 @@ async fn handler_internal(
                     state.metrics.add_ca_no_bridging_needed(
                         ChainAbstractionNoBridgingNeededType::AssetNotSupported,
                     );
-                    return Ok(no_bridging_needed_response);
+                    return Ok(Json(PrepareResponse::Error(PrepareResponseError {
+                        error: BridgingError::AssetNotSupported,
+                        reason: format!(
+                            "The initial transaction asset {}:{} is not supported for the bridging",
+                            initial_tx_chain_id.clone(),
+                            to_address
+                        ),
+                    })));
                 };
 
                 // Get the ERC20 transfer gas estimation for the token contract
@@ -414,7 +425,11 @@ async fn handler_internal(
                     state.metrics.add_ca_no_bridging_needed(
                         ChainAbstractionNoBridgingNeededType::AssetNotSupported,
                     );
-                    return Ok(no_bridging_needed_response);
+                    return Ok(Json(PrepareResponse::Error(PrepareResponseError {
+                        error: BridgingError::AssetNotSupported,
+                        reason: "The transaction does not change any supported bridging assets"
+                            .to_string(),
+                    })));
                 }
 
                 (
@@ -430,22 +445,6 @@ async fn handler_internal(
     // Estimated gas multiplied by the slippage
     initial_transaction.gas_limit =
         U64::from((gas_used * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
-
-    // Check if the destination address is supported ERC20 asset contract
-    // Attempt to destructure the result into symbol and decimals using a match expression
-    let (initial_tx_token_symbol, initial_tx_token_decimals) = match find_supported_bridging_asset(
-        &initial_tx_chain_id,
-        Eip155OrSolanaAddress::Eip155(asset_transfer_contract),
-    ) {
-        Some((symbol, decimals)) => (symbol, decimals),
-        None => {
-            error!("The changed asset is not a supported for the bridging");
-            state
-                .metrics
-                .add_ca_no_bridging_needed(ChainAbstractionNoBridgingNeededType::AssetNotSupported);
-            return Ok(no_bridging_needed_response);
-        }
-    };
 
     // Get the current balance of the ERC20 or native token and check if it's enough for the transfer
     // without bridging or calculate the top-up value
@@ -463,9 +462,32 @@ async fn handler_internal(
         state
             .metrics
             .add_ca_no_bridging_needed(ChainAbstractionNoBridgingNeededType::SufficientFunds);
-        return Ok(no_bridging_needed_response);
+        return Ok(no_bridging_needed_response(initial_transaction));
     }
     let mut erc20_topup_value = asset_transfer_value - erc20_balance;
+
+    // Check if the destination address is supported ERC20 asset contract
+    // Attempt to destructure the result into symbol and decimals using a match expression
+    let (initial_tx_token_symbol, initial_tx_token_decimals) = match find_supported_bridging_asset(
+        &initial_tx_chain_id,
+        Eip155OrSolanaAddress::Eip155(asset_transfer_contract),
+    ) {
+        Some((symbol, decimals)) => (symbol, decimals),
+        None => {
+            error!("The changed asset is not a supported for the bridging");
+            state
+                .metrics
+                .add_ca_no_bridging_needed(ChainAbstractionNoBridgingNeededType::AssetNotSupported);
+            return Ok(Json(PrepareResponse::Error(PrepareResponseError {
+                error: BridgingError::AssetNotSupported,
+                reason: format!(
+                    "The initial transaction asset {}:{} is not supported for the bridging",
+                    initial_tx_chain_id.clone(),
+                    asset_transfer_contract
+                ),
+            })));
+        }
+    };
 
     let sol_rpc = "https://api.mainnet-beta.solana.com";
     let solana_rpc_client = Arc::new(SolanaRpcClient::new_with_commitment(

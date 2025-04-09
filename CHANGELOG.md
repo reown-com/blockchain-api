@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.217.0 - 2025-04-09
+#### Features
+- **(CA)** adding `AssetNotSupported` error type instead of no bridging needed where applicable (#997) - (fc1ec3e) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.216.2 - 2025-04-09
 #### Bug Fixes
 - improve error attribution (#1029) - (331f305) - Chris Smith

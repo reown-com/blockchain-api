@@ -32,7 +32,7 @@ permissions:
 jobs:
   ci:
     name: CI
-    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.17
+    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.18
     secrets: inherit
     with:
       check-infra: ${{ inputs.check-infra }}
