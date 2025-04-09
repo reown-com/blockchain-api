@@ -46,7 +46,7 @@ jobs:
   ci:
     name: CI
     needs: [ paths-filter ]
-    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.17
+    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@fix/bump-cargo-deny-action
     secrets: inherit
     with:
       check-app: ${{ needs.paths-filter.outputs.app == 'true' }}
