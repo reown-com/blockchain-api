@@ -217,7 +217,7 @@ pub async fn rpc_provider_call(
                                 error!(
                                     "Duplicate RPC ID: {:?} for body {}",
                                     req.id,
-                                    String::from_utf8_lossy(&body)
+                                    serde_json::to_string(&body).unwrap_or_default()
                                 );
                             }
                         }
