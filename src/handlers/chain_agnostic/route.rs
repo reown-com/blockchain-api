@@ -43,20 +43,23 @@ use {
     tracing::{debug, error},
     uuid::Uuid,
     wc::future::FutureExt,
-    yttrium::chain_abstraction::{
-        api::{
-            prepare::{
-                BridgingError, Eip155OrSolanaAddress, FundingMetadata, InitialTransactionMetadata,
-                Metadata, PrepareRequest, PrepareResponse, PrepareResponseAvailable,
-                PrepareResponseError, PrepareResponseNotRequired, PrepareResponseSuccess,
-                RouteQueryParams, SolanaTransaction, Transactions,
+    yttrium::{
+        chain_abstraction::{
+            api::{
+                prepare::{
+                    BridgingError, Eip155OrSolanaAddress, FundingMetadata,
+                    InitialTransactionMetadata, Metadata, PrepareRequest, PrepareResponse,
+                    PrepareResponseAvailable, PrepareResponseError, PrepareResponseNotRequired,
+                    PrepareResponseSuccess, RouteQueryParams, SolanaTransaction, Transactions,
+                },
+                Transaction,
             },
-            Transaction,
+            solana::{
+                self, SolanaCommitmentConfig, SolanaParsePubkeyError, SolanaPubkey,
+                SolanaRpcClient, SolanaVersionedTransaction,
+            },
         },
-        solana::{
-            self, SolanaCommitmentConfig, SolanaParsePubkeyError, SolanaPubkey, SolanaRpcClient,
-            SolanaVersionedTransaction,
-        },
+        erc20::ERC20,
     },
 };
 
@@ -564,7 +567,7 @@ async fn handler_internal(
         bridge_decimals,
     );
 
-    let (routes, bridged_amount, final_bridging_fee) = match bridge_contract {
+    let (routes, bridged_amount, final_bridging_fee) = match bridge_contract.clone() {
         Eip155OrSolanaAddress::Eip155(bridge_contract) if !query_params.use_lifi => {
             // Get Quotes for the bridging
             let quotes = state
@@ -853,7 +856,7 @@ async fn handler_internal(
                 final_bridging_fee,
             )
         }
-        _ => {
+        bridge_contract => {
             // let mut solana_accounts = Vec::with_capacity(request_payload.accounts.len());
             // for (chain_id, account) in request_payload
             //     .accounts
@@ -902,18 +905,20 @@ async fn handler_internal(
                 })?;
             debug!("Quote: {}", serde_json::to_string_pretty(&quote).unwrap());
 
-            #[derive(Debug, Serialize, Deserialize)]
-            #[serde(rename_all = "camelCase")]
-            struct Action {
-                from_amount: U256,
-            }
-
             if bridge_chain_id.starts_with("solana:") {
+                assert!(bridge_contract.as_solana().is_some());
+
                 #[derive(Debug, Serialize, Deserialize)]
                 #[serde(rename_all = "camelCase")]
                 struct Quote {
                     action: Action,
                     transaction_request: TransactionRequest,
+                }
+
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct Action {
+                    from_amount: U256,
                 }
 
                 #[derive(Debug, Serialize, Deserialize)]
@@ -956,11 +961,35 @@ async fn handler_internal(
                     quote.action.from_amount - erc20_topup_value,
                 )
             } else if bridge_chain_id.starts_with("eip155:") {
+                let bridge_contract = bridge_contract
+                    .as_eip155()
+                    .expect("Internal bug: the bridge contract should be an EIP-155 address when bridge_chain_id starts with eip155:");
+
                 #[derive(Debug, Serialize, Deserialize)]
                 #[serde(rename_all = "camelCase")]
                 struct Quote {
                     action: Action,
+                    estimate: Estimate,
                     transaction_request: TransactionRequest,
+                }
+
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct Action {
+                    from_amount: U256,
+                    from_token: FromToken,
+                }
+
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct FromToken {
+                    address: Address,
+                }
+
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct Estimate {
+                    approval_address: Address,
                 }
 
                 #[derive(Debug, Serialize, Deserialize)]
@@ -972,7 +1001,7 @@ async fn handler_internal(
                     to: Address,
                     value: U256,
                     gas_limit: U256,
-                    gas_price: U256,
+                    gas_price: U256, // should be unused, as this is legacy gas API
                 }
 
                 let quote = serde_json::from_value::<Quote>(quote).map_err(|e| {
@@ -985,28 +1014,68 @@ async fn handler_internal(
                     serde_json::to_string_pretty(&quote).unwrap()
                 );
 
-                let nonce = get_nonce(
+                let mut nonce = get_nonce(
                     from_address,
                     &provider_pool
                         .get_provider(bridge_chain_id.clone(), MessageSource::ChainAgnosticCheck),
                 )
                 .await?;
 
-                // TODO approval txn?
+                let mut txns = Vec::with_capacity(2);
 
-                let tx = Transaction {
+                // Generate approval txn, if necessary
+                {
+                    // Approve 4x the necessary amount to avoid re-approving too often
+                    const APPROVE_MULTIPLIER: u64 = 4;
+
+                    // https://docs.li.fi/li.fi-api/li.fi-api/transferring-tokens-example#checking-and-setting-the-allowance
+                    assert_eq!(bridge_contract, &quote.action.from_token.address);
+                    assert_ne!(bridge_contract, &quote.estimate.approval_address);
+                    let source_token = ERC20::new(
+                        quote.action.from_token.address,
+                        provider_pool.get_provider(
+                            bridge_chain_id.clone(),
+                            MessageSource::ChainAgnosticCheck,
+                        ),
+                    );
+                    let allowance = source_token
+                        .allowance(from_address, quote.estimate.approval_address)
+                        .call()
+                        .await
+                        .map_err(|e| {
+                            RouteSolanaError::Internal(RouteSolanaInternalError::AllowanceCall(e))
+                        })?
+                        .remaining;
+                    if allowance < quote.action.from_amount {
+                        let approve_amount =
+                            quote.action.from_amount * U256::from(APPROVE_MULTIPLIER);
+                        let approve_tx =
+                            source_token.approve(quote.estimate.approval_address, approve_amount);
+                        txns.push(Transaction {
+                            chain_id: format!("eip155:{}", quote.transaction_request.chain_id),
+                            from: quote.transaction_request.from,
+                            to: quote.action.from_token.address,
+                            value: U256::ZERO,
+                            input: approve_tx.calldata().clone(),
+                            nonce,
+                            gas_limit: U64::from(100000), // TODO estimate gas
+                        });
+                        nonce += U64::from(1);
+                    }
+                }
+
+                txns.push(Transaction {
                     chain_id: format!("eip155:{}", quote.transaction_request.chain_id),
                     from: quote.transaction_request.from,
                     to: quote.transaction_request.to,
                     value: quote.transaction_request.value,
                     input: quote.transaction_request.data,
                     nonce,
-                    // TODO remove, this field is deprecated
                     gas_limit: U64::from(quote.transaction_request.gas_limit),
-                };
+                });
 
                 (
-                    vec![Transactions::Eip155(vec![tx])],
+                    vec![Transactions::Eip155(txns)],
                     quote.action.from_amount,
                     quote.action.from_amount - erc20_topup_value,
                 )
@@ -1188,6 +1257,9 @@ pub enum RouteSolanaInternalError {
 
     #[error("Transaction request deserialization: {0}")]
     TransactionRequestDeserialization(solana::bincode::Error),
+
+    #[error("Allowance call: {0}")]
+    AllowanceCall(alloy::contract::Error),
 }
 
 #[derive(Debug, thiserror::Error)]
