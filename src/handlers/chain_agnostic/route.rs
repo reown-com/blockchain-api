@@ -670,13 +670,13 @@ async fn handler_internal(
                 return Ok(Json(PrepareResponse::Error(PrepareResponseError {
                     error: BridgingError::NoRoutesAvailable,
                     reason: format!(
-                "No routes were found from {}:{} to {}:{} for updated (fee included) amount: {}",
-                bridge_chain_id.clone(),
-                bridge_contract,
-                initial_tx_chain_id.clone(),
-                asset_transfer_contract,
-                required_topup_amount
-            ),
+                        "No routes were found from {}:{} to {}:{} for updated (fee included) amount: {}",
+                        bridge_chain_id.clone(),
+                        bridge_contract,
+                        initial_tx_chain_id.clone(),
+                        asset_transfer_contract,
+                        required_topup_amount
+                    ),
                 })));
             };
 
