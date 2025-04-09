@@ -879,33 +879,6 @@ async fn handler_internal(
             )
         }
         bridge_contract => {
-            // let mut solana_accounts = Vec::with_capacity(request_payload.accounts.len());
-            // for (chain_id, account) in request_payload
-            //     .accounts
-            //     .iter()
-            //     .filter_map(|a| a.strip_prefix("solana:"))
-            //     .filter_map(|a| a.split_once(":"))
-            // // skip any malformed CAIP-10 addresses without 3 colons
-            // {
-            //     let account_sol = SolanaPubkey::from_str(account).map_err(|e| {
-            //         RouteSolanaError::Request(RouteSolanaRequestError::MalformedSolanaAccount(e))
-            //     })?;
-            //     solana_accounts.push((chain_id, account_sol));
-            // }
-
-            // let (chain_id, solana_mainnet) = (SOLANA_MAINNET_CAIP2, SOLANA_MAINNET_CHAIN_ID); // TODO: make this dynamic
-
-            // let mainnet_solana_accounts = solana_accounts
-            //     .iter()
-            //     .filter(|(chain_id, _)| chain_id == &solana_mainnet)
-            //     .map(|(_, account)| account)
-            //     .collect::<Vec<_>>();
-
-            // let _found_account = mainnet_solana_accounts
-            //     .iter()
-            //     .find(|a| bridging_asset.account.as_solana() == Some(a))
-            //     .expect("Internal bug: the account should be found");
-
             let quote = reqwest::Client::new()
                 .get("https://li.quest/v1/quote/toAmount")
                 .query(&json!({
