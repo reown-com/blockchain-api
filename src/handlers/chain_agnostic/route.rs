@@ -24,7 +24,7 @@ use {
             simple_request_json::SimpleRequestJson,
         },
     },
-    alloy::primitives::{Address, U256, U64},
+    alloy::primitives::{Address, Bytes, U256, U64},
     axum::{
         extract::{ConnectInfo, Query, State},
         response::{IntoResponse, Response},
@@ -564,11 +564,8 @@ async fn handler_internal(
         bridge_decimals,
     );
 
-    // TODO query param
-    let always_use_lifi = false;
-
     let (routes, bridged_amount, final_bridging_fee) = match bridge_contract {
-        Eip155OrSolanaAddress::Eip155(bridge_contract) if !always_use_lifi => {
+        Eip155OrSolanaAddress::Eip155(bridge_contract) if !query_params.use_lifi => {
             // Get Quotes for the bridging
             let quotes = state
                 .providers
@@ -907,21 +904,34 @@ async fn handler_internal(
 
             #[derive(Debug, Serialize, Deserialize)]
             #[serde(rename_all = "camelCase")]
-            struct Quote {
-                transaction_request: TransactionRequest,
+            struct Action {
+                from_amount: U256,
             }
-
-            #[derive(Debug, Serialize, Deserialize)]
-            #[serde(rename_all = "camelCase")]
-            struct TransactionRequest {
-                data: String,
-            }
-
-            let quote = serde_json::from_value::<Quote>(quote).map_err(|e| {
-                RouteSolanaError::Internal(RouteSolanaInternalError::QuoteDeserialization(e))
-            })?;
 
             if bridge_chain_id.starts_with("solana:") {
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct Quote {
+                    action: Action,
+                    transaction_request: TransactionRequest,
+                }
+
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct TransactionRequest {
+                    data: String,
+                }
+
+                let quote = serde_json::from_value::<Quote>(quote).map_err(|e| {
+                    RouteSolanaError::Internal(
+                        RouteSolanaInternalError::LiFiQuoteDeserializationSolana(e),
+                    )
+                })?;
+                debug!(
+                    "Parsed quote: {}",
+                    serde_json::to_string_pretty(&quote).unwrap()
+                );
+
                 let data = data_encoding::BASE64
                     .decode(quote.transaction_request.data.as_bytes())
                     .map_err(|e| {
@@ -942,13 +952,66 @@ async fn handler_internal(
                         chain_id: bridge_chain_id.clone(),
                         transaction: tx,
                     }])],
-                    U256::ZERO,
-                    U256::ZERO,
+                    quote.action.from_amount,
+                    quote.action.from_amount - erc20_topup_value,
                 )
             } else if bridge_chain_id.starts_with("eip155:") {
-                // (vec![Transactions::Eip155(vec![tx])], U256::ZERO, U256::ZERO)
-                unimplemented!("Unsupported chain ID: {}", bridge_chain_id)
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct Quote {
+                    action: Action,
+                    transaction_request: TransactionRequest,
+                }
+
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct TransactionRequest {
+                    chain_id: u64,
+                    data: Bytes,
+                    from: Address,
+                    to: Address,
+                    value: U256,
+                    gas_limit: U256,
+                    gas_price: U256,
+                }
+
+                let quote = serde_json::from_value::<Quote>(quote).map_err(|e| {
+                    RouteSolanaError::Internal(
+                        RouteSolanaInternalError::LiFiQuoteDeserializationEip155(e),
+                    )
+                })?;
+                debug!(
+                    "Parsed quote: {}",
+                    serde_json::to_string_pretty(&quote).unwrap()
+                );
+
+                let nonce = get_nonce(
+                    from_address,
+                    &provider_pool
+                        .get_provider(bridge_chain_id.clone(), MessageSource::ChainAgnosticCheck),
+                )
+                .await?;
+
+                // TODO approval txn?
+
+                let tx = Transaction {
+                    chain_id: format!("eip155:{}", quote.transaction_request.chain_id),
+                    from: quote.transaction_request.from,
+                    to: quote.transaction_request.to,
+                    value: quote.transaction_request.value,
+                    input: quote.transaction_request.data,
+                    nonce,
+                    // TODO remove, this field is deprecated
+                    gas_limit: U64::from(quote.transaction_request.gas_limit),
+                };
+
+                (
+                    vec![Transactions::Eip155(vec![tx])],
+                    quote.action.from_amount,
+                    quote.action.from_amount - erc20_topup_value,
+                )
             } else {
+                // Bug: This means that we have a supported asset on a non-supported chain
                 unimplemented!("Unsupported chain ID: {}", bridge_chain_id)
             }
         }
@@ -1114,8 +1177,11 @@ pub enum RouteSolanaInternalError {
     #[error("JSON deserialization: {0}")]
     JsonDeserialization(reqwest::Error),
 
-    #[error("Quote deserialization: {0}")]
-    QuoteDeserialization(serde_json::Error),
+    #[error("LiFi quote (Solana) deserialization: {0}")]
+    LiFiQuoteDeserializationSolana(serde_json::Error),
+
+    #[error("LiFi quote (EIP155) deserialization: {0}")]
+    LiFiQuoteDeserializationEip155(serde_json::Error),
 
     #[error("Transaction request decode: {0}")]
     TransactionRequestDecode(data_encoding::DecodeError),

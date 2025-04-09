@@ -7391,7 +7391,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a56d757972c98b346a9b766e3f02746cde6dd1cd1d1d563472929fdd74bec4d"
 dependencies = [
  "anyhow",
- "itertools 0.13.0",
+ "itertools 0.11.0",
  "proc-macro2 1.0.94",
  "quote 1.0.39",
  "syn 2.0.99",
@@ -12063,9 +12063,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.43.0"
+version = "1.44.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d61fa4ffa3de412bfea335c6ecff681de2b609ba3c77ef3e00e521813a9ed9e"
+checksum = "e6b88822cbe49de4185e3a4cbf8321dd487cf5fe0c5c65695fef6346371e9c48"
 dependencies = [
  "backtrace",
  "bytes",
@@ -13628,6 +13628,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
+source = "git+https://github.com/reown-com/yttrium.git?rev=9ac3e2c#9ac3e2c0e22336fec37eeef33dc093740b745af8"
 dependencies = [
  "alloy 0.11.1",
  "alloy-provider 0.11.1",
