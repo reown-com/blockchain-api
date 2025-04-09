@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.216.2 - 2025-04-09
+#### Bug Fixes
+- improve error attribution (#1029) - (331f305) - Chris Smith
+#### Miscellaneous Chores
+- add terraform exchanges env (#1023) - (a153f66) - Luka Isailovic
+
+- - -
+
 ## 0.216.1 - 2025-04-08
 #### Bug Fixes
 - prepare use op (#1022) - (9db935a) - Chris Smith
