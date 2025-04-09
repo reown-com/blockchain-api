@@ -22,6 +22,7 @@ use {
 };
 
 pub mod assets;
+pub mod lifi;
 pub mod route;
 pub mod status;
 
@@ -424,6 +425,7 @@ pub fn convert_amount(amount: U256, from_decimals: u8, to_decimals: u8) -> U256 
             let diff = from_decimals - to_decimals;
             let exp = U256::from(diff as u64);
             let factor = U256::from(10).pow(exp);
+            // FIXME possible truncation error here? This `convert_amount()` function may be unsafe to use in some cases
             amount / factor
         }
         Ordering::Less => {

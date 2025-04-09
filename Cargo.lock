@@ -8280,7 +8280,7 @@ dependencies = [
 
 [[package]]
 name = "rpc-proxy"
-version = "0.217.0"
+version = "0.218.0"
 dependencies = [
  "alloy 0.11.1",
  "anyhow",
@@ -14071,7 +14071,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?rev=d7aeb62#d7aeb62d8402fdc2babc2398a62dfc49ded7949a"
+source = "git+https://github.com/reown-com/yttrium.git?rev=513ad42#513ad42b4df3536e62f5e5bd841a7a10865c5a58"
 dependencies = [
  "alloy 0.11.1",
  "alloy-provider 0.11.1",
