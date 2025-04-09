@@ -453,3 +453,40 @@ variable "balances_denylist_project_ids" {
   description = "Comma separated list of project IDs to denylist"
   type        = string
 }
+
+#-------------------------------------------------------------------------------
+# Exchanges
+
+variable "coinbase_project_id" {
+  description = "Coinbase project id"
+  type        = string
+  default     = ""
+}
+
+variable "binance_client_id" {
+  description = "Coinbase project id"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "binance_token" {
+  description = "Coinbase project id"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "binance_key" {
+  description = "Coinbase project id"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "binance_host" {
+  description = "Coinbase project id"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
