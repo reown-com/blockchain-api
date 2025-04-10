@@ -339,9 +339,7 @@ impl ProviderRepository {
             config.tenderly_api_key.clone(),
             config.tenderly_account_id.clone(),
             config.tenderly_project_id.clone(),
-            // Todo: Temporary disabling the gas estimation caching
-            // redis_pool.clone(),
-            None,
+            redis_pool.clone(),
         ));
 
         let token_metadata_cache = Arc::new(TokenMetadataCache::new(redis_pool.clone()));
