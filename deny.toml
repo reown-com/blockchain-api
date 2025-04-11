@@ -1,6 +1,5 @@
 [licenses]
 unused-allowed-license = "deny"
-copyleft = "deny"
 allow = [
     "Apache-2.0",
     "MIT",

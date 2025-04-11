@@ -22,11 +22,12 @@ use {
 };
 
 pub mod assets;
+pub mod lifi;
 pub mod route;
 pub mod status;
 
 /// How much to multiply the bridging fee amount to cover bridging fee volatility
-pub const BRIDGING_FEE_SLIPPAGE: i16 = 200; // 200%
+pub const BRIDGING_FEE_SLIPPAGE: i16 = 250; // 250%
 
 /// Bridging timeout in seconds
 pub const BRIDGING_TIMEOUT: u64 = 1800; // 30 minutes
@@ -429,6 +430,7 @@ pub fn convert_amount(amount: U256, from_decimals: u8, to_decimals: u8) -> U256 
             let diff = from_decimals - to_decimals;
             let exp = U256::from(diff as u64);
             let factor = U256::from(10).pow(exp);
+            // FIXME possible truncation error here? This `convert_amount()` function may be unsafe to use in some cases
             amount / factor
         }
         Ordering::Less => {

@@ -11,11 +11,7 @@ use {
             ChainAbstractionInitialTxInfo, MessageSource,
         },
         error::RpcError,
-        handlers::{
-            self_provider,
-            wallet::get_assets::{self},
-            SdkInfoParams,
-        },
+        handlers::{chain_agnostic::lifi::caip2_to_lifi_chain_id, self_provider, SdkInfoParams},
         metrics::{ChainAbstractionNoBridgingNeededType, ChainAbstractionTransactionType},
         state::AppState,
         storage::irn::OperationType,
@@ -28,7 +24,7 @@ use {
             simple_request_json::SimpleRequestJson,
         },
     },
-    alloy::primitives::{Address, U256, U64},
+    alloy::primitives::{Address, Bytes, U256, U64},
     axum::{
         extract::{ConnectInfo, Query, State},
         response::{IntoResponse, Response},
@@ -47,20 +43,23 @@ use {
     tracing::{debug, error},
     uuid::Uuid,
     wc::future::FutureExt,
-    yttrium::chain_abstraction::{
-        api::{
-            prepare::{
-                BridgingError, Eip155OrSolanaAddress, FundingMetadata, InitialTransactionMetadata,
-                Metadata, PrepareRequest, PrepareResponse, PrepareResponseAvailable,
-                PrepareResponseError, PrepareResponseNotRequired, PrepareResponseSuccess,
-                RouteQueryParams, SolanaTransaction, Transactions,
+    yttrium::{
+        chain_abstraction::{
+            api::{
+                prepare::{
+                    BridgingError, Eip155OrSolanaAddress, FundingMetadata,
+                    InitialTransactionMetadata, Metadata, PrepareRequest, PrepareResponse,
+                    PrepareResponseAvailable, PrepareResponseError, PrepareResponseNotRequired,
+                    PrepareResponseSuccess, RouteQueryParams, SolanaTransaction, Transactions,
+                },
+                Transaction,
             },
-            Transaction,
+            solana::{
+                self, SolanaCommitmentConfig, SolanaParsePubkeyError, SolanaPubkey,
+                SolanaRpcClient, SolanaVersionedTransaction,
+            },
         },
-        solana::{
-            self, SolanaCommitmentConfig, SolanaParsePubkeyError, SolanaPubkey, SolanaRpcClient,
-            SolanaVersionedTransaction, SOLANA_MAINNET_CAIP2, SOLANA_MAINNET_CHAIN_ID,
-        },
+        erc20::ERC20,
     },
 };
 
@@ -198,6 +197,15 @@ impl From<PrepareResponseAvailable> for PrepareResponseAvailableV1 {
     }
 }
 
+fn no_bridging_needed_response(initial_transaction: Transaction) -> Json<PrepareResponse> {
+    Json(PrepareResponse::Success(
+        PrepareResponseSuccess::NotRequired(PrepareResponseNotRequired {
+            initial_transaction,
+            transactions: vec![],
+        }),
+    ))
+}
+
 pub async fn handler_v2(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
@@ -268,13 +276,6 @@ async fn handler_internal(
     .await?;
     initial_transaction.nonce = intial_transaction_nonce;
 
-    let no_bridging_needed_response = Json(PrepareResponse::Success(
-        PrepareResponseSuccess::NotRequired(PrepareResponseNotRequired {
-            initial_transaction: initial_transaction.clone(),
-            transactions: vec![],
-        }),
-    ));
-
     let asset_transfer_value;
     let asset_transfer_contract;
     let asset_transfer_receiver;
@@ -312,6 +313,8 @@ async fn handler_internal(
                 );
 
                 // Check if the destination address is supported ERC20 asset contract
+                // return an error if not, since the simulation for the gas estimation
+                // will fail
                 if find_supported_bridging_asset(
                     &initial_tx_chain_id.clone(),
                     Eip155OrSolanaAddress::Eip155(to_address),
@@ -326,7 +329,14 @@ async fn handler_internal(
                     state.metrics.add_ca_no_bridging_needed(
                         ChainAbstractionNoBridgingNeededType::AssetNotSupported,
                     );
-                    return Ok(no_bridging_needed_response);
+                    return Ok(Json(PrepareResponse::Error(PrepareResponseError {
+                        error: BridgingError::AssetNotSupported,
+                        reason: format!(
+                            "The initial transaction asset {}:{} is not supported for the bridging",
+                            initial_tx_chain_id.clone(),
+                            to_address
+                        ),
+                    })));
                 };
 
                 // Get the ERC20 transfer gas estimation for the token contract
@@ -415,7 +425,11 @@ async fn handler_internal(
                     state.metrics.add_ca_no_bridging_needed(
                         ChainAbstractionNoBridgingNeededType::AssetNotSupported,
                     );
-                    return Ok(no_bridging_needed_response);
+                    return Ok(Json(PrepareResponse::Error(PrepareResponseError {
+                        error: BridgingError::AssetNotSupported,
+                        reason: "The transaction does not change any supported bridging assets"
+                            .to_string(),
+                    })));
                 }
 
                 (
@@ -431,22 +445,6 @@ async fn handler_internal(
     // Estimated gas multiplied by the slippage
     initial_transaction.gas_limit =
         U64::from((gas_used * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
-
-    // Check if the destination address is supported ERC20 asset contract
-    // Attempt to destructure the result into symbol and decimals using a match expression
-    let (initial_tx_token_symbol, initial_tx_token_decimals) = match find_supported_bridging_asset(
-        &initial_tx_chain_id,
-        Eip155OrSolanaAddress::Eip155(asset_transfer_contract),
-    ) {
-        Some((symbol, decimals)) => (symbol, decimals),
-        None => {
-            error!("The changed asset is not a supported for the bridging");
-            state
-                .metrics
-                .add_ca_no_bridging_needed(ChainAbstractionNoBridgingNeededType::AssetNotSupported);
-            return Ok(no_bridging_needed_response);
-        }
-    };
 
     // Get the current balance of the ERC20 or native token and check if it's enough for the transfer
     // without bridging or calculate the top-up value
@@ -464,9 +462,32 @@ async fn handler_internal(
         state
             .metrics
             .add_ca_no_bridging_needed(ChainAbstractionNoBridgingNeededType::SufficientFunds);
-        return Ok(no_bridging_needed_response);
+        return Ok(no_bridging_needed_response(initial_transaction));
     }
     let mut erc20_topup_value = asset_transfer_value - erc20_balance;
+
+    // Check if the destination address is supported ERC20 asset contract
+    // Attempt to destructure the result into symbol and decimals using a match expression
+    let (initial_tx_token_symbol, initial_tx_token_decimals) = match find_supported_bridging_asset(
+        &initial_tx_chain_id,
+        Eip155OrSolanaAddress::Eip155(asset_transfer_contract),
+    ) {
+        Some((symbol, decimals)) => (symbol, decimals),
+        None => {
+            error!("The changed asset is not a supported for the bridging");
+            state
+                .metrics
+                .add_ca_no_bridging_needed(ChainAbstractionNoBridgingNeededType::AssetNotSupported);
+            return Ok(Json(PrepareResponse::Error(PrepareResponseError {
+                error: BridgingError::AssetNotSupported,
+                reason: format!(
+                    "The initial transaction asset {}:{} is not supported for the bridging",
+                    initial_tx_chain_id.clone(),
+                    asset_transfer_contract
+                ),
+            })));
+        }
+    };
 
     let sol_rpc = "https://api.mainnet-beta.solana.com";
     let solana_rpc_client = Arc::new(SolanaRpcClient::new_with_commitment(
@@ -568,8 +589,8 @@ async fn handler_internal(
         bridge_decimals,
     );
 
-    let (routes, bridged_amount, final_bridging_fee) = match bridge_contract {
-        Eip155OrSolanaAddress::Eip155(bridge_contract) => {
+    let (routes, bridged_amount, final_bridging_fee) = match bridge_contract.clone() {
+        Eip155OrSolanaAddress::Eip155(bridge_contract) if !query_params.use_lifi => {
             // Get Quotes for the bridging
             let quotes = state
                 .providers
@@ -671,13 +692,13 @@ async fn handler_internal(
                 return Ok(Json(PrepareResponse::Error(PrepareResponseError {
                     error: BridgingError::NoRoutesAvailable,
                     reason: format!(
-                "No routes were found from {}:{} to {}:{} for updated (fee included) amount: {}",
-                bridge_chain_id.clone(),
-                bridge_contract,
-                initial_tx_chain_id.clone(),
-                asset_transfer_contract,
-                required_topup_amount
-            ),
+                        "No routes were found from {}:{} to {}:{} for updated (fee included) amount: {}",
+                        bridge_chain_id.clone(),
+                        bridge_contract,
+                        initial_tx_chain_id.clone(),
+                        asset_transfer_contract,
+                        required_topup_amount
+                    ),
                 })));
             };
 
@@ -823,9 +844,9 @@ async fn handler_internal(
                     })?;
                     if simulation_result.transaction.input != curr_route.input {
                         return Err(RpcError::SimulationFailed(
-                "The input for the simulation result does not match the input for the transaction"
-                    .into(),
-            ));
+                            "The input for the simulation result does not match the input for the transaction"
+                                .into(),
+                        ));
                     }
 
                     curr_route.gas_limit = U64::from(
@@ -857,51 +878,16 @@ async fn handler_internal(
                 final_bridging_fee,
             )
         }
-        Eip155OrSolanaAddress::Solana(_contract) => {
-            let mut solana_accounts = Vec::with_capacity(request_payload.accounts.len());
-            for (chain_id, account) in request_payload
-                .accounts
-                .iter()
-                .filter_map(|a| a.strip_prefix("solana:"))
-                .filter_map(|a| a.split_once(":"))
-            // skip any malformed CAIP-10 addresses without 3 colons
-            {
-                let account_sol = SolanaPubkey::from_str(account).map_err(|e| {
-                    RouteSolanaError::Request(RouteSolanaRequestError::MalformedSolanaAccount(e))
-                })?;
-                solana_accounts.push((chain_id, account_sol));
-            }
-
-            let (chain_id, solana_mainnet) = (SOLANA_MAINNET_CAIP2, SOLANA_MAINNET_CHAIN_ID); // TODO: make this dynamic
-
-            let mainnet_solana_accounts = solana_accounts
-                .iter()
-                .filter(|(chain_id, _)| chain_id == &solana_mainnet)
-                .map(|(_, account)| account)
-                .collect::<Vec<_>>();
-
-            let found_account = mainnet_solana_accounts
-                .iter()
-                .find(|a| bridging_asset.account.as_solana() == Some(a))
-                .expect("Internal bug: the account should be found");
-
+        bridge_contract => {
             let quote = reqwest::Client::new()
                 .get("https://li.quest/v1/quote/toAmount")
                 .query(&json!({
-                    "fromChain": match bridge_chain_id.as_str() {
-                        solana::SOLANA_MAINNET_CAIP2 => "SOL",
-                        _ => return Err(RpcError::InvalidValue(bridge_chain_id)),
-                    },
-                    "toChain": match initial_tx_chain_id.as_str() {
-                        get_assets::CHAIN_ID_BASE => "8453",
-                        get_assets::CHAIN_ID_OPTIMISM => "10",
-                        get_assets::CHAIN_ID_ARBITRUM => "42161",
-                        _ => return Err(RpcError::InvalidValue(initial_tx_chain_id)),
-                    },
+                    "fromChain": caip2_to_lifi_chain_id(bridge_chain_id.as_str())?,
+                    "toChain": caip2_to_lifi_chain_id(initial_tx_chain_id.as_str())?,
                     "fromToken": bridge_contract.to_string(),
                     "toToken": asset_transfer_contract.to_string(),
                     "toAmount": erc20_topup_value.to_string(),
-                    "fromAddress": found_account.to_string(),
+                    "fromAddress": bridging_asset.account.to_string(),
                     "toAddress": from_address.to_string(),
                 }))
                 .send()
@@ -914,49 +900,184 @@ async fn handler_internal(
                 })?;
             debug!("Quote: {}", serde_json::to_string_pretty(&quote).unwrap());
 
-            #[derive(Debug, Serialize, Deserialize)]
-            #[serde(rename_all = "camelCase")]
-            struct Quote {
-                transaction_request: TransactionRequest,
-            }
+            if bridge_chain_id.starts_with("solana:") {
+                assert!(bridge_contract.as_solana().is_some());
 
-            #[derive(Debug, Serialize, Deserialize)]
-            #[serde(rename_all = "camelCase")]
-            struct TransactionRequest {
-                data: String,
-            }
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct Quote {
+                    action: Action,
+                    transaction_request: TransactionRequest,
+                }
 
-            let quote = serde_json::from_value::<Quote>(quote).map_err(|e| {
-                RouteSolanaError::Internal(RouteSolanaInternalError::QuoteDeserialization(e))
-            })?;
-            let data = data_encoding::BASE64
-                .decode(quote.transaction_request.data.as_bytes())
-                .map_err(|e| {
-                    RouteSolanaError::Internal(RouteSolanaInternalError::TransactionRequestDecode(
-                        e,
-                    ))
-                })?;
-            let tx =
-                solana::bincode::deserialize::<SolanaVersionedTransaction>(&data).map_err(|e| {
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct Action {
+                    from_amount: U256,
+                }
+
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct TransactionRequest {
+                    data: String,
+                }
+
+                let quote = serde_json::from_value::<Quote>(quote).map_err(|e| {
                     RouteSolanaError::Internal(
-                        RouteSolanaInternalError::TransactionRequestDeserialization(e),
+                        RouteSolanaInternalError::LiFiQuoteDeserializationSolana(e),
                     )
                 })?;
+                debug!(
+                    "Parsed quote: {}",
+                    serde_json::to_string_pretty(&quote).unwrap()
+                );
 
-            (
-                vec![tx]
-                    .into_iter()
-                    .map(|t| {
-                        Transactions::Solana(vec![SolanaTransaction {
-                            from: **found_account,
-                            chain_id: chain_id.to_owned(),
-                            transaction: t,
-                        }])
-                    })
-                    .collect(),
-                U256::ZERO,
-                U256::ZERO,
-            )
+                let data = data_encoding::BASE64
+                    .decode(quote.transaction_request.data.as_bytes())
+                    .map_err(|e| {
+                        RouteSolanaError::Internal(
+                            RouteSolanaInternalError::TransactionRequestDecode(e),
+                        )
+                    })?;
+                let tx = solana::bincode::deserialize::<SolanaVersionedTransaction>(&data)
+                    .map_err(|e| {
+                        RouteSolanaError::Internal(
+                            RouteSolanaInternalError::TransactionRequestDeserialization(e),
+                        )
+                    })?;
+
+                (
+                    vec![Transactions::Solana(vec![SolanaTransaction {
+                        from: *bridging_asset.account.as_solana().unwrap(),
+                        chain_id: bridge_chain_id.clone(),
+                        transaction: tx,
+                    }])],
+                    quote.action.from_amount,
+                    quote.action.from_amount - erc20_topup_value,
+                )
+            } else if bridge_chain_id.starts_with("eip155:") {
+                let bridge_contract = bridge_contract
+                    .as_eip155()
+                    .expect("Internal bug: the bridge contract should be an EIP-155 address when bridge_chain_id starts with eip155:");
+
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct Quote {
+                    action: Action,
+                    estimate: Estimate,
+                    transaction_request: TransactionRequest,
+                }
+
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct Action {
+                    from_amount: U256,
+                    from_token: FromToken,
+                }
+
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct FromToken {
+                    address: Address,
+                }
+
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct Estimate {
+                    approval_address: Address,
+                }
+
+                #[derive(Debug, Serialize, Deserialize)]
+                #[serde(rename_all = "camelCase")]
+                struct TransactionRequest {
+                    chain_id: u64,
+                    data: Bytes,
+                    from: Address,
+                    to: Address,
+                    value: U256,
+                    gas_limit: U256,
+                    gas_price: U256, // should be unused, as this is legacy gas API
+                }
+
+                let quote = serde_json::from_value::<Quote>(quote).map_err(|e| {
+                    RouteSolanaError::Internal(
+                        RouteSolanaInternalError::LiFiQuoteDeserializationEip155(e),
+                    )
+                })?;
+                debug!(
+                    "Parsed quote: {}",
+                    serde_json::to_string_pretty(&quote).unwrap()
+                );
+
+                let mut nonce = get_nonce(
+                    from_address,
+                    &provider_pool
+                        .get_provider(bridge_chain_id.clone(), MessageSource::ChainAgnosticCheck),
+                )
+                .await?;
+
+                let mut txns = Vec::with_capacity(2);
+
+                // Generate approval txn, if necessary
+                {
+                    // Approve 4x the necessary amount to avoid re-approving too often
+                    const APPROVE_MULTIPLIER: u64 = 4;
+
+                    // https://docs.li.fi/li.fi-api/li.fi-api/transferring-tokens-example#checking-and-setting-the-allowance
+                    assert_eq!(bridge_contract, &quote.action.from_token.address);
+                    assert_ne!(bridge_contract, &quote.estimate.approval_address);
+                    let source_token = ERC20::new(
+                        quote.action.from_token.address,
+                        provider_pool.get_provider(
+                            bridge_chain_id.clone(),
+                            MessageSource::ChainAgnosticCheck,
+                        ),
+                    );
+                    let allowance = source_token
+                        .allowance(from_address, quote.estimate.approval_address)
+                        .call()
+                        .await
+                        .map_err(|e| {
+                            RouteSolanaError::Internal(RouteSolanaInternalError::AllowanceCall(e))
+                        })?
+                        .remaining;
+                    if allowance < quote.action.from_amount {
+                        let approve_amount =
+                            quote.action.from_amount * U256::from(APPROVE_MULTIPLIER);
+                        let approve_tx =
+                            source_token.approve(quote.estimate.approval_address, approve_amount);
+                        txns.push(Transaction {
+                            chain_id: format!("eip155:{}", quote.transaction_request.chain_id),
+                            from: quote.transaction_request.from,
+                            to: quote.action.from_token.address,
+                            value: U256::ZERO,
+                            input: approve_tx.calldata().clone(),
+                            nonce,
+                            gas_limit: U64::from(100000), // TODO estimate gas
+                        });
+                        nonce += U64::from(1);
+                    }
+                }
+
+                txns.push(Transaction {
+                    chain_id: format!("eip155:{}", quote.transaction_request.chain_id),
+                    from: quote.transaction_request.from,
+                    to: quote.transaction_request.to,
+                    value: quote.transaction_request.value,
+                    input: quote.transaction_request.data,
+                    nonce,
+                    gas_limit: U64::from(quote.transaction_request.gas_limit),
+                });
+
+                (
+                    vec![Transactions::Eip155(txns)],
+                    quote.action.from_amount,
+                    quote.action.from_amount - erc20_topup_value,
+                )
+            } else {
+                // Bug: This means that we have a supported asset on a non-supported chain
+                unimplemented!("Unsupported chain ID: {}", bridge_chain_id)
+            }
         }
     };
 
@@ -1120,14 +1241,20 @@ pub enum RouteSolanaInternalError {
     #[error("JSON deserialization: {0}")]
     JsonDeserialization(reqwest::Error),
 
-    #[error("Quote deserialization: {0}")]
-    QuoteDeserialization(serde_json::Error),
+    #[error("LiFi quote (Solana) deserialization: {0}")]
+    LiFiQuoteDeserializationSolana(serde_json::Error),
+
+    #[error("LiFi quote (EIP155) deserialization: {0}")]
+    LiFiQuoteDeserializationEip155(serde_json::Error),
 
     #[error("Transaction request decode: {0}")]
     TransactionRequestDecode(data_encoding::DecodeError),
 
     #[error("Transaction request deserialization: {0}")]
     TransactionRequestDeserialization(solana::bincode::Error),
+
+    #[error("Allowance call: {0}")]
+    AllowanceCall(alloy::contract::Error),
 }
 
 #[derive(Debug, thiserror::Error)]
