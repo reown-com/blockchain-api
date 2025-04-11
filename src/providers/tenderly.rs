@@ -17,7 +17,7 @@ use {
 };
 
 /// Gas estimation caching TTL paramters
-const GAS_ESTIMATE_CACHE_TTL: u64 = 60 * 60 * 2; // 2 hours
+const GAS_ESTIMATE_CACHE_TTL: u64 = 60 * 30; // 30 minutes
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SimulationRequest {

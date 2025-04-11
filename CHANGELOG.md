@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.219.0 - 2025-04-10
+#### Features
+- **(CA)** enabling ERC20 transfer gas estimation caching (#1031) - (7580bea) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.218.0 - 2025-04-09
 #### Features
 - LiFi feature flag (#1025) - (ce20a7a) - Chris Smith
