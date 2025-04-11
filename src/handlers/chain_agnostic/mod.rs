@@ -12,6 +12,7 @@ use {
     alloy::primitives::{Address, Bytes, B256, U256},
     assets::{Eip155OrSolanaStatic, SimulationParams, BRIDGING_ASSETS},
     ethers::{types::H160 as EthersH160, utils::keccak256},
+    futures_util::{stream::FuturesUnordered, StreamExt},
     serde::{Deserialize, Serialize},
     std::{cmp::Ordering, collections::HashMap, sync::Arc},
     tracing::debug,
@@ -97,79 +98,6 @@ pub fn find_supported_bridging_asset(
     None
 }
 
-pub async fn get_balances_of_all_source_tokens(
-    project_id: String,
-    accounts: Vec<Eip155OrSolanaAddress>,
-    chain_id: String,
-    token_addresses: Vec<Eip155OrSolanaAddress>,
-    session_id: Option<String>,
-    solana_rpc_client: Arc<SolanaRpcClient>,
-) -> Result<Vec<(Eip155OrSolanaAddress, Eip155OrSolanaAddress, U256)>, RpcError> {
-    let mut balances = Vec::new();
-    // Check the ERC20 tokens balance for each of supported assets
-    // TODO: Use the balance provider instead of looping
-    for account in accounts {
-        match account {
-            Eip155OrSolanaAddress::Eip155(address) => {
-                for contract in token_addresses.clone() {
-                    let erc20_balance = match contract {
-                        Eip155OrSolanaAddress::Eip155(contract) => U256::from_be_bytes(
-                            get_erc20_balance(
-                                &chain_id,
-                                EthersH160::from(<[u8; 20]>::from(*contract)),
-                                EthersH160::from(<[u8; 20]>::from(address)),
-                                &project_id,
-                                MessageSource::ChainAgnosticCheck,
-                                session_id.clone(),
-                            )
-                            .await?
-                            .into(),
-                        ),
-                        Eip155OrSolanaAddress::Solana(_) => {
-                            continue;
-                        }
-                    };
-                    balances.push((account.clone(), contract, erc20_balance));
-                }
-            }
-            Eip155OrSolanaAddress::Solana(address) => {
-                for contract in token_addresses.clone() {
-                    let erc20_balance = match contract {
-                        Eip155OrSolanaAddress::Solana(contract) => solana_rpc_client
-                            .get_token_account_balance(&solana::get_associated_token_address(
-                                &address, &contract,
-                            ))
-                            .await
-                            .map_err(|e| {
-                                RpcError::CryptoUitlsError(
-                                    crate::utils::crypto::CryptoUitlsError::ProviderError(format!(
-                                        "Failed to get solana token account balance: {}",
-                                        e
-                                    )),
-                                )
-                            })?
-                            .amount
-                            .parse::<U256>()
-                            .map_err(|e| {
-                                RpcError::CryptoUitlsError(
-                                    crate::utils::crypto::CryptoUitlsError::ProviderError(format!(
-                                        "Failed to parse solana token account balance: {}",
-                                        e
-                                    )),
-                                )
-                            })?,
-                        Eip155OrSolanaAddress::Eip155(_) => {
-                            continue;
-                        }
-                    };
-                    balances.push((account.clone(), contract, erc20_balance));
-                }
-            }
-        }
-    }
-    Ok(balances)
-}
-
 pub struct BridgingAsset {
     pub chain_id: String,
     pub account: Eip155OrSolanaAddress,
@@ -203,8 +131,16 @@ pub async fn check_bridging_for_erc20_transfer(
     solana_rpc_client: Arc<SolanaRpcClient>,
 ) -> Result<Option<BridgingAsset>, RpcError> {
     // Check ERC20 tokens balance for each of supported assets
-    let mut contracts_per_chain: HashMap<(String, String, u8), Vec<Eip155OrSolanaAddress>> =
-        HashMap::new();
+
+    let mut balances_to_check: Vec<(
+        String,                // token symbol
+        String,                // chain id
+        u8,                    // decimals
+        Eip155OrSolanaAddress, // contract address
+        Eip155OrSolanaAddress, // account address
+    )> = Vec::new();
+
+    // Gather all the balances to check
     for (token_symbol, asset_entry) in BRIDGING_ASSETS.entries() {
         for (chain_id, contract_address) in asset_entry.contracts.entries() {
             // Exclude the initial transaction asset
@@ -225,26 +161,11 @@ pub async fn check_bridging_for_erc20_transfer(
                     continue;
                 }
             }
-            contracts_per_chain
-                .entry((
-                    token_symbol.to_string(),
-                    (*chain_id).to_string(),
-                    asset_entry.metadata.decimals,
-                ))
-                .or_default()
-                .push(contract_address.into_eip155_or_solana_address());
-        }
-    }
-    // Making the check for each chain_id and use the asset with the highest balance
-    let mut bridging_asset_found: Option<BridgingAsset> = None;
-    for ((token_symbol, chain_id, decimals), contracts) in contracts_per_chain {
-        let erc20_balances = get_balances_of_all_source_tokens(
-            rpc_project_id.clone(),
-            accounts
-                .iter()
-                .filter_map(|(cid, address)| {
+
+            let accounts = accounts.iter().filter_map(|(cid, address)| {
+                if address.same_kind_as(&contract_address.into_eip155_or_solana_address()) {
                     if let Some(cid) = cid {
-                        if cid == &chain_id {
+                        if cid == chain_id {
                             Some(address.clone())
                         } else {
                             None
@@ -252,51 +173,138 @@ pub async fn check_bridging_for_erc20_transfer(
                     } else {
                         Some(address.clone())
                     }
-                })
-                .collect(),
-            chain_id.clone(),
-            contracts,
-            session_id.clone(),
-            solana_rpc_client.clone(),
-        )
-        .await?;
-        // TODO do in parallel
-        for (account, contract_address, current_balance) in erc20_balances {
-            // Check if the balance compared to the transfer value is enough, applied to the transfer token decimals
-            if convert_amount(current_balance, decimals, amount_token_decimals) >= value {
-                // Use the priority asset if found
-                if token_symbol == token_symbol_priority {
-                    return Ok(Some(BridgingAsset {
-                        chain_id: chain_id.clone(),
-                        account,
-                        token_symbol: token_symbol.clone(),
-                        contract_address,
-                        current_balance,
-                        decimals,
-                    }));
+                } else {
+                    None
                 }
+            });
 
-                // or use the asset with the highest found balance
-                if let Some(BridgingAsset {
-                    current_balance: existing_balance,
-                    ..
-                }) = &bridging_asset_found
-                {
-                    if current_balance <= *existing_balance {
-                        continue;
-                    }
-                }
-                bridging_asset_found = Some(BridgingAsset {
+            for account in accounts {
+                balances_to_check.push((
+                    token_symbol.to_string(),
+                    (*chain_id).to_string(),
+                    asset_entry.metadata.decimals,
+                    contract_address.into_eip155_or_solana_address(),
+                    account,
+                ));
+            }
+        }
+    }
+
+    let mut handles = FuturesUnordered::new();
+
+    // Dispatch all of the balance checks
+    for (token_symbol, chain_id, decimals, contract, account) in balances_to_check {
+        assert!(contract.same_kind_as(&account));
+        match chain_id {
+            chain_id if chain_id.starts_with("eip155:") => {
+                let rpc_project_id = rpc_project_id.clone();
+                let session_id = session_id.clone();
+                handles.push(futures_util::future::Either::Left(async move {
+                    let balance = U256::from_be_bytes(
+                        // TODO switch to alloy and use ProviderPool
+                        get_erc20_balance(
+                            &chain_id,
+                            EthersH160::from(<[u8; 20]>::from(*contract.as_eip155().unwrap())),
+                            EthersH160::from(<[u8; 20]>::from(*account.as_eip155().unwrap())),
+                            &rpc_project_id,
+                            MessageSource::ChainAgnosticCheck,
+                            session_id,
+                        )
+                        .await?
+                        .into(),
+                    );
+                    Result::<_, RpcError>::Ok((
+                        token_symbol,
+                        chain_id,
+                        decimals,
+                        contract,
+                        account,
+                        balance,
+                    ))
+                }));
+            }
+            chain_id if chain_id.starts_with("solana:") => {
+                let solana_rpc_client = solana_rpc_client.clone();
+                handles.push(futures_util::future::Either::Right(async move {
+                    let balance = solana_rpc_client
+                        .get_token_account_balance(&solana::get_associated_token_address(
+                            account
+                                .as_solana()
+                                .expect("Account is not a solana address"),
+                            contract
+                                .as_solana()
+                                .expect("Contract is not a solana address"),
+                        ))
+                        .await
+                        .map_err(|e| {
+                            RpcError::CryptoUitlsError(
+                                crate::utils::crypto::CryptoUitlsError::ProviderError(format!(
+                                    "Failed to get solana token account balance: {}",
+                                    e
+                                )),
+                            )
+                        })?
+                        .amount
+                        .parse::<U256>()
+                        .map_err(|e| {
+                            RpcError::CryptoUitlsError(
+                                crate::utils::crypto::CryptoUitlsError::ProviderError(format!(
+                                    "Failed to parse solana token account balance: {}",
+                                    e
+                                )),
+                            )
+                        })?;
+                    Ok((token_symbol, chain_id, decimals, contract, account, balance))
+                }));
+            }
+            _ => {
+                unreachable!("Invalid chain id: {}", chain_id);
+            }
+        }
+    }
+
+    // Making the check for each chain_id and use the asset with the highest balance
+    let mut bridging_asset_found: Option<BridgingAsset> = None;
+
+    // Consume the results as they come in, possibly aborting the operation early if priority asset is found
+    while let Some(result) = handles.next().await {
+        let (token_symbol, chain_id, decimals, contract_address, account, current_balance) =
+            result?;
+        // Check if the balance compared to the transfer value is enough, applied to the transfer token decimals
+        if convert_amount(current_balance, decimals, amount_token_decimals) >= value {
+            // Use the priority asset if found
+            if token_symbol == token_symbol_priority {
+                return Ok(Some(BridgingAsset {
                     chain_id: chain_id.clone(),
                     account,
                     token_symbol: token_symbol.clone(),
                     contract_address,
                     current_balance,
                     decimals,
-                });
+                }));
             }
+
+            // or use the asset with the highest found balance
+            if let Some(BridgingAsset {
+                current_balance: existing_balance,
+                ..
+            }) = &bridging_asset_found
+            {
+                if current_balance <= *existing_balance {
+                    continue;
+                }
+            }
+            bridging_asset_found = Some(BridgingAsset {
+                chain_id: chain_id.clone(),
+                account,
+                token_symbol: token_symbol.clone(),
+                contract_address,
+                current_balance,
+                decimals,
+            });
         }
     }
+
     Ok(bridging_asset_found)
 }
 

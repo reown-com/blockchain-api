@@ -497,6 +497,7 @@ async fn handler_internal(
         }
     };
 
+    // TODO self-call Blockchain API here and add to ProviderPool
     let sol_rpc = "https://api.mainnet-beta.solana.com";
     let solana_rpc_client = Arc::new(SolanaRpcClient::new_with_commitment(
         sol_rpc.to_string(),
