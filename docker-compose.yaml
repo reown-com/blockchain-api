@@ -20,7 +20,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - RPC_PROXY_LOG_LEVEL=DEBUG
       - RPC_PROXY_HOST=0.0.0.0
