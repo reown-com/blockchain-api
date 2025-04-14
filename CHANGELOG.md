@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.220.0 - 2025-04-14
+#### Bug Fixes
+- **(CI)** making a provider default amount can be null (#1033) - (f45d9ed) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(o11y)** introducing distinguishing free tier and top tier providers alert (#1032) - (fb4cf89) - Max Kalashnikoff | maksy.eth
+- **(providers)** adding Kaia chain to the dRPC provider (#1036) - (125fd4d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.219.0 - 2025-04-10
 #### Features
 - **(CA)** enabling ERC20 transfer gas estimation caching (#1031) - (7580bea) - Max Kalashnikoff | maksy.eth
