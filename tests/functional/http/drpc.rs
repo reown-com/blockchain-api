@@ -69,4 +69,13 @@ async fn drpc_provider_evm(ctx: &mut ServerContext) {
         "0x515",
     )
     .await;
+
+    // Kaia mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:8217",
+        "0x2019",
+    )
+    .await;
 }
