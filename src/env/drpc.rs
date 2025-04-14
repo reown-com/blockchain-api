@@ -107,5 +107,13 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Kaia / Klaytn
+        (
+            "eip155:8217".into(),
+            (
+                "https://klaytn.drpc.org".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
     ])
 }
