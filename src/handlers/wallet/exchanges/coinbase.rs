@@ -173,7 +173,7 @@ impl CoinbaseExchange {
             (Some(key_name), Some(key_secret)) => Ok((key_name, key_secret)),
             _ => Err(ExchangeError::ConfigurationError(
                 "Exchange is not available".to_string(),
-            ))
+            )),
         }
     }
 
