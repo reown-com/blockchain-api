@@ -73,10 +73,9 @@ pub struct PreOrderRequest {
     pub crypto_currency: Option<String>,
 
     /// Specify whether the requested amount is in fiat:1 or crypto:2
-    //pub amount_type: i32, // TODO: Unsupported by Binance ATM
+    pub amount_type: i32, 
     /// Requested amount. Fraction is 8
-    //pub requested_amount: String,
-    pub fiat_amount: String,
+    pub requested_amount: String,
 
     /// The payment method code from payment method list API.
     pub pay_method_code: Option<String>,
@@ -365,7 +364,8 @@ impl BinanceExchange {
             external_order_id: order_id,
             fiat_currency: Some(DEFAULT_FIAT_CURRENCY.to_string()),
             crypto_currency: Some(crypto_currency),
-            fiat_amount: params.amount.to_string(), // USING CRYPTO AMOUNT AS FIAT AMOUNT - This is indended atm
+            amount_type: AmountType::Crypto as i32,
+            requested_amount: params.amount.to_string(),
             pay_method_code: Some(DEFAULT_PAYMENT_METHOD_CODE.to_string()),
             pay_method_sub_code: Some(DEFAULT_PAYMENT_METHOD_SUB_CODE.to_string()),
             network,
