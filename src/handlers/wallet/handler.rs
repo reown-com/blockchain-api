@@ -142,7 +142,7 @@ enum Error {
     GetAssets(GetAssetsError),
 
     #[error("{PAY_GET_EXCHANGE_BUY_STATUS}: {0}")]
-    GetExchangeBuyStatusError(GetExchangeBuyStatusError),
+    GetExchangeBuyStatus(GetExchangeBuyStatusError),
 
     #[error("Method not found")]
     MethodNotFound,
@@ -170,7 +170,7 @@ impl Error {
             Error::GetAssets(_) => -5,    // TODO more specific codes
             Error::GetExchanges(_) => -6,
             Error::GetUrl(_) => -7,
-            Error::GetExchangeBuyStatusError(_) => -8,
+            Error::GetExchangeBuyStatus(_) => -8,
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,
@@ -285,7 +285,7 @@ async fn handle_rpc(
                 Json(serde_json::from_value(params).map_err(Error::InvalidParams)?),
             )
             .await
-            .map_err(Error::GetExchangeBuyStatusError)?,
+            .map_err(Error::GetExchangeBuyStatus)?,
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
         _ => Err(Error::MethodNotFound),

@@ -91,10 +91,13 @@ struct TransactionStatusResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-enum OnrampTransactionStatus {
-    OnrampTransactionStatusInProgress,
-    OnrampTransactionStatusSuccess,
-    OnrampTransactionStatusFailed,
+enum CoinbaseTransactionStatus {
+    #[serde(rename = "ONRAMP_TRANSACTION_STATUS_IN_PROGRESS")]
+    InProgress,
+    #[serde(rename = "ONRAMP_TRANSACTION_STATUS_SUCCESS")]
+    Success,
+    #[serde(rename = "ONRAMP_TRANSACTION_STATUS_FAILED")]
+    Failed,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -116,7 +119,7 @@ enum OnrampTransactionType {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct OnrampTransaction {
-    status: OnrampTransactionStatus,
+    status: CoinbaseTransactionStatus,
     purchase_currency: String,
     purchase_network: String,
     purchase_amount: String, 
@@ -294,9 +297,9 @@ impl CoinbaseExchange {
         match response.transactions.first() {
             Some(transaction) => {
                 let status = match transaction.status {
-                    OnrampTransactionStatus::OnrampTransactionStatusInProgress => BuyTransactionStatus::InProgress,
-                    OnrampTransactionStatus::OnrampTransactionStatusSuccess => BuyTransactionStatus::Success,
-                    OnrampTransactionStatus::OnrampTransactionStatusFailed => BuyTransactionStatus::Failed,
+                    CoinbaseTransactionStatus::InProgress => BuyTransactionStatus::InProgress,
+                    CoinbaseTransactionStatus::Success => BuyTransactionStatus::Success,
+                    CoinbaseTransactionStatus::Failed => BuyTransactionStatus::Failed,
                 };
                 Ok(GetBuyStatusResponse { status, tx_hash: transaction.tx_hash.clone() })
             }
@@ -346,9 +349,10 @@ fn generate_coinbase_jwt_key(
         "nonce": nonce,
         "typ": "JWT"
     });
-
-    let header_b64 = BASE64_URL_SAFE_NO_PAD.encode(&serde_json::to_vec(&header).unwrap());
-    let claims_b64 = BASE64_URL_SAFE_NO_PAD.encode(&serde_json::to_vec(&claims).unwrap());
+    let header = serde_json::to_vec(&header).map_err(|e| ExchangeError::InternalError(format!("Failed to serialize header: {}", e)))?;
+    let header_b64 = BASE64_URL_SAFE_NO_PAD.encode(&header);
+    let claims = serde_json::to_vec(&claims).map_err(|e| ExchangeError::InternalError(format!("Failed to serialize claims: {}", e)))?;
+    let claims_b64 = BASE64_URL_SAFE_NO_PAD.encode(&claims);
     let message = format!("{}.{}", header_b64, claims_b64);
 
     let secret_bytes = STANDARD
@@ -361,7 +365,7 @@ fn generate_coinbase_jwt_key(
 
     let signing_key = SigningKey::from_bytes(&secret_array);
     let signature = signing_key.sign(message.as_bytes());
-    let signature_b64 = BASE64_URL_SAFE_NO_PAD.encode(&signature.to_bytes());
+    let signature_b64 = BASE64_URL_SAFE_NO_PAD.encode(signature.to_bytes());
 
     Ok(format!("{}.{}.{}", header_b64, claims_b64, signature_b64))
 }
