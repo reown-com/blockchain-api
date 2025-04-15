@@ -1,5 +1,8 @@
 use {
-    crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider, GetBuyUrlParams, GetBuyStatusParams, GetBuyStatusResponse, BuyTransactionStatus},
+    crate::handlers::wallet::exchanges::{
+        BuyTransactionStatus, ExchangeError, ExchangeProvider, GetBuyStatusParams,
+        GetBuyStatusResponse, GetBuyUrlParams,
+    },
     crate::state::AppState,
     crate::utils::crypto::Caip19Asset,
     axum::extract::State,
@@ -20,8 +23,6 @@ const QUERY_ORDER_DETAILS_PATH: &str = "/papi/v1/ramp/connect/order";
 const DEFAULT_FIAT_CURRENCY: &str = "USD";
 const DEFAULT_PAYMENT_METHOD_CODE: &str = "BUY_WALLET";
 const DEFAULT_PAYMENT_METHOD_SUB_CODE: &str = "Wallet";
-
-
 
 // CAIP-19 asset mappings to Binance assets
 static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
@@ -61,19 +62,19 @@ static CHAIN_ID_TO_BINANCE_NETWORK: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum BinanceOrderStatus {
-    Init,               
-    OnRampProcessing,  
-    OnRampCompleted,    
-    OffRampProcessing,  
-    WithdrawInit,       
-    WithdrawProcessing, 
-    Completed,          
-    OffRampFailed,      
-    WithdrawAbandoned,  
-    OnRampFailed,       
-    WithdrawFailed,     
-    FailedReserved,     
-    Unknown(usize),     
+    Init,
+    OnRampProcessing,
+    OnRampCompleted,
+    OffRampProcessing,
+    WithdrawInit,
+    WithdrawProcessing,
+    Completed,
+    OffRampFailed,
+    WithdrawAbandoned,
+    OnRampFailed,
+    WithdrawFailed,
+    FailedReserved,
+    Unknown(usize),
 }
 
 impl From<usize> for BinanceOrderStatus {
@@ -112,7 +113,7 @@ pub struct PreOrderRequest {
     pub crypto_currency: Option<String>,
 
     /// Specify whether the requested amount is in fiat:1 or crypto:2
-    pub amount_type: i32, 
+    pub amount_type: i32,
     /// Requested amount. Fraction is 8
     pub requested_amount: String,
 
@@ -210,7 +211,6 @@ struct QueryOrderDetailsResponse {
     status: usize,
     withdraw_tx_hash: Option<String>,
 }
-
 
 /// Base response structure for Binance API responses
 #[derive(Debug, Deserialize, Serialize)]
@@ -440,7 +440,6 @@ impl BinanceExchange {
         state: State<Arc<AppState>>,
         params: GetBuyStatusParams,
     ) -> Result<GetBuyStatusResponse, ExchangeError> {
-
         let request = QueryOrderDetailsRequest {
             external_order_id: params.session_id,
         };
@@ -454,21 +453,26 @@ impl BinanceExchange {
         let binance_status: BinanceOrderStatus = response.status.into();
 
         let status = match binance_status {
-            BinanceOrderStatus::OnRampCompleted | BinanceOrderStatus::Completed => BuyTransactionStatus::Success,
+            BinanceOrderStatus::OnRampCompleted | BinanceOrderStatus::Completed => {
+                BuyTransactionStatus::Success
+            }
             BinanceOrderStatus::Init
             | BinanceOrderStatus::OnRampProcessing
             | BinanceOrderStatus::OffRampProcessing
-            | BinanceOrderStatus::WithdrawInit 
+            | BinanceOrderStatus::WithdrawInit
             | BinanceOrderStatus::WithdrawProcessing => BuyTransactionStatus::InProgress,
             BinanceOrderStatus::OffRampFailed
             | BinanceOrderStatus::WithdrawAbandoned
             | BinanceOrderStatus::OnRampFailed
             | BinanceOrderStatus::WithdrawFailed
             | BinanceOrderStatus::FailedReserved => BuyTransactionStatus::Failed,
-            BinanceOrderStatus::Unknown(_) => BuyTransactionStatus::Unknown, 
+            BinanceOrderStatus::Unknown(_) => BuyTransactionStatus::Unknown,
         };
 
-        Ok(GetBuyStatusResponse { status, tx_hash: response.withdraw_tx_hash })
+        Ok(GetBuyStatusResponse {
+            status,
+            tx_hash: response.withdraw_tx_hash,
+        })
     }
 
     pub async fn create_pre_order(

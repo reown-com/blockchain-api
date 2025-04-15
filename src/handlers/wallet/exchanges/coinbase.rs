@@ -1,19 +1,22 @@
 use {
-    crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider, GetBuyUrlParams, GetBuyStatusParams, GetBuyStatusResponse, BuyTransactionStatus},
+    crate::handlers::wallet::exchanges::{
+        BuyTransactionStatus, ExchangeError, ExchangeProvider, GetBuyStatusParams,
+        GetBuyStatusResponse, GetBuyUrlParams,
+    },
     crate::state::AppState,
     crate::utils::crypto::Caip19Asset,
     axum::extract::State,
+    base64::engine::general_purpose::STANDARD,
+    base64::prelude::*,
+    ed25519_dalek::{Signer, SigningKey},
     once_cell::sync::Lazy,
+    rand::RngCore,
     serde::{Deserialize, Serialize},
     std::collections::HashMap,
     std::sync::Arc,
-    url::Url,
-    base64::engine::general_purpose::STANDARD,
-    base64::prelude::*,
     std::time::{SystemTime, UNIX_EPOCH},
-    rand::RngCore,
-    ed25519_dalek::{Signer, SigningKey},
     tracing::debug,
+    url::Url,
 };
 
 const COINBASE_ONE_CLICK_BUY_URL: &str = "https://pay.coinbase.com/buy/select-asset";
@@ -122,16 +125,16 @@ struct OnrampTransaction {
     status: CoinbaseTransactionStatus,
     purchase_currency: String,
     purchase_network: String,
-    purchase_amount: String, 
-    payment_total: String,   
-    payment_subtotal: String, 
-    coinbase_fee: String,    
-    network_fee: String,     
-    exchange_rate: String,  
+    purchase_amount: String,
+    payment_total: String,
+    payment_subtotal: String,
+    coinbase_fee: String,
+    network_fee: String,
+    exchange_rate: String,
     country: String,
     user_id: String,
     payment_method: OnrampPaymentMethod,
-    tx_hash: Option<String>, 
+    tx_hash: Option<String>,
     transaction_id: String,
     wallet_address: String,
     #[serde(rename = "type")]
@@ -159,7 +162,6 @@ impl ExchangeProvider for CoinbaseExchange {
 }
 
 impl CoinbaseExchange {
-
     fn get_api_credentials(
         &self,
         state: &Arc<AppState>,
@@ -200,7 +202,6 @@ impl CoinbaseExchange {
         Ok(res)
     }
 
-
     fn map_asset_to_coinbase_format(
         &self,
         asset: &Caip19Asset,
@@ -230,7 +231,12 @@ impl CoinbaseExchange {
         state: &Arc<AppState>,
         transaction_id: &str,
     ) -> Result<TransactionStatusResponse, ExchangeError> {
-        let res = self.send_get_request(state, &format!("/onramp/v1/buy/user/{}/transactions", transaction_id)).await?;
+        let res = self
+            .send_get_request(
+                state,
+                &format!("/onramp/v1/buy/user/{}/transactions", transaction_id),
+            )
+            .await?;
         let body: TransactionStatusResponse = res.json().await.map_err(|e| {
             debug!("Error parsing transaction status response: {:?}", e);
             ExchangeError::InternalError(e.to_string())
@@ -238,7 +244,6 @@ impl CoinbaseExchange {
         debug!("get_transaction_status body: {:?}", body);
         Ok(body)
     }
-
 
     pub async fn get_buy_url(
         &self,
@@ -289,11 +294,12 @@ impl CoinbaseExchange {
         state: State<Arc<AppState>>,
         params: GetBuyStatusParams,
     ) -> Result<GetBuyStatusResponse, ExchangeError> {
-
-        let response = self.get_transaction_status(&state, &params.session_id).await?;
+        let response = self
+            .get_transaction_status(&state, &params.session_id)
+            .await?;
 
         debug!("get_buy_status response: {:?}", response);
-        
+
         match response.transactions.first() {
             Some(transaction) => {
                 let status = match transaction.status {
@@ -301,12 +307,16 @@ impl CoinbaseExchange {
                     CoinbaseTransactionStatus::Success => BuyTransactionStatus::Success,
                     CoinbaseTransactionStatus::Failed => BuyTransactionStatus::Failed,
                 };
-                Ok(GetBuyStatusResponse { status, tx_hash: transaction.tx_hash.clone() })
+                Ok(GetBuyStatusResponse {
+                    status,
+                    tx_hash: transaction.tx_hash.clone(),
+                })
             }
-            None => Ok(GetBuyStatusResponse { status: BuyTransactionStatus::Unknown, tx_hash: None }),
+            None => Ok(GetBuyStatusResponse {
+                status: BuyTransactionStatus::Unknown,
+                tx_hash: None,
+            }),
         }
-
-    
     }
 }
 
@@ -349,9 +359,11 @@ fn generate_coinbase_jwt_key(
         "nonce": nonce,
         "typ": "JWT"
     });
-    let header = serde_json::to_vec(&header).map_err(|e| ExchangeError::InternalError(format!("Failed to serialize header: {}", e)))?;
+    let header = serde_json::to_vec(&header)
+        .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize header: {}", e)))?;
     let header_b64 = BASE64_URL_SAFE_NO_PAD.encode(&header);
-    let claims = serde_json::to_vec(&claims).map_err(|e| ExchangeError::InternalError(format!("Failed to serialize claims: {}", e)))?;
+    let claims = serde_json::to_vec(&claims)
+        .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize claims: {}", e)))?;
     let claims_b64 = BASE64_URL_SAFE_NO_PAD.encode(&claims);
     let message = format!("{}.{}", header_b64, claims_b64);
 

@@ -14,8 +14,8 @@ use {
     std::{net::SocketAddr, sync::Arc},
     thiserror::Error,
     tracing::debug,
-    wc::future::FutureExt,
     uuid::Uuid,
+    wc::future::FutureExt,
 };
 
 #[derive(Debug, Deserialize)]

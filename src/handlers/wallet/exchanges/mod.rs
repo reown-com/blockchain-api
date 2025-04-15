@@ -53,7 +53,6 @@ pub enum BuyTransactionStatus {
     Failed,
 }
 
-
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBuyStatusResponse {

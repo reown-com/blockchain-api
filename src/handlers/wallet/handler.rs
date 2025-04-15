@@ -1,9 +1,9 @@
 use super::get_assets::{self, GetAssetsError};
 use super::get_calls_status::{self, GetCallsStatusError};
+use super::get_exchange_buy_status::{self, GetExchangeBuyStatusError};
 use super::get_exchange_url::{self, GetExchangeUrlError};
 use super::get_exchanges::{self, GetExchangesError};
 use super::prepare_calls::{self, PrepareCallsError};
-use super::get_exchange_buy_status::{self, GetExchangeBuyStatusError};
 use super::send_prepared_calls::{self, SendPreparedCallsError};
 use crate::error::RpcError;
 use crate::json_rpc::{
@@ -174,7 +174,6 @@ impl Error {
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,
-         
         }
     }
 }

@@ -1,5 +1,7 @@
 use {
-    crate::handlers::wallet::exchanges::{ExchangeError, ExchangeType, GetBuyStatusParams, BuyTransactionStatus}, 
+    crate::handlers::wallet::exchanges::{
+        BuyTransactionStatus, ExchangeError, ExchangeType, GetBuyStatusParams,
+    },
     crate::{
         handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
         state::AppState,
@@ -48,7 +50,7 @@ pub enum GetExchangeBuyStatusError {
     ExchangeNotFound(String),
 
     #[error("Session not found or expired: {0}")]
-    SessionNotFound(String), 
+    SessionNotFound(String),
 
     #[error("Internal error: {0}")]
     InternalError(String),
@@ -74,26 +76,36 @@ async fn handler_internal(
     request: GetExchangeBuyStatusRequest,
 ) -> Result<GetExchangeBuyStatusResponse, GetExchangeBuyStatusError> {
     let exchange = ExchangeType::from_id(&request.exchange_id).ok_or_else(|| {
-        GetExchangeBuyStatusError::ExchangeNotFound(format!("Exchange {} not found", request.exchange_id))
+        GetExchangeBuyStatusError::ExchangeNotFound(format!(
+            "Exchange {} not found",
+            request.exchange_id
+        ))
     })?;
 
     if request.session_id.is_empty() || request.session_id.len() > MAX_SESSION_ID_LENGTH {
-        return Err(GetExchangeBuyStatusError::ValidationError("Invalid session ID".to_string()));
+        return Err(GetExchangeBuyStatusError::ValidationError(
+            "Invalid session ID".to_string(),
+        ));
     }
 
     let result = exchange
         .get_buy_status(
             state,
-            GetBuyStatusParams { 
+            GetBuyStatusParams {
                 session_id: request.session_id.clone(),
             },
         )
         .await;
 
     match result {
-        Ok(response) => Ok(GetExchangeBuyStatusResponse { status: response.status, tx_hash: response.tx_hash }),
+        Ok(response) => Ok(GetExchangeBuyStatusResponse {
+            status: response.status,
+            tx_hash: response.tx_hash,
+        }),
         Err(e) => match e {
-            ExchangeError::ValidationError(msg) => Err(GetExchangeBuyStatusError::ValidationError(msg)),
+            ExchangeError::ValidationError(msg) => {
+                Err(GetExchangeBuyStatusError::ValidationError(msg))
+            }
             _ => {
                 debug!(
                     error = %e,
@@ -107,4 +119,4 @@ async fn handler_internal(
             }
         },
     }
-} 
+}
