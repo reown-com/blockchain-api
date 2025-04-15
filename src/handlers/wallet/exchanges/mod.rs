@@ -17,6 +17,8 @@ use coinbase::CoinbaseExchange;
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
 pub struct Config {
     pub coinbase_project_id: Option<String>,
+    pub coinbase_key_name: Option<String>,
+    pub coinbase_key_secret: Option<String>,
     pub binance_client_id: Option<String>,
     pub binance_token: Option<String>,
     pub binance_key: Option<String>,
@@ -35,6 +37,27 @@ pub struct GetBuyUrlParams {
     pub asset: Caip19Asset,
     pub amount: usize,
     pub recipient: String,
+    pub session_id: String,
+}
+
+pub struct GetBuyStatusParams {
+    pub session_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum BuyTransactionStatus {
+    InProgress,
+    Success,
+    Failed,
+}
+
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetBuyStatusResponse {
+    pub status: BuyTransactionStatus,
+    pub tx_hash: Option<String>,
 }
 
 pub trait ExchangeProvider {
@@ -97,6 +120,17 @@ impl ExchangeType {
         match self {
             ExchangeType::Binance => BinanceExchange.get_buy_url(state, params).await,
             ExchangeType::Coinbase => CoinbaseExchange.get_buy_url(state, params).await,
+        }
+    }
+
+    pub async fn get_buy_status(
+        &self,
+        state: State<Arc<AppState>>,
+        params: GetBuyStatusParams,
+    ) -> Result<GetBuyStatusResponse, ExchangeError> {
+        match self {
+            ExchangeType::Binance => BinanceExchange.get_buy_status(state, params).await,
+            ExchangeType::Coinbase => CoinbaseExchange.get_buy_status(state, params).await,
         }
     }
 

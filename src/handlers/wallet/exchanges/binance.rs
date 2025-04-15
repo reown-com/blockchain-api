@@ -1,5 +1,5 @@
 use {
-    crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider, GetBuyUrlParams},
+    crate::handlers::wallet::exchanges::{ExchangeError, ExchangeProvider, GetBuyUrlParams, GetBuyStatusParams, GetBuyStatusResponse, BuyTransactionStatus},
     crate::state::AppState,
     crate::utils::crypto::Caip19Asset,
     axum::extract::State,
@@ -10,7 +10,6 @@ use {
     std::collections::HashMap,
     std::sync::Arc,
     tracing::debug,
-    uuid::Uuid,
 };
 
 pub struct BinanceExchange;
@@ -358,10 +357,8 @@ impl BinanceExchange {
             ));
         }
 
-        let order_id = Uuid::new_v4().to_string().replace("-", "");
-
         let request = PreOrderRequest {
-            external_order_id: order_id,
+            external_order_id: params.session_id,
             fiat_currency: Some(DEFAULT_FIAT_CURRENCY.to_string()),
             crypto_currency: Some(crypto_currency),
             amount_type: AmountType::Crypto as i32,
@@ -382,6 +379,14 @@ impl BinanceExchange {
 
         let url = self.create_pre_order(&state, request).await?;
         Ok(url)
+    }
+
+    pub async fn get_buy_status(
+        &self,
+        _state: State<Arc<AppState>>,
+        _params: GetBuyStatusParams,
+    ) -> Result<GetBuyStatusResponse, ExchangeError> {
+        Ok(GetBuyStatusResponse { status: BuyTransactionStatus::InProgress, tx_hash: None })
     }
 
     pub async fn create_pre_order(

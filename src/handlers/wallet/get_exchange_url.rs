@@ -15,6 +15,7 @@ use {
     thiserror::Error,
     tracing::debug,
     wc::future::FutureExt,
+    uuid::Uuid,
 };
 
 #[derive(Debug, Deserialize)]
@@ -30,6 +31,7 @@ pub struct GeneratePayUrlRequest {
 #[serde(rename_all = "camelCase")]
 pub struct GeneratePayUrlResponse {
     pub url: String,
+    pub session_id: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -111,6 +113,9 @@ async fn handler_internal(
         }
     };
 
+    // Removing dashes from the session id because binance only accepts alphanumeric characters
+    let session_id = Uuid::new_v4().to_string().replace("-", "");
+
     let result = exchange
         .get_buy_url(
             state,
@@ -118,12 +123,13 @@ async fn handler_internal(
                 asset,
                 amount,
                 recipient: address,
+                session_id: session_id.clone(),
             },
         )
         .await;
 
     match result {
-        Ok(url) => Ok(GeneratePayUrlResponse { url }),
+        Ok(url) => Ok(GeneratePayUrlResponse { url, session_id }),
         Err(e) => match e {
             ExchangeError::ValidationError(msg) => Err(GetExchangeUrlError::ValidationError(msg)),
             _ => {
