@@ -169,13 +169,12 @@ impl CoinbaseExchange {
         let key_name = state.config.exchanges.coinbase_key_name.clone();
         let key_secret = state.config.exchanges.coinbase_key_secret.clone();
 
-        if key_name.is_none() || key_secret.is_none() {
-            return Err(ExchangeError::ConfigurationError(
+        match (key_name, key_secret) {
+            (Some(key_name), Some(key_secret)) => Ok((key_name, key_secret)),
+            _ => Err(ExchangeError::ConfigurationError(
                 "Exchange is not available".to_string(),
-            ));
+            ))
         }
-
-        Ok((key_name.unwrap(), key_secret.unwrap()))
     }
 
     async fn send_get_request(
