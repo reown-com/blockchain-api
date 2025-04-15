@@ -16,9 +16,12 @@ pub struct BinanceExchange;
 
 const PRE_ORDER_PATH: &str = "/papi/v1/ramp/connect/buy/pre-order";
 const PAYMENT_METHOD_LIST_PATH: &str = "/papi/v1/ramp/connect/buy/payment-method-list";
+const QUERY_ORDER_DETAILS_PATH: &str = "/papi/v1/ramp/connect/order";
 const DEFAULT_FIAT_CURRENCY: &str = "USD";
 const DEFAULT_PAYMENT_METHOD_CODE: &str = "BUY_WALLET";
 const DEFAULT_PAYMENT_METHOD_SUB_CODE: &str = "Wallet";
+
+
 
 // CAIP-19 asset mappings to Binance assets
 static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
@@ -55,6 +58,43 @@ static CHAIN_ID_TO_BINANCE_NETWORK: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
         ("solana:4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ", "SOL"), // Solana
     ])
 });
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+enum BinanceOrderStatus {
+    Init,               
+    OnRampProcessing,  
+    OnRampCompleted,    
+    OffRampProcessing,  
+    WithdrawInit,       
+    WithdrawProcessing, 
+    Completed,          
+    OffRampFailed,      
+    WithdrawAbandoned,  
+    OnRampFailed,       
+    WithdrawFailed,     
+    FailedReserved,     
+    Unknown(usize),     
+}
+
+impl From<usize> for BinanceOrderStatus {
+    fn from(value: usize) -> Self {
+        match value {
+            0 => BinanceOrderStatus::Init,
+            1 => BinanceOrderStatus::OnRampProcessing,
+            2 => BinanceOrderStatus::OnRampCompleted,
+            6 => BinanceOrderStatus::OffRampProcessing,
+            10 => BinanceOrderStatus::WithdrawInit,
+            11 => BinanceOrderStatus::WithdrawProcessing,
+            20 => BinanceOrderStatus::Completed,
+            95 => BinanceOrderStatus::OffRampFailed,
+            96 => BinanceOrderStatus::WithdrawAbandoned,
+            97 => BinanceOrderStatus::OnRampFailed,
+            98 => BinanceOrderStatus::WithdrawFailed,
+            99 => BinanceOrderStatus::FailedReserved,
+            _ => BinanceOrderStatus::Unknown(value),
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -157,6 +197,20 @@ struct PaymentMethod {
     p2p: Option<bool>,
     withdraw_restriction: Option<i32>,
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct QueryOrderDetailsRequest {
+    external_order_id: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct QueryOrderDetailsResponse {
+    status: usize,
+    withdraw_tx_hash: Option<String>,
+}
+
 
 /// Base response structure for Binance API responses
 #[derive(Debug, Deserialize, Serialize)]
@@ -383,10 +437,38 @@ impl BinanceExchange {
 
     pub async fn get_buy_status(
         &self,
-        _state: State<Arc<AppState>>,
-        _params: GetBuyStatusParams,
+        state: State<Arc<AppState>>,
+        params: GetBuyStatusParams,
     ) -> Result<GetBuyStatusResponse, ExchangeError> {
-        Ok(GetBuyStatusResponse { status: BuyTransactionStatus::Uknown, tx_hash: None })
+
+        let request = QueryOrderDetailsRequest {
+            external_order_id: params.session_id,
+        };
+
+        let response: QueryOrderDetailsResponse = self
+            .send_post_request(&state, QUERY_ORDER_DETAILS_PATH, &request)
+            .await?;
+
+        debug!("get_buy_status response: {:?}", response);
+
+        let binance_status: BinanceOrderStatus = response.status.into();
+
+        let status = match binance_status {
+            BinanceOrderStatus::OnRampCompleted | BinanceOrderStatus::Completed => BuyTransactionStatus::Success,
+            BinanceOrderStatus::Init
+            | BinanceOrderStatus::OnRampProcessing
+            | BinanceOrderStatus::OffRampProcessing
+            | BinanceOrderStatus::WithdrawInit 
+            | BinanceOrderStatus::WithdrawProcessing => BuyTransactionStatus::InProgress,
+            BinanceOrderStatus::OffRampFailed
+            | BinanceOrderStatus::WithdrawAbandoned
+            | BinanceOrderStatus::OnRampFailed
+            | BinanceOrderStatus::WithdrawFailed
+            | BinanceOrderStatus::FailedReserved => BuyTransactionStatus::Failed,
+            BinanceOrderStatus::Unknown(_) => BuyTransactionStatus::Unknown, 
+        };
+
+        Ok(GetBuyStatusResponse { status, tx_hash: response.withdraw_tx_hash })
     }
 
     pub async fn create_pre_order(
