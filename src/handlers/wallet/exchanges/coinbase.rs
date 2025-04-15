@@ -300,7 +300,7 @@ impl CoinbaseExchange {
                 };
                 Ok(GetBuyStatusResponse { status, tx_hash: transaction.tx_hash.clone() })
             }
-            None => Ok(GetBuyStatusResponse { status: BuyTransactionStatus::InProgress, tx_hash: None }),
+            None => Ok(GetBuyStatusResponse { status: BuyTransactionStatus::Unknown, tx_hash: None }),
         }
 
     

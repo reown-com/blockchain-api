@@ -47,6 +47,7 @@ pub struct GetBuyStatusParams {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum BuyTransactionStatus {
+    Unknown,
     InProgress,
     Success,
     Failed,
