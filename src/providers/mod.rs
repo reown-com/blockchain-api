@@ -58,7 +58,7 @@ use {
         hash::Hash,
         sync::Arc,
     },
-    tracing::{debug, error, log::warn},
+    tracing::{debug, error, info, log::warn},
     wc::metrics::TaskMetrics,
     yttrium::chain_abstraction::api::Transaction,
 };
@@ -645,6 +645,10 @@ impl ProviderRepository {
                 warn!("Failed to update weights from prometheus: {}", e);
             }
         }
+        info!(
+            "Balance providers weights: {:?}",
+            self.balance_weight_resolver
+        );
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
