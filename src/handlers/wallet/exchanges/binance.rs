@@ -386,7 +386,7 @@ impl BinanceExchange {
         _state: State<Arc<AppState>>,
         _params: GetBuyStatusParams,
     ) -> Result<GetBuyStatusResponse, ExchangeError> {
-        Ok(GetBuyStatusResponse { status: BuyTransactionStatus::InProgress, tx_hash: None })
+        Ok(GetBuyStatusResponse { status: BuyTransactionStatus::Uknown, tx_hash: None })
     }
 
     pub async fn create_pre_order(
