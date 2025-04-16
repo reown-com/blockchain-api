@@ -18,11 +18,8 @@ use {
 pub struct BinanceExchange;
 
 const PRE_ORDER_PATH: &str = "/papi/v1/ramp/connect/buy/pre-order";
-const PAYMENT_METHOD_LIST_PATH: &str = "/papi/v1/ramp/connect/buy/payment-method-list";
 const QUERY_ORDER_DETAILS_PATH: &str = "/papi/v1/ramp/connect/order";
-const DEFAULT_FIAT_CURRENCY: &str = "USD";
-const DEFAULT_PAYMENT_METHOD_CODE: &str = "BUY_WALLET";
-const DEFAULT_PAYMENT_METHOD_SUB_CODE: &str = "Wallet";
+
 
 // CAIP-19 asset mappings to Binance assets
 static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
@@ -103,10 +100,6 @@ pub struct PreOrderRequest {
     /// The unique order id from the partner side. Supports only letters and numbers.
     pub external_order_id: String,
 
-    /// Fiat currency. If not specified, Binance Connect will automatically select/recommend a default fiat currency.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fiat_currency: Option<String>,
-
     /// Crypto currency. If not specified, Binance Connect will automatically select/recommend a default crypto currency.
     /// Required for SEND_PRIMARY.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -155,7 +148,11 @@ pub struct PreOrderRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Customization {}
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub struct Customization {
+    send_primary: Option<bool>,
+    merchant_display_name: Option<String>,
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -333,6 +330,7 @@ impl BinanceExchange {
             .await
             .map_err(|e| ExchangeError::GetPayUrlError(e.to_string()))?;
 
+        debug!("Binance response: {:?}", response);
         let status = response.status();
         if !status.is_success() {
             let error_body = response.text().await.unwrap_or_default();
@@ -395,30 +393,15 @@ impl BinanceExchange {
             .map_asset_to_binance_format(&params.asset)
             .map_err(|e| ExchangeError::ValidationError(e.to_string()))?;
 
-        let is_supported = self
-            .is_payment_method_supported(
-                &state,
-                DEFAULT_PAYMENT_METHOD_CODE,
-                DEFAULT_PAYMENT_METHOD_SUB_CODE,
-                &params.amount.to_string(),
-                &crypto_currency,
-            )
-            .await?;
-
-        if !is_supported {
-            return Err(ExchangeError::ValidationError(
-                "Selected payment method is not supported for this transaction".to_string(),
-            ));
-        }
+      
 
         let request = PreOrderRequest {
             external_order_id: params.session_id,
-            fiat_currency: Some(DEFAULT_FIAT_CURRENCY.to_string()),
             crypto_currency: Some(crypto_currency),
             amount_type: AmountType::Crypto as i32,
             requested_amount: params.amount.to_string(),
-            pay_method_code: Some(DEFAULT_PAYMENT_METHOD_CODE.to_string()),
-            pay_method_sub_code: Some(DEFAULT_PAYMENT_METHOD_SUB_CODE.to_string()),
+            pay_method_code: None,
+            pay_method_sub_code: None,
             network,
             address: params.recipient,
             memo: None,
@@ -428,7 +411,10 @@ impl BinanceExchange {
             fail_redirect_deep_link: None,
             client_ip: None,
             client_type: None,
-            customization: None,
+            customization: Some(Customization {
+                send_primary: Some(true),
+                merchant_display_name: Some("Reown".to_string()),
+            }),
         };
 
         let url = self.create_pre_order(&state, request).await?;
@@ -486,65 +472,5 @@ impl BinanceExchange {
         Ok(data.link)
     }
 
-    pub async fn is_payment_method_supported(
-        &self,
-        state: &Arc<AppState>,
-        payment_method_code: &str,
-        payment_method_sub_code: &str,
-        amount: &str,
-        crypto_currency: &str,
-    ) -> Result<bool, ExchangeError> {
-        let request = PaymentMethodListRequest {
-            fiat_currency: DEFAULT_FIAT_CURRENCY.to_string(),
-            crypto_currency: crypto_currency.to_string(),
-            total_amount: amount.to_string(),
-            amount_type: AmountType::Crypto as usize,
-        };
-
-        let data: PaymentMethodListResponseData = self
-            .send_post_request(state, PAYMENT_METHOD_LIST_PATH, &request)
-            .await?;
-
-        let method = data
-            .payment_methods
-            .iter()
-            .find(|method| {
-                method.pay_method_code.as_deref() == Some(payment_method_code)
-                    && method.pay_method_sub_code.as_deref() == Some(payment_method_sub_code)
-            })
-            .ok_or_else(|| {
-                ExchangeError::ValidationError("Payment method is not supported".to_string())
-            })?;
-
-        let amount_value = amount
-            .parse::<f64>()
-            .map_err(|_| ExchangeError::ValidationError("Invalid amount format".to_string()))?;
-
-        if let Some(min_limit_str) = &method.crypto_min_limit {
-            let min_limit = min_limit_str.parse::<f64>().map_err(|_| {
-                ExchangeError::ValidationError("Invalid min limit format".to_string())
-            })?;
-
-            if amount_value < min_limit {
-                return Err(ExchangeError::ValidationError(format!(
-                    "Amount is below minimum limit of {}",
-                    min_limit_str
-                )));
-            }
-        }
-        if let Some(max_limit_str) = &method.crypto_max_limit {
-            let max_limit = max_limit_str.parse::<f64>().map_err(|_| {
-                ExchangeError::ValidationError("Invalid max limit format".to_string())
-            })?;
-
-            if amount_value > max_limit {
-                return Err(ExchangeError::ValidationError(format!(
-                    "Amount exceeds maximum limit of {}",
-                    max_limit_str
-                )));
-            }
-        }
-
-        Ok(true)
-    }
+    
 }
