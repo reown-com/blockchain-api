@@ -20,7 +20,6 @@ pub struct BinanceExchange;
 const PRE_ORDER_PATH: &str = "/papi/v1/ramp/connect/buy/pre-order";
 const QUERY_ORDER_DETAILS_PATH: &str = "/papi/v1/ramp/connect/order";
 
-
 // CAIP-19 asset mappings to Binance assets
 static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
     HashMap::from([
@@ -393,8 +392,6 @@ impl BinanceExchange {
             .map_asset_to_binance_format(&params.asset)
             .map_err(|e| ExchangeError::ValidationError(e.to_string()))?;
 
-      
-
         let request = PreOrderRequest {
             external_order_id: params.session_id,
             crypto_currency: Some(crypto_currency),
@@ -471,6 +468,4 @@ impl BinanceExchange {
             .await?;
         Ok(data.link)
     }
-
-    
 }
