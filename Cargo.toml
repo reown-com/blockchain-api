@@ -110,6 +110,7 @@ regex = "1.10"
 sha256 = "1.5"
 uuid = { version = "1.13.1", features = ["serde"] }
 openssl = "0.10"
+ed25519-dalek = "2.1"
 
 
 # System CPU and Memory metrics

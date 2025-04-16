@@ -463,29 +463,42 @@ variable "coinbase_project_id" {
   default     = ""
 }
 
+variable "coinbase_key_name" {
+  description = "Coinbase key name"
+  type        = string
+  default     = ""
+}
+
+variable "coinbase_key_secret" {
+  description = "Coinbase key secret"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "binance_client_id" {
-  description = "Coinbase project id"
+  description = "Binance client id"
   type        = string
   sensitive   = true
   default     = ""
 }
 
 variable "binance_token" {
-  description = "Coinbase project id"
+  description = "Binance token"
   type        = string
   sensitive   = true
   default     = ""
 }
 
 variable "binance_key" {
-  description = "Coinbase project id"
+  description = "Binance key"
   type        = string
   sensitive   = true
   default     = ""
 }
 
 variable "binance_host" {
-  description = "Coinbase project id"
+  description = "Binance host"
   type        = string
   sensitive   = true
   default     = ""
