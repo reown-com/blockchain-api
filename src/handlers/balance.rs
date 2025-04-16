@@ -208,57 +208,34 @@ async fn handler_internal(
         .get_balance_provider_for_namespace(&namespace, PROVIDER_MAX_CALLS)?;
 
     let mut balance_response = None;
+    let mut retry_count = 0;
+    for (i, provider) in providers.iter().enumerate() {
+        let provider_response = provider
+            .get_balance(
+                address.clone(),
+                query.clone().0,
+                &state.providers.token_metadata_cache,
+                state.metrics.clone(),
+            )
+            .await;
+        match provider_response {
+            Ok(response) => {
+                balance_response = Some((response, provider.provider_kind()));
+                break;
+            }
+            Err(e) => {
+                retry_count = i;
+                error!(
+                    "Error on balance provider response, trying the next provider: {:?}",
+                    e
+                );
+            }
+        };
+    }
+    state
+        .metrics
+        .add_balance_lookup_retries(retry_count as u64, namespace);
 
-    // Temporarily using the first provider in the list
-    // for debugging purposes
-    let provider = providers
-        .first()
-        .ok_or_else(|| RpcError::UnsupportedNamespace(namespace))?;
-    let provider_response = provider
-        .get_balance(
-            address.clone(),
-            query.clone().0,
-            &state.providers.token_metadata_cache,
-            state.metrics.clone(),
-        )
-        .await
-        .tap_err(|e| {
-            error!("Failed to call balance with {}", e);
-        });
-    match provider_response {
-        Ok(response) => {
-            balance_response = Some((response, provider.provider_kind()));
-        }
-        e => {
-            debug!("Balance provider returned an error {e:?}, trying the next provider");
-        }
-    };
-
-    // Temporarily disabling the balance provider failover loop
-    //
-    // for provider in providers.iter() {
-    //     let provider_response = provider
-    //         .get_balance(
-    //             address.clone(),
-    //             query.clone().0,
-    //             &state.providers.token_metadata_cache,
-    //             state.metrics.clone(),
-    //         )
-    //         .await
-    //         .tap_err(|e| {
-    //             error!("Failed to call balance with {}", e);
-    //         });
-
-    //     match provider_response {
-    //         Ok(response) => {
-    //             balance_response = Some((response, provider.provider_kind()));
-    //             break;
-    //         }
-    //         e => {
-    //             debug!("Balance provider returned an error {e:?}, trying the next provider");
-    //         }
-    //     };
-    // }
     let (mut response, provider_kind) = balance_response.ok_or(
         RpcError::BalanceTemporarilyUnavailable(namespace.to_string()),
     )?;

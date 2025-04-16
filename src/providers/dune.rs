@@ -82,9 +82,16 @@ impl DuneProvider {
         url.query_pairs_mut()
             .append_pair("exclude_spam_tokens", "true");
         url.query_pairs_mut().append_pair("metadata", "logo");
-        if let Some(caip2_chain_id) = params.chain_id {
-            let (_, chain_id) = crypto::disassemble_caip2(&caip2_chain_id)
-                .map_err(|_| RpcError::InvalidParameter(caip2_chain_id))?;
+        if let Some(chain_id_param) = params.chain_id {
+            // Check if it's a CAIP2 chain ID (contains a colon)
+            let chain_id = if chain_id_param.contains(':') {
+                let (_, chain_id) = crypto::disassemble_caip2(&chain_id_param)
+                    .map_err(|_| RpcError::InvalidParameter(chain_id_param))?;
+                chain_id
+            } else {
+                // It's already a plain chain ID, use it as EVM chain ID
+                chain_id_param
+            };
             url.query_pairs_mut().append_pair("chain_ids", &chain_id);
         }
 
