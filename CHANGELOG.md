@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.220.3 - 2025-04-16
+#### Bug Fixes
+- **(balances)** fixing the failover retrying, adding support for an (#1040) - (fdb41b9) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.220.2 - 2025-04-16
 #### Bug Fixes
 - temporarily disabling the balance provider failover retrying (#1039) - (0912ae7) - Max Kalashnikoff | maksy.eth
