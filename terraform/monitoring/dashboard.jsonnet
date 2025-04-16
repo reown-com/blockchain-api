@@ -212,8 +212,9 @@ dashboard.new(
     panels.chain_abstraction.response_types_rates(ds, vars) { gridPos: pos_short._2 },
 
   row.new('Accounts balance'),
-    panels.balance.requests_distribution_evm(ds, vars)      { gridPos: pos_short._2 },
-    panels.balance.requests_distribution_solana(ds, vars)   { gridPos: pos_short._2 },
+    panels.balance.requests_distribution_evm(ds, vars)      { gridPos: pos_short._3 },
+    panels.balance.requests_distribution_solana(ds, vars)   { gridPos: pos_short._3 },
+    panels.balance.provider_retries(ds, vars)               { gridPos: pos_short._3 },
 
   row.new('Swaps'),
     panels.swaps.availability(ds, vars)           { gridPos: pos._1 },
