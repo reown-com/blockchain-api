@@ -26,7 +26,7 @@ pub struct SimulationRequest {
     pub to: Address,
     pub input: Bytes,
     pub estimate_gas: bool,
-    pub state_objects: HashMap<Address, StateStorage>,
+    pub state_objects: HashMap<Address, StateOverride>,
     pub save: bool, // Save the simulation to the dashboard
 }
 
@@ -35,9 +35,11 @@ pub struct BundledSimulationRequests {
     pub simulations: Vec<SimulationRequest>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct StateStorage {
-    pub storage: HashMap<B256, B256>,
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum StateOverride {
+    Storage { storage: HashMap<B256, B256> },
+    Balance { balance: U256 },
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -204,17 +206,28 @@ impl SimulationProvider for TenderlyProvider {
             .map_err(|_| RpcError::ConversionParseURLError)?;
         let (_, evm_chain_id) = disassemble_caip2(&chain_id)?;
 
-        // fill the state_objects with the state_overrides
-        let mut state_objects: HashMap<Address, StateStorage> = HashMap::new();
+        // Filling the state_objects with the state_overrides
+        let mut state_objects: HashMap<Address, StateOverride> = HashMap::new();
         for (address, state) in state_overrides {
-            let mut account_state = StateStorage {
-                storage: HashMap::new(),
-            };
+            let mut account_state = HashMap::new();
             for (key, value) in state {
-                account_state.storage.insert(key, value);
+                account_state.insert(key, value);
             }
-            state_objects.insert(address, account_state);
+            state_objects.insert(
+                address,
+                StateOverride::Storage {
+                    storage: account_state,
+                },
+            );
         }
+
+        // Filling the native token ETH balance override with 1 ETH
+        state_objects.insert(
+            from,
+            StateOverride::Balance {
+                balance: U256::from(1_000_000_000_000_000_000u64),
+            },
+        );
 
         let latency_start = SystemTime::now();
         let response = self
@@ -276,17 +289,28 @@ impl SimulationProvider for TenderlyProvider {
         for transaction in transactions {
             let (_, evm_chain_id) = disassemble_caip2(&transaction.chain_id)?;
 
-            // fill the state_objects with the state_overrides
-            let mut state_objects: HashMap<Address, StateStorage> = HashMap::new();
+            // Filling the state_objects with the state_overrides
+            let mut state_objects: HashMap<Address, StateOverride> = HashMap::new();
             for (address, state) in state_overrides.clone() {
-                let mut account_state = StateStorage {
-                    storage: HashMap::new(),
-                };
+                let mut account_state = HashMap::new();
                 for (key, value) in state {
-                    account_state.storage.insert(key, value);
+                    account_state.insert(key, value);
                 }
-                state_objects.insert(address, account_state);
+                state_objects.insert(
+                    address,
+                    StateOverride::Storage {
+                        storage: account_state,
+                    },
+                );
             }
+
+            // Filling the native token ETH balance override with 1 ETH
+            state_objects.insert(
+                transaction.from,
+                StateOverride::Balance {
+                    balance: U256::from(1_000_000_000_000_000_000u64),
+                },
+            );
 
             bundled_simulations.simulations.push(SimulationRequest {
                 network_id: evm_chain_id,
