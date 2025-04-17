@@ -9,14 +9,14 @@ use {
         utils::crypto::get_erc20_balance,
         Metrics,
     },
-    alloy::primitives::{Address, B256, U256},
+    alloy::primitives::{Address, Bytes, B256, U256},
     assets::{Eip155OrSolanaStatic, SimulationParams, BRIDGING_ASSETS},
     ethers::{types::H160 as EthersH160, utils::keccak256},
     serde::{Deserialize, Serialize},
     std::{cmp::Ordering, collections::HashMap, sync::Arc},
     tracing::debug,
     yttrium::chain_abstraction::{
-        api::{prepare::Eip155OrSolanaAddress, Transaction},
+        api::prepare::Eip155OrSolanaAddress,
         solana::{self, SolanaRpcClient},
     },
 };
@@ -260,6 +260,7 @@ pub async fn check_bridging_for_erc20_transfer(
             solana_rpc_client.clone(),
         )
         .await?;
+        // TODO do in parallel
         for (account, contract_address, current_balance) in erc20_balances {
             // Check if the balance compared to the transfer value is enough, applied to the transfer token decimals
             if convert_amount(current_balance, decimals, amount_token_decimals) >= value {
@@ -329,15 +330,17 @@ pub struct Erc20AssetChange {
 /// Get the ERC20 assets changes and gas used from the transaction simulation result
 pub async fn get_assets_changes_from_simulation(
     simulation_provider: Arc<dyn SimulationProvider>,
-    transaction: &Transaction,
+    chain_id: String,
+    from: Address,
+    to: Address,
+    input: Bytes,
     metrics: Arc<Metrics>,
 ) -> Result<(Vec<Erc20AssetChange>, u64), RpcError> {
     // Fill the state overrides for the source address for each of the supported
     // assets on the initial tx chain for the balance slot
     let state_overrides = {
         let mut state_overrides = HashMap::new();
-        let assets_contracts =
-            get_bridging_assets_contracts_for_chain(&transaction.chain_id.clone());
+        let assets_contracts = get_bridging_assets_contracts_for_chain(&chain_id);
         let mut account_state = HashMap::new();
         for (asset_name, asset_contract) in assets_contracts {
             let asset_contract = if let Eip155OrSolanaStatic::Eip155(contract) = asset_contract {
@@ -350,15 +353,15 @@ pub async fn get_assets_changes_from_simulation(
             };
             let balance_storage_slot = *simulation_params
                 .balance_storage_slots
-                .get(&transaction.chain_id)
+                .get(&chain_id)
                 .ok_or_else(|| {
                     RpcError::InvalidConfiguration(format!(
                         "Contract balance storage slot for simulation is not present for {} on {}",
-                        asset_name, transaction.chain_id
+                        asset_name, chain_id
                     ))
                 })?;
             account_state.insert(
-                compute_simulation_storage_slot(transaction.from, balance_storage_slot),
+                compute_simulation_storage_slot(from, balance_storage_slot),
                 compute_simulation_balance(simulation_params.balance),
             );
             state_overrides.insert(asset_contract, account_state.clone());
@@ -367,14 +370,7 @@ pub async fn get_assets_changes_from_simulation(
     };
 
     let simulation_result = &simulation_provider
-        .simulate_transaction(
-            transaction.chain_id.clone(),
-            transaction.from,
-            transaction.to,
-            transaction.input.clone(),
-            state_overrides,
-            metrics,
-        )
+        .simulate_transaction(chain_id.clone(), from, to, input, state_overrides, metrics)
         .await?;
     let gas_used = simulation_result.transaction.gas;
 
@@ -402,7 +398,7 @@ pub async fn get_assets_changes_from_simulation(
             && asset_changed.token_info.contract_address.is_some()
         {
             asset_changes.push(Erc20AssetChange {
-                chain_id: transaction.chain_id.clone(),
+                chain_id: chain_id.clone(),
                 asset_contract: asset_changed
                     .token_info
                     .contract_address

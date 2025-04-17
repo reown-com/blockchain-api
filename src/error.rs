@@ -261,6 +261,9 @@ pub enum RpcError {
 
     #[error("Route solana: {0}")]
     RouteSolana(#[from] RouteSolanaError),
+
+    #[error("Join error: {0}")]
+    JoinError(#[from] tokio::task::JoinError),
 }
 
 impl IntoResponse for RpcError {
