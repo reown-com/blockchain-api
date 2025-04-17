@@ -173,7 +173,7 @@ async fn handler_internal(
         for &v in &EMPTY_BALANCE_RESPONSE_SDK_VERSIONS {
             if version == v || version.ends_with(v) {
                 debug!(
-                    "Responding with empty balance array for sdk version: {}",
+                    "Responding with an empty balance array for sdk version: {}",
                     version
                 );
                 return Ok(Json(BalanceResponseBody { balances: vec![] }));
