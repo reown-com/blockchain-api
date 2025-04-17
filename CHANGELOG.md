@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.220.4 - 2025-04-17
+#### Bug Fixes
+- null changes to trigger a new release (#1041) - (cee6bb9) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- add buy order status checks (#1037) - (8461146) - Luka Isailovic
+
+- - -
+
 ## 0.220.3 - 2025-04-16
 #### Bug Fixes
 - **(balances)** fixing the failover retrying, adding support for an (#1040) - (fdb41b9) - Max Kalashnikoff | maksy.eth
