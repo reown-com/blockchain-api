@@ -120,7 +120,7 @@ impl DuneProvider {
         address: String,
         metrics: Arc<Metrics>,
     ) -> RpcResult<DuneBalanceResponseBody> {
-        let base = format!("{}/echo/beta/balances/svm/{}", DUNE_API_BASE_URL, &address);
+        let base = format!("{}/echo/beta2/balances/svm/{}", DUNE_API_BASE_URL, &address);
         let mut url = Url::parse(&base).map_err(|_| RpcError::BalanceParseURLError)?;
         url.query_pairs_mut()
             .append_pair("exclude_spam_tokens", "true");
