@@ -165,6 +165,7 @@ impl Error {
             Error::GetAssets(e) => e.is_internal(),
             Error::GetExchanges(e) => e.is_internal(),
             Error::GetUrl(e) => e.is_internal(),
+            Error::GetExchangeBuyStatus(e) => e.is_internal(),
             Error::MethodNotFound => false,
             Error::InvalidParams(_) => false,
             Error::Internal(_) => true,

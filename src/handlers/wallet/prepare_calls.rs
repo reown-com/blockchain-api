@@ -170,10 +170,7 @@ pub enum PrepareCallsInternalError {
 
 impl PrepareCallsError {
     pub fn is_internal(&self) -> bool {
-        match self {
-            PrepareCallsError::InternalError(_) => true,
-            _ => false,
-        }
+        matches!(self, PrepareCallsError::InternalError(_))
     }
 }
 

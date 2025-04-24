@@ -136,10 +136,7 @@ pub enum SendPreparedCallsInternalError {
 
 impl SendPreparedCallsError {
     pub fn is_internal(&self) -> bool {
-        match self {
-            SendPreparedCallsError::InternalError(_) => true,
-            _ => false,
-        }
+        matches!(self, SendPreparedCallsError::InternalError(_))
     }
 }
 

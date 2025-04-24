@@ -56,6 +56,12 @@ pub enum GetExchangeBuyStatusError {
     InternalError(String),
 }
 
+impl GetExchangeBuyStatusError {
+    pub fn is_internal(&self) -> bool {
+        matches!(self, GetExchangeBuyStatusError::InternalError(_))
+    }
+}
+
 pub async fn handler(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,

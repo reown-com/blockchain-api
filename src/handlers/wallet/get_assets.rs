@@ -8,12 +8,8 @@ use crate::{
     state::AppState,
 };
 use alloy::primitives::{address, Address, U256};
-use axum::{
-    extract::{ConnectInfo, Path, Query, State},
-    response::{IntoResponse, Response},
-    Json,
-};
-use hyper::{HeaderMap, StatusCode};
+use axum::extract::{ConnectInfo, Path, Query, State};
+use hyper::HeaderMap;
 use serde::Deserialize;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use thiserror::Error;
@@ -38,10 +34,7 @@ pub enum GetAssetsErrorInternalError {
 
 impl GetAssetsError {
     pub fn is_internal(&self) -> bool {
-        match self {
-            GetAssetsError::InternalError(_) => true,
-            _ => false,
-        }
+        matches!(self, GetAssetsError::InternalError(_))
     }
 }
 

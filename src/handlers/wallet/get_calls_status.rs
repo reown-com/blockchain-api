@@ -9,12 +9,8 @@ use alloy::{
     providers::ProviderBuilder,
     rpc::{client::RpcClient, types::UserOperationReceipt},
 };
-use axum::{
-    extract::{ConnectInfo, Query, State},
-    response::{IntoResponse, Response},
-    Json,
-};
-use hyper::{HeaderMap, StatusCode};
+use axum::extract::{ConnectInfo, Query, State};
+use hyper::HeaderMap;
 use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, sync::Arc};
 use thiserror::Error;
@@ -73,10 +69,7 @@ pub enum GetCallsStatusInternalError {
 
 impl GetCallsStatusError {
     pub fn is_internal(&self) -> bool {
-        match self {
-            GetCallsStatusError::InternalError(_) => true,
-            _ => false,
-        }
+        matches!(self, GetCallsStatusError::InternalError(_))
     }
 }
 

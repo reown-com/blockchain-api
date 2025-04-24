@@ -55,10 +55,7 @@ pub enum GetExchangeUrlError {
 
 impl GetExchangeUrlError {
     pub fn is_internal(&self) -> bool {
-        match self {
-            GetExchangeUrlError::InternalError(_) => true,
-            _ => false,
-        }
+        matches!(self, GetExchangeUrlError::InternalError(_))
     }
 }
 
