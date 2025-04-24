@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.220.5 - 2025-04-24
+#### Bug Fixes
+- some internal wallet RPC errors were not being logged (#1044) - (ed6d180) - Chris Smith
+
+- - -
+
 ## 0.220.4 - 2025-04-17
 #### Bug Fixes
 - null changes to trigger a new release (#1041) - (cee6bb9) - Max Kalashnikoff | maksy.eth
