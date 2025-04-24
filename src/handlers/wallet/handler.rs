@@ -72,28 +72,6 @@ async fn handler_internal(
         )))
         .into_response(),
         Err(e) => {
-            let is_internal = matches!(e, Error::Internal(_))
-                || matches!(
-                    e,
-                    Error::SendPreparedCalls(SendPreparedCallsError::InternalError(_))
-                )
-                || matches!(e, Error::PrepareCalls(PrepareCallsError::InternalError(_)));
-
-            if is_internal {
-                error!("Internal server error handling wallet RPC request: {e:?}");
-            }
-            // TODO these special cases shouldn't be necessary, by remapping
-            if matches!(
-                e,
-                Error::SendPreparedCalls(SendPreparedCallsError::InternalError(_))
-            ) {
-                error!(
-                    "Internal server error handling wallet RPC request (sendPreparedCalls): {e:?}"
-                );
-            }
-            if matches!(e, Error::PrepareCalls(PrepareCallsError::InternalError(_))) {
-                error!("Internal server error handling wallet RPC request (prepareCalls): {e:?}");
-            }
             let json = Json(JsonRpcResponse::Error(JsonRpcError::new(
                 request.id,
                 ErrorResponse {
@@ -102,7 +80,8 @@ async fn handler_internal(
                     data: None,
                 },
             )));
-            if is_internal {
+            if e.is_internal() {
+                error!("Internal server error handling wallet RPC request: {e:?}");
                 (StatusCode::INTERNAL_SERVER_ERROR, json).into_response()
             } else {
                 (StatusCode::BAD_REQUEST, json).into_response()
@@ -174,6 +153,21 @@ impl Error {
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,
+        }
+    }
+
+    fn is_internal(&self) -> bool {
+        match self {
+            Error::InvalidProjectId(_) => false,
+            Error::PrepareCalls(e) => e.is_internal(),
+            Error::SendPreparedCalls(e) => e.is_internal(),
+            Error::GetCallsStatus(e) => e.is_internal(),
+            Error::GetAssets(e) => e.is_internal(),
+            Error::GetExchanges(e) => e.is_internal(),
+            Error::GetUrl(e) => e.is_internal(),
+            Error::MethodNotFound => false,
+            Error::InvalidParams(_) => false,
+            Error::Internal(_) => true,
         }
     }
 }

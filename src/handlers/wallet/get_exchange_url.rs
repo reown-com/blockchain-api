@@ -53,6 +53,15 @@ pub enum GetExchangeUrlError {
     InternalError(String),
 }
 
+impl GetExchangeUrlError {
+    pub fn is_internal(&self) -> bool {
+        match self {
+            GetExchangeUrlError::InternalError(_) => true,
+            _ => false,
+        }
+    }
+}
+
 pub async fn handler(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,

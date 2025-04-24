@@ -36,21 +36,11 @@ pub enum GetAssetsErrorInternalError {
     GetBalance(RpcError),
 }
 
-impl IntoResponse for GetAssetsError {
-    fn into_response(self) -> Response {
-        #[allow(unreachable_patterns)] // TODO remove
+impl GetAssetsError {
+    pub fn is_internal(&self) -> bool {
         match self {
-            Self::InternalError(e) => {
-                error!("HTTP server error: (get_assets) {e:?}");
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-            e => (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({
-                    "error": e.to_string(),
-                })),
-            )
-                .into_response(),
+            GetAssetsError::InternalError(_) => true,
+            _ => false,
         }
     }
 }
