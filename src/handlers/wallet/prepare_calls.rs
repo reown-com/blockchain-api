@@ -168,6 +168,12 @@ pub enum PrepareCallsInternalError {
     GetSessionContextError(InternalGetSessionContextError),
 }
 
+impl PrepareCallsError {
+    pub fn is_internal(&self) -> bool {
+        matches!(self, PrepareCallsError::InternalError(_))
+    }
+}
+
 pub async fn handler(
     state: State<Arc<AppState>>,
     project_id: String,
