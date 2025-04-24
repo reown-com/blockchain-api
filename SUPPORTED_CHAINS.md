@@ -35,11 +35,14 @@ Chain name with associated `chainId` query param to use.
 | Avalanche C-Chain                                        | eip155:43114         |
 | Linea <sup>[1](#footnote1)</sup>                         | eip155:59144         |
 | Polygon Amoy <sup>[1](#footnote1)</sup>                  | eip155:80002         |
+| Berachain Bepolia <sup>[1](#footnote)</sup>              | eip155:80069         |
 | Berachain bArtio <sup>[1](#footnote1)</sup>              | eip155:80084         |
+| Berachain Mainnet <sup>[1](#footnote1)</sup>             | eip155:80094         |
 | Base Sepolia                                             | eip155:84532         |
 | Arbitrum Sepolia                                         | eip155:421614        |
 | Scroll Mainnet <sup>[1](#footnote1)</sup>                | eip155:534352        |
 | Scroll Sepolia Testnet <sup>[1](#footnote1)</sup>        | eip155:534351        |
+| Ethereum Hoodi <sup>[1](#footnote1)</sup>                | eip155:560048        |
 | Odyssey Testnet <sup>[1](#footnote1)</sup>               | eip155:911867        |
 | Zora <sup>[1](#footnote1)</sup>                          | eip155:7777777       |
 | Ethereum Sepolia                                         | eip155:11155111      |
