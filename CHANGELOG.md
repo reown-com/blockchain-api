@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.221.0 - 2025-04-25
+#### Features
+- **(providers)** updating providers endpoint and supported chains (#1045) - (3c8115f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.220.5 - 2025-04-24
 #### Bug Fixes
 - some internal wallet RPC errors were not being logged (#1044) - (ed6d180) - Chris Smith
