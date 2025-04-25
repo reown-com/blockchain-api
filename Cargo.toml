@@ -1,6 +1,6 @@
 [package]
 name = "rpc-proxy"
-version = "0.220.5"
+version = "0.221.0"
 edition = "2021"
 authors = [
     "Derek <derek@walletconnect.com>",
