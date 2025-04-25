@@ -31,6 +31,15 @@ async fn drpc_provider_evm(ctx: &mut ServerContext) {
     )
     .await;
 
+    // Ethereum Hoodi
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:560048",
+        "0x88bb0",
+    )
+    .await;
+
     // Arbitrum One
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
@@ -76,6 +85,15 @@ async fn drpc_provider_evm(ctx: &mut ServerContext) {
         &provider,
         "eip155:8217",
         "0x2019",
+    )
+    .await;
+
+    // Berachain mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:80094",
+        "0x138de",
     )
     .await;
 }

@@ -16,16 +16,15 @@ use {
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
-    allnodes::*, arbitrum::*, aurora::*, base::*, berachain::*, binance::*, drpc::*, dune::*,
-    getblock::*, infura::*, lava::*, mantle::*, monad::*, morph::*, near::*, odyssey::*, pokt::*,
-    publicnode::*, quicknode::*, server::*, solscan::*, syndica::*, unichain::*, wemix::*,
-    zerion::*, zksync::*, zora::*,
+    allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, drpc::*, dune::*, getblock::*,
+    infura::*, lava::*, mantle::*, monad::*, morph::*, near::*, odyssey::*, pokt::*, publicnode::*,
+    quicknode::*, server::*, solscan::*, syndica::*, unichain::*, wemix::*, zerion::*, zksync::*,
+    zora::*,
 };
 mod allnodes;
 mod arbitrum;
 mod aurora;
 mod base;
-mod berachain;
 mod binance;
 mod drpc;
 mod dune;

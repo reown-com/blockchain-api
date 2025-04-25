@@ -59,6 +59,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::High).unwrap(),
             ),
         ),
+        // Ethereum Hoodi
+        (
+            "eip155:560048".into(),
+            (
+                "ethereum-hoodi-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
         // Base mainnet
         (
             "eip155:8453".into(),
@@ -161,11 +169,19 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
-        // Berachain bArtio testnet
+        // Berachain Mainnet
         (
-            "eip155:80084".into(),
+            "eip155:80094".into(),
             (
-                "berachain-testnet-rpc".into(),
+                "berachain-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        // Berachain Bepolia testnet
+        (
+            "eip155:80069".into(),
+            (
+                "berachain-bepolia-rpc".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
