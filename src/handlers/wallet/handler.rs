@@ -37,6 +37,7 @@ pub struct WalletQueryParams {
     pub sdk_info: SdkInfoParams,
 }
 
+// TODO support batch requests (and validate unique RPC IDs)
 pub async fn handler(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
