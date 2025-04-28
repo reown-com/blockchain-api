@@ -67,7 +67,6 @@ mod allnodes;
 mod arbitrum;
 mod aurora;
 mod base;
-mod berachain;
 mod binance;
 mod bungee;
 mod coinbase;
@@ -103,7 +102,6 @@ pub use {
     arbitrum::ArbitrumProvider,
     aurora::AuroraProvider,
     base::BaseProvider,
-    berachain::BerachainProvider,
     binance::BinanceProvider,
     bungee::BungeeProvider,
     drpc::DrpcProvider,
@@ -339,9 +337,7 @@ impl ProviderRepository {
             config.tenderly_api_key.clone(),
             config.tenderly_account_id.clone(),
             config.tenderly_project_id.clone(),
-            // Todo: Temporary disabling the gas estimation caching
-            // redis_pool.clone(),
-            None,
+            redis_pool.clone(),
         ));
 
         let token_metadata_cache = Arc::new(TokenMetadataCache::new(redis_pool.clone()));
@@ -675,7 +671,6 @@ pub enum ProviderKind {
     Infura,
     Pokt,
     Binance,
-    Berachain,
     Bungee,
     ZKSync,
     Publicnode,
@@ -714,7 +709,6 @@ impl Display for ProviderKind {
                 ProviderKind::Infura => "Infura",
                 ProviderKind::Pokt => "Pokt",
                 ProviderKind::Binance => "Binance",
-                ProviderKind::Berachain => "Berachain",
                 ProviderKind::Wemix => "Wemix",
                 ProviderKind::Bungee => "Bungee",
                 ProviderKind::ZKSync => "zkSync",
@@ -754,7 +748,6 @@ impl ProviderKind {
             "Infura" => Some(Self::Infura),
             "Pokt" => Some(Self::Pokt),
             "Binance" => Some(Self::Binance),
-            "Berachain" => Some(Self::Berachain),
             "Bungee" => Some(Self::Bungee),
             "zkSync" => Some(Self::ZKSync),
             "Publicnode" => Some(Self::Publicnode),

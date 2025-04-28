@@ -4,6 +4,7 @@ use {
         handlers::identity::IdentityLookupSource,
         providers::{ProviderKind, RpcProvider},
         storage::irn::OperationType,
+        utils::crypto::CaipNamespaces,
     },
     sqlx::PgPool,
     std::time::{Duration, SystemTime},
@@ -65,6 +66,7 @@ pub struct Metrics {
     pub history_lookup_counter: Counter<u64>,
     pub history_lookup_success_counter: Counter<u64>,
     pub history_lookup_latency_tracker: Histogram<f64>,
+    pub balance_lookup_retries: Histogram<u64>,
 
     // Generic Non-RPC providers caching
     pub non_rpc_providers_cache_latency_tracker: Histogram<f64>,
@@ -312,6 +314,11 @@ impl Metrics {
             .with_description("The number of times no bridging was needed for a CA")
             .init();
 
+        let balance_lookup_retries = meter
+            .u64_histogram("balance_lookup_retries")
+            .with_description("Retries per balance call")
+            .init();
+
         Metrics {
             rpc_call_counter,
             rpc_call_retries,
@@ -342,6 +349,7 @@ impl Metrics {
             history_lookup_counter,
             history_lookup_success_counter,
             history_lookup_latency_tracker,
+            balance_lookup_retries,
             non_rpc_providers_cache_latency_tracker,
             cpu_usage,
             memory_total,
@@ -374,6 +382,14 @@ impl Metrics {
             &otel::Context::new(),
             retires_count,
             &[otel::KeyValue::new("chain_id", chain_id)],
+        )
+    }
+
+    pub fn add_balance_lookup_retries(&self, retry_count: u64, namespace: CaipNamespaces) {
+        self.balance_lookup_retries.record(
+            &otel::Context::new(),
+            retry_count,
+            &[otel::KeyValue::new("namespace", namespace.to_string())],
         )
     }
 

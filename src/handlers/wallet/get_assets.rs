@@ -8,12 +8,8 @@ use crate::{
     state::AppState,
 };
 use alloy::primitives::{address, Address, U256};
-use axum::{
-    extract::{ConnectInfo, Path, Query, State},
-    response::{IntoResponse, Response},
-    Json,
-};
-use hyper::{HeaderMap, StatusCode};
+use axum::extract::{ConnectInfo, Path, Query, State};
+use hyper::HeaderMap;
 use serde::Deserialize;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use thiserror::Error;
@@ -36,22 +32,9 @@ pub enum GetAssetsErrorInternalError {
     GetBalance(RpcError),
 }
 
-impl IntoResponse for GetAssetsError {
-    fn into_response(self) -> Response {
-        #[allow(unreachable_patterns)] // TODO remove
-        match self {
-            Self::InternalError(e) => {
-                error!("HTTP server error: (get_assets) {e:?}");
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-            e => (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({
-                    "error": e.to_string(),
-                })),
-            )
-                .into_response(),
-        }
+impl GetAssetsError {
+    pub fn is_internal(&self) -> bool {
+        matches!(self, GetAssetsError::InternalError(_))
     }
 }
 

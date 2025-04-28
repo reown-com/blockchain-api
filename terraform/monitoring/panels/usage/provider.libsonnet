@@ -7,7 +7,7 @@ local alert          = grafana.alert;
 local alertCondition = grafana.alertCondition;
 
 {
-  new(ds, vars, provider)::
+  new(ds, vars, provider, alertPeriod)::
     panels.timeseries(
       title       = provider,
       datasource  = ds.prometheus,
@@ -35,7 +35,7 @@ local alertCondition = grafana.alertCondition;
       namespace     = 'Blockchain API',
       name          = "%s - Provider availability drop" % vars.environment,
       message       = "%s - Provider availability drop" % vars.environment,
-      period        = '5m',
+      period        = alertPeriod,
       frequency     = '1m',
       noDataState   = 'no_data',
       notifications = vars.notifications,
@@ -48,7 +48,7 @@ local alertCondition = grafana.alertCondition;
           evaluatorType   = 'lt',
           operatorType    = 'or',
           queryRefId      = 'providerAvailabilityPercent',
-          queryTimeStart  = '5m',
+          queryTimeStart  = alertPeriod,
           reducerType     = 'avg',
         ),
       ]

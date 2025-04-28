@@ -1,5 +1,6 @@
 use super::get_assets::{self, GetAssetsError};
 use super::get_calls_status::{self, GetCallsStatusError};
+use super::get_exchange_buy_status::{self, GetExchangeBuyStatusError};
 use super::get_exchange_url::{self, GetExchangeUrlError};
 use super::get_exchanges::{self, GetExchangesError};
 use super::prepare_calls::{self, PrepareCallsError};
@@ -72,28 +73,6 @@ async fn handler_internal(
         )))
         .into_response(),
         Err(e) => {
-            let is_internal = matches!(e, Error::Internal(_))
-                || matches!(
-                    e,
-                    Error::SendPreparedCalls(SendPreparedCallsError::InternalError(_))
-                )
-                || matches!(e, Error::PrepareCalls(PrepareCallsError::InternalError(_)));
-
-            if is_internal {
-                error!("Internal server error handling wallet RPC request: {e:?}");
-            }
-            // TODO these special cases shouldn't be necessary, by remapping
-            if matches!(
-                e,
-                Error::SendPreparedCalls(SendPreparedCallsError::InternalError(_))
-            ) {
-                error!(
-                    "Internal server error handling wallet RPC request (sendPreparedCalls): {e:?}"
-                );
-            }
-            if matches!(e, Error::PrepareCalls(PrepareCallsError::InternalError(_))) {
-                error!("Internal server error handling wallet RPC request (prepareCalls): {e:?}");
-            }
             let json = Json(JsonRpcResponse::Error(JsonRpcError::new(
                 request.id,
                 ErrorResponse {
@@ -102,7 +81,8 @@ async fn handler_internal(
                     data: None,
                 },
             )));
-            if is_internal {
+            if e.is_internal() {
+                error!("Internal server error handling wallet RPC request: {e:?}");
                 (StatusCode::INTERNAL_SERVER_ERROR, json).into_response()
             } else {
                 (StatusCode::BAD_REQUEST, json).into_response()
@@ -116,6 +96,7 @@ pub const WALLET_SEND_PREPARED_CALLS: &str = "wallet_sendPreparedCalls";
 pub const WALLET_GET_CALLS_STATUS: &str = "wallet_getCallsStatus";
 pub const PAY_GET_EXCHANGES: &str = "reown_getExchanges";
 pub const PAY_GET_EXCHANGE_URL: &str = "reown_getExchangePayUrl";
+pub const PAY_GET_EXCHANGE_BUY_STATUS: &str = "reown_getExchangeBuyStatus";
 
 #[derive(Debug, Error)]
 enum Error {
@@ -139,6 +120,9 @@ enum Error {
 
     #[error("{}: {0}", wallet_service_api::WALLET_GET_ASSETS)]
     GetAssets(GetAssetsError),
+
+    #[error("{PAY_GET_EXCHANGE_BUY_STATUS}: {0}")]
+    GetExchangeBuyStatus(GetExchangeBuyStatusError),
 
     #[error("Method not found")]
     MethodNotFound,
@@ -166,9 +150,26 @@ impl Error {
             Error::GetAssets(_) => -5,    // TODO more specific codes
             Error::GetExchanges(_) => -6,
             Error::GetUrl(_) => -7,
+            Error::GetExchangeBuyStatus(_) => -8,
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,
+        }
+    }
+
+    fn is_internal(&self) -> bool {
+        match self {
+            Error::InvalidProjectId(_) => false,
+            Error::PrepareCalls(e) => e.is_internal(),
+            Error::SendPreparedCalls(e) => e.is_internal(),
+            Error::GetCallsStatus(e) => e.is_internal(),
+            Error::GetAssets(e) => e.is_internal(),
+            Error::GetExchanges(e) => e.is_internal(),
+            Error::GetUrl(e) => e.is_internal(),
+            Error::GetExchangeBuyStatus(e) => e.is_internal(),
+            Error::MethodNotFound => false,
+            Error::InvalidParams(_) => false,
+            Error::Internal(_) => true,
         }
     }
 }
@@ -266,6 +267,20 @@ async fn handle_rpc(
             )
             .await
             .map_err(Error::GetUrl)?,
+        )
+        .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
+        PAY_GET_EXCHANGE_BUY_STATUS => serde_json::to_value(
+            &get_exchange_buy_status::handler(
+                state,
+                connect_info,
+                headers,
+                Query(get_exchange_buy_status::QueryParams {
+                    sdk_info: query.sdk_info,
+                }),
+                Json(serde_json::from_value(params).map_err(Error::InvalidParams)?),
+            )
+            .await
+            .map_err(Error::GetExchangeBuyStatus)?,
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
         _ => Err(Error::MethodNotFound),

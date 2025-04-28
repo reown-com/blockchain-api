@@ -16,16 +16,15 @@ use {
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
-    allnodes::*, arbitrum::*, aurora::*, base::*, berachain::*, binance::*, drpc::*, dune::*,
-    getblock::*, infura::*, lava::*, mantle::*, monad::*, morph::*, near::*, odyssey::*, pokt::*,
-    publicnode::*, quicknode::*, server::*, solscan::*, syndica::*, unichain::*, wemix::*,
-    zerion::*, zksync::*, zora::*,
+    allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, drpc::*, dune::*, getblock::*,
+    infura::*, lava::*, mantle::*, monad::*, morph::*, near::*, odyssey::*, pokt::*, publicnode::*,
+    quicknode::*, server::*, solscan::*, syndica::*, unichain::*, wemix::*, zerion::*, zksync::*,
+    zora::*,
 };
 mod allnodes;
 mod arbitrum;
 mod aurora;
 mod base;
-mod berachain;
 mod binance;
 mod drpc;
 mod dune;
@@ -249,6 +248,11 @@ mod test {
                 "RPC_PROXY_EXCHANGES_COINBASE_PROJECT_ID",
                 "COINBASE_PROJECT_ID",
             ),
+            ("RPC_PROXY_EXCHANGES_COINBASE_KEY_NAME", "COINBASE_KEY_NAME"),
+            (
+                "RPC_PROXY_EXCHANGES_COINBASE_KEY_SECRET",
+                "COINBASE_KEY_SECRET",
+            ),
             ("RPC_PROXY_EXCHANGES_BINANCE_CLIENT_ID", "BINANCE_CLIENT_ID"),
             ("RPC_PROXY_EXCHANGES_BINANCE_TOKEN", "BINANCE_TOKEN"),
             ("RPC_PROXY_EXCHANGES_BINANCE_KEY", "BINANCE_KEY"),
@@ -360,6 +364,8 @@ mod test {
                     binance_token: Some("BINANCE_TOKEN".to_owned()),
                     binance_key: Some("BINANCE_KEY".to_owned()),
                     binance_host: Some("BINANCE_HOST".to_owned()),
+                    coinbase_key_name: Some("COINBASE_KEY_NAME".to_owned()),
+                    coinbase_key_secret: Some("COINBASE_KEY_SECRET".to_owned()),
                 },
             }
         );

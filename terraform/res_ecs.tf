@@ -125,6 +125,8 @@ module "ecs" {
 
   # Exchanges
   coinbase_project_id = var.coinbase_project_id
+  coinbase_key_name   = var.coinbase_key_name
+  coinbase_key_secret = var.coinbase_key_secret
   binance_client_id   = var.binance_client_id
   binance_token       = var.binance_token
   binance_key         = var.binance_key

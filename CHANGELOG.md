@@ -2,6 +2,71 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.223.0 - 2025-04-28
+#### Features
+- **(providers)** adding Monad testnet endpoint to the dRPC (#1046) - (5c17c1d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.222.0 - 2025-04-25
+#### Features
+- **(Dune)** updating the SVM balance endpoint (#1043) - (9cf2775) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.221.0 - 2025-04-25
+#### Features
+- **(providers)** updating providers endpoint and supported chains (#1045) - (3c8115f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.220.5 - 2025-04-24
+#### Bug Fixes
+- some internal wallet RPC errors were not being logged (#1044) - (ed6d180) - Chris Smith
+
+- - -
+
+## 0.220.4 - 2025-04-17
+#### Bug Fixes
+- null changes to trigger a new release (#1041) - (cee6bb9) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- add buy order status checks (#1037) - (8461146) - Luka Isailovic
+
+- - -
+
+## 0.220.3 - 2025-04-16
+#### Bug Fixes
+- **(balances)** fixing the failover retrying, adding support for an (#1040) - (fdb41b9) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.220.2 - 2025-04-16
+#### Bug Fixes
+- temporarily disabling the balance provider failover retrying (#1039) - (0912ae7) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.220.1 - 2025-04-15
+#### Bug Fixes
+- **(debug)** adding debug message for the balance provider weights (#1038) - (e062049) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.220.0 - 2025-04-14
+#### Bug Fixes
+- **(CI)** making a provider default amount can be null (#1033) - (f45d9ed) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(o11y)** introducing distinguishing free tier and top tier providers alert (#1032) - (fb4cf89) - Max Kalashnikoff | maksy.eth
+- **(providers)** adding Kaia chain to the dRPC provider (#1036) - (125fd4d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.219.0 - 2025-04-10
+#### Features
+- **(CA)** enabling ERC20 transfer gas estimation caching (#1031) - (7580bea) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.218.0 - 2025-04-09
 #### Features
 - LiFi feature flag (#1025) - (ce20a7a) - Chris Smith

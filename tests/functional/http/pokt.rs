@@ -164,6 +164,15 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
         "0xe708",
     )
     .await;
+
+    // Berachain mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:80094",
+        "0x138de",
+    )
+    .await;
 }
 
 #[test_context(ServerContext)]
