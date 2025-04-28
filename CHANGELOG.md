@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.224.0 - 2025-04-28
+#### Features
+- improve RPC analytics (#1024) - (746dfe0) - Chris Smith
+
+- - -
+
 ## 0.223.0 - 2025-04-28
 #### Features
 - **(providers)** adding Monad testnet endpoint to the dRPC (#1046) - (5c17c1d) - Max Kalashnikoff | maksy.eth
