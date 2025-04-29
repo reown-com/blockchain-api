@@ -59,6 +59,12 @@ pub enum GetExchangesInternalError {
     InternalError(String),
 }
 
+impl GetExchangesError {
+    pub fn is_internal(&self) -> bool {
+        matches!(self, GetExchangesError::InternalError(_))
+    }
+}
+
 pub async fn handler(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,

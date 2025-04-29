@@ -59,6 +59,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Ethereum Hoodi
+        (
+            "eip155:560048".into(),
+            (
+                "https://hoodi.drpc.org".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
         // Arbitrum One
         (
             "eip155:42161".into(),
@@ -104,6 +112,30 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:1301".into(),
             (
                 "https://unichain-sepolia.drpc.org".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        // Kaia / Klaytn
+        (
+            "eip155:8217".into(),
+            (
+                "https://klaytn.drpc.org".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        // Berachain Mainnet
+        (
+            "eip155:80094".into(),
+            (
+                "https://berachain.drpc.org".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        // Monad Testnet
+        (
+            "eip155:10143".into(),
+            (
+                "https://monad-testnet.drpc.org".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),

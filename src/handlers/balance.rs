@@ -173,7 +173,7 @@ async fn handler_internal(
         for &v in &EMPTY_BALANCE_RESPONSE_SDK_VERSIONS {
             if version == v || version.ends_with(v) {
                 debug!(
-                    "Responding with empty balance array for sdk version: {}",
+                    "Responding with an empty balance array for sdk version: {}",
                     version
                 );
                 return Ok(Json(BalanceResponseBody { balances: vec![] }));
@@ -208,7 +208,8 @@ async fn handler_internal(
         .get_balance_provider_for_namespace(&namespace, PROVIDER_MAX_CALLS)?;
 
     let mut balance_response = None;
-    for provider in providers.iter() {
+    let mut retry_count = 0;
+    for (i, provider) in providers.iter().enumerate() {
         let provider_response = provider
             .get_balance(
                 address.clone(),
@@ -216,21 +217,25 @@ async fn handler_internal(
                 &state.providers.token_metadata_cache,
                 state.metrics.clone(),
             )
-            .await
-            .tap_err(|e| {
-                error!("Failed to call balance with {}", e);
-            });
-
+            .await;
         match provider_response {
             Ok(response) => {
                 balance_response = Some((response, provider.provider_kind()));
                 break;
             }
-            e => {
-                debug!("Balance provider returned an error {e:?}, trying the next provider");
+            Err(e) => {
+                retry_count = i;
+                error!(
+                    "Error on balance provider response, trying the next provider: {:?}",
+                    e
+                );
             }
         };
     }
+    state
+        .metrics
+        .add_balance_lookup_retries(retry_count as u64, namespace);
+
     let (mut response, provider_kind) = balance_response.ok_or(
         RpcError::BalanceTemporarilyUnavailable(namespace.to_string()),
     )?;
