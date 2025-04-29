@@ -13,4 +13,9 @@ module "monitoring" {
   log_group_app_name    = module.ecs.log_group_app_name
   log_group_app_arn     = module.ecs.log_group_app_arn
   aws_account_id        = data.aws_caller_identity.this.account_id
+
+  providers = {
+    grafana     = grafana
+    grafana.sla = grafana.sla
+  }
 }
