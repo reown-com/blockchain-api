@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.225.0 - 2025-04-29
+#### Bug Fixes
+- **(CI)** removing unsupported bundler test (#1048) - (653bf19) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(providers)** adding Solana Devnet to the Syndica provider (#1047) - (d1e81d8) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.224.0 - 2025-04-28
 #### Features
 - improve RPC analytics (#1024) - (746dfe0) - Chris Smith
