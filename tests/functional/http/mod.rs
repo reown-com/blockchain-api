@@ -22,6 +22,7 @@ pub(crate) mod odyssey;
 pub(crate) mod pokt;
 pub(crate) mod publicnode;
 pub(crate) mod quicknode;
+pub(crate) mod syndica;
 pub(crate) mod unichain;
 pub(crate) mod wemix;
 pub(crate) mod zksync;
