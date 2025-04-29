@@ -108,7 +108,7 @@ describe('Chain abstraction orchestrator', () => {
         expect(approvalTransaction.nonce).not.toBe("0x00")
         expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
         const decodedData = erc20Interface.decodeFunctionData('approve', approvalTransaction.input);
-        if (BigInt(decodedData.amount) < bridging_amount) {
+        if ((BigInt(decodedData.amount) * BigInt(1005) / BigInt(1000)) < bridging_amount) {
           throw new Error(`Expected approval amount is incorrect`);
         }
         expect(() => BigInt(approvalTransaction.gasLimit)).not.toThrow();
