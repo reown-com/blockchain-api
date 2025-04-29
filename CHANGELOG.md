@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.226.0 - 2025-04-29
+#### Features
+- **(CA)** adding simulation balance override for ETH (#1042) - (4882b96) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.225.0 - 2025-04-29
 #### Bug Fixes
 - **(CI)** removing unsupported bundler test (#1048) - (653bf19) - Max Kalashnikoff | maksy.eth
