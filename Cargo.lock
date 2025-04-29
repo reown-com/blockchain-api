@@ -14072,7 +14072,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?branch=fix%2Fno-paymaster-in-userop-receipt#f852122f1831d0dbd1bc8c5c82dd3130894fbb25"
+source = "git+https://github.com/reown-com/yttrium.git#72dfb2920ab79759dd562a4c91e1c13fa6d78af8"
 dependencies = [
  "alloy 0.11.1",
  "alloy-provider 0.11.1",
