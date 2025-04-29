@@ -147,7 +147,7 @@ fn get_supported_token_and_chain_pair_key(
 ) -> Option<&'static str> {
     for (key, chain_pairs) in get_erc20_groups() {
         if let Some(a) = chain_pairs.get(chain_id) {
-            if let AddressOrNative::Address(ref address) = address {
+            if let AddressOrNative::AddressVariant(ref address) = address {
                 if a == address {
                     return Some(key);
                 }
@@ -172,7 +172,7 @@ fn group_balances(
             .address
             .as_ref()
             .map(|a| convert_caip10_to_address(a.as_ref()))
-            .map(AddressOrNative::Address)
+            .map(AddressOrNative::AddressVariant)
             .unwrap_or(AddressOrNative::Native);
 
         let token_key =
@@ -300,7 +300,7 @@ fn apply_asset_filter(asset_filter: AssetFilter, balances: Vec<BalanceItem>) -> 
                         .address
                         .as_ref()
                         .map(|a| convert_caip10_to_address(a.as_str()))
-                        .map(AddressOrNative::Address)
+                        .map(AddressOrNative::AddressVariant)
                         .unwrap_or(AddressOrNative::Native)
                         == address
             });
@@ -372,7 +372,9 @@ fn create_response(balances: Vec<BalanceItem>) -> GetAssetsResult {
                 match balance.address {
                     Some(address) => Asset::Erc20 {
                         data: AssetData {
-                            address: AddressOrNative::Address(convert_caip10_to_address(&address)),
+                            address: AddressOrNative::AddressVariant(convert_caip10_to_address(
+                                &address,
+                            )),
                             balance: asset_balance,
                             metadata: Erc20Metadata {
                                 name: balance.name,
