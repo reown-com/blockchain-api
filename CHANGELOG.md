@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.226.1 - 2025-04-30
+#### Bug Fixes
+- **(test)** adding a country code to the Meld quotes (#1051) - (de3eba8) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- bump yttrium (#1050) - (b932730) - Chris Smith
+
+- - -
+
 ## 0.226.0 - 2025-04-29
 #### Features
 - **(CA)** adding simulation balance override for ETH (#1042) - (4882b96) - Max Kalashnikoff | maksy.eth
