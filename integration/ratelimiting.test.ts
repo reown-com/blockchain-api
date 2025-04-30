@@ -5,10 +5,10 @@ describe('Rate limiting', () => {
 
   it('Simulate flood and check is rate limited', async () => {
     // Using default max tokens of 30
-    const max_tokens = 30;
+    const max_tokens = 200;
 
-    // Flooding requests twice then max tokens
-    const requests_to_send = max_tokens * 2;
+    // Flooding requests x1.5 then max tokens
+    const requests_to_send = max_tokens * 1.5;
     
     // Sending flood requests to the generators endpoint since it's not dependent on the third parties
     const payload = {
