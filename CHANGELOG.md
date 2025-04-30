@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.227.0 - 2025-04-30
+#### Bug Fixes
+- highest balance check (#1015) - (8b8ead9) - Chris Smith
+#### Features
+- extending Prometheus provider to use sla (#1049) - (e834c15) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.226.1 - 2025-04-30
 #### Bug Fixes
 - **(test)** adding a country code to the Meld quotes (#1051) - (de3eba8) - Max Kalashnikoff | maksy.eth
