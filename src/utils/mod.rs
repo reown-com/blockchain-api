@@ -1,5 +1,6 @@
 use rand::{distributions::Alphanumeric, Rng};
 
+pub mod batch_json_rpc_request;
 pub mod build;
 pub mod crypto;
 pub mod erc4337;

@@ -134,6 +134,12 @@ pub enum SendPreparedCallsInternalError {
     IsSessionEnabled(alloy::contract::Error),
 }
 
+impl SendPreparedCallsError {
+    pub fn is_internal(&self) -> bool {
+        matches!(self, SendPreparedCallsError::InternalError(_))
+    }
+}
+
 pub async fn handler(
     state: State<Arc<AppState>>,
     project_id: String,

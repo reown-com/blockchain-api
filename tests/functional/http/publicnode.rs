@@ -37,6 +37,15 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
     )
     .await;
 
+    // Ethereum Hoodi
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:560048",
+        "0x88bb0",
+    )
+    .await;
+
     // Base mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
@@ -147,12 +156,21 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Berachain Bartio
+    // Berachain Mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &provider,
-        "eip155:80084",
-        "0x138d4",
+        "eip155:80094",
+        "0x138de",
+    )
+    .await;
+
+    // Berachain Bepolia
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:80069",
+        "0x138c5",
     )
     .await;
 

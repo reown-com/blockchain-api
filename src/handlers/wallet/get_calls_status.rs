@@ -9,12 +9,8 @@ use alloy::{
     providers::ProviderBuilder,
     rpc::{client::RpcClient, types::UserOperationReceipt},
 };
-use axum::{
-    extract::{ConnectInfo, Query, State},
-    response::{IntoResponse, Response},
-    Json,
-};
-use hyper::{HeaderMap, StatusCode};
+use axum::extract::{ConnectInfo, Query, State};
+use hyper::HeaderMap;
 use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, sync::Arc};
 use thiserror::Error;
@@ -71,22 +67,9 @@ pub enum GetCallsStatusInternalError {
     UserOperationReceiptError(String),
 }
 
-impl IntoResponse for GetCallsStatusError {
-    fn into_response(self) -> Response {
-        #[allow(unreachable_patterns)] // TODO remove
-        match self {
-            Self::InternalError(e) => {
-                error!("HTTP server error: (get_calls_status) {e:?}");
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-            e => (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({
-                    "error": e.to_string(),
-                })),
-            )
-                .into_response(),
-        }
+impl GetCallsStatusError {
+    pub fn is_internal(&self) -> bool {
+        matches!(self, GetCallsStatusError::InternalError(_))
     }
 }
 
