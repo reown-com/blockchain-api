@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.227.1 - 2025-04-30
+#### Bug Fixes
+- pin yttrium - (20a43ce) - Chris Smith
+
+- - -
+
 ## 0.227.0 - 2025-04-30
 #### Bug Fixes
 - highest balance check (#1015) - (8b8ead9) - Chris Smith
