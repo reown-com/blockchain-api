@@ -143,6 +143,7 @@ describe('OnRamp', () => {
       destinationCurrencyCode: 'BTC',
       sourceAmount: 100,
       sourceCurrencyCode: 'USD',
+      countryCode: 'US',
     };
 
     let resp: any = await httpClient.post(
