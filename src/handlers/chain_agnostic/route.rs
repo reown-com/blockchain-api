@@ -250,208 +250,209 @@ async fn handler_internal(
         ));
     };
 
-    let mut initial_transaction = Transaction {
-        from: request_payload.transaction.from,
-        to: first_call.to,
-        value: first_call.value,
-        input: first_call.input.clone(),
-        gas_limit: U64::ZERO,
-        nonce: U64::ZERO,
-        chain_id: request_payload.transaction.chain_id.clone(),
-    };
-    let initial_tx_chain_id = request_payload.transaction.chain_id.clone();
-
-    let from_address = initial_transaction.from;
-    let to_address = initial_transaction.to;
-    let transfer_value = initial_transaction.value;
-
-    // Calculate the initial transaction nonce
-    let intial_transaction_nonce = get_nonce(
-        from_address,
-        &provider_pool.get_provider(
-            initial_transaction.chain_id.clone(),
-            MessageSource::ChainAgnosticCheck,
-        ),
-    )
-    .await?;
-    initial_transaction.nonce = intial_transaction_nonce;
-
-    let asset_transfer_value;
-    let asset_transfer_contract;
-    let asset_transfer_receiver;
-    let transaction_data = initial_transaction.input.clone();
-    let gas_used;
-    let is_initial_tx_native_token_transfer;
-
     // Check if the transaction value is non zero it's a native token transfer
-    if transfer_value > U256::ZERO {
-        is_initial_tx_native_token_transfer = true;
-        asset_transfer_value = transfer_value;
-        asset_transfer_contract = NATIVE_TOKEN_ADDRESS;
-        asset_transfer_receiver = to_address;
+    let (
+        is_initial_tx_native_token_transfer,
+        asset_transfer_value,
+        asset_transfer_contract,
+        asset_transfer_receiver,
+        initial_tx_gas_used,
+    ) = if first_call.value > U256::ZERO {
+        let is_initial_tx_native_token_transfer = true;
+        let asset_transfer_value = first_call.value;
+        let asset_transfer_contract = NATIVE_TOKEN_ADDRESS;
+        let asset_transfer_receiver = first_call.to;
         let (_, simulated_gas_used) = get_assets_changes_from_simulation(
             state.providers.simulation_provider.clone(),
-            &initial_transaction,
+            request_payload.transaction.chain_id.clone(),
+            request_payload.transaction.from,
+            first_call.to,
+            first_call.input.clone(),
             state.metrics.clone(),
         )
         .await?;
-        gas_used = simulated_gas_used;
-    } else {
-        is_initial_tx_native_token_transfer = false;
-        // Decode the ERC20 transfer function data or use the simulation
-        // to get the transfer asset and amount
+        let gas_used = simulated_gas_used;
         (
-            asset_transfer_contract,
+            is_initial_tx_native_token_transfer,
             asset_transfer_value,
+            asset_transfer_contract,
             asset_transfer_receiver,
             gas_used,
-        ) = match decode_erc20_transfer_data(&transaction_data) {
-            Ok((receiver, erc20_transfer_value)) => {
-                debug!(
-                    "The transaction is an ERC20 transfer with value: {:?}",
-                    erc20_transfer_value
-                );
-
-                // Check if the destination address is supported ERC20 asset contract
-                // return an error if not, since the simulation for the gas estimation
-                // will fail
-                if find_supported_bridging_asset(
-                    &initial_tx_chain_id.clone(),
-                    Eip155OrSolanaAddress::Eip155(to_address),
-                )
-                .is_none()
-                {
-                    error!(
-                        "The destination address is not a supported bridging asset contract {}:{}",
-                        initial_tx_chain_id.clone(),
-                        to_address
+        )
+    } else {
+        let is_initial_tx_native_token_transfer = false;
+        // Decode the ERC20 transfer function data or use the simulation
+        // to get the transfer asset and amount
+        let (asset_transfer_contract, asset_transfer_value, asset_transfer_receiver, gas_used) =
+            match decode_erc20_transfer_data(&first_call.input) {
+                Ok((receiver, erc20_transfer_value)) => {
+                    debug!(
+                        "The transaction is an ERC20 transfer with value: {:?}",
+                        erc20_transfer_value
                     );
-                    state.metrics.add_ca_no_bridging_needed(
-                        ChainAbstractionNoBridgingNeededType::AssetNotSupported,
-                    );
-                    return Ok(Json(PrepareResponse::Error(PrepareResponseError {
-                        error: BridgingError::AssetNotSupported,
-                        reason: format!(
-                            "The initial transaction asset {}:{} is not supported for the bridging",
-                            initial_tx_chain_id.clone(),
-                            to_address
-                        ),
-                    })));
-                };
 
-                // Get the ERC20 transfer gas estimation for the token contract
-                // and chain_id, or simulate the transaction to get the gas used
-                let gas_used = match state
-                    .providers
-                    .simulation_provider
-                    .get_cached_gas_estimation(
-                        &initial_tx_chain_id,
-                        to_address,
-                        Some(Erc20FunctionType::Transfer),
-                    )
-                    .await?
-                {
-                    Some(gas) => gas,
-                    None => {
-                        let (_, simulated_gas_used) = get_assets_changes_from_simulation(
-                            state.providers.simulation_provider.clone(),
-                            &initial_transaction,
-                            state.metrics.clone(),
-                        )
-                        .await?;
-                        state.metrics.add_ca_gas_estimation(
-                            simulated_gas_used,
-                            initial_transaction.chain_id.clone(),
-                            ChainAbstractionTransactionType::Transfer,
-                        );
-                        // Save the initial tx gas estimation to the cache
-                        {
-                            let state = state.clone();
-                            let initial_tx_chain_id = initial_tx_chain_id.clone();
-                            tokio::spawn(async move {
-                                state
-                                    .providers
-                                    .simulation_provider
-                                    .set_cached_gas_estimation(
-                                        &initial_tx_chain_id,
-                                        to_address,
-                                        Some(Erc20FunctionType::Transfer),
-                                        simulated_gas_used,
-                                    )
-                                    .await
-                                    .unwrap_or_else(|e| {
-                                        error!(
-                                "Failed to save the initial ERC20 gas estimation to the cache: {}",
-                                e
-                            )
-                                    });
-                            });
-                        }
-                        simulated_gas_used
-                    }
-                };
-
-                (to_address, erc20_transfer_value, receiver, gas_used)
-            }
-            _ => {
-                debug!(
-                    "The transaction data is not an ERC20 transfer function, making a simulation"
-                );
-
-                let (simulation_assets_changes, gas_used) = get_assets_changes_from_simulation(
-                    state.providers.simulation_provider.clone(),
-                    &initial_transaction,
-                    state.metrics.clone(),
-                )
-                .await?;
-                let mut asset_transfer_value = U256::ZERO;
-                let mut asset_transfer_contract = Address::default();
-                let mut asset_transfer_receiver = Address::default();
-                for asset_change in simulation_assets_changes {
+                    // Check if the destination address is supported ERC20 asset contract
+                    // return an error if not, since the simulation for the gas estimation
+                    // will fail
                     if find_supported_bridging_asset(
-                        &asset_change.chain_id.clone(),
-                        Eip155OrSolanaAddress::Eip155(asset_change.asset_contract),
+                        &request_payload.transaction.chain_id.clone(),
+                        Eip155OrSolanaAddress::Eip155(first_call.to),
                     )
-                    .is_some()
+                    .is_none()
                     {
-                        asset_transfer_contract = asset_change.asset_contract;
-                        asset_transfer_value = asset_change.amount;
-                        asset_transfer_receiver = asset_change.receiver;
-                        break;
-                    }
-                }
-                if asset_transfer_value.is_zero() {
-                    error!("The transaction does not change any supported bridging assets");
-                    state.metrics.add_ca_no_bridging_needed(
-                        ChainAbstractionNoBridgingNeededType::AssetNotSupported,
-                    );
-                    return Ok(Json(PrepareResponse::Error(PrepareResponseError {
-                        error: BridgingError::AssetNotSupported,
-                        reason: "The transaction does not change any supported bridging assets"
-                            .to_string(),
-                    })));
-                }
+                        error!(
+                            "The destination address is not a supported bridging asset contract {}:{}",
+                            request_payload.transaction.chain_id.clone(),
+                            first_call.to
+                        );
+                        state.metrics.add_ca_no_bridging_needed(
+                            ChainAbstractionNoBridgingNeededType::AssetNotSupported,
+                        );
+                        return Ok(Json(PrepareResponse::Error(PrepareResponseError {
+                            error: BridgingError::AssetNotSupported,
+                            reason: format!(
+                                "The initial transaction asset {}:{} is not supported for the bridging",
+                                request_payload.transaction.chain_id.clone(),
+                                first_call.to
+                            ),
+                        })));
+                    };
 
-                (
-                    asset_transfer_contract,
-                    asset_transfer_value,
-                    asset_transfer_receiver,
-                    gas_used,
-                )
-            }
-        };
+                    // Get the ERC20 transfer gas estimation for the token contract
+                    // and chain_id, or simulate the transaction to get the gas used
+                    let gas_used = match state
+                        .providers
+                        .simulation_provider
+                        .get_cached_gas_estimation(
+                            &request_payload.transaction.chain_id.clone(),
+                            first_call.to,
+                            Some(Erc20FunctionType::Transfer),
+                        )
+                        .await?
+                    {
+                        Some(gas) => gas,
+                        None => {
+                            let (_, simulated_gas_used) = get_assets_changes_from_simulation(
+                                state.providers.simulation_provider.clone(),
+                                request_payload.transaction.chain_id.clone(),
+                                request_payload.transaction.from,
+                                first_call.to,
+                                first_call.input.clone(),
+                                state.metrics.clone(),
+                            )
+                            .await?;
+                            state.metrics.add_ca_gas_estimation(
+                                simulated_gas_used,
+                                request_payload.transaction.chain_id.clone(),
+                                ChainAbstractionTransactionType::Transfer,
+                            );
+                            // Save the initial tx gas estimation to the cache
+                            {
+                                let state = state.clone();
+                                let initial_chain_id = request_payload.transaction.chain_id.clone();
+                                tokio::spawn(async move {
+                                    state
+                                        .providers
+                                        .simulation_provider
+                                        .set_cached_gas_estimation(
+                                            &initial_chain_id,
+                                            first_call.to,
+                                            Some(Erc20FunctionType::Transfer),
+                                            simulated_gas_used,
+                                        )
+                                        .await
+                                        .unwrap_or_else(|e| {
+                                            error!(
+                                                "Failed to save the initial ERC20 gas estimation to the cache: {}",
+                                                e
+                                            )
+                                        });
+                                });
+                            }
+                            simulated_gas_used
+                        }
+                    };
+
+                    (first_call.to, erc20_transfer_value, receiver, gas_used)
+                }
+                _ => {
+                    debug!(
+                        "The transaction data is not an ERC20 transfer function, making a simulation"
+                    );
+
+                    let (simulation_assets_changes, gas_used) = get_assets_changes_from_simulation(
+                        state.providers.simulation_provider.clone(),
+                        request_payload.transaction.chain_id.clone(),
+                        request_payload.transaction.from,
+                        first_call.to,
+                        first_call.input.clone(),
+                        state.metrics.clone(),
+                    )
+                    .await?;
+                    let mut asset_transfer_value = U256::ZERO;
+                    let mut asset_transfer_contract = Address::default();
+                    let mut asset_transfer_receiver = Address::default();
+                    for asset_change in simulation_assets_changes {
+                        if find_supported_bridging_asset(
+                            &asset_change.chain_id.clone(),
+                            Eip155OrSolanaAddress::Eip155(asset_change.asset_contract),
+                        )
+                        .is_some()
+                        {
+                            asset_transfer_contract = asset_change.asset_contract;
+                            asset_transfer_value = asset_change.amount;
+                            asset_transfer_receiver = asset_change.receiver;
+                            break;
+                        }
+                    }
+                    if asset_transfer_value.is_zero() {
+                        error!("The transaction does not change any supported bridging assets");
+                        state.metrics.add_ca_no_bridging_needed(
+                            ChainAbstractionNoBridgingNeededType::AssetNotSupported,
+                        );
+                        return Ok(Json(PrepareResponse::Error(PrepareResponseError {
+                            error: BridgingError::AssetNotSupported,
+                            reason: "The transaction does not change any supported bridging assets"
+                                .to_string(),
+                        })));
+                    }
+
+                    (
+                        asset_transfer_contract,
+                        asset_transfer_value,
+                        asset_transfer_receiver,
+                        gas_used,
+                    )
+                }
+            };
+
+        (
+            is_initial_tx_native_token_transfer,
+            asset_transfer_value,
+            asset_transfer_contract,
+            asset_transfer_receiver,
+            gas_used,
+        )
     };
 
     // Estimated gas multiplied by the slippage
-    initial_transaction.gas_limit =
-        U64::from((gas_used * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
+    let initial_tx_gas_limit =
+        U64::from((initial_tx_gas_used * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
+
+    let from_account_nonce = tokio::task::spawn({
+        let provider = provider_pool.get_provider(
+            request_payload.transaction.chain_id.clone(),
+            MessageSource::ChainAgnosticCheck,
+        );
+        async move { get_nonce(request_payload.transaction.from, &provider).await }
+    });
 
     // Get the current balance of the ERC20 or native token and check if it's enough for the transfer
     // without bridging or calculate the top-up value
     let erc20_balance = get_erc20_balance(
-        &initial_tx_chain_id,
+        &request_payload.transaction.chain_id.clone(),
         convert_alloy_address_to_h160(asset_transfer_contract),
-        convert_alloy_address_to_h160(from_address),
+        convert_alloy_address_to_h160(request_payload.transaction.from),
         query_params.project_id.as_ref(),
         MessageSource::ChainAgnosticCheck,
         query_params.session_id.clone(),
@@ -462,14 +463,22 @@ async fn handler_internal(
         state
             .metrics
             .add_ca_no_bridging_needed(ChainAbstractionNoBridgingNeededType::SufficientFunds);
-        return Ok(no_bridging_needed_response(initial_transaction));
+        return Ok(no_bridging_needed_response(Transaction {
+            from: request_payload.transaction.from,
+            to: first_call.to,
+            value: first_call.value,
+            input: first_call.input.clone(),
+            gas_limit: initial_tx_gas_limit,
+            nonce: from_account_nonce.await??,
+            chain_id: request_payload.transaction.chain_id.clone(),
+        }));
     }
     let mut erc20_topup_value = asset_transfer_value - erc20_balance;
 
     // Check if the destination address is supported ERC20 asset contract
     // Attempt to destructure the result into symbol and decimals using a match expression
     let (initial_tx_token_symbol, initial_tx_token_decimals) = match find_supported_bridging_asset(
-        &initial_tx_chain_id,
+        &request_payload.transaction.chain_id,
         Eip155OrSolanaAddress::Eip155(asset_transfer_contract),
     ) {
         Some((symbol, decimals)) => (symbol, decimals),
@@ -482,8 +491,7 @@ async fn handler_internal(
                 error: BridgingError::AssetNotSupported,
                 reason: format!(
                     "The initial transaction asset {}:{} is not supported for the bridging",
-                    initial_tx_chain_id.clone(),
-                    asset_transfer_contract
+                    request_payload.transaction.chain_id, asset_transfer_contract
                 ),
             })));
         }
@@ -546,10 +554,10 @@ async fn handler_internal(
                     },
                 ));
             }
-            accounts.push((None, Eip155OrSolanaAddress::Eip155(from_address)));
+            accounts.push((None, Eip155OrSolanaAddress::Eip155(request_payload.transaction.from)));
             accounts
         },
-        initial_transaction.chain_id.clone(),
+        request_payload.transaction.chain_id.clone(),
         Eip155OrSolanaAddress::Eip155(asset_transfer_contract),
         initial_tx_token_symbol.clone(),
         initial_tx_token_decimals,
@@ -572,7 +580,7 @@ async fn handler_internal(
             error: BridgingError::InsufficientFunds,
             reason: format!(
                 "No supported assets with at least {} amount were found in the address {}",
-                erc20_topup_value, from_address
+                erc20_topup_value, request_payload.transaction.from
             ),
         })));
     };
@@ -589,6 +597,19 @@ async fn handler_internal(
         bridge_decimals,
     );
 
+    // Getting the current nonce for the address for the bridging transaction
+    let bridge_account_nonce = if bridge_chain_id.starts_with("eip155:") {
+        Some(tokio::task::spawn({
+            let provider = provider_pool
+                .get_provider(bridge_chain_id.clone(), MessageSource::ChainAgnosticCheck);
+            async move { get_nonce(request_payload.transaction.from, &provider).await }
+        }))
+    } else {
+        None
+    };
+
+    let mut from_account_nonce = from_account_nonce.await??;
+
     let (routes, bridged_amount, final_bridging_fee) = match bridge_contract.clone() {
         Eip155OrSolanaAddress::Eip155(bridge_contract) if !query_params.use_lifi => {
             // Get Quotes for the bridging
@@ -598,10 +619,10 @@ async fn handler_internal(
                 .get_bridging_quotes(
                     bridge_chain_id.clone(),
                     bridge_contract,
-                    initial_tx_chain_id.clone(),
+                    request_payload.transaction.chain_id.clone(),
                     asset_transfer_contract,
                     erc20_topup_value,
-                    from_address,
+                    request_payload.transaction.from,
                     state.metrics.clone(),
                 )
                 .await?;
@@ -611,16 +632,16 @@ async fn handler_internal(
                     .add_ca_no_routes_found(construct_metrics_bridging_route(
                         bridge_chain_id.clone(),
                         bridge_contract.to_string(),
-                        initial_tx_chain_id.clone(),
+                        request_payload.transaction.chain_id.clone(),
                         asset_transfer_contract.to_string(),
                     ));
                 return Ok(Json(PrepareResponse::Error(PrepareResponseError {
                     error: BridgingError::NoRoutesAvailable,
                     reason: format!(
                         "No routes were found from {}:{} to {}:{} for an initial amount {}",
-                        bridge_chain_id.clone(),
+                        bridge_chain_id,
                         bridge_contract,
-                        initial_tx_chain_id.clone(),
+                        request_payload.transaction.chain_id,
                         asset_transfer_contract,
                         erc20_topup_value
                     ),
@@ -656,7 +677,7 @@ async fn handler_internal(
             if current_bridging_asset_balance < required_topup_amount {
                 let error_reason = format!(
                     "The current bridging asset balance on {} is {} less than the required topup amount:{}",
-                    from_address, current_bridging_asset_balance, required_topup_amount
+                    request_payload.transaction.from, current_bridging_asset_balance, required_topup_amount
                 );
                 error!(error_reason);
                 state.metrics.add_ca_insufficient_funds();
@@ -673,10 +694,10 @@ async fn handler_internal(
                 .get_bridging_quotes(
                     bridge_chain_id.clone(),
                     bridge_contract,
-                    initial_tx_chain_id.clone(),
+                    request_payload.transaction.chain_id.clone(),
                     asset_transfer_contract,
                     required_topup_amount,
-                    from_address,
+                    request_payload.transaction.from,
                     state.metrics.clone(),
                 )
                 .await?;
@@ -686,16 +707,16 @@ async fn handler_internal(
                     .add_ca_no_routes_found(construct_metrics_bridging_route(
                         bridge_chain_id.clone(),
                         bridge_contract.to_string(),
-                        initial_tx_chain_id.clone(),
+                        request_payload.transaction.chain_id.clone(),
                         asset_transfer_contract.to_string(),
                     ));
                 return Ok(Json(PrepareResponse::Error(PrepareResponseError {
                     error: BridgingError::NoRoutesAvailable,
                     reason: format!(
                         "No routes were found from {}:{} to {}:{} for updated (fee included) amount: {}",
-                        bridge_chain_id.clone(),
+                        bridge_chain_id,
                         bridge_contract,
-                        initial_tx_chain_id.clone(),
+                        request_payload.transaction.chain_id,
                         asset_transfer_contract,
                         required_topup_amount
                     ),
@@ -727,15 +748,10 @@ async fn handler_internal(
                 .build_bridging_tx(best_route.clone(), state.metrics.clone())
                 .await?;
 
-            // Getting the current nonce for the address for the bridging transaction
-            let mut current_nonce = get_nonce(
-                from_address,
-                &provider_pool.get_provider(
-                    format!("eip155:{}", bridge_tx.chain_id),
-                    MessageSource::ChainAgnosticCheck,
-                ),
-            )
-            .await?;
+            let mut bridge_account_nonce = bridge_account_nonce
+                .expect("bridge_account_nonce should've been initiated")
+                .await??;
+
             let mut routes = Vec::new();
 
             // Check for the allowance
@@ -773,23 +789,23 @@ async fn handler_internal(
                         value: U256::ZERO,
                         gas_limit: U64::ZERO,
                         input: approval_tx.data,
-                        nonce: current_nonce,
+                        nonce: bridge_account_nonce,
                         chain_id: format!("eip155:{}", bridge_tx.chain_id),
                     };
                     routes.push(approval_transaction);
 
                     // Increment the nonce
-                    current_nonce += U64::from(1);
+                    bridge_account_nonce += U64::from(1);
                 }
             }
 
             let mut bridging_transaction = Transaction {
-                from: from_address,
+                from: request_payload.transaction.from,
                 to: bridge_tx.tx_target,
                 value: bridge_tx.value,
                 gas_limit: U64::ZERO,
                 input: bridge_tx.tx_data,
-                nonce: current_nonce,
+                nonce: bridge_account_nonce,
                 chain_id: format!("eip155:{}", bridge_tx.chain_id),
             };
 
@@ -797,8 +813,8 @@ async fn handler_internal(
             // and increase the initial transaction nonce for this case
             // since we have an approval (optional) and a bridging transactions
             // before the initial transaction
-            if bridge_chain_id == initial_tx_chain_id {
-                initial_transaction.nonce = bridging_transaction.nonce + U64::from(1);
+            if bridge_chain_id == request_payload.transaction.chain_id {
+                from_account_nonce += U64::from(1);
             }
 
             // If the bridging transaction value is non zero, it's a native token transfer
@@ -883,12 +899,12 @@ async fn handler_internal(
                 .get("https://li.quest/v1/quote/toAmount")
                 .query(&json!({
                     "fromChain": caip2_to_lifi_chain_id(bridge_chain_id.as_str())?,
-                    "toChain": caip2_to_lifi_chain_id(initial_tx_chain_id.as_str())?,
+                    "toChain": caip2_to_lifi_chain_id(request_payload.transaction.chain_id.as_str())?,
                     "fromToken": bridge_contract.to_string(),
                     "toToken": asset_transfer_contract.to_string(),
                     "toAmount": erc20_topup_value.to_string(),
                     "fromAddress": bridging_asset.account.to_string(),
-                    "toAddress": from_address.to_string(),
+                    "toAddress": request_payload.transaction.from.to_string(),
                 }))
                 .send()
                 .await
@@ -1010,7 +1026,7 @@ async fn handler_internal(
                 );
 
                 let mut nonce = get_nonce(
-                    from_address,
+                    request_payload.transaction.from,
                     &provider_pool
                         .get_provider(bridge_chain_id.clone(), MessageSource::ChainAgnosticCheck),
                 )
@@ -1034,7 +1050,10 @@ async fn handler_internal(
                         ),
                     );
                     let allowance = source_token
-                        .allowance(from_address, quote.estimate.approval_address)
+                        .allowance(
+                            request_payload.transaction.from,
+                            quote.estimate.approval_address,
+                        )
                         .call()
                         .await
                         .map_err(|e| {
@@ -1088,8 +1107,8 @@ async fn handler_internal(
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs(),
-        chain_id: initial_tx_chain_id.clone(),
-        wallet: from_address,
+        chain_id: request_payload.transaction.chain_id.clone(),
+        wallet: request_payload.transaction.from,
         contract: asset_transfer_contract,
         amount_current: erc20_balance, // The current balance of the ERC20 token
         amount_expected: asset_transfer_value, // The total transfer amount expected
@@ -1150,8 +1169,8 @@ async fn handler_internal(
                 bridge_chain_id.clone(),
                 bridge_contract.to_string(),
                 bridge_token_symbol.clone(),
-                initial_tx_chain_id.clone(),
-                to_address.to_string(),
+                request_payload.transaction.chain_id.clone(),
+                first_call.to.to_string(),
                 initial_tx_token_symbol.clone(),
                 bridged_amount.to_string(),
                 final_bridging_fee.to_string(),
@@ -1167,11 +1186,11 @@ async fn handler_internal(
                 query_params.sdk_version,
                 query_params.sdk_type,
                 orchestration_id.clone(),
-                from_address.to_string(),
-                to_address.to_string(),
+                request_payload.transaction.from.to_string(),
+                first_call.to.to_string(),
                 asset_transfer_value.to_string(),
-                initial_tx_chain_id.clone(),
-                to_address.to_string(),
+                request_payload.transaction.chain_id.clone(),
+                first_call.to.to_string(),
                 initial_tx_token_symbol.clone(),
             ));
     }
@@ -1188,7 +1207,15 @@ async fn handler_internal(
     return Ok(Json(PrepareResponse::Success(
         PrepareResponseSuccess::Available(PrepareResponseAvailable {
             orchestration_id,
-            initial_transaction,
+            initial_transaction: Transaction {
+                from: request_payload.transaction.from,
+                to: first_call.to,
+                value: first_call.value,
+                input: first_call.input.clone(),
+                gas_limit: initial_tx_gas_limit,
+                nonce: from_account_nonce,
+                chain_id: request_payload.transaction.chain_id.clone(),
+            },
             transactions: routes,
             metadata: Metadata {
                 funding_from: vec![FundingMetadata {
