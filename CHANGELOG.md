@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.227.2 - 2025-05-01
+#### Bug Fixes
+- **(CI)** fixing rate-limiting test and enabling sessions and chain abstraction tests on staging (#1052) - (bd13e5d) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- route performance (#1034) - (37b3fb5) - Chris Smith
+
+- - -
+
 ## 0.227.1 - 2025-04-30
 #### Bug Fixes
 - pin yttrium - (20a43ce) - Chris Smith
