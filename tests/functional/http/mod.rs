@@ -9,7 +9,6 @@ use {
 pub(crate) mod arbitrum;
 pub(crate) mod aurora;
 pub(crate) mod base;
-pub(crate) mod berachain;
 pub(crate) mod binance;
 pub(crate) mod drpc;
 pub(crate) mod getblock;
@@ -23,6 +22,7 @@ pub(crate) mod odyssey;
 pub(crate) mod pokt;
 pub(crate) mod publicnode;
 pub(crate) mod quicknode;
+pub(crate) mod syndica;
 pub(crate) mod unichain;
 pub(crate) mod wemix;
 pub(crate) mod zksync;

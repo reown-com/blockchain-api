@@ -8280,7 +8280,7 @@ dependencies = [
 
 [[package]]
 name = "rpc-proxy"
-version = "0.219.0"
+version = "0.227.1"
 dependencies = [
  "alloy 0.11.1",
  "anyhow",
@@ -8299,6 +8299,7 @@ dependencies = [
  "deadpool-redis",
  "derive_more 1.0.0",
  "dotenv",
+ "ed25519-dalek 2.1.1",
  "envy",
  "ethers",
  "eyre",
@@ -14071,7 +14072,7 @@ dependencies = [
 [[package]]
 name = "yttrium"
 version = "0.1.0"
-source = "git+https://github.com/reown-com/yttrium.git?rev=ad71547#ad715473daf1cfe02d51e7eeba71b1db5c316f16"
+source = "git+https://github.com/reown-com/yttrium.git?rev=79be962#79be96244fad2b2511271e0735ded1ee4b032b04"
 dependencies = [
  "alloy 0.11.1",
  "alloy-provider 0.11.1",

@@ -132,7 +132,7 @@ describe('OnRamp', () => {
     expect(resp.status).toBe(200)
     expect(resp.data.length).toBeGreaterThan(0)
     expect(typeof resp.data[0].currencyCode).toBe('string')
-    expect(typeof resp.data[0].defaultAmount).toBe('number')
+    expect(resp.data[0].defaultAmount === null || typeof resp.data[0].defaultAmount === 'number').toBeTruthy()
     expect(typeof resp.data[0].minimumAmount).toBe('number')
     expect(typeof resp.data[0].maximumAmount).toBe('number')
   })
@@ -143,6 +143,7 @@ describe('OnRamp', () => {
       destinationCurrencyCode: 'BTC',
       sourceAmount: 100,
       sourceCurrencyCode: 'USD',
+      countryCode: 'US',
     };
 
     let resp: any = await httpClient.post(

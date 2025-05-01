@@ -1,6 +1,6 @@
 [package]
 name = "rpc-proxy"
-version = "0.219.0"
+version = "0.227.1"
 edition = "2021"
 authors = [
     "Derek <derek@walletconnect.com>",
@@ -13,7 +13,7 @@ build = "build.rs"
 [dependencies]
 wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.9.0", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock", "rate_limit"] }
 relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", tag = "v0.32.0", features = ["cacao"] }
-yttrium = { git = "https://github.com/reown-com/yttrium.git", rev = "ad71547", features = ["solana"] }
+yttrium = { git = "https://github.com/reown-com/yttrium.git", rev = "79be962", features = ["solana"] }
 
 # Async
 async-trait = "0.1.82"
@@ -110,6 +110,7 @@ regex = "1.10"
 sha256 = "1.5"
 uuid = { version = "1.13.1", features = ["serde"] }
 openssl = "0.10"
+ed25519-dalek = "2.1"
 
 
 # System CPU and Memory metrics

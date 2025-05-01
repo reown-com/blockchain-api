@@ -20,22 +20,22 @@ use {
         Router,
     },
     env::{
-        AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BerachainConfig, BinanceConfig,
-        DrpcConfig, DuneConfig, GetBlockConfig, InfuraConfig, LavaConfig, MantleConfig,
-        MonadConfig, MorphConfig, NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig,
-        QuicknodeConfig, SolScanConfig, SyndicaConfig, UnichainConfig, WemixConfig, ZKSyncConfig,
-        ZerionConfig, ZoraConfig,
+        AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, DrpcConfig,
+        DuneConfig, GetBlockConfig, InfuraConfig, LavaConfig, MantleConfig, MonadConfig,
+        MorphConfig, NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
+        SolScanConfig, SyndicaConfig, UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig,
+        ZoraConfig,
     },
     error::RpcResult,
     http::Request,
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
-        AllnodesProvider, ArbitrumProvider, AuroraProvider, BaseProvider, BerachainProvider,
-        BinanceProvider, DrpcProvider, DuneProvider, GetBlockProvider, InfuraProvider,
-        InfuraWsProvider, LavaProvider, MantleProvider, MonadProvider, MorphProvider, NearProvider,
-        OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider,
-        SolScanProvider, SyndicaProvider, UnichainProvider, WemixProvider, ZKSyncProvider,
-        ZerionProvider, ZoraProvider, ZoraWsProvider,
+        AllnodesProvider, ArbitrumProvider, AuroraProvider, BaseProvider, BinanceProvider,
+        DrpcProvider, DuneProvider, GetBlockProvider, InfuraProvider, InfuraWsProvider,
+        LavaProvider, MantleProvider, MonadProvider, MorphProvider, NearProvider, OdysseyProvider,
+        PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider, SolScanProvider,
+        SyndicaProvider, UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider,
+        ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -527,7 +527,6 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_rpc_provider::<ZoraProvider, ZoraConfig>(ZoraConfig::default());
     providers.add_rpc_provider::<NearProvider, NearConfig>(NearConfig::default());
     providers.add_rpc_provider::<MantleProvider, MantleConfig>(MantleConfig::default());
-    providers.add_rpc_provider::<BerachainProvider, BerachainConfig>(BerachainConfig::default());
     providers.add_rpc_provider::<UnichainProvider, UnichainConfig>(UnichainConfig::default());
     providers
         .add_rpc_provider::<LavaProvider, LavaConfig>(LavaConfig::new(config.lava_api_key.clone()));

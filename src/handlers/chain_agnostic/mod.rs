@@ -6,7 +6,7 @@ use {
             tenderly::{AssetChangeType, TokenStandard},
             SimulationProvider,
         },
-        utils::crypto::get_erc20_balance,
+        utils::{crypto::get_erc20_balance, token_amount::TokenAmount},
         Metrics,
     },
     alloy::primitives::{Address, Bytes, B256, U256},
@@ -271,7 +271,9 @@ pub async fn check_bridging_for_erc20_transfer(
         let (token_symbol, chain_id, decimals, contract_address, account, current_balance) =
             result?;
         // Check if the balance compared to the transfer value is enough, applied to the transfer token decimals
-        if convert_amount(current_balance, decimals, amount_token_decimals) >= value {
+        if TokenAmount::new(current_balance, decimals)
+                >= TokenAmount::new(value, amount_token_decimals)
+            {
             // Use the priority asset if found
             if token_symbol == token_symbol_priority {
                 return Ok(Some(BridgingAsset {
@@ -287,10 +289,13 @@ pub async fn check_bridging_for_erc20_transfer(
             // or use the asset with the highest found balance
             if let Some(BridgingAsset {
                 current_balance: existing_balance,
+                    decimals: existing_decimals,
                 ..
             }) = &bridging_asset_found
             {
-                if current_balance <= *existing_balance {
+                if TokenAmount::new(current_balance, decimals)
+                        <= TokenAmount::new(*existing_balance, *existing_decimals)
+                    {
                     continue;
                 }
             }

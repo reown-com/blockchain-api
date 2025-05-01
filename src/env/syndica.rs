@@ -45,5 +45,13 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Solana Devnet
+        (
+            "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1".into(),
+            (
+                "https://solana-devnet.api.syndica.io".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
     ])
 }

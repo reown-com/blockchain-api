@@ -67,7 +67,6 @@ mod allnodes;
 mod arbitrum;
 mod aurora;
 mod base;
-mod berachain;
 mod binance;
 mod bungee;
 mod coinbase;
@@ -103,7 +102,6 @@ pub use {
     arbitrum::ArbitrumProvider,
     aurora::AuroraProvider,
     base::BaseProvider,
-    berachain::BerachainProvider,
     binance::BinanceProvider,
     bungee::BungeeProvider,
     drpc::DrpcProvider,
@@ -673,7 +671,6 @@ pub enum ProviderKind {
     Infura,
     Pokt,
     Binance,
-    Berachain,
     Bungee,
     ZKSync,
     Publicnode,
@@ -712,7 +709,6 @@ impl Display for ProviderKind {
                 ProviderKind::Infura => "Infura",
                 ProviderKind::Pokt => "Pokt",
                 ProviderKind::Binance => "Binance",
-                ProviderKind::Berachain => "Berachain",
                 ProviderKind::Wemix => "Wemix",
                 ProviderKind::Bungee => "Bungee",
                 ProviderKind::ZKSync => "zkSync",
@@ -752,7 +748,6 @@ impl ProviderKind {
             "Infura" => Some(Self::Infura),
             "Pokt" => Some(Self::Pokt),
             "Binance" => Some(Self::Binance),
-            "Berachain" => Some(Self::Berachain),
             "Bungee" => Some(Self::Bungee),
             "zkSync" => Some(Self::ZKSync),
             "Publicnode" => Some(Self::Publicnode),

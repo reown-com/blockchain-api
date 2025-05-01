@@ -142,6 +142,8 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_ANALYTICS_EXPORT_BUCKET", value = var.analytics_datalake_bucket_name },
 
         { name = "RPC_PROXY_EXCHANGES_COINBASE_PROJECT_ID", value = var.coinbase_project_id },
+        { name = "RPC_PROXY_EXCHANGES_COINBASE_KEY_NAME", value = var.coinbase_key_name },
+        { name = "RPC_PROXY_EXCHANGES_COINBASE_KEY_SECRET", value = var.coinbase_key_secret },
         { name = "RPC_PROXY_EXCHANGES_BINANCE_CLIENT_ID", value = var.binance_client_id },
         { name = "RPC_PROXY_EXCHANGES_BINANCE_TOKEN", value = var.binance_token },
         { name = "RPC_PROXY_EXCHANGES_BINANCE_KEY", value = var.binance_key },
