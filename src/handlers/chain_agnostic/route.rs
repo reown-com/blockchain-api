@@ -906,6 +906,7 @@ async fn handler_internal(
                     "toAmount": erc20_topup_value.to_string(),
                     "fromAddress": bridging_asset.account.to_string(),
                     "toAddress": request_payload.transaction.from.to_string(),
+                    "order": "FASTEST",
                 }))
                 .send()
                 .await
