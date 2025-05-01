@@ -9,7 +9,7 @@ use {
         utils::{crypto::get_erc20_balance, token_amount::TokenAmount},
         Metrics,
     },
-    alloy::primitives::{Address, Bytes, B256, U256},
+    alloy::primitives::{Address, Bytes, Bytes, B256, U256},
     assets::{Eip155OrSolanaStatic, SimulationParams, BRIDGING_ASSETS},
     ethers::{types::H160 as EthersH160, utils::keccak256},
     futures_util::{stream::FuturesUnordered, StreamExt},
@@ -17,6 +17,7 @@ use {
     std::{cmp::Ordering, collections::HashMap, sync::Arc},
     tracing::debug,
     yttrium::chain_abstraction::{
+        api::prepare::Eip155OrSolanaAddress,
         api::prepare::Eip155OrSolanaAddress,
         solana::{self, SolanaRpcClient},
     },
