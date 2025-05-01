@@ -16,6 +16,7 @@ use {
     tower::Service,
 };
 
+#[derive(Clone)]
 pub struct SelfProviderPool {
     pub state: Arc<AppState>,
     pub connect_info: SocketAddr,
