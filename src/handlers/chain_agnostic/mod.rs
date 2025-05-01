@@ -9,7 +9,7 @@ use {
         utils::{crypto::get_erc20_balance, token_amount::TokenAmount},
         Metrics,
     },
-    alloy::primitives::{Address, Bytes, Bytes, B256, U256},
+    alloy::primitives::{Address, Bytes, B256, U256},
     assets::{Eip155OrSolanaStatic, SimulationParams, BRIDGING_ASSETS},
     ethers::{types::H160 as EthersH160, utils::keccak256},
     futures_util::{stream::FuturesUnordered, StreamExt},
@@ -17,7 +17,6 @@ use {
     std::{cmp::Ordering, collections::HashMap, sync::Arc},
     tracing::debug,
     yttrium::chain_abstraction::{
-        api::prepare::Eip155OrSolanaAddress,
         api::prepare::Eip155OrSolanaAddress,
         solana::{self, SolanaRpcClient},
     },
@@ -273,8 +272,8 @@ pub async fn check_bridging_for_erc20_transfer(
             result?;
         // Check if the balance compared to the transfer value is enough, applied to the transfer token decimals
         if TokenAmount::new(current_balance, decimals)
-                >= TokenAmount::new(value, amount_token_decimals)
-            {
+            >= TokenAmount::new(value, amount_token_decimals)
+        {
             // Use the priority asset if found
             if token_symbol == token_symbol_priority {
                 return Ok(Some(BridgingAsset {
@@ -290,13 +289,13 @@ pub async fn check_bridging_for_erc20_transfer(
             // or use the asset with the highest found balance
             if let Some(BridgingAsset {
                 current_balance: existing_balance,
-                    decimals: existing_decimals,
+                decimals: existing_decimals,
                 ..
             }) = &bridging_asset_found
             {
                 if TokenAmount::new(current_balance, decimals)
-                        <= TokenAmount::new(*existing_balance, *existing_decimals)
-                    {
+                    <= TokenAmount::new(*existing_balance, *existing_decimals)
+                {
                     continue;
                 }
             }
