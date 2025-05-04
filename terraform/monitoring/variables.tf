@@ -3,6 +3,10 @@ variable "monitoring_role_arn" {
   type        = string
 }
 
+variable "trusted_arns" {
+  type = list(string)
+}
+
 variable "notification_channels" {
   description = "The notification channels to send alerts to"
   type        = list(any)
