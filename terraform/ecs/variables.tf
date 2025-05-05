@@ -236,12 +236,6 @@ variable "bungee_api_key" {
   sensitive   = true
 }
 
-variable "lava_api_key" {
-  description = "Lava API key"
-  type        = string
-  sensitive   = true
-}
-
 variable "tenderly_api_key" {
   description = "Tenderly API key"
   type        = string
