@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.228.0 - 2025-05-06
+#### Features
+- **(providers)** removing Lava provider (#1055) - (0648cdd) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- update monitoring-role TF module (#1054) - (5c84ab5) - daniel
+
+- - -
+
 ## 0.227.2 - 2025-05-01
 #### Bug Fixes
 - **(CI)** fixing rate-limiting test and enabling sessions and chain abstraction tests on staging (#1052) - (bd13e5d) - Max Kalashnikoff | maksy.eth
