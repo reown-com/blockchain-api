@@ -21,10 +21,9 @@ use {
     },
     env::{
         AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, DrpcConfig,
-        DuneConfig, GetBlockConfig, InfuraConfig, LavaConfig, MantleConfig, MonadConfig,
-        MorphConfig, NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
-        SolScanConfig, SyndicaConfig, UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig,
-        ZoraConfig,
+        DuneConfig, GetBlockConfig, InfuraConfig, MantleConfig, MonadConfig, MorphConfig,
+        NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig,
+        SyndicaConfig, UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
@@ -32,8 +31,8 @@ use {
     providers::{
         AllnodesProvider, ArbitrumProvider, AuroraProvider, BaseProvider, BinanceProvider,
         DrpcProvider, DuneProvider, GetBlockProvider, InfuraProvider, InfuraWsProvider,
-        LavaProvider, MantleProvider, MonadProvider, MorphProvider, NearProvider, OdysseyProvider,
-        PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider, SolScanProvider,
+        MantleProvider, MonadProvider, MorphProvider, NearProvider, OdysseyProvider, PoktProvider,
+        ProviderRepository, PublicnodeProvider, QuicknodeProvider, SolScanProvider,
         SyndicaProvider, UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider,
         ZoraProvider, ZoraWsProvider,
     },
@@ -528,8 +527,6 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_rpc_provider::<NearProvider, NearConfig>(NearConfig::default());
     providers.add_rpc_provider::<MantleProvider, MantleConfig>(MantleConfig::default());
     providers.add_rpc_provider::<UnichainProvider, UnichainConfig>(UnichainConfig::default());
-    providers
-        .add_rpc_provider::<LavaProvider, LavaConfig>(LavaConfig::new(config.lava_api_key.clone()));
     providers.add_rpc_provider::<SyndicaProvider, SyndicaConfig>(SyndicaConfig::new(
         config.syndica_api_key.clone(),
     ));
