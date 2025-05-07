@@ -246,14 +246,7 @@ impl CoinbaseExchange {
             )
             .await?;
 
-  
-        
-        let response_text = res.text().await.map_err(|e| {
-            debug!("Error reading response text: {:?}", e);
-            ExchangeError::InternalError(e.to_string())
-        })?;
-        debug!("Raw transaction status response: {}", response_text);
-        let body: TransactionStatusResponse = serde_json::from_str(&response_text).map_err(|e| {
+        let body: TransactionStatusResponse = res.json().await.map_err(|e| {
             debug!("Error parsing transaction status response: {:?}", e);
             ExchangeError::InternalError(e.to_string())
         })?;
