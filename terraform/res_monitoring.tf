@@ -2,7 +2,10 @@ module "monitoring" {
   source  = "./monitoring"
   context = module.this
 
-  monitoring_role_arn   = data.terraform_remote_state.monitoring.outputs.grafana_workspaces.central.iam_role_arn
+  monitoring_role_arn = data.terraform_remote_state.monitoring.outputs.grafana_workspaces.central.iam_role_arn
+
+  trusted_arns = [data.terraform_remote_state.monitoring.outputs.grafana_workspaces.business.iam_role_arn]
+
   notification_channels = var.notification_channels
   prometheus_endpoint   = aws_prometheus_workspace.prometheus.prometheus_endpoint
   ecs_service_name      = module.ecs.ecs_service_name
@@ -13,4 +16,9 @@ module "monitoring" {
   log_group_app_name    = module.ecs.log_group_app_name
   log_group_app_arn     = module.ecs.log_group_app_arn
   aws_account_id        = data.aws_caller_identity.this.account_id
+
+  providers = {
+    grafana     = grafana
+    grafana.sla = grafana.sla
+  }
 }

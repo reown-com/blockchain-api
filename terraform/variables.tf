@@ -8,6 +8,13 @@ variable "grafana_auth" {
   sensitive   = true
 }
 
+variable "sla_grafana_auth" {
+  description = "The API Token for the SLA Grafana instance"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 #-------------------------------------------------------------------------------
 # Application
 
@@ -148,12 +155,6 @@ variable "solscan_api_v2_token" {
 
 variable "bungee_api_key" {
   description = "Bungee API key"
-  type        = string
-  sensitive   = true
-}
-
-variable "lava_api_key" {
-  description = "Lava API key"
   type        = string
   sensitive   = true
 }

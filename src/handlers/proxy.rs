@@ -5,7 +5,7 @@ use {
         error::RpcError,
         providers::ProviderKind,
         state::AppState,
-        utils::{crypto, network},
+        utils::{batch_json_rpc_request::MaybeBatchRequest, crypto, network},
     },
     axum::{
         body::Bytes,
@@ -15,6 +15,7 @@ use {
     hyper::{http, HeaderMap},
     std::{
         borrow::Borrow,
+        collections::HashSet,
         net::SocketAddr,
         sync::Arc,
         time::{Duration, SystemTime},
@@ -70,8 +71,8 @@ pub async fn rpc_call(
     if query_params.session_id.is_some() {
         let provider_kind = match chain_id.as_str() {
             "eip155:10" => Some(ProviderKind::Quicknode), // Optimism
-            "eip155:8453" => Some(ProviderKind::Lava),    // Base
-            "eip155:42161" => Some(ProviderKind::Lava),   // Arbitrum One
+            "eip155:8453" => Some(ProviderKind::Pokt),    // Base
+            "eip155:42161" => Some(ProviderKind::Pokt),   // Arbitrum One
             _ => {
                 debug!(
                     "Requested sessionId for chain {chain_id} but no hardcoded provider was configured"
@@ -175,6 +176,8 @@ pub async fn rpc_call(
     Err(RpcError::ChainTemporarilyUnavailable(chain_id))
 }
 
+// TODO eventually refactor this to be called by the wallet handler (generic JSON-RPC)
+// However, dependency on us having an exaustive list of supported RPC methods is a blocker to merging these handlers.
 #[tracing::instrument(skip(state), level = "debug")]
 pub async fn rpc_provider_call(
     state: Arc<AppState>,
@@ -188,32 +191,72 @@ pub async fn rpc_provider_call(
     let chain_id = query_params.chain_id.clone();
     let origin = headers
         .get("origin")
-        .map(|v| v.to_str().unwrap_or("invalid_header").to_string());
+        .map(|v| Arc::from(v.to_str().unwrap_or("invalid_header").to_string()));
 
     state.metrics.add_rpc_call(chain_id.clone());
-    if let Ok(rpc_request) = serde_json::from_slice(&body) {
-        let (country, continent, region) = state
-            .analytics
-            .lookup_geo_data(network::get_forwarded_ip(&headers).unwrap_or_else(|| addr.ip()))
-            .map(|geo| (geo.country, geo.continent, geo.region))
-            .unwrap_or((None, None, None));
 
-        state.analytics.message(MessageInfo::new(
-            &query_params,
-            &headers,
-            &rpc_request,
-            region,
-            country,
-            continent,
-            &provider.provider_kind(),
-            origin,
-            query_params.sdk_info.sv.clone(),
-            query_params.sdk_info.st.clone(),
-        ));
+    let (country, continent, region) = state
+        .analytics
+        .lookup_geo_data(network::get_forwarded_ip(&headers).unwrap_or_else(|| addr.ip()))
+        .map(|geo| (geo.country, geo.continent, geo.region))
+        .unwrap_or((None, None, None));
+
+    match serde_json::from_slice::<MaybeBatchRequest>(&body) {
+        Ok(body) => {
+            let rpcs = match &body {
+                MaybeBatchRequest::Single(req) => {
+                    vec![(req.id.to_string(), req.method.to_string())]
+                }
+                MaybeBatchRequest::Batch(reqs) => {
+                    {
+                        // Validate unique RPC IDs
+                        let mut ids = HashSet::new();
+                        for req in reqs {
+                            if !ids.insert(&req.id) {
+                                // TODO turn this into a 4xx error after validating with data that this behavior isn't widely depended on
+                                error!(
+                                    "Duplicate RPC ID: {:?} for body {}",
+                                    req.id,
+                                    serde_json::to_string(&body).unwrap_or_default()
+                                );
+                            }
+                        }
+                    }
+
+                    reqs.iter()
+                        .map(|req| (req.id.to_string(), req.method.to_string()))
+                        .collect()
+                }
+            };
+
+            for (rpc_id, rpc_method) in rpcs {
+                state.analytics.message(MessageInfo::new(
+                    &query_params,
+                    &headers,
+                    query_params.session_id.clone(),
+                    rpc_id,
+                    rpc_method,
+                    region.clone(),
+                    country.clone(),
+                    continent.clone(),
+                    &provider.provider_kind(),
+                    origin.clone(),
+                    query_params.sdk_info.sv.clone(),
+                    query_params.sdk_info.st.clone(),
+                ));
+            }
+        }
+        Err(e) => {
+            // TODO turn this into a 4xx error after validating with data that this behavior isn't widely depended on
+            error!(
+                "TRIAGE: Invalid JSON-RPC request: {} for body: {}",
+                e,
+                String::from_utf8_lossy(&body)
+            );
+        }
     }
 
     let project_id = query_params.project_id.clone();
-
     // Start timing external provider added time
     let external_call_start = SystemTime::now();
 

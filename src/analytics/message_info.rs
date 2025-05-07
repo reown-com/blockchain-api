@@ -1,5 +1,5 @@
 use {
-    crate::{handlers::RpcQueryParams, json_rpc::JsonRpcRequest, providers::ProviderKind},
+    crate::{handlers::RpcQueryParams, providers::ProviderKind},
     hyper::HeaderMap,
     parquet_derive::ParquetRecordWriter,
     serde::{Deserialize, Serialize},
@@ -14,13 +14,14 @@ pub struct MessageInfo {
 
     pub project_id: String,
     pub chain_id: String,
-    pub method: Arc<str>,
+    pub method: String,
     pub source: String,
 
     pub request_id: Option<String>,
     pub rpc_id: String,
+    pub session_id: Option<String>,
 
-    pub origin: Option<String>,
+    pub origin: Option<Arc<str>>,
     pub provider: String,
 
     pub region: Option<String>,
@@ -37,12 +38,14 @@ impl MessageInfo {
     pub fn new(
         query_params: &RpcQueryParams,
         headers: &HeaderMap,
-        request: &JsonRpcRequest,
+        session_id: Option<String>,
+        rpc_id: String,
+        rpc_method: String,
         region: Option<Vec<String>>,
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
         provider: &ProviderKind,
-        origin: Option<String>,
+        origin: Option<Arc<str>>,
         sv: Option<String>,
         st: Option<String>,
     ) -> Self {
@@ -51,7 +54,7 @@ impl MessageInfo {
 
             project_id: query_params.project_id.to_owned(),
             chain_id: query_params.chain_id.to_lowercase(),
-            method: request.method.clone(),
+            method: rpc_method,
             source: query_params
                 .source
                 .as_ref()
@@ -62,7 +65,8 @@ impl MessageInfo {
                 .get("x-request-id")
                 .and_then(|v| v.to_str().ok())
                 .map(|v| v.to_string()),
-            rpc_id: request.id.to_string(),
+            rpc_id,
+            session_id,
 
             origin,
             provider: provider.to_string(),

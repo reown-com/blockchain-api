@@ -2,6 +2,64 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.228.0 - 2025-05-06
+#### Features
+- **(providers)** removing Lava provider (#1055) - (0648cdd) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- update monitoring-role TF module (#1054) - (5c84ab5) - daniel
+
+- - -
+
+## 0.227.2 - 2025-05-01
+#### Bug Fixes
+- **(CI)** fixing rate-limiting test and enabling sessions and chain abstraction tests on staging (#1052) - (bd13e5d) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- route performance (#1034) - (37b3fb5) - Chris Smith
+
+- - -
+
+## 0.227.1 - 2025-04-30
+#### Bug Fixes
+- pin yttrium - (20a43ce) - Chris Smith
+
+- - -
+
+## 0.227.0 - 2025-04-30
+#### Bug Fixes
+- highest balance check (#1015) - (8b8ead9) - Chris Smith
+#### Features
+- extending Prometheus provider to use sla (#1049) - (e834c15) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.226.1 - 2025-04-30
+#### Bug Fixes
+- **(test)** adding a country code to the Meld quotes (#1051) - (de3eba8) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- bump yttrium (#1050) - (b932730) - Chris Smith
+
+- - -
+
+## 0.226.0 - 2025-04-29
+#### Features
+- **(CA)** adding simulation balance override for ETH (#1042) - (4882b96) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.225.0 - 2025-04-29
+#### Bug Fixes
+- **(CI)** removing unsupported bundler test (#1048) - (653bf19) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(providers)** adding Solana Devnet to the Syndica provider (#1047) - (d1e81d8) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.224.0 - 2025-04-28
+#### Features
+- improve RPC analytics (#1024) - (746dfe0) - Chris Smith
+
+- - -
+
 ## 0.223.0 - 2025-04-28
 #### Features
 - **(providers)** adding Monad testnet endpoint to the dRPC (#1046) - (5c17c1d) - Max Kalashnikoff | maksy.eth
