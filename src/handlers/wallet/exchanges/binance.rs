@@ -19,7 +19,7 @@ pub struct BinanceExchange;
 
 const PRE_ORDER_PATH: &str = "/papi/v1/ramp/connect/buy/pre-order";
 const QUERY_ORDER_DETAILS_PATH: &str = "/papi/v1/ramp/connect/order";
-const DEFAULT_MERCHANT_NAME: &str = " ";
+const FALLBACK_MERCHANT_NAME: &str = " ";
 
 // CAIP-19 asset mappings to Binance assets
 static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
@@ -404,8 +404,8 @@ impl BinanceExchange {
                 ExchangeError::InternalError(format!("Failed to get project data: {}", e))
             })?;
         let project_name = if project.project_data.name.is_empty() {
-            debug!("Project name is empty, using default name");
-            DEFAULT_MERCHANT_NAME.to_string()
+            debug!("Project name is empty, using fallback name");
+            FALLBACK_MERCHANT_NAME.to_string()
         } else {
             project.project_data.name
         };
