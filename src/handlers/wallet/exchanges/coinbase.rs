@@ -111,6 +111,7 @@ enum OnrampPaymentMethod {
     ApplePay,
     FiatWallet,
     CryptoWallet,
+    Unspecified,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -123,22 +124,30 @@ enum OnrampTransactionType {
 #[derive(Debug, Serialize, Deserialize)]
 struct OnrampTransaction {
     status: CoinbaseTransactionStatus,
-    purchase_currency: String,
-    purchase_network: String,
-    purchase_amount: String,
-    payment_total: String,
-    payment_subtotal: String,
-    coinbase_fee: String,
-    network_fee: String,
-    exchange_rate: String,
-    country: String,
-    user_id: String,
-    payment_method: OnrampPaymentMethod,
+    purchase_currency: Option<String>,
+    purchase_network: Option<String>,
+    purchase_amount: Option<CurrencyAmount>,
+    payment_total: Option<CurrencyAmount>,
+    payment_subtotal: Option<CurrencyAmount>,
+    coinbase_fee: Option<CurrencyAmount>,
+    network_fee: Option<CurrencyAmount>,
+    exchange_rate: Option<CurrencyAmount>,
+    country: Option<String>,
+    user_id: Option<String>,
+    payment_method: Option<OnrampPaymentMethod>,
     tx_hash: Option<String>,
-    transaction_id: String,
-    wallet_address: String,
+    transaction_id: Option<String>,
+    wallet_address: Option<String>,
     #[serde(rename = "type")]
     transaction_type: OnrampTransactionType,
+    created_at: Option<String>,
+    completed_at: Option<String>,
+    partner_user_ref: Option<String>,
+    user_type: Option<String>,
+    contract_address: Option<String>,
+    failure_reason: Option<String>,
+    end_partner_name: Option<String>,
+    payment_total_usd: Option<CurrencyAmount>,
 }
 
 pub struct CoinbaseExchange;
@@ -236,7 +245,15 @@ impl CoinbaseExchange {
                 &format!("/onramp/v1/buy/user/{}/transactions", transaction_id),
             )
             .await?;
-        let body: TransactionStatusResponse = res.json().await.map_err(|e| {
+
+  
+        
+        let response_text = res.text().await.map_err(|e| {
+            debug!("Error reading response text: {:?}", e);
+            ExchangeError::InternalError(e.to_string())
+        })?;
+        debug!("Raw transaction status response: {}", response_text);
+        let body: TransactionStatusResponse = serde_json::from_str(&response_text).map_err(|e| {
             debug!("Error parsing transaction status response: {:?}", e);
             ExchangeError::InternalError(e.to_string())
         })?;
