@@ -257,6 +257,7 @@ async fn handle_rpc(
         PAY_GET_EXCHANGE_URL => serde_json::to_value(
             &get_exchange_url::handler(
                 state,
+                project_id,
                 connect_info,
                 headers,
                 Query(get_exchange_url::QueryParams {

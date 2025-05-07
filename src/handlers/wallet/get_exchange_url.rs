@@ -61,18 +61,20 @@ impl GetExchangeUrlError {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
+    project_id: String,
     connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     query: Query<QueryParams>,
     Json(request): Json<GeneratePayUrlRequest>,
 ) -> Result<GeneratePayUrlResponse, GetExchangeUrlError> {
-    handler_internal(state, connect_info, headers, query, request)
+    handler_internal(state, project_id,connect_info, headers, query, request)
         .with_metrics(HANDLER_TASK_METRICS.with_name("pay_get_exchange_url"))
         .await
 }
 
 async fn handler_internal(
     state: State<Arc<AppState>>,
+    project_id: String,
     _connect_info: ConnectInfo<SocketAddr>,
     _headers: HeaderMap,
     _query: Query<QueryParams>,
@@ -126,6 +128,7 @@ async fn handler_internal(
         .get_buy_url(
             state,
             GetBuyUrlParams {
+                project_id,
                 asset,
                 amount,
                 recipient: address,
