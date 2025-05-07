@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.228.2 - 2025-05-07
+#### Bug Fixes
+- coinbase transaction status (#1058) - (43c8a22) - Luka Isailovic
+
+- - -
+
 ## 0.228.1 - 2025-05-07
 #### Bug Fixes
 - FAUCET_REQUEST_API_KEY env var (#1059) - (e435f80) - Chris Smith
