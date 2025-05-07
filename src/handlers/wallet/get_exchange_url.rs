@@ -67,7 +67,7 @@ pub async fn handler(
     query: Query<QueryParams>,
     Json(request): Json<GeneratePayUrlRequest>,
 ) -> Result<GeneratePayUrlResponse, GetExchangeUrlError> {
-    handler_internal(state, project_id,connect_info, headers, query, request)
+    handler_internal(state, project_id, connect_info, headers, query, request)
         .with_metrics(HANDLER_TASK_METRICS.with_name("pay_get_exchange_url"))
         .await
 }

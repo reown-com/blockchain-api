@@ -334,7 +334,10 @@ impl BinanceExchange {
         let status = response.status();
         if !status.is_success() {
             let error_body = response.text().await.unwrap_or_default();
-            let message = format!("Binance API request failed with status: {}, body: {}", status, error_body);
+            let message = format!(
+                "Binance API request failed with status: {}, body: {}",
+                status, error_body
+            );
             debug!("Binance API request failed: {}", message);
             return Err(ExchangeError::InternalError(message));
         }
