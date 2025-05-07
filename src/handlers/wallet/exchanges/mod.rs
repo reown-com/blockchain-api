@@ -34,6 +34,7 @@ pub struct Exchange {
 }
 
 pub struct GetBuyUrlParams {
+    pub project_id: String,
     pub asset: Caip19Asset,
     pub amount: usize,
     pub recipient: String,
