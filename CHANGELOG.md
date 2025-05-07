@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.228.1 - 2025-05-07
+#### Bug Fixes
+- FAUCET_REQUEST_API_KEY env var (#1059) - (e435f80) - Chris Smith
+#### Miscellaneous Chores
+- pay merchant name (#1057) - (3ddbb2c) - Luka Isailovic
+
+- - -
+
 ## 0.228.0 - 2025-05-06
 #### Features
 - **(providers)** removing Lava provider (#1055) - (0648cdd) - Max Kalashnikoff | maksy.eth
