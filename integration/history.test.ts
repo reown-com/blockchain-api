@@ -33,6 +33,23 @@ describe('Transactions history', () => {
     }
   })
 
+  it('fulfilled history Ethereum address (filtered by chainId)', async () => {
+    const chainId = 'eip155:1'
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/account/${fulfilled_eth_address}/history?projectId=${projectId}&chainId=${chainId}`,
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.data).toBe('object')
+
+    for (const item of resp.data.data) {
+      expect(item.id).toBeDefined()
+      expect(typeof item.metadata).toBe('object')
+      expect(item.metadata.chain).toBe(chainId);
+      expect(typeof item.metadata.application).toBe('object')
+      expect(typeof item.transfers).toBe('object')
+    }
+  })
+
   it('fulfilled history Solana address', async () => {
     let chainId = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
     let resp: any = await httpClient.get(
