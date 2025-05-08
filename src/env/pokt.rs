@@ -172,6 +172,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:80094".into(),
             ("berachain".into(), Weight::new(Priority::Normal).unwrap()),
         ),
+        // Sonic Mainnet
+        (
+            "eip155:146".into(),
+            ("sonic".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Near protocol
         (
             "near:mainnet".into(),
