@@ -18,7 +18,7 @@ use {
         utils::{
             crypto::{
                 convert_alloy_address_to_h160, decode_erc20_transfer_data, get_erc20_balance,
-                get_gas_estimate, get_nonce, Erc20FunctionType,
+                get_gas_estimate, Erc20FunctionType,
             },
             network,
             simple_request_json::SimpleRequestJson,
@@ -601,7 +601,9 @@ async fn handler_internal(
     );
 
     // Getting the current nonce for the address for the bridging transaction
-    nonce_manager.initialize_nonce(bridge_chain_id.clone(), request_payload.transaction.from);
+    if bridge_chain_id.starts_with("eip155:") {
+        nonce_manager.initialize_nonce(bridge_chain_id.clone(), request_payload.transaction.from);
+    }
 
     let (routes, bridged_amount, final_bridging_fee) = match bridge_contract.clone() {
         Eip155OrSolanaAddress::Eip155(bridge_contract) if !query_params.use_lifi => {
@@ -1007,12 +1009,10 @@ async fn handler_internal(
                     serde_json::to_string_pretty(&quote).unwrap()
                 );
 
-                let mut nonce = get_nonce(
-                    request_payload.transaction.from,
-                    &provider_pool
-                        .get_provider(bridge_chain_id.clone(), MessageSource::ChainAgnosticCheck),
-                )
-                .await?;
+                let chain_id = format!("eip155:{}", quote.transaction_request.chain_id);
+                assert_eq!(chain_id, bridge_chain_id);
+                let from = quote.transaction_request.from;
+                assert_eq!(from, request_payload.transaction.from);
 
                 let mut txns = Vec::with_capacity(2);
 
@@ -1048,27 +1048,32 @@ async fn handler_internal(
                         let approve_tx =
                             source_token.approve(quote.estimate.approval_address, approve_amount);
                         txns.push(Transaction {
-                            chain_id: format!("eip155:{}", quote.transaction_request.chain_id),
-                            from: quote.transaction_request.from,
+                            chain_id: chain_id.clone(),
+                            from: from.clone(),
                             to: quote.action.from_token.address,
                             value: U256::ZERO,
                             input: approve_tx.calldata().clone(),
-                            nonce,
+                            nonce: nonce_manager
+                                .get_nonce(chain_id.clone(), from.clone())
+                                .await??,
                             gas_limit: U64::from(100000), // TODO estimate gas
                         });
-                        nonce += U64::from(1);
                     }
                 }
 
-                txns.push(Transaction {
-                    chain_id: format!("eip155:{}", quote.transaction_request.chain_id),
-                    from: quote.transaction_request.from,
-                    to: quote.transaction_request.to,
-                    value: quote.transaction_request.value,
-                    input: quote.transaction_request.data,
-                    nonce,
-                    gas_limit: U64::from(quote.transaction_request.gas_limit),
-                });
+                {
+                    txns.push(Transaction {
+                        chain_id: chain_id.clone(),
+                        from: from.clone(),
+                        to: quote.transaction_request.to,
+                        value: quote.transaction_request.value,
+                        input: quote.transaction_request.data,
+                        nonce: nonce_manager
+                            .get_nonce(chain_id.clone(), from.clone())
+                            .await??,
+                        gas_limit: U64::from(quote.transaction_request.gas_limit),
+                    });
+                }
 
                 (
                     vec![Transactions::Eip155(txns)],
