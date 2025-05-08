@@ -14,6 +14,7 @@ Chain name with associated `chainId` query param to use.
 | Binance Smart Chain Testnet <sup>[1](#footnote1)</sup>   | eip155:97            |
 | Gnosis Chain                                             | eip155:100           |
 | Polygon                                                  | eip155:137           |
+| Sonic                                                    | eip155:146           |
 | zkSync Era Sepolia Testnet <sup>[1](#footnote1)</sup>    | eip155:300           |
 | zkSync Era                                               | eip155:324           |
 | Polygon Zkevm                                            | eip155:1101          |
@@ -33,6 +34,7 @@ Chain name with associated `chainId` query param to use.
 | Celo                                                     | eip155:42220         |
 | Avalanche Fuji Testnet <sup>[1](#footnote1)</sup>        | eip155:43113         |
 | Avalanche C-Chain                                        | eip155:43114         |
+| Sonic Testnet <sup>[1](#footnote1)</sup>                 | eip155:57054         |
 | Linea <sup>[1](#footnote1)</sup>                         | eip155:59144         |
 | Polygon Amoy <sup>[1](#footnote1)</sup>                  | eip155:80002         |
 | Berachain Bepolia <sup>[1](#footnote)</sup>              | eip155:80069         |

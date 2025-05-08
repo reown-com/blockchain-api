@@ -139,5 +139,21 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Sonic Mainnet
+        (
+            "eip155:146".into(),
+            (
+                "https://sonic.drpc.org".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        // Sonic Testnet
+        (
+            "eip155:57054".into(),
+            (
+                "https://sonic-testnet.drpc.org".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
     ])
 }

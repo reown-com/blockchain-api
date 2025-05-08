@@ -173,6 +173,10 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
         "0x138de",
     )
     .await;
+
+    // Sonic Mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:146", "0x92")
+        .await;
 }
 
 #[test_context(ServerContext)]
