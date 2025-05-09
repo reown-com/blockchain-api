@@ -111,15 +111,12 @@ async fn handler_internal(
         )));
     }
 
-    let amount = request
-        .amount
-        .parse::<f64>()
-        .map_err(|_| {
-            GetExchangeUrlError::ValidationError(format!(
-                "Invalid amount. Expected a valid number: {}",
-                request.amount
-            ))
-        })?;
+    let amount = request.amount.parse::<f64>().map_err(|_| {
+        GetExchangeUrlError::ValidationError(format!(
+            "Invalid amount. Expected a valid number: {}",
+            request.amount
+        ))
+    })?;
 
     // Removing dashes from the session id because binance only accepts alphanumeric characters
     let session_id = Uuid::new_v4().to_string().replace("-", "");
