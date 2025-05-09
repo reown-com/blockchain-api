@@ -19,6 +19,7 @@ pub struct BinanceExchange;
 
 const PRE_ORDER_PATH: &str = "/papi/v1/ramp/connect/buy/pre-order";
 const QUERY_ORDER_DETAILS_PATH: &str = "/papi/v1/ramp/connect/order";
+const FALLBACK_MERCHANT_NAME: &str = " ";
 
 // CAIP-19 asset mappings to Binance assets
 static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
@@ -333,10 +334,12 @@ impl BinanceExchange {
         let status = response.status();
         if !status.is_success() {
             let error_body = response.text().await.unwrap_or_default();
-            return Err(ExchangeError::InternalError(format!(
+            let message = format!(
                 "Binance API request failed with status: {}, body: {}",
                 status, error_body
-            )));
+            );
+            debug!("Binance API request failed: {}", message);
+            return Err(ExchangeError::InternalError(message));
         }
 
         let parsed_response: BinanceResponse<R> = response.json().await.map_err(|e| {
@@ -392,6 +395,21 @@ impl BinanceExchange {
             .map_asset_to_binance_format(&params.asset)
             .map_err(|e| ExchangeError::ValidationError(e.to_string()))?;
 
+        let project = state
+            .registry
+            .project_data(&params.project_id)
+            .await
+            .map_err(|e| {
+                debug!("Failed to get project data: {}", e);
+                ExchangeError::InternalError(format!("Failed to get project data: {}", e))
+            })?;
+        let project_name = if project.project_data.name.is_empty() {
+            debug!("Project name is empty, using fallback name");
+            FALLBACK_MERCHANT_NAME.to_string()
+        } else {
+            project.project_data.name
+        };
+
         let request = PreOrderRequest {
             external_order_id: params.session_id,
             crypto_currency: Some(crypto_currency),
@@ -410,7 +428,7 @@ impl BinanceExchange {
             client_type: None,
             customization: Some(Customization {
                 send_primary: Some(true),
-                merchant_display_name: Some("Reown".to_string()),
+                merchant_display_name: Some(project_name),
             }),
         };
 

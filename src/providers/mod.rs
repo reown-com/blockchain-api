@@ -74,7 +74,6 @@ mod drpc;
 mod dune;
 mod getblock;
 mod infura;
-mod lava;
 mod mantle;
 mod meld;
 pub mod mock_alto;
@@ -108,7 +107,6 @@ pub use {
     dune::DuneProvider,
     getblock::GetBlockProvider,
     infura::{InfuraProvider, InfuraWsProvider},
-    lava::LavaProvider,
     mantle::MantleProvider,
     meld::MeldProvider,
     monad::MonadProvider,
@@ -160,8 +158,6 @@ pub struct ProvidersConfig {
     pub solscan_api_v2_token: String,
     /// Bungee API key
     pub bungee_api_key: String,
-    /// Lava API key
-    pub lava_api_key: String,
     /// Tenderly API key
     pub tenderly_api_key: String,
     /// Tenderly Account ID
@@ -685,7 +681,6 @@ pub enum ProviderKind {
     GetBlock,
     SolScan,
     Unichain,
-    Lava,
     Morph,
     Tenderly,
     Dune,
@@ -724,7 +719,6 @@ impl Display for ProviderKind {
                 ProviderKind::GetBlock => "GetBlock",
                 ProviderKind::SolScan => "SolScan",
                 ProviderKind::Unichain => "Unichain",
-                ProviderKind::Lava => "Lava",
                 ProviderKind::Morph => "Morph",
                 ProviderKind::Tenderly => "Tenderly",
                 ProviderKind::Dune => "Dune",
@@ -762,7 +756,6 @@ impl ProviderKind {
             "GetBlock" => Some(Self::GetBlock),
             "SolScan" => Some(Self::SolScan),
             "Unichain" => Some(Self::Unichain),
-            "Lava" => Some(Self::Lava),
             "Morph" => Some(Self::Morph),
             "Tenderly" => Some(Self::Tenderly),
             "Dune" => Some(Self::Dune),

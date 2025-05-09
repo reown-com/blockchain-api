@@ -3,11 +3,11 @@ services:
     image: ghcr.io/foundry-rs/foundry:stable
     restart: unless-stopped
     ports: ["8545:8545"]
-    entrypoint: [ "anvil", "--fork-url", "https://gateway.tenderly.co/public/sepolia", "--host", "0.0.0.0", "--gas-price", "1", "--silent", "--hardfork", "prague" ]
+    entrypoint: [ "anvil", "--fork-url", "https://gateway.tenderly.co/public/sepolia", "--host", "0.0.0.0", "--gas-price", "1" ]
     platform: linux/amd64
  
   mock-paymaster:
-    image: ghcr.io/pimlicolabs/mock-verifying-paymaster:main
+    image: ghcr.io/pimlicolabs/mock-verifying-paymaster@sha256:588629c066e5060635ac9756679b8d9049eeb412003cd96a518944dccd0b3b01
     restart: unless-stopped
     ports: ["3000:3000"]
     environment:

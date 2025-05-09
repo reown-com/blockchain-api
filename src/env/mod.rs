@@ -17,7 +17,7 @@ use {
 };
 pub use {
     allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, drpc::*, dune::*, getblock::*,
-    infura::*, lava::*, mantle::*, monad::*, morph::*, near::*, odyssey::*, pokt::*, publicnode::*,
+    infura::*, mantle::*, monad::*, morph::*, near::*, odyssey::*, pokt::*, publicnode::*,
     quicknode::*, server::*, solscan::*, syndica::*, unichain::*, wemix::*, zerion::*, zksync::*,
     zora::*,
 };
@@ -30,7 +30,6 @@ mod drpc;
 mod dune;
 mod getblock;
 mod infura;
-mod lava;
 mod mantle;
 mod monad;
 mod morph;
@@ -197,7 +196,6 @@ mod test {
                 "SOLSCAN_API_V2_TOKEN",
             ),
             ("RPC_PROXY_PROVIDER_BUNGEE_API_KEY", "BUNGEE_API_KEY"),
-            ("RPC_PROXY_PROVIDER_LAVA_API_KEY", "LAVA_API_KEY"),
             ("RPC_PROXY_PROVIDER_TENDERLY_API_KEY", "TENDERLY_KEY"),
             (
                 "RPC_PROXY_PROVIDER_TENDERLY_ACCOUNT_ID",
@@ -329,7 +327,6 @@ mod test {
                     pimlico_api_key: "PIMLICO_API_KEY".to_string(),
                     solscan_api_v2_token: "SOLSCAN_API_V2_TOKEN".to_string(),
                     bungee_api_key: "BUNGEE_API_KEY".to_string(),
-                    lava_api_key: "LAVA_API_KEY".to_string(),
                     tenderly_api_key: "TENDERLY_KEY".to_string(),
                     tenderly_account_id: "TENDERLY_ACCOUNT_ID".to_string(),
                     tenderly_project_id: "TENDERLY_PROJECT_ID".to_string(),

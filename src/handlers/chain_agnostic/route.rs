@@ -2,8 +2,8 @@ use {
     super::{
         super::HANDLER_TASK_METRICS, assets::NATIVE_TOKEN_ADDRESS,
         check_bridging_for_erc20_transfer, convert_amount, find_supported_bridging_asset,
-        get_assets_changes_from_simulation, BridgingStatus, StorageBridgingItem,
-        BRIDGING_FEE_SLIPPAGE, STATUS_POLLING_INTERVAL,
+        get_assets_changes_from_simulation, nonce_manager::NonceManager, BridgingStatus,
+        StorageBridgingItem, BRIDGING_FEE_SLIPPAGE, STATUS_POLLING_INTERVAL,
     },
     crate::{
         analytics::{
@@ -18,7 +18,7 @@ use {
         utils::{
             crypto::{
                 convert_alloy_address_to_h160, decode_erc20_transfer_data, get_erc20_balance,
-                get_gas_estimate, get_nonce, Erc20FunctionType,
+                get_gas_estimate, Erc20FunctionType,
             },
             network,
             simple_request_json::SimpleRequestJson,
@@ -439,13 +439,11 @@ async fn handler_internal(
     let initial_tx_gas_limit =
         U64::from((initial_tx_gas_used * (100 + ESTIMATED_GAS_SLIPPAGE as u64)) / 100);
 
-    let from_account_nonce = tokio::task::spawn({
-        let provider = provider_pool.get_provider(
-            request_payload.transaction.chain_id.clone(),
-            MessageSource::ChainAgnosticCheck,
-        );
-        async move { get_nonce(request_payload.transaction.from, &provider).await }
-    });
+    let mut nonce_manager = NonceManager::new(provider_pool.clone());
+    nonce_manager.initialize_nonce(
+        request_payload.transaction.chain_id.clone(),
+        request_payload.transaction.from,
+    );
 
     // Get the current balance of the ERC20 or native token and check if it's enough for the transfer
     // without bridging or calculate the top-up value
@@ -469,7 +467,12 @@ async fn handler_internal(
             value: first_call.value,
             input: first_call.input.clone(),
             gas_limit: initial_tx_gas_limit,
-            nonce: from_account_nonce.await??,
+            nonce: nonce_manager
+                .get_nonce(
+                    request_payload.transaction.chain_id.clone(),
+                    request_payload.transaction.from,
+                )
+                .await??,
             chain_id: request_payload.transaction.chain_id.clone(),
         }));
     }
@@ -599,17 +602,9 @@ async fn handler_internal(
     );
 
     // Getting the current nonce for the address for the bridging transaction
-    let bridge_account_nonce = if bridge_chain_id.starts_with("eip155:") {
-        Some(tokio::task::spawn({
-            let provider = provider_pool
-                .get_provider(bridge_chain_id.clone(), MessageSource::ChainAgnosticCheck);
-            async move { get_nonce(request_payload.transaction.from, &provider).await }
-        }))
-    } else {
-        None
-    };
-
-    let mut from_account_nonce = from_account_nonce.await??;
+    if bridge_chain_id.starts_with("eip155:") {
+        nonce_manager.initialize_nonce(bridge_chain_id.clone(), request_payload.transaction.from);
+    }
 
     let (routes, bridged_amount, final_bridging_fee) = match bridge_contract.clone() {
         Eip155OrSolanaAddress::Eip155(bridge_contract) if !query_params.use_lifi => {
@@ -749,10 +744,6 @@ async fn handler_internal(
                 .build_bridging_tx(best_route.clone(), state.metrics.clone())
                 .await?;
 
-            let mut bridge_account_nonce = bridge_account_nonce
-                .expect("bridge_account_nonce should've been initiated")
-                .await??;
-
             let mut routes = Vec::new();
 
             // Check for the allowance
@@ -790,13 +781,12 @@ async fn handler_internal(
                         value: U256::ZERO,
                         gas_limit: U64::ZERO,
                         input: approval_tx.data,
-                        nonce: bridge_account_nonce,
+                        nonce: nonce_manager
+                            .get_nonce(bridge_chain_id.clone(), request_payload.transaction.from)
+                            .await??,
                         chain_id: format!("eip155:{}", bridge_tx.chain_id),
                     };
                     routes.push(approval_transaction);
-
-                    // Increment the nonce
-                    bridge_account_nonce += U64::from(1);
                 }
             }
 
@@ -806,17 +796,11 @@ async fn handler_internal(
                 value: bridge_tx.value,
                 gas_limit: U64::ZERO,
                 input: bridge_tx.tx_data,
-                nonce: bridge_account_nonce,
+                nonce: nonce_manager
+                    .get_nonce(bridge_chain_id.clone(), request_payload.transaction.from)
+                    .await??,
                 chain_id: format!("eip155:{}", bridge_tx.chain_id),
             };
-
-            // Checking if it's a swap only on the same chain
-            // and increase the initial transaction nonce for this case
-            // since we have an approval (optional) and a bridging transactions
-            // before the initial transaction
-            if bridge_chain_id == request_payload.transaction.chain_id {
-                from_account_nonce += U64::from(1);
-            }
 
             // If the bridging transaction value is non zero, it's a native token transfer
             // and we can get the gas estimation by calling `eth_estimateGas` RPC method
@@ -1027,12 +1011,10 @@ async fn handler_internal(
                     serde_json::to_string_pretty(&quote).unwrap()
                 );
 
-                let mut nonce = get_nonce(
-                    request_payload.transaction.from,
-                    &provider_pool
-                        .get_provider(bridge_chain_id.clone(), MessageSource::ChainAgnosticCheck),
-                )
-                .await?;
+                let chain_id = format!("eip155:{}", quote.transaction_request.chain_id);
+                assert_eq!(chain_id, bridge_chain_id);
+                let from = quote.transaction_request.from;
+                assert_eq!(from, request_payload.transaction.from);
 
                 let mut txns = Vec::with_capacity(2);
 
@@ -1068,27 +1050,28 @@ async fn handler_internal(
                         let approve_tx =
                             source_token.approve(quote.estimate.approval_address, approve_amount);
                         txns.push(Transaction {
-                            chain_id: format!("eip155:{}", quote.transaction_request.chain_id),
-                            from: quote.transaction_request.from,
+                            chain_id: chain_id.clone(),
+                            from,
                             to: quote.action.from_token.address,
                             value: U256::ZERO,
                             input: approve_tx.calldata().clone(),
-                            nonce,
+                            nonce: nonce_manager.get_nonce(chain_id.clone(), from).await??,
                             gas_limit: U64::from(100000), // TODO estimate gas
                         });
-                        nonce += U64::from(1);
                     }
                 }
 
-                txns.push(Transaction {
-                    chain_id: format!("eip155:{}", quote.transaction_request.chain_id),
-                    from: quote.transaction_request.from,
-                    to: quote.transaction_request.to,
-                    value: quote.transaction_request.value,
-                    input: quote.transaction_request.data,
-                    nonce,
-                    gas_limit: U64::from(quote.transaction_request.gas_limit),
-                });
+                {
+                    txns.push(Transaction {
+                        chain_id: chain_id.clone(),
+                        from,
+                        to: quote.transaction_request.to,
+                        value: quote.transaction_request.value,
+                        input: quote.transaction_request.data,
+                        nonce: nonce_manager.get_nonce(chain_id.clone(), from).await??,
+                        gas_limit: U64::from(quote.transaction_request.gas_limit),
+                    });
+                }
 
                 (
                     vec![Transactions::Eip155(txns)],
@@ -1215,7 +1198,12 @@ async fn handler_internal(
                 value: first_call.value,
                 input: first_call.input.clone(),
                 gas_limit: initial_tx_gas_limit,
-                nonce: from_account_nonce,
+                nonce: nonce_manager
+                    .get_nonce(
+                        request_payload.transaction.chain_id.clone(),
+                        request_payload.transaction.from,
+                    )
+                    .await??,
                 chain_id: request_payload.transaction.chain_id.clone(),
             },
             transactions: routes,
