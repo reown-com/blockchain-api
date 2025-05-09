@@ -23,6 +23,7 @@ use {
 
 pub mod assets;
 pub mod lifi;
+pub mod nonce_manager;
 pub mod route;
 pub mod status;
 
