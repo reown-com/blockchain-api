@@ -111,6 +111,7 @@ async fn handler_internal(
         )));
     }
 
+    // support decimal and hex
     let amount = match request.amount.parse::<f64>() {
         Ok(parsed_amount) => parsed_amount,
         Err(_) => match usize::from_str_radix(request.amount.trim_start_matches("0x"), 16) {
