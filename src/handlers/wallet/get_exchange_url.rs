@@ -110,7 +110,7 @@ async fn handler_internal(
             asset, request.exchange_id
         )));
     }
-    
+
     // support decimal and hex
     let amount = match request.amount.parse::<f64>() {
         Ok(parsed_amount) => parsed_amount,
