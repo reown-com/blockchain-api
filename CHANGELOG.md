@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.228.4 - 2025-05-09
+#### Bug Fixes
+- buy url (#1062) - (d6eb8f5) - Luka Isailovic
+#### Miscellaneous Chores
+- change the implementation to use string float instead of hex (#1061) - (7b871d9) - Luka Isailovic
+
+- - -
+
 ## 0.228.3 - 2025-05-09
 #### Bug Fixes
 - nonce manager (#1053) - (356effd) - Chris Smith
