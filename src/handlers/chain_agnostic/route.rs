@@ -500,6 +500,7 @@ async fn handler_internal(
         }
     };
 
+    // TODO self-call Blockchain API here and add to ProviderPool
     let sol_rpc = "https://api.mainnet-beta.solana.com";
     let solana_rpc_client = Arc::new(SolanaRpcClient::new_with_commitment(
         sol_rpc.to_string(),
@@ -889,6 +890,7 @@ async fn handler_internal(
                     "toAmount": erc20_topup_value.to_string(),
                     "fromAddress": bridging_asset.account.to_string(),
                     "toAddress": request_payload.transaction.from.to_string(),
+                    "order": "FASTEST",
                 }))
                 .send()
                 .await
