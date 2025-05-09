@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.228.3 - 2025-05-09
+#### Bug Fixes
+- nonce manager (#1053) - (356effd) - Chris Smith
+
+- - -
+
 ## 0.228.2 - 2025-05-07
 #### Bug Fixes
 - coinbase transaction status (#1058) - (43c8a22) - Luka Isailovic
