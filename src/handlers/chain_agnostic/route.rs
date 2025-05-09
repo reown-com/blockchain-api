@@ -1049,13 +1049,11 @@ async fn handler_internal(
                             source_token.approve(quote.estimate.approval_address, approve_amount);
                         txns.push(Transaction {
                             chain_id: chain_id.clone(),
-                            from: from.clone(),
+                            from,
                             to: quote.action.from_token.address,
                             value: U256::ZERO,
                             input: approve_tx.calldata().clone(),
-                            nonce: nonce_manager
-                                .get_nonce(chain_id.clone(), from.clone())
-                                .await??,
+                            nonce: nonce_manager.get_nonce(chain_id.clone(), from).await??,
                             gas_limit: U64::from(100000), // TODO estimate gas
                         });
                     }
@@ -1064,13 +1062,11 @@ async fn handler_internal(
                 {
                     txns.push(Transaction {
                         chain_id: chain_id.clone(),
-                        from: from.clone(),
+                        from,
                         to: quote.transaction_request.to,
                         value: quote.transaction_request.value,
                         input: quote.transaction_request.data,
-                        nonce: nonce_manager
-                            .get_nonce(chain_id.clone(), from.clone())
-                            .await??,
+                        nonce: nonce_manager.get_nonce(chain_id.clone(), from).await??,
                         gas_limit: U64::from(quote.transaction_request.gas_limit),
                     });
                 }
