@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.228.5 - 2025-05-12
+#### Bug Fixes
+- **(transactions)** adding a filtering by chainId (#1056) - (5408324) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.228.4 - 2025-05-09
 #### Bug Fixes
 - buy url (#1062) - (d6eb8f5) - Luka Isailovic
