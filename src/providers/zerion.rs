@@ -263,6 +263,18 @@ impl HistoryProvider for ZerionProvider {
             url.query_pairs_mut().append_pair("page[after]", &cursor);
         }
 
+        if let Some(chain_id) = params.chain_id {
+            let chain_name = if chain_id.contains(':') {
+                crypto::ChainId::from_caip2(&chain_id)
+                    .ok_or(RpcError::InvalidParameter(chain_id))?
+            } else {
+                crypto::ChainId::from_caip2(&format!("eip155:{}", chain_id))
+                    .ok_or(RpcError::InvalidParameter(chain_id))?
+            };
+            url.query_pairs_mut()
+                .append_pair("filter[chain_ids]", &chain_name);
+        }
+
         let latency_start = SystemTime::now();
         let response = self.send_request(url).await.tap_err(|e| {
             error!("Error on request to zerion history endpoint with {}", e);

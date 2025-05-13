@@ -193,6 +193,19 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Sonic Mainnet
+        (
+            "eip155:146".into(),
+            ("sonic-rpc".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
+        // Sonic Testnet
+        (
+            "eip155:57054".into(),
+            (
+                "sonic-blaze-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
         // Bitcoin mainnet
         (
             "bip122:000000000019d6689c085ae165831e93".into(),
