@@ -164,12 +164,6 @@ variable "postgres_url" {
 #-------------------------------------------------------------------------------
 # Providers
 
-variable "infura_project_id" {
-  description = "The project ID for Infura"
-  type        = string
-  sensitive   = true
-}
-
 variable "pokt_project_id" {
   description = "The project ID for POKT"
   type        = string

@@ -17,9 +17,8 @@ use {
 };
 pub use {
     allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, drpc::*, dune::*, getblock::*,
-    infura::*, mantle::*, monad::*, morph::*, near::*, odyssey::*, pokt::*, publicnode::*,
-    quicknode::*, server::*, solscan::*, syndica::*, unichain::*, wemix::*, zerion::*, zksync::*,
-    zora::*,
+    mantle::*, monad::*, morph::*, near::*, odyssey::*, pokt::*, publicnode::*, quicknode::*,
+    server::*, solscan::*, syndica::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
 };
 mod allnodes;
 mod arbitrum;
@@ -29,7 +28,6 @@ mod binance;
 mod drpc;
 mod dune;
 mod getblock;
-mod infura;
 mod mantle;
 mod monad;
 mod morph;
@@ -178,7 +176,6 @@ mod test {
                 "RPC_PROXY_PROVIDER_CACHE_REDIS_ADDR",
                 "redis://127.0.0.1/providers_cache",
             ),
-            ("RPC_PROXY_PROVIDER_INFURA_PROJECT_ID", "INFURA_PROJECT_ID"),
             ("RPC_PROXY_PROVIDER_POKT_PROJECT_ID", "POKT_PROJECT_ID"),
             ("RPC_PROXY_PROVIDER_ZERION_API_KEY", "ZERION_API_KEY"),
             (
@@ -315,7 +312,6 @@ mod test {
                     prometheus_query_url: Some("PROMETHEUS_QUERY_URL".to_owned()),
                     prometheus_workspace_header: Some("PROMETHEUS_WORKSPACE_HEADER".to_owned()),
                     cache_redis_addr: Some("redis://127.0.0.1/providers_cache".to_owned()),
-                    infura_project_id: "INFURA_PROJECT_ID".to_string(),
                     pokt_project_id: "POKT_PROJECT_ID".to_string(),
                     quicknode_api_tokens: "QUICKNODE_API_TOKENS".to_string(),
                     zerion_api_key: "ZERION_API_KEY".to_owned(),
