@@ -327,10 +327,7 @@ impl CoinbaseExchange {
                     CoinbaseTransactionStatus::Failed => BuyTransactionStatus::Failed,
                 };
 
-                Ok(GetBuyStatusResponse {
-                    status,
-                    tx_hash,
-                })
+                Ok(GetBuyStatusResponse { status, tx_hash })
             }
             None => Ok(GetBuyStatusResponse {
                 status: BuyTransactionStatus::Unknown,
