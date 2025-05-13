@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.230.0 - 2025-05-13
+#### Features
+- **(providers)** removing Infura RPC provider (#1063) - (6b779e1) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.229.0 - 2025-05-12
 #### Features
 - **(chains)** adding Sonic Mainnet and Testnet RPC support (#1060) - (afb05ff) - Max Kalashnikoff | maksy.eth
