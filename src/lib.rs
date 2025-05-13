@@ -21,20 +21,19 @@ use {
     },
     env::{
         AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, DrpcConfig,
-        DuneConfig, GetBlockConfig, InfuraConfig, MantleConfig, MonadConfig, MorphConfig,
-        NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig,
-        SyndicaConfig, UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
+        DuneConfig, GetBlockConfig, MantleConfig, MonadConfig, MorphConfig, NearConfig,
+        OdysseyConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig, SyndicaConfig,
+        UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
         AllnodesProvider, ArbitrumProvider, AuroraProvider, BaseProvider, BinanceProvider,
-        DrpcProvider, DuneProvider, GetBlockProvider, InfuraProvider, InfuraWsProvider,
-        MantleProvider, MonadProvider, MorphProvider, NearProvider, OdysseyProvider, PoktProvider,
-        ProviderRepository, PublicnodeProvider, QuicknodeProvider, SolScanProvider,
-        SyndicaProvider, UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider,
-        ZoraProvider, ZoraWsProvider,
+        DrpcProvider, DuneProvider, GetBlockProvider, MantleProvider, MonadProvider, MorphProvider,
+        NearProvider, OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider,
+        QuicknodeProvider, SolScanProvider, SyndicaProvider, UnichainProvider, WemixProvider,
+        ZKSyncProvider, ZerionProvider, ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -520,9 +519,6 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_rpc_provider::<QuicknodeProvider, QuicknodeConfig>(QuicknodeConfig::new(
         config.quicknode_api_tokens.clone(),
     ));
-    providers.add_rpc_provider::<InfuraProvider, InfuraConfig>(InfuraConfig::new(
-        config.infura_project_id.clone(),
-    ));
     providers.add_rpc_provider::<ZoraProvider, ZoraConfig>(ZoraConfig::default());
     providers.add_rpc_provider::<NearProvider, NearConfig>(NearConfig::default());
     providers.add_rpc_provider::<MantleProvider, MantleConfig>(MantleConfig::default());
@@ -545,9 +541,6 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
         ));
     };
 
-    providers.add_ws_provider::<InfuraWsProvider, InfuraConfig>(InfuraConfig::new(
-        config.infura_project_id.clone(),
-    ));
     providers.add_ws_provider::<ZoraWsProvider, ZoraConfig>(ZoraConfig::default());
 
     providers.add_balance_provider::<ZerionProvider, ZerionConfig>(

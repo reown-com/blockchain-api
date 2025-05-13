@@ -78,7 +78,6 @@ jobs:
       - run: cargo test --features=test-mock-bundler --lib --bins
         env:
           RPC_PROXY_POSTGRES_URI: "postgres://postgres@localhost/postgres"
-          RPC_PROXY_PROVIDER_INFURA_PROJECT_ID: ""
           RPC_PROXY_PROVIDER_POKT_PROJECT_ID: ""
           RPC_PROXY_PROVIDER_QUICKNODE_API_TOKENS: ""
           RPC_PROXY_PROVIDER_PIMLICO_API_KEY: ""
