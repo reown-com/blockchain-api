@@ -311,14 +311,25 @@ impl CoinbaseExchange {
 
         match response.transactions.first() {
             Some(transaction) => {
-                let status = match transaction.status {
+                let tx_hash = transaction.tx_hash.clone();
+
+                let status = match &transaction.status {
+                    CoinbaseTransactionStatus::Success => {
+                        if tx_hash.is_none() {
+                            // It's possible that the transaction is successful
+                            // but the tx_hash is not available yet.
+                            BuyTransactionStatus::InProgress
+                        } else {
+                            BuyTransactionStatus::Success
+                        }
+                    }
                     CoinbaseTransactionStatus::InProgress => BuyTransactionStatus::InProgress,
-                    CoinbaseTransactionStatus::Success => BuyTransactionStatus::Success,
                     CoinbaseTransactionStatus::Failed => BuyTransactionStatus::Failed,
                 };
+
                 Ok(GetBuyStatusResponse {
                     status,
-                    tx_hash: transaction.tx_hash.clone(),
+                    tx_hash,
                 })
             }
             None => Ok(GetBuyStatusResponse {
