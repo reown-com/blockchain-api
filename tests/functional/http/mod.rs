@@ -12,7 +12,6 @@ pub(crate) mod aurora;
 pub(crate) mod base;
 pub(crate) mod binance;
 pub(crate) mod drpc;
-pub(crate) mod getblock;
 pub(crate) mod mantle;
 pub(crate) mod monad;
 pub(crate) mod morph;

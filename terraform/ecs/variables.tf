@@ -206,12 +206,6 @@ variable "one_inch_referrer" {
   sensitive   = true
 }
 
-variable "getblock_access_tokens" {
-  description = "Mapping of API access tokens for GetBlock in JSON format"
-  type        = string
-  sensitive   = true
-}
-
 variable "pimlico_api_key" {
   description = "Pimlico bundler API token key"
   type        = string
