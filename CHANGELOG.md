@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.230.1 - 2025-05-13
+#### Bug Fixes
+- **(terraform)** updating the RDS engine version (#1064) - (e328752) - Max Kalashnikoff | maksy.eth
+- coinbase transaction status (#1065) - (5346509) - Luka Isailovic
+
+- - -
+
 ## 0.230.0 - 2025-05-13
 #### Features
 - **(providers)** removing Infura RPC provider (#1063) - (6b779e1) - Max Kalashnikoff | maksy.eth
