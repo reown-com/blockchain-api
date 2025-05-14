@@ -13,7 +13,6 @@ pub(crate) mod binance;
 pub(crate) mod drpc;
 pub(crate) mod edexa;
 pub(crate) mod getblock;
-pub(crate) mod infura;
 pub(crate) mod mantle;
 pub(crate) mod monad;
 pub(crate) mod morph;

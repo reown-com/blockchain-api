@@ -86,7 +86,6 @@ resource "aws_ecs_task_definition" "app_task" {
 
         { name = "RPC_PROXY_BLOCKED_COUNTRIES", value = var.ofac_blocked_countries },
 
-        { name = "RPC_PROXY_PROVIDER_INFURA_PROJECT_ID", value = var.infura_project_id },
         { name = "RPC_PROXY_PROVIDER_POKT_PROJECT_ID", value = var.pokt_project_id },
         { name = "RPC_PROXY_PROVIDER_QUICKNODE_API_TOKENS", value = var.quicknode_api_tokens },
         { name = "RPC_PROXY_PROVIDER_ZERION_API_KEY", value = var.zerion_api_key },

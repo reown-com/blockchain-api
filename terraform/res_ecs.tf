@@ -63,7 +63,6 @@ module "ecs" {
   postgres_url                       = module.postgres.database_url
 
   # Providers
-  infura_project_id      = var.infura_project_id
   pokt_project_id        = var.pokt_project_id
   quicknode_api_tokens   = var.quicknode_api_tokens
   zerion_api_key         = var.zerion_api_key
