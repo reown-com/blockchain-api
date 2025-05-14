@@ -96,7 +96,7 @@ mod zksync;
 mod zora;
 
 pub use {
-    allnodes::AllnodesProvider,
+    allnodes::{AllnodesProvider, AllnodesWsProvider},
     arbitrum::ArbitrumProvider,
     aurora::AuroraProvider,
     base::BaseProvider,
