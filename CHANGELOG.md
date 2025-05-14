@@ -2,6 +2,51 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.231.0 - 2025-05-14
+#### Features
+- ws provider fix (#1069) - (b7b59df) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.230.2 - 2025-05-14
+#### Bug Fixes
+- **(rpc)** using the Publicnode provider when session was provided (#1070) - (c193c90) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.230.1 - 2025-05-13
+#### Bug Fixes
+- **(terraform)** updating the RDS engine version (#1064) - (e328752) - Max Kalashnikoff | maksy.eth
+- coinbase transaction status (#1065) - (5346509) - Luka Isailovic
+
+- - -
+
+## 0.230.0 - 2025-05-13
+#### Features
+- **(providers)** removing Infura RPC provider (#1063) - (6b779e1) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.229.0 - 2025-05-12
+#### Features
+- **(chains)** adding Sonic Mainnet and Testnet RPC support (#1060) - (afb05ff) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.228.5 - 2025-05-12
+#### Bug Fixes
+- **(transactions)** adding a filtering by chainId (#1056) - (5408324) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.228.4 - 2025-05-09
+#### Bug Fixes
+- buy url (#1062) - (d6eb8f5) - Luka Isailovic
+#### Miscellaneous Chores
+- change the implementation to use string float instead of hex (#1061) - (7b871d9) - Luka Isailovic
+
+- - -
+
 ## 0.228.3 - 2025-05-09
 #### Bug Fixes
 - nonce manager (#1053) - (356effd) - Chris Smith

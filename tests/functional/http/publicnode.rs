@@ -147,6 +147,15 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:10", "0xa")
         .await;
 
+    // Optimism Sepolia
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:11155420",
+        "0xaa37dc",
+    )
+    .await;
+
     // Arbitrum One
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
@@ -180,6 +189,19 @@ async fn publicnode_provider(ctx: &mut ServerContext) {
         &provider,
         "eip155:1301",
         "0x515",
+    )
+    .await;
+
+    // Sonic Mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:146", "0x92")
+        .await;
+
+    // Sonic Testnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:57054",
+        "0xdede",
     )
     .await;
 }

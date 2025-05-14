@@ -69,7 +69,6 @@ For passing `Exact provider request` and disabled cache tests you need to provid
 $ docker build . --tag rpc-proxy:
 $ docker run -p 3000:3000 \
     -e RPC_PROXY_POKT_PROJECT_ID=<some_id> \
-    -e RPC_PROXY_INFURA_PROJECT_ID=<some_id> \
     -e RPC_PROXY_QUICKNODE_API_TOKENS=<JSON> \
     -e RPC_PROXY_ZERION_API_KEY=<some_id> \
     -e RPC_PROXY_REGISTRY_API_URL=<registry_url> \
@@ -83,7 +82,6 @@ If you need to test with registry caching activated, you can use `docker-compose
 
 ```console
 $ RPC_PROXY_POKT_PROJECT_ID=<some_id> \
-  RPC_PROXY_INFURA_PROJECT_ID=<some_id> \
   RPC_PROXY_QUICKNODE_API_TOKENS=<JSON> \
   RPC_PROXY_REGISTRY_API_AUTH_TOKEN=<token> \
   docker-compose up

@@ -14,6 +14,7 @@ Chain name with associated `chainId` query param to use.
 | Binance Smart Chain Testnet <sup>[1](#footnote1)</sup>   | eip155:97            |
 | Gnosis Chain                                             | eip155:100           |
 | Polygon                                                  | eip155:137           |
+| Sonic                                                    | eip155:146           |
 | zkSync Era Sepolia Testnet <sup>[1](#footnote1)</sup>    | eip155:300           |
 | zkSync Era                                               | eip155:324           |
 | Polygon Zkevm                                            | eip155:1101          |
@@ -33,6 +34,7 @@ Chain name with associated `chainId` query param to use.
 | Celo                                                     | eip155:42220         |
 | Avalanche Fuji Testnet <sup>[1](#footnote1)</sup>        | eip155:43113         |
 | Avalanche C-Chain                                        | eip155:43114         |
+| Sonic Testnet <sup>[1](#footnote1)</sup>                 | eip155:57054         |
 | Linea <sup>[1](#footnote1)</sup>                         | eip155:59144         |
 | Polygon Amoy <sup>[1](#footnote1)</sup>                  | eip155:80002         |
 | Berachain Bepolia <sup>[1](#footnote)</sup>              | eip155:80069         |
@@ -76,9 +78,4 @@ WebSocket RPC **is not recommended for production use**, and may be removed in t
 | Network            | Chain ID        |
 |--------------------|-----------------|
 | Ethereum           | eip155:1        |
-| Optimism           | eip155:10       |
-| Arbitrum           | eip155:42161    |
-| Arbitrum Sepolia   | eip155:421614   |
 | Zora               | eip155:7777777  |
-| Ethereum Sepolia   | eip155:11155111 |
-| Optimism Sepolia   | eip155:11155420 |

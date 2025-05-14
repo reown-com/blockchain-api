@@ -73,7 +73,6 @@ mod coinbase;
 mod drpc;
 mod dune;
 mod getblock;
-mod infura;
 mod mantle;
 mod meld;
 pub mod mock_alto;
@@ -97,7 +96,7 @@ mod zksync;
 mod zora;
 
 pub use {
-    allnodes::AllnodesProvider,
+    allnodes::{AllnodesProvider, AllnodesWsProvider},
     arbitrum::ArbitrumProvider,
     aurora::AuroraProvider,
     base::BaseProvider,
@@ -106,7 +105,6 @@ pub use {
     drpc::DrpcProvider,
     dune::DuneProvider,
     getblock::GetBlockProvider,
-    infura::{InfuraProvider, InfuraWsProvider},
     mantle::MantleProvider,
     meld::MeldProvider,
     monad::MonadProvider,
@@ -141,7 +139,6 @@ pub struct ProvidersConfig {
     /// Redis address for provider's responses caching
     pub cache_redis_addr: Option<String>,
 
-    pub infura_project_id: String,
     pub pokt_project_id: String,
     pub quicknode_api_tokens: String,
 
@@ -664,7 +661,6 @@ impl ProviderRepository {
 pub enum ProviderKind {
     Aurora,
     Arbitrum,
-    Infura,
     Pokt,
     Binance,
     Bungee,
@@ -701,7 +697,6 @@ impl Display for ProviderKind {
             match self {
                 ProviderKind::Aurora => "Aurora",
                 ProviderKind::Arbitrum => "Arbitrum",
-                ProviderKind::Infura => "Infura",
                 ProviderKind::Pokt => "Pokt",
                 ProviderKind::Binance => "Binance",
                 ProviderKind::Wemix => "Wemix",
@@ -739,7 +734,6 @@ impl ProviderKind {
         match s {
             "Aurora" => Some(Self::Aurora),
             "Arbitrum" => Some(Self::Arbitrum),
-            "Infura" => Some(Self::Infura),
             "Pokt" => Some(Self::Pokt),
             "Binance" => Some(Self::Binance),
             "Bungee" => Some(Self::Bungee),
