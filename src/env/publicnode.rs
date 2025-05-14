@@ -198,6 +198,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:146".into(),
             ("sonic-rpc".into(), Weight::new(Priority::Normal).unwrap()),
         ),
+        // Optimism Sepolia
+        (
+            "eip155:11155420".into(),
+            (
+                "optimism-sepolia-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
         // Sonic Testnet
         (
             "eip155:57054".into(),

@@ -103,11 +103,12 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ("optimism".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Optimism Sepolia
+        // TODO: Temporary disabled due to issues with the provider
         (
             "eip155:11155420".into(),
             (
                 "optimism-sepolia-testnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                Weight::new(Priority::Disabled).unwrap(),
             ),
         ),
         // Arbitrum
