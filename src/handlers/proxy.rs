@@ -71,8 +71,8 @@ pub async fn rpc_call(
     if query_params.session_id.is_some() {
         let provider_kind = match chain_id.as_str() {
             "eip155:10" => Some(ProviderKind::Quicknode), // Optimism
-            "eip155:8453" => Some(ProviderKind::Pokt),    // Base
-            "eip155:42161" => Some(ProviderKind::Pokt),   // Arbitrum One
+            "eip155:8453" => Some(ProviderKind::Publicnode), // Base
+            "eip155:42161" => Some(ProviderKind::Publicnode), // Arbitrum One
             _ => {
                 debug!(
                     "Requested sessionId for chain {chain_id} but no hardcoded provider was configured"
