@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.230.2 - 2025-05-14
+#### Bug Fixes
+- **(rpc)** using the Publicnode provider when session was provided (#1070) - (c193c90) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.230.1 - 2025-05-13
 #### Bug Fixes
 - **(terraform)** updating the RDS engine version (#1064) - (e328752) - Max Kalashnikoff | maksy.eth
