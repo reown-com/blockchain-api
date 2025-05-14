@@ -52,6 +52,8 @@ Chain name with associated `chainId` query param to use.
 | Zora Sepolia <sup>[1](#footnote1)</sup>                  | eip155:999999999     |
 | Aurora <sup>[1](#footnote1)</sup>                        | eip155:1313161554    |
 | Aurora Testnet <sup>[1](#footnote1)</sup>                | eip155:1313161555    |
+| edeXa Mainnet <sup>[1](#footnote1)</sup>                 | eip155:5424          |
+| edeXa Testnet <sup>[1](#footnote1)</sup>                 | eip155:1995          |
 | Near Mainnet                                             | near:mainnet         |
 
 ### Solana

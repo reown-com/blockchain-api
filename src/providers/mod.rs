@@ -72,6 +72,7 @@ mod bungee;
 mod coinbase;
 mod drpc;
 mod dune;
+mod edexa;
 mod getblock;
 mod infura;
 mod mantle;
@@ -105,6 +106,7 @@ pub use {
     bungee::BungeeProvider,
     drpc::DrpcProvider,
     dune::DuneProvider,
+    edexa::EdexaProvider,
     getblock::GetBlockProvider,
     infura::{InfuraProvider, InfuraWsProvider},
     mantle::MantleProvider,
@@ -691,6 +693,7 @@ pub enum ProviderKind {
     Allnodes,
     Meld,
     Monad,
+    Edexa,
 }
 
 impl Display for ProviderKind {
@@ -728,6 +731,7 @@ impl Display for ProviderKind {
                 ProviderKind::Allnodes => "Allnodes",
                 ProviderKind::Meld => "Meld",
                 ProviderKind::Monad => "Monad",
+                ProviderKind::Edexa => "edeXa",
             }
         )
     }
@@ -766,6 +770,7 @@ impl ProviderKind {
             "Allnodes" => Some(Self::Allnodes),
             "Meld" => Some(Self::Meld),
             "Monad" => Some(Self::Monad),
+            "edeXa" => Some(Self::Edexa),
             _ => None,
         }
     }
