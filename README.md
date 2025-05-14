@@ -1,22 +1,22 @@
 # Blockchain API
 
-[📚 Documentation](https://docs.walletconnect.com/cloud/blockchain-api)
+[📚 Documentation](https://docs.reown.com/cloud/blockchain-api)
 
 Blockchain RPC proxy for interacting with multiple EVM and non-EVM blockchains. Also offers higher-levels functions such as ENS resolution and transaction history. We do not run our own blockchain RPC nodes but instead proxy to and load balance across other popular RPC providers.
 
-Not to be confused with the [WalletConnect Relay](https://docs.walletconnect.com/cloud/relay).
+Not to be confused with the [Reown Relay](https://docs.reown.com/cloud/relay).
 
 ## Usage
 
-Endpoint: `https://rpc.walletconnect.com/v1?chainId=eip155:1&projectId=<your-project-id>`
+Endpoint: `https://rpc.walletconnect.org/v1?chainId=eip155:1&projectId=<your-project-id>`
 
 For example:
 
 ```bash
-curl -X POST "https://rpc.walletconnect.com/v1?chainId=eip155:1&projectId=<your-project-id>" --data '{"id":"1","jsonrpc":"2.0","method":"eth_chainId","params":[]}'
+curl -X POST "https://rpc.walletconnect.org/v1?chainId=eip155:1&projectId=<your-project-id>" --data '{"id":"1","jsonrpc":"2.0","method":"eth_chainId","params":[]}'
 ```
 
-Obtain a `projectId` from <https://cloud.walletconnect.com>
+Obtain a `projectId` from <https://cloud.reown.com>
 
 See [SUPPORTED_CHAINS.md](./SUPPORTED_CHAINS.md) for which chains we support and which `chainId` to use.
 

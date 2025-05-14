@@ -373,7 +373,7 @@ fn get_rpc_url(
     source: MessageSource,
     session_id: Option<String>,
 ) -> Result<Url, CryptoUitlsError> {
-    let mut provider = Url::parse("https://rpc.walletconnect.com/v1").map_err(|e| {
+    let mut provider = Url::parse("https://rpc.walletconnect.org/v1").map_err(|e| {
         CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e))
     })?;
     provider.query_pairs_mut().append_pair("chainId", chain_id);

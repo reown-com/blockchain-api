@@ -12,7 +12,7 @@ on:
         description: 'the URL of the environment'
         required: true
         type: string
-        default: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.com
+        default: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.org
 
 permissions:
   contents: read
