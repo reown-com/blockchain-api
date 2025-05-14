@@ -78,9 +78,4 @@ WebSocket RPC **is not recommended for production use**, and may be removed in t
 | Network            | Chain ID        |
 |--------------------|-----------------|
 | Ethereum           | eip155:1        |
-| Optimism           | eip155:10       |
-| Arbitrum           | eip155:42161    |
-| Arbitrum Sepolia   | eip155:421614   |
 | Zora               | eip155:7777777  |
-| Ethereum Sepolia   | eip155:11155111 |
-| Optimism Sepolia   | eip155:11155420 |

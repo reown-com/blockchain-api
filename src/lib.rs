@@ -29,11 +29,12 @@ use {
     http::Request,
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
-        AllnodesProvider, ArbitrumProvider, AuroraProvider, BaseProvider, BinanceProvider,
-        DrpcProvider, DuneProvider, GetBlockProvider, MantleProvider, MonadProvider, MorphProvider,
-        NearProvider, OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider,
-        QuicknodeProvider, SolScanProvider, SyndicaProvider, UnichainProvider, WemixProvider,
-        ZKSyncProvider, ZerionProvider, ZoraProvider, ZoraWsProvider,
+        AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
+        BinanceProvider, DrpcProvider, DuneProvider, GetBlockProvider, MantleProvider,
+        MonadProvider, MorphProvider, NearProvider, OdysseyProvider, PoktProvider,
+        ProviderRepository, PublicnodeProvider, QuicknodeProvider, SolScanProvider,
+        SyndicaProvider, UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider,
+        ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -541,6 +542,9 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
         ));
     };
 
+    providers.add_ws_provider::<AllnodesWsProvider, AllnodesConfig>(AllnodesConfig::new(
+        config.allnodes_api_key.clone(),
+    ));
     providers.add_ws_provider::<ZoraWsProvider, ZoraConfig>(ZoraConfig::default());
 
     providers.add_balance_provider::<ZerionProvider, ZerionConfig>(
