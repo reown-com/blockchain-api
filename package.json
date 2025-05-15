@@ -7,7 +7,7 @@
     "format": "prettier --config integration/.prettierrc --write '*.{json,js}' 'integration/**/*.{js,ts}' '.github/**/*.{yml,yaml}'",
     "lint": "eslint --max-warnings=0 integration && prettier --config integration/.prettierrc --check '*.{json,js}' 'integration/**/*.{js,ts}'"
   },
-  "author": "WalletConnect, Inc. <walletconnect.com>",
+  "author": "reown inc. <reown.com>",
   "license": "Apache-2.0",
   "eslintConfig": {
     "root": true,
