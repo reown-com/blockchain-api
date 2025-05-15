@@ -93,6 +93,9 @@ pub enum ExchangeError {
     #[error("Get pay url error: {0}")]
     GetPayUrlError(String),
 
+    #[error("Feature not enabled: {0}")]
+    FeatureNotEnabled(String),
+
     #[error("Internal error")]
     InternalError(String),
 }
@@ -156,4 +159,21 @@ pub fn get_supported_exchanges(asset: Option<String>) -> Result<Vec<Exchange>, E
 
 pub fn get_exchange_by_id(id: &str) -> Option<Exchange> {
     ExchangeType::from_id(id).map(|e| e.to_exchange())
+}
+
+pub async fn is_feature_enabled_for_project_id(
+    state: State<Arc<AppState>>,
+    project_id: &str,
+) -> Result<(), ExchangeError> {
+    let project = state.registry.project_data(project_id).await.map_err(|e| {
+        ExchangeError::InternalError(e.to_string())
+    })?;
+
+    if project.project_data.is_enabled {
+        Ok(())
+    } else {
+        Err(ExchangeError::FeatureNotEnabled(
+            "Project is not enabled".to_string(),
+        ))
+    }
 }
