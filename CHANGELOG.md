@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.232.0 - 2025-05-15
+#### Features
+- **(providers)** removing GetBlock RPC provider (#1066) - (dd70090) - Max Kalashnikoff | maksy.eth
+- removing Grafana SLA workspace support (#1071) - (c63bf9d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.231.0 - 2025-05-14
 #### Features
 - ws provider fix (#1069) - (b7b59df) - Max Kalashnikoff | maksy.eth
