@@ -42,6 +42,23 @@ static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
         ), // USDC on Arbitrum
         ("eip155:1/slip44:60", "ETH"), // Native ETH
         ("solana:4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ/slip44:501", "SOL"), // Native SOL
+        (
+            "eip155:1/erc20:0xdAC17F958D2ee523a2206206994597C13D831ec7",
+            "USDT",
+        ), // USDT on Ethereum
+        (
+            "eip155:42161/erc20:0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+            "USDT",
+        ), // USDT on Arbitrum
+        (
+            "eip155:10/erc20:0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
+            "USDT",
+        ), // USDT on Optimism
+        (
+            "eip155:137/erc20:0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+            "USDT",
+        ), // USDT on Polygon
+      
     ])
 });
 

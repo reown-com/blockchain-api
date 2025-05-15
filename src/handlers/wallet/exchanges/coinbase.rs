@@ -30,12 +30,37 @@ static CAIP19_TO_COINBASE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
             "eip155:8453/erc20:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
             "USDC",
         ), // USDC on Base
+        (
+            "eip155:10/erc20:0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
+            "USDC",
+        ), // USDC on Optimism
+        (
+            "eip155:42161/erc20:0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+            "USDC",
+        ), // USDC on Arbitrum
+        (
+            "eip155:137/erc20:0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+            "USDC",
+        ), // USDC on Polygon
+        (
+            "eip155:1/erc20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "USDC",
+        ), // USDC on Ethereum
+        ("eip155:1/slip44:60", "ETH"), // Native ETH
+        (
+            "eip155:1/erc20:0xdAC17F958D2ee523a2206206994597C13D831ec7",
+            "USDT",
+        ), // USDT on Ethereum
     ])
 });
 
 static CHAIN_ID_TO_COINBASE_NETWORK: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
     HashMap::from([
         ("eip155:8453", "base"), // Base
+        ("eip155:10", "optimism"), // Optimism
+        ("eip155:42161", "arbitrum"), // Arbitrum
+        ("eip155:137", "polygon"), // Polygon
+        ("eip155:1", "ethereum"), // Ethereum
     ])
 });
 
