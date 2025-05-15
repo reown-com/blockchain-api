@@ -16,9 +16,9 @@ use {
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
-    allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, drpc::*, dune::*, getblock::*,
-    mantle::*, monad::*, morph::*, near::*, odyssey::*, pokt::*, publicnode::*, quicknode::*,
-    server::*, solscan::*, syndica::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
+    allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, drpc::*, dune::*, mantle::*,
+    monad::*, morph::*, near::*, odyssey::*, pokt::*, publicnode::*, quicknode::*, server::*,
+    solscan::*, syndica::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
 };
 mod allnodes;
 mod arbitrum;
@@ -27,7 +27,6 @@ mod base;
 mod binance;
 mod drpc;
 mod dune;
-mod getblock;
 mod mantle;
 mod monad;
 mod morph;
@@ -186,7 +185,6 @@ mod test {
             ("RPC_PROXY_PROVIDER_COINBASE_APP_ID", "COINBASE_APP_ID"),
             ("RPC_PROXY_PROVIDER_ONE_INCH_API_KEY", "ONE_INCH_API_KEY"),
             ("RPC_PROXY_PROVIDER_ONE_INCH_REFERRER", "ONE_INCH_REFERRER"),
-            ("RPC_PROXY_PROVIDER_GETBLOCK_ACCESS_TOKENS", "{}"),
             ("RPC_PROXY_PROVIDER_PIMLICO_API_KEY", "PIMLICO_API_KEY"),
             (
                 "RPC_PROXY_PROVIDER_SOLSCAN_API_V2_TOKEN",
@@ -319,7 +317,6 @@ mod test {
                     coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),
                     one_inch_api_key: Some("ONE_INCH_API_KEY".to_owned()),
                     one_inch_referrer: Some("ONE_INCH_REFERRER".to_owned()),
-                    getblock_access_tokens: Some("{}".to_owned()),
                     pimlico_api_key: "PIMLICO_API_KEY".to_string(),
                     solscan_api_v2_token: "SOLSCAN_API_V2_TOKEN".to_string(),
                     bungee_api_key: "BUNGEE_API_KEY".to_string(),
