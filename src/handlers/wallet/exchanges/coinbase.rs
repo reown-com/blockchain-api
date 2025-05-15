@@ -60,13 +60,12 @@ static CAIP19_TO_COINBASE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
 
 static CHAIN_ID_TO_COINBASE_NETWORK: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
     HashMap::from([
-        ("eip155:8453", "base"), // Base
-        ("eip155:10", "optimism"), // Optimism
-        ("eip155:42161", "arbitrum"), // Arbitrum
-        ("eip155:137", "polygon"), // Polygon
-        ("eip155:1", "ethereum"), // Ethereum
+        ("eip155:8453", "base"),                            // Base
+        ("eip155:10", "optimism"),                          // Optimism
+        ("eip155:42161", "arbitrum"),                       // Arbitrum
+        ("eip155:137", "polygon"),                          // Polygon
+        ("eip155:1", "ethereum"),                           // Ethereum
         ("solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", "SOL"), // Solana
-
     ])
 });
 
