@@ -51,6 +51,10 @@ static CAIP19_TO_COINBASE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
             "eip155:1/erc20:0xdAC17F958D2ee523a2206206994597C13D831ec7",
             "USDT",
         ), // USDT on Ethereum
+        (
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/token:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            "USDC",
+        ), // USDC on Solana
     ])
 });
 
@@ -61,6 +65,8 @@ static CHAIN_ID_TO_COINBASE_NETWORK: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
         ("eip155:42161", "arbitrum"), // Arbitrum
         ("eip155:137", "polygon"), // Polygon
         ("eip155:1", "ethereum"), // Ethereum
+        ("solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", "SOL"), // Solana
+
     ])
 });
 
