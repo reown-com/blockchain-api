@@ -8,13 +8,6 @@ variable "grafana_auth" {
   sensitive   = true
 }
 
-variable "sla_grafana_auth" {
-  description = "The API Token for the SLA Grafana instance"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
 #-------------------------------------------------------------------------------
 # Application
 
