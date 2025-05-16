@@ -14,6 +14,7 @@ use {
     },
     serde::{Deserialize, Serialize},
     std::sync::Arc,
+    tracing::info,
     wc::future::FutureExt,
 };
 
@@ -22,6 +23,8 @@ use {
 pub struct BundlerQueryParams {
     pub project_id: String,
     pub chain_id: String,
+    // matching the name of the query param Universal Provider passes: https://github.com/WalletConnect/walletconnect-monorepo/blob/475f2813b6f0fe0d3dc01eeaee9182e331c56daa/providers/universal-provider/src/providers/eip155.ts#L250
+    pub bundler: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -52,17 +55,22 @@ async fn handler_internal(
         .validate_project_access_and_quota(&query_params.project_id.clone())
         .await?;
     let evm_chain_id = disassemble_caip2(&query_params.chain_id)?.1;
-    let result = state
-        .providers
-        .bundler_ops_provider
-        .bundler_rpc_call(
-            &evm_chain_id,
-            request_payload.id,
-            request_payload.jsonrpc,
-            &request_payload.method,
-            request_payload.params,
-        )
-        .await?;
+    info!("bundler endpoint bundler: {:?}", query_params.bundler);
+    let result = match query_params.bundler {
+        None | Some(_) => {
+            state
+                .providers
+                .bundler_ops_provider
+                .bundler_rpc_call(
+                    &evm_chain_id,
+                    request_payload.id,
+                    request_payload.jsonrpc,
+                    &request_payload.method,
+                    request_payload.params,
+                )
+                .await?
+        }
+    };
 
     Ok(Json(result).into_response())
 }
