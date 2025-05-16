@@ -41,7 +41,31 @@ static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
             "USDC",
         ), // USDC on Arbitrum
         ("eip155:1/slip44:60", "ETH"), // Native ETH
-        ("solana:4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ/slip44:501", "SOL"), // Native SOL
+        ("solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/slip44:501", "SOL"), // Native SOL
+        (
+            "eip155:1/erc20:0xdAC17F958D2ee523a2206206994597C13D831ec7",
+            "USDT",
+        ), // USDT on Ethereum
+        (
+            "eip155:42161/erc20:0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+            "USDT",
+        ), // USDT on Arbitrum
+        (
+            "eip155:10/erc20:0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
+            "USDT",
+        ), // USDT on Optimism
+        (
+            "eip155:137/erc20:0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+            "USDT",
+        ), // USDT on Polygon
+        (
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/token:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            "USDC",
+        ), // USDC on Solana
+        (
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/token:Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+            "USDT",
+        ), // USDT on Solana
     ])
 });
 
@@ -53,7 +77,7 @@ static CHAIN_ID_TO_BINANCE_NETWORK: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
         ("eip155:8453", "BASE"),                            // Base
         ("eip155:42161", "ARBITRUM"),                       // Arbitrum
         ("eip155:10", "OPTIMISM"),                          // Optimism
-        ("solana:4sGjMW1sUnHzSxGspuhpqLDx6wiyjNtZ", "SOL"), // Solana
+        ("solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", "SOL"), // Solana
     ])
 });
 
