@@ -1,5 +1,7 @@
 use {
-    crate::handlers::wallet::exchanges::{get_supported_exchanges, Exchange},
+    crate::handlers::wallet::exchanges::{
+        get_supported_exchanges, is_feature_enabled_for_project_id, Exchange,
+    },
     crate::{
         handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
         state::AppState,
@@ -67,11 +69,14 @@ impl GetExchangesError {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
+    project_id: String,
     connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     query: Query<QueryParams>,
     Json(request): Json<GetExchangesRequest>,
 ) -> Result<GetExchangesResponse, GetExchangesError> {
+    is_feature_enabled_for_project_id(state.clone(), &project_id)
+        .map_err(|e| GetExchangesError::ValidationError(e.to_string()))?;
     handler_internal(state, connect_info, headers, query, request)
         .with_metrics(HANDLER_TASK_METRICS.with_name("pay_get_exchanges"))
         .await

@@ -121,13 +121,14 @@ module "ecs" {
   testing_project_id = var.testing_project_id
 
   # Exchanges
-  coinbase_project_id = var.coinbase_project_id
-  coinbase_key_name   = var.coinbase_key_name
-  coinbase_key_secret = var.coinbase_key_secret
-  binance_client_id   = var.binance_client_id
-  binance_token       = var.binance_token
-  binance_key         = var.binance_key
-  binance_host        = var.binance_host
+  coinbase_project_id     = var.coinbase_project_id
+  coinbase_key_name       = var.coinbase_key_name
+  coinbase_key_secret     = var.coinbase_key_secret
+  binance_client_id       = var.binance_client_id
+  binance_token           = var.binance_token
+  binance_key             = var.binance_key
+  binance_host            = var.binance_host
+  pay_allowed_project_ids = var.pay_allowed_project_ids
 
   depends_on = [aws_iam_role.application_role]
 }
