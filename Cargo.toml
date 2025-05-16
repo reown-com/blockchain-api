@@ -115,6 +115,7 @@ ed25519-dalek = "2.1"
 # System CPU and Memory metrics
 sysinfo = "0.30"
 eyre = "0.6.12"
+wiremock = "0.6.3"
 
 [dev-dependencies]
 jsonrpc = "0.18.0"

@@ -347,3 +347,6 @@ _check-string-in-set target set options='':
       exit 1
     fi
   fi
+
+docker:
+  docker compose up -d postgres redis
