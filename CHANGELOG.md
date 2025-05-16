@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.233.0 - 2025-05-16
+#### Features
+- enable more pairs for exchanges (#1072) - (30d39ff) - Luka Isailovic
+
+- - -
+
 ## 0.232.1 - 2025-05-15
 #### Bug Fixes
 - changing domains from com to org and reown.com (#1067) - (8e3924f) - Max Kalashnikoff | maksy.eth
