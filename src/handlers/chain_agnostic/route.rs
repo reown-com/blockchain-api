@@ -85,6 +85,7 @@ pub async fn handler_v1(
         .map(|Json(j)| Json(j.into()))
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PrepareResponseV1 {
