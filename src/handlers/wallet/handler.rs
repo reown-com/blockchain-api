@@ -244,6 +244,7 @@ async fn handle_rpc(
         PAY_GET_EXCHANGES => serde_json::to_value(
             &get_exchanges::handler(
                 state,
+                project_id,
                 connect_info,
                 headers,
                 Query(get_exchanges::QueryParams {
@@ -273,6 +274,7 @@ async fn handle_rpc(
         PAY_GET_EXCHANGE_BUY_STATUS => serde_json::to_value(
             &get_exchange_buy_status::handler(
                 state,
+                project_id,
                 connect_info,
                 headers,
                 Query(get_exchange_buy_status::QueryParams {

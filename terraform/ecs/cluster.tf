@@ -145,6 +145,7 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_EXCHANGES_BINANCE_TOKEN", value = var.binance_token },
         { name = "RPC_PROXY_EXCHANGES_BINANCE_KEY", value = var.binance_key },
         { name = "RPC_PROXY_EXCHANGES_BINANCE_HOST", value = var.binance_host },
+        { name = "RPC_PROXY_EXCHANGES_ALLOWED_PROJECT_IDS", value = var.pay_allowed_project_ids },
 
 
       ],

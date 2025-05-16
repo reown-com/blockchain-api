@@ -485,3 +485,10 @@ variable "binance_host" {
   sensitive   = true
   default     = ""
 }
+
+variable "pay_allowed_project_ids" {
+  description = "Allowed project ids for pay with exchange"
+  type        = string
+  sensitive   = false
+  default     = ""
+}
