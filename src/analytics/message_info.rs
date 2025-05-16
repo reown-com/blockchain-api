@@ -53,7 +53,7 @@ impl MessageInfo {
             timestamp: wc::analytics::time::now(),
 
             project_id: query_params.project_id.to_owned(),
-            chain_id: query_params.chain_id.to_lowercase(),
+            chain_id: query_params.chain_id.clone(),
             method: rpc_method,
             source: query_params
                 .source

@@ -30,7 +30,7 @@ async fn handler_internal(
         .validate_project_access_and_quota(&query_params.project_id)
         .await?;
 
-    let chain_id = query_params.chain_id.to_lowercase();
+    let chain_id = query_params.chain_id.clone();
     let provider = state
         .providers
         .get_ws_provider_for_chain_id(&chain_id)

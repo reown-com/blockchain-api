@@ -75,7 +75,16 @@ Chain name with associated `chainId` query param to use.
 
 WebSocket RPC **is not recommended for production use**, and may be removed in the future.
 
+### Ethereum
+
 | Network            | Chain ID        |
 |--------------------|-----------------|
 | Ethereum           | eip155:1        |
 | Zora               | eip155:7777777  |
+
+### Solana
+
+| Network                               | Chain ID                                |
+|---------------------------------------|-----------------------------------------|
+| Solana Mainnet                        | solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp |
+| Solana Devnet                         | solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1 |
