@@ -264,6 +264,12 @@ pub enum RpcError {
 
     #[error("Join error: {0}")]
     JoinError(#[from] tokio::task::JoinError),
+
+    #[error("Unsupported bundler name (URL parse error): {0}")]
+    UnsupportedBundlerNameUrlParseError(url::ParseError),
+
+    #[error("Unsupported bundler name: {0}")]
+    UnsupportedBundlerName(String),
 }
 
 impl IntoResponse for RpcError {
@@ -283,6 +289,22 @@ impl IntoResponse for RpcError {
                     Json(new_error_response(
                         "currency".to_string(),
                         format!("Unsupported currency: {error_message}."),
+                    )),
+                )
+                    .into_response(),
+            Self::UnsupportedBundlerName(error_message) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(new_error_response(
+                        "bundler_name".to_string(),
+                        format!("Unsupported bundler name: {error_message}."),
+                    )),
+                )
+                    .into_response(),
+            Self::UnsupportedBundlerNameUrlParseError(error_message) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(new_error_response(
+                        "bundler_name".to_string(),
+                        format!("Unsupported bundler name: {error_message}."),
                     )),
                 )
                     .into_response(),
