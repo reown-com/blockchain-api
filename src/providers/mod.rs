@@ -115,7 +115,7 @@ pub use {
     publicnode::PublicnodeProvider,
     quicknode::QuicknodeProvider,
     solscan::SolScanProvider,
-    syndica::SyndicaProvider,
+    syndica::{SyndicaProvider, SyndicaWsProvider},
     tenderly::TenderlyProvider,
     unichain::UnichainProvider,
     wemix::WemixProvider,

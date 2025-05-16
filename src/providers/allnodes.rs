@@ -58,7 +58,7 @@ impl RpcWsProvider for AllnodesWsProvider {
     ) -> RpcResult<Response> {
         let chain = &self
             .supported_chains
-            .get(&query_params.chain_id.to_lowercase())
+            .get(&query_params.chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
         let project_id = query_params.project_id;
