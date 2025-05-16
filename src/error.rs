@@ -108,7 +108,7 @@ pub enum RpcError {
     InvalidScheme,
 
     #[error(transparent)]
-    AxumTungstenite(#[from] axum_tungstenite::Error),
+    AxumTungstenite(Box<axum_tungstenite::Error>),
 
     #[error(transparent)]
     RateLimited(#[from] wc::rate_limit::RateLimitExceeded),
