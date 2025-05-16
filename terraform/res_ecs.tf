@@ -63,25 +63,24 @@ module "ecs" {
   postgres_url                       = module.postgres.database_url
 
   # Providers
-  pokt_project_id        = var.pokt_project_id
-  quicknode_api_tokens   = var.quicknode_api_tokens
-  zerion_api_key         = var.zerion_api_key
-  coinbase_api_key       = var.coinbase_api_key
-  coinbase_app_id        = var.coinbase_app_id
-  one_inch_api_key       = var.one_inch_api_key
-  one_inch_referrer      = var.one_inch_referrer
-  getblock_access_tokens = var.getblock_access_tokens
-  pimlico_api_key        = var.pimlico_api_key
-  solscan_api_v2_token   = var.solscan_api_v2_token
-  bungee_api_key         = var.bungee_api_key
-  tenderly_api_key       = var.tenderly_api_key
-  tenderly_account_id    = var.tenderly_account_id
-  tenderly_project_id    = var.tenderly_project_id
-  dune_api_key           = var.dune_api_key
-  syndica_api_key        = var.syndica_api_key
-  allnodes_api_key       = var.allnodes_api_key
-  meld_api_key           = var.meld_api_key
-  meld_api_url           = var.meld_api_url
+  pokt_project_id      = var.pokt_project_id
+  quicknode_api_tokens = var.quicknode_api_tokens
+  zerion_api_key       = var.zerion_api_key
+  coinbase_api_key     = var.coinbase_api_key
+  coinbase_app_id      = var.coinbase_app_id
+  one_inch_api_key     = var.one_inch_api_key
+  one_inch_referrer    = var.one_inch_referrer
+  pimlico_api_key      = var.pimlico_api_key
+  solscan_api_v2_token = var.solscan_api_v2_token
+  bungee_api_key       = var.bungee_api_key
+  tenderly_api_key     = var.tenderly_api_key
+  tenderly_account_id  = var.tenderly_account_id
+  tenderly_project_id  = var.tenderly_project_id
+  dune_api_key         = var.dune_api_key
+  syndica_api_key      = var.syndica_api_key
+  allnodes_api_key     = var.allnodes_api_key
+  meld_api_key         = var.meld_api_key
+  meld_api_url         = var.meld_api_url
 
   # Project Registry
   registry_api_endpoint   = var.registry_api_endpoint

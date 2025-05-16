@@ -218,7 +218,7 @@ async fn handler_internal(
         // TODO refactor to call internal proxy function directly
         let provider = ProviderBuilder::default().on_http(
             format!(
-                "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",
+                "https://rpc.walletconnect.org/v1?chainId={}&projectId={}&source={}",
                 chain_id.caip2_identifier(),
                 project_id,
                 MessageSource::WalletPrepareCalls,
@@ -267,7 +267,7 @@ async fn handler_internal(
 
         // TODO refactor to use bundler_rpc_call directly: https://github.com/WalletConnect/blockchain-api/blob/8be3ca5b08dec2387ee2c2ffcb4b7ca739443bcb/src/handlers/bundler.rs#L62
         let bundler_url = format!(
-            "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
+            "https://rpc.walletconnect.org/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
             chain_id.caip2_identifier(),
             project_id,
         )

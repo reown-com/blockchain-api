@@ -8,13 +8,6 @@ variable "grafana_auth" {
   sensitive   = true
 }
 
-variable "sla_grafana_auth" {
-  description = "The API Token for the SLA Grafana instance"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
 #-------------------------------------------------------------------------------
 # Application
 
@@ -125,12 +118,6 @@ variable "one_inch_api_key" {
 
 variable "one_inch_referrer" {
   description = "The referrer address for 1inch"
-  type        = string
-  sensitive   = true
-}
-
-variable "getblock_access_tokens" {
-  description = "Mapping of API access tokens for GetBlock in JSON format"
   type        = string
   sensitive   = true
 }

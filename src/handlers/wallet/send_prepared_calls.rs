@@ -349,7 +349,7 @@ async fn handler_internal(
         // TODO refactor to call internal proxy function directly
         let provider = ProviderBuilder::default().on_http(
             format!(
-                "https://rpc.walletconnect.com/v1?chainId={}&projectId={}&source={}",
+                "https://rpc.walletconnect.org/v1?chainId={}&projectId={}&source={}",
                 chain_id.caip2_identifier(),
                 project_id,
                 MessageSource::WalletSendPreparedCalls,
@@ -428,7 +428,7 @@ async fn handler_internal(
         let bundler_client = BundlerClient::new(BundlerConfig::new(
             // "https://api.pimlico.io/v2/84532/rpc?apikey=pim_CNm9dEo4QHQAJ3fU3RyPzG"
             format!(
-                "https://rpc.walletconnect.com/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
+                "https://rpc.walletconnect.org/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
                 chain_id.caip2_identifier(),
                 project_id,
             )

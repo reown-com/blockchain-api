@@ -72,7 +72,6 @@ mod bungee;
 mod coinbase;
 mod drpc;
 mod dune;
-mod getblock;
 mod mantle;
 mod meld;
 pub mod mock_alto;
@@ -96,7 +95,7 @@ mod zksync;
 mod zora;
 
 pub use {
-    allnodes::AllnodesProvider,
+    allnodes::{AllnodesProvider, AllnodesWsProvider},
     arbitrum::ArbitrumProvider,
     aurora::AuroraProvider,
     base::BaseProvider,
@@ -104,7 +103,6 @@ pub use {
     bungee::BungeeProvider,
     drpc::DrpcProvider,
     dune::DuneProvider,
-    getblock::GetBlockProvider,
     mantle::MantleProvider,
     meld::MeldProvider,
     monad::MonadProvider,
@@ -147,8 +145,6 @@ pub struct ProvidersConfig {
     pub coinbase_app_id: Option<String>,
     pub one_inch_api_key: Option<String>,
     pub one_inch_referrer: Option<String>,
-    /// GetBlock provider access tokens in JSON format
-    pub getblock_access_tokens: Option<String>,
     /// Pimlico API token key
     pub pimlico_api_key: String,
     /// SolScan API v2 token key
@@ -674,7 +670,6 @@ pub enum ProviderKind {
     Quicknode,
     Near,
     Mantle,
-    GetBlock,
     SolScan,
     Unichain,
     Morph,
@@ -711,7 +706,6 @@ impl Display for ProviderKind {
                 ProviderKind::Quicknode => "Quicknode",
                 ProviderKind::Near => "Near",
                 ProviderKind::Mantle => "Mantle",
-                ProviderKind::GetBlock => "GetBlock",
                 ProviderKind::SolScan => "SolScan",
                 ProviderKind::Unichain => "Unichain",
                 ProviderKind::Morph => "Morph",
@@ -747,7 +741,6 @@ impl ProviderKind {
             "Quicknode" => Some(Self::Quicknode),
             "Near" => Some(Self::Near),
             "Mantle" => Some(Self::Mantle),
-            "GetBlock" => Some(Self::GetBlock),
             "SolScan" => Some(Self::SolScan),
             "Unichain" => Some(Self::Unichain),
             "Morph" => Some(Self::Morph),

@@ -1,12 +1,11 @@
 [package]
 name = "rpc-proxy"
-version = "0.230.0"
+version = "0.233.0"
 edition = "2021"
 authors = [
-    "Derek <derek@walletconnect.com>",
-    "Raku <maciejrak@walletconnect.com>",
-    "Chris <chris@walletconnect.com>",
-    "Max <max@walletconnect.com>",
+    "Derek <derek@reown.com>",
+    "Chris <chris@reown.com>",
+    "Max <max@reown.com>",
 ]
 build = "build.rs"
 

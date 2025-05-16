@@ -2,6 +2,44 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.233.0 - 2025-05-16
+#### Features
+- enable more pairs for exchanges (#1072) - (30d39ff) - Luka Isailovic
+
+- - -
+
+## 0.232.1 - 2025-05-15
+#### Bug Fixes
+- changing domains from com to org and reown.com (#1067) - (8e3924f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.232.0 - 2025-05-15
+#### Features
+- **(providers)** removing GetBlock RPC provider (#1066) - (dd70090) - Max Kalashnikoff | maksy.eth
+- removing Grafana SLA workspace support (#1071) - (c63bf9d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.231.0 - 2025-05-14
+#### Features
+- ws provider fix (#1069) - (b7b59df) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.230.2 - 2025-05-14
+#### Bug Fixes
+- **(rpc)** using the Publicnode provider when session was provided (#1070) - (c193c90) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.230.1 - 2025-05-13
+#### Bug Fixes
+- **(terraform)** updating the RDS engine version (#1064) - (e328752) - Max Kalashnikoff | maksy.eth
+- coinbase transaction status (#1065) - (5346509) - Luka Isailovic
+
+- - -
+
 ## 0.230.0 - 2025-05-13
 #### Features
 - **(providers)** removing Infura RPC provider (#1063) - (6b779e1) - Max Kalashnikoff | maksy.eth

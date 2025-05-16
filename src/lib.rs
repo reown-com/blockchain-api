@@ -21,16 +21,16 @@ use {
     },
     env::{
         AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, DrpcConfig,
-        DuneConfig, GetBlockConfig, MantleConfig, MonadConfig, MorphConfig, NearConfig,
-        OdysseyConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig, SyndicaConfig,
-        UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
+        DuneConfig, MantleConfig, MonadConfig, MorphConfig, NearConfig, OdysseyConfig, PoktConfig,
+        PublicnodeConfig, QuicknodeConfig, SolScanConfig, SyndicaConfig, UnichainConfig,
+        WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
-        AllnodesProvider, ArbitrumProvider, AuroraProvider, BaseProvider, BinanceProvider,
-        DrpcProvider, DuneProvider, GetBlockProvider, MantleProvider, MonadProvider, MorphProvider,
+        AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
+        BinanceProvider, DrpcProvider, DuneProvider, MantleProvider, MonadProvider, MorphProvider,
         NearProvider, OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider,
         QuicknodeProvider, SolScanProvider, SyndicaProvider, UnichainProvider, WemixProvider,
         ZKSyncProvider, ZerionProvider, ZoraProvider, ZoraWsProvider,
@@ -534,13 +534,12 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
         config.allnodes_api_key.clone(),
     ));
     providers.add_rpc_provider::<MonadProvider, MonadConfig>(MonadConfig::default());
-
-    if let Some(getblock_access_tokens) = &config.getblock_access_tokens {
-        providers.add_rpc_provider::<GetBlockProvider, GetBlockConfig>(GetBlockConfig::new(
-            getblock_access_tokens.clone(),
-        ));
-    };
-
+    providers.add_ws_provider::<AllnodesWsProvider, AllnodesConfig>(AllnodesConfig::new(
+        config.allnodes_api_key.clone(),
+    ));
+    providers.add_ws_provider::<AllnodesWsProvider, AllnodesConfig>(AllnodesConfig::new(
+        config.allnodes_api_key.clone(),
+    ));
     providers.add_ws_provider::<ZoraWsProvider, ZoraConfig>(ZoraConfig::default());
 
     providers.add_balance_provider::<ZerionProvider, ZerionConfig>(

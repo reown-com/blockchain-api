@@ -18,7 +18,7 @@ impl AsyncTestContext for ServerContext {
         #[cfg(not(feature = "test-localhost"))]
         let server = {
             let public_addr = env::var("RPC_URL")
-                .unwrap_or("https://staging.rpc.walletconnect.com".to_owned())
+                .unwrap_or("https://staging.rpc.walletconnect.org".to_owned())
                 .parse()
                 .unwrap();
 
