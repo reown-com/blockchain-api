@@ -165,7 +165,7 @@ pub fn get_exchange_by_id(id: &str) -> Option<Exchange> {
 
 pub fn is_feature_enabled_for_project_id(
     state: State<Arc<AppState>>,
-    project_id: &str,
+    project_id: &String,
 ) -> Result<(), ExchangeError> {
     let allowed_project_ids = state
         .config
@@ -176,7 +176,7 @@ pub fn is_feature_enabled_for_project_id(
 
     debug!("allowed_project_ids: {:?}", allowed_project_ids);
 
-    if !allowed_project_ids.contains(&project_id.to_string()) {
+    if !allowed_project_ids.contains(project_id) {
         return Err(ExchangeError::FeatureNotEnabled(
             "Project is not allowed to use this feature".to_string(),
         ));
