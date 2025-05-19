@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.235.0 - 2025-05-19
+#### Features
+- **(RPC)** adding Solana RPC WebSocket support (#1073) - (da70416) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.234.0 - 2025-05-19
 #### Features
 - exchange projectid validation (#1075) - (b106c91) - Luka Isailovic
