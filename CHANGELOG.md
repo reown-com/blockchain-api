@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.234.0 - 2025-05-19
+#### Features
+- exchange projectid validation (#1075) - (b106c91) - Luka Isailovic
+
+- - -
+
 ## 0.233.1 - 2025-05-16
 #### Bug Fixes
 - log bundler name in endpoint (#1074) - (60643f7) - Chris Smith
