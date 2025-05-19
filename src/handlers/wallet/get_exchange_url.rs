@@ -1,5 +1,7 @@
 use {
-    crate::handlers::wallet::exchanges::{ExchangeError, ExchangeType, GetBuyUrlParams},
+    crate::handlers::wallet::exchanges::{
+        is_feature_enabled_for_project_id, ExchangeError, ExchangeType, GetBuyUrlParams,
+    },
     crate::{
         handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
         state::AppState,
@@ -67,6 +69,8 @@ pub async fn handler(
     query: Query<QueryParams>,
     Json(request): Json<GeneratePayUrlRequest>,
 ) -> Result<GeneratePayUrlResponse, GetExchangeUrlError> {
+    is_feature_enabled_for_project_id(state.clone(), &project_id)
+        .map_err(|e| GetExchangeUrlError::ValidationError(e.to_string()))?;
     handler_internal(state, project_id, connect_info, headers, query, request)
         .with_metrics(HANDLER_TASK_METRICS.with_name("pay_get_exchange_url"))
         .await

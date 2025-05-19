@@ -6,6 +6,7 @@ use {
     strum::IntoEnumIterator,
     strum_macros::{AsRefStr, EnumIter},
     thiserror::Error,
+    tracing::debug,
 };
 
 pub mod binance;
@@ -23,6 +24,7 @@ pub struct Config {
     pub binance_token: Option<String>,
     pub binance_key: Option<String>,
     pub binance_host: Option<String>,
+    pub allowed_project_ids: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -93,6 +95,9 @@ pub enum ExchangeError {
     #[error("Get pay url error: {0}")]
     GetPayUrlError(String),
 
+    #[error("Feature not enabled: {0}")]
+    FeatureNotEnabled(String),
+
     #[error("Internal error")]
     InternalError(String),
 }
@@ -156,4 +161,26 @@ pub fn get_supported_exchanges(asset: Option<String>) -> Result<Vec<Exchange>, E
 
 pub fn get_exchange_by_id(id: &str) -> Option<Exchange> {
     ExchangeType::from_id(id).map(|e| e.to_exchange())
+}
+
+pub fn is_feature_enabled_for_project_id(
+    state: State<Arc<AppState>>,
+    project_id: &String,
+) -> Result<(), ExchangeError> {
+    let allowed_project_ids = state
+        .config
+        .exchanges
+        .allowed_project_ids
+        .as_ref()
+        .ok_or_else(|| ExchangeError::FeatureNotEnabled("Feature is not enabled".to_string()))?;
+
+    debug!("allowed_project_ids: {:?}", allowed_project_ids);
+
+    if !allowed_project_ids.contains(project_id) {
+        return Err(ExchangeError::FeatureNotEnabled(
+            "Project is not allowed to use this feature".to_string(),
+        ));
+    }
+
+    Ok(())
 }

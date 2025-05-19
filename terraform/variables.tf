@@ -337,3 +337,9 @@ variable "binance_host" {
   default     = ""
 }
 
+variable "pay_allowed_project_ids" {
+  description = "Allowed project ids for pay with exchange"
+  type        = string
+  sensitive   = false
+  default     = ""
+}

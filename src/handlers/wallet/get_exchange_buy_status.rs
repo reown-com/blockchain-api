@@ -1,6 +1,7 @@
 use {
     crate::handlers::wallet::exchanges::{
-        BuyTransactionStatus, ExchangeError, ExchangeType, GetBuyStatusParams,
+        is_feature_enabled_for_project_id, BuyTransactionStatus, ExchangeError, ExchangeType,
+        GetBuyStatusParams,
     },
     crate::{
         handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
@@ -64,11 +65,14 @@ impl GetExchangeBuyStatusError {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
+    project_id: String,
     connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     query: Query<QueryParams>,
     Json(request): Json<GetExchangeBuyStatusRequest>,
 ) -> Result<GetExchangeBuyStatusResponse, GetExchangeBuyStatusError> {
+    is_feature_enabled_for_project_id(state.clone(), &project_id)
+        .map_err(|e| GetExchangeBuyStatusError::ValidationError(e.to_string()))?;
     handler_internal(state, connect_info, headers, query, request)
         .with_metrics(HANDLER_TASK_METRICS.with_name("pay_get_exchange_buy_status"))
         .await
