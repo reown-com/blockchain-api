@@ -12,6 +12,7 @@ use {
         Metrics,
     },
     async_trait::async_trait,
+    reqwest::StatusCode,
     serde::{Deserialize, Serialize},
     std::{sync::Arc, time::SystemTime},
     tracing::log::error,
@@ -116,7 +117,10 @@ impl OnRampMultiProvider for MeldProvider {
         if !response.status().is_success() {
             // Passing through error description for the error context
             // if user parameter is invalid (got 400 status code from the provider)
-            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+            if matches!(
+                response.status(),
+                StatusCode::BAD_REQUEST | StatusCode::UNPROCESSABLE_ENTITY
+            ) {
                 let response_error = match response.json::<MeldErrorResponse>().await {
                     Ok(response_error) => response_error.message,
                     Err(e) => {
@@ -194,7 +198,10 @@ impl OnRampMultiProvider for MeldProvider {
         if !response.status().is_success() {
             // Passing through error description for the error context
             // if user parameter is invalid (got 400 status code from the provider)
-            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+            if matches!(
+                response.status(),
+                StatusCode::BAD_REQUEST | StatusCode::UNPROCESSABLE_ENTITY
+            ) {
                 let response_error = match response.json::<MeldErrorResponse>().await {
                     Ok(response_error) => response_error.message,
                     Err(e) => {
@@ -248,7 +255,10 @@ impl OnRampMultiProvider for MeldProvider {
         if !response.status().is_success() {
             // Passing through error description for the error context
             // if user parameter is invalid (got 400 status code from the provider)
-            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+            if matches!(
+                response.status(),
+                StatusCode::BAD_REQUEST | StatusCode::UNPROCESSABLE_ENTITY
+            ) {
                 let response_error = match response.json::<MeldErrorResponse>().await {
                     Ok(response_error) => response_error.message,
                     Err(e) => {
@@ -293,7 +303,10 @@ impl OnRampMultiProvider for MeldProvider {
         if !response.status().is_success() {
             // Passing through error description for the error context
             // if user parameter is invalid (got 400 status code from the provider)
-            if response.status() == reqwest::StatusCode::BAD_REQUEST {
+            if matches!(
+                response.status(),
+                StatusCode::BAD_REQUEST | StatusCode::UNPROCESSABLE_ENTITY
+            ) {
                 let response_error = match response.json::<MeldErrorResponse>().await {
                     Ok(response_error) => response_error,
                     Err(e) => {
