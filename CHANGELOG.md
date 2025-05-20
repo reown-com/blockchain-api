@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.235.1 - 2025-05-20
+#### Bug Fixes
+- **(Meld)** proper handling of the bad request response (#1077) - (f11796f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.235.0 - 2025-05-19
 #### Features
 - **(RPC)** adding Solana RPC WebSocket support (#1073) - (da70416) - Max Kalashnikoff | maksy.eth
