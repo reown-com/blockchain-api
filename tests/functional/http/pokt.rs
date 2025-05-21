@@ -214,7 +214,7 @@ async fn pokt_provider_near(ctx: &mut ServerContext) {
 #[tokio::test]
 #[ignore]
 async fn pokt_provider_sui(ctx: &mut ServerContext) {
-    let provider = ProviderKind::Quicknode;
     // Sui mainnet
-    check_if_rpc_is_responding_correctly_for_sui(ctx, &provider, "mainnet", "35834a8a").await;
+    check_if_rpc_is_responding_correctly_for_sui(ctx, &ProviderKind::Pokt, "mainnet", "35834a8a")
+        .await;
 }
