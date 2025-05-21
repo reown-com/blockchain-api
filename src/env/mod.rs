@@ -18,7 +18,7 @@ use {
 pub use {
     allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, drpc::*, dune::*, mantle::*,
     monad::*, morph::*, near::*, odyssey::*, pokt::*, publicnode::*, quicknode::*, server::*,
-    solscan::*, syndica::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
+    solscan::*, sui::*, syndica::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
 };
 mod allnodes;
 mod arbitrum;
@@ -37,6 +37,7 @@ mod publicnode;
 mod quicknode;
 mod server;
 pub mod solscan;
+mod sui;
 mod syndica;
 mod unichain;
 mod wemix;

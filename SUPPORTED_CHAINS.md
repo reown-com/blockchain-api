@@ -69,6 +69,14 @@ Chain name with associated `chainId` query param to use.
 | Bitcoin Mainnet                       | bip122:000000000019d6689c085ae165831e93 |
 | Bitcoin Testnet                       | bip122:000000000933ea01ad0ee984209779ba |
 
+### Sui
+
+| Network                               | Chain ID    |
+|---------------------------------------|-------------|
+| Sui Mainnet                           | sui:mainnet |
+| Sui Devnet                            | sui:devnet  |
+| Sui Testnet                           | sui:testnet |
+
 <a id="footnote1"><sup>1</sup></a> The availability of this chain in our RPC is not guaranteed.
 
 ## WebSocket RPC

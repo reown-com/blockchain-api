@@ -2,6 +2,7 @@ use {
     super::{
         check_if_rpc_is_responding_correctly_for_near_protocol,
         check_if_rpc_is_responding_correctly_for_solana,
+        check_if_rpc_is_responding_correctly_for_sui,
         check_if_rpc_is_responding_correctly_for_supported_chain,
     },
     crate::context::ServerContext,
@@ -207,4 +208,13 @@ async fn pokt_provider_solana(ctx: &mut ServerContext) {
 #[ignore]
 async fn pokt_provider_near(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_near_protocol(ctx, &ProviderKind::Pokt).await;
+}
+
+#[test_context(ServerContext)]
+#[tokio::test]
+#[ignore]
+async fn pokt_provider_sui(ctx: &mut ServerContext) {
+    // Sui mainnet
+    check_if_rpc_is_responding_correctly_for_sui(ctx, &ProviderKind::Pokt, "mainnet", "35834a8a")
+        .await;
 }
