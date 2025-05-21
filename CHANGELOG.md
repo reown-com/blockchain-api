@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.237.0 - 2025-05-21
+#### Features
+- updating yttrium (#1079) - (a712a63) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.236.0 - 2025-05-21
 #### Features
 - **(providers)** adding Sui chain RPC support (#1078) - (969f0db) - Max Kalashnikoff | maksy.eth
