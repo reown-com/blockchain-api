@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.236.0 - 2025-05-21
+#### Features
+- **(providers)** adding Sui chain RPC support (#1078) - (969f0db) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.235.1 - 2025-05-20
 #### Bug Fixes
 - **(Meld)** proper handling of the bad request response (#1077) - (f11796f) - Max Kalashnikoff | maksy.eth
