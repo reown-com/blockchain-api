@@ -2,6 +2,7 @@ use {
     super::{
         check_if_rpc_is_responding_correctly_for_bitcoin,
         check_if_rpc_is_responding_correctly_for_solana,
+        check_if_rpc_is_responding_correctly_for_sui,
         check_if_rpc_is_responding_correctly_for_supported_chain,
     },
     crate::context::ServerContext,
@@ -241,4 +242,15 @@ async fn quicknode_provider_solana(ctx: &mut ServerContext) {
         &provider,
     )
     .await;
+}
+
+#[test_context(ServerContext)]
+#[tokio::test]
+#[ignore]
+async fn quicknode_provider_sui(ctx: &mut ServerContext) {
+    let provider = ProviderKind::Publicnode;
+    // Sui mainnet
+    check_if_rpc_is_responding_correctly_for_sui(ctx, &provider, "mainnet", "35834a8a").await;
+    // Sui testnet
+    check_if_rpc_is_responding_correctly_for_sui(ctx, &provider, "testnet", "4c78adac").await;
 }

@@ -232,5 +232,19 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp".into(),
             ("solana-rpc".into(), Weight::new(Priority::Normal).unwrap()),
         ),
+        // Sui mainnet
+        (
+            "sui:mainnet".into(),
+            ("sui-rpc".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
+        // Sui testnet
+        (
+            "sui:testnet".into(),
+            (
+                "sui-testnet-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        //
     ])
 }

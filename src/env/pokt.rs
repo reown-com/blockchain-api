@@ -183,5 +183,10 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "near:mainnet".into(),
             ("near".into(), Weight::new(Priority::Normal).unwrap()),
         ),
+        // Sui mainnet
+        (
+            "sui:mainnet".into(),
+            ("sui".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
     ])
 }

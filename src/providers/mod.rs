@@ -85,6 +85,7 @@ mod pokt;
 mod publicnode;
 mod quicknode;
 mod solscan;
+mod sui;
 mod syndica;
 pub mod tenderly;
 mod unichain;
@@ -115,6 +116,7 @@ pub use {
     publicnode::PublicnodeProvider,
     quicknode::QuicknodeProvider,
     solscan::SolScanProvider,
+    sui::SuiProvider,
     syndica::{SyndicaProvider, SyndicaWsProvider},
     tenderly::TenderlyProvider,
     unichain::UnichainProvider,
@@ -682,6 +684,7 @@ pub enum ProviderKind {
     Allnodes,
     Meld,
     Monad,
+    Sui,
 }
 
 impl Display for ProviderKind {
@@ -717,6 +720,7 @@ impl Display for ProviderKind {
                 ProviderKind::Allnodes => "Allnodes",
                 ProviderKind::Meld => "Meld",
                 ProviderKind::Monad => "Monad",
+                ProviderKind::Sui => "Sui",
             }
         )
     }
@@ -753,6 +757,7 @@ impl ProviderKind {
             "Allnodes" => Some(Self::Allnodes),
             "Meld" => Some(Self::Meld),
             "Monad" => Some(Self::Monad),
+            "Sui" => Some(Self::Sui),
             _ => None,
         }
     }
