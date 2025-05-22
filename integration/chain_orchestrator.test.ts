@@ -1,7 +1,7 @@
 import { getTestSetup } from './init';
 import { ethers, Interface } from "ethers"
 
-describe('Chain abstraction orchestrator', () => {
+describe('Chain abstraction orchestrator v1', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
 
   const erc20Interface = new Interface([
@@ -293,7 +293,9 @@ describe('Chain abstraction orchestrator', () => {
     await checkStatus(orchestration_id)
   })
 
-  it('bridging routes (USDT Arbitrum → USDT Optimism)', async () => {
+  // Skipping this test for now, as the USDT on Arbitrum 
+  // is not supported on Bungee anymore
+  it.skip('bridging routes (USDT Arbitrum → USDT Optimism)', async () => {
     // Sending USDT to Optimism, but having the USDT balance on Arbitrum.
     const destination_chain_id = chain_id_optimism;
     const funding_chain_id = chain_id_arbitrum;
@@ -334,7 +336,9 @@ describe('Chain abstraction orchestrator', () => {
     await checkStatus(orchestration_id)
   })
 
-  it('bridging routes (USDT Optimism → USDT Arbitrum)', async () => {
+  // Skipping this test for now, as the USDT on Arbitrum 
+  // is not supported on Bungee anymore
+  it.skip('bridging routes (USDT Optimism → USDT Arbitrum)', async () => {
     // Sending USDT on Arbitrum, but having the USDT balance on Optimism.
     const amount_to_send = 1_000_000;
     const destination_chain_id = chain_id_arbitrum;
