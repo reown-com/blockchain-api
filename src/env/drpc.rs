@@ -88,7 +88,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:56".into(),
             (
                 "https://bsc.drpc.org".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                Weight::new(Priority::Minimal).unwrap(),
             ),
         ),
         // Polygon
