@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.238.0 - 2025-05-22
+#### Bug Fixes
+- **(tests)** disabling the USDT Arbitrum v1 CA tests (#1080) - (f55b8a9) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(providers)** decreasing BSC chain priority for the dRPC (#1081) - (ac309ec) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.237.0 - 2025-05-21
 #### Features
 - updating yttrium (#1079) - (a712a63) - Max Kalashnikoff | maksy.eth
