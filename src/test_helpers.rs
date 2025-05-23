@@ -42,7 +42,7 @@ pub async fn spawn_blockchain_api_with_params(params: Params) -> Url {
                 port: public_port,
                 prometheus_port,
                 host: hostname.to_string(),
-                log_level: "NONE".to_string(),
+                log_level: "DEBUG".to_string(),
                 validate_project_id: params.validate_project_id,
                 ..Default::default()
             };
@@ -79,7 +79,7 @@ async fn wait_for_server_to_start(port: u16) {
         }
     };
 
-    tokio::time::timeout(Duration::from_secs(5), poll_fut)
+    tokio::time::timeout(Duration::from_secs(10), poll_fut)
         .await
         .unwrap()
 }
