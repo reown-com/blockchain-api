@@ -94,7 +94,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:11155111".into(),
             (
                 "eth-sepolia-testnet".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                Weight::new(Priority::Minimal).unwrap(),
             ),
         ),
         // Optimism
@@ -147,11 +147,6 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         (
             "eip155:42220".into(),
             ("celo".into(), Weight::new(Priority::Normal).unwrap()),
-        ),
-        // Linea
-        (
-            "eip155:59144".into(),
-            ("linea".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Kaia Mainnet
         (
