@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.239.1 - 2025-05-26
+#### Bug Fixes
+- **(logs)** distinguishing server errors and internal server errors (#1082) - (ff98774) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.239.0 - 2025-05-23
 #### Features
 - handle custom bundler URL (#1076) - (e0e4989) - Chris Smith
