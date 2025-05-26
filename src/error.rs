@@ -10,7 +10,7 @@ use {
     axum::{response::IntoResponse, Json},
     cerberus::registry::RegistryError,
     hyper::StatusCode,
-    tracing::{debug, log::error},
+    tracing::log::error,
 };
 
 pub type RpcResult<T> = Result<T, RpcError>;
@@ -711,12 +711,15 @@ impl IntoResponse for RpcError {
                 .into_response(),
         };
 
-        if response.status().is_client_error() {
-            debug!("HTTP client error: {self:?}");
-        }
-
-        if response.status().is_server_error() {
-            error!("HTTP server error: {self:?}");
+        // Log the server errors response status based on the status code
+        match response.status() {
+            StatusCode::INTERNAL_SERVER_ERROR => {
+                error!("HTTP internal server error: {self:?}");
+            }
+            status if status.is_server_error() => {
+                error!("HTTP server error: {self:?}");
+            }
+            _ => {}
         }
 
         response
