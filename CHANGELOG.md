@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.239.2 - 2025-05-27
+#### Bug Fixes
+- **(providers)** adding Linea chain to the dRPC and Publicnode, removing from Pokt (#1084) - (c352dd3) - Max Kalashnikoff | maksy.eth
+- **(test)** temporarily disabling bundler functional test (#1086) - (a9a93ac) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.239.1 - 2025-05-26
 #### Bug Fixes
 - **(logs)** distinguishing server errors and internal server errors (#1082) - (ff98774) - Max Kalashnikoff | maksy.eth
