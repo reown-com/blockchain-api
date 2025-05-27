@@ -163,5 +163,13 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Celo Mainnet
+        (
+            "eip155:42220".into(),
+            (
+                "https://celo.drpc.org".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
     ])
 }
