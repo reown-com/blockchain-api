@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.240.0 - 2025-05-27
+#### Features
+- **(providers)** extending providers for the Celo chain (#1087) - (c6fefbd) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.239.3 - 2025-05-27
 #### Bug Fixes
 - **(CA)** properly handling of the initial transaction simulation error (#1083) - (c3ff77d) - Max Kalashnikoff | maksy.eth
