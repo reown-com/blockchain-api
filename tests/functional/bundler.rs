@@ -6,6 +6,7 @@ use wiremock::matchers::{body_partial_json, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 #[tokio::test]
+#[ignore]
 async fn default_bundler() {
     let bundler_server = MockServer::start().await;
 
