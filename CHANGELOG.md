@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.239.3 - 2025-05-27
+#### Bug Fixes
+- **(CA)** properly handling of the initial transaction simulation error (#1083) - (c3ff77d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.239.2 - 2025-05-27
 #### Bug Fixes
 - **(providers)** adding Linea chain to the dRPC and Publicnode, removing from Pokt (#1084) - (c352dd3) - Max Kalashnikoff | maksy.eth
