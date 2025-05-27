@@ -333,7 +333,7 @@ async fn handler_internal(
                     {
                         Some(gas) => gas,
                         None => {
-                            let (_, simulated_gas_used) = get_assets_changes_from_simulation(
+                            let simulation_result = get_assets_changes_from_simulation(
                                 state.providers.simulation_provider.clone(),
                                 request_payload.transaction.chain_id.clone(),
                                 request_payload.transaction.from,
@@ -341,7 +341,19 @@ async fn handler_internal(
                                 first_call.input.clone(),
                                 state.metrics.clone(),
                             )
-                            .await?;
+                            .await;
+                            let simulated_gas_used = match simulation_result {
+                                Ok(simulation_result) => simulation_result.1,
+                                Err(e) => {
+                                    return Ok(Json(PrepareResponse::Error(PrepareResponseError {
+                                        error: BridgingError::TransactionSimulationFailed,
+                                        reason: format!(
+                                            "The initial transaction simulation failed due to an error: {}",
+                                            e
+                                        ),
+                                    })));
+                                }
+                            };
                             state.metrics.add_ca_gas_estimation(
                                 simulated_gas_used,
                                 request_payload.transaction.chain_id.clone(),
@@ -381,7 +393,7 @@ async fn handler_internal(
                         "The transaction data is not an ERC20 transfer function, making a simulation"
                     );
 
-                    let (simulation_assets_changes, gas_used) = get_assets_changes_from_simulation(
+                    let simulation_result = get_assets_changes_from_simulation(
                         state.providers.simulation_provider.clone(),
                         request_payload.transaction.chain_id.clone(),
                         request_payload.transaction.from,
@@ -389,7 +401,21 @@ async fn handler_internal(
                         first_call.input.clone(),
                         state.metrics.clone(),
                     )
-                    .await?;
+                    .await;
+
+                    let (simulation_assets_changes, gas_used) = match simulation_result {
+                        Ok(changes) => changes,
+                        Err(e) => {
+                            return Ok(Json(PrepareResponse::Error(PrepareResponseError {
+                                error: BridgingError::TransactionSimulationFailed,
+                                reason: format!(
+                                    "The initial transaction simulation failed due to an error: {}",
+                                    e
+                                ),
+                            })));
+                        }
+                    };
+
                     let mut asset_transfer_value = U256::ZERO;
                     let mut asset_transfer_contract = Address::default();
                     let mut asset_transfer_receiver = Address::default();
