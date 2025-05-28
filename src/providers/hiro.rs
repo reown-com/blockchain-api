@@ -60,7 +60,7 @@ impl RpcProvider for HiroProvider {
             .supported_chains
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
-        let uri = format!("{uri}/v2/transactions");
+        let uri = format!("{}/v2/transactions", uri.trim_end_matches('/'));
         let uri = uri.parse::<hyper::Uri>().map_err(|_| {
             RpcError::InvalidParameter("Failed to parse URI for stacks_transactions".into())
         })?;
