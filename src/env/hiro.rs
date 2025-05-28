@@ -35,17 +35,17 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     // Keep in-sync with SUPPORTED_CHAINS.md
 
     HashMap::from([
-        // Stacks mainnet
+        // Stacks Mainnet
         (
-            "stacks:mainnet".into(),
+            "stacks:1".into(),
             (
                 "https://api.mainnet.hiro.so/".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
-        // Stacks testnet
+        // Stacks Testnet
         (
-            "stacks:testnet".into(),
+            "stacks:2147483648".into(),
             (
                 "https://api.testnet.hiro.so/".into(),
                 Weight::new(Priority::Normal).unwrap(),

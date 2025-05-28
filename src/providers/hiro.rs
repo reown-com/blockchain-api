@@ -88,8 +88,10 @@ impl RpcProvider for HiroProvider {
             tx_param.to_string()
         };
 
-        let stacks_transactions_request =
-            serde_json::to_string(&TransactionsRequest { tx }).unwrap();
+        let stacks_transactions_request = serde_json::to_string(&TransactionsRequest { tx })
+            .map_err(|e| {
+                RpcError::InvalidParameter(format!("Failed to serialize transaction: {}", e))
+            })?;
 
         let hyper_request = hyper::http::Request::builder()
             .method(Method::POST)
