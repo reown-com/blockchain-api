@@ -21,20 +21,20 @@ use {
     },
     env::{
         AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, DrpcConfig,
-        DuneConfig, MantleConfig, MonadConfig, MorphConfig, NearConfig, OdysseyConfig, PoktConfig,
-        PublicnodeConfig, QuicknodeConfig, SolScanConfig, SuiConfig, SyndicaConfig, UnichainConfig,
-        WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
+        DuneConfig, HiroConfig, MantleConfig, MonadConfig, MorphConfig, NearConfig, OdysseyConfig,
+        PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig, SuiConfig, SyndicaConfig,
+        UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
         AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
-        BinanceProvider, DrpcProvider, DuneProvider, MantleProvider, MonadProvider, MorphProvider,
-        NearProvider, OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider,
-        QuicknodeProvider, SolScanProvider, SuiProvider, SyndicaProvider, SyndicaWsProvider,
-        UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider, ZoraProvider,
-        ZoraWsProvider,
+        BinanceProvider, DrpcProvider, DuneProvider, HiroProvider, MantleProvider, MonadProvider,
+        MorphProvider, NearProvider, OdysseyProvider, PoktProvider, ProviderRepository,
+        PublicnodeProvider, QuicknodeProvider, SolScanProvider, SuiProvider, SyndicaProvider,
+        SyndicaWsProvider, UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider,
+        ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -536,6 +536,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     ));
     providers.add_rpc_provider::<MonadProvider, MonadConfig>(MonadConfig::default());
     providers.add_rpc_provider::<SuiProvider, SuiConfig>(SuiConfig::default());
+    providers.add_rpc_provider::<HiroProvider, HiroConfig>(HiroConfig::default());
     providers.add_ws_provider::<AllnodesWsProvider, AllnodesConfig>(AllnodesConfig::new(
         config.allnodes_api_key.clone(),
     ));
