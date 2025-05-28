@@ -77,6 +77,17 @@ Chain name with associated `chainId` query param to use.
 | Sui Devnet                            | sui:devnet  |
 | Sui Testnet                           | sui:testnet |
 
+
+### Stacks
+
+*Important note:* The Stacks support is currently in a Beta. Endpoints and schema
+can be changed in a near future.
+
+| Network                                   | Chain ID          |
+|-------------------------------------------|-------------------|
+| Stacks Mainnet <sup>[1](#footnote1)</sup> | stacks:1          |
+| Stacks Testnet <sup>[1](#footnote1)</sup> | stacks:2147483648 |
+
 <a id="footnote1"><sup>1</sup></a> The availability of this chain in our RPC is not guaranteed.
 
 ## WebSocket RPC

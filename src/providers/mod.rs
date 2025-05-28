@@ -72,6 +72,7 @@ mod bungee;
 mod coinbase;
 mod drpc;
 mod dune;
+mod hiro;
 mod mantle;
 mod meld;
 pub mod mock_alto;
@@ -104,6 +105,7 @@ pub use {
     bungee::BungeeProvider,
     drpc::DrpcProvider,
     dune::DuneProvider,
+    hiro::HiroProvider,
     mantle::MantleProvider,
     meld::MeldProvider,
     monad::MonadProvider,
@@ -685,6 +687,7 @@ pub enum ProviderKind {
     Meld,
     Monad,
     Sui,
+    Hiro,
 }
 
 impl Display for ProviderKind {
@@ -721,6 +724,7 @@ impl Display for ProviderKind {
                 ProviderKind::Meld => "Meld",
                 ProviderKind::Monad => "Monad",
                 ProviderKind::Sui => "Sui",
+                ProviderKind::Hiro => "Hiro",
             }
         )
     }
