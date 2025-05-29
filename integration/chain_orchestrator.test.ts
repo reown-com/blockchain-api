@@ -1,7 +1,7 @@
 import { getTestSetup } from './init';
 import { ethers, Interface } from "ethers"
 
-// Chain abstraction orchestrator v1 tests were disabled due to the flakiness
+// Skipping flaky Chain abstraction orchestrator v1 tests
 describe.skip('Chain abstraction orchestrator v1', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
 
