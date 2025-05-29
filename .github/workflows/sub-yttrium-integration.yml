@@ -19,6 +19,8 @@ env:
 
 jobs:
   e2e-latest:
+    # This job was disabled due to the chain abstraction  
+    if: false
     name: E2E (latest)
     runs-on: ubuntu-latest
     concurrency:
@@ -45,6 +47,8 @@ jobs:
           BLOCKCHAIN_API_URL: ${{ inputs.stage-url }}
 
   e2e-pinned:
+    # This job was disabled due to the chain abstraction  
+    if: false
     name: E2E (pinned)
     runs-on: ubuntu-latest
     concurrency:

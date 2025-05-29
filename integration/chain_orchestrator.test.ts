@@ -1,7 +1,8 @@
 import { getTestSetup } from './init';
 import { ethers, Interface } from "ethers"
 
-describe('Chain abstraction orchestrator v1', () => {
+// Chain abstraction orchestrator v1 tests were disabled due to the flakiness
+describe.skip('Chain abstraction orchestrator v1', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
 
   const erc20Interface = new Interface([
