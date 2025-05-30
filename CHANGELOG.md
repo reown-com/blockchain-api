@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.242.0 - 2025-05-30
+#### Bug Fixes
+- **(CI)** disabling chain abstraction integration tests (#1089) - (dacb7ed) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(utils)** updating CAIP-2 to names utility (#1090) - (cbbc630) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.241.0 - 2025-05-28
 #### Features
 - **(RPC)** adding Stacks transactions RPC support (#1088) - (0bec683) - Max Kalashnikoff | maksy.eth
