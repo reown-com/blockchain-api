@@ -34,6 +34,7 @@ local redis  = panels.aws.redis;
     rate_limited_counter:   (import 'proxy/rate_limited_counter.libsonnet'  ).new,
     http_codes:             (import 'proxy/http_codes.libsonnet'            ).new,
     chains_unavailability:  (import 'proxy/chains_unavailability.libsonnet' ).new,
+    websocket_connections:  (import 'proxy/websocket_connections.libsonnet' ).new,
   },
 
   projects: {
@@ -76,7 +77,6 @@ local redis  = panels.aws.redis;
     active_connections:       (import 'lb/active_connections.libsonnet'         ).new,
     error_4xx:                (import 'lb/error_4xx.libsonnet'                  ).new,
     error_5xx:                (import 'lb/error_5xx.libsonnet'                  ).new,
-    error_5xx_logs:           (import 'lb/error_5xx_logs.libsonnet'             ).new,
     healthy_hosts:            (import 'lb/healthy_hosts.libsonnet'              ).new,
     requests:                 (import 'lb/requests.libsonnet'                   ).new,
     response_time:            (import 'lb/latency.libsonnet'                    ).new, 

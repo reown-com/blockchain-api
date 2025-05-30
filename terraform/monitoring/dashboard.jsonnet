@@ -61,10 +61,9 @@ dashboard.new(
 
 .addPanels(layout.generate_grid([
   row.new('Application'),
-    panels.ecs.availability(ds, vars)                { gridPos: pos._4 },
-    panels.lb.error_5xx(ds, vars)                    { gridPos: pos._4 },
-    panels.proxy.errors_non_provider(ds, vars)       { gridPos: pos._4 },
-    panels.lb.error_5xx_logs(ds, vars)               { gridPos: pos._4 },
+    panels.ecs.availability(ds, vars)                { gridPos: pos._3 },
+    panels.lb.error_5xx(ds, vars)                    { gridPos: pos._3 },
+    panels.proxy.errors_non_provider(ds, vars)       { gridPos: pos._3 },
     panels.app.handlers_latency(ds, vars)            { gridPos: pos._2 },
     panels.app.handlers_rate(ds, vars)               { gridPos: pos._2 },
 
@@ -137,6 +136,7 @@ dashboard.new(
 
   row.new('RPC Proxy Metrics'),
     panels.proxy.calls(ds, vars)                     { gridPos: pos._3 },
+    panels.proxy.websocket_connections(ds, vars)     { gridPos: pos._3 },
     panels.proxy.latency(ds, vars)                   { gridPos: pos._3 },
     panels.proxy.chains_unavailability(ds, vars)     { gridPos: pos._3 },
     panels.proxy.errors_provider(ds, vars)           { gridPos: pos._3 },
