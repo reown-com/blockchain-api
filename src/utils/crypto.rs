@@ -703,12 +703,15 @@ pub fn is_address_valid(address: &str, namespace: &CaipNamespaces) -> bool {
 #[strum(serialize_all = "lowercase")]
 #[repr(u64)]
 pub enum ChainId {
+    Abstract = 2741,
+    Ape = 33139,
     Arbitrum = 42161,
     Aurora = 1313161554,
     Avalanche = 43114,
     Base = 8453,
     #[strum(serialize = "base_sepolia_testnet", serialize = "base-sepolia-testnet")]
     BaseSepoliaTestnet = 84532,
+    Berachain = 80094,
     #[strum(
         to_string = "binance-smart-chain",
         serialize = "binance_smart_chain",
@@ -717,15 +720,10 @@ pub enum ChainId {
     BinanceSmartChain = 56,
     Blast = 81032,
     Celo = 42220,
+    Degen = 666666666,
     #[strum(serialize = "ethereum", serialize = "mainnet")]
     Ethereum = 1,
     Fantom = 250,
-    Goerli = 5,
-    Linea = 59160,
-    Optimism = 10,
-    Polygon = 137,
-    Scroll = 8508132,
-    Sepolia = 11155111,
     #[strum(
         to_string = "xdai",
         serialize = "gnosis",
@@ -734,6 +732,21 @@ pub enum ChainId {
         serialize = "gnosischain"
     )]
     GnosisChain = 100,
+    Goerli = 5,
+    #[strum(serialize = "gravity-alpha")]
+    GravityAlpha = 1625,
+    Ink = 57073,
+    Lens = 232,
+    Linea = 59160,
+    Optimism = 10,
+    Polygon = 137,
+    #[strum(serialize = "polygon-zkevm", serialize = "polygon_zkevm")]
+    PolygonZkevm = 1101,
+    Scroll = 8508132,
+    Sepolia = 11155111,
+    Soneium = 1868,
+    Sonic = 146,
+    Unichain = 130,
     #[strum(
         serialize = "zksync",
         serialize = "zksyncera",
