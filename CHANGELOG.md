@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.243.0 - 2025-06-02
+#### Bug Fixes
+- **(RPC)** disabling Polygon for Pokt provider (#1092) - (b87d9eb) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(o11y)** adding wss RPC connection chart, removing http 500 error logs (#1091) - (01fb7e4) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.242.0 - 2025-05-30
 #### Bug Fixes
 - **(CI)** disabling chain abstraction integration tests (#1089) - (dacb7ed) - Max Kalashnikoff | maksy.eth
