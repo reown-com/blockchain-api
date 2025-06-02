@@ -2,6 +2,9 @@ use axum::{routing::get, Router};
 use tower_service::Service;
 use worker::*;
 
+pub mod active_config;
+pub mod config;
+
 fn router() -> Router {
     Router::new().route("/v1", get(proxy))
 }
@@ -17,5 +20,9 @@ async fn fetch(
 }
 
 pub async fn proxy() -> &'static str {
+    // TODO validate rate limit, parse request, etc.
+    // TODO call cachable function to determine which provider to use
+    //      - returns the provider
+    //      - if provider fails, call the function again but cache-bust w/ some parameter. This will return a different provider?
     "Hello Axum!"
 }
