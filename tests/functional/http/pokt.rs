@@ -105,8 +105,9 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     .await;
 
     // Polygon mainnet
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:137", "0x89")
-        .await;
+    // Temporarily disabled due to issues with the provider
+    // check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:137", "0x89")
+    //     .await;
 
     // Polygon zkevm
     check_if_rpc_is_responding_correctly_for_supported_chain(

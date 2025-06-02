@@ -128,10 +128,12 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ),
         ),
         // Polygon
-        (
-            "eip155:137".into(),
-            ("polygon".into(), Weight::new(Priority::Normal).unwrap()),
-        ),
+        // Temprarily disabled due to issues with the provider until the Pokt infra
+        // migration is complete
+        // (
+        //     "eip155:137".into(),
+        //     ("polygon".into(), Weight::new(Priority::Normal).unwrap()),
+        // ),
         (
             "eip155:1101".into(),
             ("polygon-zkevm".into(), Weight::new(Priority::High).unwrap()),
