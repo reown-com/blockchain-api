@@ -59,10 +59,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ("gnosis".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Base mainnet
-        (
-            "eip155:8453".into(),
-            ("base".into(), Weight::new(Priority::Normal).unwrap()),
-        ),
+        // TODO: Temporary disabled due to issues with the provider
+        // (
+        //     "eip155:8453".into(),
+        //     ("base".into(), Weight::new(Priority::Normal).unwrap()),
+        // ),
         // Base Sepolia
         (
             "eip155:84532".into(),
@@ -98,10 +99,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ),
         ),
         // Optimism
-        (
-            "eip155:10".into(),
-            ("optimism".into(), Weight::new(Priority::Normal).unwrap()),
-        ),
+        // TODO: Temporary disabled due to issues with the provider
+        // (
+        //     "eip155:10".into(),
+        //     ("optimism".into(), Weight::new(Priority::Normal).unwrap()),
+        // ),
         // Optimism Sepolia
         // TODO: Temporary disabled due to issues with the provider
         (
@@ -112,13 +114,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ),
         ),
         // Arbitrum
-        (
-            "eip155:42161".into(),
-            (
-                "arbitrum-one".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
-        ),
+        // TODO: Temporary disabled due to issues with the provider
+        // (
+        //     "eip155:42161".into(),
+        //     (
+        //         "arbitrum-one".into(),
+        //         Weight::new(Priority::Normal).unwrap(),
+        //     ),
+        // ),
         // Arbitrum Sepolia
         (
             "eip155:421614".into(),
