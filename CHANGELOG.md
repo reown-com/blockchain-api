@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.244.1 - 2025-06-03
+#### Bug Fixes
+- coinbase order status (#1096) - (cd21cb2) - Luka Isailovic
+
+- - -
+
 ## 0.244.0 - 2025-06-02
 #### Features
 - **(providers)** temporarily disabling Op, Base and Arb in the Pokt provider (#1094) - (7c05482) - Max Kalashnikoff | maksy.eth
