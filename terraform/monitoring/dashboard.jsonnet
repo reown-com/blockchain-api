@@ -91,6 +91,7 @@ dashboard.new(
     panels.usage.provider(ds, vars, 'Odyssey', alert_period_free_tier)   { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Syndica', alert_period_free_tier)   { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Monad', alert_period_free_tier)     { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'CallStatic', alert_period_free_tier){ gridPos: pos._4 },
 
   row.new('RPC Proxy provider Weights'),
     panels.weights.provider(ds, vars, 'Pokt')        { gridPos: pos._4 },
@@ -112,6 +113,7 @@ dashboard.new(
     panels.weights.provider(ds, vars, 'Odyssey')     { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Syndica')     { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Monad')       { gridPos: pos._4 },
+    panels.weights.provider(ds, vars, 'CallStatic')  { gridPos: pos._4 },
 
   row.new('RPC Proxy providers Status Codes'),
     panels.status.provider(ds, vars, 'Pokt')         { gridPos: pos._4 },
@@ -133,6 +135,7 @@ dashboard.new(
     panels.status.provider(ds, vars, 'Odyssey')      { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Syndica')      { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Monad')        { gridPos: pos._4 },
+    panels.status.provider(ds, vars, 'CallStatic')   { gridPos: pos._4 },
 
   row.new('RPC Proxy Metrics'),
     panels.proxy.calls(ds, vars)                     { gridPos: pos._3 },
