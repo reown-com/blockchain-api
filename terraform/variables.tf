@@ -194,6 +194,12 @@ variable "meld_api_url" {
   sensitive   = true
 }
 
+variable "callstatic_api_key" {
+  description = "Callstatic API key"
+  type        = string
+  sensitive   = true
+}
+
 #-------------------------------------------------------------------------------
 # Analytics
 

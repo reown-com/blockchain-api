@@ -272,6 +272,12 @@ variable "meld_api_url" {
   sensitive   = true
 }
 
+variable "callstatic_api_key" {
+  description = "Callstatic API key"
+  type        = string
+  sensitive   = true
+}
+
 variable "testing_project_id" {
   description = "Project ID used in a testing suite"
   type        = string

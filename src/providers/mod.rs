@@ -69,6 +69,7 @@ mod aurora;
 mod base;
 mod binance;
 mod bungee;
+mod callstatic;
 mod coinbase;
 mod drpc;
 mod dune;
@@ -103,6 +104,7 @@ pub use {
     base::BaseProvider,
     binance::BinanceProvider,
     bungee::BungeeProvider,
+    callstatic::CallStaticProvider,
     drpc::DrpcProvider,
     dune::DuneProvider,
     hiro::HiroProvider,
@@ -171,6 +173,8 @@ pub struct ProvidersConfig {
     pub meld_api_key: String,
     /// Meld API Base URL
     pub meld_api_url: String,
+    /// CallStatic API key
+    pub callstatic_api_key: String,
 
     pub override_bundler_urls: Option<MockAltoUrls>,
 }
@@ -688,6 +692,7 @@ pub enum ProviderKind {
     Monad,
     Sui,
     Hiro,
+    CallStatic,
 }
 
 impl Display for ProviderKind {
@@ -725,6 +730,7 @@ impl Display for ProviderKind {
                 ProviderKind::Monad => "Monad",
                 ProviderKind::Sui => "Sui",
                 ProviderKind::Hiro => "Hiro",
+                ProviderKind::CallStatic => "CallStatic",
             }
         )
     }
@@ -762,6 +768,8 @@ impl ProviderKind {
             "Meld" => Some(Self::Meld),
             "Monad" => Some(Self::Monad),
             "Sui" => Some(Self::Sui),
+            "Hiro" => Some(Self::Hiro),
+            "CallStatic" => Some(Self::CallStatic),
             _ => None,
         }
     }
