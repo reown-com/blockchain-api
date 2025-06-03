@@ -345,7 +345,7 @@ impl CoinbaseExchange {
 
                 let status = match &transaction.status {
                     CoinbaseTransactionStatus::Success => {
-                        if tx_hash.as_ref().is_none_or(|s| s.is_empty()) {
+                        if tx_hash.as_ref().is_none_or(String::is_empty) {
                             // It's possible that the transaction is successful
                             // but the tx_hash is not available yet.
                             BuyTransactionStatus::InProgress
