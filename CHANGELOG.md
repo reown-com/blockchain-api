@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.245.0 - 2025-06-03
+#### Features
+- **(providers)** adding CallStatic RPC provider (#1095) - (796c8c7) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.244.1 - 2025-06-03
 #### Bug Fixes
 - coinbase order status (#1096) - (cd21cb2) - Luka Isailovic
