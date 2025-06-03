@@ -345,7 +345,12 @@ impl CoinbaseExchange {
 
                 let status = match &transaction.status {
                     CoinbaseTransactionStatus::Success => {
-                        if tx_hash.is_none() {
+                        let tx_hash_missing_or_empty = match &tx_hash {
+                            None => true,
+                            Some(value) => value.is_empty(),
+                        };
+                        
+                        if tx_hash_missing_or_empty {
                             // It's possible that the transaction is successful
                             // but the tx_hash is not available yet.
                             BuyTransactionStatus::InProgress
