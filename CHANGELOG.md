@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.247.0 - 2025-06-04
+#### Features
+- **(providers)** adding Zan, OneRpc, TheRpc providers (#1099) - (ea4360f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.246.0 - 2025-06-04
 #### Features
 - enable binance flags (#1097) - (f9b645b) - Luka Isailovic
