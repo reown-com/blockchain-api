@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.247.1 - 2025-06-04
+#### Bug Fixes
+- **(providers)** disabling CallStatic (#1100) - (d79fd2a) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.247.0 - 2025-06-04
 #### Features
 - **(providers)** adding Zan, OneRpc, TheRpc providers (#1099) - (ea4360f) - Max Kalashnikoff | maksy.eth
