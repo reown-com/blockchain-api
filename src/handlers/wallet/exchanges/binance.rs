@@ -176,6 +176,13 @@ pub struct PreOrderRequest {
 pub struct Customization {
     send_primary: Option<bool>,
     merchant_display_name: Option<String>,
+    net_receive: Option<bool>,
+    lock_order_attributes: Option<Vec<i32>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+enum LockOrderAttributeType {
+    All = 1,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -453,6 +460,8 @@ impl BinanceExchange {
             customization: Some(Customization {
                 send_primary: Some(true),
                 merchant_display_name: Some(project_name),
+                net_receive: Some(true),
+                lock_order_attributes: Some(vec![2, 3]),
             }),
         };
 
