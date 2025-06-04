@@ -17,9 +17,9 @@ use {
 };
 pub use {
     allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, callstatic::*, drpc::*, dune::*,
-    hiro::*, mantle::*, monad::*, morph::*, near::*, odyssey::*, pokt::*, publicnode::*,
-    quicknode::*, server::*, solscan::*, sui::*, syndica::*, unichain::*, wemix::*, zerion::*,
-    zksync::*, zora::*,
+    hiro::*, mantle::*, monad::*, morph::*, near::*, odyssey::*, onerpc::*, pokt::*, publicnode::*,
+    quicknode::*, server::*, solscan::*, sui::*, syndica::*, therpc::*, unichain::*, wemix::*,
+    zan::*, zerion::*, zksync::*, zora::*,
 };
 mod allnodes;
 mod arbitrum;
@@ -35,6 +35,7 @@ mod monad;
 mod morph;
 mod near;
 mod odyssey;
+mod onerpc;
 mod pokt;
 mod publicnode;
 mod quicknode;
@@ -42,8 +43,10 @@ mod server;
 pub mod solscan;
 mod sui;
 mod syndica;
+mod therpc;
 mod unichain;
 mod wemix;
+mod zan;
 pub mod zerion;
 mod zksync;
 mod zora;
@@ -221,6 +224,7 @@ mod test {
                 "RPC_PROXY_PROVIDER_CALLSTATIC_API_KEY",
                 "CALLSTATIC_API_KEY",
             ),
+            ("RPC_PROXY_PROVIDER_ZAN_API_KEY", "ZAN_API_KEY"),
             // Postgres config.
             (
                 "RPC_PROXY_POSTGRES_URI",
@@ -342,6 +346,7 @@ mod test {
                     meld_api_key: "MELD_API_KEY".to_string(),
                     meld_api_url: "MELD_API_URL".to_string(),
                     callstatic_api_key: "CALLSTATIC_API_KEY".to_string(),
+                    zan_api_key: "ZAN_API_KEY".to_string(),
                 },
                 rate_limiting: RateLimitingConfig {
                     max_tokens: Some(100),
