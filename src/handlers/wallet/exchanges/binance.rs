@@ -176,6 +176,7 @@ pub struct PreOrderRequest {
 pub struct Customization {
     send_primary: Option<bool>,
     merchant_display_name: Option<String>,
+    net_receive: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -453,6 +454,7 @@ impl BinanceExchange {
             customization: Some(Customization {
                 send_primary: Some(true),
                 merchant_display_name: Some(project_name),
+                net_receive: Some(true),
             }),
         };
 
