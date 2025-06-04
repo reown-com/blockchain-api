@@ -6,16 +6,26 @@ use {
         storage::irn::OperationType,
         utils::{
             crypto::{
-                abi_encode_two_bytes_arrays, call_get_user_op_hash, disassemble_caip10,
-                is_address_valid, pack_signature, to_eip191_message, CaipNamespaces, ChainId,
+                abi_encode_two_bytes_arrays,
+                call_get_user_op_hash,
+                disassemble_caip10,
+                is_address_valid,
+                pack_signature,
+                to_eip191_message,
+                CaipNamespaces,
+                ChainId,
                 UserOperation,
             },
             permissions::{
-                contract_call_permission_check, native_token_transfer_permission_check,
-                ContractCallPermissionData, NativeTokenAllowancePermissionData, PermissionType,
+                contract_call_permission_check,
+                native_token_transfer_permission_check,
+                ContractCallPermissionData,
+                NativeTokenAllowancePermissionData,
+                PermissionType,
             },
             sessions::extract_execution_batch_components,
             simple_request_json::SimpleRequestJson,
+            validators::is_ownable_validator_format,
         },
     },
     axum::{
@@ -26,13 +36,12 @@ use {
     ethers::{
         core::k256::ecdsa::SigningKey,
         signers::LocalWallet,
-        types::{H160, H256},
+        types::{Bytes, H160, H256},
         utils::keccak256,
     },
     serde::{Deserialize, Serialize},
     serde_json::json,
     std::{str::FromStr, sync::Arc, time::SystemTime},
-    tracing::debug,
     wc::future::FutureExt,
 };
 
@@ -138,6 +147,7 @@ async fn handler_internal(
     // Get the PCI object from the IRN
     let irn_client = state.irn.as_ref().ok_or(RpcError::IrnNotConfigured)?;
     let irn_call_start = SystemTime::now();
+
     let storage_permissions_item = irn_client
         .hget(caip10_address.clone(), request_payload.pci.clone())
         .await?
@@ -179,7 +189,6 @@ async fn handler_internal(
         match PermissionType::from_str(permission.r#type.as_str()) {
             Ok(permission_type) => match permission_type {
                 PermissionType::ContractCall => {
-                    debug!("Executing contract call permission check");
                     contract_call_permission_check(
                         execution_batch.clone(),
                         serde_json::from_value::<ContractCallPermissionData>(
@@ -188,7 +197,6 @@ async fn handler_internal(
                     )?;
                 }
                 PermissionType::NativeTokenRecurringAllowance => {
-                    debug!("Executing native token transfer permission check");
                     native_token_transfer_permission_check(
                         execution_batch.clone(),
                         serde_json::from_value::<NativeTokenAllowancePermissionData>(
@@ -204,7 +212,7 @@ async fn handler_internal(
     }
 
     // Check and get the permission context if it's updated
-    let _permission_context = storage_permissions_item
+    let permission_context = storage_permissions_item
         .context
         .clone()
         .ok_or_else(|| RpcError::PermissionContextNotUpdated(request_payload.pci.clone()))?;
@@ -212,6 +220,8 @@ async fn handler_internal(
     // Sign the userOp hash with the permission signing key
     let signing_key_bytes = hex::decode(storage_permissions_item.signing_key)
         .map_err(|e| RpcError::WrongHexFormat(e.to_string()))?;
+
+    // Create signer from private key
     let signer = SigningKey::from_bytes(signing_key_bytes.as_slice().into())
         .map_err(|e| RpcError::KeyFormatError(e.to_string()))?;
 
@@ -220,10 +230,27 @@ async fn handler_internal(
     let signature = wallet
         .sign_hash(H256::from(&keccak256(eip191_user_op_hash.clone())))
         .unwrap();
+
+    let message_hash = H256::from(&keccak256(eip191_user_op_hash.clone()));
+    let signature = wallet
+        .sign_hash(message_hash)
+        .map_err(|e| RpcError::SignatureFormatError(e.to_string()))?;
+
     let packed_signature = pack_signature(&signature);
 
-    // ABI encode the signatures
-    let concatenated_signature = abi_encode_two_bytes_arrays(&packed_signature, &user_op.signature);
+    // Determine signature format based on validator init data in context
+    let concatenated_signature = if is_ownable_validator_format(&permission_context) {
+        // For OwnableValidator: concatenate signatures directly (no ABI encoding)
+        // The order is important: signatures must be in the same order as sorted owner
+        // addresses
+        let mut concatenated_signature = Vec::new();
+        concatenated_signature.extend_from_slice(&user_op.signature); // Frontend signature (first signer)
+        concatenated_signature.extend_from_slice(&packed_signature); // Backend signature (second signer)
+        Bytes::from(concatenated_signature)
+    } else {
+        // For MultiKeySigner: ABI encode the signatures
+        abi_encode_two_bytes_arrays(&packed_signature, &user_op.signature)
+    };
 
     // Update the userOp with the signature
     user_op.signature = concatenated_signature;
