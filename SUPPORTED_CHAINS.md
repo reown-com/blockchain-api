@@ -13,6 +13,7 @@ Chain name with associated `chainId` query param to use.
 | Binance Smart Chain                                      | eip155:56            |
 | Binance Smart Chain Testnet <sup>[1](#footnote1)</sup>   | eip155:97            |
 | Gnosis Chain                                             | eip155:100           |
+| Unichain Mainnet <sup>[1](#footnote1)</sup>              | eip155:130           |
 | Polygon                                                  | eip155:137           |
 | Sonic                                                    | eip155:146           |
 | zkSync Era Sepolia Testnet <sup>[1](#footnote1)</sup>    | eip155:300           |

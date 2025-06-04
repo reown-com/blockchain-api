@@ -81,6 +81,8 @@ module "ecs" {
   allnodes_api_key     = var.allnodes_api_key
   meld_api_key         = var.meld_api_key
   meld_api_url         = var.meld_api_url
+  callstatic_api_key   = var.callstatic_api_key
+  zan_api_key          = var.zan_api_key
 
   # Project Registry
   registry_api_endpoint   = var.registry_api_endpoint

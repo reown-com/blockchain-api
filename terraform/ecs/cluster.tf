@@ -104,6 +104,11 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_PROVIDER_ALLNODES_API_KEY", value = var.allnodes_api_key },
         { name = "RPC_PROXY_PROVIDER_MELD_API_KEY", value = var.meld_api_key },
         { name = "RPC_PROXY_PROVIDER_MELD_API_URL", value = var.meld_api_url },
+        { name = "RPC_PROXY_PROVIDER_CALLSTATIC_API_KEY", value = var.callstatic_api_key },
+        { name = "RPC_PROXY_PROVIDER_ZAN_API_KEY", value = var.zan_api_key },
+
+        { name = "RPC_PROXY_PROVIDER_PROMETHEUS_ENDPOINT", value = var.prometheus_endpoint },
+        { name = "RPC_PROXY_PROVIDER_PROMETHEUS_WORKSPACE_ID", value = var.prometheus_workspace_id },
 
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL", value = "http://127.0.0.1:${local.prometheus_proxy_port}/workspaces/${var.prometheus_workspace_id}" },
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_WORKSPACE_HEADER", value = "aps-workspaces.${module.this.region}.amazonaws.com" },

@@ -69,6 +69,7 @@ mod aurora;
 mod base;
 mod binance;
 mod bungee;
+mod callstatic;
 mod coinbase;
 mod drpc;
 mod dune;
@@ -81,6 +82,7 @@ mod morph;
 mod near;
 mod odyssey;
 mod one_inch;
+mod onerpc;
 mod pimlico;
 mod pokt;
 mod publicnode;
@@ -89,9 +91,11 @@ mod solscan;
 mod sui;
 mod syndica;
 pub mod tenderly;
+mod therpc;
 mod unichain;
 mod weights;
 mod wemix;
+mod zan;
 pub mod zerion;
 mod zksync;
 mod zora;
@@ -103,6 +107,7 @@ pub use {
     base::BaseProvider,
     binance::BinanceProvider,
     bungee::BungeeProvider,
+    callstatic::CallStaticProvider,
     drpc::DrpcProvider,
     dune::DuneProvider,
     hiro::HiroProvider,
@@ -113,6 +118,7 @@ pub use {
     near::NearProvider,
     odyssey::OdysseyProvider,
     one_inch::OneInchProvider,
+    onerpc::OneRpcProvider,
     pimlico::PimlicoProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
@@ -121,8 +127,10 @@ pub use {
     sui::SuiProvider,
     syndica::{SyndicaProvider, SyndicaWsProvider},
     tenderly::TenderlyProvider,
+    therpc::TheRpcProvider,
     unichain::UnichainProvider,
     wemix::WemixProvider,
+    zan::ZanProvider,
     zerion::ZerionProvider,
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
@@ -171,6 +179,10 @@ pub struct ProvidersConfig {
     pub meld_api_key: String,
     /// Meld API Base URL
     pub meld_api_url: String,
+    /// CallStatic API key
+    pub callstatic_api_key: String,
+    /// Zan API key
+    pub zan_api_key: String,
 
     pub override_bundler_urls: Option<MockAltoUrls>,
 }
@@ -688,6 +700,10 @@ pub enum ProviderKind {
     Monad,
     Sui,
     Hiro,
+    CallStatic,
+    OneRpc,
+    TheRpc,
+    Zan,
 }
 
 impl Display for ProviderKind {
@@ -725,6 +741,10 @@ impl Display for ProviderKind {
                 ProviderKind::Monad => "Monad",
                 ProviderKind::Sui => "Sui",
                 ProviderKind::Hiro => "Hiro",
+                ProviderKind::CallStatic => "CallStatic",
+                ProviderKind::OneRpc => "OneRpc",
+                ProviderKind::TheRpc => "TheRpc",
+                ProviderKind::Zan => "Zan",
             }
         )
     }
@@ -762,6 +782,11 @@ impl ProviderKind {
             "Meld" => Some(Self::Meld),
             "Monad" => Some(Self::Monad),
             "Sui" => Some(Self::Sui),
+            "Hiro" => Some(Self::Hiro),
+            "CallStatic" => Some(Self::CallStatic),
+            "OneRpc" => Some(Self::OneRpc),
+            "TheRpc" => Some(Self::TheRpc),
+            "Zan" => Some(Self::Zan),
             _ => None,
         }
     }

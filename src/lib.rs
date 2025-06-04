@@ -20,21 +20,23 @@ use {
         Router,
     },
     env::{
-        AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, DrpcConfig,
-        DuneConfig, HiroConfig, MantleConfig, MonadConfig, MorphConfig, NearConfig, OdysseyConfig,
-        PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig, SuiConfig, SyndicaConfig,
-        UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
+        AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, CallStaticConfig,
+        DrpcConfig, DuneConfig, HiroConfig, MantleConfig, MonadConfig, MorphConfig, NearConfig,
+        OdysseyConfig, OneRpcConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig,
+        SuiConfig, SyndicaConfig, TheRpcConfig, UnichainConfig, WemixConfig, ZKSyncConfig,
+        ZanConfig, ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
         AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
-        BinanceProvider, DrpcProvider, DuneProvider, HiroProvider, MantleProvider, MonadProvider,
-        MorphProvider, NearProvider, OdysseyProvider, PoktProvider, ProviderRepository,
-        PublicnodeProvider, QuicknodeProvider, SolScanProvider, SuiProvider, SyndicaProvider,
-        SyndicaWsProvider, UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider,
-        ZoraProvider, ZoraWsProvider,
+        BinanceProvider, CallStaticProvider, DrpcProvider, DuneProvider, HiroProvider,
+        MantleProvider, MonadProvider, MorphProvider, NearProvider, OdysseyProvider,
+        OneRpcProvider, PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider,
+        SolScanProvider, SuiProvider, SyndicaProvider, SyndicaWsProvider, TheRpcProvider,
+        UnichainProvider, WemixProvider, ZKSyncProvider, ZanProvider, ZerionProvider, ZoraProvider,
+        ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -537,6 +539,13 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_rpc_provider::<MonadProvider, MonadConfig>(MonadConfig::default());
     providers.add_rpc_provider::<SuiProvider, SuiConfig>(SuiConfig::default());
     providers.add_rpc_provider::<HiroProvider, HiroConfig>(HiroConfig::default());
+    providers.add_rpc_provider::<CallStaticProvider, CallStaticConfig>(CallStaticConfig::new(
+        config.callstatic_api_key.clone(),
+    ));
+    providers
+        .add_rpc_provider::<ZanProvider, ZanConfig>(ZanConfig::new(config.zan_api_key.clone()));
+    providers.add_rpc_provider::<OneRpcProvider, OneRpcConfig>(OneRpcConfig::default());
+    providers.add_rpc_provider::<TheRpcProvider, TheRpcConfig>(TheRpcConfig::default());
     providers.add_ws_provider::<AllnodesWsProvider, AllnodesConfig>(AllnodesConfig::new(
         config.allnodes_api_key.clone(),
     ));

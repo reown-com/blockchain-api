@@ -2,6 +2,43 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.247.2 - 2025-06-04
+#### Bug Fixes
+- **(TheRPC)** proper handling of the rate limiting response (#1102) - (52cdcc7) - Max Kalashnikoff | maksy.eth
+- adding Zan API key to terraform variables (#1101) - (64db1be) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.247.1 - 2025-06-04
+#### Bug Fixes
+- **(providers)** disabling CallStatic (#1100) - (d79fd2a) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.247.0 - 2025-06-04
+#### Features
+- **(providers)** adding Zan, OneRpc, TheRpc providers (#1099) - (ea4360f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.246.0 - 2025-06-04
+#### Features
+- enable binance flags (#1097) - (f9b645b) - Luka Isailovic
+
+- - -
+
+## 0.245.0 - 2025-06-03
+#### Features
+- **(providers)** adding CallStatic RPC provider (#1095) - (796c8c7) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.244.1 - 2025-06-03
+#### Bug Fixes
+- coinbase order status (#1096) - (cd21cb2) - Luka Isailovic
+
+- - -
+
 ## 0.244.0 - 2025-06-02
 #### Features
 - **(providers)** temporarily disabling Op, Base and Arb in the Pokt provider (#1094) - (7c05482) - Max Kalashnikoff | maksy.eth
