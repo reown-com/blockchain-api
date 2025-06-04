@@ -64,11 +64,17 @@ impl RpcProvider for TheRpcProvider {
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if response.error.is_some() && status.is_success() {
-                debug!(
-                    "Strange: provider returned JSON RPC error, but status {status} is success: \
-                     TheRpc: {response:?}"
-                );
+            if let Some(error) = &response.error {
+                // Handling the custom rate limit error
+                if error.code == -32029 {
+                    return Ok((http::StatusCode::TOO_MANY_REQUESTS, body).into_response());
+                }
+                if status.is_success() {
+                    debug!(
+                        "Strange: provider returned JSON RPC error, but status {status} is \
+                         success: Pokt: {response:?}"
+                    );
+                }
             }
         }
 
