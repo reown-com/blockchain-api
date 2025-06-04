@@ -206,6 +206,7 @@ enum AmountType {
     Fiat = 1,
     Crypto = 2,
 }
+// test
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
