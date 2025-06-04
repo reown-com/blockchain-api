@@ -1,38 +1,58 @@
-use super::types::PreparedCalls;
-use crate::analytics::MessageSource;
-use crate::handlers::sessions::get::{
-    get_session_context, GetSessionContextError, InternalGetSessionContextError,
-};
-use crate::handlers::wallet::types::SignatureRequestType;
-use crate::utils::erc4337::BundlerRpcClient;
-use crate::utils::erc7677::{PaymasterRpcClient, PmGetPaymasterDataParams};
-use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
-use alloy::primitives::{bytes, keccak256, Address, Bytes, FixedBytes, B256, U256, U64};
-use alloy::providers::{Provider, ProviderBuilder};
-use alloy::sol_types::SolCall;
-use alloy::sol_types::SolValue;
-use axum::extract::State;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::Arc;
-use thiserror::Error;
-use tracing::error;
-use url::Url;
-use uuid::Uuid;
-use wc::future::FutureExt;
-use yttrium::erc7579::accounts::safe::encode_validator_key;
-use yttrium::erc7579::smart_sessions::ISmartSession::isPermissionEnabledReturn;
-use yttrium::erc7579::smart_sessions::{
-    enableSessionSigCall, encode_use_signature, EnableSession, ISmartSession, SmartSessionMode,
-    SMART_SESSIONS_ADDRESS,
-};
-use yttrium::smart_accounts::account_address::AccountAddress;
-use yttrium::{
-    bundler::{config::BundlerConfig, pimlico::client::BundlerClient},
-    chain::ChainId,
-    entry_point::{EntryPointConfig, EntryPointVersion},
-    smart_accounts::{nonce::get_nonce_with_key, safe::get_call_data},
-    user_operation::{user_operation_hash::UserOperationHash, UserOperationV07},
+use {
+    super::types::PreparedCalls,
+    crate::{
+        analytics::MessageSource,
+        handlers::{
+            sessions::get::{
+                get_session_context,
+                GetSessionContextError,
+                InternalGetSessionContextError,
+            },
+            wallet::types::SignatureRequestType,
+            HANDLER_TASK_METRICS,
+        },
+        state::AppState,
+        utils::{
+            erc4337::BundlerRpcClient,
+            erc7677::{PaymasterRpcClient, PmGetPaymasterDataParams},
+        },
+    },
+    alloy::{
+        primitives::{bytes, keccak256, Address, Bytes, FixedBytes, B256, U256, U64},
+        providers::{Provider, ProviderBuilder},
+        signers::{local::PrivateKeySigner, Signer},
+        sol_types::{SolCall, SolValue},
+    },
+    axum::extract::State,
+    serde::{Deserialize, Serialize},
+    std::{collections::HashMap, sync::Arc},
+    thiserror::Error,
+    tracing::error,
+    url::Url,
+    uuid::Uuid,
+    wc::future::FutureExt,
+    yttrium::{
+        bundler::{config::BundlerConfig, pimlico::client::BundlerClient},
+        chain::ChainId,
+        entry_point::{EntryPointConfig, EntryPointVersion},
+        erc7579::{
+            accounts::safe::encode_validator_key,
+            smart_sessions::{
+                enableSessionSigCall,
+                encode_use_signature,
+                EnableSession,
+                ISmartSession::{self, isPermissionEnabledReturn},
+                SmartSessionMode,
+                SMART_SESSIONS_ADDRESS,
+            },
+        },
+        smart_accounts::{
+            account_address::AccountAddress,
+            nonce::get_nonce_with_key,
+            safe::get_call_data,
+        },
+        user_operation::{user_operation_hash::UserOperationHash, UserOperationV07},
+    },
 };
 
 pub type PrepareCallsRequest = Vec<PrepareCallsRequestItem>;
@@ -128,8 +148,8 @@ pub enum PrepareCallsError {
     #[error("Invalid permissionEnableSig for kernel account")]
     PermissionContextInvalidPermissionEnableSigForKernelAccount,
 
-    #[error("Invalid permission context")]
-    InvalidPermissionContext,
+    #[error("Invalid permission context: {0}")]
+    InvalidPermissionContext(PermissionContextError),
 
     #[error("Paymaster service capability is not supported")]
     PaymasterServiceUnsupported,
@@ -145,6 +165,27 @@ pub enum PrepareCallsError {
 
     #[error("Internal error")]
     InternalError(PrepareCallsInternalError),
+}
+
+#[derive(Error, Debug)]
+pub enum PermissionContextError {
+    #[error("Validator address mismatch")]
+    ValidatorAddressMismatch,
+
+    #[error("Signers data missing count")]
+    SignersDataMissingCount,
+
+    #[error("Signers data truncated")]
+    SignersDataTruncated,
+
+    #[error("Unknown signer type")]
+    UnknownSignerType,
+
+    #[error("Signer data truncated")]
+    SignerDataTruncated,
+
+    #[error("Signers data has trailing bytes")]
+    SignersDataTrailingBytes,
 }
 
 #[derive(Error, Debug)]
@@ -190,6 +231,7 @@ async fn handler_internal(
     project_id: String,
     request: PrepareCallsRequest,
 ) -> Result<PrepareCallsResponse, PrepareCallsError> {
+    tracing::debug!("=== PREPARE CALLS HANDLER STARTED ===");
     let mut response = Vec::with_capacity(request.len());
     for request in request {
         let chain_id = ChainId::new_eip155(request.chain_id.to::<u64>());
@@ -251,11 +293,11 @@ async fn handler_internal(
         let (validator_address, signature) =
             split_permissions_context_and_check_validator(&context)?;
 
-        // TODO refactor into yttrium
+        tracing::debug!("Getting dummy signature for gas estimation");
         let dummy_signature =
             get_dummy_signature(request.from, signature, account_type, &provider).await?;
 
-        // https://github.com/reown-com/web-examples/blob/32f9df464e2fa85ec49c21837d811cfe1437719e/advanced/wallets/react-wallet-v2/src/lib/smart-accounts/builders/SafeUserOpBuilder.ts#L110
+        tracing::debug!("Getting nonce with validator key");
         let nonce = get_nonce_with_key(
             &provider,
             request.from,
@@ -265,7 +307,7 @@ async fn handler_internal(
         .await
         .map_err(|e| PrepareCallsError::InternalError(PrepareCallsInternalError::GetNonce(e)))?;
 
-        // TODO refactor to use bundler_rpc_call directly: https://github.com/WalletConnect/blockchain-api/blob/8be3ca5b08dec2387ee2c2ffcb4b7ca739443bcb/src/handlers/bundler.rs#L62
+        tracing::debug!("Setting up bundler clients");
         let bundler_url = format!(
             "https://rpc.walletconnect.org/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
             chain_id.caip2_identifier(),
@@ -276,7 +318,7 @@ async fn handler_internal(
         let pimlico_client = BundlerClient::new(BundlerConfig::new(bundler_url.clone()));
         let bundler_provider = BundlerRpcClient::new(bundler_url);
 
-        // TODO cache this
+        tracing::debug!("Estimating gas price");
         let gas_price = pimlico_client
             .estimate_user_operation_gas_price()
             .await
@@ -285,7 +327,13 @@ async fn handler_internal(
                     PrepareCallsInternalError::EstimateUserOperationGasPrice(e),
                 )
             })?;
+        tracing::debug!(
+            "Got gas price estimates - max_fee_per_gas: {}, max_priority_fee_per_gas: {}",
+            gas_price.fast.max_fee_per_gas,
+            gas_price.fast.max_priority_fee_per_gas
+        );
 
+        tracing::debug!("Building initial user operation");
         let user_op = UserOperationV07 {
             sender: request.from,
             nonce,
@@ -304,54 +352,15 @@ async fn handler_internal(
             signature: dummy_signature,
         };
 
-        let (user_op, is_final) =
-            if let Some(paymaster_service) = &request.capabilities.paymaster_service {
-                let paymaster_client = PaymasterRpcClient::new(paymaster_service.url.clone());
-
-                let sponsor_user_op_result = paymaster_client
-                    .pm_get_paymaster_stub_data(PmGetPaymasterDataParams {
-                        user_op: user_op.clone(),
-                        entrypoint: entry_point_config.address().into(),
-                        chain_id: U64::from(chain_id.eip155_chain_id()),
-                        context: HashMap::new(),
-                    })
-                    .await
-                    .map_err(PrepareCallsError::PmGetPaymasterStubData)?;
-
-                (
-                    UserOperationV07 {
-                        paymaster: Some(sponsor_user_op_result.paymaster),
-                        paymaster_data: Some(sponsor_user_op_result.paymaster_data),
-                        paymaster_verification_gas_limit: Some(
-                            sponsor_user_op_result.paymaster_verification_gas_limit,
-                        ),
-                        paymaster_post_op_gas_limit: Some(
-                            sponsor_user_op_result.paymaster_post_op_gas_limit,
-                        ),
-                        ..user_op
-                    },
-                    sponsor_user_op_result.is_final,
-                )
-            } else {
-                (user_op, false)
-            };
-
-        let user_op = {
-            let response = bundler_provider
-                .eth_estimate_user_operation_gas_v07(&user_op, entry_point_config.address().into())
-                .await
-                .map_err(PrepareCallsError::EstimateUserOperationGas)?;
-
-            UserOperationV07 {
-                call_gas_limit: response.call_gas_limit,
-                verification_gas_limit: response.verification_gas_limit,
-                pre_verification_gas: response.pre_verification_gas,
-                ..user_op
-            }
-        };
-
         let user_op = if let Some(paymaster_service) = request.capabilities.paymaster_service {
+            // For prepare calls, we always want to fetch paymaster data if service is
+            // provided
+            let is_final = false;
             if !is_final {
+                tracing::debug!(
+                    "Getting paymaster data from service: {}",
+                    paymaster_service.url
+                );
                 let paymaster_client = PaymasterRpcClient::new(paymaster_service.url);
 
                 let sponsor_user_op_result = paymaster_client
@@ -364,22 +373,79 @@ async fn handler_internal(
                     .await
                     .map_err(PrepareCallsError::PmGetPaymasterData)?;
 
+                tracing::debug!(
+                    "Got paymaster data: paymaster={:?}, paymaster_data=0x{}",
+                    sponsor_user_op_result.paymaster,
+                    hex::encode(&sponsor_user_op_result.paymaster_data)
+                );
+
                 UserOperationV07 {
                     paymaster: Some(sponsor_user_op_result.paymaster),
                     paymaster_data: Some(sponsor_user_op_result.paymaster_data),
                     ..user_op
                 }
             } else {
+                tracing::debug!("Skipping paymaster data fetch - is_final=true");
                 user_op
             }
         } else {
+            tracing::debug!("No paymaster service configured");
             user_op
         };
 
+        let user_op = {
+            tracing::debug!("=== GAS ESTIMATION DEBUG ===");
+            tracing::debug!("UserOperation JSON for Pimlico simulation:");
+
+            // Format for easy copy-paste into Pimlico simulator
+            let user_op_json = serde_json::json!({
+                "sender": format!("0x{:x}", user_op.sender.to_address()),
+                "nonce": format!("0x{:x}", user_op.nonce),
+                "callData": format!("0x{}", hex::encode(&user_op.call_data)),
+                "callGasLimit": "0xF4240",  // 1,000,000 gas for simulation (safe for complex operations)
+                "verificationGasLimit": "0xF4240",  // 1,000,000 gas for simulation (safe for Smart Sessions)
+                "preVerificationGas": "0x15F90",  // 90,000 gas for simulation (safe overhead)
+                "maxFeePerGas": format!("0x{:x}", user_op.max_fee_per_gas),
+                "maxPriorityFeePerGas": format!("0x{:x}", user_op.max_priority_fee_per_gas),
+                "signature": format!("0x{}", hex::encode(&user_op.signature))
+            });
+
+            tracing::debug!(
+                "{}",
+                serde_json::to_string_pretty(&user_op_json)
+                    .unwrap_or_else(|_| "Failed to serialize JSON".to_string())
+            );
+            tracing::debug!("EntryPoint: {}", entry_point_config.address());
+            tracing::debug!("=== END GAS ESTIMATION DEBUG ===");
+
+            tracing::debug!("Estimating gas for user operation");
+            let response = bundler_provider
+                .eth_estimate_user_operation_gas_v07(&user_op, entry_point_config.address().into())
+                .await
+                .map_err(PrepareCallsError::EstimateUserOperationGas)?;
+
+            tracing::debug!(
+                "Gas estimation response: call_gas_limit={:?}, verification_gas_limit={:?}, \
+                 pre_verification_gas={:?}",
+                response.call_gas_limit,
+                response.verification_gas_limit,
+                response.pre_verification_gas
+            );
+
+            UserOperationV07 {
+                call_gas_limit: response.call_gas_limit,
+                verification_gas_limit: response.verification_gas_limit,
+                pre_verification_gas: response.pre_verification_gas,
+                ..user_op
+            }
+        };
+
+        tracing::debug!("Calculating user operation hash");
         let hash = user_op.hash(
             &entry_point_config.address().to_address(),
             chain_id.eip155_chain_id(),
         );
+        tracing::debug!("Calculated user operation hash: {:?}", hash);
 
         response.push(PrepareCallsResponseItem {
             prepared_calls: PreparedCalls {
@@ -404,7 +470,9 @@ pub fn split_permissions_context_and_check_validator(
 
     let validator_address = Address::from_slice(validator_address);
     if validator_address != SMART_SESSIONS_ADDRESS {
-        return Err(PrepareCallsError::InvalidPermissionContext);
+        return Err(PrepareCallsError::InvalidPermissionContext(
+            PermissionContextError::ValidatorAddressMismatch,
+        ));
     }
 
     Ok((validator_address, signature))
@@ -466,7 +534,8 @@ pub fn decode_smart_session_signature(
                 mode,
                 permission_id,
                 signature,
-                enable_session_data: None, // TODO bad practice to not enforce this as part of the enum variant
+                enable_session_data: None, /* TODO bad practice to not enforce this as part of
+                                            * the enum variant */
             })
         }
         SmartSessionMode::Enable | SmartSessionMode::UnsafeEnable => {
@@ -515,7 +584,8 @@ pub fn decode_smart_session_signature(
                         chainDigestIndex: enable_session.chainDigestIndex,
                         hashesAndChainIds: enable_session.hashesAndChainIds,
                         sessionToEnable: enable_session.sessionToEnable,
-                        permissionEnableSig: permission_enable_sig, // TODO skip all this and just pass-through as-is
+                        permissionEnableSig: permission_enable_sig, /* TODO skip all this and
+                                                                     * just pass-through as-is */
                     },
                     validator,
                 }),
@@ -533,6 +603,11 @@ pub async fn encode_use_or_enable_smart_session_signature(
     enable_session_data: EnableSessionData,
 ) -> Result<Bytes, PrepareCallsError> {
     let smart_sessions = ISmartSession::new(SMART_SESSIONS_ADDRESS, provider);
+    tracing::debug!(
+        ?permission_id,
+        ?address,
+        "Checking if permission is enabled"
+    );
     let isPermissionEnabledReturn {
         _0: session_enabled,
     } = smart_sessions
@@ -543,9 +618,12 @@ pub async fn encode_use_or_enable_smart_session_signature(
             PrepareCallsError::InternalError(PrepareCallsInternalError::IsSessionEnabled(e))
         })?;
 
+    tracing::debug!(session_enabled, "Encoding signature for smart session",);
     let signature = if session_enabled {
+        tracing::debug!("Using existing session");
         encode_use_signature(permission_id, signature.into())
     } else {
+        tracing::debug!("Enabling new session");
         encode_enable_signature(account_type, signature, enable_session_data)?
     };
 
@@ -557,31 +635,41 @@ fn encode_enable_signature_before_compress(
     signature: Vec<u8>,
     enable_session_data: EnableSessionData,
 ) -> Vec<u8> {
-    (
-        // enable_session_data.enable_session,
-        EnableSession {
-            chainDigestIndex: enable_session_data.enable_session.chainDigestIndex,
-            hashesAndChainIds: enable_session_data.enable_session.hashesAndChainIds,
-            sessionToEnable: enable_session_data.enable_session.sessionToEnable,
-            permissionEnableSig: match account_type {
-                AccountType::Erc7579Implementation | AccountType::Safe | AccountType::Nexus => (
+    tracing::trace!("Encoding enable signature before compression");
+    tracing::trace!("Account type: {:?}", account_type);
+    tracing::trace!("Signature length: {} bytes", signature.len());
+
+    let enable_session = EnableSession {
+        chainDigestIndex: enable_session_data.enable_session.chainDigestIndex,
+        hashesAndChainIds: enable_session_data.enable_session.hashesAndChainIds,
+        sessionToEnable: enable_session_data.enable_session.sessionToEnable,
+        permissionEnableSig: match account_type {
+            AccountType::Erc7579Implementation | AccountType::Safe | AccountType::Nexus => {
+                tracing::trace!("Using standard permission enable sig format");
+                (
                     enable_session_data.validator,
                     enable_session_data.enable_session.permissionEnableSig,
                 )
                     .abi_encode_packed()
-                    .into(),
-                AccountType::Kernel => (
+                    .into()
+            }
+            AccountType::Kernel => {
+                tracing::trace!("Using Kernel permission enable sig format with 0x01 prefix");
+                (
                     [0x01],
                     enable_session_data.validator,
                     enable_session_data.enable_session.permissionEnableSig,
                 )
                     .abi_encode_packed()
-                    .into(),
-            },
+                    .into()
+            }
         },
-        signature,
-    )
-        .abi_encode_params()
+    };
+
+    tracing::trace!("Encoding final params");
+    let encoded = (enable_session, signature).abi_encode_params();
+    tracing::trace!("Encoded params length: {} bytes", encoded.len());
+    encoded
 }
 
 fn encode_enable_signature(
@@ -589,9 +677,12 @@ fn encode_enable_signature(
     signature: Vec<u8>,
     enable_session_data: EnableSessionData,
 ) -> Result<Bytes, PrepareCallsError> {
+    tracing::debug!("Encoding enable signature before compression");
     let signature =
         encode_enable_signature_before_compress(account_type, signature, enable_session_data);
+    tracing::debug!("Encoded signature length: {} bytes", signature.len());
 
+    tracing::debug!("Compressing signature");
     let mut compress_state = fastlz_rs::CompressState::new();
     let compressed = Bytes::from(
         compress_state
@@ -602,6 +693,9 @@ fn encode_enable_signature(
                 ))
             })?,
     );
+    tracing::debug!("Compressed signature length: {} bytes", compressed.len());
+
+    tracing::debug!("Encoding final enable signature");
     Ok((
         FixedBytes::from(SmartSessionMode::Enable.to_u8()),
         compressed,
@@ -610,32 +704,66 @@ fn encode_enable_signature(
         .into())
 }
 
+#[derive(Clone)]
 enum SignerType {
     Ecdsa,
     Passkey,
 }
 
+fn is_ownable_validator_format(data: &Bytes) -> bool {
+    // Check if data is abi.encode(threshold, owners) format
+    data.len() >= 64 && <(U256, Vec<Address>)>::abi_decode_params(data, false).is_ok()
+}
+
 fn decode_signers(data: Bytes) -> Result<Vec<SignerType>, PrepareCallsError> {
-    let mut data = data.into_iter();
-    let signer_count = data
+    // Try ABI decoding first (threshold + address array format) - OwnableValidator
+    if is_ownable_validator_format(&data) {
+        if let Ok((_, owners)) = <(U256, Vec<Address>)>::abi_decode_params(&data, false) {
+            if !owners.is_empty() {
+                // For OwnableValidator format, all signers are ECDSA (EOA addresses)
+                return Ok(vec![SignerType::Ecdsa; owners.len()]);
+            }
+        }
+    }
+
+    // Fall back to custom format (signer type bytes + data) - MultiKeySigner
+    let mut data_iter = data.into_iter();
+    let signer_count = data_iter
         .next()
-        .ok_or(PrepareCallsError::InvalidPermissionContext)?; // TODO correct error variants
+        .ok_or(PrepareCallsError::InvalidPermissionContext(
+            PermissionContextError::SignersDataMissingCount,
+        ))?;
+
     let mut signers = Vec::with_capacity(signer_count as usize);
     for _i in 0..signer_count {
-        let (signer_type, length) = match data.next() {
-            Some(0) => (SignerType::Ecdsa, 20),
-            Some(1) => (SignerType::Passkey, 64),
-            _ => return Err(PrepareCallsError::InvalidPermissionContext), // TODO correct error variants
+        let (signer_type, length) = match data_iter.next() {
+            Some(0) => (SignerType::Ecdsa, 20),   // EOA
+            Some(1) => (SignerType::Passkey, 64), // PASSKEY
+            Some(_) => {
+                return Err(PrepareCallsError::InvalidPermissionContext(
+                    PermissionContextError::UnknownSignerType,
+                ))
+            }
+            None => {
+                return Err(PrepareCallsError::InvalidPermissionContext(
+                    PermissionContextError::SignersDataTruncated,
+                ))
+            }
         };
-        // ignore the actual signature
+        // Skip over the signature data
         for _i in 0..length {
-            data.next()
-                .ok_or(PrepareCallsError::InvalidPermissionContext)?; // TODO correct error variants
+            data_iter
+                .next()
+                .ok_or(PrepareCallsError::InvalidPermissionContext(
+                    PermissionContextError::SignerDataTruncated,
+                ))?;
         }
         signers.push(signer_type);
     }
-    if data.next().is_some() {
-        return Err(PrepareCallsError::InvalidPermissionContext); // TODO correct error variants
+    if data_iter.next().is_some() {
+        return Err(PrepareCallsError::InvalidPermissionContext(
+            PermissionContextError::SignersDataTrailingBytes,
+        ));
     }
     Ok(signers)
 }
@@ -656,23 +784,96 @@ async fn get_dummy_signature(
     assert_eq!(mode, SmartSessionMode::Enable);
     let enable_session_data = enable_session_data.unwrap();
 
-    const DUMMY_ECDSA_SIGNATURE: Bytes = bytes!("e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c");
-    const DUMMY_PASSKEY_SIGNATURE: Bytes = bytes!("00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000001635bc6d0f68ff895cae8a288ecf7542a6a9cd555df784b73e1e2ea7e9104b1db15e9015d280cb19527881c625fee43fd3a405d5b0d199a8c8e6589a7381209e40000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002549960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f47b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a22746278584e465339585f3442797231634d77714b724947422d5f3330613051685a36793775634d30424f45222c226f726967696e223a22687474703a2f2f6c6f63616c686f73743a33303030222c2263726f73734f726967696e223a66616c73652c20226f746865725f6b6579735f63616e5f62655f61646465645f68657265223a22646f206e6f7420636f6d7061726520636c69656e74446174614a534f4e20616761696e737420612074656d706c6174652e205365652068747470733a2f2f676f6f2e676c2f796162506578227d000000000000000000000000");
-    let signature = decode_signers(
-        enable_session_data
-            .enable_session
-            .sessionToEnable
-            .sessionValidatorInitData
-            .clone(),
-    )?
-    .into_iter()
-    .map(|t| match t {
-        SignerType::Ecdsa => DUMMY_ECDSA_SIGNATURE,
-        SignerType::Passkey => DUMMY_PASSKEY_SIGNATURE,
-    })
-    .collect::<Vec<_>>()
-    .abi_encode();
+    // Deterministic dummy private keys for consistent signatures
+    let dummy_private_key_1 = B256::from_slice(&[1u8; 32]);
+    let dummy_private_key_2 = B256::from_slice(&[2u8; 32]);
 
+    let signer_1 = PrivateKeySigner::from_bytes(&dummy_private_key_1).unwrap();
+    let signer_2 = PrivateKeySigner::from_bytes(&dummy_private_key_2).unwrap();
+
+    // Create a dummy message hash for signing (in practice this would be the actual
+    // userOp hash)
+    let dummy_message_hash = keccak256("dummy message for gas estimation");
+
+    let signature_1 = signer_1.sign_hash(&dummy_message_hash).await.unwrap();
+    let signature_2 = signer_2.sign_hash(&dummy_message_hash).await.unwrap();
+
+    // Convert to 65-byte format (r + s + v)
+    let sig_1_bytes = [
+        signature_1.r().to_be_bytes::<32>().as_slice(),
+        signature_1.s().to_be_bytes::<32>().as_slice(),
+        &[if signature_1.v() { 28u8 } else { 27u8 }],
+    ]
+    .concat();
+
+    let sig_2_bytes = [
+        signature_2.r().to_be_bytes::<32>().as_slice(),
+        signature_2.s().to_be_bytes::<32>().as_slice(),
+        &[if signature_2.v() { 28u8 } else { 27u8 }],
+    ]
+    .concat();
+
+    const DUMMY_PASSKEY_SIGNATURE: Bytes = bytes!("00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000001635bc6d0f68ff895cae8a288ecf7542a6a9cd555df784b73e1e2ea7e9104b1db15e9015d280cb19527881c625fee43fd3a405d5b0d199a8c8e6589a7381209e400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002549960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d000000000000000000000000");
+
+    tracing::debug!("Decoding signers from session validator init data");
+    let validator_init_data = &enable_session_data
+        .enable_session
+        .sessionToEnable
+        .sessionValidatorInitData;
+
+    let signers = decode_signers(validator_init_data.clone())?;
+    tracing::debug!("Decoded {} signers", signers.len());
+
+    tracing::debug!("Mapping signers to dummy signatures");
+    let signature = if is_ownable_validator_format(validator_init_data) {
+        // For OwnableValidator: concatenate signatures directly (abi.encodePacked
+        // style)
+        tracing::debug!("Using OwnableValidator signature format (concatenated)");
+        signers
+            .into_iter()
+            .enumerate()
+            .flat_map(|(i, t)| match t {
+                SignerType::Ecdsa => {
+                    tracing::trace!("Using valid dummy ECDSA signature for signer {}", i);
+                    if i == 0 {
+                        sig_1_bytes.clone()
+                    } else {
+                        sig_2_bytes.clone()
+                    }
+                }
+                SignerType::Passkey => {
+                    tracing::trace!("Using dummy Passkey signature for signer {}", i);
+                    DUMMY_PASSKEY_SIGNATURE.to_vec()
+                }
+            })
+            .collect::<Vec<u8>>()
+    } else {
+        // For MultiKeySigner: ABI-encode as array
+        tracing::debug!("Using MultiKeySigner signature format (ABI-encoded array)");
+        signers
+            .into_iter()
+            .enumerate()
+            .map(|(i, t)| match t {
+                SignerType::Ecdsa => {
+                    tracing::trace!("Using valid dummy ECDSA signature for signer {}", i);
+                    Bytes::from(if i == 0 {
+                        sig_1_bytes.clone()
+                    } else {
+                        sig_2_bytes.clone()
+                    })
+                }
+                SignerType::Passkey => {
+                    tracing::trace!("Using dummy Passkey signature for signer {}", i);
+                    DUMMY_PASSKEY_SIGNATURE
+                }
+            })
+            .collect::<Vec<_>>()
+            .abi_encode()
+    };
+
+    tracing::debug!("Generated signature of length {} bytes", signature.len());
+
+    tracing::debug!("Encoding final smart session signature");
     encode_use_or_enable_smart_session_signature(
         provider,
         permission_id,
@@ -686,10 +887,16 @@ async fn get_dummy_signature(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use alloy::primitives::{address, bytes, fixed_bytes};
-    use yttrium::erc7579::smart_sessions::{
-        ActionData, ChainDigest, ERC7739Data, PolicyData, Session,
+    use {
+        super::*,
+        alloy::primitives::{address, bytes, fixed_bytes},
+        yttrium::erc7579::smart_sessions::{
+            ActionData,
+            ChainDigest,
+            ERC7739Data,
+            PolicyData,
+            Session,
+        },
     };
 
     #[test]
@@ -697,7 +904,7 @@ mod tests {
         assert_eq!(
             encode_use_signature(
                 fixed_bytes!("2ec3eb29f3b075c8fed3fb0585947b5f1ae50c2fbe2f8274918bed889f69e342"),
-                bytes!("00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c00000000000000000000000000000000000000000000000000000000000000")
+                bytes!("00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c00000000000000000000000000000000000000000000000000000000000000"),
             ),
             bytes!("002ec3eb29f3b075c8fed3fb0585947b5f1ae50c2fbe2f8274918bed889f69e34200000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c00000000000000000000000000000000000000000000000000000000000000"),
         );
@@ -744,7 +951,7 @@ mod tests {
                     validator: address!("9388056f9cecfa536e70649154db93485a1f3448"),
                 }
             )),
-            bytes!("000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000004e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000042000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000014a34d921018061556bee2f63850c0762c9e7af9ad05895078ad8287f4cadc56f347a000000000000000000000000207b90941d9cff79a750c1e5c05ddaa17ea01b9f00000000000000000000000000000000000000000000000000000000000000e031000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b020079b1cf6cb04b0e7a626c98053b3ad29d3a93527700bae0435ac2bccb87c2ef2db5e215fac4dec876f40000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020efef39a1000000000000000000000000000000000000000000000000000000000000000000000000000000002e65bafa07238666c3b239e94f32dad3cdd6498d0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000009a6c4974dce237e01ff35c602ca9555a3c0fa5ef0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000002000000000000000000000000066f8671c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000559388056f9cecfa536e70649154db93485a1f3448821a568f5940148c20779e18f7fa0547c4f53f388eb684678f92774152a728a73be1f82e3f3f37a54f20e686e2a9711c280871aef1f7aa796b790ade00c0f010200000000000000000000000000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c00000000000000000000000000000000000000000000000000000000000000"),
+            bytes!("000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000004e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000042000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000014a34d921018061556bee2f63850c0762c9e7af9ad05895078ad8287f4cadc56f347a000000000000000000000000207b90941d9cff79a750c1e5c05ddaa17ea01b9f00000000000000000000000000000000000000000000000000000000000000e03100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b020079b1cf6cb04b0e7a626c98053b3ad29d3a93527700bae0435ac2bccb87c2ef2db5e215fac4dec876f4e0184ce02a00e016ff0000e016ffe03800e2153f221203efef39a12007e01c00132e65bafa07238666c3b239e94f32dad3cdd6498de01638e017dfe0189fe0035f139a6c4974dce237e01ff35c602ca9555a3c0fa5efe0031fe00a00e1177fe0045f0366f864d5e00a43e013001f559388056f9cecfa536e70649154db93485a1f3448f0c9cba469e26f15ae4c091f8ff1b474b48673bb75d32e7e360391cb6e6db11c931dcc81986a86b380fcd48015464b5f504fd5fa527fd9437e46ea75098adce216c81fe01371e004000001e4177fe004dfe00a000002e00a13e00300e1173f00c0e0032ce00a001f41e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfc1fb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839a01f51ce00a54e02200e0587f"),
         );
     }
 
@@ -753,7 +960,7 @@ mod tests {
         assert_eq!(
             encode_enable_signature(
                 AccountType::Safe,
-                bytes!("00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c00000000000000000000000000000000000000000000000000000000000000").to_vec(),
+                bytes!("00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839a01f51ce00a54e02200e0587f"),
                 EnableSessionData {
                     enable_session: EnableSession {
                         chainDigestIndex: 0,
@@ -789,7 +996,7 @@ mod tests {
                     validator: address!("9388056f9cecfa536e70649154db93485a1f3448"),
                 }
             ).unwrap(),
-            bytes!("010000e015000040e0151e0104e0e0151fe018000080e01621e0165f010420e0163f0001e0141f1f014a3464b2d184c4b8517d7f2f59bab7e6269b6aa524e268fcd1eec34a9c8e2702d7389fe0033f12207b90941d9cff79a750c1e5c05ddaa17ea01be0041fe00a0001e031e00a14e021000001e1167f010160e0154b0001e1163fe018001f2b02001b60aa8eb31e11c41279f6a102026edeeb848ec600bae0435ac2bccb870bc2ef2db5e215fac4dec876f4e0184ce02a00e016ff0000e016ffe03800e2153f221203efef39a12007e01c00132e65bafa07238666c3b239e94f32dad3cdd6498de01638e017dfe0189fe0035f139a6c4974dce237e01ff35c602ca9555a3c0fa5efe0031fe00a00e1177fe0045f0366f864d5e00a43e013001f559388056f9cecfa536e70649154db93485a1f3448f0c9cba469e26f15ae4c091f8ff1b474b48673bb75d32e7e360391cb6e6db11c931dcc81986a86b380fcd48015464b5f504fd5fa527fd9437e46ea75098adce216c81fe01371e004000001e4177fe004dfe00a000002e00a13e00300e1173f00c0e0032ce00a001f41e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfc1fb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839a01f51ce00a54e02200e0587f"),
+            bytes!("010000e015000040e0151e0104e0e0151fe018000080e01621e0165f010420e0163f0001e0141f1f014a3464b2d184c4b8517d7f2f59bab7e6269b6aa524e268fcd1eec34a9c8e2702d7389fe0033f12207b90941d9cff79a750c1e5c05ddaa17ea01be0041fe00a0001e031e00a14e021000001e1167f010160e0154b0001e1163fe018001f2b02001b60aa8eb31e11c41279f6a102026edeeb848ec600bae0435ac2bccb870bc2ef2db5e215fac4dec876f4e0184ce02a00e016ff0000e016ffe03800e2153f221203efef39a12007e01c00132e65bafa07238666c3b239e94f32dad3cdd6498de01638e017dfe0189fe0035f139a6c4974dce237e01ff35c602ca9555a3c0fa5efe0031fe00a00e1177fe0045f0366f864d5e00a43e013001f559388056f9cecfa536e70649154db93485a1f3448f0c9cba469e26f15ae4c091f8ff1b474b48673bb75d32e7e360391cb6e6db11c931dcc81986a86b380fcd48015464b5f504fd5fa527fd9437e46ea75098adce216c81f"),
         );
     }
 
