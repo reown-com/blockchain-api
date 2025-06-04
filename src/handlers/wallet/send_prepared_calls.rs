@@ -1,38 +1,55 @@
-use super::call_id::{CallId, CallIdInner};
-use super::prepare_calls::{
-    decode_smart_session_signature, encode_use_or_enable_smart_session_signature,
-    split_permissions_context_and_check_validator, AccountType, DecodedSmartSessionSignature,
-    PrepareCallsError,
-};
-use super::types::PreparedCalls;
-use crate::analytics::MessageSource;
-use crate::handlers::sessions::cosign::{self, CoSignQueryParams};
-use crate::handlers::sessions::get::{
-    get_session_context, GetSessionContextError, InternalGetSessionContextError,
-};
-use crate::handlers::sessions::CoSignRequest;
-use crate::utils::crypto::UserOperation;
-use crate::utils::simple_request_json::SimpleRequestJson;
-use crate::{handlers::HANDLER_TASK_METRICS, state::AppState};
-use alloy::primitives::{Bytes, U64};
-use alloy::providers::ProviderBuilder;
-use axum::extract::{Path, Query};
-use axum::{extract::State, response::IntoResponse};
-use hyper::body::to_bytes;
-use parquet::data_type::AsBytes;
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
-use thiserror::Error;
-use tracing::error;
-use uuid::Uuid;
-use wc::future::FutureExt;
-use yttrium::bundler::client::BundlerClient;
-use yttrium::bundler::config::BundlerConfig;
-use yttrium::erc7579::smart_sessions::SmartSessionMode;
-use yttrium::{
-    chain::ChainId,
-    entry_point::{EntryPointConfig, EntryPointVersion},
-    user_operation::UserOperationV07,
+use {
+    super::{
+        call_id::{CallId, CallIdInner},
+        prepare_calls::{
+            decode_smart_session_signature,
+            encode_use_or_enable_smart_session_signature,
+            split_permissions_context_and_check_validator,
+            AccountType,
+            DecodedSmartSessionSignature,
+            PrepareCallsError,
+        },
+        types::PreparedCalls,
+    },
+    crate::{
+        analytics::MessageSource,
+        handlers::{
+            sessions::{
+                cosign::{self, CoSignQueryParams},
+                get::{
+                    get_session_context,
+                    GetSessionContextError,
+                    InternalGetSessionContextError,
+                },
+                CoSignRequest,
+            },
+            HANDLER_TASK_METRICS,
+        },
+        state::AppState,
+        utils::{crypto::UserOperation, simple_request_json::SimpleRequestJson},
+    },
+    alloy::{
+        primitives::{Bytes, U64},
+        providers::ProviderBuilder,
+    },
+    axum::{
+        extract::{Path, Query, State},
+        response::IntoResponse,
+    },
+    hyper::body::to_bytes,
+    parquet::data_type::AsBytes,
+    serde::{Deserialize, Serialize},
+    std::sync::Arc,
+    thiserror::Error,
+    uuid::Uuid,
+    wc::future::FutureExt,
+    yttrium::{
+        bundler::{client::BundlerClient, config::BundlerConfig},
+        chain::ChainId,
+        entry_point::{EntryPointConfig, EntryPointVersion},
+        erc7579::smart_sessions::SmartSessionMode,
+        user_operation::UserOperationV07,
+    },
 };
 
 pub type SendPreparedCallsRequest = Vec<SendPreparedCallsRequestItem>;
@@ -159,28 +176,10 @@ async fn handler_internal(
     let mut response = Vec::with_capacity(request.len());
     for request in request {
         let chain_id = ChainId::new_eip155(request.prepared_calls.chain_id.to::<u64>());
-
-        let cosign_signature = {
-            let response =
-                match cosign::handler(
-                    state.clone(),
-                    Path({
-                        format!(
-                            "{}:{}",
-                            chain_id.caip2_identifier(),
-                            request
-                                .prepared_calls
-                                .data
-                                .sender
-                                .to_address()
-                                .to_checksum(None)
-                        )
-                    }),
-                    Query(CoSignQueryParams {
-                        project_id: project_id.clone(),
-                        version: None,
-                    }),
-                    SimpleRequestJson(CoSignRequest {
+        let cosign_signature =
+            {
+                let cosign_request =
+                    CoSignRequest {
                         pci: request.context.to_string(),
                         user_op: UserOperation {
                             sender: ethers::types::H160::from_slice(
@@ -263,7 +262,27 @@ async fn handler_internal(
                                 },
                             ),
                         },
+                    };
+
+                let response = match cosign::handler(
+                    state.clone(),
+                    Path({
+                        format!(
+                            "{}:{}",
+                            chain_id.caip2_identifier(),
+                            request
+                                .prepared_calls
+                                .data
+                                .sender
+                                .to_address()
+                                .to_checksum(None)
+                        )
                     }),
+                    Query(CoSignQueryParams {
+                        project_id: project_id.clone(),
+                        version: None,
+                    }),
+                    SimpleRequestJson(cosign_request),
                 )
                 .await
                 {
@@ -290,15 +309,15 @@ async fn handler_internal(
                         return Err(e);
                     }
                 };
-            if !response.status().is_success() {
-                return Err(SendPreparedCallsError::InternalError(
-                    SendPreparedCallsInternalError::CosignUnsuccessful(
-                        to_bytes(response.into_body()).await,
-                    ),
-                ));
-            }
-            hex::decode(
-                serde_json::from_slice::<serde_json::Value>(
+                if !response.status().is_success() {
+                    return Err(SendPreparedCallsError::InternalError(
+                        SendPreparedCallsInternalError::CosignUnsuccessful(
+                            to_bytes(response.into_body()).await,
+                        ),
+                    ));
+                }
+
+                let response_json = serde_json::from_slice::<serde_json::Value>(
                     &to_bytes(response.into_body()).await.map_err(|e| {
                         SendPreparedCallsError::InternalError(
                             SendPreparedCallsInternalError::CosignReadResponse(e),
@@ -309,23 +328,29 @@ async fn handler_internal(
                     SendPreparedCallsError::InternalError(
                         SendPreparedCallsInternalError::CosignParseResponse(e),
                     )
+                })?;
+
+                let signature_hex = response_json
+                    .get("signature")
+                    .ok_or_else(|| {
+                        SendPreparedCallsError::InternalError(
+                            SendPreparedCallsInternalError::CosignResponseMissingSignature,
+                        )
+                    })?
+                    .as_str()
+                    .ok_or_else(|| {
+                        SendPreparedCallsError::InternalError(
+                            SendPreparedCallsInternalError::CosignResponseSignatureNotString,
+                        )
+                    })?
+                    .trim_start_matches("0x");
+
+                hex::decode(signature_hex).map_err(|e| {
+                    SendPreparedCallsError::InternalError(
+                        SendPreparedCallsInternalError::CosignResponseSignatureNotHex(e),
+                    )
                 })?
-                .get("signature")
-                .ok_or(SendPreparedCallsError::InternalError(
-                    SendPreparedCallsInternalError::CosignResponseMissingSignature,
-                ))?
-                .as_str()
-                .ok_or(SendPreparedCallsError::InternalError(
-                    SendPreparedCallsInternalError::CosignResponseSignatureNotString,
-                ))?
-                .trim_start_matches("0x"),
-            )
-            .map_err(|e| {
-                SendPreparedCallsError::InternalError(
-                    SendPreparedCallsInternalError::CosignResponseSignatureNotHex(e),
-                )
-            })?
-        };
+            };
 
         // TODO check isSafe for request.from:
         // https://github.com/reown-com/web-examples/blob/32f9df464e2fa85ec49c21837d811cfe1437719e/advanced/wallets/react-wallet-v2/src/utils/UserOpBuilderUtil.ts#L39
@@ -386,6 +411,7 @@ async fn handler_internal(
             }
         })?
         .ok_or(SendPreparedCallsError::PciNotFound)?;
+
         let (_validator_address, signature) =
             split_permissions_context_and_check_validator(&context)
                 .map_err(SendPreparedCallsError::SplitPermissionsContextAndCheckValidator)?;
@@ -425,16 +451,13 @@ async fn handler_internal(
         };
 
         // TODO refactor to use bundler_rpc_call directly: https://github.com/WalletConnect/blockchain-api/blob/8be3ca5b08dec2387ee2c2ffcb4b7ca739443bcb/src/handlers/bundler.rs#L62
-        let bundler_client = BundlerClient::new(BundlerConfig::new(
-            // "https://api.pimlico.io/v2/84532/rpc?apikey=pim_CNm9dEo4QHQAJ3fU3RyPzG"
-            format!(
-                "https://rpc.walletconnect.org/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
-                chain_id.caip2_identifier(),
-                project_id,
-            )
-            .parse()
-            .unwrap(),
-        ));
+        let bundler_url = format!(
+            "https://rpc.walletconnect.org/v1/bundler?chainId={}&projectId={}&bundler=pimlico",
+            chain_id.caip2_identifier(),
+            project_id,
+        );
+
+        let bundler_client = BundlerClient::new(BundlerConfig::new(bundler_url.parse().unwrap()));
 
         let user_op_hash = bundler_client
             .send_user_operation(entry_point_config.address(), user_op)
