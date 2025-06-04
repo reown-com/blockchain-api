@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.247.2 - 2025-06-04
+#### Bug Fixes
+- **(TheRPC)** proper handling of the rate limiting response (#1102) - (52cdcc7) - Max Kalashnikoff | maksy.eth
+- adding Zan API key to terraform variables (#1101) - (64db1be) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.247.1 - 2025-06-04
 #### Bug Fixes
 - **(providers)** disabling CallStatic (#1100) - (d79fd2a) - Max Kalashnikoff | maksy.eth
