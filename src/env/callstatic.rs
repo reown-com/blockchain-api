@@ -40,7 +40,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // BSC mainnet
         (
             "eip155:56".into(),
-            ("bsc".into(), Weight::new(Priority::Normal).unwrap()),
+            ("bsc".into(), Weight::new(Priority::Disabled).unwrap()),
         ),
     ])
 }
