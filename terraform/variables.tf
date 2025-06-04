@@ -200,6 +200,12 @@ variable "callstatic_api_key" {
   sensitive   = true
 }
 
+variable "zan_api_key" {
+  description = "Zan API key"
+  type        = string
+  sensitive   = true
+}
+
 #-------------------------------------------------------------------------------
 # Analytics
 
