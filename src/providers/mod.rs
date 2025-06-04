@@ -82,6 +82,7 @@ mod morph;
 mod near;
 mod odyssey;
 mod one_inch;
+mod onerpc;
 mod pimlico;
 mod pokt;
 mod publicnode;
@@ -90,9 +91,11 @@ mod solscan;
 mod sui;
 mod syndica;
 pub mod tenderly;
+mod therpc;
 mod unichain;
 mod weights;
 mod wemix;
+mod zan;
 pub mod zerion;
 mod zksync;
 mod zora;
@@ -115,6 +118,7 @@ pub use {
     near::NearProvider,
     odyssey::OdysseyProvider,
     one_inch::OneInchProvider,
+    onerpc::OneRpcProvider,
     pimlico::PimlicoProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
@@ -123,8 +127,10 @@ pub use {
     sui::SuiProvider,
     syndica::{SyndicaProvider, SyndicaWsProvider},
     tenderly::TenderlyProvider,
+    therpc::TheRpcProvider,
     unichain::UnichainProvider,
     wemix::WemixProvider,
+    zan::ZanProvider,
     zerion::ZerionProvider,
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
@@ -175,6 +181,8 @@ pub struct ProvidersConfig {
     pub meld_api_url: String,
     /// CallStatic API key
     pub callstatic_api_key: String,
+    /// Zan API key
+    pub zan_api_key: String,
 
     pub override_bundler_urls: Option<MockAltoUrls>,
 }
@@ -693,6 +701,9 @@ pub enum ProviderKind {
     Sui,
     Hiro,
     CallStatic,
+    OneRpc,
+    TheRpc,
+    Zan,
 }
 
 impl Display for ProviderKind {
@@ -731,6 +742,9 @@ impl Display for ProviderKind {
                 ProviderKind::Sui => "Sui",
                 ProviderKind::Hiro => "Hiro",
                 ProviderKind::CallStatic => "CallStatic",
+                ProviderKind::OneRpc => "OneRpc",
+                ProviderKind::TheRpc => "TheRpc",
+                ProviderKind::Zan => "Zan",
             }
         )
     }
@@ -770,6 +784,9 @@ impl ProviderKind {
             "Sui" => Some(Self::Sui),
             "Hiro" => Some(Self::Hiro),
             "CallStatic" => Some(Self::CallStatic),
+            "OneRpc" => Some(Self::OneRpc),
+            "TheRpc" => Some(Self::TheRpc),
+            "Zan" => Some(Self::Zan),
             _ => None,
         }
     }
