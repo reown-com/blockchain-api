@@ -206,7 +206,6 @@ enum AmountType {
     Fiat = 1,
     Crypto = 2,
 }
-// test
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -462,7 +461,7 @@ impl BinanceExchange {
                 send_primary: Some(true),
                 merchant_display_name: Some(project_name),
                 net_receive: Some(true),
-                lock_order_attributes: Some(vec![LockOrderAttributeType::All as i32]),
+                lock_order_attributes: Some(vec![2, 3]),
             }),
         };
 
