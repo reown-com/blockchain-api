@@ -128,8 +128,11 @@ pub enum PrepareCallsError {
     #[error("Invalid permissionEnableSig for kernel account")]
     PermissionContextInvalidPermissionEnableSigForKernelAccount,
 
-    #[error("Invalid permission context")]
-    InvalidPermissionContext,
+    #[error("Invalid permission context decode signers")]
+    InvalidPermissionContextDecodeSigners,
+
+    #[error("Invalid permission context, not a smart sessions validator")]
+    InvalidPermissionContextNotSmartSessionsValidator,
 
     #[error("Paymaster service capability is not supported")]
     PaymasterServiceUnsupported,
@@ -404,7 +407,7 @@ pub fn split_permissions_context_and_check_validator(
 
     let validator_address = Address::from_slice(validator_address);
     if validator_address != SMART_SESSIONS_ADDRESS {
-        return Err(PrepareCallsError::InvalidPermissionContext);
+        return Err(PrepareCallsError::InvalidPermissionContextNotSmartSessionsValidator);
     }
 
     Ok((validator_address, signature))
@@ -619,23 +622,24 @@ fn decode_signers(data: Bytes) -> Result<Vec<SignerType>, PrepareCallsError> {
     let mut data = data.into_iter();
     let signer_count = data
         .next()
-        .ok_or(PrepareCallsError::InvalidPermissionContext)?; // TODO correct error variants
+        .ok_or(PrepareCallsError::InvalidPermissionContextDecodeSigners)?; // TODO correct error variants
     let mut signers = Vec::with_capacity(signer_count as usize);
     for _i in 0..signer_count {
         let (signer_type, length) = match data.next() {
             Some(0) => (SignerType::Ecdsa, 20),
             Some(1) => (SignerType::Passkey, 64),
-            _ => return Err(PrepareCallsError::InvalidPermissionContext), // TODO correct error variants
+            _ => return Err(PrepareCallsError::InvalidPermissionContextDecodeSigners), // TODO correct error variants
         };
         // ignore the actual signature
         for _i in 0..length {
             data.next()
-                .ok_or(PrepareCallsError::InvalidPermissionContext)?; // TODO correct error variants
+                .ok_or(PrepareCallsError::InvalidPermissionContextDecodeSigners)?;
+            // TODO correct error variants
         }
         signers.push(signer_type);
     }
     if data.next().is_some() {
-        return Err(PrepareCallsError::InvalidPermissionContext); // TODO correct error variants
+        return Err(PrepareCallsError::InvalidPermissionContextDecodeSigners); // TODO correct error variants
     }
     Ok(signers)
 }
@@ -658,20 +662,22 @@ async fn get_dummy_signature(
 
     const DUMMY_ECDSA_SIGNATURE: Bytes = bytes!("e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c");
     const DUMMY_PASSKEY_SIGNATURE: Bytes = bytes!("00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000001635bc6d0f68ff895cae8a288ecf7542a6a9cd555df784b73e1e2ea7e9104b1db15e9015d280cb19527881c625fee43fd3a405d5b0d199a8c8e6589a7381209e40000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002549960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f47b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a22746278584e465339585f3442797231634d77714b724947422d5f3330613051685a36793775634d30424f45222c226f726967696e223a22687474703a2f2f6c6f63616c686f73743a33303030222c2263726f73734f726967696e223a66616c73652c20226f746865725f6b6579735f63616e5f62655f61646465645f68657265223a22646f206e6f7420636f6d7061726520636c69656e74446174614a534f4e20616761696e737420612074656d706c6174652e205365652068747470733a2f2f676f6f2e676c2f796162506578227d000000000000000000000000");
-    let signature = decode_signers(
-        enable_session_data
-            .enable_session
-            .sessionToEnable
-            .sessionValidatorInitData
-            .clone(),
-    )?
-    .into_iter()
-    .map(|t| match t {
-        SignerType::Ecdsa => DUMMY_ECDSA_SIGNATURE,
-        SignerType::Passkey => DUMMY_PASSKEY_SIGNATURE,
-    })
-    .collect::<Vec<_>>()
-    .abi_encode();
+    // TODO tweak auto-detect this based on sessionValidatorAddress: if new, then decode addresses, etc.
+    let signature = //decode_signers(
+    //     enable_session_data
+    //         .enable_session
+    //         .sessionToEnable
+    //         .sessionValidatorInitData
+    //         .clone(),
+    // )?
+    vec![SignerType::Ecdsa, SignerType::Ecdsa]
+        .into_iter()
+        .map(|t| match t {
+            SignerType::Ecdsa => DUMMY_ECDSA_SIGNATURE,
+            SignerType::Passkey => DUMMY_PASSKEY_SIGNATURE,
+        })
+        .collect::<Vec<_>>()
+        .abi_encode();
 
     encode_use_or_enable_smart_session_signature(
         provider,
