@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.247.3 - 2025-06-05
+#### Bug Fixes
+- **(exchanges)** fixing the solana network name (#1104) - (e4672ad) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.247.2 - 2025-06-04
 #### Bug Fixes
 - **(TheRPC)** proper handling of the rate limiting response (#1102) - (52cdcc7) - Max Kalashnikoff | maksy.eth
