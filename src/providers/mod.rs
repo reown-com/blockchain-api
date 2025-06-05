@@ -468,22 +468,24 @@ impl ProviderRepository {
         let minimal_weight_value = Weight::new(Priority::Minimal)
             .expect("Failed to create a Minimal priority value")
             .value();
-        let non_minimal_weight_providers = weights
+
+        // Filter weights to get only non-minimal priority providers
+        let non_minimal_weight_providers: Vec<_> = weights
             .iter()
-            .filter(|&x| *x > minimal_weight_value)
-            .count();
+            .filter(|&&x| x > minimal_weight_value)
+            .collect();
         let keys = providers.keys().cloned().collect::<Vec<_>>();
 
-        match WeightedIndex::new(weights) {
+        match WeightedIndex::new(non_minimal_weight_providers.clone()) {
             Ok(mut dist) => {
                 let providers_to_iterate =
-                    std::cmp::min(max_providers, non_minimal_weight_providers);
+                    std::cmp::min(max_providers, non_minimal_weight_providers.len());
                 let mut providers_result = (0..providers_to_iterate)
                     .map(|i| {
                         let dist_key = dist.sample(&mut OsRng);
                         let provider = keys.get(dist_key).ok_or_else(|| {
                             RpcError::WeightedProvidersIndex(format!(
-                                "Failed to get random balanceprovider for namespace: {}",
+                                "Failed to get random balance provider for namespace: {}",
                                 namespace
                             ))
                         })?;
@@ -514,7 +516,7 @@ impl ProviderRepository {
 
                 // Append minimal priority providers to the end of the list
                 // to use it only for a failover retrying
-                if non_minimal_weight_providers < max_providers {
+                if non_minimal_weight_providers.len() < max_providers {
                     let minimal_weight_providers = providers
                         .iter()
                         .filter(|(_, weight)| weight.value() == minimal_weight_value)
