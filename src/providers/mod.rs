@@ -78,6 +78,7 @@ mod mantle;
 mod meld;
 pub mod mock_alto;
 mod monad;
+mod moonbeam;
 mod morph;
 mod near;
 mod odyssey;
@@ -114,6 +115,7 @@ pub use {
     mantle::MantleProvider,
     meld::MeldProvider,
     monad::MonadProvider,
+    moonbeam::MoonbeamProvider,
     morph::MorphProvider,
     near::NearProvider,
     odyssey::OdysseyProvider,
@@ -704,6 +706,7 @@ pub enum ProviderKind {
     OneRpc,
     TheRpc,
     Zan,
+    Moonbeam,
 }
 
 impl Display for ProviderKind {
@@ -745,6 +748,7 @@ impl Display for ProviderKind {
                 ProviderKind::OneRpc => "OneRpc",
                 ProviderKind::TheRpc => "TheRpc",
                 ProviderKind::Zan => "Zan",
+                ProviderKind::Moonbeam => "Moonbeam",
             }
         )
     }
@@ -787,6 +791,7 @@ impl ProviderKind {
             "OneRpc" => Some(Self::OneRpc),
             "TheRpc" => Some(Self::TheRpc),
             "Zan" => Some(Self::Zan),
+            "Moonbeam" => Some(Self::Moonbeam),
             _ => None,
         }
     }

@@ -14,6 +14,7 @@ pub(crate) mod binance;
 pub(crate) mod drpc;
 pub(crate) mod mantle;
 pub(crate) mod monad;
+pub(crate) mod moonbeam;
 pub(crate) mod morph;
 pub(crate) mod near;
 pub(crate) mod odyssey;

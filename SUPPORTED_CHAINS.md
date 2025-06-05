@@ -21,6 +21,7 @@ Chain name with associated `chainId` query param to use.
 | Polygon Zkevm                                            | eip155:1101          |
 | Wemix Mainnet <sup>[1](#footnote1)</sup>                 | eip155:1111          |
 | Wemix Testnet <sup>[1](#footnote1)</sup>                 | eip155:1112          |
+| Moonbeam GLMR <sup>[1](#footnote1)</sup>                 | eip155:1284          |
 | Unichain Sepolia <sup>[1](#footnote1)</sup>              | eip155:1301          |
 | Sei Network <sup>[1](#footnote1)</sup>                   | eip155:1329          |
 | Morph Holesky <sup>[1](#footnote1)</sup>                 | eip155:2810          |
