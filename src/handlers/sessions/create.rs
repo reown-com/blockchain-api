@@ -1,6 +1,9 @@
 use {
     super::{
-        super::HANDLER_TASK_METRICS, NewPermissionPayload, QueryParams, StoragePermissionsItem,
+        super::HANDLER_TASK_METRICS,
+        NewPermissionPayload,
+        QueryParams,
+        StoragePermissionsItem,
     },
     crate::{
         error::RpcError,
@@ -114,7 +117,7 @@ async fn handler_internal(
         pci: pci.clone(),
         key: KeyItem {
             r#type: KeyType::Secp256k1,
-            public_key: format!("0x{}", hex::encode(public_key_der_hex)),
+            public_key: format!("0x{public_key_der_hex}"),
         },
     };
 
