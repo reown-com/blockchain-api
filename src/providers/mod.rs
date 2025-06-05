@@ -462,13 +462,23 @@ impl ProviderRepository {
             .map(|(_, weight)| weight.value())
             .map(|w| w.max(1))
             .collect();
-        let non_zero_weight_providers = weights.iter().filter(|&x| *x > 0).count();
+
+        // Adding non-minimal priority providers and use providers with the minimal priority
+        // only for a failover retrying (append them to the end of the list)
+        let minimal_weight_value = Weight::new(Priority::Minimal)
+            .expect("Failed to create a Minimal priority value")
+            .value();
+        let non_minimal_weight_providers = weights
+            .iter()
+            .filter(|&x| *x > minimal_weight_value)
+            .count();
         let keys = providers.keys().cloned().collect::<Vec<_>>();
 
         match WeightedIndex::new(weights) {
             Ok(mut dist) => {
-                let providers_to_iterate = std::cmp::min(max_providers, non_zero_weight_providers);
-                let providers_result = (0..providers_to_iterate)
+                let providers_to_iterate =
+                    std::cmp::min(max_providers, non_minimal_weight_providers);
+                let mut providers_result = (0..providers_to_iterate)
                     .map(|i| {
                         let dist_key = dist.sample(&mut OsRng);
                         let provider = keys.get(dist_key).ok_or_else(|| {
@@ -501,6 +511,25 @@ impl ProviderRepository {
                             })
                     })
                     .collect::<Result<Vec<_>, _>>()?;
+
+                // Append minimal priority providers to the end of the list
+                // to use it only for a failover retrying
+                if non_minimal_weight_providers < max_providers {
+                    let minimal_weight_providers = providers
+                        .iter()
+                        .filter(|(_, weight)| weight.value() == minimal_weight_value)
+                        .map(|(provider, _)| self.balance_providers.get(provider).cloned())
+                        .collect::<Option<Vec<_>>>()
+                        .unwrap_or_default();
+
+                    let remaining_providers = max_providers - providers_to_iterate;
+                    let minimal_weight_providers = minimal_weight_providers
+                        .into_iter()
+                        .take(remaining_providers)
+                        .collect::<Vec<_>>();
+
+                    providers_result.extend(minimal_weight_providers);
+                }
                 Ok(providers_result)
             }
             Err(e) => {
