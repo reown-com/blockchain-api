@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.247.4 - 2025-06-05
+#### Bug Fixes
+- **(OneRpc)** adding a provper handling of the rate-limited response (#1106) - (e949bd3) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.247.3 - 2025-06-05
 #### Bug Fixes
 - **(exchanges)** fixing the solana network name (#1104) - (e4672ad) - Max Kalashnikoff | maksy.eth
