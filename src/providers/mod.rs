@@ -463,23 +463,32 @@ impl ProviderRepository {
             .expect("Failed to create a Minimal priority value")
             .value();
 
-        // Filter providers to get only non-minimal priority providers
-        let filtered_providers: Vec<_> = providers
-            .iter()
-            .filter(|(_, weight)| weight.value() > minimal_weight_value)
-            .collect();
-        let non_minimal_weight_providers: Vec<_> = filtered_providers
-            .iter()
-            .map(|(_, weight)| weight.value())
-            .collect();
-        let keys: Vec<_> = filtered_providers.iter().map(|(key, _)| key).collect();
+        // Separate providers by weight and collect references
+        let (filtered_providers, non_minimal_weight_providers, minimal_weight_providers): (
+            Vec<_>,
+            Vec<_>,
+            Vec<_>,
+        ) = providers.iter().fold(
+            (Vec::new(), Vec::new(), Vec::new()),
+            |(mut filtered, mut non_minimal, mut minimal), (provider_kind, weight)| {
+                match weight.value().cmp(&minimal_weight_value) {
+                    std::cmp::Ordering::Greater => {
+                        filtered.push((provider_kind, weight));
+                        non_minimal.push(weight.value());
+                    }
+                    std::cmp::Ordering::Equal => {
+                        if let Some(provider) = self.balance_providers.get(provider_kind) {
+                            minimal.push(provider.clone());
+                        }
+                    }
+                    // We don't have weights less than minimal priority
+                    std::cmp::Ordering::Less => {}
+                }
+                (filtered, non_minimal, minimal)
+            },
+        );
 
-        // Filter providers to get only minimal priority providers
-        let minimal_weight_providers: Vec<_> = providers
-            .iter()
-            .filter(|(_, weight)| weight.value() == minimal_weight_value)
-            .filter_map(|(provider, _)| self.balance_providers.get(provider).cloned())
-            .collect::<Vec<_>>();
+        let keys: Vec<_> = filtered_providers.iter().map(|(key, _)| key).collect();
 
         // If no non-minimal providers are available, directly append minimal-priority providers
         if non_minimal_weight_providers.is_empty() {
