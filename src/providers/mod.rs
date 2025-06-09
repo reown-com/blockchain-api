@@ -464,16 +464,16 @@ impl ProviderRepository {
             .value();
 
         // Separate providers by weight and collect references
-        let (filtered_providers, non_minimal_weight_providers, minimal_weight_providers): (
+        let (high_priority_providers, non_minimal_weight_providers, minimal_weight_providers): (
             Vec<_>,
             Vec<_>,
             Vec<_>,
         ) = providers.iter().fold(
             (Vec::new(), Vec::new(), Vec::new()),
-            |(mut filtered, mut non_minimal, mut minimal), (provider_kind, weight)| {
+            |(mut high_priority, mut non_minimal, mut minimal), (provider_kind, weight)| {
                 match weight.value().cmp(&minimal_weight_value) {
                     std::cmp::Ordering::Greater => {
-                        filtered.push((provider_kind, weight));
+                        high_priority.push((provider_kind, weight));
                         non_minimal.push(weight.value());
                     }
                     std::cmp::Ordering::Equal => {
@@ -484,11 +484,11 @@ impl ProviderRepository {
                     // We don't have weights less than minimal priority
                     std::cmp::Ordering::Less => {}
                 }
-                (filtered, non_minimal, minimal)
+                (high_priority, non_minimal, minimal)
             },
         );
 
-        let keys: Vec<_> = filtered_providers.iter().map(|(key, _)| key).collect();
+        let keys: Vec<_> = high_priority_providers.iter().map(|(key, _)| key).collect();
 
         // If no non-minimal providers are available, directly append minimal-priority providers
         if non_minimal_weight_providers.is_empty() {
@@ -537,8 +537,13 @@ impl ProviderRepository {
                     })
                     .collect::<Result<Vec<_>, _>>()?;
 
-                // Append minimal-priority providers to the end of the list
-                providers_result.extend(minimal_weight_providers);
+                // Append minimal-priority providers to the end of the list, capped to remaining capacity
+                let remaining_capacity = max_providers.saturating_sub(providers_result.len());
+                providers_result.extend(
+                    minimal_weight_providers
+                        .into_iter()
+                        .take(remaining_capacity),
+                );
 
                 Ok(providers_result)
             }
