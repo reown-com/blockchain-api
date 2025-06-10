@@ -453,23 +453,58 @@ impl ProviderRepository {
             return Err(RpcError::UnsupportedChain(namespace.to_string()));
         }
 
-        let weights: Vec<_> = providers
-            .iter()
-            .map(|(_, weight)| weight.value())
-            .map(|w| w.max(1))
-            .collect();
-        let non_zero_weight_providers = weights.iter().filter(|&x| *x > 0).count();
-        let keys = providers.keys().cloned().collect::<Vec<_>>();
+        // Adding non-minimal priority providers and use providers with the minimal priority
+        // only for a failover retrying (append them to the end of the list)
+        let minimal_weight_value = Weight::new(Priority::Minimal)
+            .expect("Failed to create a Minimal priority value")
+            .value();
 
-        match WeightedIndex::new(weights) {
+        // Separate providers by weight and collect references
+        let (high_priority_providers, non_minimal_weight_providers, minimal_weight_providers): (
+            Vec<_>,
+            Vec<_>,
+            Vec<_>,
+        ) = providers.iter().fold(
+            (Vec::new(), Vec::new(), Vec::new()),
+            |(mut high_priority, mut non_minimal, mut minimal), (provider_kind, weight)| {
+                match weight.value().cmp(&minimal_weight_value) {
+                    std::cmp::Ordering::Greater => {
+                        high_priority.push((provider_kind, weight));
+                        non_minimal.push(weight.value());
+                    }
+                    std::cmp::Ordering::Equal => {
+                        if let Some(provider) = self.balance_providers.get(provider_kind) {
+                            minimal.push(provider.clone());
+                        }
+                    }
+                    // We don't have weights less than minimal priority
+                    std::cmp::Ordering::Less => {}
+                }
+                (high_priority, non_minimal, minimal)
+            },
+        );
+
+        let keys: Vec<_> = high_priority_providers.iter().map(|(key, _)| key).collect();
+
+        // If no non-minimal providers are available, directly append minimal-priority providers
+        if non_minimal_weight_providers.is_empty() {
+            let minimal_weight_providers = minimal_weight_providers
+                .into_iter()
+                .take(max_providers)
+                .collect::<Vec<_>>();
+            return Ok(minimal_weight_providers);
+        }
+
+        match WeightedIndex::new(non_minimal_weight_providers.clone()) {
             Ok(mut dist) => {
-                let providers_to_iterate = std::cmp::min(max_providers, non_zero_weight_providers);
-                let providers_result = (0..providers_to_iterate)
+                let providers_to_iterate =
+                    std::cmp::min(max_providers, non_minimal_weight_providers.len());
+                let mut providers_result = (0..providers_to_iterate)
                     .map(|i| {
                         let dist_key = dist.sample(&mut OsRng);
                         let provider = keys.get(dist_key).ok_or_else(|| {
                             RpcError::WeightedProvidersIndex(format!(
-                                "Failed to get random balanceprovider for namespace: {}",
+                                "Failed to get random balance provider for namespace: {}",
                                 namespace
                             ))
                         })?;
@@ -497,6 +532,15 @@ impl ProviderRepository {
                             })
                     })
                     .collect::<Result<Vec<_>, _>>()?;
+
+                // Append minimal-priority providers to the end of the list, capped to remaining capacity
+                let remaining_capacity = max_providers.saturating_sub(providers_result.len());
+                providers_result.extend(
+                    minimal_weight_providers
+                        .into_iter()
+                        .take(remaining_capacity),
+                );
+
                 Ok(providers_result)
             }
             Err(e) => {
