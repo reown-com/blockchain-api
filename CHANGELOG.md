@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.249.0 - 2025-06-10
+#### Features
+- **(providers)** adding Quicknode endpoints, removing Zan, tuning alerts (#1109) - (3d000fd) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.248.0 - 2025-06-05
 #### Features
 - **(providers)** adding Moonbeam RPC chain support and Moonbeam RPC provider (#1105) - (fcc5070) - Max Kalashnikoff | maksy.eth
