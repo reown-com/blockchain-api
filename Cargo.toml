@@ -1,6 +1,6 @@
 [package]
 name = "rpc-proxy"
-version = "0.249.1"
+version = "0.249.2"
 edition = "2021"
 authors = [
     "Derek <derek@reown.com>",
