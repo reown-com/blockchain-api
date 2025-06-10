@@ -7,7 +7,7 @@ local alert          = grafana.alert;
 local alertCondition = grafana.alertCondition;
 
 {
-  new(ds, vars, provider, alertPeriod)::
+  new(ds, vars, provider, alertPeriod, minimalAvailability)::
     panels.timeseries(
       title       = provider,
       datasource  = ds.prometheus,
@@ -44,7 +44,7 @@ local alertCondition = grafana.alertCondition;
       },
       conditions  = [
         alertCondition.new(
-          evaluatorParams = [ 90 ],
+          evaluatorParams = [ minimalAvailability ],
           evaluatorType   = 'lt',
           operatorType    = 'or',
           queryRefId      = 'providerAvailabilityPercent',

@@ -105,7 +105,6 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_PROVIDER_MELD_API_KEY", value = var.meld_api_key },
         { name = "RPC_PROXY_PROVIDER_MELD_API_URL", value = var.meld_api_url },
         { name = "RPC_PROXY_PROVIDER_CALLSTATIC_API_KEY", value = var.callstatic_api_key },
-        { name = "RPC_PROXY_PROVIDER_ZAN_API_KEY", value = var.zan_api_key },
 
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_ENDPOINT", value = var.prometheus_endpoint },
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_WORKSPACE_ID", value = var.prometheus_workspace_id },
