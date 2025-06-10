@@ -263,7 +263,7 @@ async fn handler_internal(
         let asset_transfer_value = first_call.value;
         let asset_transfer_contract = NATIVE_TOKEN_ADDRESS;
         let asset_transfer_receiver = first_call.to;
-        let (_, simulated_gas_used) = get_assets_changes_from_simulation(
+        let simulation_result = get_assets_changes_from_simulation(
             state.providers.simulation_provider.clone(),
             request_payload.transaction.chain_id.clone(),
             request_payload.transaction.from,
@@ -271,7 +271,20 @@ async fn handler_internal(
             first_call.input.clone(),
             state.metrics.clone(),
         )
-        .await?;
+        .await;
+        let simulated_gas_used = match simulation_result {
+            Ok(simulation_result) => simulation_result.1,
+            Err(e) => {
+                return Ok(Json(PrepareResponse::Error(PrepareResponseError {
+                    error: BridgingError::TransactionSimulationFailed,
+                    reason: format!(
+                        "The initial transaction (native token transfer) simulation failed due to an error: {}",
+                        e
+                    ),
+                })));
+            }
+        };
+
         let gas_used = simulated_gas_used;
         (
             is_initial_tx_native_token_transfer,

@@ -369,7 +369,9 @@ pub fn handle_rpc_error(error: ProviderError) -> Result<(), RpcError> {
         ProviderError::CustomError(e) if e.starts_with(SELF_PROVIDER_ERROR_PREFIX) => {
             let error_detail = e.trim_start_matches(SELF_PROVIDER_ERROR_PREFIX);
             // Exception for no available JSON-RPC providers
-            if error_detail.contains("503 Service Unavailable") {
+            if error_detail.contains("503 Service Unavailable")
+                || error_detail.contains("400 Bad Request")
+            {
                 return Err(RpcError::ProviderError);
             }
             // Proceed with Ok() if the error is related to the contract call error
