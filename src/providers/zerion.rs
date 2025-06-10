@@ -143,7 +143,7 @@ pub struct ZerionTransactionTransfer {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 pub struct ZerionFungibleInfoAttribute {
-    pub name: String,
+    pub name: Option<String>,
     pub symbol: String,
     pub icon: Option<ZerionTransactionURLItem>,
     pub implementations: Vec<ZerionImplementation>,
@@ -351,7 +351,7 @@ impl HistoryProvider for ZerionProvider {
                         Some(HistoryTransactionTransfer {
                             fungible_info: f.fungible_info.map(|f| {
                                 HistoryTransactionFungibleInfo {
-                                    name: Some(f.name),
+                                    name: f.name,
                                     symbol: Some(f.symbol),
                                     icon: f.icon.map(|f| HistoryTransactionURLItem { url: f.url }),
                                 }
@@ -440,7 +440,11 @@ impl PortfolioProvider for ZerionProvider {
             .into_iter()
             .map(|f| PortfolioPosition {
                 id: f.id,
-                name: f.attributes.fungible_info.name,
+                name: f
+                    .attributes
+                    .fungible_info
+                    .name
+                    .unwrap_or(f.attributes.fungible_info.symbol.clone()),
                 symbol: f.attributes.fungible_info.symbol,
             })
             .collect();
@@ -519,7 +523,11 @@ impl BalanceProvider for ZerionProvider {
 
             // Set the default metadata from the response
             let mut token_metadata = TokenMetadataCacheItem {
-                name: f.attributes.fungible_info.name.clone(),
+                name: f
+                    .attributes
+                    .fungible_info
+                    .name
+                    .unwrap_or(f.attributes.fungible_info.symbol.clone()),
                 symbol: f.attributes.fungible_info.symbol.clone(),
                 icon_url: f
                     .attributes

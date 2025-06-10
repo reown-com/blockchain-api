@@ -61,7 +61,7 @@ struct TokenInfoResponse {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 struct TokenMetaData {
-    pub name: String,
+    pub name: Option<String>,
     pub symbol: String,
     pub decimals: u8,
     pub icon: Option<String>,
@@ -262,7 +262,7 @@ impl SolScanProvider {
         // since metadata is static
         if address == SOLANA_NATIVE_TOKEN_ADDRESS {
             return Ok(TokenMetaData {
-                name: "Solana".to_string(),
+                name: Some("Solana".to_string()),
                 symbol: "SOL".to_string(),
                 decimals: 9,
                 icon: Some(SOLANA_SOL_TOKEN_ICON.to_string()),
@@ -274,7 +274,7 @@ impl SolScanProvider {
         match metadata_cache.get_metadata(&caip10_address).await {
             Ok(Some(metadata)) => {
                 return Ok(TokenMetaData {
-                    name: metadata.name,
+                    name: Some(metadata.name),
                     symbol: metadata.symbol,
                     decimals: metadata.decimals,
                     icon: Some(metadata.icon_url),
@@ -291,7 +291,7 @@ impl SolScanProvider {
 
         // Cache the metadata
         let token_metadata = TokenMetadataCacheItem {
-            name: metadata.name.clone(),
+            name: metadata.name.clone().unwrap_or(metadata.symbol.clone()),
             symbol: metadata.symbol.clone(),
             decimals: metadata.decimals,
             icon_url: metadata.icon.clone().unwrap_or_default(),
@@ -448,7 +448,7 @@ impl BalanceProvider for SolScanProvider {
                 .await?;
             let decimal_amount = item.amount as f64 / 10f64.powf(item.token_decimals as f64);
             let balance_item = BalanceItem {
-                name: token_metadata.name,
+                name: token_metadata.name.unwrap_or(token_metadata.symbol.clone()),
                 symbol: token_metadata.symbol,
                 chain_id: Some(SOLANA_MAINNET_CHAIN_ID.to_string()),
                 address: Some(item.token_address),
@@ -470,7 +470,7 @@ impl BalanceProvider for SolScanProvider {
                 .get_token_info(SOLANA_NATIVE_TOKEN_ADDRESS, metadata_cache, metrics)
                 .await?;
             let sol_balance_item = BalanceItem {
-                name: sol_metadata.name,
+                name: sol_metadata.name.unwrap_or(sol_metadata.symbol.clone()),
                 symbol: sol_metadata.symbol,
                 chain_id: Some(SOLANA_MAINNET_CHAIN_ID.to_string()),
                 address: Some(SOLANA_NATIVE_TOKEN_ADDRESS.to_string()),
@@ -581,7 +581,7 @@ impl HistoryProvider for SolScanProvider {
                 },
                 transfers: Some(vec![HistoryTransactionTransfer {
                     fungible_info: Some(HistoryTransactionFungibleInfo {
-                        name: Some(token_info.name),
+                        name: token_info.name,
                         symbol: Some(token_info.symbol),
                         icon: Some(HistoryTransactionURLItem {
                             url: token_info.icon.unwrap_or_default(),
@@ -639,7 +639,7 @@ impl FungiblePriceProvider for SolScanProvider {
         let response = PriceResponseBody {
             fungibles: vec![FungiblePriceItem {
                 address: format!("{}:{}:{}", CaipNamespaces::Solana, chain_id, address),
-                name: info.name,
+                name: info.name.unwrap_or(info.symbol.clone()),
                 symbol: info.symbol,
                 icon_url: info.icon.unwrap_or_default(),
                 price,
