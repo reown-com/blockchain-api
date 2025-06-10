@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.249.1 - 2025-06-10
+#### Bug Fixes
+- **(balance)** using the minimal priority providers only for a failover (#1107) - (fc37f03) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.249.0 - 2025-06-10
 #### Features
 - **(providers)** adding Quicknode endpoints, removing Zan, tuning alerts (#1109) - (3d000fd) - Max Kalashnikoff | maksy.eth
