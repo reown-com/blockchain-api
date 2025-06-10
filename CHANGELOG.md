@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.249.2 - 2025-06-10
+#### Bug Fixes
+- fixing history providers deserialization errors, simulation errors handling, identity error fix (#1110) - (68b1ac5) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.249.1 - 2025-06-10
 #### Bug Fixes
 - **(balance)** using the minimal priority providers only for a failover (#1107) - (fc37f03) - Max Kalashnikoff | maksy.eth
