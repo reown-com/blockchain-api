@@ -24,7 +24,7 @@ use {
         DrpcConfig, DuneConfig, HiroConfig, MantleConfig, MonadConfig, MoonbeamConfig, MorphConfig,
         NearConfig, OdysseyConfig, OneRpcConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
         SolScanConfig, SuiConfig, SyndicaConfig, TheRpcConfig, UnichainConfig, WemixConfig,
-        ZKSyncConfig, ZanConfig, ZerionConfig, ZoraConfig,
+        ZKSyncConfig, ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
@@ -35,8 +35,8 @@ use {
         MantleProvider, MonadProvider, MoonbeamProvider, MorphProvider, NearProvider,
         OdysseyProvider, OneRpcProvider, PoktProvider, ProviderRepository, PublicnodeProvider,
         QuicknodeProvider, SolScanProvider, SuiProvider, SyndicaProvider, SyndicaWsProvider,
-        TheRpcProvider, UnichainProvider, WemixProvider, ZKSyncProvider, ZanProvider,
-        ZerionProvider, ZoraProvider, ZoraWsProvider,
+        TheRpcProvider, UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider,
+        ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -542,8 +542,6 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_rpc_provider::<CallStaticProvider, CallStaticConfig>(CallStaticConfig::new(
         config.callstatic_api_key.clone(),
     ));
-    providers
-        .add_rpc_provider::<ZanProvider, ZanConfig>(ZanConfig::new(config.zan_api_key.clone()));
     providers.add_rpc_provider::<MoonbeamProvider, MoonbeamConfig>(MoonbeamConfig::default());
     providers.add_rpc_provider::<OneRpcProvider, OneRpcConfig>(OneRpcConfig::default());
     providers.add_rpc_provider::<TheRpcProvider, TheRpcConfig>(TheRpcConfig::default());

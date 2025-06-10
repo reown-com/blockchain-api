@@ -96,7 +96,6 @@ mod therpc;
 mod unichain;
 mod weights;
 mod wemix;
-mod zan;
 pub mod zerion;
 mod zksync;
 mod zora;
@@ -132,7 +131,6 @@ pub use {
     therpc::TheRpcProvider,
     unichain::UnichainProvider,
     wemix::WemixProvider,
-    zan::ZanProvider,
     zerion::ZerionProvider,
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
@@ -183,8 +181,6 @@ pub struct ProvidersConfig {
     pub meld_api_url: String,
     /// CallStatic API key
     pub callstatic_api_key: String,
-    /// Zan API key
-    pub zan_api_key: String,
 
     pub override_bundler_urls: Option<MockAltoUrls>,
 }
@@ -705,7 +701,6 @@ pub enum ProviderKind {
     CallStatic,
     OneRpc,
     TheRpc,
-    Zan,
     Moonbeam,
 }
 
@@ -747,7 +742,6 @@ impl Display for ProviderKind {
                 ProviderKind::CallStatic => "CallStatic",
                 ProviderKind::OneRpc => "OneRpc",
                 ProviderKind::TheRpc => "TheRpc",
-                ProviderKind::Zan => "Zan",
                 ProviderKind::Moonbeam => "Moonbeam",
             }
         )
@@ -790,7 +784,6 @@ impl ProviderKind {
             "CallStatic" => Some(Self::CallStatic),
             "OneRpc" => Some(Self::OneRpc),
             "TheRpc" => Some(Self::TheRpc),
-            "Zan" => Some(Self::Zan),
             "Moonbeam" => Some(Self::Moonbeam),
             _ => None,
         }

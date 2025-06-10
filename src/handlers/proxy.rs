@@ -29,7 +29,7 @@ use {
     wc::future::FutureExt,
 };
 
-const PROVIDER_PROXY_MAX_CALLS: usize = 3;
+const PROVIDER_PROXY_MAX_CALLS: usize = 5;
 const PROVIDER_PROXY_CALL_TIMEOUT: Duration = Duration::from_secs(10);
 
 pub async fn handler(

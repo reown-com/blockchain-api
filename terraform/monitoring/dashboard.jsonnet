@@ -36,7 +36,10 @@ local height    = 8;
 local pos       = grafana.layout.pos(height);
 local pos_short       = grafana.layout.pos(6);
 
-// RPC provider specific alert period depend on the provider tier
+// RPC provider specific alert period and availability depend on the provider tier
+local availability_top_tier = 90; // Expecting minimal 90% success responses
+local availability_free_tier = 25; // Expecting minimal 25% success rate
+// alert period for the success rate from above
 local alert_period_top_tier = '5m';
 local alert_period_free_tier = '24h';
 
@@ -72,30 +75,31 @@ dashboard.new(
     panels.ecs.cpu(ds, vars)                         { gridPos: pos._3 },
 
   row.new('RPC Proxy Chain Usage'),
-    panels.usage.provider(ds, vars, 'Pokt', alert_period_top_tier)       { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Quicknode', alert_period_top_tier)  { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Allnodes', alert_period_top_tier)   { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Aurora', alert_period_free_tier)    { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Arbitrum', alert_period_free_tier)  { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Base', alert_period_free_tier)      { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Binance', alert_period_free_tier)   { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Near', alert_period_free_tier)      { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Publicnode', alert_period_free_tier){ gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Zora', alert_period_free_tier)      { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'zkSync', alert_period_free_tier)    { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Mantle', alert_period_free_tier)    { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Unichain', alert_period_free_tier)  { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Morph', alert_period_free_tier)     { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Wemix', alert_period_free_tier)     { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Drpc', alert_period_free_tier)      { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Odyssey', alert_period_free_tier)   { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Syndica', alert_period_free_tier)   { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Monad', alert_period_free_tier)     { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'CallStatic', alert_period_free_tier){ gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'OneRpc', alert_period_free_tier)    { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'TheRpc', alert_period_free_tier)    { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Zan', alert_period_free_tier)       { gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'Moonbeam', alert_period_free_tier)  { gridPos: pos._4 },
+    // Top-tier providers
+    panels.usage.provider(ds, vars, 'Pokt', alert_period_top_tier, availability_top_tier)        { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Quicknode', alert_period_top_tier, availability_top_tier)   { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Allnodes', alert_period_top_tier, availability_top_tier)    { gridPos: pos._4 },
+    // Free providers
+    panels.usage.provider(ds, vars, 'Aurora', alert_period_free_tier, availability_free_tier)    { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Arbitrum', alert_period_free_tier, availability_free_tier)  { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Base', alert_period_free_tier, availability_free_tier)      { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Binance', alert_period_free_tier, availability_free_tier)   { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Near', alert_period_free_tier, availability_free_tier)      { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Publicnode', alert_period_free_tier, availability_free_tier){ gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Zora', alert_period_free_tier, availability_free_tier)      { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'zkSync', alert_period_free_tier, availability_free_tier)    { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Mantle', alert_period_free_tier, availability_free_tier)    { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Unichain', alert_period_free_tier, availability_free_tier)  { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Morph', alert_period_free_tier, availability_free_tier)     { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Wemix', alert_period_free_tier, availability_free_tier)     { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Drpc', alert_period_free_tier, availability_free_tier)      { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Odyssey', alert_period_free_tier, availability_free_tier)   { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Syndica', alert_period_free_tier, availability_free_tier)   { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Monad', alert_period_free_tier, availability_free_tier)     { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'CallStatic', alert_period_free_tier, availability_free_tier){ gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'OneRpc', alert_period_free_tier, availability_free_tier)    { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'TheRpc', alert_period_free_tier, availability_free_tier)    { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Moonbeam', alert_period_free_tier, availability_free_tier)  { gridPos: pos._4 },
 
   row.new('RPC Proxy provider Weights'),
     panels.weights.provider(ds, vars, 'Pokt')        { gridPos: pos._4 },
@@ -120,7 +124,6 @@ dashboard.new(
     panels.weights.provider(ds, vars, 'CallStatic')  { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'OneRpc')      { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'TheRpc')      { gridPos: pos._4 },
-    panels.weights.provider(ds, vars, 'Zan')         { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Moonbeam')    { gridPos: pos._4 },
 
   row.new('RPC Proxy providers Status Codes'),
@@ -146,7 +149,6 @@ dashboard.new(
     panels.status.provider(ds, vars, 'CallStatic')   { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'OneRpc')       { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'TheRpc')       { gridPos: pos._4 },
-    panels.status.provider(ds, vars, 'Zan')          { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Moonbeam')     { gridPos: pos._4 },
 
   row.new('RPC Proxy Metrics'),
