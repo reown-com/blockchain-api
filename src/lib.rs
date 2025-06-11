@@ -21,7 +21,7 @@ use {
     },
     env::{
         AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, CallStaticConfig,
-        DrpcConfig, DuneConfig, HiroConfig, MantleConfig, MonadConfig, MoonbeamConfig, MorphConfig,
+        DrpcConfig, DuneConfig, EdexaConfig, HiroConfig, MantleConfig, MonadConfig, MoonbeamConfig, MorphConfig,
         NearConfig, OdysseyConfig, OneRpcConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
         SolScanConfig, SuiConfig, SyndicaConfig, TheRpcConfig, UnichainConfig, WemixConfig,
         ZKSyncConfig, ZerionConfig, ZoraConfig,
@@ -31,7 +31,7 @@ use {
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
         AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
-        BinanceProvider, CallStaticProvider, DrpcProvider, DuneProvider, HiroProvider,
+        BinanceProvider, CallStaticProvider, DrpcProvider, DuneProvider, EdexaProvider, HiroProvider,
         MantleProvider, MonadProvider, MoonbeamProvider, MorphProvider, NearProvider,
         OdysseyProvider, OneRpcProvider, PoktProvider, ProviderRepository, PublicnodeProvider,
         QuicknodeProvider, SolScanProvider, SuiProvider, SyndicaProvider, SyndicaWsProvider,
@@ -545,6 +545,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_rpc_provider::<MoonbeamProvider, MoonbeamConfig>(MoonbeamConfig::default());
     providers.add_rpc_provider::<OneRpcProvider, OneRpcConfig>(OneRpcConfig::default());
     providers.add_rpc_provider::<TheRpcProvider, TheRpcConfig>(TheRpcConfig::default());
+    providers.add_rpc_provider::<EdexaProvider, EdexaConfig>(EdexaConfig::default());
     providers.add_ws_provider::<AllnodesWsProvider, AllnodesConfig>(AllnodesConfig::new(
         config.allnodes_api_key.clone(),
     ));

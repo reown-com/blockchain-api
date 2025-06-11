@@ -24,10 +24,12 @@ Chain name with associated `chainId` query param to use.
 | Moonbeam GLMR <sup>[1](#footnote1)</sup>                 | eip155:1284          |
 | Unichain Sepolia <sup>[1](#footnote1)</sup>              | eip155:1301          |
 | Sei Network <sup>[1](#footnote1)</sup>                   | eip155:1329          |
+| edeXa Testnet <sup>[1](#footnote1)</sup>                 | eip155:1995          |
 | Morph Holesky <sup>[1](#footnote1)</sup>                 | eip155:2810          |
 | Morph Mainnet <sup>[1](#footnote1)</sup>                 | eip155:2818          |
 | Mantle <sup>[1](#footnote1)</sup>                        | eip155:5000          |
 | Mantle Testnet <sup>[1](#footnote1)</sup>                | eip155:5003          |
+| edeXa Mainnet <sup>[1](#footnote1)</sup>                 | eip155:5424          |
 | Kaia Mainnet                                             | eip155:8217          |
 | Base                                                     | eip155:8453          |
 | Monad Testnet                                            | eip155:10143         |
