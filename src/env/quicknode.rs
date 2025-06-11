@@ -98,6 +98,10 @@ fn extract_supported_chains_and_subdomains(
             ("crimson-spring-wind.ethereum-sepolia", Priority::Normal),
         ),
         (
+            "eip155:137",
+            ("chaotic-wandering-fire.matic", Priority::Low),
+        ),
+        (
             "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
             ("indulgent-thrumming-bush.solana-mainnet", Priority::Minimal),
         ),
