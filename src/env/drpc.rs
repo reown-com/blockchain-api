@@ -171,5 +171,13 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Sei Mainnet
+        (
+            "eip155:1329".into(),
+            (
+                "https://sei.drpc.org".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
     ])
 }
