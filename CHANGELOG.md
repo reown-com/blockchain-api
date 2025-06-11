@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.250.0 - 2025-06-11
+#### Features
+- **(rpc)** adding Polygon to Quicknode and Sei to the dRPC (#1111) - (7ea57b6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.249.2 - 2025-06-10
 #### Bug Fixes
 - fixing history providers deserialization errors, simulation errors handling, identity error fix (#1110) - (68b1ac5) - Max Kalashnikoff | maksy.eth
