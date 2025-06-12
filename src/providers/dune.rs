@@ -97,7 +97,10 @@ impl DuneProvider {
         }
 
         let latency_start = SystemTime::now();
-        let response = self.send_request(url.clone()).await?;
+        let response = self.send_request(url.clone()).await.map_err(|e| {
+            error!("Error sending request to Dune EVM balance API: {:?}", e);
+            RpcError::BalanceProviderError
+        })?;
         metrics.add_latency_and_status_code_for_provider(
             self.provider_kind,
             response.status().into(),
@@ -128,7 +131,10 @@ impl DuneProvider {
         url.query_pairs_mut().append_pair("metadata", "logo");
 
         let latency_start = SystemTime::now();
-        let response = self.send_request(url.clone()).await?;
+        let response = self.send_request(url.clone()).await.map_err(|e| {
+            error!("Error sending request to Dune svm balance API: {:?}", e);
+            RpcError::BalanceProviderError
+        })?;
         metrics.add_latency_and_status_code_for_provider(
             self.provider_kind,
             response.status().into(),
