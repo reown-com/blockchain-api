@@ -97,7 +97,6 @@ dashboard.new(
     panels.usage.provider(ds, vars, 'Syndica', alert_period_free_tier, availability_free_tier)   { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Monad', alert_period_free_tier, availability_free_tier)     { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'CallStatic', alert_period_free_tier, availability_free_tier){ gridPos: pos._4 },
-    panels.usage.provider(ds, vars, 'OneRpc', alert_period_free_tier, availability_free_tier)    { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'TheRpc', alert_period_free_tier, availability_free_tier)    { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Moonbeam', alert_period_free_tier, availability_free_tier)  { gridPos: pos._4 },
 
@@ -122,7 +121,6 @@ dashboard.new(
     panels.weights.provider(ds, vars, 'Syndica')     { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Monad')       { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'CallStatic')  { gridPos: pos._4 },
-    panels.weights.provider(ds, vars, 'OneRpc')      { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'TheRpc')      { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Moonbeam')    { gridPos: pos._4 },
 
@@ -147,7 +145,6 @@ dashboard.new(
     panels.status.provider(ds, vars, 'Syndica')      { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Monad')        { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'CallStatic')   { gridPos: pos._4 },
-    panels.status.provider(ds, vars, 'OneRpc')       { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'TheRpc')       { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Moonbeam')     { gridPos: pos._4 },
 

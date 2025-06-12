@@ -22,9 +22,9 @@ use {
     env::{
         AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, CallStaticConfig,
         DrpcConfig, DuneConfig, HiroConfig, MantleConfig, MonadConfig, MoonbeamConfig, MorphConfig,
-        NearConfig, OdysseyConfig, OneRpcConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
-        SolScanConfig, SuiConfig, SyndicaConfig, TheRpcConfig, UnichainConfig, WemixConfig,
-        ZKSyncConfig, ZerionConfig, ZoraConfig,
+        NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig, SolScanConfig,
+        SuiConfig, SyndicaConfig, TheRpcConfig, UnichainConfig, WemixConfig, ZKSyncConfig,
+        ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
@@ -33,10 +33,10 @@ use {
         AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
         BinanceProvider, CallStaticProvider, DrpcProvider, DuneProvider, HiroProvider,
         MantleProvider, MonadProvider, MoonbeamProvider, MorphProvider, NearProvider,
-        OdysseyProvider, OneRpcProvider, PoktProvider, ProviderRepository, PublicnodeProvider,
-        QuicknodeProvider, SolScanProvider, SuiProvider, SyndicaProvider, SyndicaWsProvider,
-        TheRpcProvider, UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider,
-        ZoraProvider, ZoraWsProvider,
+        OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider,
+        SolScanProvider, SuiProvider, SyndicaProvider, SyndicaWsProvider, TheRpcProvider,
+        UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider, ZoraProvider,
+        ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -543,7 +543,6 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
         config.callstatic_api_key.clone(),
     ));
     providers.add_rpc_provider::<MoonbeamProvider, MoonbeamConfig>(MoonbeamConfig::default());
-    providers.add_rpc_provider::<OneRpcProvider, OneRpcConfig>(OneRpcConfig::default());
     providers.add_rpc_provider::<TheRpcProvider, TheRpcConfig>(TheRpcConfig::default());
     providers.add_ws_provider::<AllnodesWsProvider, AllnodesConfig>(AllnodesConfig::new(
         config.allnodes_api_key.clone(),

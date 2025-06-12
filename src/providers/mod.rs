@@ -83,7 +83,6 @@ mod morph;
 mod near;
 mod odyssey;
 mod one_inch;
-mod onerpc;
 mod pimlico;
 mod pokt;
 mod publicnode;
@@ -119,7 +118,6 @@ pub use {
     near::NearProvider,
     odyssey::OdysseyProvider,
     one_inch::OneInchProvider,
-    onerpc::OneRpcProvider,
     pimlico::PimlicoProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
@@ -743,7 +741,6 @@ pub enum ProviderKind {
     Sui,
     Hiro,
     CallStatic,
-    OneRpc,
     TheRpc,
     Moonbeam,
 }
@@ -784,7 +781,6 @@ impl Display for ProviderKind {
                 ProviderKind::Sui => "Sui",
                 ProviderKind::Hiro => "Hiro",
                 ProviderKind::CallStatic => "CallStatic",
-                ProviderKind::OneRpc => "OneRpc",
                 ProviderKind::TheRpc => "TheRpc",
                 ProviderKind::Moonbeam => "Moonbeam",
             }
@@ -826,7 +822,6 @@ impl ProviderKind {
             "Sui" => Some(Self::Sui),
             "Hiro" => Some(Self::Hiro),
             "CallStatic" => Some(Self::CallStatic),
-            "OneRpc" => Some(Self::OneRpc),
             "TheRpc" => Some(Self::TheRpc),
             "Moonbeam" => Some(Self::Moonbeam),
             _ => None,
