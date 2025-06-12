@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.250.2 - 2025-06-12
+#### Bug Fixes
+- **(providers)** adding a proper handling of connection resets to providers (#1114) - (1fe3e25) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.250.1 - 2025-06-12
 #### Bug Fixes
 - **(Dune)** disabling exclude_spam_tokens and filtering by the pool size (#1112) - (f7b77b7) - Max Kalashnikoff | maksy.eth
