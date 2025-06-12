@@ -73,6 +73,7 @@ mod callstatic;
 mod coinbase;
 mod drpc;
 mod dune;
+mod edexa;
 mod hiro;
 mod mantle;
 mod meld;
@@ -110,6 +111,7 @@ pub use {
     callstatic::CallStaticProvider,
     drpc::DrpcProvider,
     dune::DuneProvider,
+    edexa::EdexaProvider,
     hiro::HiroProvider,
     mantle::MantleProvider,
     meld::MeldProvider,
@@ -746,6 +748,7 @@ pub enum ProviderKind {
     OneRpc,
     TheRpc,
     Moonbeam,
+    Edexa,
 }
 
 impl Display for ProviderKind {
@@ -787,6 +790,7 @@ impl Display for ProviderKind {
                 ProviderKind::OneRpc => "OneRpc",
                 ProviderKind::TheRpc => "TheRpc",
                 ProviderKind::Moonbeam => "Moonbeam",
+                ProviderKind::Edexa => "edeXa",
             }
         )
     }
@@ -829,6 +833,7 @@ impl ProviderKind {
             "OneRpc" => Some(Self::OneRpc),
             "TheRpc" => Some(Self::TheRpc),
             "Moonbeam" => Some(Self::Moonbeam),
+            "edeXa" => Some(Self::Edexa),
             _ => None,
         }
     }
