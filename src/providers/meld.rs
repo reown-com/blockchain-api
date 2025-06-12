@@ -186,7 +186,13 @@ impl OnRampMultiProvider for MeldProvider {
             .append_pair("categories", DEFAULT_CATEGORY);
 
         let latency_start = SystemTime::now();
-        let response = self.send_get_request(url).await?;
+        let response = self.send_get_request(url).await.map_err(|e| {
+            error!(
+                "Error sending request to Meld providers properties: {:?}",
+                e
+            );
+            RpcError::OnRampProviderError
+        })?;
         metrics.add_latency_and_status_code_for_provider(
             self.provider_kind,
             response.status().into(),
@@ -243,7 +249,11 @@ impl OnRampMultiProvider for MeldProvider {
                     session_data: params.session_data,
                 },
             )
-            .await?;
+            .await
+            .map_err(|e| {
+                error!("Error sending request to Meld get widget: {:?}", e);
+                RpcError::OnRampProviderError
+            })?;
         metrics.add_latency_and_status_code_for_provider(
             self.provider_kind,
             response.status().into(),
@@ -291,7 +301,10 @@ impl OnRampMultiProvider for MeldProvider {
         let url = Url::parse(&base).map_err(|_| RpcError::OnRampParseURLError)?;
 
         let latency_start = SystemTime::now();
-        let response = self.send_post_request(url, &params).await?;
+        let response = self.send_post_request(url, &params).await.map_err(|e| {
+            error!("Error sending request to Meld get quotes: {:?}", e);
+            RpcError::OnRampProviderError
+        })?;
         metrics.add_latency_and_status_code_for_provider(
             self.provider_kind,
             response.status().into(),

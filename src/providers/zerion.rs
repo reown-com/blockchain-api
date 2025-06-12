@@ -276,8 +276,12 @@ impl HistoryProvider for ZerionProvider {
         }
 
         let latency_start = SystemTime::now();
-        let response = self.send_request(url).await.tap_err(|e| {
-            error!("Error on request to zerion history endpoint with {}", e);
+        let response = self.send_request(url).await.map_err(|e| {
+            error!(
+                "Error on request to zerion transactions history endpoint with {}",
+                e
+            );
+            RpcError::TransactionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
             self.provider_kind,
@@ -414,7 +418,10 @@ impl PortfolioProvider for ZerionProvider {
             .append_pair("currency", &params.currency.unwrap_or("usd".to_string()));
 
         let latency_start = SystemTime::now();
-        let response = self.send_request(url).await?;
+        let response = self.send_request(url).await.map_err(|e| {
+            error!("Error on request to zerion portfolio endpoint with {}", e);
+            RpcError::PortfolioProviderError
+        })?;
         metrics.add_latency_and_status_code_for_provider(
             self.provider_kind,
             response.status().into(),
@@ -485,7 +492,13 @@ impl BalanceProvider for ZerionProvider {
         }
 
         let latency_start = SystemTime::now();
-        let response = self.send_request(url.clone()).await?;
+        let response = self.send_request(url.clone()).await.map_err(|e| {
+            error!(
+                "Error on request to zerion transactions history endpoint with {}",
+                e
+            );
+            RpcError::BalanceProviderError
+        })?;
         metrics.add_latency_and_status_code_for_provider(
             self.provider_kind,
             response.status().into(),
