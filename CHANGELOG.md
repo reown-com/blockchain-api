@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.250.4 - 2025-06-13
+#### Bug Fixes
+- **(identity)** adding a proper handling of the node's null response (#1115) - (d4ee863) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.250.3 - 2025-06-12
 #### Bug Fixes
 - **(providers)** removing OneRpc free endpoints (#1113) - (46227b6) - Max Kalashnikoff | maksy.eth
