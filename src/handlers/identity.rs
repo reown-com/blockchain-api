@@ -372,7 +372,9 @@ pub fn handle_rpc_error(error: ProviderError) -> Result<(), RpcError> {
             if error_detail.contains("503 Service Unavailable")
                 || error_detail.contains("400 Bad Request")
             {
-                return Err(RpcError::ProviderError);
+                return Err(RpcError::IdentityProviderError(
+                    "No available JSON-RPC providers".into(),
+                ));
             }
             // Proceed with Ok() if the error is related to the contract call error
             // since there should be a wrong NFT avatar contract address.
@@ -382,6 +384,13 @@ pub fn handle_rpc_error(error: ProviderError) -> Result<(), RpcError> {
                     error_detail
                 );
                 return Ok(());
+            }
+            // Check if the error is GenericParameterError which means that the
+            // node returned null malformed response
+            if error_detail.contains("Generic parameter error") {
+                return Err(RpcError::IdentityProviderError(
+                    "Malformed response from the JSON-RPC provider on ENS name resolution".into(),
+                ));
             }
             // Check the list of error codes that reflects an execution reverted
             // and should proceed with Ok()
