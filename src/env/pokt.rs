@@ -59,11 +59,10 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ("gnosis".into(), Weight::new(Priority::Normal).unwrap()),
         ),
         // Base mainnet
-        // TODO: Temporary disabled due to issues with the provider
-        // (
-        //     "eip155:8453".into(),
-        //     ("base".into(), Weight::new(Priority::Normal).unwrap()),
-        // ),
+        (
+            "eip155:8453".into(),
+            ("base".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Base Sepolia
         (
             "eip155:84532".into(),
@@ -99,29 +98,26 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ),
         ),
         // Optimism
-        // TODO: Temporary disabled due to issues with the provider
-        // (
-        //     "eip155:10".into(),
-        //     ("optimism".into(), Weight::new(Priority::Normal).unwrap()),
-        // ),
+        (
+            "eip155:10".into(),
+            ("optimism".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         // Optimism Sepolia
-        // TODO: Temporary disabled due to issues with the provider
         (
             "eip155:11155420".into(),
             (
                 "optimism-sepolia-testnet".into(),
-                Weight::new(Priority::Disabled).unwrap(),
+                Weight::new(Priority::Normal).unwrap(),
             ),
         ),
         // Arbitrum
-        // TODO: Temporary disabled due to issues with the provider
-        // (
-        //     "eip155:42161".into(),
-        //     (
-        //         "arbitrum-one".into(),
-        //         Weight::new(Priority::Normal).unwrap(),
-        //     ),
-        // ),
+        (
+            "eip155:42161".into(),
+            (
+                "arbitrum-one".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
         // Arbitrum Sepolia
         (
             "eip155:421614".into(),
@@ -131,12 +127,10 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             ),
         ),
         // Polygon
-        // Temprarily disabled due to issues with the provider until the Pokt infra
-        // migration is complete
-        // (
-        //     "eip155:137".into(),
-        //     ("polygon".into(), Weight::new(Priority::Normal).unwrap()),
-        // ),
+        (
+            "eip155:137".into(),
+            ("polygon".into(), Weight::new(Priority::Normal).unwrap()),
+        ),
         (
             "eip155:1101".into(),
             ("polygon-zkevm".into(), Weight::new(Priority::High).unwrap()),
@@ -166,7 +160,8 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         // Scroll
         (
             "eip155:534352".into(),
-            ("scroll".into(), Weight::new(Priority::Normal).unwrap()),
+            // TODO: Temporarily disabled due to HTTP 400s issue with the provider
+            ("scroll".into(), Weight::new(Priority::Disabled).unwrap()),
         ),
         // Berachain Mainnet
         (
