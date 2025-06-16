@@ -55,18 +55,15 @@ fn extract_supported_chains_and_subdomains(
     let supported_chain_ids = HashMap::from([
         (
             "eip155:324",
-            ("snowy-chaotic-hill.zksync-mainnet", Priority::Normal),
+            ("snowy-chaotic-hill.zksync-mainnet", Priority::Low),
         ),
         (
             "eip155:1101",
-            ("clean-few-meme.zkevm-mainnet", Priority::Normal),
+            ("clean-few-meme.zkevm-mainnet", Priority::Low),
         ),
         (
             "eip155:42161",
-            (
-                "divine-special-snowflake.arbitrum-mainnet",
-                Priority::Normal,
-            ),
+            ("divine-special-snowflake.arbitrum-mainnet", Priority::Low),
         ),
         (
             "eip155:80084",
@@ -83,19 +80,19 @@ fn extract_supported_chains_and_subdomains(
         ("eip155:56", ("muddy-compatible-general.bsc", Priority::Low)),
         (
             "eip155:8217",
-            ("sleek-solitary-telescope.kaia-mainnet", Priority::Normal),
+            ("sleek-solitary-telescope.kaia-mainnet", Priority::Low),
         ),
         (
             "eip155:421614",
-            ("thrumming-quaint-flower.arbitrum-sepolia", Priority::Normal),
+            ("thrumming-quaint-flower.arbitrum-sepolia", Priority::Low),
         ),
         (
             "eip155:80094",
-            ("convincing-prettiest-wind.bera-mainnet", Priority::Normal),
+            ("convincing-prettiest-wind.bera-mainnet", Priority::Low),
         ),
         (
             "eip155:11155111",
-            ("crimson-spring-wind.ethereum-sepolia", Priority::Normal),
+            ("crimson-spring-wind.ethereum-sepolia", Priority::Low),
         ),
         (
             "eip155:137",
