@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.251.0 - 2025-06-16
+#### Features
+- **(providers)** enabling Pokt endpoints and tune Quicknode (#1116) - (99de8be) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.250.4 - 2025-06-13
 #### Bug Fixes
 - **(identity)** adding a proper handling of the node's null response (#1115) - (d4ee863) - Max Kalashnikoff | maksy.eth
