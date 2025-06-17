@@ -177,6 +177,10 @@ impl OnRampMultiProvider for MeldProvider {
                 "{}/service-providers/limits/fiat-currency-purchases",
                 self.api_base_url
             ),
+            PropertyType::CountriesDefaults => format!(
+                "{}/service-providers/properties/defaults/by-country",
+                self.api_base_url
+            ),
         };
         let mut url = Url::parse(&base_url).map_err(|_| RpcError::OnRampParseURLError)?;
         if let Some(countries) = params.countries {
