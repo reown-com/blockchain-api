@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.252.0 - 2025-06-18
+#### Features
+- **(onRamp)** adding defaults by country properties (#1117) - (451e012) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.251.0 - 2025-06-16
 #### Features
 - **(providers)** enabling Pokt endpoints and tune Quicknode (#1116) - (99de8be) - Max Kalashnikoff | maksy.eth
