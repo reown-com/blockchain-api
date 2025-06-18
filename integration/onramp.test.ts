@@ -135,6 +135,20 @@ describe('OnRamp', () => {
     expect(resp.data[0].defaultAmount === null || typeof resp.data[0].defaultAmount === 'number').toBeTruthy()
     expect(typeof resp.data[0].minimumAmount).toBe('number')
     expect(typeof resp.data[0].maximumAmount).toBe('number')
+
+    // Check for `countries-defaults` type
+    type = 'countries-defaults'
+    const defaultCountry = 'US'
+    resp = await httpClient.get(
+      `${onRampPath}/providers/properties` +
+      `?projectId=${projectId}` +
+      `&type=${type}` +
+      `&countries=${defaultCountry}`
+    );
+    expect(resp.status).toBe(200)
+    expect(resp.data.length).toBeGreaterThan(0)
+    expect(resp.data[0].countryCode).toBe(defaultCountry)
+    expect(resp.data[0].defaultCurrencyCode).toBe('USD')
   })
 
   it('get multi provider quotes', async () => {
