@@ -200,6 +200,12 @@ variable "callstatic_api_key" {
   sensitive   = true
 }
 
+variable "blast_api_key" {
+  description = "Blast API key"
+  type        = string
+  sensitive   = true
+}
+
 #-------------------------------------------------------------------------------
 # Analytics
 

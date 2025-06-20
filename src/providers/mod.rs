@@ -68,6 +68,7 @@ mod arbitrum;
 mod aurora;
 mod base;
 mod binance;
+mod blast;
 mod bungee;
 mod callstatic;
 mod coinbase;
@@ -87,6 +88,7 @@ mod pimlico;
 mod pokt;
 mod publicnode;
 mod quicknode;
+mod rootstock;
 mod solscan;
 mod sui;
 mod syndica;
@@ -105,6 +107,7 @@ pub use {
     aurora::AuroraProvider,
     base::BaseProvider,
     binance::BinanceProvider,
+    blast::BlastProvider,
     bungee::BungeeProvider,
     callstatic::CallStaticProvider,
     drpc::DrpcProvider,
@@ -122,6 +125,7 @@ pub use {
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
     quicknode::QuicknodeProvider,
+    rootstock::RootstockProvider,
     solscan::SolScanProvider,
     sui::SuiProvider,
     syndica::{SyndicaProvider, SyndicaWsProvider},
@@ -179,6 +183,8 @@ pub struct ProvidersConfig {
     pub meld_api_url: String,
     /// CallStatic API key
     pub callstatic_api_key: String,
+    /// Blast.io API key
+    pub blast_api_key: String,
 
     pub override_bundler_urls: Option<MockAltoUrls>,
 }
@@ -743,6 +749,8 @@ pub enum ProviderKind {
     CallStatic,
     TheRpc,
     Moonbeam,
+    Blast,
+    Rootstock,
 }
 
 impl Display for ProviderKind {
@@ -783,6 +791,8 @@ impl Display for ProviderKind {
                 ProviderKind::CallStatic => "CallStatic",
                 ProviderKind::TheRpc => "TheRpc",
                 ProviderKind::Moonbeam => "Moonbeam",
+                ProviderKind::Blast => "Blast",
+                ProviderKind::Rootstock => "Rootstock",
             }
         )
     }
@@ -824,6 +834,8 @@ impl ProviderKind {
             "CallStatic" => Some(Self::CallStatic),
             "TheRpc" => Some(Self::TheRpc),
             "Moonbeam" => Some(Self::Moonbeam),
+            "Blast" => Some(Self::Blast),
+            "Rootstock" => Some(Self::Rootstock),
             _ => None,
         }
     }

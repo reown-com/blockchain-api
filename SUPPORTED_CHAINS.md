@@ -11,6 +11,7 @@ Chain name with associated `chainId` query param to use.
 | Ethereum                                                 | eip155:1             |
 | Optimism                                                 | eip155:10            |
 | Rootstock Mainnet <sup>[1](#footnote1)</sup>             | eip155:30            |
+| Rootstock Testnet <sup>[1](#footnote1)</sup>             | eip155:31            |
 | Binance Smart Chain                                      | eip155:56            |
 | Binance Smart Chain Testnet <sup>[1](#footnote1)</sup>   | eip155:97            |
 | Gnosis Chain                                             | eip155:100           |
