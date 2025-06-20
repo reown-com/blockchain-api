@@ -16,16 +16,17 @@ use {
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
-    allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, callstatic::*, drpc::*, dune::*,
-    hiro::*, mantle::*, monad::*, moonbeam::*, morph::*, near::*, odyssey::*, pokt::*,
-    publicnode::*, quicknode::*, server::*, solscan::*, sui::*, syndica::*, therpc::*, unichain::*,
-    wemix::*, zerion::*, zksync::*, zora::*,
+    allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, blast::*, callstatic::*, drpc::*,
+    dune::*, hiro::*, mantle::*, monad::*, moonbeam::*, morph::*, near::*, odyssey::*, pokt::*,
+    publicnode::*, quicknode::*, rootstock::*, server::*, solscan::*, sui::*, syndica::*,
+    therpc::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
 };
 mod allnodes;
 mod arbitrum;
 mod aurora;
 mod base;
 mod binance;
+mod blast;
 mod callstatic;
 mod drpc;
 mod dune;
@@ -39,6 +40,7 @@ mod odyssey;
 mod pokt;
 mod publicnode;
 mod quicknode;
+mod rootstock;
 mod server;
 pub mod solscan;
 mod sui;
@@ -223,6 +225,7 @@ mod test {
                 "RPC_PROXY_PROVIDER_CALLSTATIC_API_KEY",
                 "CALLSTATIC_API_KEY",
             ),
+            ("RPC_PROXY_PROVIDER_BLAST_API_KEY", "BLAST_API_KEY"),
             // Postgres config.
             (
                 "RPC_PROXY_POSTGRES_URI",
@@ -344,6 +347,7 @@ mod test {
                     meld_api_key: "MELD_API_KEY".to_string(),
                     meld_api_url: "MELD_API_URL".to_string(),
                     callstatic_api_key: "CALLSTATIC_API_KEY".to_string(),
+                    blast_api_key: "BLAST_API_KEY".to_string(),
                 },
                 rate_limiting: RateLimitingConfig {
                     max_tokens: Some(100),

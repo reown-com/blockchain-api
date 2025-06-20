@@ -171,14 +171,6 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
-        // Rootstock Mainnet
-        (
-            "eip155:30".into(),
-            (
-                "https://rootstock.drpc.org".into(),
-                Weight::new(Priority::Normal).unwrap(),
-            ),
-        ),
         // Sei Mainnet
         (
             "eip155:1329".into(),

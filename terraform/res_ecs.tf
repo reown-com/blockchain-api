@@ -82,6 +82,7 @@ module "ecs" {
   meld_api_key         = var.meld_api_key
   meld_api_url         = var.meld_api_url
   callstatic_api_key   = var.callstatic_api_key
+  blast_api_key        = var.blast_api_key
 
   # Project Registry
   registry_api_endpoint   = var.registry_api_endpoint
