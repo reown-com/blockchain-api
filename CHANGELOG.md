@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.254.0 - 2025-06-20
+#### Features
+- **(Rootstock)** adding Rootstock native endpoints and Blast provider (#1120) - (9c5403b) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.253.0 - 2025-06-19
 #### Features
 - **(RPC)** adding Rootstock mainnet support (#1118) - (de0c0a9) - Max Kalashnikoff | maksy.eth
