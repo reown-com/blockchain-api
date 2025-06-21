@@ -11,6 +11,7 @@ pub mod rate_limit;
 pub mod sessions;
 pub mod simple_request_json;
 pub mod token_amount;
+pub mod validators;
 
 pub fn generate_random_string(len: usize) -> String {
     let rng = rand::thread_rng();
@@ -32,7 +33,8 @@ pub fn capitalize_first_letter(s: &str) -> String {
     match c.next() {
         None => String::new(),
         Some(first) => {
-            // to_uppercase() returns an iterator because some characters can map to multiple chars
+            // to_uppercase() returns an iterator because some characters can map to
+            // multiple chars
             first.to_uppercase().collect::<String>() + c.as_str()
         }
     }
