@@ -94,6 +94,11 @@ jobs:
           RPC_PROXY_PROVIDER_ALLNODES_API_KEY: ""
           RPC_PROXY_PROVIDER_MELD_API_KEY: ""
           RPC_PROXY_PROVIDER_MELD_API_URL: ""
+      - run: docker compose up -d --build proxy
+      - uses: ./.github/workflows/sub-validate.yml
+        with:
+          stage: local
+          stage-url: http://localhost:3001
       - run: docker logs mock-bundler-anvil-1
         if: failure()
       - run: docker logs mock-bundler-alto-1
