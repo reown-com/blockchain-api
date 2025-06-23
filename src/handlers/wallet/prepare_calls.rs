@@ -15,7 +15,7 @@ use {
         utils::{
             erc4337::BundlerRpcClient,
             erc7677::{PaymasterRpcClient, PmGetPaymasterDataParams},
-            validators::is_ownable_validator_format,
+            validators::{is_ownable_validator_address, is_ownable_validator_format},
         },
     },
     alloy::{
@@ -298,8 +298,14 @@ async fn handler_internal(
             split_permissions_context_and_check_validator(&context)?;
 
         // TODO refactor into yttrium
-        let dummy_signature =
-            get_dummy_signature(request.from, signature, account_type, &provider).await?;
+        let dummy_signature = get_dummy_signature(
+            request.from,
+            validator_address,
+            signature,
+            account_type,
+            &provider,
+        )
+        .await?;
 
         // https://github.com/reown-com/web-examples/blob/32f9df464e2fa85ec49c21837d811cfe1437719e/advanced/wallets/react-wallet-v2/src/lib/smart-accounts/builders/SafeUserOpBuilder.ts#L110
         let nonce = get_nonce_with_key(
@@ -594,11 +600,11 @@ pub async fn encode_use_or_enable_smart_session_signature(
         })?;
 
     // Convert signature format based on validator type
-    let validator_init_data = &enable_session_data
+    let validator_address = enable_session_data
         .enable_session
         .sessionToEnable
-        .sessionValidatorInitData;
-    let converted_signature = decode_and_convert_signature_format(signature, validator_init_data)?;
+        .sessionValidator;
+    let converted_signature = decode_and_convert_signature_format(signature, validator_address)?;
 
     let signature = if session_enabled {
         encode_use_signature(permission_id, converted_signature.into())
@@ -671,9 +677,10 @@ enum SignerType {
     Passkey,
 }
 
-fn decode_signers(data: Bytes) -> Result<Vec<SignerType>, PrepareCallsError> {
-    // Try ABI decoding first (threshold + address array format) - OwnableValidator
-    if is_ownable_validator_format(&data) {
+fn decode_signers(data: Bytes, validator_address: Address) -> Result<Vec<SignerType>, PrepareCallsError> {
+    // Check if this is an OwnableValidator by address
+    if is_ownable_validator_address(validator_address) {
+        // Try ABI decoding (threshold + address array format) - OwnableValidator
         if let Ok((_, owners)) = <(U256, Vec<Address>)>::abi_decode_params(&data, false) {
             if !owners.is_empty() {
                 // For OwnableValidator format, all signers are ECDSA (EOA addresses)
@@ -726,6 +733,7 @@ fn decode_signers(data: Bytes) -> Result<Vec<SignerType>, PrepareCallsError> {
 
 async fn get_dummy_signature(
     address: AccountAddress,
+    validator_address: Address,
     signature: &[u8],
     account_type: AccountType,
     provider: &impl Provider,
@@ -749,9 +757,9 @@ async fn get_dummy_signature(
         .sessionToEnable
         .sessionValidatorInitData;
 
-    let signers = decode_signers(validator_init_data.clone())?;
+    let signers = decode_signers(validator_init_data.clone(), validator_address)?;
 
-    let signature = if is_ownable_validator_format(validator_init_data) {
+    let signature = if is_ownable_validator_address(validator_address) {
         // For OwnableValidator: concatenate signatures directly (abi.encodePacked
         // style)
         signers
@@ -786,9 +794,9 @@ async fn get_dummy_signature(
 
 fn decode_and_convert_signature_format(
     signature: Vec<u8>,
-    validator_init_data: &Bytes,
+    validator_address: Address,
 ) -> Result<Vec<u8>, PrepareCallsError> {
-    if is_ownable_validator_format(validator_init_data) {
+    if is_ownable_validator_address(validator_address) {
         // Try to decode as ABI-encoded array of signatures
         if let Ok(signature_array) = <Vec<Bytes>>::abi_decode(&signature, true) {
             // Concatenate all signatures (pure concatenation, no ABI artifacts)
@@ -855,7 +863,7 @@ mod tests {
 
     // Test OwnableValidator (threshold + owners format)
     mod ownable_validator_tests {
-        use super::*;
+        use {super::*, crate::utils::validators::OWNABLE_VALIDATOR_ADDRESS};
 
         #[test]
         fn test_is_ownable_validator_format() {
@@ -866,11 +874,11 @@ mod tests {
                 address!("2222222222222222222222222222222222222222"),
             ];
             let data = Bytes::from((threshold, owners).abi_encode_params());
-            assert!(is_ownable_validator_format(&data));
+            assert_eq!(is_ownable_validator_format(&data), Ok(true));
 
             // Invalid format
             let invalid_data = bytes!("1234567890");
-            assert!(!is_ownable_validator_format(&invalid_data));
+            assert_eq!(is_ownable_validator_format(&invalid_data), Ok(false));
         }
 
         #[test]
@@ -883,7 +891,7 @@ mod tests {
             ];
             let data = Bytes::from((threshold, owners.clone()).abi_encode_params());
 
-            let signers = decode_signers(data).unwrap();
+            let signers = decode_signers(data, OWNABLE_VALIDATOR_ADDRESS).unwrap();
             assert_eq!(signers.len(), owners.len());
             // All should be ECDSA for OwnableValidator
             for signer in signers {
@@ -899,16 +907,9 @@ mod tests {
             let signature_array = vec![sig1.clone(), sig2.clone()];
             let abi_encoded = signature_array.abi_encode();
 
-            // Create ownable validator init data
-            let threshold = U256::from(2);
-            let owners = vec![
-                address!("1111111111111111111111111111111111111111"),
-                address!("2222222222222222222222222222222222222222"),
-            ];
-            let validator_init_data = Bytes::from((threshold, owners).abi_encode_params());
-
             let result =
-                decode_and_convert_signature_format(abi_encoded, &validator_init_data).unwrap();
+                decode_and_convert_signature_format(abi_encoded, OWNABLE_VALIDATOR_ADDRESS)
+                    .unwrap();
 
             // Should be concatenated
             let expected = [sig1.to_vec(), sig2.to_vec()].concat();
@@ -933,7 +934,7 @@ mod tests {
             data.push(1u8);
             data.extend_from_slice(&[0x22; 64]);
 
-            let signers = decode_signers(Bytes::from(data)).unwrap();
+            let signers = decode_signers(Bytes::from(data), address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F")).unwrap();
             assert_eq!(signers.len(), 2);
             assert!(matches!(signers[0], SignerType::Ecdsa));
             assert!(matches!(signers[1], SignerType::Passkey));
@@ -942,17 +943,17 @@ mod tests {
         #[test]
         fn test_decode_signers_multi_key_errors() {
             // Missing count
-            let result = decode_signers(Bytes::new());
+            let result = decode_signers(Bytes::new(), address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F"));
             assert!(result.is_err());
 
             // Truncated data
             let data = vec![1u8, 0u8]; // Says 1 signer, type ECDSA, but missing 20 bytes
-            let result = decode_signers(Bytes::from(data));
+            let result = decode_signers(Bytes::from(data), address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F"));
             assert!(result.is_err());
 
             // Unknown signer type
             let data = vec![1u8, 99u8]; // Invalid type
-            let result = decode_signers(Bytes::from(data));
+            let result = decode_signers(Bytes::from(data), address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F"));
             assert!(result.is_err());
         }
 
@@ -962,11 +963,11 @@ mod tests {
             let sig2 = vec![0x22; 65]; // 65-byte ECDSA signature
             let concatenated = [sig1.clone(), sig2.clone()].concat();
 
-            // Non-ownable validator init data
-            let validator_init_data = bytes!("1234567890abcdef");
-
-            let result =
-                decode_and_convert_signature_format(concatenated, &validator_init_data).unwrap();
+            let result = decode_and_convert_signature_format(
+                concatenated,
+                address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F"),
+            )
+            .unwrap();
 
             // Should be ABI-encoded array
             let signature_array = vec![Bytes::from(sig1), Bytes::from(sig2)];

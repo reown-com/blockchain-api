@@ -117,6 +117,9 @@ async fn handler_internal(
         pci: pci.clone(),
         key: KeyItem {
             r#type: KeyType::Secp256k1,
+            // BREAKING CHANGE: For OwnableValidator support, the public key format is now
+            // a direct hex string with 0x prefix (previously was ASCII-hex encoded).
+            // This aligns with how validator contracts expect public keys to be formatted.
             public_key: format!("0x{public_key_der_hex}"),
         },
     };

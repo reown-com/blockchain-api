@@ -25,9 +25,10 @@ use {
             },
             sessions::extract_execution_batch_components,
             simple_request_json::SimpleRequestJson,
-            validators::is_ownable_validator_format,
+            validators::is_ownable_validator_address,
         },
     },
+    alloy::primitives::Address,
     axum::{
         extract::{Path, Query, State},
         response::{IntoResponse, Response},
@@ -227,9 +228,6 @@ async fn handler_internal(
 
     // Create a LocalWallet for signing and signing the hashed message
     let wallet = LocalWallet::from(signer);
-    let signature = wallet
-        .sign_hash(H256::from(&keccak256(eip191_user_op_hash.clone())))
-        .unwrap();
 
     let message_hash = H256::from(&keccak256(eip191_user_op_hash.clone()));
     let signature = wallet
@@ -238,14 +236,32 @@ async fn handler_internal(
 
     let packed_signature = pack_signature(&signature);
 
-    // Determine signature format based on validator init data in context
-    let concatenated_signature = if is_ownable_validator_format(&permission_context) {
+    // Extract validator address from permission context (first 20 bytes)
+    let validator_address = if permission_context.len() >= 20 {
+        Address::from_slice(&permission_context[..20])
+    } else {
+        return Err(RpcError::PermissionContextNotUpdated(
+            request_payload.pci.clone(),
+        ));
+    };
+
+    // Determine signature format based on validator address
+    let concatenated_signature = if is_ownable_validator_address(validator_address) {
         // For OwnableValidator: concatenate signatures directly (no ABI encoding)
-        // The order is important: signatures must be in the same order as sorted owner
-        // addresses
+        // The OwnableValidator contract:
+        // 1. Uses CheckSignatures.recoverNSignatures to recover signers from signatures
+        // 2. The recovered signers array maintains the order of the input signatures
+        // 3. OwnableValidator then sorts the recovered signers before validation
+        // 4. Checks if sorted signers are valid owners with sufficient threshold
+        //
+        // Since the contract sorts signers after recovery, the order of concatenation
+        // doesn't affect validation. We maintain a consistent order for clarity.
+        //
+        // IMPORTANT: OwnableValidator only supports EOA signatures (ECDSA recovery).
+        // It does NOT support passkeys. For passkey support, use MultiKeySigner instead.
         let mut concatenated_signature = Vec::new();
-        concatenated_signature.extend_from_slice(&user_op.signature); // Frontend signature (first signer)
-        concatenated_signature.extend_from_slice(&packed_signature); // Backend signature (second signer)
+        concatenated_signature.extend_from_slice(&user_op.signature); // Frontend signature
+        concatenated_signature.extend_from_slice(&packed_signature); // Backend signature
         Bytes::from(concatenated_signature)
     } else {
         // For MultiKeySigner: ABI encode the signatures
@@ -259,4 +275,42 @@ async fn handler_internal(
         "signature": format!("0x{}", hex::encode(user_op.signature)),
     }))
     .into_response())
+}
+
+#[cfg(test)]
+mod tests {
+    use {
+        super::*,
+        crate::utils::validators::OWNABLE_VALIDATOR_ADDRESS,
+        alloy::primitives::{address, bytes},
+    };
+
+    #[test]
+    fn test_signature_concatenation_for_ownable_validator() {
+        // Test that signatures are properly concatenated for OwnableValidator
+
+        // Test signatures (65 bytes each)
+        let frontend_sig = bytes!("e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c");
+        let backend_sig = bytes!("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1b");
+
+        // Concatenate signatures in the order we use (frontend first, backend second)
+        let mut concatenated = Vec::new();
+        concatenated.extend_from_slice(&frontend_sig);
+        concatenated.extend_from_slice(&backend_sig);
+
+        // Verify the concatenation
+        assert_eq!(concatenated.len(), 130); // 65 + 65
+        assert_eq!(&concatenated[0..65], frontend_sig.as_ref());
+        assert_eq!(&concatenated[65..130], backend_sig.as_ref());
+    }
+
+    #[test]
+    fn test_signature_format_detection() {
+        // Test that validator address properly determines signature format
+        let ownable_validator = OWNABLE_VALIDATOR_ADDRESS;
+        let other_validator = address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F");
+
+        assert!(is_ownable_validator_address(ownable_validator));
+        assert!(!is_ownable_validator_address(other_validator));
+    }
 }
