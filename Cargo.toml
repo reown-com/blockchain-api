@@ -16,7 +16,7 @@ yttrium = { git = "https://github.com/reown-com/yttrium.git", rev = "5e1b5f4", f
 
 # Async
 async-trait = "0.1.82"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.45", features = ["full"] }
 
 # Web
 hyper = "0.14"
