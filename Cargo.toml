@@ -1,3 +1,10 @@
+[workspace]
+resolver = "3"
+members = ["./worker"]
+
+[workspace.dependencies]
+# nothing yet
+
 [package]
 name = "rpc-proxy"
 version = "0.255.0"
@@ -10,9 +17,22 @@ authors = [
 build = "build.rs"
 
 [dependencies]
-wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.9.0", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock", "rate_limit"] }
-relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", tag = "v0.32.0", features = ["cacao"] }
-yttrium = { git = "https://github.com/reown-com/yttrium.git", rev = "5e1b5f4", features = ["solana"] }
+wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.9.0", features = [
+    "alloc",
+    "analytics",
+    "future",
+    "http",
+    "metrics",
+    "geoip",
+    "geoblock",
+    "rate_limit",
+] }
+relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", tag = "v0.32.0", features = [
+    "cacao",
+] }
+yttrium = { git = "https://github.com/reown-com/yttrium.git", rev = "5e1b5f4", features = [
+    "solana",
+] }
 
 # Async
 async-trait = "0.1.82"
@@ -64,7 +84,7 @@ sqlx = { version = "0.7.4", features = [
 ] }
 
 # IRN
-wcn_replication = { package = "wcn_replication", path = "irn/crates/replication" }
+wcn_replication = { git = "https://github.com/WalletConnectFoundation/wcn.git", rev = "0657696" }
 
 dotenv = "0.15.0"
 envy = "0.4"
