@@ -493,7 +493,7 @@ impl BalanceProvider for SolScanProvider {
     }
 
     fn provider_kind(&self) -> ProviderKind {
-        self.provider_kind
+        self.provider_kind.clone()
     }
 }
 
@@ -612,7 +612,7 @@ impl HistoryProvider for SolScanProvider {
     }
 
     fn provider_kind(&self) -> ProviderKind {
-        self.provider_kind
+        self.provider_kind.clone()
     }
 }
 
