@@ -92,7 +92,7 @@ impl MeldProvider {
                 RpcError::OnRampProviderError
             })?;
         metrics.add_latency_and_status_code_for_provider(
-            ProviderKind::Meld,
+            &ProviderKind::Meld,
             response.status().into(),
             latency_start,
             None,
@@ -185,7 +185,7 @@ impl OnRampMultiProvider for MeldProvider {
         let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
@@ -276,7 +276,7 @@ impl OnRampMultiProvider for MeldProvider {
             RpcError::OnRampProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
@@ -337,7 +337,7 @@ impl OnRampMultiProvider for MeldProvider {
                 RpcError::OnRampProviderError
             })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
