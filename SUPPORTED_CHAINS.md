@@ -10,18 +10,18 @@ Chain name with associated `chainId` query param to use.
 |----------------------------------------------------------|----------------------|
 | Ethereum                                                 | eip155:1             |
 | Optimism                                                 | eip155:10            |
-| Rootstock Mainnet <sup>[1](#footnote1)</sup>             | eip155:30            |
+| Rootstock <sup>[1](#footnote1)</sup>                     | eip155:30            |
 | Rootstock Testnet <sup>[1](#footnote1)</sup>             | eip155:31            |
 | Binance Smart Chain                                      | eip155:56            |
 | Binance Smart Chain Testnet <sup>[1](#footnote1)</sup>   | eip155:97            |
 | Gnosis Chain                                             | eip155:100           |
-| Unichain Mainnet <sup>[1](#footnote1)</sup>              | eip155:130           |
+| Unichain <sup>[1](#footnote1)</sup>                      | eip155:130           |
 | Polygon                                                  | eip155:137           |
 | Sonic                                                    | eip155:146           |
-| zkSync Era Sepolia Testnet <sup>[1](#footnote1)</sup>    | eip155:300           |
+| zkSync Era Sepolia <sup>[1](#footnote1)</sup>            | eip155:300           |
 | zkSync Era                                               | eip155:324           |
-| Polygon Zkevm                                            | eip155:1101          |
-| Wemix Mainnet <sup>[1](#footnote1)</sup>                 | eip155:1111          |
+| Polygon zkEVM                                            | eip155:1101          |
+| Wemix <sup>[1](#footnote1)</sup>                         | eip155:1111          |
 | Wemix Testnet <sup>[1](#footnote1)</sup>                 | eip155:1112          |
 | Moonbeam GLMR <sup>[1](#footnote1)</sup>                 | eip155:1284          |
 | Unichain Sepolia <sup>[1](#footnote1)</sup>              | eip155:1301          |
@@ -30,7 +30,7 @@ Chain name with associated `chainId` query param to use.
 | Morph Mainnet <sup>[1](#footnote1)</sup>                 | eip155:2818          |
 | Mantle <sup>[1](#footnote1)</sup>                        | eip155:5000          |
 | Mantle Testnet <sup>[1](#footnote1)</sup>                | eip155:5003          |
-| Kaia Mainnet                                             | eip155:8217          |
+| Kaia                                                     | eip155:8217          |
 | Base                                                     | eip155:8453          |
 | Monad Testnet                                            | eip155:10143         |
 | Ethereum Holesky                                         | eip155:17000         |
@@ -43,7 +43,7 @@ Chain name with associated `chainId` query param to use.
 | Polygon Amoy <sup>[1](#footnote1)</sup>                  | eip155:80002         |
 | Berachain Bepolia <sup>[1](#footnote)</sup>              | eip155:80069         |
 | Berachain bArtio <sup>[1](#footnote1)</sup>              | eip155:80084         |
-| Berachain Mainnet <sup>[1](#footnote1)</sup>             | eip155:80094         |
+| Berachain <sup>[1](#footnote1)</sup>                     | eip155:80094         |
 | Base Sepolia                                             | eip155:84532         |
 | Arbitrum Sepolia                                         | eip155:421614        |
 | Scroll Mainnet <sup>[1](#footnote1)</sup>                | eip155:534352        |
@@ -56,13 +56,13 @@ Chain name with associated `chainId` query param to use.
 | Zora Sepolia <sup>[1](#footnote1)</sup>                  | eip155:999999999     |
 | Aurora <sup>[1](#footnote1)</sup>                        | eip155:1313161554    |
 | Aurora Testnet <sup>[1](#footnote1)</sup>                | eip155:1313161555    |
-| Near Mainnet                                             | near:mainnet         |
+| Near                                                     | near:mainnet         |
 
 ### Solana
 
 | Network                               | Chain ID                                |
 |---------------------------------------|-----------------------------------------|
-| Solana Mainnet                        | solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp |
+| Solana                                | solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp |
 | Solana Devnet                         | solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1 |
 | Solana Testnet                        | solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z |
 
@@ -70,14 +70,14 @@ Chain name with associated `chainId` query param to use.
 
 | Network                               | Chain ID                                |
 |---------------------------------------|-----------------------------------------|
-| Bitcoin Mainnet                       | bip122:000000000019d6689c085ae165831e93 |
+| Bitcoin                               | bip122:000000000019d6689c085ae165831e93 |
 | Bitcoin Testnet                       | bip122:000000000933ea01ad0ee984209779ba |
 
 ### Sui
 
 | Network                               | Chain ID    |
 |---------------------------------------|-------------|
-| Sui Mainnet                           | sui:mainnet |
+| Sui                                   | sui:mainnet |
 | Sui Devnet                            | sui:devnet  |
 | Sui Testnet                           | sui:testnet |
 
@@ -89,7 +89,7 @@ can be changed in a near future.
 
 | Network                                   | Chain ID          |
 |-------------------------------------------|-------------------|
-| Stacks Mainnet <sup>[1](#footnote1)</sup> | stacks:1          |
+| Stacks <sup>[1](#footnote1)</sup>         | stacks:1          |
 | Stacks Testnet <sup>[1](#footnote1)</sup> | stacks:2147483648 |
 
 <a id="footnote1"><sup>1</sup></a> The availability of this chain in our RPC is not guaranteed.

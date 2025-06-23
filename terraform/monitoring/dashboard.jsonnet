@@ -28,6 +28,9 @@ local vars  = {
   log_group_app_name: std.extVar('log_group_app_name'),
   log_group_app_arn:  std.extVar('log_group_app_arn'),
   aws_account_id:     std.extVar('aws_account_id'),
+
+  // chain_config: std.parseJson(std.extVar('chain_config')),
+  chain_config: import 'chain_config.json',
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -245,4 +248,5 @@ dashboard.new(
 
   row.new('IRN Client'),
     panels.irn.latency(ds, vars)        { gridPos: pos._2 },
-]))
+
+] + (import 'panels/chain_rpc_router/chain_rpc_router.libsonnet').new(ds, vars, row, pos)))

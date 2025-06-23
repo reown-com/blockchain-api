@@ -1,0 +1,299 @@
+{
+  "chains": [
+    {
+      "caip2": "eip155:1",
+      "name": "Ethereum",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:10",
+      "name": "Optimism",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:30",
+      "name": "Rootstock",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:31",
+      "name": "Rootstock Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:56",
+      "name": "Binance Smart Chain",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:97",
+      "name": "Binance Smart Chain Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:100",
+      "name": "Gnosis Chain",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:130",
+      "name": "Unichain",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:137",
+      "name": "Polygon",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:146",
+      "name": "Sonic",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:300",
+      "name": "zkSync Era Sepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:324",
+      "name": "zkSync Era",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1101",
+      "name": "Polygon zkEVM",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1111",
+      "name": "Wemix",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1112",
+      "name": "Wemix Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1284",
+      "name": "Moonbeam GLMR",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1301",
+      "name": "Unichain Sepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1329",
+      "name": "Sei Network",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:2810",
+      "name": "Morph Holesky",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:2818",
+      "name": "Morph Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:5000",
+      "name": "Mantle",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:5003",
+      "name": "Mantle Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:8217",
+      "name": "Kaia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:8453",
+      "name": "Base",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:10143",
+      "name": "Monad Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:17000",
+      "name": "Ethereum Holesky",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:42161",
+      "name": "Arbitrum",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:42220",
+      "name": "Celo",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:43113",
+      "name": "Avalanche Fuji Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:43114",
+      "name": "Avalanche C-Chain",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:57054",
+      "name": "Sonic Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:59144",
+      "name": "Linea",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:80002",
+      "name": "Polygon Amoy",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:80069",
+      "name": "Berachain Bepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:80084",
+      "name": "Berachain bArtio",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:80094",
+      "name": "Berachain",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:84532",
+      "name": "Base Sepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:421614",
+      "name": "Arbitrum Sepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:534352",
+      "name": "Scroll Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:534351",
+      "name": "Scroll Sepolia Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:560048",
+      "name": "Ethereum Hoodi",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:911867",
+      "name": "Odyssey Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:7777777",
+      "name": "Zora",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:11155111",
+      "name": "Ethereum Sepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:11155420",
+      "name": "Optimism Sepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:999999999",
+      "name": "Zora Sepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1313161554",
+      "name": "Aurora",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1313161555",
+      "name": "Aurora Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "near:mainnet",
+      "name": "Near",
+      "providers": []
+    },
+    {
+      "caip2": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+      "name": "Solana",
+      "providers": []
+    },
+    {
+      "caip2": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
+      "name": "Solana Devnet",
+      "providers": []
+    },
+    {
+      "caip2": "solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z",
+      "name": "Solana Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "bip122:000000000019d6689c085ae165831e93",
+      "name": "Bitcoin",
+      "providers": []
+    },
+    {
+      "caip2": "bip122:000000000933ea01ad0ee984209779ba",
+      "name": "Bitcoin Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "sui:mainnet",
+      "name": "Sui",
+      "providers": []
+    },
+    {
+      "caip2": "sui:devnet",
+      "name": "Sui Devnet",
+      "providers": []
+    },
+    {
+      "caip2": "sui:testnet",
+      "name": "Sui Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "stacks:1",
+      "name": "Stacks",
+      "providers": []
+    },
+    {
+      "caip2": "stacks:2147483648",
+      "name": "Stacks Testnet",
+      "providers": []
+    }
+  ]
+}
