@@ -15,7 +15,7 @@ use {
         utils::{
             erc4337::BundlerRpcClient,
             erc7677::{PaymasterRpcClient, PmGetPaymasterDataParams},
-            validators::{is_ownable_validator_address, is_ownable_validator_format},
+            validators::is_ownable_validator_address,
         },
     },
     alloy::{
@@ -865,21 +865,6 @@ mod tests {
     mod ownable_validator_tests {
         use {super::*, crate::utils::validators::OWNABLE_VALIDATOR_ADDRESS};
 
-        #[test]
-        fn test_is_ownable_validator_format() {
-            // Valid OwnableValidator format: abi.encode(threshold, owners)
-            let threshold = U256::from(1);
-            let owners = vec![
-                address!("1111111111111111111111111111111111111111"),
-                address!("2222222222222222222222222222222222222222"),
-            ];
-            let data = Bytes::from((threshold, owners).abi_encode_params());
-            assert_eq!(is_ownable_validator_format(&data), Ok(true));
-
-            // Invalid format
-            let invalid_data = bytes!("1234567890");
-            assert_eq!(is_ownable_validator_format(&invalid_data), Ok(false));
-        }
 
         #[test]
         fn test_decode_signers_ownable_format() {
