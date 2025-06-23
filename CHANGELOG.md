@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.255.0 - 2025-06-23
+#### Features
+- **(Meld)** getting quotes for all possible payment types (#1121) - (d1c569e) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.254.0 - 2025-06-20
 #### Features
 - **(Rootstock)** adding Rootstock native endpoints and Blast provider (#1120) - (9c5403b) - Max Kalashnikoff | maksy.eth
