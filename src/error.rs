@@ -147,6 +147,9 @@ pub enum RpcError {
     #[error("Invalid conversion parameter with code: {0} and description: {1}")]
     ConversionInvalidParameterWithCode(String, String),
 
+    #[error("Conversion provider internal error: {0}")]
+    ConversionProviderInternalError(String),
+
     // Profile names errors
     #[error("Name is already registered: {0}")]
     NameAlreadyRegistered(String),

@@ -169,5 +169,10 @@ describe('OnRamp', () => {
     expect(typeof resp.data[0].destinationAmount).toBe('number')
     expect(resp.data[0].destinationCurrencyCode).toBe('BTC')
     expect(typeof resp.data[0].sourceAmount).toBe('number')
+    
+    // Check that we have more than one different paymentMethodType
+    // This verifies that the parallel requests for different payment types are working
+    const paymentMethodTypes = Array.from(new Set(resp.data.map((quote: any) => quote.paymentMethodType)));
+    expect(paymentMethodTypes.length).toBeGreaterThan(1);
   })
 })
