@@ -12,9 +12,11 @@ use {
         Metrics,
     },
     async_trait::async_trait,
+    futures_util::future::join_all,
     reqwest::StatusCode,
     serde::{Deserialize, Serialize},
     std::{sync::Arc, time::SystemTime},
+    tokio::task,
     tracing::log::error,
     url::Url,
 };
@@ -86,6 +88,14 @@ pub struct MeldQuotesResponse {
 pub struct MeldErrorResponse {
     pub code: String,
     pub message: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PaymentMethod {
+    pub name: String,
+    pub payment_method: String,
+    pub payment_type: String,
 }
 
 #[async_trait]
@@ -304,55 +314,122 @@ impl OnRampMultiProvider for MeldProvider {
         let base = format!("{}/payments/crypto/quote", self.api_base_url);
         let url = Url::parse(&base).map_err(|_| RpcError::OnRampParseURLError)?;
 
-        let latency_start = SystemTime::now();
-        let response = self.send_post_request(url, &params).await.map_err(|e| {
-            error!("Error sending request to Meld get quotes: {:?}", e);
-            RpcError::OnRampProviderError
-        })?;
-        metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
-            response.status().into(),
-            latency_start,
-            None,
-            Some("onramp_multi_quotes".to_string()),
-        );
-
-        if !response.status().is_success() {
-            // Passing through error description for the error context
-            // if user parameter is invalid (got 400 status code from the provider)
-            if matches!(
-                response.status(),
-                StatusCode::BAD_REQUEST | StatusCode::UNPROCESSABLE_ENTITY
-            ) {
-                let response_error = match response.json::<MeldErrorResponse>().await {
-                    Ok(response_error) => response_error,
-                    Err(e) => {
-                        error!(
-                            "Error parsing Meld HTTP 400 Bad Request error response {:?}",
-                            e
-                        );
-                        // Respond to the client with a generic error message and HTTP 400 anyway
-                        MeldErrorResponse {
-                            code: "BAD_REQUEST".to_string(),
-                            message: "Invalid parameter".to_string(),
-                        }
-                    }
-                };
-                return Err(RpcError::ConversionInvalidParameterWithCode(
-                    response_error.code,
-                    response_error.message,
-                ));
+        // Get all payment-types based on the country if not payment type was provided.
+        // Country is optional, but we are providing it anyways and it's required
+        // to get the payment types we will use the fallback to the US as a default.
+        let mut payment_types: Vec<String> = Vec::new();
+        if let Some(payment_type) = &params.payment_method_type {
+            payment_types.push(payment_type.to_string());
+        } else {
+            let country = params.clone().country_code.unwrap_or("US".to_string());
+            let providers_properties_response = self
+                .get_providers_properties(
+                    ProvidersPropertiesQueryParams {
+                        project_id: params.project_id.clone(),
+                        r#type: PropertyType::PaymentMethods,
+                        countries: Some(country.to_string()),
+                    },
+                    metrics.clone(),
+                )
+                .await?;
+            let payment_methods: Vec<PaymentMethod> =
+                serde_json::from_value(providers_properties_response)?;
+            for payment_method in payment_methods {
+                payment_types.push(payment_method.payment_type);
             }
+        };
 
-            error!(
-                "Error on Meld get quotes. Status is not OK: {:?}",
-                response.status(),
-            );
-            return Err(RpcError::OnRampProviderError);
+        // Get quotes for each payment type in parallel and aggregate results
+        // otherwise only the card payment is provided in quotes if there are no
+        // payment type was provided to the request, but we want to get all
+        // available quotes for all payment types.
+        let mut handles = Vec::new();
+
+        for payment_type in payment_types {
+            let mut params = params.clone();
+            params.payment_method_type = Some(payment_type);
+            let url = url.clone();
+            let metrics = metrics.clone();
+            let http_client = self.http_client.clone();
+            let api_version = API_VERSION.to_string();
+            let api_key = self.api_key.clone();
+
+            let handle = task::spawn(async move {
+                let latency_start = SystemTime::now();
+                let response = http_client
+                    .post(url)
+                    .json(&params)
+                    .header("Meld-Version", api_version)
+                    .header("Authorization", format!("BASIC {}", api_key))
+                    .send()
+                    .await
+                    .map_err(|e| {
+                        error!("Error sending request to Meld get quotes: {:?}", e);
+                        RpcError::OnRampProviderError
+                    })?;
+                metrics.add_latency_and_status_code_for_provider(
+                    ProviderKind::Meld,
+                    response.status().into(),
+                    latency_start,
+                    None,
+                    Some("onramp_multi_quotes".to_string()),
+                );
+
+                if !response.status().is_success() {
+                    // Passing through error description for the error context
+                    // if user parameter is invalid (got 400 status code from the provider)
+                    if matches!(
+                        response.status(),
+                        StatusCode::BAD_REQUEST | StatusCode::UNPROCESSABLE_ENTITY
+                    ) {
+                        let response_error = match response.json::<MeldErrorResponse>().await {
+                            Ok(response_error) => response_error,
+                            Err(e) => {
+                                error!(
+                                    "Error parsing Meld HTTP 400 Bad Request error response {:?}",
+                                    e
+                                );
+                                // Respond to the client with a generic error message and HTTP 400 anyway
+                                MeldErrorResponse {
+                                    code: "BAD_REQUEST".to_string(),
+                                    message: "Invalid parameter".to_string(),
+                                }
+                            }
+                        };
+                        return Err(RpcError::ConversionInvalidParameterWithCode(
+                            response_error.code,
+                            response_error.message,
+                        ));
+                    }
+
+                    error!(
+                        "Error on Meld get quotes. Status is not OK: {:?}",
+                        response.status(),
+                    );
+                    return Err(RpcError::OnRampProviderError);
+                }
+
+                let response_quotes = response.json::<MeldQuotesResponse>().await?;
+                Ok(response_quotes.quotes)
+            });
+
+            handles.push(handle);
         }
 
-        let response_quotes = response.json::<MeldQuotesResponse>().await?;
+        let mut quotes = Vec::new();
+        let results = join_all(handles).await;
 
-        Ok(response_quotes.quotes)
+        for result in results {
+            match result {
+                Ok(Ok(quotes_response)) => quotes.extend(quotes_response),
+                Ok(Err(e)) => return Err(e),
+                Err(e) => {
+                    error!("Meld parallel quotes tasks join error: {:?}", e);
+                    return Err(RpcError::OnRampProviderError);
+                }
+            }
+        }
+
+        Ok(quotes)
     }
 }
