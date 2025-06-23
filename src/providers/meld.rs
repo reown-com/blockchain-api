@@ -410,7 +410,7 @@ impl OnRampMultiProvider for MeldProvider {
         // We are not expecting more than 20 payment types, we should stop
         // if we have more than 20 payment types.
         if payment_types.len() > 20 {
-            return Err(RpcError::ConversionInvalidParameter(
+            return Err(RpcError::ConversionProviderInternalError(
                 "Too many payment types".to_string(),
             ));
         }
@@ -446,7 +446,7 @@ impl OnRampMultiProvider for MeldProvider {
                 Ok(Ok(quotes_response)) => quotes.extend(quotes_response),
                 Ok(Err(e)) => return Err(e),
                 Err(e) => {
-                    error!("Meld parallel quotes tasks join error: {:?}", e);
+                    error!("Error on getting Meld quotes in parallel: {:?}", e);
                     return Err(RpcError::OnRampProviderError);
                 }
             }
