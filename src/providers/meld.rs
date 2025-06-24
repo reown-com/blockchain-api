@@ -115,7 +115,7 @@ impl MeldProvider {
                         );
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         MeldErrorResponse {
-                            code: "BAD_REQUEST".to_string(),
+                            code: "UNKNOWN".to_string(),
                             message: "Invalid parameter".to_string(),
                         }
                     }
@@ -151,9 +151,11 @@ pub struct MeldQuotesResponse {
     pub quotes: Vec<QuotesResponse>,
 }
 
+// Can be used for both old (Meld prod) and new (Meld sandbox) error response schemas
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MeldErrorResponse {
+    #[serde(alias = "error")]
     pub code: String,
     pub message: String,
 }
@@ -403,7 +405,12 @@ impl OnRampMultiProvider for MeldProvider {
             let payment_methods: Vec<PaymentMethod> =
                 serde_json::from_value(providers_properties_response)?;
             for payment_method in payment_methods {
-                payment_types.push(payment_method.payment_type);
+                // Push only if the payment type is not already in the list
+                // because Meld response contains duplicates for the same payment type
+                // but with different payment methods.
+                if !payment_types.contains(&payment_method.payment_type) {
+                    payment_types.push(payment_method.payment_type);
+                }
             }
         };
 
