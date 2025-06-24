@@ -454,7 +454,7 @@ impl OnRampMultiProvider for MeldProvider {
                 Ok(Ok(quotes_response)) => quotes.extend(quotes_response),
                 Ok(Err(e)) => {
                     // Check if this is an EMPTY_QUOTES_ERROR_CODE error, if so continue to next payment type
-                    // because the list can be fullfilled with quotes for other payment types.
+                    // because the list can be fulfilled with quotes for other payment types.
                     if let RpcError::ConversionInvalidParameterWithCode(code, _) = &e {
                         if code == EMPTY_QUOTES_ERROR_CODE {
                             error!("No valid quotes for payment type, continuing to next");
