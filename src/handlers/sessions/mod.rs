@@ -16,6 +16,9 @@ pub mod revoke;
 #[serde(rename_all = "camelCase")]
 pub struct QueryParams {
     pub project_id: String,
+    /// Optional API version parameter (e.g., v=2)
+    #[serde(rename = "v")]
+    pub api_version: Option<usize>,
 }
 
 /// Payload to create a new permission
