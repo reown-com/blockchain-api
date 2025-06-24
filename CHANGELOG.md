@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.255.1 - 2025-06-24
+#### Bug Fixes
+- **(Meld)** adding support for the new error message schema and removing payment types duplicates (#1123) - (ebaa31f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.255.0 - 2025-06-23
 #### Features
 - **(Meld)** getting quotes for all possible payment types (#1121) - (d1c569e) - Max Kalashnikoff | maksy.eth
