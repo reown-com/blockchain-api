@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.258.0 - 2025-06-25
+#### Features
+- **(RPC)** increasing Polygon Amoy and Avalanche Fuji providers (#1125) - (b0d4231) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.257.0 - 2025-06-25
 #### Features
 - **(wallet)** add smart sessions ownable validator support (#1108) - (ae6c051) - Rafael Quintero
