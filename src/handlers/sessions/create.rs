@@ -1,9 +1,6 @@
 use {
     super::{
-        super::HANDLER_TASK_METRICS,
-        NewPermissionPayload,
-        QueryParams,
-        StoragePermissionsItem,
+        super::HANDLER_TASK_METRICS, NewPermissionPayload, QueryParams, StoragePermissionsItem,
     },
     crate::{
         error::RpcError,
