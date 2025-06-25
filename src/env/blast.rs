@@ -53,5 +53,18 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Polygon Mainnet
+        (
+            "eip155:137".into(),
+            (
+                "polygon-mainnet".into(),
+                Weight::new(Priority::Low).unwrap(),
+            ),
+        ),
+        // Polygon Amoy
+        (
+            "eip155:80002".into(),
+            ("polygon-amoy".into(), Weight::new(Priority::Low).unwrap()),
+        ),
     ])
 }
