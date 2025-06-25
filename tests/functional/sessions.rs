@@ -1,5 +1,4 @@
-use rpc_proxy::test_helpers::spawn_blockchain_api_with_params;
-use serde_json::json;
+use {rpc_proxy::test_helpers::spawn_blockchain_api_with_params, serde_json::json};
 
 #[tokio::test]
 #[ignore]
@@ -95,7 +94,9 @@ async fn test_sessions_create_invalid_version_defaults_to_v1() {
     .await;
 
     let url = server_url
-        .join("/v1/sessions/eip155:1:0x1234567890123456789012345678901234567890?projectId=test&v=99")
+        .join(
+            "/v1/sessions/eip155:1:0x1234567890123456789012345678901234567890?projectId=test&v=99",
+        )
         .unwrap();
 
     let client = reqwest::Client::new();

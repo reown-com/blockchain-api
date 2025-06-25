@@ -258,7 +258,8 @@ async fn handler_internal(
         // doesn't affect validation. We maintain a consistent order for clarity.
         //
         // IMPORTANT: OwnableValidator only supports EOA signatures (ECDSA recovery).
-        // It does NOT support passkeys. For passkey support, use MultiKeySigner instead.
+        // It does NOT support passkeys. For passkey support, use MultiKeySigner
+        // instead.
         let mut concatenated_signature = Vec::new();
         concatenated_signature.extend_from_slice(&user_op.signature); // Frontend signature
         concatenated_signature.extend_from_slice(&packed_signature); // Backend signature

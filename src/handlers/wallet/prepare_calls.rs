@@ -677,7 +677,10 @@ enum SignerType {
     Passkey,
 }
 
-fn decode_signers(data: Bytes, validator_address: Address) -> Result<Vec<SignerType>, PrepareCallsError> {
+fn decode_signers(
+    data: Bytes,
+    validator_address: Address,
+) -> Result<Vec<SignerType>, PrepareCallsError> {
     // Check if this is an OwnableValidator by address
     if is_ownable_validator_address(validator_address) {
         // Try ABI decoding (threshold + address array format) - OwnableValidator
@@ -865,7 +868,6 @@ mod tests {
     mod ownable_validator_tests {
         use {super::*, crate::utils::validators::OWNABLE_VALIDATOR_ADDRESS};
 
-
         #[test]
         fn test_decode_signers_ownable_format() {
             let threshold = U256::from(2);
@@ -919,7 +921,11 @@ mod tests {
             data.push(1u8);
             data.extend_from_slice(&[0x22; 64]);
 
-            let signers = decode_signers(Bytes::from(data), address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F")).unwrap();
+            let signers = decode_signers(
+                Bytes::from(data),
+                address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F"),
+            )
+            .unwrap();
             assert_eq!(signers.len(), 2);
             assert!(matches!(signers[0], SignerType::Ecdsa));
             assert!(matches!(signers[1], SignerType::Passkey));
@@ -928,17 +934,26 @@ mod tests {
         #[test]
         fn test_decode_signers_multi_key_errors() {
             // Missing count
-            let result = decode_signers(Bytes::new(), address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F"));
+            let result = decode_signers(
+                Bytes::new(),
+                address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F"),
+            );
             assert!(result.is_err());
 
             // Truncated data
             let data = vec![1u8, 0u8]; // Says 1 signer, type ECDSA, but missing 20 bytes
-            let result = decode_signers(Bytes::from(data), address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F"));
+            let result = decode_signers(
+                Bytes::from(data),
+                address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F"),
+            );
             assert!(result.is_err());
 
             // Unknown signer type
             let data = vec![1u8, 99u8]; // Invalid type
-            let result = decode_signers(Bytes::from(data), address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F"));
+            let result = decode_signers(
+                Bytes::from(data),
+                address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F"),
+            );
             assert!(result.is_err());
         }
 
