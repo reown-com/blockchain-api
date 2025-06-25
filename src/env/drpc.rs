@@ -179,5 +179,21 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
+        // Polygon Amoy
+        (
+            "eip155:80002".into(),
+            (
+                "https://polygon-amoy.drpc.org".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
+        // Avalanche Fuji
+        (
+            "eip155:43113".into(),
+            (
+                "https://avalanche-fuji.drpc.org".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
     ])
 }
