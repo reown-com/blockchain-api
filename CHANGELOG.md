@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.256.0 - 2025-06-25
+#### Features
+- **(Stacks)** adding `stacks_accounts`, `stacks_extended_nonces` and `hiro_fees_transaction` RPC methods to map to Stacks extended and Hiro endpoints (#1119) - (b6ff676) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.255.2 - 2025-06-24
 #### Bug Fixes
 - **(Meld)** adding proper handling of the no valid quotes error code (#1124) - (e12cff1) - Max Kalashnikoff | maksy.eth
