@@ -20,23 +20,24 @@ use {
         Router,
     },
     env::{
-        AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, CallStaticConfig,
-        DrpcConfig, DuneConfig, EdexaConfig, HiroConfig, MantleConfig, MonadConfig, MoonbeamConfig, MorphConfig,
-        NearConfig, OdysseyConfig, OneRpcConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
-        SolScanConfig, SuiConfig, SyndicaConfig, TheRpcConfig, UnichainConfig, WemixConfig,
-        ZKSyncConfig, ZerionConfig, ZoraConfig,
+        AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, BlastConfig,
+        CallStaticConfig, DrpcConfig, DuneConfig, EdexaConfig, HiroConfig, MantleConfig,
+        MonadConfig, MoonbeamConfig, MorphConfig, NearConfig, OdysseyConfig, PoktConfig,
+        PublicnodeConfig, QuicknodeConfig, RootstockConfig, SolScanConfig, SuiConfig,
+        SyndicaConfig, TheRpcConfig, UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig,
+        ZoraConfig,
     },
     error::RpcResult,
     http::Request,
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
         AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
-        BinanceProvider, CallStaticProvider, DrpcProvider, DuneProvider, EdexaProvider, HiroProvider,
-        MantleProvider, MonadProvider, MoonbeamProvider, MorphProvider, NearProvider,
-        OdysseyProvider, OneRpcProvider, PoktProvider, ProviderRepository, PublicnodeProvider,
-        QuicknodeProvider, SolScanProvider, SuiProvider, SyndicaProvider, SyndicaWsProvider,
-        TheRpcProvider, UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider,
-        ZoraProvider, ZoraWsProvider,
+        BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider,
+        EdexaProvider, HiroProvider, MantleProvider, MonadProvider, MoonbeamProvider,
+        MorphProvider, NearProvider, OdysseyProvider, PoktProvider, ProviderRepository,
+        PublicnodeProvider, QuicknodeProvider, RootstockProvider, SolScanProvider, SuiProvider,
+        SyndicaProvider, SyndicaWsProvider, TheRpcProvider, UnichainProvider, WemixProvider,
+        ZKSyncProvider, ZerionProvider, ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -538,12 +539,15 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     ));
     providers.add_rpc_provider::<MonadProvider, MonadConfig>(MonadConfig::default());
     providers.add_rpc_provider::<SuiProvider, SuiConfig>(SuiConfig::default());
+    providers.add_rpc_provider::<RootstockProvider, RootstockConfig>(RootstockConfig::default());
     providers.add_rpc_provider::<HiroProvider, HiroConfig>(HiroConfig::default());
     providers.add_rpc_provider::<CallStaticProvider, CallStaticConfig>(CallStaticConfig::new(
         config.callstatic_api_key.clone(),
     ));
+    providers.add_rpc_provider::<BlastProvider, BlastConfig>(BlastConfig::new(
+        config.blast_api_key.clone(),
+    ));
     providers.add_rpc_provider::<MoonbeamProvider, MoonbeamConfig>(MoonbeamConfig::default());
-    providers.add_rpc_provider::<OneRpcProvider, OneRpcConfig>(OneRpcConfig::default());
     providers.add_rpc_provider::<TheRpcProvider, TheRpcConfig>(TheRpcConfig::default());
     providers.add_rpc_provider::<EdexaProvider, EdexaConfig>(EdexaConfig::default());
     providers.add_ws_provider::<AllnodesWsProvider, AllnodesConfig>(AllnodesConfig::new(

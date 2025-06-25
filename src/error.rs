@@ -65,8 +65,8 @@ pub enum RpcError {
     #[error("Specified bundler is not supported: {0}")]
     UnsupportedBundler(String),
 
-    #[error("Failed to reach the provider")]
-    ProviderError,
+    #[error("Failed to reach the identity provider: {0}")]
+    IdentityProviderError(String),
 
     #[error("Failed to reach the transaction provider")]
     TransactionProviderError,
@@ -146,6 +146,9 @@ pub enum RpcError {
 
     #[error("Invalid conversion parameter with code: {0} and description: {1}")]
     ConversionInvalidParameterWithCode(String, String),
+
+    #[error("Conversion provider internal error: {0}")]
+    ConversionProviderInternalError(String),
 
     // Profile names errors
     #[error("Name is already registered: {0}")]
@@ -356,11 +359,11 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
-            Self::ProviderError => (
+            Self::IdentityProviderError(e) => (
                 StatusCode::SERVICE_UNAVAILABLE,
                 Json(new_error_response(
-                    "unreachable".to_string(),
-                    "We failed to reach the provider for your request".to_string(),
+                    "".to_string(),
+                    format!("We failed to reach the identity provider with an error: {}", e),
                 )),
             )
                 .into_response(),

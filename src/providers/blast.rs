@@ -1,7 +1,7 @@
 use {
     super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
-        env::OneRpcConfig,
+        env::BlastConfig,
         error::{RpcError, RpcResult},
     },
     async_trait::async_trait,
@@ -9,19 +9,20 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    hyper::{client::HttpConnector, http, Client, Method},
+    hyper::{self, client::HttpConnector, Client, Method, StatusCode},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
     tracing::debug,
 };
 
 #[derive(Debug)]
-pub struct OneRpcProvider {
+pub struct BlastProvider {
     pub client: Client<HttpsConnector<HttpConnector>>,
+    pub api_key: String,
     pub supported_chains: HashMap<String, String>,
 }
 
-impl Provider for OneRpcProvider {
+impl Provider for BlastProvider {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool {
         self.supported_chains.contains_key(chain_id)
     }
@@ -31,19 +32,19 @@ impl Provider for OneRpcProvider {
     }
 
     fn provider_kind(&self) -> ProviderKind {
-        ProviderKind::OneRpc
+        ProviderKind::Blast
     }
 }
 
 #[async_trait]
-impl RateLimited for OneRpcProvider {
+impl RateLimited for BlastProvider {
     async fn is_rate_limited(&self, response: &mut Response) -> bool {
-        response.status() == http::StatusCode::TOO_MANY_REQUESTS
+        response.status() == StatusCode::TOO_MANY_REQUESTS
     }
 }
 
 #[async_trait]
-impl RpcProvider for OneRpcProvider {
+impl RpcProvider for BlastProvider {
     #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
     async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
         let chain = &self
@@ -51,7 +52,7 @@ impl RpcProvider for OneRpcProvider {
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let uri = format!("https://1rpc.io/{}", chain);
+        let uri = format!("https://{}.blastapi.io/{}", chain, self.api_key);
 
         let hyper_request = hyper::http::Request::builder()
             .method(Method::POST)
@@ -64,31 +65,30 @@ impl RpcProvider for OneRpcProvider {
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if let Some(error) = &response.error {
-                // Handling the custom rate limit error
-                if error.code == -32001 && error.message == "Exceeded the quota usage" {
-                    return Ok((http::StatusCode::TOO_MANY_REQUESTS, body).into_response());
-                }
-                if status.is_success() {
-                    debug!(
-                        "Strange: provider returned JSON RPC error, but status {status} is \
-                         success: OneRpc: {response:?}"
-                    );
-                }
+            if response.error.is_some() && status.is_success() {
+                debug!(
+                    "Strange: provider returned JSON RPC error, but status {status} is success: \
+               Blast: {response:?}"
+                );
             }
         }
 
-        let mut response = (status, body).into_response();
-        response
-            .headers_mut()
-            .insert("Content-Type", HeaderValue::from_static("application/json"));
+        let response = (
+            status,
+            [(
+                hyper::header::CONTENT_TYPE,
+                HeaderValue::from_static("application/json"),
+            )],
+            body,
+        )
+            .into_response();
         Ok(response)
     }
 }
 
-impl RpcProviderFactory<OneRpcConfig> for OneRpcProvider {
+impl RpcProviderFactory<BlastConfig> for BlastProvider {
     #[tracing::instrument(level = "debug")]
-    fn new(provider_config: &OneRpcConfig) -> Self {
+    fn new(provider_config: &BlastConfig) -> Self {
         let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
@@ -96,9 +96,10 @@ impl RpcProviderFactory<OneRpcConfig> for OneRpcProvider {
             .map(|(k, v)| (k.clone(), v.0.clone()))
             .collect();
 
-        OneRpcProvider {
+        BlastProvider {
             client: forward_proxy_client,
             supported_chains,
+            api_key: provider_config.api_key.clone(),
         }
     }
 }

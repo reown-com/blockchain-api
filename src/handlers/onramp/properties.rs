@@ -28,6 +28,7 @@ pub enum PropertyType {
     FiatCurrencies,
     PaymentMethods,
     FiatPurchasesLimits,
+    CountriesDefaults,
 }
 
 pub async fn handler(

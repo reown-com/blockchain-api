@@ -24,6 +24,7 @@ use {
 };
 
 const DUNE_API_BASE_URL: &str = "https://api.dune.com/api";
+const MIN_POOL_SIZE: f64 = 10.0; // Minimum pool size to consider a token valid
 
 /// Native token icons, since Dune doesn't provide them yet
 /// TODO: Hardcoding icon urls temporarily until Dune provides them
@@ -48,6 +49,8 @@ struct Balance {
     price_usd: Option<f64>,
     value_usd: Option<f64>,
     token_metadata: Option<Metadata>,
+    pool_size: Option<f64>,
+    low_liquidity: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -79,8 +82,6 @@ impl DuneProvider {
     ) -> RpcResult<DuneBalanceResponseBody> {
         let base = format!("{}/echo/v1/balances/evm/{}", DUNE_API_BASE_URL, &address);
         let mut url = Url::parse(&base).map_err(|_| RpcError::BalanceParseURLError)?;
-        url.query_pairs_mut()
-            .append_pair("exclude_spam_tokens", "true");
         url.query_pairs_mut().append_pair("metadata", "logo");
         if let Some(chain_id_param) = params.chain_id {
             // Check if it's a CAIP2 chain ID (contains a colon)
@@ -96,7 +97,10 @@ impl DuneProvider {
         }
 
         let latency_start = SystemTime::now();
-        let response = self.send_request(url.clone()).await?;
+        let response = self.send_request(url.clone()).await.map_err(|e| {
+            error!("Error sending request to Dune EVM balance API: {:?}", e);
+            RpcError::BalanceProviderError
+        })?;
         metrics.add_latency_and_status_code_for_provider(
             self.provider_kind,
             response.status().into(),
@@ -127,7 +131,10 @@ impl DuneProvider {
         url.query_pairs_mut().append_pair("metadata", "logo");
 
         let latency_start = SystemTime::now();
-        let response = self.send_request(url.clone()).await?;
+        let response = self.send_request(url.clone()).await.map_err(|e| {
+            error!("Error sending request to Dune svm balance API: {:?}", e);
+            RpcError::BalanceProviderError
+        })?;
         metrics.add_latency_and_status_code_for_provider(
             self.provider_kind,
             response.status().into(),
@@ -178,6 +185,14 @@ impl BalanceProvider for DuneProvider {
 
         let mut balances_vec = Vec::new();
         for f in balance_response.balances {
+            // Check for the spam token by checking the pool size
+            // and low liquidity flags
+            if f.pool_size.is_some_and(|size| size <= MIN_POOL_SIZE)
+                || f.low_liquidity.unwrap_or(false)
+            {
+                continue;
+            };
+
             // Build a CAIP-2 chain ID
             let caip2_chain_id = match f.chain_id {
                 Some(cid) => format!("{}:{}", namespace, cid),

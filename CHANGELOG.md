@@ -2,6 +2,78 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.255.2 - 2025-06-24
+#### Bug Fixes
+- **(Meld)** adding proper handling of the no valid quotes error code (#1124) - (e12cff1) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.255.1 - 2025-06-24
+#### Bug Fixes
+- **(Meld)** adding support for the new error message schema and removing payment types duplicates (#1123) - (ebaa31f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.255.0 - 2025-06-23
+#### Features
+- **(Meld)** getting quotes for all possible payment types (#1121) - (d1c569e) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.254.0 - 2025-06-20
+#### Features
+- **(Rootstock)** adding Rootstock native endpoints and Blast provider (#1120) - (9c5403b) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.253.0 - 2025-06-19
+#### Features
+- **(RPC)** adding Rootstock mainnet support (#1118) - (de0c0a9) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.252.0 - 2025-06-18
+#### Features
+- **(onRamp)** adding defaults by country properties (#1117) - (451e012) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.251.0 - 2025-06-16
+#### Features
+- **(providers)** enabling Pokt endpoints and tune Quicknode (#1116) - (99de8be) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.250.4 - 2025-06-13
+#### Bug Fixes
+- **(identity)** adding a proper handling of the node's null response (#1115) - (d4ee863) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.250.3 - 2025-06-12
+#### Bug Fixes
+- **(providers)** removing OneRpc free endpoints (#1113) - (46227b6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.250.2 - 2025-06-12
+#### Bug Fixes
+- **(providers)** adding a proper handling of connection resets to providers (#1114) - (1fe3e25) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.250.1 - 2025-06-12
+#### Bug Fixes
+- **(Dune)** disabling exclude_spam_tokens and filtering by the pool size (#1112) - (f7b77b7) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.250.0 - 2025-06-11
+#### Features
+- **(rpc)** adding Polygon to Quicknode and Sei to the dRPC (#1111) - (7ea57b6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.249.2 - 2025-06-10
 #### Bug Fixes
 - fixing history providers deserialization errors, simulation errors handling, identity error fix (#1110) - (68b1ac5) - Max Kalashnikoff | maksy.eth

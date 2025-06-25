@@ -135,6 +135,20 @@ describe('OnRamp', () => {
     expect(resp.data[0].defaultAmount === null || typeof resp.data[0].defaultAmount === 'number').toBeTruthy()
     expect(typeof resp.data[0].minimumAmount).toBe('number')
     expect(typeof resp.data[0].maximumAmount).toBe('number')
+
+    // Check for `countries-defaults` type
+    type = 'countries-defaults'
+    const defaultCountry = 'US'
+    resp = await httpClient.get(
+      `${onRampPath}/providers/properties` +
+      `?projectId=${projectId}` +
+      `&type=${type}` +
+      `&countries=${defaultCountry}`
+    );
+    expect(resp.status).toBe(200)
+    expect(resp.data.length).toBeGreaterThan(0)
+    expect(resp.data[0].countryCode).toBe(defaultCountry)
+    expect(resp.data[0].defaultCurrencyCode).toBe('USD')
   })
 
   it('get multi provider quotes', async () => {
@@ -155,5 +169,10 @@ describe('OnRamp', () => {
     expect(typeof resp.data[0].destinationAmount).toBe('number')
     expect(resp.data[0].destinationCurrencyCode).toBe('BTC')
     expect(typeof resp.data[0].sourceAmount).toBe('number')
+    
+    // Check that we have more than one different paymentMethodType
+    // This verifies that the parallel requests for different payment types are working
+    const paymentMethodTypes = Array.from(new Set(resp.data.map((quote: any) => quote.paymentMethodType)));
+    expect(paymentMethodTypes.length).toBeGreaterThan(1);
   })
 })
