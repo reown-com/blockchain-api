@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.257.0 - 2025-06-25
+#### Features
+- **(wallet)** add smart sessions ownable validator support (#1108) - (ae6c051) - Rafael Quintero
+
+- - -
+
 ## 0.256.0 - 2025-06-25
 #### Features
 - **(Stacks)** adding `stacks_accounts`, `stacks_extended_nonces` and `hiro_fees_transaction` RPC methods to map to Stacks extended and Hiro endpoints (#1119) - (b6ff676) - Max Kalashnikoff | maksy.eth
