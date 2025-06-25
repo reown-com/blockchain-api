@@ -120,8 +120,8 @@ async fn handler_internal(
             format!("0x{public_key_der_hex}")
         }
         _ => {
-            // v1 (default): ASCII-hex encoded for backward compatibility
-            hex::encode(public_key_der_hex)
+            // v1 (default): ASCII-hex encoded with 0x prefix
+            format!("0x{}", hex::encode(public_key_der_hex))
         }
     };
 
