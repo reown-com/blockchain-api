@@ -454,9 +454,7 @@ impl OnRampMultiProvider for MeldProvider {
             match result {
                 Ok(Ok(quotes_response)) => quotes.extend(quotes_response),
                 Ok(Err(e)) => {
-                    if first_error.is_none() {
-                        first_error = Some(e);
-                    }
+                    first_error.get_or_insert(e);
                 }
                 Err(e) => {
                     error!("Error on getting Meld quotes in parallel: {:?}", e);
