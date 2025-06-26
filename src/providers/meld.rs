@@ -23,7 +23,6 @@ use {
 const API_VERSION: &str = "2023-12-19";
 const DEFAULT_CATEGORY: &str = "CRYPTO_ONRAMP";
 const DEFAULT_SESSION_TYPE: &str = "BUY";
-const EMPTY_QUOTES_ERROR_CODE: &str = "NO_VALID_QUOTES";
 
 #[derive(Debug)]
 pub struct MeldProvider {
@@ -449,25 +448,24 @@ impl OnRampMultiProvider for MeldProvider {
         }
 
         let mut quotes = Vec::new();
+        let mut first_error: Option<RpcError> = None;
+
         while let Some(result) = join_set.join_next().await {
             match result {
                 Ok(Ok(quotes_response)) => quotes.extend(quotes_response),
                 Ok(Err(e)) => {
-                    // Check if this is an EMPTY_QUOTES_ERROR_CODE error, if so continue to next payment type
-                    // because the list can be fulfilled with quotes for other payment types.
-                    if let RpcError::ConversionInvalidParameterWithCode(code, _) = &e {
-                        if code == EMPTY_QUOTES_ERROR_CODE {
-                            error!("No valid quotes for payment type, continuing to next");
-                            continue;
-                        }
-                    }
-                    return Err(e);
+                    first_error.get_or_insert(e);
                 }
                 Err(e) => {
                     error!("Error on getting Meld quotes in parallel: {:?}", e);
                     return Err(RpcError::OnRampProviderError);
                 }
             }
+        }
+
+        // If we have no quotes and there were errors, return the first error
+        if quotes.is_empty() && first_error.is_some() {
+            return Err(first_error.unwrap());
         }
 
         Ok(quotes)
