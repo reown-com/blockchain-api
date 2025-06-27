@@ -110,6 +110,9 @@ pub enum RpcError {
     #[error(transparent)]
     AxumTungstenite(Box<axum_tungstenite::Error>),
 
+    #[error("Only WebSocket connections are supported for GET method on this endpoint")]
+    WebSocketConnectionExpected,
+
     #[error(transparent)]
     RateLimited(#[from] wc::rate_limit::RateLimitExceeded),
 
@@ -372,6 +375,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "scheme".to_string(),
                     "Invalid scheme used. Try http(s):// or ws(s)://".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::WebSocketConnectionExpected => (
+                StatusCode::UPGRADE_REQUIRED,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Only WebSocket connections are supported for GET method on this endpoint".to_string(),
                 )),
             )
                 .into_response(),
