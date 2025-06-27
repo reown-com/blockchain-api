@@ -77,7 +77,7 @@ pub async fn handler_internal(
             Err(e) => match e {
                 SqlxError::RowNotFound => return Err(RpcError::NameNotRegistered(name)),
                 _ => {
-                    error!("Failed to lookup name in the database: {}", e);
+                    error!("Failed to lookup name in the database: {e}");
                     return Ok((
                         StatusCode::INTERNAL_SERVER_ERROR,
                         "Name lookup database error",
@@ -166,7 +166,7 @@ pub async fn handler_internal(
     {
         Ok(response) => Ok(Json(response).into_response()),
         Err(e) => {
-            error!("Failed to update address: {}", e);
+            error!("Failed to update address: {e}");
             Ok((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Failed to update address",

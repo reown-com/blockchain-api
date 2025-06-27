@@ -295,30 +295,29 @@ impl BinanceExchange {
         private_key: &str,
     ) -> Result<String, ExchangeError> {
         let key_bytes = STANDARD.decode(private_key).map_err(|e| {
-            ExchangeError::GetPayUrlError(format!("Failed to decode private key: {}", e))
+            ExchangeError::GetPayUrlError(format!("Failed to decode private key: {e}"))
         })?;
 
         let pkey = PKey::private_key_from_pkcs8(&key_bytes).map_err(|e| {
-            ExchangeError::GetPayUrlError(format!("Failed to parse private key: {}", e))
+            ExchangeError::GetPayUrlError(format!("Failed to parse private key: {e}"))
         })?;
 
         let data_to_sign = if body.is_empty() || body == "{}" {
             timestamp.to_string()
         } else {
-            format!("{}{}", body, timestamp)
+            format!("{body}{timestamp}")
         };
         debug!("Data to sign: {}", data_to_sign);
 
-        let mut signer = Signer::new(MessageDigest::sha256(), &pkey).map_err(|e| {
-            ExchangeError::GetPayUrlError(format!("Failed to create signer: {}", e))
-        })?;
+        let mut signer = Signer::new(MessageDigest::sha256(), &pkey)
+            .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to create signer: {e}")))?;
 
-        signer.update(data_to_sign.as_bytes()).map_err(|e| {
-            ExchangeError::GetPayUrlError(format!("Failed to update signer: {}", e))
-        })?;
+        signer
+            .update(data_to_sign.as_bytes())
+            .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to update signer: {e}")))?;
         let signature = signer
             .sign_to_vec()
-            .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to sign data: {}", e)))?;
+            .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to sign data: {e}")))?;
 
         Ok(STANDARD.encode(&signature))
     }
@@ -341,12 +340,12 @@ impl BinanceExchange {
             .as_millis() as u64;
 
         let body = serde_json::to_string(payload).map_err(|e| {
-            ExchangeError::GetPayUrlError(format!("Failed to serialize request body: {}", e))
+            ExchangeError::GetPayUrlError(format!("Failed to serialize request body: {e}"))
         })?;
 
         let signature = self.generate_signature(&body, timestamp, &private_key)?;
 
-        let url = format!("{}{}", host, path);
+        let url = format!("{host}{path}");
 
         let response = state
             .http_client
@@ -365,17 +364,15 @@ impl BinanceExchange {
         let status = response.status();
         if !status.is_success() {
             let error_body = response.text().await.unwrap_or_default();
-            let message = format!(
-                "Binance API request failed with status: {}, body: {}",
-                status, error_body
-            );
+            let message =
+                format!("Binance API request failed with status: {status}, body: {error_body}");
             debug!("Binance API request failed: {}", message);
             return Err(ExchangeError::InternalError(message));
         }
 
         let parsed_response: BinanceResponse<R> = response.json().await.map_err(|e| {
             debug!("Unable to parse Binance response: {}", e);
-            ExchangeError::InternalError(format!("Failed to parse Binance response: {}", e))
+            ExchangeError::InternalError(format!("Failed to parse Binance response: {e}"))
         })?;
         debug!("Parsed response: {:?}", parsed_response);
         if let Some(success) = parsed_response.success {
@@ -403,14 +400,14 @@ impl BinanceExchange {
         let crypto = CAIP19_TO_BINANCE_CRYPTO
             .get(full_caip19.as_str())
             .ok_or_else(|| {
-                ExchangeError::ValidationError(format!("Unsupported asset: {}", full_caip19))
+                ExchangeError::ValidationError(format!("Unsupported asset: {full_caip19}"))
             })?
             .to_string();
 
         let network = CHAIN_ID_TO_BINANCE_NETWORK
             .get(chain_id.as_str())
             .ok_or_else(|| {
-                ExchangeError::ValidationError(format!("Unsupported chain ID: {}", chain_id))
+                ExchangeError::ValidationError(format!("Unsupported chain ID: {chain_id}"))
             })?
             .to_string();
 
@@ -432,7 +429,7 @@ impl BinanceExchange {
             .await
             .map_err(|e| {
                 debug!("Failed to get project data: {}", e);
-                ExchangeError::InternalError(format!("Failed to get project data: {}", e))
+                ExchangeError::InternalError(format!("Failed to get project data: {e}"))
             })?;
         let project_name = if project.project_data.name.is_empty() {
             debug!("Project name is empty, using fallback name");

@@ -51,7 +51,7 @@ async fn handler_internal(
         .get_allowance(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call get allownce with {}", e);
+            error!("Failed to call get allownce with {e}");
         })?;
 
     Ok(Json(response).into_response())

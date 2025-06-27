@@ -56,7 +56,7 @@ async fn insert_and_get_name_by_name() {
     )
     .await;
     if let Err(ref e) = insert_result {
-        println!("Error: {:?}", e);
+        println!("Error: {e:?}");
     }
     assert!(insert_result.is_ok(), "Inserting a new name should succeed");
 
@@ -305,7 +305,7 @@ async fn insert_delete_two_addresses() {
     let delete_address_result = delete_address(
         name.clone(),
         types::SupportedNamespaces::Eip155,
-        format!("{}", chain_id),
+        format!("{chain_id}"),
         address.clone(),
         &pg_pool,
     )
@@ -319,7 +319,7 @@ async fn insert_delete_two_addresses() {
     let insert_address_result = insert_or_update_address(
         name.clone(),
         types::SupportedNamespaces::Eip155,
-        format!("{}", chain_id),
+        format!("{chain_id}"),
         new_address.clone(),
         &pg_pool,
     )
@@ -336,7 +336,7 @@ async fn insert_delete_two_addresses() {
     let delete_address_result = delete_address(
         name.clone(),
         types::SupportedNamespaces::Eip155,
-        format!("{}", chain_id),
+        format!("{chain_id}"),
         address,
         &pg_pool,
     )

@@ -105,7 +105,7 @@ impl SolScanProvider {
 
     /// Construct the cache key for the pricing
     fn format_cache_pricing_key(&self, address: &str) -> String {
-        format!("solscan/pricing/{}", address)
+        format!("solscan/pricing/{address}")
     }
 
     #[allow(dependency_on_unit_never_type_fallback)]
@@ -270,7 +270,7 @@ impl SolScanProvider {
             });
         }
 
-        let caip10_address = format!("{}:{}", SOLANA_MAINNET_CHAIN_ID, address);
+        let caip10_address = format!("{SOLANA_MAINNET_CHAIN_ID}:{address}");
         match metadata_cache.get_metadata(&caip10_address).await {
             Ok(Some(metadata)) => {
                 return Ok(TokenMetaData {

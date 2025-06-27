@@ -167,8 +167,8 @@ mod tests {
         let mut json = serde_json::Map::new();
         for i in 0..1000 {
             json.insert(
-                format!("field{}", i),
-                serde_json::Value::String(format!("value{}", i)),
+                format!("field{i}"),
+                serde_json::Value::String(format!("value{i}")),
             );
         }
         let json = serde_json::Value::Object(json);

@@ -24,24 +24,24 @@ pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
             let chain_id = if let Some(chain_id) = metric.remove("chain_id") {
                 ChainId(chain_id)
             } else {
-                warn!("No chain_id found in metric: {:?}", metric);
+                warn!("No chain_id found in metric: {metric:?}");
                 continue;
             };
 
             let Some(status_code) = metric.remove("status_code") else {
-                warn!("No status_code found in metric: {:?}", metric);
+                warn!("No status_code found in metric: {metric:?}");
                 continue;
             };
 
             let Some(provider) = metric.remove("provider") else {
-                warn!("No provider found in metric: {:?}", metric);
+                warn!("No provider found in metric: {metric:?}");
                 continue;
             };
 
             let provider_kind = match ProviderKind::from_str(&provider) {
                 Some(provider_kind) => provider_kind,
                 None => {
-                    warn!("Failed to parse provider kind in metric: {}", provider);
+                    warn!("Failed to parse provider kind in metric: {provider}");
                     continue;
                 }
             };
@@ -130,10 +130,7 @@ pub fn update_values(weight_resolver: &ChainsWeightResolver, parsed_weights: Par
             let chain_weight = calculate_chain_weight(chain_availability, provider_availability);
 
             let Some(provider_chain_weight) = weight_resolver.get(&chain_id) else {
-                warn!(
-                    "Chain {} not found in weight resolver: {:?}",
-                    chain_id, weight_resolver
-                );
+                warn!("Chain {chain_id} not found in weight resolver: {weight_resolver:?}");
                 continue;
             };
 

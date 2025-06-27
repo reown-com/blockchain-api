@@ -77,7 +77,7 @@ impl HiroProvider {
 
         let stacks_transactions_request = serde_json::to_string(&TransactionsRequest { tx })
             .map_err(|e| {
-                RpcError::InvalidParameter(format!("Failed to serialize transaction: {}", e))
+                RpcError::InvalidParameter(format!("Failed to serialize transaction: {e}"))
             })?;
 
         let hyper_request = hyper::http::Request::builder()
@@ -162,7 +162,7 @@ impl HiroProvider {
             transaction_payload,
         })
         .map_err(|e| {
-            RpcError::InvalidParameter(format!("Failed to serialize fees transaction: {}", e))
+            RpcError::InvalidParameter(format!("Failed to serialize fees transaction: {e}"))
         })?;
 
         let hyper_request = hyper::http::Request::builder()
@@ -245,7 +245,7 @@ impl RpcProvider for HiroProvider {
         let method: SupportedMethods = serde_json::from_value(serde_json::Value::String(
             (*json_rpc_request.method).to_string(),
         ))
-        .map_err(|e| RpcError::InvalidParameter(format!("Invalid method provided: {:?}", e)))?;
+        .map_err(|e| RpcError::InvalidParameter(format!("Invalid method provided: {e:?}")))?;
 
         match method {
             SupportedMethods::StacksTransactions => {

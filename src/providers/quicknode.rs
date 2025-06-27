@@ -60,10 +60,9 @@ impl RpcProvider for QuicknodeProvider {
             self.chain_subdomains
                 .get(chain_id)
                 .ok_or(RpcError::InvalidConfiguration(format!(
-                    "Quicknode subdomain not found for chainId: {}",
-                    chain_id
+                    "Quicknode subdomain not found for chainId: {chain_id}"
                 )))?;
-        let uri = format!("https://{}.quiknode.pro/{}", chain_subdomain, token);
+        let uri = format!("https://{chain_subdomain}.quiknode.pro/{token}");
 
         let hyper_request = hyper::http::Request::builder()
             .method(Method::POST)

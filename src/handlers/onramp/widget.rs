@@ -76,7 +76,7 @@ async fn handler_internal(
         .get_widget(request_payload, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call onramp widget with {}", e);
+            error!("Failed to call onramp widget with {e}");
         })?;
 
     Ok(Json(widget_response).into_response())

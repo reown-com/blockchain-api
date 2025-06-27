@@ -176,7 +176,7 @@ async fn handler_internal(
                 )
                 .await
                 .tap_err(|e| {
-                    error!("Failed to call coinbase transactions history with {}", e);
+                    error!("Failed to call coinbase transactions history with {e}");
                 })?
         } else {
             return Err(RpcError::UnsupportedProvider(onramp));
@@ -198,7 +198,7 @@ async fn handler_internal(
             )
             .await
             .tap_err(|e| {
-                error!("Failed to call transactions history with {}", e);
+                error!("Failed to call transactions history with {e}");
             })?
     };
 

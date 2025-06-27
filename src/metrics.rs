@@ -490,7 +490,7 @@ impl Metrics {
     ) {
         let mut attributes = vec![
             otel::KeyValue::new("provider", provider_kind.to_string()),
-            otel::KeyValue::new("status_code", format!("{}", status)),
+            otel::KeyValue::new("status_code", format!("{status}")),
         ];
         if let Some(chain_id) = chain_id {
             attributes.push(otel::KeyValue::new("chain_id", chain_id));

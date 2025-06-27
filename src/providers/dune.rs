@@ -98,7 +98,7 @@ impl DuneProvider {
 
         let latency_start = SystemTime::now();
         let response = self.send_request(url.clone()).await.map_err(|e| {
-            error!("Error sending request to Dune EVM balance API: {:?}", e);
+            error!("Error sending request to Dune EVM balance API: {e:?}");
             RpcError::BalanceProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
@@ -132,7 +132,7 @@ impl DuneProvider {
 
         let latency_start = SystemTime::now();
         let response = self.send_request(url.clone()).await.map_err(|e| {
-            error!("Error sending request to Dune svm balance API: {:?}", e);
+            error!("Error sending request to Dune svm balance API: {e:?}");
             RpcError::BalanceProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
@@ -195,12 +195,12 @@ impl BalanceProvider for DuneProvider {
 
             // Build a CAIP-2 chain ID
             let caip2_chain_id = match f.chain_id {
-                Some(cid) => format!("{}:{}", namespace, cid),
+                Some(cid) => format!("{namespace}:{cid}"),
                 None => match namespace {
                     // Use default Mainnet chain IDs if not provided
-                    crypto::CaipNamespaces::Eip155 => format!("{}:1", namespace),
+                    crypto::CaipNamespaces::Eip155 => format!("{namespace}:1"),
                     crypto::CaipNamespaces::Solana => {
-                        format!("{}:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", namespace)
+                        format!("{namespace}:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp")
                     }
                 },
             };
@@ -209,7 +209,7 @@ impl BalanceProvider for DuneProvider {
             let caip10_token_address_strict = if f.address == "native" {
                 match namespace {
                     crypto::CaipNamespaces::Eip155 => {
-                        format!("{}:{}", caip2_chain_id, H160_EMPTY_ADDRESS)
+                        format!("{caip2_chain_id}:{H160_EMPTY_ADDRESS}")
                     }
                     crypto::CaipNamespaces::Solana => {
                         format!("{}:{}", caip2_chain_id, crypto::SOLANA_NATIVE_TOKEN_ADDRESS)
@@ -278,14 +278,14 @@ impl BalanceProvider for DuneProvider {
                                 .set_metadata(&address_key, &new_item_to_store)
                                 .await
                             {
-                                error!("Failed to update token metadata cache: {:?}", e);
+                                error!("Failed to update token metadata cache: {e:?}");
                             }
                         });
                     }
                     new_item
                 }
                 Err(e) => {
-                    error!("Error getting token metadata: {:?}", e);
+                    error!("Error getting token metadata: {e:?}");
                     continue;
                 }
             };

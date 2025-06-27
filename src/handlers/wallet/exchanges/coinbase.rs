@@ -226,7 +226,7 @@ impl CoinbaseExchange {
         let jwt_key =
             generate_coinbase_jwt_key(&pub_key, &priv_key, "GET", COINBASE_API_HOST, path)?;
 
-        let url = format!("https://{}{}", COINBASE_API_HOST, path);
+        let url = format!("https://{COINBASE_API_HOST}{path}");
 
         let res = state
             .http_client
@@ -250,14 +250,14 @@ impl CoinbaseExchange {
         let crypto = CAIP19_TO_COINBASE_CRYPTO
             .get(full_caip19.as_str())
             .ok_or_else(|| {
-                ExchangeError::ValidationError(format!("Unsupported asset: {}", full_caip19))
+                ExchangeError::ValidationError(format!("Unsupported asset: {full_caip19}"))
             })?
             .to_string();
 
         let network = CHAIN_ID_TO_COINBASE_NETWORK
             .get(chain_id.as_str())
             .ok_or_else(|| {
-                ExchangeError::ValidationError(format!("Unsupported chain ID: {}", chain_id))
+                ExchangeError::ValidationError(format!("Unsupported chain ID: {chain_id}"))
             })?
             .to_string();
 
@@ -272,7 +272,7 @@ impl CoinbaseExchange {
         let res = self
             .send_get_request(
                 state,
-                &format!("/onramp/v1/buy/user/{}/transactions", transaction_id),
+                &format!("/onramp/v1/buy/user/{transaction_id}/transactions"),
             )
             .await?;
 
@@ -304,16 +304,14 @@ impl CoinbaseExchange {
             params.recipient.clone(),
             vec![network.clone()],
         )]))
-        .map_err(|e| {
-            ExchangeError::InternalError(format!("Failed to serialize addresses: {}", e))
-        })?;
+        .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize addresses: {e}")))?;
 
         let assets = serde_json::to_string(&vec![crypto.clone()]).map_err(|e| {
-            ExchangeError::InternalError(format!("Failed to serialize assets: {}", e))
+            ExchangeError::InternalError(format!("Failed to serialize assets: {e}"))
         })?;
 
         let mut url = Url::parse(COINBASE_ONE_CLICK_BUY_URL)
-            .map_err(|e| ExchangeError::InternalError(format!("Failed to parse URL: {}", e)))?;
+            .map_err(|e| ExchangeError::InternalError(format!("Failed to parse URL: {e}")))?;
 
         url.query_pairs_mut()
             .append_pair("appId", project_id)
@@ -387,7 +385,7 @@ fn generate_coinbase_jwt_key(
         .duration_since(UNIX_EPOCH)
         .map_err(|_| ExchangeError::InternalError("Failed to get current time".to_string()))?
         .as_secs() as usize;
-    let uri = format!("{} {}{}", request_method, request_host, request_path);
+    let uri = format!("{request_method} {request_host}{request_path}");
     let claims = Claims {
         iss: "cdp".to_string(),
         nbf: now,
@@ -407,12 +405,12 @@ fn generate_coinbase_jwt_key(
         "typ": "JWT"
     });
     let header = serde_json::to_vec(&header)
-        .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize header: {}", e)))?;
+        .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize header: {e}")))?;
     let header_b64 = BASE64_URL_SAFE_NO_PAD.encode(&header);
     let claims = serde_json::to_vec(&claims)
-        .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize claims: {}", e)))?;
+        .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize claims: {e}")))?;
     let claims_b64 = BASE64_URL_SAFE_NO_PAD.encode(&claims);
-    let message = format!("{}.{}", header_b64, claims_b64);
+    let message = format!("{header_b64}.{claims_b64}");
 
     let secret_bytes = STANDARD
         .decode(key_secret.trim())
@@ -426,5 +424,5 @@ fn generate_coinbase_jwt_key(
     let signature = signing_key.sign(message.as_bytes());
     let signature_b64 = BASE64_URL_SAFE_NO_PAD.encode(signature.to_bytes());
 
-    Ok(format!("{}.{}.{}", header_b64, claims_b64, signature_b64))
+    Ok(format!("{header_b64}.{claims_b64}.{signature_b64}"))
 }
