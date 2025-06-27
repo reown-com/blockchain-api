@@ -216,7 +216,7 @@ fn ensure_generate_on_ramp_url() {
             .find(|(key, _)| key == "destinationWallets")
             .unwrap()
             .1,
-        format!("[{{\"address\":\"{}\"}}]", address)
+        format!("[{{\"address\":\"{address}\"}}]")
     );
     assert_eq!(
         url.query_pairs()

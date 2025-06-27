@@ -1180,7 +1180,7 @@ mod tests {
 
         for (chain_name, coin_type) in chains.iter() {
             let result = ChainId::to_caip2(chain_name);
-            assert!(result.is_some(), "chain_name is not found: {}", chain_name);
+            assert!(result.is_some(), "chain_name is not found: {chain_name}");
             assert_eq!(&result.unwrap(), coin_type);
         }
     }
@@ -1201,7 +1201,7 @@ mod tests {
 
         for (chain_id, chain_name) in chains.iter() {
             let result = ChainId::from_caip2(chain_id);
-            assert!(result.is_some(), "chain_id is not found: {}", chain_id);
+            assert!(result.is_some(), "chain_id is not found: {chain_id}");
             assert_eq!(&result.unwrap(), chain_name);
         }
     }
@@ -1264,7 +1264,7 @@ mod tests {
         assert_eq!(eth_asset.to_string(), eth_asset_str);
 
         let erc20_address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
-        let erc20_asset_str = format!("eip155:1/erc20:{}", erc20_address);
+        let erc20_asset_str = format!("eip155:1/erc20:{erc20_address}");
         let erc20_asset = Caip19Asset::parse(&erc20_asset_str).unwrap();
         assert_eq!(erc20_asset.chain_id().namespace(), "eip155");
         assert_eq!(erc20_asset.chain_id().reference(), "1");
@@ -1277,7 +1277,7 @@ mod tests {
         // Test parsing valid CAIP-19 identifiers with token ID
         let nft_address = "0x06012c8cf97BEaD5deAe237070F9587f8E7A266d";
         let token_id = "771769";
-        let nft_asset_str = format!("eip155:1/erc721:{}/{}", nft_address, token_id);
+        let nft_asset_str = format!("eip155:1/erc721:{nft_address}/{token_id}");
         let nft_asset = Caip19Asset::parse(&nft_asset_str).unwrap();
         assert_eq!(nft_asset.chain_id().namespace(), "eip155");
         assert_eq!(nft_asset.chain_id().reference(), "1");
@@ -1323,14 +1323,14 @@ mod tests {
         assert_eq!(eth_asset.to_string(), eth_asset_str);
 
         let erc20_address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
-        let erc20_asset_str = format!("eip155:1/erc20:{}", erc20_address);
+        let erc20_asset_str = format!("eip155:1/erc20:{erc20_address}");
         let erc20_asset = Caip19Asset::from_str(&erc20_asset_str).unwrap();
         assert_eq!(erc20_asset.to_string(), erc20_asset_str);
 
         // Test with token ID
         let nft_address = "0x06012c8cf97BEaD5deAe237070F9587f8E7A266d";
         let token_id = "771769";
-        let nft_asset_str = format!("eip155:1/erc721:{}/{}", nft_address, token_id);
+        let nft_asset_str = format!("eip155:1/erc721:{nft_address}/{token_id}");
         let nft_asset = Caip19Asset::from_str(&nft_asset_str).unwrap();
         assert_eq!(nft_asset.to_string(), nft_asset_str);
     }
