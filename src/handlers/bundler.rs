@@ -105,8 +105,7 @@ async fn handler_internal(
                     || domain.ends_with("local.")
                 {
                     return Err(RpcError::UnsupportedBundlerName(format!(
-                        "domain is not supported, got {}",
-                        domain
+                        "domain is not supported, got {domain}"
                     )));
                 }
             } else {

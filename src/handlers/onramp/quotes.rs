@@ -88,7 +88,7 @@ async fn handler_internal(
         .get_buy_quotes(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call coinbase buy quotes with {}", e);
+            error!("Failed to call coinbase buy quotes with {e}");
         })?;
 
     Ok(Json(buy_quotes).into_response())

@@ -51,7 +51,7 @@ pub fn contract_call_permission_check(
         if address != call_address {
             error!("Execution address does not match the contract address in the permission data. Execution Address: {:?}, Contract Address: {:?}", address, call_address);
             return Err(RpcError::CosignerPermissionDenied(format!(
-              "Execution address does not match the contract address in the permission data. Execution Address: {:?}, Contract Address: {:?}", address, call_address
+              "Execution address does not match the contract address in the permission data. Execution Address: {address:?}, Contract Address: {call_address:?}"
           )));
         }
     }
@@ -71,8 +71,7 @@ pub fn native_token_transfer_permission_check(
             sum, allowance
         );
         return Err(RpcError::CosignerPermissionDenied(format!(
-            "Execution value is greater than the allowance. Execution Value: {:?}, Allowance: {:?}",
-            sum, allowance
+            "Execution value is greater than the allowance. Execution Value: {sum:?}, Allowance: {allowance:?}"
         )));
     }
 

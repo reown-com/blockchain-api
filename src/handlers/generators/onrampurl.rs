@@ -110,7 +110,7 @@ async fn handler_internal(
     let mut parameters = match serde_json::from_slice::<OnRampURLRequest>(&body) {
         Ok(parameters) => parameters,
         Err(e) => {
-            debug!("Error deserializing request body: {}", e);
+            debug!("Error deserializing request body: {e}");
             return Ok((
                 StatusCode::BAD_REQUEST,
                 "Error deserializing request body: {}",
@@ -123,7 +123,7 @@ async fn handler_internal(
     let on_ramp_url = match generate_on_ramp_url(CB_PAY_HOST, CB_PAY_PATH, parameters) {
         Ok(on_ramp_url) => on_ramp_url,
         Err(e) => {
-            error!("Error generating on-ramp URL: {}", e);
+            error!("Error generating on-ramp URL: {e}");
             return Ok((StatusCode::INTERNAL_SERVER_ERROR, "").into_response());
         }
     };

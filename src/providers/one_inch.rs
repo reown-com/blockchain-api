@@ -84,8 +84,7 @@ impl OneInchProvider {
         let latency_start = SystemTime::now();
         let price_response = self.send_request(url).await.map_err(|e| {
             error!(
-                "Error sending request to 1inch provider for fungible price: {:?}",
-                e
+                "Error sending request to 1inch provider for fungible price: {e:?}"
             );
             RpcError::ConversionProviderError
         })?;
@@ -105,8 +104,7 @@ impl OneInchProvider {
                     Ok(response_error) => response_error.description,
                     Err(e) => {
                         error!(
-                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
-                            e
+                            "Error parsing OneInch HTTP 400 Bad Request error response {e:?}"
                         );
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         "Invalid parameter".to_string()
@@ -153,8 +151,7 @@ impl OneInchProvider {
         let latency_start = SystemTime::now();
         let response = self.send_request(url).await.map_err(|e| {
             error!(
-                "Error sending request to 1inch provider for token info: {:?}",
-                e
+                "Error sending request to 1inch provider for token info: {e:?}"
             );
             RpcError::ConversionProviderError
         })?;
@@ -174,8 +171,7 @@ impl OneInchProvider {
                     Ok(response_error) => response_error.description,
                     Err(e) => {
                         error!(
-                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
-                            e
+                            "Error parsing OneInch HTTP 400 Bad Request error response {e:?}"
                         );
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         "Invalid parameter".to_string()
@@ -301,8 +297,7 @@ impl ConversionProvider for OneInchProvider {
         let latency_start = SystemTime::now();
         let response = self.send_request(url).await.map_err(|e| {
             error!(
-                "Error sending request to 1inch provider for token list: {:?}",
-                e
+                "Error sending request to 1inch provider for token list: {e:?}"
             );
             RpcError::ConversionProviderError
         })?;
@@ -322,8 +317,7 @@ impl ConversionProvider for OneInchProvider {
                     Ok(response_error) => response_error.description,
                     Err(e) => {
                         error!(
-                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
-                            e
+                            "Error parsing OneInch HTTP 400 Bad Request error response {e:?}"
                         );
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         "Invalid parameter".to_string()
@@ -422,8 +416,7 @@ impl ConversionProvider for OneInchProvider {
         let latency_start = SystemTime::now();
         let response = self.send_request(url).await.map_err(|e| {
             error!(
-                "Error sending request to 1inch provider for convertion quote: {:?}",
-                e
+                "Error sending request to 1inch provider for convertion quote: {e:?}"
             );
             RpcError::ConversionProviderError
         })?;
@@ -444,8 +437,7 @@ impl ConversionProvider for OneInchProvider {
                     Ok(response_error) => response_error.description,
                     Err(e) => {
                         error!(
-                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
-                            e
+                            "Error parsing OneInch HTTP 400 Bad Request error response {e:?}"
                         );
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         "Invalid parameter".to_string()
@@ -456,8 +448,7 @@ impl ConversionProvider for OneInchProvider {
 
             error!(
                 "Error on getting quotes for conversion from 1inch provider. Status is not OK: \
-                 {:?}",
-                response_status,
+                 {response_status:?}",
             );
             return Err(RpcError::ConversionProviderError);
         }
@@ -508,8 +499,7 @@ impl ConversionProvider for OneInchProvider {
         let latency_start = SystemTime::now();
         let response = self.send_request(url).await.map_err(|e| {
             error!(
-                "Error sending request to 1inch provider for building approval tx: {:?}",
-                e
+                "Error sending request to 1inch provider for building approval tx: {e:?}"
             );
             RpcError::ConversionProviderError
         })?;
@@ -529,8 +519,7 @@ impl ConversionProvider for OneInchProvider {
                     Ok(response_error) => response_error.description,
                     Err(e) => {
                         error!(
-                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
-                            e
+                            "Error parsing OneInch HTTP 400 Bad Request error response {e:?}"
                         );
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         "Invalid parameter".to_string()
@@ -616,8 +605,7 @@ impl ConversionProvider for OneInchProvider {
         let latency_start = SystemTime::now();
         let response = self.send_request(url).await.map_err(|e| {
             error!(
-                "Error sending request to 1inch provider for building convertion tx: {:?}",
-                e
+                "Error sending request to 1inch provider for building convertion tx: {e:?}"
             );
             RpcError::ConversionProviderError
         })?;
@@ -637,8 +625,7 @@ impl ConversionProvider for OneInchProvider {
                     Ok(response_error) => response_error.description,
                     Err(e) => {
                         error!(
-                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
-                            e
+                            "Error parsing OneInch HTTP 400 Bad Request error response {e:?}"
                         );
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         "Invalid parameter".to_string()
@@ -697,8 +684,7 @@ impl ConversionProvider for OneInchProvider {
         let latency_start = SystemTime::now();
         let response = self.send_request(url).await.map_err(|e| {
             error!(
-                "Error sending request to 1inch provider for gas price: {:?}",
-                e
+                "Error sending request to 1inch provider for gas price: {e:?}"
             );
             RpcError::ConversionProviderError
         })?;
@@ -718,8 +704,7 @@ impl ConversionProvider for OneInchProvider {
                     Ok(response_error) => response_error.description,
                     Err(e) => {
                         error!(
-                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
-                            e
+                            "Error parsing OneInch HTTP 400 Bad Request error response {e:?}"
                         );
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         "Invalid parameter".to_string()
@@ -773,8 +758,7 @@ impl ConversionProvider for OneInchProvider {
         let latency_start = SystemTime::now();
         let response = self.send_request(url).await.map_err(|e| {
             error!(
-                "Error sending request to 1inch provider for allowance: {:?}",
-                e
+                "Error sending request to 1inch provider for allowance: {e:?}"
             );
             RpcError::ConversionProviderError
         })?;
@@ -794,8 +778,7 @@ impl ConversionProvider for OneInchProvider {
                     Ok(response_error) => response_error.description,
                     Err(e) => {
                         error!(
-                            "Error parsing OneInch HTTP 400 Bad Request error response {:?}",
-                            e
+                            "Error parsing OneInch HTTP 400 Bad Request error response {e:?}"
                         );
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         "Invalid parameter".to_string()

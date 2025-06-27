@@ -52,7 +52,7 @@ async fn handler_internal(
         .get_gas_price(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call get gas price with {}", e);
+            error!("Failed to call get gas price with {e}");
         })?;
 
     Ok(Json(response).into_response())

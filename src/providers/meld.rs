@@ -84,11 +84,11 @@ impl MeldProvider {
             .post(url)
             .json(&params)
             .header("Meld-Version", API_VERSION)
-            .header("Authorization", format!("BASIC {}", api_key))
+            .header("Authorization", format!("BASIC {api_key}"))
             .send()
             .await
             .map_err(|e| {
-                error!("Error sending request to Meld get quotes: {:?}", e);
+                error!("Error sending request to Meld get quotes: {e:?}");
                 RpcError::OnRampProviderError
             })?;
         metrics.add_latency_and_status_code_for_provider(
@@ -110,8 +110,7 @@ impl MeldProvider {
                     Ok(response_error) => response_error,
                     Err(e) => {
                         error!(
-                            "Error parsing Meld HTTP 400 Bad Request error response {:?}",
-                            e
+                            "Error parsing Meld HTTP 400 Bad Request error response {e:?}"
                         );
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         MeldErrorResponse {
@@ -205,8 +204,7 @@ impl OnRampMultiProvider for MeldProvider {
                     Ok(response_error) => response_error.message,
                     Err(e) => {
                         error!(
-                            "Error parsing Meld HTTP 400 Bad Request error response {:?}",
-                            e
+                            "Error parsing Meld HTTP 400 Bad Request error response {e:?}"
                         );
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         "Invalid parameter".to_string()
@@ -272,8 +270,7 @@ impl OnRampMultiProvider for MeldProvider {
         let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await.map_err(|e| {
             error!(
-                "Error sending request to Meld providers properties: {:?}",
-                e
+                "Error sending request to Meld providers properties: {e:?}"
             );
             RpcError::OnRampProviderError
         })?;
@@ -296,8 +293,7 @@ impl OnRampMultiProvider for MeldProvider {
                     Ok(response_error) => response_error.message,
                     Err(e) => {
                         error!(
-                            "Error parsing Meld HTTP 400 Bad Request error response {:?}",
-                            e
+                            "Error parsing Meld HTTP 400 Bad Request error response {e:?}"
                         );
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         "Invalid parameter".to_string()
@@ -335,7 +331,7 @@ impl OnRampMultiProvider for MeldProvider {
             )
             .await
             .map_err(|e| {
-                error!("Error sending request to Meld get widget: {:?}", e);
+                error!("Error sending request to Meld get widget: {e:?}");
                 RpcError::OnRampProviderError
             })?;
         metrics.add_latency_and_status_code_for_provider(
@@ -357,8 +353,7 @@ impl OnRampMultiProvider for MeldProvider {
                     Ok(response_error) => response_error.message,
                     Err(e) => {
                         error!(
-                            "Error parsing Meld HTTP 400 Bad Request error response {:?}",
-                            e
+                            "Error parsing Meld HTTP 400 Bad Request error response {e:?}"
                         );
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         "Invalid parameter".to_string()
@@ -457,7 +452,7 @@ impl OnRampMultiProvider for MeldProvider {
                     first_error.get_or_insert(e);
                 }
                 Err(e) => {
-                    error!("Error on getting Meld quotes in parallel: {:?}", e);
+                    error!("Error on getting Meld quotes in parallel: {e:?}");
                     return Err(RpcError::OnRampProviderError);
                 }
             }

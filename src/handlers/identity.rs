@@ -202,7 +202,7 @@ async fn lookup_identity(
     headers: HeaderMap,
 ) -> Result<(IdentityLookupSource, IdentityResponse), RpcError> {
     let address_with_checksum = to_checksum(&address, None);
-    let cache_record_key = format!("{}-v1", address_with_checksum);
+    let cache_record_key = format!("{address_with_checksum}-v1");
 
     // Check if we should enable cache control for allow listed Project ID
     // The cache is enabled by default
@@ -395,7 +395,7 @@ pub fn handle_rpc_error(error: ProviderError) -> Result<(), RpcError> {
             // Check the list of error codes that reflects an execution reverted
             // and should proceed with Ok()
             for &code in &JSON_RPC_OK_ERROR_CODES {
-                if error_detail.contains(&format!("code: {},", code)) {
+                if error_detail.contains(&format!("code: {code},")) {
                     debug!(
                         "JsonRpcError code {} while looking up identity: {:?}",
                         code, error_detail
@@ -505,7 +505,7 @@ impl ethers::providers::RpcError for SelfProviderError {
 
 impl From<SelfProviderError> for ProviderError {
     fn from(value: SelfProviderError) -> Self {
-        ProviderError::CustomError(format!("{}{}", SELF_PROVIDER_ERROR_PREFIX, value))
+        ProviderError::CustomError(format!("{SELF_PROVIDER_ERROR_PREFIX}{value}"))
     }
 }
 
@@ -573,8 +573,7 @@ impl JsonRpcClient for SelfProvider {
         };
         let result = serde_json::from_value(result).map_err(|e| {
             SelfProviderError::GenericParameterError(format!(
-                "Caller should always provide generic parameter R=Bytes: {}",
-                e
+                "Caller should always provide generic parameter R=Bytes: {e}"
             ))
         })?;
         Ok(result)

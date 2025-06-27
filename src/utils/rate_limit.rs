@@ -76,7 +76,7 @@ impl RateLimit {
     }
 
     fn format_key(&self, endpoint: &str, ip: &str) -> String {
-        format!("rate_limit:{}:{}", endpoint, ip)
+        format!("rate_limit:{endpoint}:{ip}")
     }
 
     /// Checks if the given endpoint, ip and project ID is rate limited

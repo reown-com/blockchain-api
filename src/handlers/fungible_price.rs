@@ -89,7 +89,7 @@ async fn handler_internal(
         )
         .await
         .tap_err(|e| {
-            error!("Failed to call fungible price with {}", e);
+            error!("Failed to call fungible price with {e}");
         })?;
 
     Ok(Json(response).into_response())

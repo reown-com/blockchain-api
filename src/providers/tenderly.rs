@@ -115,8 +115,7 @@ impl TenderlyProvider {
         redis_caching_pool: Option<Arc<Pool>>,
     ) -> Self {
         let base_api_url = format!(
-            "https://api.tenderly.co/api/v1/account/{}/project/{}",
-            account_slug, project_slug
+            "https://api.tenderly.co/api/v1/account/{account_slug}/project/{project_slug}"
         );
         let http_client = reqwest::Client::new();
         Self {
@@ -153,11 +152,10 @@ impl TenderlyProvider {
     ) -> String {
         if let Some(function_type) = function_type {
             return format!(
-                "tenderly/gas/{}/{}/{:?}",
-                chain_id, contract_address, function_type
+                "tenderly/gas/{chain_id}/{contract_address}/{function_type:?}"
             );
         };
-        format!("tenderly/gas/{}/{}", chain_id, contract_address)
+        format!("tenderly/gas/{chain_id}/{contract_address}")
     }
 
     #[allow(dependency_on_unit_never_type_fallback)]
