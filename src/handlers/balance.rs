@@ -172,9 +172,7 @@ async fn handler_internal(
     if let Some(version) = sdk_version {
         for &v in &EMPTY_BALANCE_RESPONSE_SDK_VERSIONS {
             if version == v || version.ends_with(v) {
-                debug!(
-                    "Responding with an empty balance array for sdk version: {version}"
-                );
+                debug!("Responding with an empty balance array for sdk version: {version}");
                 return Ok(Json(BalanceResponseBody { balances: vec![] }));
             }
         }
@@ -224,9 +222,7 @@ async fn handler_internal(
             }
             Err(e) => {
                 retry_count = i;
-                error!(
-                    "Error on balance provider response, trying the next provider: {e:?}"
-                );
+                error!("Error on balance provider response, trying the next provider: {e:?}");
             }
         };
     }
@@ -297,9 +293,7 @@ async fn handler_internal(
             })?;
         let force_update: Vec<&str> = force_update.split(',').collect();
         for caip_contract_address in force_update {
-            debug!(
-                "Forcing balance update for the contract address: {caip_contract_address}"
-            );
+            debug!("Forcing balance update for the contract address: {caip_contract_address}");
             let (namespace, chain_id, contract_address) =
                 crypto::disassemble_caip10(caip_contract_address)
                     .map_err(|_| RpcError::InvalidAddress)?;

@@ -131,9 +131,7 @@ async fn handler_internal(
     };
 
     // TODO: remove this debuging log
-    print!(
-        "New permission created with PCI: {pci:?} for address: {address:?}"
-    );
+    print!("New permission created with PCI: {pci:?} for address: {address:?}");
 
     Ok(Json(response).into_response())
 }

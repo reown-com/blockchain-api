@@ -309,13 +309,12 @@ impl BinanceExchange {
         };
         debug!("Data to sign: {}", data_to_sign);
 
-        let mut signer = Signer::new(MessageDigest::sha256(), &pkey).map_err(|e| {
-            ExchangeError::GetPayUrlError(format!("Failed to create signer: {e}"))
-        })?;
+        let mut signer = Signer::new(MessageDigest::sha256(), &pkey)
+            .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to create signer: {e}")))?;
 
-        signer.update(data_to_sign.as_bytes()).map_err(|e| {
-            ExchangeError::GetPayUrlError(format!("Failed to update signer: {e}"))
-        })?;
+        signer
+            .update(data_to_sign.as_bytes())
+            .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to update signer: {e}")))?;
         let signature = signer
             .sign_to_vec()
             .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to sign data: {e}")))?;
@@ -365,9 +364,8 @@ impl BinanceExchange {
         let status = response.status();
         if !status.is_success() {
             let error_body = response.text().await.unwrap_or_default();
-            let message = format!(
-                "Binance API request failed with status: {status}, body: {error_body}"
-            );
+            let message =
+                format!("Binance API request failed with status: {status}, body: {error_body}");
             debug!("Binance API request failed: {}", message);
             return Err(ExchangeError::InternalError(message));
         }

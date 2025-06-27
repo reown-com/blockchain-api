@@ -1270,9 +1270,7 @@ fn construct_metrics_bridging_route(
     to_chain_id: String,
     to_contract: String,
 ) -> String {
-    format!(
-        "{from_chain_id}:{from_contract}->{to_chain_id}:{to_contract}"
-    )
+    format!("{from_chain_id}:{from_contract}->{to_chain_id}:{to_contract}")
 }
 
 #[derive(Debug, thiserror::Error)]
