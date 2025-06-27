@@ -152,7 +152,7 @@ impl ChainOrchestrationProvider for BungeeProvider {
         let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
@@ -191,7 +191,7 @@ impl ChainOrchestrationProvider for BungeeProvider {
             .send_post_request(url, &BungeeBuildTxRequest { route })
             .await?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
@@ -235,7 +235,7 @@ impl ChainOrchestrationProvider for BungeeProvider {
         let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
@@ -281,7 +281,7 @@ impl ChainOrchestrationProvider for BungeeProvider {
         let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
