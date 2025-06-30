@@ -92,7 +92,7 @@ pub struct TokenMetadataCacheItem {
 }
 
 fn address_balance_cache_key(address: &str) -> String {
-    format!("address_balance/{}", address)
+    format!("address_balance/{address}")
 }
 
 pub async fn get_cached_balance(
@@ -119,7 +119,7 @@ pub async fn set_cached_balance(
                 Some(BALANCE_CACHE_TTL),
             )
             .await
-            .unwrap_or_else(|e| error!("Failed to set balance cache: {}", e));
+            .unwrap_or_else(|e| error!("Failed to set balance cache: {e}"));
     }
 }
 
@@ -173,8 +173,7 @@ async fn handler_internal(
         for &v in &EMPTY_BALANCE_RESPONSE_SDK_VERSIONS {
             if version == v || version.ends_with(v) {
                 debug!(
-                    "Responding with an empty balance array for sdk version: {}",
-                    version
+                    "Responding with an empty balance array for sdk version: {version}"
                 );
                 return Ok(Json(BalanceResponseBody { balances: vec![] }));
             }
@@ -226,8 +225,7 @@ async fn handler_internal(
             Err(e) => {
                 retry_count = i;
                 error!(
-                    "Error on balance provider response, trying the next provider: {:?}",
-                    e
+                    "Error on balance provider response, trying the next provider: {e:?}"
                 );
             }
         };
@@ -300,8 +298,7 @@ async fn handler_internal(
         let force_update: Vec<&str> = force_update.split(',').collect();
         for caip_contract_address in force_update {
             debug!(
-                "Forcing balance update for the contract address: {}",
-                caip_contract_address
+                "Forcing balance update for the contract address: {caip_contract_address}"
             );
             let (namespace, chain_id, contract_address) =
                 crypto::disassemble_caip10(caip_contract_address)
@@ -309,7 +306,7 @@ async fn handler_internal(
             let contract_address = contract_address
                 .parse::<Address>()
                 .map_err(|_| RpcError::InvalidAddress)?;
-            let caip2_chain_id = format!("{}:{}", namespace, chain_id);
+            let caip2_chain_id = format!("{namespace}:{chain_id}");
             let parsed_address = address
                 .parse::<Address>()
                 .map_err(|_| RpcError::InvalidAddress)?;
@@ -369,19 +366,18 @@ async fn handler_internal(
             let get_price_info = get_price_info_provider
                 .get_price(
                     &chain_id.clone(),
-                    format!("{:#x}", contract_address).as_str(),
+                    format!("{contract_address:#x}").as_str(),
                     &query.currency,
                     &state.providers.token_metadata_cache,
                     state.metrics.clone(),
                 )
                 .await
                 .tap_err(|e| {
-                    error!("Failed to call fungible get_price with {}", e);
+                    error!("Failed to call fungible get_price with {e}");
                 })?;
             let token_info = get_price_info.fungibles.first().ok_or_else(|| {
                 error!(
-                    "Empty tokens list result from get_price for address: {:#x}",
-                    contract_address
+                    "Empty tokens list result from get_price for address: {contract_address:#x}"
                 );
                 RpcError::BalanceProviderError
             })?;
@@ -432,7 +428,7 @@ impl TokenMetadataCache {
         Self { cache_pool }
     }
     fn token_metadata_cache_key(&self, caip10_token_address: &str) -> String {
-        format!("token_metadata/{}", caip10_token_address)
+        format!("token_metadata/{caip10_token_address}")
     }
 
     #[allow(dependency_on_unit_never_type_fallback)]

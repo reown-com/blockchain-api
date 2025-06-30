@@ -79,7 +79,7 @@ async fn handler_internal(
         .build_convert_tx(request_payload, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call build conversion transaction with {}", e);
+            error!("Failed to call build conversion transaction with {e}");
         })?;
 
     Ok(Json(response).into_response())

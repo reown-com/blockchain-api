@@ -27,7 +27,7 @@ pub fn extract_execution_batch_components(
 ) -> Result<Vec<ExecutionTransaction>, RpcError> {
     // Decode the calldata into Safe7579::executeCall
     let execute_call = Safe7579::executeCall::abi_decode(call_data_bytes, true).map_err(|e| {
-        RpcError::AbiDecodingError(format!("Failed to decode executeCall: {:?}", e))
+        RpcError::AbiDecodingError(format!("Failed to decode executeCall: {e:?}"))
     })?;
 
     // Access the mode bytes directly
@@ -43,8 +43,7 @@ pub fn extract_execution_batch_components(
         let batch_transactions: Vec<(Address, U256, Bytes)> =
             BatchTransactionType::abi_decode(execution_calldata_bytes, true).map_err(|e| {
                 RpcError::AbiDecodingError(format!(
-                    "Failed to decode batch transactions ABI type: {:?}",
-                    e
+                    "Failed to decode batch transactions ABI type: {e:?}"
                 ))
             })?;
 

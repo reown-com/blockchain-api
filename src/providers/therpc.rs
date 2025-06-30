@@ -51,7 +51,7 @@ impl RpcProvider for TheRpcProvider {
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let uri = format!("https://rpc.therpc.io/{}", chain);
+        let uri = format!("https://rpc.therpc.io/{chain}");
 
         let hyper_request = hyper::http::Request::builder()
             .method(Method::POST)

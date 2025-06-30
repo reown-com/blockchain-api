@@ -447,7 +447,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 
     let profiler = async move {
         if let Err(e) = tokio::spawn(profiler::run()).await {
-            warn!("Memory debug stats collection failed with: {:?}", e);
+            warn!("Memory debug stats collection failed with: {e:?}");
         }
         Ok(())
     };
@@ -472,7 +472,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     ];
 
     if let Err(e) = futures_util::future::select_all(services).await.0 {
-        warn!("Server error: {:?}", e);
+        warn!("Server error: {e:?}");
     };
 
     Ok(())

@@ -278,8 +278,7 @@ async fn handler_internal(
                 return Ok(Json(PrepareResponse::Error(PrepareResponseError {
                     error: BridgingError::TransactionSimulationFailed,
                     reason: format!(
-                        "The initial transaction (native token transfer) simulation failed due to an error: {}",
-                        e
+                        "The initial transaction (native token transfer) simulation failed due to an error: {e}"
                     ),
                 })));
             }
@@ -361,8 +360,7 @@ async fn handler_internal(
                                     return Ok(Json(PrepareResponse::Error(PrepareResponseError {
                                         error: BridgingError::TransactionSimulationFailed,
                                         reason: format!(
-                                            "The initial transaction simulation failed due to an error: {}",
-                                            e
+                                            "The initial transaction simulation failed due to an error: {e}"
                                         ),
                                     })));
                                 }
@@ -422,8 +420,7 @@ async fn handler_internal(
                             return Ok(Json(PrepareResponse::Error(PrepareResponseError {
                                 error: BridgingError::TransactionSimulationFailed,
                                 reason: format!(
-                                    "The initial transaction simulation failed due to an error: {}",
-                                    e
+                                    "The initial transaction simulation failed due to an error: {e}"
                                 ),
                             })));
                         }
@@ -1274,8 +1271,7 @@ fn construct_metrics_bridging_route(
     to_contract: String,
 ) -> String {
     format!(
-        "{}:{}->{}:{}",
-        from_chain_id, from_contract, to_chain_id, to_contract
+        "{from_chain_id}:{from_contract}->{to_chain_id}:{to_contract}"
     )
 }
 

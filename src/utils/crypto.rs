@@ -298,8 +298,7 @@ pub fn decode_erc20_transfer_data(data: &[u8]) -> Result<(Address, AlloyU256), C
     }
     let transfer_params = transferCall::abi_decode(data, false).map_err(|err| {
         CryptoUitlsError::Erc20DecodeError(format!(
-            "Failed to decode ERC20 transfer params: {}",
-            err
+            "Failed to decode ERC20 transfer params: {err}"
         ))
     })?;
     Ok((transfer_params.to, transfer_params.value))
@@ -374,7 +373,7 @@ fn get_rpc_url(
     session_id: Option<String>,
 ) -> Result<Url, CryptoUitlsError> {
     let mut provider = Url::parse("https://rpc.walletconnect.org/v1").map_err(|e| {
-        CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e))
+        CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {e}"))
     })?;
     provider.query_pairs_mut().append_pair("chainId", chain_id);
     provider
@@ -408,14 +407,13 @@ pub async fn verify_eip6492_message_signature(
 
     let provider = get_rpc_url(chain_id, rpc_project_id, source, session_id)?;
     let hexed_signature = hex::decode(&signature[2..])
-        .map_err(|e| CryptoUitlsError::SignatureFormat(format!("Wrong signature format: {}", e)))?;
+        .map_err(|e| CryptoUitlsError::SignatureFormat(format!("Wrong signature format: {e}")))?;
 
     match verify_eip6492(hexed_signature, address, &message_hash, provider).await {
         Ok(_) => Ok(true),
         Err(CacaoError::Verification) => Ok(false),
         Err(e) => Err(CryptoUitlsError::ContractCallError(format!(
-            "Failed to verify EIP-6492 signature: {}",
-            e
+            "Failed to verify EIP-6492 signature: {e}"
         ))),
     }
 }
@@ -499,15 +497,14 @@ pub async fn get_erc20_contract_balance(
     let provider = EthersProvider::<Http>::try_from(
         get_rpc_url(chain_id, rpc_project_id, source, session_id)?.as_str(),
     )
-    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
+    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {e}")))?;
     let provider = Arc::new(provider);
 
     let contract = ERC20Contract::new(contract, provider);
     let balance = contract.balance_of(wallet).call().await.map_err(|e| {
         CryptoUitlsError::ContractCallError(format!(
-            "Failed to call ERC20 contract {:?} in {:?} for the balance of {:?}.\
-            The error: {}",
-            contract, chain_id, wallet, e
+            "Failed to call ERC20 contract {contract:?} in {chain_id:?} for the balance of {wallet:?}.\
+            The error: {e}"
         ))
     })?;
     Ok(balance)
@@ -525,13 +522,13 @@ pub async fn get_balance(
     let provider = EthersProvider::<Http>::try_from(
         get_rpc_url(chain_id, rpc_project_id, source, session_id)?.as_str(),
     )
-    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
+    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {e}")))?;
     let provider = Arc::new(provider);
 
     let balance = provider
         .get_balance(wallet, None)
         .await
-        .map_err(|e| CryptoUitlsError::ProviderError(format!("{}", e)))?;
+        .map_err(|e| CryptoUitlsError::ProviderError(format!("{e}")))?;
     Ok(balance)
 }
 
@@ -545,7 +542,7 @@ pub async fn get_gas_price(
     let gas_price = provider
         .get_gas_price()
         .await
-        .map_err(|e| CryptoUitlsError::ProviderError(format!("{}", e)))?;
+        .map_err(|e| CryptoUitlsError::ProviderError(format!("{e}")))?;
     Ok(gas_price)
 }
 
@@ -559,7 +556,7 @@ pub async fn get_nonce(
         .get_transaction_count(wallet)
         .pending()
         .await
-        .map_err(|e| CryptoUitlsError::ProviderError(format!("{}", e)))?;
+        .map_err(|e| CryptoUitlsError::ProviderError(format!("{e}")))?;
     Ok(AlloyU64::from(nonce))
 }
 
@@ -586,7 +583,7 @@ pub async fn get_gas_estimate(
             ..Default::default()
         })
         .await
-        .map_err(|e| CryptoUitlsError::ProviderError(format!("{}", e)))?;
+        .map_err(|e| CryptoUitlsError::ProviderError(format!("{e}")))?;
     Ok(gas_estimate)
 }
 
@@ -616,7 +613,7 @@ pub async fn call_get_user_op_hash(
         )?
         .as_str(),
     )
-    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {}", e)))?;
+    .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {e}")))?;
     let provider = Arc::new(provider);
 
     let contract = EntryPoint::new(contract_address, provider);
@@ -640,8 +637,7 @@ pub async fn call_get_user_op_hash(
         .await
         .map_err(|e| {
             CryptoUitlsError::ContractCallError(format!(
-                "Failed to call getUserOpHash in EntryPoint contract: {}",
-                e
+                "Failed to call getUserOpHash in EntryPoint contract: {e}"
             ))
         })?;
 
@@ -829,14 +825,12 @@ impl Caip2ChainId {
     pub fn new(namespace: &str, reference: &str) -> Result<Self, CryptoUitlsError> {
         if !CAIP2_NAMESPACE_REGEX.is_match(namespace) {
             return Err(CryptoUitlsError::WrongCaip2Format(format!(
-                "CAIP-2 namespace must be 3-8 characters of lowercase letters, digits, or hyphens: {}",
-                namespace
+                "CAIP-2 namespace must be 3-8 characters of lowercase letters, digits, or hyphens: {namespace}"
             )));
         }
         if !CAIP2_REFERENCE_REGEX.is_match(reference) {
             return Err(CryptoUitlsError::WrongChainIdFormat(format!(
-                "CAIP-2 reference must be 1-32 characters of letters, digits, or hyphens: {}",
-                reference
+                "CAIP-2 reference must be 1-32 characters of letters, digits, or hyphens: {reference}"
             )));
         }
 
@@ -852,15 +846,13 @@ impl Caip2ChainId {
 
         let namespace = parts.next().ok_or_else(|| {
             CryptoUitlsError::WrongCaip2Format(format!(
-                "CAIP-2 chain ID must have a namespace component: {}",
-                chain_id
+                "CAIP-2 chain ID must have a namespace component: {chain_id}"
             ))
         })?;
 
         let reference = parts.next().ok_or_else(|| {
             CryptoUitlsError::WrongCaip2Format(format!(
-                "CAIP-2 chain ID must have a reference component: {}",
-                chain_id
+                "CAIP-2 chain ID must have a reference component: {chain_id}"
             ))
         })?;
         Self::new(namespace, reference)
@@ -915,16 +907,14 @@ impl Caip19Asset {
         // Validate asset namespace format
         if !CAIP19_ASSET_NAMESPACE_REGEX.is_match(asset_namespace) {
             return Err(CryptoUitlsError::WrongCaip19Format(format!(
-                "Invalid asset namespace format (must be 3-8 lowercase alphanumeric or hyphen characters): {}",
-                asset_namespace
+                "Invalid asset namespace format (must be 3-8 lowercase alphanumeric or hyphen characters): {asset_namespace}"
             )));
         }
 
         // Validate asset reference format
         if !CAIP19_ASSET_REFERENCE_REGEX.is_match(asset_reference) {
             return Err(CryptoUitlsError::WrongCaip19Format(format!(
-                "Invalid asset reference format (must be 1-128 alphanumeric characters or -,%,.): {}",
-                asset_reference
+                "Invalid asset reference format (must be 1-128 alphanumeric characters or -,%,.): {asset_reference}"
             )));
         }
 
@@ -932,8 +922,7 @@ impl Caip19Asset {
         if let Some(token_id) = token_id {
             if !CAIP19_TOKEN_ID_REGEX.is_match(token_id) {
                 return Err(CryptoUitlsError::WrongCaip19Format(format!(
-                    "Invalid token ID format (must be 1-78 alphanumeric characters or -,%,.): {}",
-                    token_id
+                    "Invalid token ID format (must be 1-78 alphanumeric characters or -,%,.): {token_id}"
                 )));
             }
         }
@@ -952,15 +941,13 @@ impl Caip19Asset {
 
         let chain_id_str = parts.next().ok_or_else(|| {
             CryptoUitlsError::WrongCaip19Format(format!(
-                "Invalid CAIP-19 format (missing chain ID): {}",
-                asset_id
+                "Invalid CAIP-19 format (missing chain ID): {asset_id}"
             ))
         })?;
 
         let asset_part = parts.next().ok_or_else(|| {
             CryptoUitlsError::WrongCaip19Format(format!(
-                "Invalid CAIP-19 format (missing '/'): {}",
-                asset_id
+                "Invalid CAIP-19 format (missing '/'): {asset_id}"
             ))
         })?;
 
@@ -969,8 +956,7 @@ impl Caip19Asset {
         let mut asset_parts = asset_part.splitn(2, '/');
         let namespace_ref_part = asset_parts.next().ok_or_else(|| {
             CryptoUitlsError::WrongCaip19Format(format!(
-                "Invalid CAIP-19 format (missing asset part): {}",
-                asset_id
+                "Invalid CAIP-19 format (missing asset part): {asset_id}"
             ))
         })?;
 
@@ -979,15 +965,13 @@ impl Caip19Asset {
         let mut namespace_ref_parts = namespace_ref_part.splitn(2, ':');
         let asset_namespace = namespace_ref_parts.next().ok_or_else(|| {
             CryptoUitlsError::WrongCaip19Format(format!(
-                "Invalid asset namespace/reference format (missing namespace): {}",
-                namespace_ref_part
+                "Invalid asset namespace/reference format (missing namespace): {namespace_ref_part}"
             ))
         })?;
 
         let asset_reference = namespace_ref_parts.next().ok_or_else(|| {
             CryptoUitlsError::WrongCaip19Format(format!(
-                "Invalid asset namespace/reference format (missing ':'): {}",
-                namespace_ref_part
+                "Invalid asset namespace/reference format (missing ':'): {namespace_ref_part}"
             ))
         })?;
 
@@ -1046,7 +1030,7 @@ impl Display for Caip19Asset {
 }
 
 pub fn format_to_caip10(namespace: CaipNamespaces, chain_id: &str, address: &str) -> String {
-    format!("{}:{}:{}", namespace, chain_id, address)
+    format!("{namespace}:{chain_id}:{address}")
 }
 
 /// Disassemble CAIP-2 to namespace and chainId
@@ -1126,12 +1110,12 @@ pub fn format_token_amount(amount: U256, decimals: u8) -> String {
     if amount_str.len() <= decimals_usize {
         let required_zeros = decimals_usize - amount_str.len();
         let zeros = "0".repeat(required_zeros);
-        return format!("0.{}{}", zeros, amount_str);
+        return format!("0.{zeros}{amount_str}");
     }
 
     // Insert the decimal point at the correct position
     let (integer_part, decimal_part) = amount_str.split_at(amount_str.len() - decimals_usize);
-    format!("{}.{}", integer_part, decimal_part)
+    format!("{integer_part}.{decimal_part}")
 }
 
 /// Convert token amount to value depending on the token price and decimals
@@ -1199,7 +1183,7 @@ mod tests {
 
         for (chain_name, coin_type) in chains.iter() {
             let result = ChainId::to_caip2(chain_name);
-            assert!(result.is_some(), "chain_name is not found: {}", chain_name);
+            assert!(result.is_some(), "chain_name is not found: {chain_name}");
             assert_eq!(&result.unwrap(), coin_type);
         }
     }
@@ -1220,7 +1204,7 @@ mod tests {
 
         for (chain_id, chain_name) in chains.iter() {
             let result = ChainId::from_caip2(chain_id);
-            assert!(result.is_some(), "chain_id is not found: {}", chain_id);
+            assert!(result.is_some(), "chain_id is not found: {chain_id}");
             assert_eq!(&result.unwrap(), chain_name);
         }
     }
@@ -1283,7 +1267,7 @@ mod tests {
         assert_eq!(eth_asset.to_string(), eth_asset_str);
 
         let erc20_address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
-        let erc20_asset_str = format!("eip155:1/erc20:{}", erc20_address);
+        let erc20_asset_str = format!("eip155:1/erc20:{erc20_address}");
         let erc20_asset = Caip19Asset::parse(&erc20_asset_str).unwrap();
         assert_eq!(erc20_asset.chain_id().namespace(), "eip155");
         assert_eq!(erc20_asset.chain_id().reference(), "1");
@@ -1296,7 +1280,7 @@ mod tests {
         // Test parsing valid CAIP-19 identifiers with token ID
         let nft_address = "0x06012c8cf97BEaD5deAe237070F9587f8E7A266d";
         let token_id = "771769";
-        let nft_asset_str = format!("eip155:1/erc721:{}/{}", nft_address, token_id);
+        let nft_asset_str = format!("eip155:1/erc721:{nft_address}/{token_id}");
         let nft_asset = Caip19Asset::parse(&nft_asset_str).unwrap();
         assert_eq!(nft_asset.chain_id().namespace(), "eip155");
         assert_eq!(nft_asset.chain_id().reference(), "1");
@@ -1342,14 +1326,14 @@ mod tests {
         assert_eq!(eth_asset.to_string(), eth_asset_str);
 
         let erc20_address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
-        let erc20_asset_str = format!("eip155:1/erc20:{}", erc20_address);
+        let erc20_asset_str = format!("eip155:1/erc20:{erc20_address}");
         let erc20_asset = Caip19Asset::from_str(&erc20_asset_str).unwrap();
         assert_eq!(erc20_asset.to_string(), erc20_asset_str);
 
         // Test with token ID
         let nft_address = "0x06012c8cf97BEaD5deAe237070F9587f8E7A266d";
         let token_id = "771769";
-        let nft_asset_str = format!("eip155:1/erc721:{}/{}", nft_address, token_id);
+        let nft_asset_str = format!("eip155:1/erc721:{nft_address}/{token_id}");
         let nft_asset = Caip19Asset::from_str(&nft_asset_str).unwrap();
         assert_eq!(nft_asset.to_string(), nft_asset_str);
     }
