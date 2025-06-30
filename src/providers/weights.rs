@@ -130,9 +130,7 @@ pub fn update_values(weight_resolver: &ChainsWeightResolver, parsed_weights: Par
             let chain_weight = calculate_chain_weight(chain_availability, provider_availability);
 
             let Some(provider_chain_weight) = weight_resolver.get(&chain_id) else {
-                warn!(
-                    "Chain {chain_id} not found in weight resolver: {weight_resolver:?}"
-                );
+                warn!("Chain {chain_id} not found in weight resolver: {weight_resolver:?}");
                 continue;
             };
 

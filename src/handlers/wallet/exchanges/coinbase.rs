@@ -304,9 +304,7 @@ impl CoinbaseExchange {
             params.recipient.clone(),
             vec![network.clone()],
         )]))
-        .map_err(|e| {
-            ExchangeError::InternalError(format!("Failed to serialize addresses: {e}"))
-        })?;
+        .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize addresses: {e}")))?;
 
         let assets = serde_json::to_string(&vec![crypto.clone()]).map_err(|e| {
             ExchangeError::InternalError(format!("Failed to serialize assets: {e}"))

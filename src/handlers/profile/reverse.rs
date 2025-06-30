@@ -55,9 +55,7 @@ async fn handler_internal(
             Ok(response) => result.push(response),
             Err(e) => {
                 // Unexpected behavior when looking up a name for an address
-                error!(
-                    "Unexpected behavior when looking up a name for an address: {e}"
-                );
+                error!("Unexpected behavior when looking up a name for an address: {e}");
                 return Ok((StatusCode::INTERNAL_SERVER_ERROR, "").into_response());
             }
         }

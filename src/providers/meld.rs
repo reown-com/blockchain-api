@@ -109,9 +109,7 @@ impl MeldProvider {
                 let response_error = match response.json::<MeldErrorResponse>().await {
                     Ok(response_error) => response_error,
                     Err(e) => {
-                        error!(
-                            "Error parsing Meld HTTP 400 Bad Request error response {e:?}"
-                        );
+                        error!("Error parsing Meld HTTP 400 Bad Request error response {e:?}");
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         MeldErrorResponse {
                             code: "UNKNOWN".to_string(),
@@ -203,9 +201,7 @@ impl OnRampMultiProvider for MeldProvider {
                 let response_error = match response.json::<MeldErrorResponse>().await {
                     Ok(response_error) => response_error.message,
                     Err(e) => {
-                        error!(
-                            "Error parsing Meld HTTP 400 Bad Request error response {e:?}"
-                        );
+                        error!("Error parsing Meld HTTP 400 Bad Request error response {e:?}");
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         "Invalid parameter".to_string()
                     }
@@ -269,9 +265,7 @@ impl OnRampMultiProvider for MeldProvider {
 
         let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await.map_err(|e| {
-            error!(
-                "Error sending request to Meld providers properties: {e:?}"
-            );
+            error!("Error sending request to Meld providers properties: {e:?}");
             RpcError::OnRampProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
@@ -292,9 +286,7 @@ impl OnRampMultiProvider for MeldProvider {
                 let response_error = match response.json::<MeldErrorResponse>().await {
                     Ok(response_error) => response_error.message,
                     Err(e) => {
-                        error!(
-                            "Error parsing Meld HTTP 400 Bad Request error response {e:?}"
-                        );
+                        error!("Error parsing Meld HTTP 400 Bad Request error response {e:?}");
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         "Invalid parameter".to_string()
                     }
@@ -352,9 +344,7 @@ impl OnRampMultiProvider for MeldProvider {
                 let response_error = match response.json::<MeldErrorResponse>().await {
                     Ok(response_error) => response_error.message,
                     Err(e) => {
-                        error!(
-                            "Error parsing Meld HTTP 400 Bad Request error response {e:?}"
-                        );
+                        error!("Error parsing Meld HTTP 400 Bad Request error response {e:?}");
                         // Respond to the client with a generic error message and HTTP 400 anyway
                         "Invalid parameter".to_string()
                     }

@@ -297,9 +297,7 @@ pub fn decode_erc20_transfer_data(data: &[u8]) -> Result<(Address, AlloyU256), C
         ));
     }
     let transfer_params = transferCall::abi_decode(data, false).map_err(|err| {
-        CryptoUitlsError::Erc20DecodeError(format!(
-            "Failed to decode ERC20 transfer params: {err}"
-        ))
+        CryptoUitlsError::Erc20DecodeError(format!("Failed to decode ERC20 transfer params: {err}"))
     })?;
     Ok((transfer_params.to, transfer_params.value))
 }
@@ -372,9 +370,8 @@ fn get_rpc_url(
     source: MessageSource,
     session_id: Option<String>,
 ) -> Result<Url, CryptoUitlsError> {
-    let mut provider = Url::parse("https://rpc.walletconnect.org/v1").map_err(|e| {
-        CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {e}"))
-    })?;
+    let mut provider = Url::parse("https://rpc.walletconnect.org/v1")
+        .map_err(|e| CryptoUitlsError::RpcUrlParseError(format!("Failed to parse RPC url: {e}")))?;
     provider.query_pairs_mut().append_pair("chainId", chain_id);
     provider
         .query_pairs_mut()

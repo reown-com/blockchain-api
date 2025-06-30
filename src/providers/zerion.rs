@@ -277,9 +277,7 @@ impl HistoryProvider for ZerionProvider {
 
         let latency_start = SystemTime::now();
         let response = self.send_request(url).await.map_err(|e| {
-            error!(
-                "Error on request to zerion transactions history endpoint with {e}"
-            );
+            error!("Error on request to zerion transactions history endpoint with {e}");
             RpcError::TransactionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
@@ -492,9 +490,7 @@ impl BalanceProvider for ZerionProvider {
 
         let latency_start = SystemTime::now();
         let response = self.send_request(url.clone()).await.map_err(|e| {
-            error!(
-                "Error on request to zerion transactions history endpoint with {e}"
-            );
+            error!("Error on request to zerion transactions history endpoint with {e}");
             RpcError::BalanceProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
