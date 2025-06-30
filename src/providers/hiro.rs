@@ -29,6 +29,7 @@ pub enum SupportedMethods {
     StacksTransactions,
     StacksAccounts,
     StacksExtendedNonces,
+    StacksTransferFees,
     HiroFeesTransaction,
 }
 
@@ -218,6 +219,43 @@ impl HiroProvider {
         Ok(response)
     }
 
+    // Send request to the Stacks `/v2/fees/transfer` endpoint
+    async fn transfer_fees(&self, chain_id: String) -> RpcResult<Response> {
+        let uri = self
+            .supported_chains
+            .get(&chain_id)
+            .ok_or(RpcError::ChainNotFound)?;
+        let uri = format!("{}/v2/fees/transfer", uri.trim_end_matches('/'));
+        let uri = uri.parse::<hyper::Uri>().map_err(|_| {
+            RpcError::InvalidParameter("Failed to parse URI for stacks_transfer_fees".into())
+        })?;
+
+        let hyper_request = hyper::http::Request::builder()
+            .method(Method::GET)
+            .uri(uri)
+            .header("Content-Type", "application/json")
+            .body(hyper::body::Body::empty())?;
+
+        let response = self.client.request(hyper_request).await?;
+        let status = response.status();
+        let body = hyper::body::to_bytes(response.into_body()).await?;
+
+        if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+            if response.error.is_some() && status.is_success() {
+                debug!(
+                    "Strange: provider returned JSON RPC error, but status {status} is success: \
+                 Stacks transfer fees: {response:?}"
+                );
+            }
+        }
+
+        let mut response = (status, body).into_response();
+        response
+            .headers_mut()
+            .insert("Content-Type", HeaderValue::from_static("application/json"));
+        Ok(response)
+    }
+
     // Send request to the Stacks `/extended/v1/address/<principal>/nonces` endpoint
     async fn extended_nonces(&self, chain_id: String, principal: String) -> RpcResult<Response> {
         let uri = self
@@ -329,6 +367,9 @@ impl RpcProvider for HiroProvider {
                 return self
                     .fees_transaction(chain_id.to_string(), transaction_payload)
                     .await;
+            }
+            SupportedMethods::StacksTransferFees => {
+                return self.transfer_fees(chain_id.to_string()).await;
             }
             SupportedMethods::StacksExtendedNonces => {
                 // Create the request body for stacks extended nonces endpoint schema
