@@ -110,11 +110,23 @@ async fn handler_internal(
         .metrics
         .add_irn_latency(irn_call_start, OperationType::Hset);
 
+    // Format public key based on API version
+    let public_key = match query_params.api_version {
+        Some(2) => {
+            // v2: Direct hex string with 0x prefix
+            format!("0x{public_key_der_hex}")
+        }
+        _ => {
+            // v1 (default): ASCII-hex encoded with 0x prefix
+            format!("0x{}", hex::encode(public_key_der_hex))
+        }
+    };
+
     let response = NewPermissionResponse {
         pci: pci.clone(),
         key: KeyItem {
             r#type: KeyType::Secp256k1,
-            public_key: format!("0x{}", hex::encode(public_key_der_hex)),
+            public_key,
         },
     };
 

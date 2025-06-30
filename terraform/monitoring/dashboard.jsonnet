@@ -102,6 +102,7 @@ dashboard.new(
     panels.usage.provider(ds, vars, 'edeXa', alert_period_free_tier, availability_free_tier)  { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Blast', alert_period_free_tier, availability_free_tier)     { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Rootstock', alert_period_free_tier, availability_free_tier) { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Hiro', alert_period_free_tier, availability_free_tier)      { gridPos: pos._4 },
 
   row.new('RPC Proxy provider Weights'),
     panels.weights.provider(ds, vars, 'Pokt')        { gridPos: pos._4 },
@@ -129,6 +130,7 @@ dashboard.new(
     panels.weights.provider(ds, vars, 'edeXa')    { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Blast')       { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Rootstock')   { gridPos: pos._4 },
+    panels.weights.provider(ds, vars, 'Hiro')        { gridPos: pos._4 },
 
   row.new('RPC Proxy providers Status Codes'),
     panels.status.provider(ds, vars, 'Pokt')         { gridPos: pos._4 },
@@ -156,6 +158,7 @@ dashboard.new(
     panels.status.provider(ds, vars, 'edeXa')     { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Blast')        { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Rootstock')    { gridPos: pos._4 },
+    panels.status.provider(ds, vars, 'Hiro')         { gridPos: pos._4 },
 
   row.new('RPC Proxy Metrics'),
     panels.proxy.calls(ds, vars)                     { gridPos: pos._3 },
