@@ -674,15 +674,24 @@ fn decode_signers(
     data: Bytes,
     validator_address: Address,
 ) -> Result<Vec<SignerType>, PrepareCallsError> {
+    tracing::info!(">> decode_signers data: {:?}", data);
     // Check if this is an OwnableValidator by address
     if is_ownable_validator_address(validator_address) {
+        tracing::info!(">> decode_signers is_ownable_validator_address {:?}", data);
         // Try ABI decoding (threshold + address array format) - OwnableValidator
         if let Ok((_, owners)) = <(U256, Vec<Address>)>::abi_decode_params(&data, false) {
+            tracing::info!(">> decode_signers owners: {:?}", owners);
             if !owners.is_empty() {
                 // For OwnableValidator format, all signers are ECDSA (EOA addresses)
                 return Ok(vec![SignerType::Ecdsa; owners.len()]);
+            } else {
+                tracing::info!(">> decode_signers owners is_empty");
             }
+        } else {
+            tracing::info!(">> decode_signers abi_decode_params failed {:?}", data);
         }
+    } else {
+        tracing::info!(">> decode_signers is_not_ownable_validator_address data:{:?} validator_address: {:?}", data, validator_address);
     }
 
     // Fall back to custom format (signer type bytes + data) - MultiKeySigner
@@ -753,7 +762,11 @@ async fn get_dummy_signature(
         .sessionToEnable
         .sessionValidatorInitData;
 
-    let signers = decode_signers(validator_init_data.clone(), validator_address)?;
+
+    tracing::info!("validator_init_data: {:?}", validator_init_data);
+    tracing::info!("deep_validator_address: {:?}", &enable_session_data.enable_session.sessionToEnable.sessionValidator);
+        
+    let signers = decode_signers(validator_init_data.clone(), enable_session_data.enable_session.sessionToEnable.sessionValidator)?;
 
     let signature = if is_ownable_validator_address(validator_address) {
         // For OwnableValidator: concatenate signatures directly (abi.encodePacked
