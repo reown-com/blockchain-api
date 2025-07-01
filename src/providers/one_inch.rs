@@ -87,7 +87,7 @@ impl OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             price_response.status().into(),
             latency_start,
             Some(chain_id.to_string()),
@@ -150,7 +150,7 @@ impl OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             Some(chain_id.to_string()),
@@ -292,7 +292,7 @@ impl ConversionProvider for OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             Some(evm_chain_id.to_string()),
@@ -407,7 +407,7 @@ impl ConversionProvider for OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             Some(chain_id.to_string()),
@@ -486,7 +486,7 @@ impl ConversionProvider for OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             Some(chain_id.to_string()),
@@ -588,7 +588,7 @@ impl ConversionProvider for OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             Some(chain_id.to_string()),
@@ -663,7 +663,7 @@ impl ConversionProvider for OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             Some(evm_chain_id.to_string()),
@@ -733,7 +733,7 @@ impl ConversionProvider for OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             Some(evm_chain_id.to_string()),

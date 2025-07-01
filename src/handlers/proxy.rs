@@ -98,6 +98,7 @@ pub async fn rpc_call(
 
             match response {
                 Ok(response) if !response.status().is_server_error() => {
+                    // No metrics are recorded for these hardcoded providers since it bypasses our routign algorithm
                     return Ok(response);
                 }
                 e => {
@@ -113,6 +114,9 @@ pub async fn rpc_call(
             }
         }
     }
+
+    // Start timing the total chain request (including retries)
+    let chain_request_start = SystemTime::now();
 
     // Exact provider proxy request for testing suite
     // This request is allowed only for the RPC_PROXY_TESTING_PROJECT_ID
@@ -171,6 +175,15 @@ pub async fn rpc_call(
                         }
                     }
                 }
+                state
+                    .metrics
+                    .add_found_provider_for_chain(chain_id.clone(), &provider.provider_kind());
+                // Record successful chain latency for the provider that succeeded
+                state.metrics.add_chain_latency(
+                    &provider.provider_kind(),
+                    chain_request_start,
+                    chain_id.clone(),
+                );
                 return Ok(response);
             }
             e => {
@@ -207,7 +220,9 @@ pub async fn rpc_provider_call(
         .get("origin")
         .map(|v| Arc::from(v.to_str().unwrap_or("invalid_header").to_string()));
 
-    state.metrics.add_rpc_call(chain_id.clone());
+    state
+        .metrics
+        .add_rpc_call(chain_id.clone(), &provider.provider_kind());
 
     let (country, continent, region) = state
         .analytics
@@ -295,9 +310,9 @@ pub async fn rpc_provider_call(
         })?;
 
     state.metrics.add_status_code_for_provider(
-        provider.provider_kind(),
+        &provider.provider_kind(),
         response.status().as_u16(),
-        Some(chain_id),
+        Some(chain_id.clone()),
         None,
     );
 
@@ -308,13 +323,18 @@ pub async fn rpc_provider_call(
         *response.status_mut() = http::StatusCode::SERVICE_UNAVAILABLE;
     }
 
-    state
-        .metrics
-        .add_external_http_latency(provider.provider_kind(), external_call_start, None);
+    state.metrics.add_external_http_latency(
+        &provider.provider_kind(),
+        external_call_start,
+        Some(chain_id.clone()),
+        None,
+    );
 
     match response.status() {
         http::StatusCode::OK | http::StatusCode::BAD_REQUEST => {
-            state.metrics.add_finished_provider_call(provider.borrow());
+            state
+                .metrics
+                .add_finished_provider_call(chain_id, provider.borrow());
         }
         _ => {
             error!(
@@ -323,7 +343,9 @@ pub async fn rpc_provider_call(
                 response.status(),
                 response.body()
             );
-            state.metrics.add_failed_provider_call(provider.borrow());
+            state
+                .metrics
+                .add_failed_provider_call(chain_id, provider.borrow());
             *response.status_mut() = http::StatusCode::SERVICE_UNAVAILABLE;
         }
     };

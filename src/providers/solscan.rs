@@ -171,7 +171,7 @@ impl SolScanProvider {
         let latency_start = SystemTime::now();
         let response = self.send_request_v2(url).await?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
@@ -222,7 +222,7 @@ impl SolScanProvider {
         let latency_start = SystemTime::now();
         let response = self.send_request_v2(url).await?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
@@ -320,7 +320,7 @@ impl SolScanProvider {
         let latency_start = SystemTime::now();
         let response = self.send_request_v2(url).await?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
@@ -422,7 +422,7 @@ impl BalanceProvider for SolScanProvider {
         let latency_start = SystemTime::now();
         let response = self.send_request_v2(url).await?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
@@ -532,7 +532,7 @@ impl HistoryProvider for SolScanProvider {
         let latency_start = SystemTime::now();
         let response = self.send_request_v2(url).await?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
