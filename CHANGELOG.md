@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.258.4 - 2025-07-01
+#### Bug Fixes
+- **(RPC)** proper handling of JSON-RPC internal error codes (#1131) - (5c0a9f0) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.258.3 - 2025-07-01
 #### Bug Fixes
 - **(Hiro)** fixing Hiro API response by wrapping it into the result field (#1130) - (1700051) - Max Kalashnikoff | maksy.eth
