@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.258.2 - 2025-07-01
+#### Bug Fixes
+- fixing clippy errors due to the new Rust version (#1129) - (545eafe) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.258.1 - 2025-06-26
 #### Bug Fixes
 - **(Meld)** return quotes even if there is a bad request error (#1126) - (609c242) - Max Kalashnikoff | maksy.eth
