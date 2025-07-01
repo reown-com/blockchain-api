@@ -1,5 +1,8 @@
 use {
-    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
+    super::{
+        is_internal_error_code, Provider, ProviderKind, RateLimited, RpcProvider,
+        RpcProviderFactory,
+    },
     crate::{
         env::BlastConfig,
         error::{RpcError, RpcResult},
@@ -70,6 +73,11 @@ impl RpcProvider for BlastProvider {
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
                Blast: {response:?}"
                 );
+            }
+            if let Some(error) = &response.error {
+                if is_internal_error_code(error.code) {
+                    return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
+                }
             }
         }
 

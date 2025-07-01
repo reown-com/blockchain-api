@@ -1,5 +1,8 @@
 use {
-    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
+    super::{
+        is_internal_error_code, Provider, ProviderKind, RateLimited, RpcProvider,
+        RpcProviderFactory,
+    },
     crate::{
         env::TheRpcConfig,
         error::{RpcError, RpcResult},
@@ -9,7 +12,7 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    hyper::{client::HttpConnector, http, Client, Method},
+    hyper::{client::HttpConnector, http, Client, Method, StatusCode},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
     tracing::debug,
@@ -65,15 +68,18 @@ impl RpcProvider for TheRpcProvider {
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if let Some(error) = &response.error {
-                // Handling the custom rate limit error
-                if error.code == -32029 {
-                    return Ok((http::StatusCode::TOO_MANY_REQUESTS, body).into_response());
-                }
                 if status.is_success() {
                     debug!(
                         "Strange: provider returned JSON RPC error, but status {status} is \
                          success: Pokt: {response:?}"
                     );
+                }
+                // Handling the custom rate limited error code
+                if error.code == -32029 {
+                    return Ok((http::StatusCode::TOO_MANY_REQUESTS, body).into_response());
+                }
+                if is_internal_error_code(error.code) {
+                    return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
                 }
             }
         }

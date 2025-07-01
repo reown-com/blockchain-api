@@ -1,5 +1,8 @@
 use {
-    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
+    super::{
+        is_internal_error_code, Provider, ProviderKind, RateLimited, RpcProvider,
+        RpcProviderFactory,
+    },
     crate::{
         env::PoktConfig,
         error::{RpcError, RpcResult},
@@ -79,19 +82,12 @@ impl RpcProvider for PoktProvider {
                          success: Pokt: {response:?}"
                     );
                 }
-                // Handling the custom rate limit error
+                // Handling the custom Pokt rate limited error codes
                 // https://github.com/pokt-foundation/portal-api/blob/a53c4952944041ba2749178907397963d7254baa/src/controllers/v1.controller.ts#L348
                 if error.code == -32004 || error.code == -32068 {
                     return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response());
                 }
-                if error.code == -32603 {
-                    return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
-                }
-                // Check if the error message is a Go node internal unmarshal error
-                if error
-                    .message
-                    .contains("cannot unmarshal array into Go value")
-                {
+                if is_internal_error_code(error.code) {
                     return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
                 }
             }
