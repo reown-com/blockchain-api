@@ -172,7 +172,7 @@ pub async fn rpc_call(
     }
 
     state.metrics.add_no_providers_for_chain(chain_id.clone());
-    debug!("All providers failed for chain_id: {}", chain_id);
+    debug!("All providers failed for chain_id: {chain_id}");
     Err(RpcError::ChainTemporarilyUnavailable(chain_id))
 }
 

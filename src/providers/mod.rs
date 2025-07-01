@@ -392,8 +392,8 @@ impl ProviderRepository {
         }
 
         let weights: Vec<_> = providers
-            .iter()
-            .map(|(_, weight)| weight.value())
+            .values()
+            .map(|weight| weight.value())
             .map(|w| w.max(1))
             .collect();
         let non_zero_weight_providers = weights.iter().filter(|&x| *x > 0).count();
@@ -407,8 +407,7 @@ impl ProviderRepository {
                         let dist_key = dist.sample(&mut OsRng);
                         let provider = keys.get(dist_key).ok_or_else(|| {
                             RpcError::WeightedProvidersIndex(format!(
-                                "Failed to get random provider for chain_id: {}",
-                                chain_id
+                                "Failed to get random provider for chain_id: {chain_id}"
                             ))
                         })?;
 
@@ -418,16 +417,14 @@ impl ProviderRepository {
                         if i < providers_to_iterate - 1 {
                             if let Err(e) = dist.update_weights(&[(dist_key, &0)]) {
                                 return Err(RpcError::WeightedProvidersIndex(format!(
-                                    "Failed to update weight in sampling iteration: {}",
-                                    e
+                                    "Failed to update weight in sampling iteration: {e}"
                                 )));
                             }
                         };
 
                         self.rpc_providers.get(provider).cloned().ok_or_else(|| {
                             RpcError::WeightedProvidersIndex(format!(
-                                "Provider not found during the weighted index check: {}",
-                                provider
+                                "Provider not found during the weighted index check: {provider}"
                             ))
                         })
                     })
@@ -437,7 +434,7 @@ impl ProviderRepository {
             Err(e) => {
                 // Respond with temporarily unavailable when all weights are 0 for
                 // a chain providers
-                warn!("Failed to create weighted index: {}", e);
+                warn!("Failed to create weighted index: {e}");
                 Err(RpcError::ChainTemporarilyUnavailable(chain_id.to_string()))
             }
         }
@@ -508,8 +505,7 @@ impl ProviderRepository {
                         let dist_key = dist.sample(&mut OsRng);
                         let provider = keys.get(dist_key).ok_or_else(|| {
                             RpcError::WeightedProvidersIndex(format!(
-                                "Failed to get random balance provider for namespace: {}",
-                                namespace
+                                "Failed to get random balance provider for namespace: {namespace}"
                             ))
                         })?;
 
@@ -519,8 +515,7 @@ impl ProviderRepository {
                         if i < providers_to_iterate - 1 {
                             if let Err(e) = dist.update_weights(&[(dist_key, &0)]) {
                                 return Err(RpcError::WeightedProvidersIndex(format!(
-                                    "Failed to update weight in sampling iteration: {}",
-                                    e
+                                    "Failed to update weight in sampling iteration: {e}"
                                 )));
                             }
                         };
@@ -530,8 +525,7 @@ impl ProviderRepository {
                             .cloned()
                             .ok_or_else(|| {
                                 RpcError::WeightedProvidersIndex(format!(
-                                "Balance provider not found during the weighted index check: {}",
-                                provider
+                                "Balance provider not found during the weighted index check: {provider}"
                             ))
                             })
                     })
@@ -550,7 +544,7 @@ impl ProviderRepository {
             Err(e) => {
                 // Respond with temporarily unavailable when all weights are 0 for
                 // a chain providers
-                warn!("Failed to create weighted index: {}", e);
+                warn!("Failed to create weighted index: {e}");
                 Err(RpcError::ChainTemporarilyUnavailable(namespace.to_string()))
             }
         }
@@ -563,7 +557,7 @@ impl ProviderRepository {
             return None;
         }
 
-        let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.value()).collect();
+        let weights: Vec<_> = providers.values().map(|weight| weight.value()).collect();
         let keys = providers.keys().cloned().collect::<Vec<_>>();
         match WeightedIndex::new(weights) {
             Ok(dist) => {
@@ -575,7 +569,7 @@ impl ProviderRepository {
                 self.ws_providers.get(provider).cloned()
             }
             Err(e) => {
-                warn!("Failed to create weighted index: {}", e);
+                warn!("Failed to create weighted index: {e}");
                 None
             }
         }
@@ -691,7 +685,7 @@ impl ProviderRepository {
                 weights::record_values(&self.rpc_weight_resolver, metrics);
             }
             Err(e) => {
-                warn!("Failed to update weights from prometheus: {}", e);
+                warn!("Failed to update weights from prometheus: {e}");
             }
         }
     }

@@ -66,7 +66,7 @@ async fn handler_internal(
         .build_approve_tx(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call build approve tx for conversion with {}", e);
+            error!("Failed to call build approve tx for conversion with {e}");
         })?;
 
     Ok(Json(response).into_response())

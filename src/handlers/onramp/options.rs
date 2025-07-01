@@ -92,7 +92,7 @@ async fn handler_internal(
         .get_buy_options(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call coinbase buy options with {}", e);
+            error!("Failed to call coinbase buy options with {e}");
         })?;
 
     Ok(Json(buy_options).into_response())

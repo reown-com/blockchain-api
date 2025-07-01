@@ -68,7 +68,7 @@ async fn handler_internal(
             }
             _ => {
                 // Handle other types of errors
-                error!("Failed to lookup name: {}", e);
+                error!("Failed to lookup name: {e}");
                 return Ok((StatusCode::INTERNAL_SERVER_ERROR, "").into_response());
             }
         },

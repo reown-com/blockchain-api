@@ -57,7 +57,7 @@ impl IdentityLookupInfo {
             timestamp: wc::analytics::time::now(),
 
             address_hash: sha256::digest(address.as_ref()),
-            address: format!("{:#x}", address),
+            address: format!("{address:#x}"),
             name_present,
             avatar_present,
             source: source.as_str().to_string(),
