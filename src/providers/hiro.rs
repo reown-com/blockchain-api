@@ -42,6 +42,11 @@ pub struct FeesTransactionRequest {
     pub transaction_payload: String,
 }
 
+#[derive(Debug, Serialize)]
+pub struct HiroResult {
+    pub result: serde_json::Value,
+}
+
 impl Provider for HiroProvider {
     fn supports_caip_chainid(&self, chain_id: &str) -> bool {
         self.supported_chains.contains_key(chain_id)
@@ -64,6 +69,25 @@ impl RateLimited for HiroProvider {
 }
 
 impl HiroProvider {
+    /// Helper function to wrap response body in JSON-RPC format
+    /// that uses the `result` field to wrap the response body.
+    fn wrap_response_in_result(&self, body: &[u8]) -> Result<Vec<u8>, RpcError> {
+        let original_result = match serde_json::from_slice::<serde_json::Value>(body) {
+            Ok(value) => value,
+            Err(e) => {
+                return Err(RpcError::InvalidParameter(format!(
+                    "Failed to deserialize Hiro response: {e}"
+                )));
+            }
+        };
+        let wrapped_response = HiroResult {
+            result: original_result,
+        };
+        serde_json::to_vec(&wrapped_response).map_err(|e| {
+            RpcError::InvalidParameter(format!("Failed to serialize wrapped Hiro response: {e}"))
+        })
+    }
+
     // Send request to the Stacks `/v2/transactions` endpoint
     async fn transactions(&self, chain_id: String, tx: String) -> RpcResult<Response> {
         let uri = self
@@ -99,7 +123,8 @@ impl HiroProvider {
             }
         }
 
-        let mut response = (status, body).into_response();
+        let wrapped_body = self.wrap_response_in_result(&body)?;
+        let mut response = (status, wrapped_body).into_response();
         response
             .headers_mut()
             .insert("Content-Type", HeaderValue::from_static("application/json"));
@@ -136,7 +161,8 @@ impl HiroProvider {
             }
         }
 
-        let mut response = (status, body).into_response();
+        let wrapped_body = self.wrap_response_in_result(&body)?;
+        let mut response = (status, wrapped_body).into_response();
         response
             .headers_mut()
             .insert("Content-Type", HeaderValue::from_static("application/json"));
@@ -184,7 +210,8 @@ impl HiroProvider {
             }
         }
 
-        let mut response = (status, body).into_response();
+        let wrapped_body = self.wrap_response_in_result(&body)?;
+        let mut response = (status, wrapped_body).into_response();
         response
             .headers_mut()
             .insert("Content-Type", HeaderValue::from_static("application/json"));
@@ -225,7 +252,8 @@ impl HiroProvider {
             }
         }
 
-        let mut response = (status, body).into_response();
+        let wrapped_body = self.wrap_response_in_result(&body)?;
+        let mut response = (status, wrapped_body).into_response();
         response
             .headers_mut()
             .insert("Content-Type", HeaderValue::from_static("application/json"));
