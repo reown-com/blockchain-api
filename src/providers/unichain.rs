@@ -1,8 +1,5 @@
 use {
-    super::{
-        is_internal_error_code, Provider, ProviderKind, RateLimited, RpcProvider,
-        RpcProviderFactory,
-    },
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
         env::UnichainConfig,
         error::{RpcError, RpcResult},
@@ -12,7 +9,7 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    hyper::{client::HttpConnector, http, Client, Method, StatusCode},
+    hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
     tracing::debug,
@@ -70,11 +67,6 @@ impl RpcProvider for UnichainProvider {
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
                  Unichain: {response:?}"
                 );
-            }
-            if let Some(error) = &response.error {
-                if is_internal_error_code(error.code) {
-                    return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
-                }
             }
         }
 

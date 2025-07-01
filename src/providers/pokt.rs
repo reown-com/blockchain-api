@@ -1,8 +1,5 @@
 use {
-    super::{
-        is_internal_error_code, Provider, ProviderKind, RateLimited, RpcProvider,
-        RpcProviderFactory,
-    },
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
         env::PoktConfig,
         error::{RpcError, RpcResult},
@@ -82,12 +79,12 @@ impl RpcProvider for PoktProvider {
                          success: Pokt: {response:?}"
                     );
                 }
-                // Handling the custom Pokt rate limited error codes
+                // Handling the custom rate limit error
                 // https://github.com/pokt-foundation/portal-api/blob/a53c4952944041ba2749178907397963d7254baa/src/controllers/v1.controller.ts#L348
                 if error.code == -32004 || error.code == -32068 {
                     return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response());
                 }
-                if is_internal_error_code(error.code) {
+                if error.code == -32603 {
                     return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
                 }
             }
