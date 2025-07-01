@@ -17,7 +17,7 @@ use {
     hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
-    tracing::debug,
+    tracing::{debug, error},
     wc::future::FutureExt,
 };
 
@@ -127,11 +127,21 @@ impl RpcProvider for AllnodesProvider {
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if response.error.is_some() && status.is_success() {
-                debug!(
-                    "Strange: provider returned JSON RPC error, but status {status} is success: \
-                 Allnodes: {response:?}"
-                );
+            if let Some(error) = &response.error {
+                if status.is_success() {
+                    debug!(
+                        "Strange: provider returned JSON RPC error, but status {status} is success: \
+                     Allnodes: {response:?}"
+                    );
+                }
+                // Log error codes in the -32000 to -32099 range to understand what messages are being returned
+                if error.code >= -32099 && error.code <= -32000 {
+                    error!(
+                        "Allnodes provider returned JSON-RPC error code in -32000 to -32099 range: \
+                         code={}, message='{}', data={:?}",
+                        error.code, error.message, error.data
+                    );
+                }
             }
         }
 
