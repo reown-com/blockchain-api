@@ -1219,3 +1219,10 @@ pub trait TokenMetadataCacheProvider: Send + Sync {
         item: &TokenMetadataCacheItem,
     ) -> Result<(), RpcError>;
 }
+
+/// Check if a JSON-RPC error code indicates a server error
+/// according to the JSON-RPC 2.0 specification
+/// https://www.jsonrpc.org/specification#error_object
+pub fn is_internal_error_code(error_code: i32) -> bool {
+    (-32099..=-32000).contains(&error_code)
+}
