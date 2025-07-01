@@ -249,7 +249,8 @@ impl HiroProvider {
             }
         }
 
-        let mut response = (status, body).into_response();
+        let wrapped_body = self.wrap_response_in_result(&body)?;
+        let mut response = (status, wrapped_body).into_response();
         response
             .headers_mut()
             .insert("Content-Type", HeaderValue::from_static("application/json"));
