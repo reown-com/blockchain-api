@@ -157,6 +157,7 @@ pub async fn rpc_call(
 
         match response {
             Ok(response) if !response.status().is_server_error() => {
+                state.metrics.add_found_provider_for_chain(chain_id.clone());
                 return Ok(response);
             }
             e => {
