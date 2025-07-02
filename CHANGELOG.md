@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.259.0 - 2025-07-02
+#### Features
+- **(Hiro)** adding transfer fee endpoint support (#1128) - (ddd5f49) - Alfreedom
+
+- - -
+
 ## 0.258.5 - 2025-07-01
 #### Bug Fixes
 - reverting #1131 and add only unmarshalling error catching (#1133) - (b6eacee) - Max Kalashnikoff | maksy.eth
