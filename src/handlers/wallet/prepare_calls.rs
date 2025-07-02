@@ -293,7 +293,6 @@ async fn handler_internal(
         // TODO refactor into yttrium
         let dummy_signature = get_dummy_signature(
             request.from,
-            validator_address,
             signature,
             account_type,
             &provider,
@@ -729,7 +728,6 @@ fn decode_signers(
 
 async fn get_dummy_signature(
     address: AccountAddress,
-    validator_address: Address,
     signature: &[u8],
     account_type: AccountType,
     provider: &impl Provider,
@@ -753,9 +751,14 @@ async fn get_dummy_signature(
         .sessionToEnable
         .sessionValidatorInitData;
 
-    let signers = decode_signers(validator_init_data.clone(), validator_address)?;
+    let session_validator_address = enable_session_data
+        .enable_session
+        .sessionToEnable
+        .sessionValidator;
 
-    let signature = if is_ownable_validator_address(validator_address) {
+    let signers = decode_signers(validator_init_data.clone(), session_validator_address)?;
+
+    let signature = if is_ownable_validator_address(session_validator_address) {
         // For OwnableValidator: concatenate signatures directly (abi.encodePacked
         // style)
         signers
@@ -838,6 +841,7 @@ fn decode_and_convert_signature_format(
 mod tests {
     use {
         super::*,
+        crate::utils::validators::{is_ownable_validator_address, OWNABLE_VALIDATOR_ADDRESS},
         alloy::primitives::{address, bytes, fixed_bytes, U256},
     };
 
@@ -859,7 +863,7 @@ mod tests {
 
     // Test OwnableValidator (threshold + owners format)
     mod ownable_validator_tests {
-        use {super::*, crate::utils::validators::OWNABLE_VALIDATOR_ADDRESS};
+        use super::*;
 
         #[test]
         fn test_decode_signers_ownable_format() {
@@ -1145,5 +1149,110 @@ mod tests {
             serde_json::from_value::<Vec<PrepareCallsRequestItem>>(value).unwrap(),
             request
         );
+    }
+
+    // Test decode_signers with proper OwnableValidator data
+    #[test]
+    fn test_decode_signers_ownable_validator_dummy_data() {
+        // Create enable session data with OwnableValidator format
+        let threshold = U256::from(2);
+        let owners = vec![
+            address!("70f8671c00000000000000000000000000000000"),
+            address!("80f8671c00000000000000000000000000000000"),
+        ];
+        let validator_init_data = Bytes::from((threshold, owners.clone()).abi_encode_params());
+
+        // Decode signers for OwnableValidator
+        let signers = decode_signers(validator_init_data, OWNABLE_VALIDATOR_ADDRESS).unwrap();
+        
+        // Should return ECDSA signers for each owner
+        assert_eq!(signers.len(), owners.len());
+        for signer in &signers {
+            assert!(matches!(signer, SignerType::Ecdsa));
+        }
+    }
+
+    // Test decode_signers with MultiKeySigner data
+    #[test]
+    fn test_decode_signers_multi_key_signer_dummy_data() {
+        let multi_key_signer_address = address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F");
+
+        // Create enable session data with MultiKeySigner
+        // Format: count (1 byte) + (type (1 byte) + data)*
+        let mut validator_init_data = vec![2u8]; // 2 signers
+        validator_init_data.push(0u8); // ECDSA type
+        validator_init_data.extend_from_slice(&[0x11; 20]); // ECDSA address
+        validator_init_data.push(1u8); // Passkey type
+        validator_init_data.extend_from_slice(&[0x22; 64]); // Passkey data
+
+        // Decode signers for MultiKeySigner
+        let signers = decode_signers(Bytes::from(validator_init_data), multi_key_signer_address).unwrap();
+        
+        // Should return correct signer types
+        assert_eq!(signers.len(), 2);
+        assert!(matches!(signers[0], SignerType::Ecdsa));
+        assert!(matches!(signers[1], SignerType::Passkey));
+    }
+
+    // Test that decode_signers properly handles validator address
+    #[test]
+    fn test_decode_signers_uses_correct_validator_check() {
+        // Test with OwnableValidator address
+        let threshold = U256::from(2);
+        let owners = vec![
+            address!("1111111111111111111111111111111111111111"),
+            address!("2222222222222222222222222222222222222222"),
+        ];
+        let data = Bytes::from((threshold, owners.clone()).abi_encode_params());
+
+        // Should properly detect OwnableValidator format
+        let signers = decode_signers(data.clone(), OWNABLE_VALIDATOR_ADDRESS).unwrap();
+        assert_eq!(signers.len(), owners.len());
+        for signer in &signers {
+            assert!(matches!(signer, SignerType::Ecdsa));
+        }
+
+        // Same data with different validator address should fall back to custom format
+        let other_validator = address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F");
+        let result = decode_signers(data, other_validator);
+        // This should fail because it tries to parse as custom format
+        assert!(result.is_err());
+    }
+
+    // Test signature format conversion for both validator types
+    #[test]
+    fn test_signature_format_conversion_respects_validator_type() {
+        let sig1 = bytes!("e8b94748580ca0b4993c9a1b86b5be851bfc076ff5ce3a1ff65bf16392acfcb800f9b4f1aef1555c7fce5599fffb17e7c635502154a0333ba21f3ae491839af51c");
+        let sig2 = bytes!("fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba098765432101");
+
+        // Test OwnableValidator: ABI-encoded -> concatenated
+        let signature_array = vec![sig1.clone(), sig2.clone()];
+        let abi_encoded = signature_array.abi_encode();
+
+        let result =
+            decode_and_convert_signature_format(abi_encoded.clone(), OWNABLE_VALIDATOR_ADDRESS)
+                .unwrap();
+        let expected_concat = [sig1.to_vec(), sig2.to_vec()].concat();
+        assert_eq!(result, expected_concat);
+
+        // Test MultiKeySigner: concatenated -> ABI-encoded
+        let concatenated = [sig1.to_vec(), sig2.to_vec()].concat();
+        let multi_key_signer = address!("207b90941d9cff79A750C1E5c05dDaA17eA01B9F");
+
+        let result = decode_and_convert_signature_format(concatenated, multi_key_signer).unwrap();
+        assert_eq!(result, abi_encoded);
+    }
+
+    // Ensure is_ownable_validator_address is used consistently
+    #[test]
+    fn test_ownable_validator_address_consistency() {
+        // The constant should match what the helper function returns
+        assert!(is_ownable_validator_address(OWNABLE_VALIDATOR_ADDRESS));
+
+        // Other addresses should not be recognized as OwnableValidator
+        assert!(!is_ownable_validator_address(address!(
+            "207b90941d9cff79A750C1E5c05dDaA17eA01B9F"
+        )));
+        assert!(!is_ownable_validator_address(SMART_SESSIONS_ADDRESS));
     }
 }
