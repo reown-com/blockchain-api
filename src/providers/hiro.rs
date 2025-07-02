@@ -233,7 +233,6 @@ impl HiroProvider {
         let hyper_request = hyper::http::Request::builder()
             .method(Method::GET)
             .uri(uri)
-            .header("Content-Type", "application/json")
             .body(hyper::body::Body::empty())?;
 
         let response = self.client.request(hyper_request).await?;
