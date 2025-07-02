@@ -291,13 +291,8 @@ async fn handler_internal(
             split_permissions_context_and_check_validator(&context)?;
 
         // TODO refactor into yttrium
-        let dummy_signature = get_dummy_signature(
-            request.from,
-            signature,
-            account_type,
-            &provider,
-        )
-        .await?;
+        let dummy_signature =
+            get_dummy_signature(request.from, signature, account_type, &provider).await?;
 
         // https://github.com/reown-com/web-examples/blob/32f9df464e2fa85ec49c21837d811cfe1437719e/advanced/wallets/react-wallet-v2/src/lib/smart-accounts/builders/SafeUserOpBuilder.ts#L110
         let nonce = get_nonce_with_key(
@@ -1164,7 +1159,7 @@ mod tests {
 
         // Decode signers for OwnableValidator
         let signers = decode_signers(validator_init_data, OWNABLE_VALIDATOR_ADDRESS).unwrap();
-        
+
         // Should return ECDSA signers for each owner
         assert_eq!(signers.len(), owners.len());
         for signer in &signers {
@@ -1186,8 +1181,9 @@ mod tests {
         validator_init_data.extend_from_slice(&[0x22; 64]); // Passkey data
 
         // Decode signers for MultiKeySigner
-        let signers = decode_signers(Bytes::from(validator_init_data), multi_key_signer_address).unwrap();
-        
+        let signers =
+            decode_signers(Bytes::from(validator_init_data), multi_key_signer_address).unwrap();
+
         // Should return correct signer types
         assert_eq!(signers.len(), 2);
         assert!(matches!(signers[0], SignerType::Ecdsa));
