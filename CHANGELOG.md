@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.259.1 - 2025-07-02
+#### Bug Fixes
+- Improve Allnodes error handling with detailed error logging (#1134) - (a73855a) - Chris Smith
+
+- - -
+
 ## 0.259.0 - 2025-07-02
 #### Features
 - **(Hiro)** adding transfer fee endpoint support (#1128) - (ddd5f49) - Alfreedom
