@@ -240,10 +240,13 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .propagate_x_request_id();
 
     let app = Router::new()
+        // HTTP RPC proxy (POST method only) with the trailing slash alias
         .route("/v1", post(handlers::proxy::handler))
         .route("/v1/", post(handlers::proxy::handler))
-        .route("/v1/supported-chains", get(handlers::supported_chains::handler))
+        // WebSocket RPC proxy (GET method only) with the /ws alias
+        .route("/v1", get(handlers::ws_proxy::handler))
         .route("/ws", get(handlers::ws_proxy::handler))
+        .route("/v1/supported-chains", get(handlers::supported_chains::handler))
         .route("/v1/identity/:address", get(handlers::identity::handler))
         .route(
             "/v1/account/:address/identity",
