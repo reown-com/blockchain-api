@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.260.0 - 2025-07-02
+#### Features
+- **(RPC)** allowing WSS RPC requests to the standart /v1 endpoint (#1127) - (ec4a70c) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.259.1 - 2025-07-02
 #### Bug Fixes
 - Improve Allnodes error handling with detailed error logging (#1134) - (a73855a) - Chris Smith
