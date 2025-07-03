@@ -3,7 +3,7 @@ use {
     crate::{
         analytics::MessageInfo,
         error::RpcError,
-        providers::ProviderKind,
+        providers::{is_internal_error_rpc_code, ProviderKind},
         state::AppState,
         utils::{batch_json_rpc_request::MaybeBatchRequest, crypto, network},
     },
@@ -157,6 +157,20 @@ pub async fn rpc_call(
 
         match response {
             Ok(response) if !response.status().is_server_error() => {
+                // Check for internal error codes range
+                // -32000 to -32099 in response and write to metrics
+                // https://www.jsonrpc.org/specification#error_object
+                if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+                    if let Some(error) = &response.error {
+                        if is_internal_error_rpc_code(error.code) {
+                            state.metrics.add_internal_error_code_for_provider(
+                                provider.provider_kind(),
+                                chain_id.clone(),
+                                error.code,
+                            );
+                        }
+                    }
+                }
                 return Ok(response);
             }
             e => {
