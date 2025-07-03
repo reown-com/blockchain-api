@@ -243,8 +243,9 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         // HTTP RPC proxy (POST method only) with the trailing slash alias
         .route("/v1", post(handlers::proxy::handler))
         .route("/v1/", post(handlers::proxy::handler))
-        // WebSocket RPC proxy (GET method only) with the /ws alias
+        // WebSocket RPC proxy (GET method only) with the /ws and trailing slash alias
         .route("/v1", get(handlers::ws_proxy::handler))
+        .route("/v1/", get(handlers::ws_proxy::handler))
         .route("/ws", get(handlers::ws_proxy::handler))
         .route("/v1/supported-chains", get(handlers::supported_chains::handler))
         .route("/v1/identity/:address", get(handlers::identity::handler))
