@@ -281,7 +281,7 @@ pub async fn rpc_provider_call(
         })?;
 
     state.metrics.add_status_code_for_provider(
-        provider.provider_kind(),
+        &provider.provider_kind(),
         response.status().as_u16(),
         Some(chain_id),
         None,
@@ -296,7 +296,7 @@ pub async fn rpc_provider_call(
 
     state
         .metrics
-        .add_external_http_latency(provider.provider_kind(), external_call_start, None);
+        .add_external_http_latency(&provider.provider_kind(), external_call_start, None);
 
     match response.status() {
         http::StatusCode::OK | http::StatusCode::BAD_REQUEST => {

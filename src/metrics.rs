@@ -417,7 +417,7 @@ impl Metrics {
 
     pub fn add_external_http_latency(
         &self,
-        provider_kind: ProviderKind,
+        provider_kind: &ProviderKind,
         start: SystemTime,
         endpoint: Option<String>,
     ) {
@@ -483,7 +483,7 @@ impl Metrics {
 
     pub fn add_status_code_for_provider(
         &self,
-        provider_kind: ProviderKind,
+        provider_kind: &ProviderKind,
         status: u16,
         chain_id: Option<String>,
         endpoint: Option<String>,
@@ -505,7 +505,7 @@ impl Metrics {
 
     pub fn add_latency_and_status_code_for_provider(
         &self,
-        provider_kind: ProviderKind,
+        provider_kind: &ProviderKind,
         status: u16,
         latency: SystemTime,
         chain_id: Option<String>,

@@ -1,6 +1,6 @@
 use {
     crate::{
-        env::Config,
+        env::{Config, GenericConfig},
         handlers::{
             balance::BalanceResponseBody, identity::IdentityResponse, rate_limit_middleware,
             status_latency_metrics_middleware,
@@ -30,13 +30,13 @@ use {
     http::Request,
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
-        AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
-        BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider,
-        HiroProvider, MantleProvider, MonadProvider, MoonbeamProvider, MorphProvider, NearProvider,
-        OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider,
-        RootstockProvider, SolScanProvider, SuiProvider, SyndicaProvider, SyndicaWsProvider,
-        TheRpcProvider, UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider,
-        ZoraProvider, ZoraWsProvider,
+        generic::GenericProvider, AllnodesProvider, AllnodesWsProvider, ArbitrumProvider,
+        AuroraProvider, BaseProvider, BinanceProvider, BlastProvider, CallStaticProvider,
+        DrpcProvider, DuneProvider, HiroProvider, MantleProvider, MonadProvider, MoonbeamProvider,
+        MorphProvider, NearProvider, OdysseyProvider, PoktProvider, ProviderRepository,
+        PublicnodeProvider, QuicknodeProvider, RootstockProvider, SolScanProvider, SuiProvider,
+        SyndicaProvider, SyndicaWsProvider, TheRpcProvider, UnichainProvider, WemixProvider,
+        ZKSyncProvider, ZerionProvider, ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -80,6 +80,7 @@ mod storage;
 pub mod test_helpers;
 pub mod utils;
 mod ws;
+pub mod yaml;
 
 pub async fn bootstrap(config: Config) -> RpcResult<()> {
     ServiceMetrics::init_with_name("rpc-proxy");
@@ -559,6 +560,16 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_ws_provider::<SyndicaWsProvider, SyndicaConfig>(SyndicaConfig::new(
         config.syndica_api_key.clone(),
     ));
+
+    for chain in &yaml::ACTIVE_CONFIG.chains {
+        for provider in &chain.providers {
+            providers.add_rpc_provider::<GenericProvider, GenericConfig>(GenericConfig {
+                caip2: chain.caip2.clone(),
+                name: chain.name.clone(),
+                provider: provider.clone(),
+            });
+        }
+    }
 
     providers.add_balance_provider::<ZerionProvider, ZerionConfig>(
         ZerionConfig::new(config.zerion_api_key.clone()),
