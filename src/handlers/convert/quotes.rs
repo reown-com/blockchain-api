@@ -63,7 +63,7 @@ async fn handler_internal(
         .get_convert_quote(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call get conversion quotes with {}", e);
+            error!("Failed to call get conversion quotes with {e}");
         })?;
 
     Ok(Json(response).into_response())

@@ -87,6 +87,13 @@ impl RpcProvider for PoktProvider {
                 if error.code == -32603 {
                     return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
                 }
+                // Check if the error message is a Go node internal unmarshal error
+                if error
+                    .message
+                    .contains("cannot unmarshal array into Go value")
+                {
+                    return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
+                }
             }
         }
 

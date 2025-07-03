@@ -110,6 +110,9 @@ pub enum RpcError {
     #[error(transparent)]
     AxumTungstenite(Box<axum_tungstenite::Error>),
 
+    #[error("Only WebSocket connections are supported for GET method on this endpoint")]
+    WebSocketConnectionExpected,
+
     #[error(transparent)]
     RateLimited(#[from] wc::rate_limit::RateLimitExceeded),
 
@@ -315,7 +318,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "".to_string(),
-                    format!("Crypto utils error: {}", e),
+                    format!("Crypto utils error: {e}"),
                 )),
             )
                 .into_response(),
@@ -363,7 +366,7 @@ impl IntoResponse for RpcError {
                 StatusCode::SERVICE_UNAVAILABLE,
                 Json(new_error_response(
                     "".to_string(),
-                    format!("We failed to reach the identity provider with an error: {}", e),
+                    format!("We failed to reach the identity provider with an error: {e}"),
                 )),
             )
                 .into_response(),
@@ -372,6 +375,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "scheme".to_string(),
                     "Invalid scheme used. Try http(s):// or ws(s)://".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::WebSocketConnectionExpected => (
+                StatusCode::UPGRADE_REQUIRED,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Only WebSocket connections are supported for GET method on this endpoint".to_string(),
                 )),
             )
                 .into_response(),
@@ -411,7 +422,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "".to_string(),
-                    format!("Invalid parameter: {}", e),
+                    format!("Invalid parameter: {e}"),
                 )),
             )
                 .into_response(),
@@ -421,7 +432,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "name".to_string(),
-                    format!("Invalid name format: {}", e),
+                    format!("Invalid name format: {e}"),
                 )),
             )
                 .into_response(),
@@ -429,7 +440,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "name".to_string(),
-                    format!("Invalid name length: {}", e),
+                    format!("Invalid name length: {e}"),
                 )),
             )
                 .into_response(),
@@ -437,7 +448,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "name".to_string(),
-                    format!("Name is not in the allowed zones: {}", e),
+                    format!("Name is not in the allowed zones: {e}"),
                 )),
             )
                 .into_response(),
@@ -445,7 +456,7 @@ impl IntoResponse for RpcError {
                     StatusCode::BAD_REQUEST,
                     Json(new_error_response(
                         "".to_string(),
-                        format!("Conversion parameter error: {}", e),
+                        format!("Conversion parameter error: {e}"),
                     )),
                 )
                     .into_response(),
@@ -453,7 +464,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response_with_code(
                     code.to_string(),
-                    format!("Conversion parameter error: {}", message),
+                    format!("Conversion parameter error: {message}"),
                 )),
             )
                 .into_response(),
@@ -461,7 +472,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "coin_type".to_string(),
-                    format!("Unsupported coin type: {}", e),
+                    format!("Unsupported coin type: {e}"),
                 )),
             )
                 .into_response(),
@@ -469,7 +480,7 @@ impl IntoResponse for RpcError {
                     StatusCode::BAD_REQUEST,
                     Json(new_error_response(
                         "address".to_string(),
-                        format!("Unsupported namespace: {}", e),
+                        format!("Unsupported namespace: {e}"),
                     )),
                 )
                     .into_response(),
@@ -485,7 +496,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "name".to_string(),
-                    format!("Name is already registered: {}", e),
+                    format!("Name is already registered: {e}"),
                 )),
             )
                 .into_response(),
@@ -493,7 +504,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "name".to_string(),
-                    format!("Name is not registered: {}", e),
+                    format!("Name is not registered: {e}"),
                 )),
             )
                 .into_response(),
@@ -501,7 +512,7 @@ impl IntoResponse for RpcError {
                 StatusCode::NOT_FOUND,
                 Json(new_error_response(
                     "name".to_string(),
-                    format!("Name is not found in the database: {}", e),
+                    format!("Name is not found in the database: {e}"),
                 )),
             )
                 .into_response(),
@@ -517,7 +528,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "timestamp".to_string(),
-                    format!("Signature UNIXTIME timestamp is too old: {}", e),
+                    format!("Signature UNIXTIME timestamp is too old: {e}"),
                 )),
             )
                 .into_response(),
@@ -525,7 +536,7 @@ impl IntoResponse for RpcError {
                 StatusCode::UNAUTHORIZED,
                 Json(new_error_response(
                     "signature".to_string(),
-                    format!("Signature validation error: {}", e),
+                    format!("Signature validation error: {e}"),
                 )),
             )
                 .into_response(),
@@ -541,7 +552,7 @@ impl IntoResponse for RpcError {
                 StatusCode::UNPROCESSABLE_ENTITY,
                 Json(new_error_response(
                     "".to_string(),
-                    format!("Deserialization error: {}", e),
+                    format!("Deserialization error: {e}"),
                 )),
             )
                 .into_response(),
@@ -549,22 +560,20 @@ impl IntoResponse for RpcError {
                 StatusCode::TOO_MANY_REQUESTS,
                 Json(new_error_response(
                     "rate_limit".to_string(),
-                    format!("Rate limited: {}", e),
+                    format!("Rate limited: {e}"),
                 )),
             )
                 .into_response(),
             Self::PermissionNotFound(address, pci) => {
                 // TODO: Remove this debug log
                 print!(
-                    "Permission not found with PCI: {:?} and address: {:?}",
-                    pci,
-                    address
+                    "Permission not found with PCI: {pci:?} and address: {address:?}"
                 );
                 (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "pci".to_string(),
-                    format!("Permission for PCI is not found: {}", pci),
+                    format!("Permission for PCI is not found: {pci}"),
                 )),
             )
                 .into_response()
@@ -573,7 +582,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "pci".to_string(),
-                    format!("Permission is revoked: {}", pci),
+                    format!("Permission is revoked: {pci}"),
                 )),
             )
                 .into_response(),
@@ -581,7 +590,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "pci".to_string(),
-                    format!("Permission is expired: {}", pci),
+                    format!("Permission is expired: {pci}"),
                 )),
             )
                 .into_response(),
@@ -589,7 +598,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "".to_string(),
-                    format!("Wrong Base64 format: {}", e),
+                    format!("Wrong Base64 format: {e}"),
                 )),
             )
                 .into_response(),
@@ -597,7 +606,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "key".to_string(),
-                    format!("Invalid key format: {}", e),
+                    format!("Invalid key format: {e}"),
                 )),
             )
                 .into_response(),
@@ -605,7 +614,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "signature".to_string(),
-                    format!("Invalid signature format: {}", e),
+                    format!("Invalid signature format: {e}"),
                 )),
             )
                 .into_response(),
@@ -621,7 +630,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "calldata".to_string(),
-                    format!("ABI signature decoding error: {}", e),
+                    format!("ABI signature decoding error: {e}"),
                 )),
             )
                 .into_response(),
@@ -661,7 +670,7 @@ impl IntoResponse for RpcError {
                 StatusCode::SERVICE_UNAVAILABLE,
                 Json(new_error_response(
                     "".to_string(),
-                    format!("Fungibles price provider is temporarily unavailable: {}", e),
+                    format!("Fungibles price provider is temporarily unavailable: {e}"),
                 )),
             )
                 .into_response(),
@@ -685,7 +694,7 @@ impl IntoResponse for RpcError {
                     StatusCode::UNAUTHORIZED,
                     Json(new_error_response(
                         "".to_string(),
-                        format!("Cosigner permission denied: {}", e),
+                        format!("Cosigner permission denied: {e}"),
                     )),
                 )
                     .into_response(),
@@ -693,7 +702,7 @@ impl IntoResponse for RpcError {
                 StatusCode::UNAUTHORIZED,
                 Json(new_error_response(
                     "".to_string(),
-                    format!("Unsupported permission in CoSigner: {}", e),
+                    format!("Unsupported permission in CoSigner: {e}"),
                 )),
             )
                 .into_response(),
@@ -701,7 +710,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "orchestrationId".to_string(),
-                    format!("Orchestration ID is not found: {}", id),
+                    format!("Orchestration ID is not found: {id}"),
                 )),
             )
                 .into_response(),

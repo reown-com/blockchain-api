@@ -185,7 +185,7 @@ pub async fn handler_internal(
     )
     .await;
     if let Err(e) = insert_result {
-        error!("Failed to insert new name: {}", e);
+        error!("Failed to insert new name: {e}");
         return Ok((StatusCode::INTERNAL_SERVER_ERROR, "").into_response());
     }
 
@@ -225,7 +225,7 @@ pub async fn handler_internal(
             )),
             _ => {
                 // Handle other types of errors
-                error!("Failed to lookup name: {}", e);
+                error!("Failed to lookup name: {e}");
                 return Ok((StatusCode::INTERNAL_SERVER_ERROR, "").into_response());
             }
         },

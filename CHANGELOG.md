@@ -2,6 +2,48 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.260.0 - 2025-07-02
+#### Features
+- **(RPC)** allowing WSS RPC requests to the standart /v1 endpoint (#1127) - (ec4a70c) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.259.1 - 2025-07-02
+#### Bug Fixes
+- Improve Allnodes error handling with detailed error logging (#1134) - (a73855a) - Chris Smith
+
+- - -
+
+## 0.259.0 - 2025-07-02
+#### Features
+- **(Hiro)** adding transfer fee endpoint support (#1128) - (ddd5f49) - Alfreedom
+
+- - -
+
+## 0.258.5 - 2025-07-01
+#### Bug Fixes
+- reverting #1131 and add only unmarshalling error catching (#1133) - (b6eacee) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.258.4 - 2025-07-01
+#### Bug Fixes
+- **(RPC)** proper handling of JSON-RPC internal error codes (#1131) - (5c0a9f0) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.258.3 - 2025-07-01
+#### Bug Fixes
+- **(Hiro)** fixing Hiro API response by wrapping it into the result field (#1130) - (1700051) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.258.2 - 2025-07-01
+#### Bug Fixes
+- fixing clippy errors due to the new Rust version (#1129) - (545eafe) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.258.1 - 2025-06-26
 #### Bug Fixes
 - **(Meld)** return quotes even if there is a bad request error (#1126) - (609c242) - Max Kalashnikoff | maksy.eth

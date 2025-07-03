@@ -29,6 +29,7 @@ pub enum SupportedMethods {
     StacksTransactions,
     StacksAccounts,
     StacksExtendedNonces,
+    StacksTransferFees,
     HiroFeesTransaction,
 }
 
@@ -40,6 +41,11 @@ pub struct TransactionsRequest {
 #[derive(Debug, Serialize)]
 pub struct FeesTransactionRequest {
     pub transaction_payload: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct HiroResult {
+    pub result: serde_json::Value,
 }
 
 impl Provider for HiroProvider {
@@ -64,6 +70,25 @@ impl RateLimited for HiroProvider {
 }
 
 impl HiroProvider {
+    /// Helper function to wrap response body in JSON-RPC format
+    /// that uses the `result` field to wrap the response body.
+    fn wrap_response_in_result(&self, body: &[u8]) -> Result<Vec<u8>, RpcError> {
+        let original_result = match serde_json::from_slice::<serde_json::Value>(body) {
+            Ok(value) => value,
+            Err(e) => {
+                return Err(RpcError::InvalidParameter(format!(
+                    "Failed to deserialize Hiro response: {e}"
+                )));
+            }
+        };
+        let wrapped_response = HiroResult {
+            result: original_result,
+        };
+        serde_json::to_vec(&wrapped_response).map_err(|e| {
+            RpcError::InvalidParameter(format!("Failed to serialize wrapped Hiro response: {e}"))
+        })
+    }
+
     // Send request to the Stacks `/v2/transactions` endpoint
     async fn transactions(&self, chain_id: String, tx: String) -> RpcResult<Response> {
         let uri = self
@@ -77,7 +102,7 @@ impl HiroProvider {
 
         let stacks_transactions_request = serde_json::to_string(&TransactionsRequest { tx })
             .map_err(|e| {
-                RpcError::InvalidParameter(format!("Failed to serialize transaction: {}", e))
+                RpcError::InvalidParameter(format!("Failed to serialize transaction: {e}"))
             })?;
 
         let hyper_request = hyper::http::Request::builder()
@@ -99,7 +124,8 @@ impl HiroProvider {
             }
         }
 
-        let mut response = (status, body).into_response();
+        let wrapped_body = self.wrap_response_in_result(&body)?;
+        let mut response = (status, wrapped_body).into_response();
         response
             .headers_mut()
             .insert("Content-Type", HeaderValue::from_static("application/json"));
@@ -136,7 +162,8 @@ impl HiroProvider {
             }
         }
 
-        let mut response = (status, body).into_response();
+        let wrapped_body = self.wrap_response_in_result(&body)?;
+        let mut response = (status, wrapped_body).into_response();
         response
             .headers_mut()
             .insert("Content-Type", HeaderValue::from_static("application/json"));
@@ -162,7 +189,7 @@ impl HiroProvider {
             transaction_payload,
         })
         .map_err(|e| {
-            RpcError::InvalidParameter(format!("Failed to serialize fees transaction: {}", e))
+            RpcError::InvalidParameter(format!("Failed to serialize fees transaction: {e}"))
         })?;
 
         let hyper_request = hyper::http::Request::builder()
@@ -184,7 +211,45 @@ impl HiroProvider {
             }
         }
 
-        let mut response = (status, body).into_response();
+        let wrapped_body = self.wrap_response_in_result(&body)?;
+        let mut response = (status, wrapped_body).into_response();
+        response
+            .headers_mut()
+            .insert("Content-Type", HeaderValue::from_static("application/json"));
+        Ok(response)
+    }
+
+    // Send request to the Stacks `/v2/fees/transfer` endpoint
+    async fn transfer_fees(&self, chain_id: String) -> RpcResult<Response> {
+        let uri = self
+            .supported_chains
+            .get(&chain_id)
+            .ok_or(RpcError::ChainNotFound)?;
+        let uri = format!("{}/v2/fees/transfer", uri.trim_end_matches('/'));
+        let uri = uri.parse::<hyper::Uri>().map_err(|_| {
+            RpcError::InvalidParameter("Failed to parse URI for stacks_transfer_fees".into())
+        })?;
+
+        let hyper_request = hyper::http::Request::builder()
+            .method(Method::GET)
+            .uri(uri)
+            .body(hyper::body::Body::empty())?;
+
+        let response = self.client.request(hyper_request).await?;
+        let status = response.status();
+        let body = hyper::body::to_bytes(response.into_body()).await?;
+
+        if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+            if response.error.is_some() && status.is_success() {
+                debug!(
+                    "Strange: provider returned JSON RPC error, but status {status} is success: \
+                 Stacks transfer fees: {response:?}"
+                );
+            }
+        }
+
+        let wrapped_body = self.wrap_response_in_result(&body)?;
+        let mut response = (status, wrapped_body).into_response();
         response
             .headers_mut()
             .insert("Content-Type", HeaderValue::from_static("application/json"));
@@ -225,7 +290,8 @@ impl HiroProvider {
             }
         }
 
-        let mut response = (status, body).into_response();
+        let wrapped_body = self.wrap_response_in_result(&body)?;
+        let mut response = (status, wrapped_body).into_response();
         response
             .headers_mut()
             .insert("Content-Type", HeaderValue::from_static("application/json"));
@@ -245,7 +311,7 @@ impl RpcProvider for HiroProvider {
         let method: SupportedMethods = serde_json::from_value(serde_json::Value::String(
             (*json_rpc_request.method).to_string(),
         ))
-        .map_err(|e| RpcError::InvalidParameter(format!("Invalid method provided: {:?}", e)))?;
+        .map_err(|e| RpcError::InvalidParameter(format!("Invalid method provided: {e:?}")))?;
 
         match method {
             SupportedMethods::StacksTransactions => {
@@ -301,6 +367,9 @@ impl RpcProvider for HiroProvider {
                 return self
                     .fees_transaction(chain_id.to_string(), transaction_payload)
                     .await;
+            }
+            SupportedMethods::StacksTransferFees => {
+                return self.transfer_fees(chain_id.to_string()).await;
             }
             SupportedMethods::StacksExtendedNonces => {
                 // Create the request body for stacks extended nonces endpoint schema

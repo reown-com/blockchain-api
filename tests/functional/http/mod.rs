@@ -58,7 +58,7 @@ async fn check_if_rpc_is_responding_correctly_for_supported_chain(
             // Check chainId
             assert_eq!(rpc_response.result::<String>().unwrap(), expected_id)
         }
-        _ => panic!("Unexpected status code: {}", status),
+        _ => panic!("Unexpected status code: {status}"),
     };
 }
 
@@ -97,7 +97,7 @@ async fn check_if_rpc_is_responding_correctly_for_near_protocol(
                 "mainnet"
             )
         }
-        _ => panic!("Unexpected status code: {}", status),
+        _ => panic!("Unexpected status code: {status}"),
     };
 }
 
@@ -120,7 +120,7 @@ async fn check_if_rpc_is_responding_correctly_for_solana(
     };
 
     let (status, rpc_response) =
-        send_jsonrpc_request(client, addr, &format!("solana:{}", chain_id), request).await;
+        send_jsonrpc_request(client, addr, &format!("solana:{chain_id}"), request).await;
 
     // Verify that HTTP communication was successful
     assert_eq!(status, StatusCode::OK);
@@ -152,7 +152,7 @@ async fn check_if_rpc_is_responding_correctly_for_sui(
     };
 
     let (status, rpc_response) =
-        send_jsonrpc_request(client, addr, &format!("sui:{}", chain_id), request).await;
+        send_jsonrpc_request(client, addr, &format!("sui:{chain_id}"), request).await;
 
     // Verify that HTTP communication was successful
     assert_eq!(status, StatusCode::OK);
@@ -183,7 +183,7 @@ async fn check_if_rpc_is_responding_correctly_for_bitcoin(
     };
 
     let (status, rpc_response) =
-        send_jsonrpc_request(client, addr, &format!("bip122:{}", chain_id), request).await;
+        send_jsonrpc_request(client, addr, &format!("bip122:{chain_id}"), request).await;
 
     // Verify that HTTP communication was successful
     assert_eq!(status, StatusCode::OK);

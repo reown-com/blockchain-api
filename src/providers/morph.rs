@@ -51,7 +51,7 @@ impl RpcProvider for MorphProvider {
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let uri = format!("https://{}.morphl2.io", chain);
+        let uri = format!("https://{chain}.morphl2.io");
 
         let hyper_request = hyper::http::Request::builder()
             .method(Method::POST)

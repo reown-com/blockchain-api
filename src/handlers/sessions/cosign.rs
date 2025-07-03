@@ -106,7 +106,7 @@ async fn handler_internal(
         return Err(RpcError::UnsupportedChain(chain_id.clone()));
     }
 
-    let chain_id_caip2 = format!("{}:{}", namespace, chain_id);
+    let chain_id_caip2 = format!("{namespace}:{chain_id}");
     let mut user_op = request_payload.user_op.clone();
 
     // Project ID for internal json-rpc calls

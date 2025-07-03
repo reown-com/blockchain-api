@@ -35,7 +35,7 @@ async fn handler_internal(
     let names = match get_names_by_address(address, &state.postgres).await {
         Ok(names) => names,
         Err(e) => {
-            error!("Error on get names by address: {}", e);
+            error!("Error on get names by address: {e}");
             return Ok((StatusCode::INTERNAL_SERVER_ERROR, "").into_response());
         }
     };
@@ -55,10 +55,7 @@ async fn handler_internal(
             Ok(response) => result.push(response),
             Err(e) => {
                 // Unexpected behavior when looking up a name for an address
-                error!(
-                    "Unexpected behavior when looking up a name for an address: {}",
-                    e
-                );
+                error!("Unexpected behavior when looking up a name for an address: {e}");
                 return Ok((StatusCode::INTERNAL_SERVER_ERROR, "").into_response());
             }
         }

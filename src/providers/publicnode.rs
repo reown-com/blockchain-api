@@ -51,7 +51,7 @@ impl RpcProvider for PublicnodeProvider {
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let uri = format!("https://{}.publicnode.com", chain);
+        let uri = format!("https://{chain}.publicnode.com");
 
         let hyper_request = hyper::http::Request::builder()
             .method(Method::POST)

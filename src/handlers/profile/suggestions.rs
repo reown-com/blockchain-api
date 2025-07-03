@@ -69,7 +69,7 @@ async fn handler_internal(
 
     // Adding the exact match for the main zone to check if it is
     // registered
-    let exact_name_with_zone = format!("{}.{}", name, zone);
+    let exact_name_with_zone = format!("{name}.{zone}");
     suggestions.push(NameSuggestion {
         name: exact_name_with_zone.clone(),
         registered: is_name_registered(exact_name_with_zone, &state.postgres).await,
@@ -78,7 +78,7 @@ async fn handler_internal(
     // Iterate found dictionary candidates and check if they are registered
     for suggested_name in candidates {
         // Get name suggestion for the main zone if the name is free
-        let name_with_zone = format!("{}.{}", suggested_name, zone);
+        let name_with_zone = format!("{suggested_name}.{zone}");
         let is_registered = is_name_registered(name_with_zone.clone(), &state.postgres).await;
 
         if !is_registered {
