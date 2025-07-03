@@ -1,5 +1,8 @@
 use {
-    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
+    super::{
+        is_internal_error_rpc_code, is_node_error_rpc_message, is_rate_limited_error_rpc_message,
+        Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory,
+    },
     crate::{
         env::BinanceConfig,
         error::{RpcError, RpcResult},
@@ -65,11 +68,24 @@ impl RpcProvider for BinanceProvider {
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if response.error.is_some() && status.is_success() {
-                debug!(
-                    "Strange: provider returned JSON RPC error, but status {status} is success: \
-                     Binance: {response:?}"
-                );
+            if let Some(error) = &response.error {
+                if status.is_success() {
+                    debug!(
+                        "Strange: provider returned JSON RPC error, but status {status} is success: \
+                     Aurora: {response:?}"
+                    );
+                    // Handle internal error codes with message-based classification
+                    if is_internal_error_rpc_code(error.code) {
+                        if is_rate_limited_error_rpc_message(&error.message) {
+                            return Ok((http::StatusCode::TOO_MANY_REQUESTS, body).into_response());
+                        }
+                        if is_node_error_rpc_message(&error.message) {
+                            return Ok(
+                                (http::StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+                            );
+                        }
+                    }
+                }
             }
         }
 
