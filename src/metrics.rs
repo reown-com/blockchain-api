@@ -43,6 +43,7 @@ pub struct Metrics {
     pub provider_finished_call_counter: Counter<u64>,
     pub provider_failed_call_counter: Counter<u64>,
     pub no_providers_for_chain_counter: Counter<u64>,
+    pub found_provider_for_chain_counter: Counter<u64>,
     pub http_latency_tracker: Histogram<f64>,
     pub http_external_latency_tracker: Histogram<f64>,
     pub rejected_project_counter: Counter<u64>,
@@ -289,6 +290,13 @@ impl Metrics {
             .with_description("The number of chain RPC calls that had no available providers")
             .init();
 
+        let found_provider_for_chain_counter = meter
+            .u64_counter("found_provider_for_chain_counter")
+            .with_description(
+                "The number of chain RPC calls that had at least one available provider",
+            )
+            .init();
+
         let ca_gas_estimation_tracker = meter
             .f64_histogram("gas_estimation")
             .with_description("The gas estimation for transactions")
@@ -332,6 +340,7 @@ impl Metrics {
             provider_finished_call_counter,
             provider_status_code_counter,
             no_providers_for_chain_counter,
+            found_provider_for_chain_counter,
             weights_value_recorder,
             identity_lookup_counter,
             identity_lookup_success_counter,
@@ -528,6 +537,14 @@ impl Metrics {
 
     pub fn add_no_providers_for_chain(&self, chain_id: String) {
         self.no_providers_for_chain_counter.add(
+            &otel::Context::new(),
+            1,
+            &[otel::KeyValue::new("chain_id", chain_id)],
+        );
+    }
+
+    pub fn add_found_provider_for_chain(&self, chain_id: String) {
+        self.found_provider_for_chain_counter.add(
             &otel::Context::new(),
             1,
             &[otel::KeyValue::new("chain_id", chain_id)],
