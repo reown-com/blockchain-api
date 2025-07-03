@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.260.2 - 2025-07-03
+#### Bug Fixes
+- adding trailing slash alias (#1137) - (0a75929) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.260.1 - 2025-07-03
 #### Bug Fixes
 - reverting Allnodes error handling with detailed error logging (#1134)" (#1135) - (7dd35ee) - Max Kalashnikoff | maksy.eth
