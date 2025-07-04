@@ -12,9 +12,19 @@ describe('Account balance', () => {
   const currency = 'usd'
   const sdk_version = '4.1.9'
 
+  // Patch all httpClient.get calls to include the origin header
+  // because the balance RPC call is not allowed without the origin header
+  function withOriginHeader(options?: any) {
+    const origin = 'https://rpc.walletconnect.org';
+    if (!options) return { headers: { origin } };
+    if (!options.headers) return { ...options, headers: { origin } };
+    return { ...options, headers: { ...options.headers, origin } };
+  }
+
   it('fulfilled balance Ethereum address', async () => {
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/account/${fulfilled_eth_address}/balance?projectId=${projectId}&currency=${currency}&sv=${sdk_version}`
+      `${baseUrl}/v1/account/${fulfilled_eth_address}/balance?projectId=${projectId}&currency=${currency}&sv=${sdk_version}`,
+      withOriginHeader()
     )
     expect(resp.status).toBe(200)
     expect(typeof resp.data.balances).toBe('object')
@@ -38,11 +48,11 @@ describe('Account balance', () => {
   it('fulfilled balance Ethereum address (deprecated \'x-sdk-version\')', async () => {
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/account/${fulfilled_eth_address}/balance?projectId=${projectId}&currency=${currency}`,
-      {
+      withOriginHeader({
         headers: {
             'x-sdk-version': sdk_version,
         }
-      }
+      })
     )
     expect(resp.status).toBe(200)
     expect(typeof resp.data.balances).toBe('object')
@@ -52,7 +62,8 @@ describe('Account balance', () => {
   it('fulfilled balance Solana address', async () => {
     let chainId = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/account/${fulfilled_solana_address}/balance?projectId=${projectId}&currency=${currency}&chainId=${chainId}&sv=${sdk_version}`
+      `${baseUrl}/v1/account/${fulfilled_solana_address}/balance?projectId=${projectId}&currency=${currency}&chainId=${chainId}&sv=${sdk_version}`,
+      withOriginHeader()
     )
     expect(resp.status).toBe(200)
     expect(typeof resp.data.balances).toBe('object')
@@ -67,12 +78,23 @@ describe('Account balance', () => {
     }
   })
 
-  it('empty balance Ethereum address no version header', async () => {
+  it('empty balance response Ethereum address: no sdk version provided', async () => {
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/account/${fulfilled_eth_address}/balance?projectId=${projectId}&currency=${currency}`
+      `${baseUrl}/v1/account/${fulfilled_eth_address}/balance?projectId=${projectId}&currency=${currency}`,
+      withOriginHeader()
     )
     // We should expect the empty balance response for the sdk version prior to 4.1.9
     // that doesn't send the x-sdk-version header due to the bug in the SDK
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.balances).toBe('object')
+    expect(resp.data.balances).toHaveLength(0)
+  })
+
+  it('empty balance response Ethereum address: no origin header', async () => {
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/account/${fulfilled_eth_address}/balance?projectId=${projectId}&currency=${currency}&sv=${sdk_version}`,
+    )
+    // We should expect the empty balance response for an empty origin header request
     expect(resp.status).toBe(200)
     expect(typeof resp.data.balances).toBe('object')
     expect(resp.data.balances).toHaveLength(0)
@@ -83,7 +105,8 @@ describe('Account balance', () => {
     // Check for the version in query parameter
     for (const affected_sdk_version of affected_sdk_versions) {
       let resp: any = await httpClient.get(
-        `${baseUrl}/v1/account/${fulfilled_eth_address}/balance?projectId=${projectId}&currency=${currency}&sv=${affected_sdk_version}`
+        `${baseUrl}/v1/account/${fulfilled_eth_address}/balance?projectId=${projectId}&currency=${currency}&sv=${affected_sdk_version}`,
+        withOriginHeader()
       )
       // We should expect the empty balance response for the affected SDK version
       expect(resp.status).toBe(200)
@@ -94,11 +117,11 @@ describe('Account balance', () => {
     for (const affected_sdk_version of affected_sdk_versions) {
       let resp: any = await httpClient.get(
         `${baseUrl}/v1/account/${fulfilled_eth_address}/balance?projectId=${projectId}&currency=${currency}`,
-        {
+        withOriginHeader({
           headers: {
               'x-sdk-version': `react-wagmi-${affected_sdk_version}`,
           }
-        }
+        })
       )
       // We should expect the empty balance response for the affected SDK version
       expect(resp.status).toBe(200)
@@ -109,7 +132,8 @@ describe('Account balance', () => {
 
   it('empty balance Ethereum address', async () => {
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/account/${empty_eth_address}/balance?projectId=${projectId}&currency=${currency}&sv=${sdk_version}`
+      `${baseUrl}/v1/account/${empty_eth_address}/balance?projectId=${projectId}&currency=${currency}&sv=${sdk_version}`,
+      withOriginHeader()
     )
     expect(resp.status).toBe(200)
     expect(typeof resp.data.balances).toBe('object')
@@ -119,7 +143,8 @@ describe('Account balance', () => {
   it('empty balance Solana address', async () => {
     let chainId = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/account/${empty_solana_address}/balance?projectId=${projectId}&currency=${currency}&chainId=${chainId}&sv=${sdk_version}`
+      `${baseUrl}/v1/account/${empty_solana_address}/balance?projectId=${projectId}&currency=${currency}&chainId=${chainId}&sv=${sdk_version}`,
+      withOriginHeader()
     )
     expect(resp.status).toBe(200)
     expect(typeof resp.data.balances).toBe('object')
@@ -132,7 +157,7 @@ describe('Account balance', () => {
     const endpoint = `/v1/account/${fulfilled_eth_address}/balance`;
     const queryParams = `?projectId=${projectId}&currency=${currency}&sv=${sdk_version}&forceUpdate=${token_contract_address}`;
     const url = `${baseUrl}${endpoint}${queryParams}`;
-    let resp = await httpClient.get(url);
+    let resp = await httpClient.get(url, withOriginHeader());
     expect(resp.status).toBe(200)
     expect(typeof resp.data.balances).toBe('object')
     expect(resp.data.balances.length).toBeGreaterThan(1)
@@ -162,7 +187,7 @@ describe('Account balance', () => {
     const endpoint = `/v1/account/${zero_balance_address}/balance`;
     let queryParams = `?projectId=${projectId}&currency=${currency}&sv=${sdk_version}`;
     let url = `${baseUrl}${endpoint}${queryParams}`;
-    let resp = await httpClient.get(url);
+    let resp = await httpClient.get(url, withOriginHeader());
     expect(resp.status).toBe(200)
     expect(typeof resp.data.balances).toBe('object')
     expect(resp.data.balances.length).toBe(0)
@@ -170,7 +195,7 @@ describe('Account balance', () => {
     // Forcing update and checking injected balance in response
     queryParams = `${queryParams}&forceUpdate=${token_contract_address}`;
     url = `${baseUrl}${endpoint}${queryParams}`;
-    resp = await httpClient.get(url);
+    resp = await httpClient.get(url, withOriginHeader());
     expect(resp.status).toBe(200)
     expect(typeof resp.data.balances).toBe('object')
     expect(resp.data.balances.length).toBe(1)
@@ -186,7 +211,7 @@ describe('Account balance', () => {
     const endpoint = `/v1/account/${fulfilled_eth_address}/balance`;
     const queryParams = `?projectId=${projectId}&currency=${currency}&sv=${sdk_version}&forceUpdate=${token_contract_address}`;
     const url = `${baseUrl}${endpoint}${queryParams}`;
-    let resp = await httpClient.get(url);
+    let resp = await httpClient.get(url, withOriginHeader());
     expect(resp.status).toBe(200)
     expect(typeof resp.data.balances).toBe('object')
     expect(resp.data.balances.length).toBeGreaterThan(1)
