@@ -152,6 +152,16 @@ async fn handler_internal(
         }
     }
 
+    // Check if `origin`` is empty and return empty balance response in this case
+    let origin = headers
+        .get("origin")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    if origin.is_empty() {
+        debug!("Origin is empty, returning empty balance response");
+        return Ok(Json(BalanceResponseBody { balances: vec![] }));
+    }
+
     state.validate_project_access_and_quota(&project_id).await?;
 
     // if headers not contains `x-sdk-version` and `sv` query parameter then respond
