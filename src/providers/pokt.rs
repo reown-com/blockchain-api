@@ -74,33 +74,35 @@ impl RpcProvider for PoktProvider {
         let status = response.status();
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
-        if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if let Some(error) = &response.error {
-                if status.is_success() {
+        if status.is_success() {
+            if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+                if let Some(error) = &response.error {
                     debug!(
                         "Strange: provider returned JSON RPC error, but status {status} is \
                          success: Pokt: {response:?}"
                     );
-                }
-
-                // Handle specific error codes first (most specific to least specific)
-                match error.code {
-                    // Pokt-specific rate limit codes
-                    -32004 | -32068 => {
-                        return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response())
-                    }
-                    // Internal server error code
-                    -32603 => return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response()),
-                    // Handle other internal error codes with message-based classification
-                    code if is_internal_error_rpc_code(code) => {
-                        if is_rate_limited_error_rpc_message(&error.message) {
-                            return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response());
+                    match error.code {
+                        // Pokt-specific rate limit codes
+                        -32004 | -32068 => {
+                            return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response())
                         }
-                        if is_node_error_rpc_message(&error.message) {
-                            return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
+                        // Internal server error code
+                        -32603 => {
+                            return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response())
                         }
+                        // Handle other internal error codes with message-based classification
+                        code if is_internal_error_rpc_code(code) => {
+                            if is_rate_limited_error_rpc_message(&error.message) {
+                                return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response());
+                            }
+                            if is_node_error_rpc_message(&error.message) {
+                                return Ok(
+                                    (StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+                                );
+                            }
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
         }

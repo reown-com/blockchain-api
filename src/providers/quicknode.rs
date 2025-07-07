@@ -77,23 +77,18 @@ impl RpcProvider for QuicknodeProvider {
         let status = response.status();
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
-        if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if let Some(error) = &response.error {
-                if status.is_success() {
-                    debug!(
-                        "Strange: provider returned JSON RPC error, but status {status} is success: \
-                     Aurora: {response:?}"
-                    );
-                    // Handle internal error codes with message-based classification
-                    if is_internal_error_rpc_code(error.code) {
-                        if is_rate_limited_error_rpc_message(&error.message) {
-                            return Ok((http::StatusCode::TOO_MANY_REQUESTS, body).into_response());
-                        }
-                        if is_node_error_rpc_message(&error.message) {
-                            return Ok(
-                                (http::StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
-                            );
-                        }
+        if let Ok(json_response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+            if let Some(error) = &json_response.error {
+                debug!(
+                    "Strange: provider returned JSON RPC error, but status {status} is success: \
+                 Quicknode: {json_response:?}"
+                );
+                if is_internal_error_rpc_code(error.code) {
+                    if is_rate_limited_error_rpc_message(&error.message) {
+                        return Ok((http::StatusCode::TOO_MANY_REQUESTS, body).into_response());
+                    }
+                    if is_node_error_rpc_message(&error.message) {
+                        return Ok((http::StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
                     }
                 }
             }

@@ -66,14 +66,13 @@ impl RpcProvider for TheRpcProvider {
         let status = response.status();
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
-        if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if let Some(error) = &response.error {
-                if status.is_success() {
+        if status.is_success() {
+            if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+                if let Some(error) = &response.error {
                     debug!(
                         "Strange: provider returned JSON RPC error, but status {status} is \
                          success: TheRpc: {response:?}"
                     );
-                    // Handle specific error codes first (most specific to least specific)
                     match error.code {
                         // TheRpc-specific rate limit codes
                         -32029 => {

@@ -127,14 +127,13 @@ impl RpcProvider for AllnodesProvider {
         let status = response.status();
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
-        if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if let Some(error) = &response.error {
-                if status.is_success() {
+        if status.is_success() {
+            if let Ok(json_response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+                if let Some(error) = &json_response.error {
                     debug!(
                         "Strange: provider returned JSON RPC error, but status {status} is success: \
-                     Allnodes: {response:?}"
+                     Allnodes: {json_response:?}"
                     );
-                    // Handle internal error codes with message-based classification
                     if is_internal_error_rpc_code(error.code) {
                         if is_rate_limited_error_rpc_message(&error.message) {
                             return Ok((http::StatusCode::TOO_MANY_REQUESTS, body).into_response());
