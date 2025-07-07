@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.261.0 - 2025-07-07
+#### Features
+- **(balance)** respond with an empty array if no origin provided (#1139) - (0a1a2f2) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.260.2 - 2025-07-03
 #### Bug Fixes
 - adding trailing slash alias (#1137) - (0a75929) - Max Kalashnikoff | maksy.eth
