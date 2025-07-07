@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.263.0 - 2025-07-07
+#### Features
+- **(o11y)** implementing grafana panel for RPC server error codes (#1140) - (3af195a) - Max Kalashnikoff | maksy.eth
+- record metrics for available chain (#1132) - (5d7f559) - Chris Smith
+
+- - -
+
 ## 0.262.0 - 2025-07-07
 #### Features
 - **(RPC)** adding JSON-RPC response checks for possible node internal errors and rate limiting (#1138) - (0620d2d) - Max Kalashnikoff | maksy.eth
