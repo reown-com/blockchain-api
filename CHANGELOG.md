@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.262.0 - 2025-07-07
+#### Features
+- **(RPC)** adding JSON-RPC response checks for possible node internal errors and rate limiting (#1138) - (0620d2d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.261.0 - 2025-07-07
 #### Features
 - **(balance)** respond with an empty array if no origin provided (#1139) - (0a1a2f2) - Max Kalashnikoff | maksy.eth
