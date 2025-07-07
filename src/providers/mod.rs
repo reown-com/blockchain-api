@@ -80,8 +80,14 @@ pub fn is_rate_limited_error_rpc_message(error_message: &str) -> bool {
         || error_message.contains("exceeded quota")
         || error_message.contains("rate limit")
         || error_message.contains("rate-limit")
-        || error_message.contains("upgrade plan")
         || error_message.contains("paid")
+        || error_message.contains("upgrade plan")
+        || error_message.contains("subscription")
+        || error_message.contains("compute units for this month")
+        || error_message.contains("compute units exceeded")
+        || error_message.contains("your plan")
+        || error_message.contains("current plan")
+        || error_message.contains("you reached")
 }
 
 /// Checks if a JSON-RPC error code indicates a server error specific codes.
