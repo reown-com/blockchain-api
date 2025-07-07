@@ -63,6 +63,38 @@ use {
     yttrium::chain_abstraction::api::Transaction,
 };
 
+/// Checks if a JSON-RPC error message indicates common node error
+/// patterns that should be handled specially.
+pub fn is_node_error_rpc_message(error_message: &str) -> bool {
+    error_message.contains("cannot unmarshal")
+        || error_message.contains("Go value")
+        || error_message.contains("deserialization error")
+        || error_message.contains("node error")
+        || error_message.contains("try again later")
+}
+
+/// Checks if a JSON-RPC error message indicates common rate-limited
+/// patterns that should be handled specially.
+pub fn is_rate_limited_error_rpc_message(error_message: &str) -> bool {
+    error_message.contains("quota exceed")
+        || error_message.contains("exceeded quota")
+        || error_message.contains("rate limit")
+        || error_message.contains("rate-limit")
+        || error_message.contains("paid")
+        || error_message.contains("upgrade plan")
+        || error_message.contains("subscription")
+        || error_message.contains("compute units for this month")
+        || error_message.contains("compute units exceeded")
+        || error_message.contains("your plan")
+        || error_message.contains("current plan")
+        || error_message.contains("you reached")
+}
+
+/// Checks if a JSON-RPC error code indicates a server error specific codes.
+pub fn is_internal_error_rpc_code(error_code: i32) -> bool {
+    (-32099..=-32000).contains(&error_code)
+}
+
 mod allnodes;
 mod arbitrum;
 mod aurora;

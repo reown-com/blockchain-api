@@ -1,5 +1,8 @@
 use {
-    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
+    super::{
+        is_internal_error_rpc_code, is_node_error_rpc_message, is_rate_limited_error_rpc_message,
+        Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory,
+    },
     crate::{
         env::PoktConfig,
         error::{RpcError, RpcResult},
@@ -71,28 +74,35 @@ impl RpcProvider for PoktProvider {
         let status = response.status();
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
-        if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if let Some(error) = &response.error {
-                if status.is_success() {
+        if status.is_success() {
+            if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+                if let Some(error) = &response.error {
                     debug!(
                         "Strange: provider returned JSON RPC error, but status {status} is \
                          success: Pokt: {response:?}"
                     );
-                }
-                // Handling the custom rate limit error
-                // https://github.com/pokt-foundation/portal-api/blob/a53c4952944041ba2749178907397963d7254baa/src/controllers/v1.controller.ts#L348
-                if error.code == -32004 || error.code == -32068 {
-                    return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response());
-                }
-                if error.code == -32603 {
-                    return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
-                }
-                // Check if the error message is a Go node internal unmarshal error
-                if error
-                    .message
-                    .contains("cannot unmarshal array into Go value")
-                {
-                    return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
+                    match error.code {
+                        // Pokt-specific rate limit codes
+                        -32004 | -32068 => {
+                            return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response())
+                        }
+                        // Internal server error code
+                        -32603 => {
+                            return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response())
+                        }
+                        // Handle other internal error codes with message-based classification
+                        code if is_internal_error_rpc_code(code) => {
+                            if is_rate_limited_error_rpc_message(&error.message) {
+                                return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response());
+                            }
+                            if is_node_error_rpc_message(&error.message) {
+                                return Ok(
+                                    (StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+                                );
+                            }
+                        }
+                        _ => {}
+                    }
                 }
             }
         }

@@ -49,6 +49,7 @@ pub struct Metrics {
     pub quota_limited_project_counter: Counter<u64>,
     pub rate_limited_call_counter: Counter<u64>,
     pub provider_status_code_counter: Counter<u64>,
+    pub provider_internal_error_code_counter: Counter<u64>,
     pub weights_value_recorder: Histogram<u64>,
     pub identity_lookup_latency_tracker: Histogram<f64>,
     pub identity_lookup_counter: Counter<u64>,
@@ -153,6 +154,13 @@ impl Metrics {
         let provider_status_code_counter = meter
             .u64_counter("provider_status_code_counter")
             .with_description("The count of status codes returned by providers")
+            .init();
+
+        let provider_internal_error_code_counter = meter
+            .u64_counter("provider_internal_error_code_counter")
+            .with_description(
+                "The count of JSON-RPC internal error codes returned by providers response",
+            )
             .init();
 
         let weights_value_recorder = meter
@@ -331,6 +339,7 @@ impl Metrics {
             provider_failed_call_counter,
             provider_finished_call_counter,
             provider_status_code_counter,
+            provider_internal_error_code_counter,
             no_providers_for_chain_counter,
             weights_value_recorder,
             identity_lookup_counter,
@@ -500,6 +509,22 @@ impl Metrics {
         }
 
         self.provider_status_code_counter
+            .add(&otel::Context::new(), 1, &attributes)
+    }
+
+    pub fn add_internal_error_code_for_provider(
+        &self,
+        provider_kind: ProviderKind,
+        chain_id: String,
+        code: i32,
+    ) {
+        let attributes = vec![
+            otel::KeyValue::new("provider", provider_kind.to_string()),
+            otel::KeyValue::new("chain_id", chain_id),
+            otel::KeyValue::new("code", format!("{code}")),
+        ];
+
+        self.provider_internal_error_code_counter
             .add(&otel::Context::new(), 1, &attributes)
     }
 
