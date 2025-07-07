@@ -152,7 +152,7 @@ async fn handler_internal(
         }
     }
 
-    // Check if `origin`` is empty and return empty balance response in this case
+    // Check if `origin` is empty and return empty balance response in this case
     let origin = headers
         .get("origin")
         .and_then(|v| v.to_str().ok())
