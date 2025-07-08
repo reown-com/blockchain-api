@@ -81,7 +81,7 @@ local error_alert(vars) = alert.new(
 
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
-      expr          = '(1-(sum(rate(http_call_counter_total{code=~"5[0-9][0-9]", route="/v1/convert/gas-price"}[$__rate_interval])) or vector(0))/(sum(rate(http_call_counter_total{route="/v1/convert/build-transaction"}[$__rate_interval]))))*100',
+      expr          = '(1-(sum(rate(http_call_counter_total{code=~"5[0-9][0-9]", route="/v1/convert/gas-price"}[$__rate_interval])) or vector(0))/(sum(rate(http_call_counter_total{route="/v1/convert/gas-price"}[$__rate_interval]))))*100',
       refId         = 'swaps_gas_price_availability',
       exemplar      = false,
       legendFormat  = 'Gas price',
