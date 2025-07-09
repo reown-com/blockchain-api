@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.263.1 - 2025-07-09
+#### Bug Fixes
+- **(1Inch)** adding a proper handling of the API's 404 response in get_gas_price and get_allowance (#1143) - (04f6121) - Max Kalashnikoff | maksy.eth
+- **(o11y)** fixing swap endpoints availability chart (#1141) - (65725be) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.263.0 - 2025-07-07
 #### Features
 - **(o11y)** implementing grafana panel for RPC server error codes (#1140) - (3af195a) - Max Kalashnikoff | maksy.eth
