@@ -33,6 +33,32 @@ local vars  = {
   chain_config: import 'chain_config.json',
 };
 
+/**
+  * @name layout.generate_grid_recursive
+  *
+  * Recursive helper function that flattens panels from rows and processes them.
+  *
+  * @param panels List of panels to process
+  * @param processed List of already processed panels
+  *
+  * @return List of panels with computed grid positions
+  */
+local generate_grid_recursive(panels, processed) =
+    if std.length(panels) == 0 then
+      layout.generate_grid(processed)
+    else
+      local current = panels[0];
+      local remaining = std.slice(panels, 1, null, null);
+      
+      if std.objectHas(current, 'type') && current.type == 'row' && std.objectHas(current, 'panels') then
+        // This is a row with nested panels - flatten them
+        generate_grid_recursive(remaining, processed + [current] + current.panels)
+      else
+        // This is a regular panel
+        generate_grid_recursive(remaining, processed + [current]);
+
+local generate_grid(panels) = generate_grid_recursive(panels, []);
+
 ////////////////////////////////////////////////////////////////////////////////
 
 local height    = 8;
@@ -65,7 +91,7 @@ dashboard.new(
   )
 )
 
-.addPanels(layout.generate_grid([
+.addPanels(generate_grid([
   row.new('Application'),
     panels.ecs.availability(ds, vars)                { gridPos: pos._3 },
     panels.lb.error_5xx(ds, vars)                    { gridPos: pos._3 },
