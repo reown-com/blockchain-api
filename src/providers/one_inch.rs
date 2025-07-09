@@ -684,6 +684,13 @@ impl ConversionProvider for OneInchProvider {
                 };
                 return Err(RpcError::ConversionInvalidParameter(response_error));
             }
+            // 404 response is expected when the chain ID is not supported
+            if response.status() == reqwest::StatusCode::NOT_FOUND {
+                return Err(RpcError::ConversionInvalidParameter(format!(
+                    "Chain ID {} is not supported",
+                    params.chain_id
+                )));
+            };
 
             error!(
                 "Error on getting gas price for conversion from 1inch provider. Status is not OK: \
@@ -754,6 +761,13 @@ impl ConversionProvider for OneInchProvider {
                 };
                 return Err(RpcError::ConversionInvalidParameter(response_error));
             }
+            // 404 response is expected when the token address is not supported
+            if response.status() == reqwest::StatusCode::NOT_FOUND {
+                return Err(RpcError::ConversionInvalidParameter(format!(
+                    "token {} is not supported",
+                    params.token_address
+                )));
+            };
 
             error!(
                 "Error on getting allowance for conversion from 1inch provider. Status is not OK: \
