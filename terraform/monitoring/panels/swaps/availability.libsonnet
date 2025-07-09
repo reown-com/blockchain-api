@@ -43,13 +43,14 @@ local error_alert(vars) = alert.new(
           axisSoftMin = 98,
           axisSoftMax = 100,
         )
+        .withSpanNulls(true)
     )
     .setAlert(vars.environment, error_alert(vars))
 
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
       expr          = '(1-(sum(rate(http_call_counter_total{code=~"5[0-9][0-9]", route="/v1/convert/tokens"}[$__rate_interval])) or vector(0))/(sum(rate(http_call_counter_total{route="/v1/convert/tokens"}[$__rate_interval]))))*100',
-      refId         = 'swaps_availability',
+      refId         = 'swaps_tokens_availability',
       exemplar      = false,
       legendFormat  = 'Tokens list',
     ))
@@ -57,7 +58,7 @@ local error_alert(vars) = alert.new(
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
       expr          = '(1-(sum(rate(http_call_counter_total{code=~"5[0-9][0-9]", route="/v1/convert/quotes"}[$__rate_interval])) or vector(0))/(sum(rate(http_call_counter_total{route="/v1/convert/quotes"}[$__rate_interval]))))*100',
-      refId         = 'swaps_availability',
+      refId         = 'swaps_quotes_availability',
       exemplar      = false,
       legendFormat  = 'Quotes',
     ))
@@ -65,7 +66,7 @@ local error_alert(vars) = alert.new(
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
       expr          = '(1-(sum(rate(http_call_counter_total{code=~"5[0-9][0-9]", route="/v1/convert/build-approve"}[$__rate_interval])) or vector(0))/(sum(rate(http_call_counter_total{route="/v1/convert/build-approve"}[$__rate_interval]))))*100',
-      refId         = 'swaps_availability',
+      refId         = 'swaps_build_approve_availability',
       exemplar      = false,
       legendFormat  = 'Build approve',
     ))
@@ -73,15 +74,15 @@ local error_alert(vars) = alert.new(
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
       expr          = '(1-(sum(rate(http_call_counter_total{code=~"5[0-9][0-9]", route="/v1/convert/build-transaction"}[$__rate_interval])) or vector(0))/(sum(rate(http_call_counter_total{route="/v1/convert/build-transaction"}[$__rate_interval]))))*100',
-      refId         = 'swaps_availability',
+      refId         = 'swaps_build_transaction_availability',
       exemplar      = false,
       legendFormat  = 'Build transaction',
     ))
 
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
-      expr          = '(1-(sum(rate(http_call_counter_total{code=~"5[0-9][0-9]", route="/v1/convert/gas-price"}[$__rate_interval])) or vector(0))/(sum(rate(http_call_counter_total{route="/v1/convert/build-transaction"}[$__rate_interval]))))*100',
-      refId         = 'swaps_availability',
+      expr          = '(1-(sum(rate(http_call_counter_total{code=~"5[0-9][0-9]", route="/v1/convert/gas-price"}[$__rate_interval])) or vector(0))/(sum(rate(http_call_counter_total{route="/v1/convert/gas-price"}[$__rate_interval]))))*100',
+      refId         = 'swaps_gas_price_availability',
       exemplar      = false,
       legendFormat  = 'Gas price',
     ))
@@ -89,8 +90,18 @@ local error_alert(vars) = alert.new(
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
       expr          = '(1-(sum(rate(http_call_counter_total{code=~"5[0-9][0-9]", route="/v1/convert/allowance"}[$__rate_interval])) or vector(0))/(sum(rate(http_call_counter_total{route="/v1/convert/allowance"}[$__rate_interval]))))*100',
-      refId         = 'swaps_availability',
+      refId         = 'swaps_allowance_availability',
       exemplar      = false,
       legendFormat  = 'Allowance check',
+    ))
+
+    // Hidden target for overall swaps availability alert
+    .addTarget(targets.prometheus(
+      datasource    = ds.prometheus,
+      expr          = '(1-(sum(rate(http_call_counter_total{code=~"5[0-9][0-9]", route=~"/v1/convert/(tokens|quotes|build-approve|build-transaction|gas-price|allowance)"}[$__rate_interval])) or vector(0))/(sum(rate(http_call_counter_total{route=~"/v1/convert/(tokens|quotes|build-approve|build-transaction|gas-price|allowance)"}[$__rate_interval]))))*100',
+      refId         = 'swaps_availability',
+      exemplar      = false,
+      legendFormat  = 'Overall availability',
+      hide          = true,
     ))
 }
