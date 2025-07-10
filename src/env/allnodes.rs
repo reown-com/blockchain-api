@@ -36,7 +36,7 @@ impl ProviderConfig for AllnodesConfig {
 }
 
 fn default_supported_chains() -> HashMap<String, (String, Weight)> {
-    // Keep in-sync with SUPPORTED_CHAINS.md
+    // Keep in-sync with SUPPORTED_CHAINS.md and src/chain_config.ACTIVE_CONFIG
 
     HashMap::from([
         // Ethereum Mainnet
@@ -48,7 +48,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
 }
 
 fn default_ws_supported_chains() -> HashMap<String, (String, Weight)> {
-    // Keep in-sync with SUPPORTED_CHAINS.md
+    // Keep in-sync with SUPPORTED_CHAINS.md and src/chain_config.ACTIVE_CONFIG
 
     HashMap::from([
         // Ethereum

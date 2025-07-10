@@ -109,4 +109,8 @@ local redis  = panels.aws.redis;
   swaps: {
     availability: (import 'swaps/availability.libsonnet').new,
   },
+
+  chain_rpc_router: {
+    panels: (import 'chain_rpc_router/chain_rpc_router.libsonnet').new,
+  },
 }
