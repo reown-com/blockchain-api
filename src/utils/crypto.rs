@@ -1119,7 +1119,15 @@ pub fn format_token_amount(amount: U256, decimals: u8) -> String {
 pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u8) -> f64 {
     let decimals_usize = decimals as usize;
     let scaling_factor = 10_u64.pow(decimals_usize as u32) as f64;
-    let balance_f64 = balance.as_u64() as f64 / scaling_factor;
+
+    // Handle U256 values that might exceed u128::MAX
+    let balance_f64 = if balance > U256::from(u128::MAX) {
+        let balance_str = balance.to_string();
+        balance_str.parse::<f64>().unwrap_or(0.0) / scaling_factor
+    } else {
+        balance.as_u128() as f64 / scaling_factor
+    };
+
     balance_f64 * price
 }
 
@@ -1367,12 +1375,56 @@ mod tests {
 
     #[test]
     fn test_convert_token_amount_to_value() {
+        // Test case 1: Normal case with balance within u128 range
         let balance = U256::from_dec_str("959694527317077690").unwrap();
         let price = 10000.05;
         let decimals = 18;
         assert_eq!(
             convert_token_amount_to_value(balance, price, decimals),
             0.959_694_527_317_077_7 * price
+        );
+
+        // Test case 2: Edge case with balance exactly at u128::MAX
+        let balance_u128_max = U256::from(u128::MAX);
+        let price_2 = 1.5;
+        let decimals_2 = 18;
+        let expected_u128_max = (u128::MAX as f64) / (10_u64.pow(18) as f64) * price_2;
+        assert_eq!(
+            convert_token_amount_to_value(balance_u128_max, price_2, decimals_2),
+            expected_u128_max
+        );
+
+        // Test case 3: Edge case with balance exceeding u128::MAX
+        // Create a U256 value that's larger than u128::MAX using arithmetic
+        let balance_exceeds_u128 = U256::from(u128::MAX) + U256::from(1u128);
+        let price_3 = 2.0;
+        let decimals_3 = 18;
+        // Use approximate comparison for very large numbers due to f64 precision limits
+        let result_3 = convert_token_amount_to_value(balance_exceeds_u128, price_3, decimals_3);
+        let expected_exceeds_u128 = ((u128::MAX as f64) + 1.0) / (10_u64.pow(18) as f64) * price_3;
+        assert!(
+            (result_3 - expected_exceeds_u128).abs() < 1e-6,
+            "Expected approximately {expected_exceeds_u128}, got {result_3}"
+        );
+
+        // Test case 4: Large but reasonable balance that exceeds u128::MAX
+        let large_balance = U256::from(u128::MAX) + U256::from(1000000u128);
+        let price_4 = 0.5;
+        let decimals_4 = 18;
+        let result_4 = convert_token_amount_to_value(large_balance, price_4, decimals_4);
+        let expected_large = ((u128::MAX as f64) + 1000000.0) / (10_u64.pow(18) as f64) * price_4;
+        assert!(
+            (result_4 - expected_large).abs() < 1e-6,
+            "Expected approximately {expected_large}, got {result_4}"
+        );
+
+        // Test case 5: Zero balance
+        let zero_balance = U256::zero();
+        let price_5 = 100.0;
+        let decimals_5 = 18;
+        assert_eq!(
+            convert_token_amount_to_value(zero_balance, price_5, decimals_5),
+            0.0
         );
     }
 
