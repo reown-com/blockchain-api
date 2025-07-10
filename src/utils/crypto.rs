@@ -1123,7 +1123,13 @@ pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u8) ->
     // Handle U256 values that might exceed u128::MAX
     let balance_f64 = if balance > U256::from(u128::MAX) {
         let balance_str = balance.to_string();
-        balance_str.parse::<f64>().unwrap_or(0.0) / scaling_factor
+        match balance_str.parse::<f64>() {
+            Ok(parsed_balance) => parsed_balance / scaling_factor,
+            Err(e) => {
+                error!("Failed to parse balance string '{}': {}", balance_str, e);
+                0.0
+            }
+        }
     } else {
         balance.as_u128() as f64 / scaling_factor
     };
