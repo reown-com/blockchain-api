@@ -87,7 +87,7 @@ impl OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             price_response.status().into(),
             latency_start,
             Some(chain_id.to_string()),
@@ -150,7 +150,7 @@ impl OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             Some(chain_id.to_string()),
@@ -292,7 +292,7 @@ impl ConversionProvider for OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             Some(evm_chain_id.to_string()),
@@ -407,7 +407,7 @@ impl ConversionProvider for OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             Some(chain_id.to_string()),
@@ -486,7 +486,7 @@ impl ConversionProvider for OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             Some(chain_id.to_string()),
@@ -588,7 +588,7 @@ impl ConversionProvider for OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             Some(chain_id.to_string()),
@@ -663,7 +663,7 @@ impl ConversionProvider for OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             Some(evm_chain_id.to_string()),
@@ -684,6 +684,13 @@ impl ConversionProvider for OneInchProvider {
                 };
                 return Err(RpcError::ConversionInvalidParameter(response_error));
             }
+            // 404 response is expected when the chain ID is not supported
+            if response.status() == reqwest::StatusCode::NOT_FOUND {
+                return Err(RpcError::ConversionInvalidParameter(format!(
+                    "Chain ID {} is not supported",
+                    params.chain_id
+                )));
+            };
 
             error!(
                 "Error on getting gas price for conversion from 1inch provider. Status is not OK: \
@@ -733,7 +740,7 @@ impl ConversionProvider for OneInchProvider {
             RpcError::ConversionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             Some(evm_chain_id.to_string()),
@@ -754,6 +761,13 @@ impl ConversionProvider for OneInchProvider {
                 };
                 return Err(RpcError::ConversionInvalidParameter(response_error));
             }
+            // 404 response is expected when the token address is not supported
+            if response.status() == reqwest::StatusCode::NOT_FOUND {
+                return Err(RpcError::ConversionInvalidParameter(format!(
+                    "token {} is not supported",
+                    params.token_address
+                )));
+            };
 
             error!(
                 "Error on getting allowance for conversion from 1inch provider. Status is not OK: \

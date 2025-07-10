@@ -102,7 +102,7 @@ impl DuneProvider {
             RpcError::BalanceProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
@@ -136,7 +136,7 @@ impl DuneProvider {
             RpcError::BalanceProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,

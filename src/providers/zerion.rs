@@ -281,7 +281,7 @@ impl HistoryProvider for ZerionProvider {
             RpcError::TransactionProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
@@ -420,7 +420,7 @@ impl PortfolioProvider for ZerionProvider {
             RpcError::PortfolioProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
@@ -494,7 +494,7 @@ impl BalanceProvider for ZerionProvider {
             RpcError::BalanceProviderError
         })?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,

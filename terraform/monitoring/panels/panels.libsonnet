@@ -26,15 +26,16 @@ local redis  = panels.aws.redis;
   },
 
   proxy: {
-    calls:                  (import 'proxy/calls.libsonnet'                 ).new,
-    latency:                (import 'proxy/latency.libsonnet'               ).new,
-    errors_non_provider:    (import 'proxy/errors_non_provider.libsonnet'   ).new,
-    errors_provider:        (import 'proxy/errors_provider.libsonnet'       ).new,
-    provider_retries:       (import 'proxy/rpc_retries.libsonnet'           ).new,
-    rate_limited_counter:   (import 'proxy/rate_limited_counter.libsonnet'  ).new,
-    http_codes:             (import 'proxy/http_codes.libsonnet'            ).new,
-    chains_unavailability:  (import 'proxy/chains_unavailability.libsonnet' ).new,
-    websocket_connections:  (import 'proxy/websocket_connections.libsonnet' ).new,
+    calls:                  (import 'proxy/calls.libsonnet'                  ).new,
+    latency:                (import 'proxy/latency.libsonnet'                ).new,
+    errors_non_provider:    (import 'proxy/errors_non_provider.libsonnet'    ).new,
+    errors_provider:        (import 'proxy/errors_provider.libsonnet'        ).new,
+    provider_retries:       (import 'proxy/rpc_retries.libsonnet'            ).new,
+    rate_limited_counter:   (import 'proxy/rate_limited_counter.libsonnet'   ).new,
+    http_codes:             (import 'proxy/http_codes.libsonnet'             ).new,
+    chains_unavailability:  (import 'proxy/chains_unavailability.libsonnet'  ).new,
+    websocket_connections:  (import 'proxy/websocket_connections.libsonnet'  ).new,
+    rpc_server_error_codes: (import 'proxy/rpc_server_error_codes.libsonnet' ).new,
   },
 
   projects: {

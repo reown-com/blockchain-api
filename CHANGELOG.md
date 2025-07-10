@@ -2,6 +2,46 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.263.1 - 2025-07-09
+#### Bug Fixes
+- **(1Inch)** adding a proper handling of the API's 404 response in get_gas_price and get_allowance (#1143) - (04f6121) - Max Kalashnikoff | maksy.eth
+- **(o11y)** fixing swap endpoints availability chart (#1141) - (65725be) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.263.0 - 2025-07-07
+#### Features
+- **(o11y)** implementing grafana panel for RPC server error codes (#1140) - (3af195a) - Max Kalashnikoff | maksy.eth
+- record metrics for available chain (#1132) - (5d7f559) - Chris Smith
+
+- - -
+
+## 0.262.0 - 2025-07-07
+#### Features
+- **(RPC)** adding JSON-RPC response checks for possible node internal errors and rate limiting (#1138) - (0620d2d) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.261.0 - 2025-07-07
+#### Features
+- **(balance)** respond with an empty array if no origin provided (#1139) - (0a1a2f2) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.260.2 - 2025-07-03
+#### Bug Fixes
+- adding trailing slash alias (#1137) - (0a75929) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.260.1 - 2025-07-03
+#### Bug Fixes
+- reverting Allnodes error handling with detailed error logging (#1134)" (#1135) - (7dd35ee) - Max Kalashnikoff | maksy.eth
+#### Tests
+- add comprehensive tests for validator address handling in prepare_calls (#1136) - (1719214) - Rafael Quintero
+
+- - -
+
 ## 0.260.0 - 2025-07-02
 #### Features
 - **(RPC)** allowing WSS RPC requests to the standart /v1 endpoint (#1127) - (ec4a70c) - Max Kalashnikoff | maksy.eth

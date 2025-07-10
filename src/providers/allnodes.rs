@@ -1,5 +1,6 @@
 use {
     super::{
+        is_internal_error_rpc_code, is_node_error_rpc_message, is_rate_limited_error_rpc_message,
         Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams,
         RpcWsProvider, WS_PROXY_TASK_METRICS,
     },
@@ -17,7 +18,7 @@ use {
     hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
-    tracing::{debug, error},
+    tracing::debug,
     wc::future::FutureExt,
 };
 
@@ -126,21 +127,23 @@ impl RpcProvider for AllnodesProvider {
         let status = response.status();
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
-        if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if let Some(error) = &response.error {
-                if status.is_success() {
+        if status.is_success() {
+            if let Ok(json_response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+                if let Some(error) = &json_response.error {
                     debug!(
                         "Strange: provider returned JSON RPC error, but status {status} is success: \
-                     Allnodes: {response:?}"
+                     Allnodes: {json_response:?}"
                     );
-                }
-                // Log error codes in the -32000 to -32099 range to understand what messages are being returned
-                if error.code >= -32099 && error.code <= -32000 {
-                    error!(
-                        "Allnodes provider returned JSON-RPC error code in -32000 to -32099 range: \
-                         code={}, message='{}', data={:?}",
-                        error.code, error.message, error.data
-                    );
+                    if is_internal_error_rpc_code(error.code) {
+                        if is_rate_limited_error_rpc_message(&error.message) {
+                            return Ok((http::StatusCode::TOO_MANY_REQUESTS, body).into_response());
+                        }
+                        if is_node_error_rpc_message(&error.message) {
+                            return Ok(
+                                (http::StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+                            );
+                        }
+                    }
                 }
             }
         }

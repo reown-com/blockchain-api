@@ -115,7 +115,7 @@ impl HistoryProvider for CoinbaseProvider {
         let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
@@ -196,7 +196,7 @@ impl OnRampProvider for CoinbaseProvider {
         let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,
@@ -225,7 +225,7 @@ impl OnRampProvider for CoinbaseProvider {
         let latency_start = SystemTime::now();
         let response = self.send_post_request(url, &params).await?;
         metrics.add_latency_and_status_code_for_provider(
-            self.provider_kind,
+            &self.provider_kind,
             response.status().into(),
             latency_start,
             None,

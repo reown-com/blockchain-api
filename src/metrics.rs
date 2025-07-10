@@ -39,16 +39,19 @@ pub enum ChainAbstractionNoBridgingNeededType {
 pub struct Metrics {
     pub rpc_call_counter: Counter<u64>,
     pub rpc_call_retries: Histogram<u64>,
+    pub chain_latency_tracker: Histogram<f64>, // Chain latency
     pub http_call_counter: Counter<u64>,
     pub provider_finished_call_counter: Counter<u64>,
     pub provider_failed_call_counter: Counter<u64>,
-    pub no_providers_for_chain_counter: Counter<u64>,
+    pub no_providers_for_chain_counter: Counter<u64>, // Chain availability
+    pub found_provider_for_chain_counter: Counter<u64>, // Chain availability
     pub http_latency_tracker: Histogram<f64>,
     pub http_external_latency_tracker: Histogram<f64>,
     pub rejected_project_counter: Counter<u64>,
     pub quota_limited_project_counter: Counter<u64>,
     pub rate_limited_call_counter: Counter<u64>,
     pub provider_status_code_counter: Counter<u64>,
+    pub provider_internal_error_code_counter: Counter<u64>,
     pub weights_value_recorder: Histogram<u64>,
     pub identity_lookup_latency_tracker: Histogram<f64>,
     pub identity_lookup_counter: Counter<u64>,
@@ -110,6 +113,11 @@ impl Metrics {
             .with_description("Retries per RPC call")
             .init();
 
+        let chain_latency_tracker = meter
+            .f64_histogram("chain_latency_tracker")
+            .with_description("The chain latency")
+            .init();
+
         let http_call_counter = meter
             .u64_counter("http_call_counter")
             .with_description("The number of http calls served")
@@ -153,6 +161,13 @@ impl Metrics {
         let provider_status_code_counter = meter
             .u64_counter("provider_status_code_counter")
             .with_description("The count of status codes returned by providers")
+            .init();
+
+        let provider_internal_error_code_counter = meter
+            .u64_counter("provider_internal_error_code_counter")
+            .with_description(
+                "The count of JSON-RPC internal error codes returned by providers response",
+            )
             .init();
 
         let weights_value_recorder = meter
@@ -289,6 +304,13 @@ impl Metrics {
             .with_description("The number of chain RPC calls that had no available providers")
             .init();
 
+        let found_provider_for_chain_counter = meter
+            .u64_counter("found_provider_for_chain_counter")
+            .with_description(
+                "The number of chain RPC calls that had at least one available provider",
+            )
+            .init();
+
         let ca_gas_estimation_tracker = meter
             .f64_histogram("gas_estimation")
             .with_description("The gas estimation for transactions")
@@ -322,6 +344,7 @@ impl Metrics {
         Metrics {
             rpc_call_counter,
             rpc_call_retries,
+            chain_latency_tracker,
             http_call_counter,
             http_external_latency_tracker,
             http_latency_tracker,
@@ -331,7 +354,9 @@ impl Metrics {
             provider_failed_call_counter,
             provider_finished_call_counter,
             provider_status_code_counter,
+            provider_internal_error_code_counter,
             no_providers_for_chain_counter,
+            found_provider_for_chain_counter,
             weights_value_recorder,
             identity_lookup_counter,
             identity_lookup_success_counter,
@@ -369,11 +394,14 @@ impl Metrics {
 }
 
 impl Metrics {
-    pub fn add_rpc_call(&self, chain_id: String) {
+    pub fn add_rpc_call(&self, chain_id: String, provider_kind: &ProviderKind) {
         self.rpc_call_counter.add(
             &otel::Context::new(),
             1,
-            &[otel::KeyValue::new("chain.id", chain_id)],
+            &[
+                otel::KeyValue::new("chain_id", chain_id),
+                otel::KeyValue::new("provider", provider_kind.to_string()),
+            ],
         );
     }
 
@@ -417,11 +445,15 @@ impl Metrics {
 
     pub fn add_external_http_latency(
         &self,
-        provider_kind: ProviderKind,
+        provider_kind: &ProviderKind,
         start: SystemTime,
+        chain_id: Option<String>,
         endpoint: Option<String>,
     ) {
         let mut attributes = vec![otel::KeyValue::new("provider", provider_kind.to_string())];
+        if let Some(chain_id) = chain_id {
+            attributes.push(otel::KeyValue::new("chain_id", chain_id));
+        }
         if let Some(endpoint) = endpoint {
             attributes.push(otel::KeyValue::new("endpoint", endpoint));
         }
@@ -459,31 +491,31 @@ impl Metrics {
         )
     }
 
-    pub fn add_failed_provider_call(&self, provider: &dyn RpcProvider) {
+    pub fn add_failed_provider_call(&self, chain_id: String, provider: &dyn RpcProvider) {
         self.provider_failed_call_counter.add(
             &otel::Context::new(),
             1,
-            &[otel::KeyValue::new(
-                "provider",
-                provider.provider_kind().to_string(),
-            )],
+            &[
+                otel::KeyValue::new("chain_id", chain_id),
+                otel::KeyValue::new("provider", provider.provider_kind().to_string()),
+            ],
         )
     }
 
-    pub fn add_finished_provider_call(&self, provider: &dyn RpcProvider) {
+    pub fn add_finished_provider_call(&self, chain_id: String, provider: &dyn RpcProvider) {
         self.provider_finished_call_counter.add(
             &otel::Context::new(),
             1,
-            &[otel::KeyValue::new(
-                "provider",
-                provider.provider_kind().to_string(),
-            )],
+            &[
+                otel::KeyValue::new("chain_id", chain_id),
+                otel::KeyValue::new("provider", provider.provider_kind().to_string()),
+            ],
         )
     }
 
     pub fn add_status_code_for_provider(
         &self,
-        provider_kind: ProviderKind,
+        provider_kind: &ProviderKind,
         status: u16,
         chain_id: Option<String>,
         endpoint: Option<String>,
@@ -503,16 +535,37 @@ impl Metrics {
             .add(&otel::Context::new(), 1, &attributes)
     }
 
-    pub fn add_latency_and_status_code_for_provider(
+    pub fn add_internal_error_code_for_provider(
         &self,
         provider_kind: ProviderKind,
+        chain_id: String,
+        code: i32,
+    ) {
+        let attributes = vec![
+            otel::KeyValue::new("provider", provider_kind.to_string()),
+            otel::KeyValue::new("chain_id", chain_id),
+            otel::KeyValue::new("code", format!("{code}")),
+        ];
+
+        self.provider_internal_error_code_counter
+            .add(&otel::Context::new(), 1, &attributes)
+    }
+
+    pub fn add_latency_and_status_code_for_provider(
+        &self,
+        provider_kind: &ProviderKind,
         status: u16,
-        latency: SystemTime,
+        start: SystemTime,
         chain_id: Option<String>,
         endpoint: Option<String>,
     ) {
-        self.add_status_code_for_provider(provider_kind, status, chain_id, endpoint.clone());
-        self.add_external_http_latency(provider_kind, latency, endpoint);
+        self.add_status_code_for_provider(
+            provider_kind,
+            status,
+            chain_id.clone(),
+            endpoint.clone(),
+        );
+        self.add_external_http_latency(provider_kind, start, chain_id, endpoint);
     }
 
     pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: String, weight: u64) {
@@ -532,6 +585,36 @@ impl Metrics {
             1,
             &[otel::KeyValue::new("chain_id", chain_id)],
         );
+    }
+
+    pub fn add_found_provider_for_chain(&self, chain_id: String, provider_kind: &ProviderKind) {
+        self.found_provider_for_chain_counter.add(
+            &otel::Context::new(),
+            1,
+            &[
+                otel::KeyValue::new("chain_id", chain_id),
+                otel::KeyValue::new("provider", provider_kind.to_string()),
+            ],
+        );
+    }
+
+    pub fn add_chain_latency(
+        &self,
+        provider_kind: &ProviderKind,
+        start: SystemTime,
+        chain_id: String,
+    ) {
+        self.chain_latency_tracker.record(
+            &otel::Context::new(),
+            start
+                .elapsed()
+                .unwrap_or(Duration::from_secs(0))
+                .as_secs_f64(),
+            &[
+                otel::KeyValue::new("provider", provider_kind.to_string()),
+                otel::KeyValue::new("chain_id", chain_id),
+            ],
+        )
     }
 
     pub fn add_identity_lookup(&self) {
