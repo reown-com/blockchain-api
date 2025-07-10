@@ -1,9 +1,9 @@
 use {
-    super::{ChainsWeightResolver, ProviderKind},
+    super::{ChainsWeightResolver, ProviderKind, WEIGHT_RECALCULATION_EXCLUDED_PROVIDERS},
     crate::env::ChainId,
     prometheus_http_query::response::PromqlResult,
     std::collections::HashMap,
-    tracing::log::warn,
+    tracing::{debug, log::warn},
 };
 
 /// The amount of successful and failed requests to a provider
@@ -125,6 +125,17 @@ fn calculate_chain_weight(
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn update_values(weight_resolver: &ChainsWeightResolver, parsed_weights: ParsedWeights) {
     for (provider, (chain_availabilities, provider_availability)) in parsed_weights {
+        // Skip weight recalculation for providers in the exclusion list
+        // This prevents weight degradation when requests fail, allowing these providers
+        // to maintain their current weights regardless of failure metrics.
+        if WEIGHT_RECALCULATION_EXCLUDED_PROVIDERS.contains(&provider) {
+            debug!(
+                "Skipping weight recalculation for {} provider due to exclusion list",
+                provider
+            );
+            continue;
+        }
+
         for (chain_id, chain_availability) in chain_availabilities {
             let chain_id = chain_id.0;
             let chain_weight = calculate_chain_weight(chain_availability, provider_availability);

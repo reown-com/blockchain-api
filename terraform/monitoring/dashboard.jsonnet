@@ -38,6 +38,7 @@ local pos_short       = grafana.layout.pos(6);
 
 // RPC provider specific alert period and availability depend on the provider tier
 local availability_top_tier = 90; // Expecting minimal 90% success responses
+local availability_mid_tier = 75; // 75% success responses
 local availability_free_tier = 25; // Expecting minimal 25% success rate
 // alert period for the success rate from above
 local alert_period_top_tier = '5m';
@@ -76,7 +77,7 @@ dashboard.new(
 
   row.new('RPC Proxy Chain Usage'),
     // Top-tier providers
-    panels.usage.provider(ds, vars, 'Pokt', alert_period_top_tier, availability_top_tier)        { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Pokt', alert_period_top_tier, availability_mid_tier)        { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Quicknode', alert_period_top_tier, availability_top_tier)   { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Allnodes', alert_period_top_tier, availability_top_tier)    { gridPos: pos._4 },
     // Free providers
