@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.264.1 - 2025-07-10
+#### Bug Fixes
+- **(balance)** fixing u64 overflow in a balance when using the force update (#1145) - (c4e1ac8) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.264.0 - 2025-07-10
 #### Features
 - **(Pokt)** making exclusion for the weight recalculation and update the alert (#1144) - (71306e6) - Max Kalashnikoff | maksy.eth
