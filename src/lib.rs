@@ -34,9 +34,9 @@ use {
         BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider,
         HiroProvider, MantleProvider, MonadProvider, MoonbeamProvider, MorphProvider, NearProvider,
         OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider,
-        RootstockProvider, SolScanProvider, SuiProvider, SyndicaProvider, SyndicaWsProvider,
-        TheRpcProvider, UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider,
-        ZoraProvider, ZoraWsProvider,
+        QuicknodeWsProvider, RootstockProvider, SolScanProvider, SuiProvider, SyndicaProvider,
+        SyndicaWsProvider, TheRpcProvider, UnichainProvider, WemixProvider, ZKSyncProvider,
+        ZerionProvider, ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -552,12 +552,16 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     ));
     providers.add_rpc_provider::<MoonbeamProvider, MoonbeamConfig>(MoonbeamConfig::default());
     providers.add_rpc_provider::<TheRpcProvider, TheRpcConfig>(TheRpcConfig::default());
+
     providers.add_ws_provider::<AllnodesWsProvider, AllnodesConfig>(AllnodesConfig::new(
         config.allnodes_api_key.clone(),
     ));
     providers.add_ws_provider::<ZoraWsProvider, ZoraConfig>(ZoraConfig::default());
     providers.add_ws_provider::<SyndicaWsProvider, SyndicaConfig>(SyndicaConfig::new(
         config.syndica_api_key.clone(),
+    ));
+    providers.add_ws_provider::<QuicknodeWsProvider, QuicknodeConfig>(QuicknodeConfig::new(
+        config.quicknode_api_tokens.clone(),
     ));
 
     providers.add_balance_provider::<ZerionProvider, ZerionConfig>(
