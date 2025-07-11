@@ -1143,6 +1143,11 @@ pub fn convert_alloy_address_to_h160(addr: Address) -> H160 {
     H160::from_slice(bytes)
 }
 
+/// Check if the body contains the pattern using the quick bytes window scroll
+pub fn contains_bytes(body: &[u8], pattern: &[u8]) -> bool {
+    body.windows(pattern.len()).any(|window| window == pattern)
+}
+
 #[cfg(test)]
 mod tests {
     use {
@@ -1593,5 +1598,12 @@ mod tests {
         // Invalid reference (special characters)
         let invalid_reference = "eip155:1/2";
         assert!(Caip2ChainId::parse(invalid_reference).is_err());
+    }
+
+    #[test]
+    fn test_contains_bytes() {
+        let body = b"say hello world";
+        let pattern = b"hello";
+        assert!(contains_bytes(body, pattern));
     }
 }
