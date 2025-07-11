@@ -45,10 +45,7 @@ impl Provider for QuicknodeProvider {
 
 #[async_trait]
 impl RateLimited for QuicknodeProvider {
-    async fn is_rate_limited(&self, response: &mut Response) -> bool
-    where
-        Self: Sized,
-    {
+    async fn is_rate_limited(&self, response: &mut Response) -> bool {
         response.status() == http::StatusCode::TOO_MANY_REQUESTS
     }
 }
@@ -179,10 +176,7 @@ impl RpcWsProvider for QuicknodeWsProvider {
 
 #[async_trait]
 impl RateLimited for QuicknodeWsProvider {
-    async fn is_rate_limited(&self, response: &mut Response) -> bool
-    where
-        Self: Sized,
-    {
+    async fn is_rate_limited(&self, response: &mut Response) -> bool {
         response.status() == http::StatusCode::TOO_MANY_REQUESTS
     }
 }
