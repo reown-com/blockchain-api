@@ -1,21 +1,25 @@
 use {
     super::{
         is_internal_error_rpc_code, is_node_error_rpc_message, is_rate_limited_error_rpc_message,
-        Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory,
+        Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams,
+        RpcWsProvider, WS_PROXY_TASK_METRICS,
     },
     crate::{
         env::QuicknodeConfig,
         error::{RpcError, RpcResult},
+        ws,
     },
     async_trait::async_trait,
     axum::{
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
+    axum_tungstenite::WebSocketUpgrade,
     hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
     tracing::debug,
+    wc::future::FutureExt,
 };
 
 #[derive(Debug)]
@@ -116,6 +120,86 @@ impl RpcProviderFactory<QuicknodeConfig> for QuicknodeProvider {
             client: forward_proxy_client,
             supported_chains,
             chain_subdomains: provider_config.chain_subdomains.clone(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct QuicknodeWsProvider {
+    pub supported_chains: HashMap<String, String>,
+    pub chain_subdomains: HashMap<String, String>,
+}
+
+impl Provider for QuicknodeWsProvider {
+    fn supports_caip_chainid(&self, chain_id: &str) -> bool {
+        self.supported_chains.contains_key(chain_id)
+    }
+
+    fn supported_caip_chains(&self) -> Vec<String> {
+        self.supported_chains.keys().cloned().collect()
+    }
+
+    fn provider_kind(&self) -> ProviderKind {
+        ProviderKind::Quicknode
+    }
+}
+
+#[async_trait]
+impl RpcWsProvider for QuicknodeWsProvider {
+    #[tracing::instrument(skip_all, fields(provider = %self.provider_kind()), level = "debug")]
+    async fn proxy(
+        &self,
+        ws: WebSocketUpgrade,
+        query_params: RpcQueryParams,
+    ) -> RpcResult<Response> {
+        let chain_id = &query_params.chain_id;
+        let project_id = query_params.project_id;
+        let token = &self
+            .supported_chains
+            .get(chain_id)
+            .ok_or(RpcError::ChainNotFound)?;
+
+        let chain_subdomain =
+            self.chain_subdomains
+                .get(chain_id)
+                .ok_or(RpcError::InvalidConfiguration(format!(
+                    "Quicknode wss subdomain not found for chainId: {chain_id}"
+                )))?;
+        let uri = format!("wss://{chain_subdomain}.quiknode.pro/{token}");
+        let (websocket_provider, _) = async_tungstenite::tokio::connect_async(uri)
+            .await
+            .map_err(|e| RpcError::AxumTungstenite(Box::new(e)))?;
+
+        Ok(ws.on_upgrade(move |socket| {
+            ws::proxy(project_id, socket, websocket_provider)
+                .with_metrics(WS_PROXY_TASK_METRICS.with_name("quicknode"))
+        }))
+    }
+}
+
+#[async_trait]
+impl RateLimited for QuicknodeWsProvider {
+    async fn is_rate_limited(&self, response: &mut Response) -> bool
+    where
+        Self: Sized,
+    {
+        response.status() == http::StatusCode::TOO_MANY_REQUESTS
+    }
+}
+
+impl RpcProviderFactory<QuicknodeConfig> for QuicknodeWsProvider {
+    #[tracing::instrument(level = "debug")]
+    fn new(provider_config: &QuicknodeConfig) -> Self {
+        let supported_chains: HashMap<String, String> = provider_config
+            .supported_ws_chains
+            .iter()
+            .map(|(k, v)| (k.clone(), v.0.clone()))
+            .collect();
+        let chain_subdomains = provider_config.chain_subdomains.clone();
+
+        QuicknodeWsProvider {
+            supported_chains,
+            chain_subdomains,
         }
     }
 }

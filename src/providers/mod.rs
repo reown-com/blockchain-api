@@ -156,7 +156,7 @@ pub use {
     pimlico::PimlicoProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
-    quicknode::QuicknodeProvider,
+    quicknode::{QuicknodeProvider, QuicknodeWsProvider},
     rootstock::RootstockProvider,
     solscan::SolScanProvider,
     sui::SuiProvider,
