@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.266.0 - 2025-07-14
+#### Features
+- coinbase secure init migration (#1148) - (3f21fa2) - Luka Isailovic
+
+- - -
+
 ## 0.265.0 - 2025-07-11
 #### Features
 - **(RPC)** extending the Quicknode provider to Solana WSS support (#1147) - (7d783dc) - Max Kalashnikoff | maksy.eth
