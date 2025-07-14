@@ -158,7 +158,7 @@ pub use {
     pimlico::PimlicoProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
-    quicknode::QuicknodeProvider,
+    quicknode::{QuicknodeProvider, QuicknodeWsProvider},
     rootstock::RootstockProvider,
     solscan::SolScanProvider,
     sui::SuiProvider,
@@ -176,6 +176,11 @@ static WS_PROXY_TASK_METRICS: TaskMetrics = TaskMetrics::new("ws_proxy_task");
 
 pub type ChainsWeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
 pub type NamespacesWeightResolver = HashMap<CaipNamespaces, HashMap<ProviderKind, Weight>>;
+
+/// Providers that are excluded from weight recalculation due to temporary issues
+/// or special handling requirements. These providers will maintain their current
+/// weights regardless of failure metrics from Prometheus.
+pub const WEIGHT_RECALCULATION_EXCLUDED_PROVIDERS: &[ProviderKind] = &[ProviderKind::Pokt];
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct ProvidersConfig {

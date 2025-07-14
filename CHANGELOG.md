@@ -2,6 +2,24 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.265.0 - 2025-07-11
+#### Features
+- **(RPC)** extending the Quicknode provider to Solana WSS support (#1147) - (7d783dc) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.264.1 - 2025-07-10
+#### Bug Fixes
+- **(balance)** fixing u64 overflow in a balance when using the force update (#1145) - (c4e1ac8) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.264.0 - 2025-07-10
+#### Features
+- **(Pokt)** making exclusion for the weight recalculation and update the alert (#1144) - (71306e6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.263.1 - 2025-07-09
 #### Bug Fixes
 - **(1Inch)** adding a proper handling of the API's 404 response in get_gas_price and get_allowance (#1143) - (04f6121) - Max Kalashnikoff | maksy.eth

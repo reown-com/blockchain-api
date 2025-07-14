@@ -32,12 +32,12 @@ use {
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
         AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
-        BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider,
-        EdexaProvider, HiroProvider, MantleProvider, MonadProvider, MoonbeamProvider,
-        MorphProvider, NearProvider, OdysseyProvider, PoktProvider, ProviderRepository,
-        PublicnodeProvider, QuicknodeProvider, RootstockProvider, SolScanProvider, SuiProvider,
-        SyndicaProvider, SyndicaWsProvider, TheRpcProvider, UnichainProvider, WemixProvider,
-        ZKSyncProvider, ZerionProvider, ZoraProvider, ZoraWsProvider,
+        BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider, EdexaProvider,
+        HiroProvider, MantleProvider, MonadProvider, MoonbeamProvider, MorphProvider, NearProvider,
+        OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider,
+        QuicknodeWsProvider, RootstockProvider, SolScanProvider, SuiProvider, SyndicaProvider,
+        SyndicaWsProvider, TheRpcProvider, UnichainProvider, WemixProvider, ZKSyncProvider,
+        ZerionProvider, ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -560,6 +560,9 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_ws_provider::<ZoraWsProvider, ZoraConfig>(ZoraConfig::default());
     providers.add_ws_provider::<SyndicaWsProvider, SyndicaConfig>(SyndicaConfig::new(
         config.syndica_api_key.clone(),
+    ));
+    providers.add_ws_provider::<QuicknodeWsProvider, QuicknodeConfig>(QuicknodeConfig::new(
+        config.quicknode_api_tokens.clone(),
     ));
 
     providers.add_balance_provider::<ZerionProvider, ZerionConfig>(
