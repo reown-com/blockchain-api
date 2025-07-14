@@ -66,6 +66,10 @@ static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
             "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/token:Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
             "USDT",
         ), // USDT on Solana
+        (
+            "eip155:30/erc20:0x2AcC95758f8b5F583470ba265EB685a8F45fC9D5",
+            "RIF",
+        ), // RIF on Rootstock
     ])
 });
 
@@ -78,6 +82,7 @@ static CHAIN_ID_TO_BINANCE_NETWORK: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
         ("eip155:42161", "ARBITRUM"),                       // Arbitrum
         ("eip155:10", "OPTIMISM"),                          // Optimism
         ("solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", "SOL"), // Solana
+        ("eip155:30", "RSK"),                               // Rootstock
     ])
 });
 
