@@ -82,7 +82,7 @@ static CHAIN_ID_TO_BINANCE_NETWORK: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
         ("eip155:42161", "ARBITRUM"),                       // Arbitrum
         ("eip155:10", "OPTIMISM"),                          // Optimism
         ("solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", "SOL"), // Solana
-        ("eip155:30", "RSK"),                              // Rootstock
+        ("eip155:30", "RSK"),                               // Rootstock
     ])
 });
 

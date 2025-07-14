@@ -192,7 +192,6 @@ struct SessionTokenRequest {
     assets: Vec<String>,
 }
 
-
 #[derive(Debug, Serialize, Deserialize)]
 struct SessionTokenResponse {
     token: String,
