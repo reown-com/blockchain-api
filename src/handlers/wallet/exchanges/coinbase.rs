@@ -338,12 +338,12 @@ impl CoinbaseExchange {
 
         let address_info = SessionTokenAddresses {
             address: recipient.to_string(),
-            blockchains: vec![network.clone()],
+            blockchains: vec![network],
         };
 
         let request = SessionTokenRequest {
             addresses: vec![address_info],
-            assets: vec![crypto.clone()],
+            assets: vec![crypto],
         };
 
         let res = self
