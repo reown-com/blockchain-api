@@ -174,7 +174,9 @@ pub async fn rpc_call(
                 // if the response is successful
                 // and bytes contains the "error" field
                 // https://www.jsonrpc.org/specification#error_object
-                if status.is_success() && crypto::contains_bytes(&body_bytes, b"\"error\"") {
+                if (status.is_success() || status == http::StatusCode::BAD_REQUEST)
+                    && crypto::contains_bytes(&body_bytes, b"\"error\"")
+                {
                     if let Ok(json_response) =
                         serde_json::from_slice::<jsonrpc::Response>(&body_bytes)
                     {
