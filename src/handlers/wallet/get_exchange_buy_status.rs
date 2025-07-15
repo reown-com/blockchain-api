@@ -123,9 +123,9 @@ async fn handler_internal(
                     exchange_id = %request.exchange_id,
                     "Internal error, unable to get exchange buy status"
                 );
-                Err(GetExchangeBuyStatusError::InternalError(
-                    "Unable to get exchange buy status".to_string(),
-                ))
+                Err(GetExchangeBuyStatusError::InternalError(format!(
+                    "Unable to get exchange buy status: {e:?}"
+                )))
             }
         },
     }
