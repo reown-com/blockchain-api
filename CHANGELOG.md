@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.266.1 - 2025-07-15
+#### Bug Fixes
+- **(exchanges)** passing an error into the internal server error message (#1150) - (490b2f6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.266.0 - 2025-07-14
 #### Features
 - coinbase secure init migration (#1148) - (3f21fa2) - Luka Isailovic
