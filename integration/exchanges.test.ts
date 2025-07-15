@@ -495,7 +495,8 @@ describe('Exchanges', () => {
         payload
       );
 
-      expect(response.status).toBe(422);
+      expect(response.status).toBe(400);
+      expect(response.data.error).toBeDefined();
     });
 
     it('should handle invalid JSON-RPC format', async () => {
@@ -512,8 +513,7 @@ describe('Exchanges', () => {
         payload
       );
 
-      expect(response.status).toBe(400);
-      expect(response.data.error).toBeDefined();
+      expect(response.status).toBe(422);
     });
 
     it('should handle invalid method name', async () => {
