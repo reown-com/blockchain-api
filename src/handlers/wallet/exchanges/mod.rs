@@ -1,7 +1,7 @@
 use {
     crate::{
         state::AppState,
-        utils::{crypto::Caip19Asset, crypto},
+        utils::{crypto, crypto::Caip19Asset},
     },
     axum::extract::State,
     serde::{Deserialize, Serialize},
@@ -170,7 +170,6 @@ pub fn is_feature_enabled_for_project_id(
     state: State<Arc<AppState>>,
     project_id: &String,
 ) -> Result<(), ExchangeError> {
-
     if let Some(testing_project_id) = state.config.server.testing_project_id.as_ref() {
         if crypto::constant_time_eq(testing_project_id, project_id) {
             return Ok(());
@@ -185,8 +184,6 @@ pub fn is_feature_enabled_for_project_id(
         .ok_or_else(|| ExchangeError::FeatureNotEnabled("Feature is not enabled".to_string()))?;
 
     debug!("allowed_project_ids: {:?}", allowed_project_ids);
-
-    
 
     if !allowed_project_ids.contains(project_id) {
         return Err(ExchangeError::FeatureNotEnabled(
