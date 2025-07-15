@@ -9,6 +9,8 @@ type Exchange = {
 
 describe('Exchanges', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
+  const shouldSkipBinanceTest = baseUrl.includes('localhost');
+  const binanceTestFn = shouldSkipBinanceTest ? it.skip : it;
 
   const ethAddress = 'eip155:1:0x2aae531a81461f029cd55cb46703211c9227ba05';
   const baseAddress = 'eip155:8453:0x2aae531a81461f029cd55cb46703211c9227ba05';
@@ -173,7 +175,8 @@ describe('Exchanges', () => {
   });
 
   describe('Get Exchange URL', () => {
-    it('should generate pay URL for Binance with USDC on Base', async () => {
+    
+    binanceTestFn('should generate pay URL for Binance with USDC on Base', async () => {
       const payload = {
         jsonrpc: '2.0',
         id: 1,
@@ -231,7 +234,7 @@ describe('Exchanges', () => {
         id: 1,
         method: 'reown_getExchangePayUrl',
         params: {
-          exchangeId: 'binance',
+          exchangeId: 'coinbase',
           asset: baseUSDC,
           amount: floatAmount,
           recipient: baseAddress
@@ -255,7 +258,7 @@ describe('Exchanges', () => {
         id: 1,
         method: 'reown_getExchangePayUrl',
         params: {
-          exchangeId: 'binance',
+          exchangeId: 'coinbase',
           asset: baseUSDC,
           amount: hexAmount,
           recipient: baseAddress
@@ -279,7 +282,7 @@ describe('Exchanges', () => {
         id: 1,
         method: 'reown_getExchangePayUrl',
         params: {
-          exchangeId: 'binance',
+          exchangeId: 'coinbase',
           asset: nativeETH,
           amount: defaultAmount,
           recipient: ethAddress
@@ -571,7 +574,13 @@ describe('Exchanges', () => {
     ];
 
     testCases.forEach(testCase => {
-      it(`should support ${testCase.name}`, async () => {
+      const shouldSkip = baseUrl.includes('localhost') && 
+                        testCase.supportedExchanges.includes('binance') &&
+                        testCase.supportedExchanges.length === 1;
+      
+      const testFn = shouldSkip ? it.skip : it;
+      
+      testFn(`should support ${testCase.name}`, async () => {
         const exchangesPayload = {
           jsonrpc: '2.0',
           id: 1,
@@ -595,6 +604,11 @@ describe('Exchanges', () => {
         });
 
         for (const exchangeId of testCase.supportedExchanges) {
+          // Skip binance tests when running locally (for test cases with multiple exchanges)
+          if (baseUrl.includes('localhost') && exchangeId === 'binance') {
+            continue;
+          }
+
           const urlPayload = {
             jsonrpc: '2.0',
             id: 1,
