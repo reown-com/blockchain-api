@@ -1,5 +1,12 @@
 import { getTestSetup } from './init';
 
+type Exchange = {
+  id: string;
+  name: string;
+  imageUrl?: string;
+}
+
+
 describe('Exchanges', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
 
@@ -69,7 +76,7 @@ describe('Exchanges', () => {
       expect(response.data.result.total).toBeGreaterThan(0);
       expect(response.data.result.exchanges).toBeInstanceOf(Array);
 
-      const exchangeIds = response.data.result.exchanges.map((e: any) => e.id);
+      const exchangeIds = response.data.result.exchanges.map((e: Exchange) => e.id);
       expect(exchangeIds).toContain('binance');
       expect(exchangeIds).toContain('coinbase');
     });
@@ -137,7 +144,7 @@ describe('Exchanges', () => {
       expect(response.status).toBe(200);
       expect(response.data.result).toBeDefined();
       
-      const exchangeIds = response.data.result.exchanges.map((e: any) => e.id);
+      const exchangeIds = response.data.result.exchanges.map((e: Exchange) => e.id);
       expect(exchangeIds).not.toContain('binance');
       expect(exchangeIds).toContain('coinbase');
     });
@@ -581,7 +588,7 @@ describe('Exchanges', () => {
         );
 
         expect(exchangesResponse.status).toBe(200);
-        const supportedExchangeIds = exchangesResponse.data.result.exchanges.map((e: any) => e.id);
+        const supportedExchangeIds = exchangesResponse.data.result.exchanges.map((e: Exchange) => e.id);
         
         testCase.supportedExchanges.forEach(expectedExchange => {
           expect(supportedExchangeIds).toContain(expectedExchange);
