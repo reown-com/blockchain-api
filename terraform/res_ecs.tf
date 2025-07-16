@@ -59,7 +59,7 @@ module "ecs" {
   rate_limiting_cache_endpoint_read  = module.redis.endpoint
   rate_limiting_cache_endpoint_write = module.redis.endpoint
   provider_cache_endpoint            = module.redis.endpoint
-  ofac_blocked_countries             = var.ofac_blocked_countries
+  ofac_countries                     = var.ofac_countries
   postgres_url                       = module.postgres.database_url
 
   # Providers

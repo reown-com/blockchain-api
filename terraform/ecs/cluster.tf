@@ -84,7 +84,7 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_GEOIP_DB_KEY", value = var.geoip_db_key },
         { name = "RPC_PROXY_TESTING_PROJECT_ID", value = var.testing_project_id },
 
-        { name = "RPC_PROXY_BLOCKED_COUNTRIES", value = var.ofac_blocked_countries },
+        { name = "RPC_PROXY_BLOCKED_COUNTRIES", value = var.ofac_countries },
 
         { name = "RPC_PROXY_PROVIDER_POKT_PROJECT_ID", value = var.pokt_project_id },
         { name = "RPC_PROXY_PROVIDER_QUICKNODE_API_TOKENS", value = var.quicknode_api_tokens },

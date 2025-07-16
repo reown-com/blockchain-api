@@ -151,7 +151,7 @@ variable "provider_cache_endpoint" {
   type        = string
 }
 
-variable "ofac_blocked_countries" {
+variable "ofac_countries" {
   description = "The list of countries under OFAC sanctions"
   type        = string
 }

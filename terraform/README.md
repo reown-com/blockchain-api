@@ -48,7 +48,7 @@ To authenticate, run `terraform login` and follow the instructions.
 | <a name="input_infura_project_id"></a> [infura\_project\_id](#input\_infura\_project\_id) | The project ID for Infura |  <pre lang="json">string</pre> |  <pre lang="json">n/a</pre> |  yes |
 | <a name="input_log_level"></a> [log\_level](#input\_log\_level) | Defines logging level for the application |  <pre lang="json">string</pre> |  <pre lang="json">n/a</pre> |  yes |
 | <a name="input_notification_channels"></a> [notification\_channels](#input\_notification\_channels) | The notification channels to send alerts to |  <pre lang="json">list(any)</pre> |  <pre lang="json">[]</pre> |  no |
-| <a name="input_ofac_blocked_countries"></a> [ofac\_blocked\_countries](#input\_ofac\_blocked\_countries) | The list of countries to block |  <pre lang="json">string</pre> |  <pre lang="json">""</pre> |  no |
+| <a name="input_ofac_countries"></a> [ofac\_blocked\_countries](#input\_ofac\_blocked\_countries) | The list of countries to block |  <pre lang="json">string</pre> |  <pre lang="json">""</pre> |  no |
 | <a name="input_pokt_project_id"></a> [pokt\_project\_id](#input\_pokt\_project\_id) | The project ID for POKT |  <pre lang="json">string</pre> |  <pre lang="json">n/a</pre> |  yes |
 | <a name="input_project_cache_ttl"></a> [project\_cache\_ttl](#input\_project\_cache\_ttl) | The TTL for project data cache |  <pre lang="json">number</pre> |  <pre lang="json">300</pre> |  no |
 | <a name="input_registry_api_auth_token"></a> [registry\_api\_auth\_token](#input\_registry\_api\_auth\_token) | The auth token for the registry API |  <pre lang="json">string</pre> |  <pre lang="json">n/a</pre> |  yes |
