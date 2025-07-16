@@ -165,32 +165,43 @@ pub async fn rpc_call(
                 let body_bytes = match hyper::body::to_bytes(response.into_body()).await {
                     Ok(bytes) => bytes,
                     Err(e) => {
-                        error!("Failed to read response body: {e}");
+                        error!("Failed to read JSON-RPC response body from provider {{provider.provider_kind()}}: {e}");
+                        state
+                            .metrics
+                            .add_rpc_call_retries(i as u64, chain_id.clone());
                         continue;
                     }
                 };
 
-                // Check for possible internal error codes range -32000..-32099
-                // if the response is successful
-                // and bytes contains the "error" field
-                // https://www.jsonrpc.org/specification#error_object
-                if (status.is_success() || status == http::StatusCode::BAD_REQUEST)
-                    && crypto::contains_bytes(&body_bytes, b"\"error\"")
-                {
-                    if let Ok(json_response) =
-                        serde_json::from_slice::<jsonrpc::Response>(&body_bytes)
-                    {
+                match serde_json::from_slice::<jsonrpc::Response>(&body_bytes) {
+                    Ok(json_response) => {
                         if let Some(error) = &json_response.error {
+                            // Check for possible internal error codes range -32000..-32099
+                            // if the response is successful
+                            // and bytes contains the "error" field
+                            // https://www.jsonrpc.org/specification#error_object
                             if is_internal_error_rpc_code(error.code) {
                                 state.metrics.add_internal_error_code_for_provider(
                                     provider.provider_kind(),
                                     chain_id.clone(),
                                     error.code,
                                 );
+                                state
+                                    .metrics
+                                    .add_rpc_call_retries(i as u64, chain_id.clone());
+                                continue;
                             }
                         }
                     }
+                    Err(e) => {
+                        error!("Failed to parse JSON-RPC response from provider {{provider.provider_kind()}}: {e}");
+                        state
+                            .metrics
+                            .add_rpc_call_retries(i as u64, chain_id.clone());
+                        continue;
+                    }
                 }
+
                 state
                     .metrics
                     .add_found_provider_for_chain(chain_id.clone(), &provider.provider_kind());
