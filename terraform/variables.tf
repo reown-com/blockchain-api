@@ -50,7 +50,7 @@ variable "app_autoscaling_max_capacity" {
   default     = 10
 }
 
-variable "ofac_blocked_countries" {
+variable "ofac_countries" {
   description = "The list of countries to block"
   type        = string
   default     = ""

@@ -39,8 +39,6 @@ jobs:
       task-name: ${{ vars.TASK_NAME }}
       stage: staging
       stage-url: https://staging.${{ vars.SUBDOMAIN_NAME }}.walletconnect.org/health
-      tf-variables: |
-        ofac_blocked_countries: ${{ vars.OFAC_BLOCKED_ZONES }}
       aws-role-arn: ${{ vars.AWS_ROLE_STAGING }}
 
   validate-staging:
@@ -65,8 +63,6 @@ jobs:
       task-name: ${{ vars.TASK_NAME }}
       stage: prod
       stage-url: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.org/health
-      tf-variables: |
-        ofac_blocked_countries: ${{ vars.OFAC_BLOCKED_ZONES }}
       aws-role-arn: ${{ vars.AWS_ROLE_PROD }}
 
   validate-prod:
