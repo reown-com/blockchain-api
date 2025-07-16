@@ -81,11 +81,12 @@ async fn handler_internal(
     // If exclude_providers is provided, remove the providers from the quotes
     // since there is no way to exclude providers in the multi provider API
     if let Some(exclude_providers) = exclude_providers {
+        let exclude_set: std::collections::HashSet<_> = exclude_providers.into_iter().collect();
         quotes.retain(|quote| {
             !quote
                 .service_provider
                 .as_ref()
-                .is_some_and(|provider| exclude_providers.contains(provider))
+                .is_some_and(|provider| exclude_set.contains(provider))
         });
     }
 
