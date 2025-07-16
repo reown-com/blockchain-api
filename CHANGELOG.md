@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.267.0 - 2025-07-16
+#### Features
+- **(OnRamp)** adding an `excludeProviders` filter for quotes (#1152) - (77c911c) - Max Kalashnikoff | maksy.eth
+- removing a repository ofac variable usage in a favor of the terraform cloud (#1151) - (4ebe3cc) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.266.1 - 2025-07-15
 #### Bug Fixes
 - **(exchanges)** passing an error into the internal server error message (#1150) - (490b2f6) - Max Kalashnikoff | maksy.eth
