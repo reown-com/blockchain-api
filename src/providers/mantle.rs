@@ -1,8 +1,5 @@
 use {
-    super::{
-        is_internal_error_rpc_code, is_node_error_rpc_message, is_rate_limited_error_rpc_message,
-        Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory,
-    },
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
         env::MantleConfig,
         error::{RpcError, RpcResult},
@@ -15,7 +12,6 @@ use {
     hyper::{client::HttpConnector, http, Client, Method},
     hyper_tls::HttpsConnector,
     std::collections::HashMap,
-    tracing::debug,
 };
 
 #[derive(Debug)]
@@ -63,24 +59,6 @@ impl RpcProvider for MantleProvider {
         let response = self.client.request(hyper_request).await?;
         let status = response.status();
         let body = hyper::body::to_bytes(response.into_body()).await?;
-
-        if let Ok(json_response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if let Some(error) = &json_response.error {
-                debug!(
-                    "Strange: provider returned JSON RPC error, but status {status} is success: \
-                 Mantle: {json_response:?}"
-                );
-                if is_internal_error_rpc_code(error.code) {
-                    if is_rate_limited_error_rpc_message(&error.message) {
-                        return Ok((http::StatusCode::TOO_MANY_REQUESTS, body).into_response());
-                    }
-                    if is_node_error_rpc_message(&error.message) {
-                        return Ok((http::StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
-                    }
-                }
-            }
-        }
-
         let mut response = (status, body).into_response();
         response
             .headers_mut()

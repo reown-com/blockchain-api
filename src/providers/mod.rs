@@ -71,6 +71,7 @@ pub fn is_node_error_rpc_message(error_message: &str) -> bool {
         || error_message.contains("deserialization error")
         || error_message.contains("node error")
         || error_message.contains("try again later")
+        || error_message.contains("header not found")
 }
 
 /// Checks if a JSON-RPC error message indicates common rate-limited
@@ -88,6 +89,21 @@ pub fn is_rate_limited_error_rpc_message(error_message: &str) -> bool {
         || error_message.contains("your plan")
         || error_message.contains("current plan")
         || error_message.contains("you reached")
+}
+
+/// Checks if a JSON-RPC error message indicates a known error
+/// that should be returned to the client.
+pub fn is_known_rpc_error_message(error_message: &str) -> bool {
+    error_message.contains("execution reverted")
+        || error_message.contains("EVM error:")
+        || error_message.contains("insufficient funds for ")
+        || error_message.contains("already known")
+        || error_message.contains("filter not found")
+        || error_message.contains("transaction")
+        || error_message.contains("nonce too")
+        || error_message.contains("stack underflow")
+        || error_message.contains("mined")
+        || error_message.contains("missing")
 }
 
 /// Checks if a JSON-RPC error code indicates a server error specific codes.
@@ -1255,4 +1271,23 @@ pub trait TokenMetadataCacheProvider: Send + Sync {
         caip10_token_address: &str,
         item: &TokenMetadataCacheItem,
     ) -> Result<(), RpcError>;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_node_error_rpc_message() {
+        let rate_limited_messages = vec![
+            "invalid request: json: cannot unmarshal array into Go value of type jsonrpc.Request",
+        ];
+
+        for message in rate_limited_messages {
+            assert!(
+                is_node_error_rpc_message(message),
+                "Message '{message}' should be detected as an internal error"
+            );
+        }
+    }
 }
