@@ -160,7 +160,10 @@ pub async fn rpc_call(
         .await;
 
         match response {
-            Ok(response) if !response.status().is_server_error() => {
+            Ok(response)
+                if (!response.status().is_server_error()
+                    && response.status() != http::StatusCode::TOO_MANY_REQUESTS) =>
+            {
                 let status = response.status();
                 let body_bytes = match hyper::body::to_bytes(response.into_body()).await {
                     Ok(bytes) => bytes,
@@ -173,32 +176,37 @@ pub async fn rpc_call(
                     }
                 };
 
-                match serde_json::from_slice::<jsonrpc::Response>(&body_bytes) {
-                    Ok(json_response) => {
-                        if let Some(error) = &json_response.error {
-                            // Check for possible internal error codes range -32000..-32099
-                            // if the response is successful
-                            // and bytes contains the "error" field
-                            // https://www.jsonrpc.org/specification#error_object
-                            if is_internal_error_rpc_code(error.code) {
-                                state.metrics.add_internal_error_code_for_provider(
-                                    provider.provider_kind(),
-                                    chain_id.clone(),
-                                    error.code,
-                                );
-                                state
-                                    .metrics
-                                    .add_rpc_call_retries(i as u64, chain_id.clone());
-                                continue;
+                // Check the JSON-RPC response schema and possible internal error codes
+                // if the status is success or bad request and error is present
+                if status.is_success() || status == http::StatusCode::BAD_REQUEST {
+                    match serde_json::from_slice::<jsonrpc::Response>(&body_bytes) {
+                        Ok(json_response) => {
+                            if let Some(error) = &json_response.error {
+                                // Check for possible unhandled internal error codes range -32000..-32099
+                                // https://www.jsonrpc.org/specification#error_object
+                                let error_code = error.code;
+                                let error_message = error.message.clone();
+                                if is_internal_error_rpc_code(error_code) {
+                                    error!("Provider {{provider.provider_kind()}} returned an internal error code: {error_code} and the message: {error_message}");
+                                    state.metrics.add_internal_error_code_for_provider(
+                                        provider.provider_kind(),
+                                        chain_id.clone(),
+                                        error.code,
+                                    );
+                                    state
+                                        .metrics
+                                        .add_rpc_call_retries(i as u64, chain_id.clone());
+                                    continue;
+                                }
                             }
                         }
-                    }
-                    Err(e) => {
-                        error!("Failed to parse JSON-RPC response from provider {{provider.provider_kind()}}: {e}");
-                        state
-                            .metrics
-                            .add_rpc_call_retries(i as u64, chain_id.clone());
-                        continue;
+                        Err(e) => {
+                            error!("Failed to parse JSON-RPC response from provider {{provider.provider_kind()}}: {e}");
+                            state
+                                .metrics
+                                .add_rpc_call_retries(i as u64, chain_id.clone());
+                            continue;
+                        }
                     }
                 }
 
