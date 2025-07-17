@@ -160,7 +160,10 @@ pub async fn rpc_call(
         .await;
 
         match response {
-            Ok(response) if !response.status().is_server_error() => {
+            Ok(response)
+                if (!response.status().is_server_error()
+                    && response.status() != http::StatusCode::TOO_MANY_REQUESTS) =>
+            {
                 let status = response.status();
                 let body_bytes = match hyper::body::to_bytes(response.into_body()).await {
                     Ok(bytes) => bytes,
@@ -174,8 +177,8 @@ pub async fn rpc_call(
                 };
 
                 // Check the JSON-RPC response schema and possible internal error codes
-                // if the status is success and error is present
-                if status.is_success() {
+                // if the status is success or bad request and error is present
+                if status.is_success() || status == http::StatusCode::BAD_REQUEST {
                     match serde_json::from_slice::<jsonrpc::Response>(&body_bytes) {
                         Ok(json_response) => {
                             if let Some(error) = &json_response.error {
