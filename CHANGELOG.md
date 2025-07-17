@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.267.1 - 2025-07-17
+#### Bug Fixes
+- **(RPC)** fixing the check for server error codes (#1146) - (72100c5) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.267.0 - 2025-07-16
 #### Features
 - **(OnRamp)** adding an `excludeProviders` filter for quotes (#1152) - (77c911c) - Max Kalashnikoff | maksy.eth
