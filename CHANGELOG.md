@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.269.0 - 2025-07-17
+#### Features
+- **(proxy)** multiple optimizations for errors catch (#1154) - (7d50774) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.268.0 - 2025-07-17
 #### Features
 - **(proxy)** adding an error check only when the response is success and debugging message (#1153) - (9a44588) - Max Kalashnikoff | maksy.eth
