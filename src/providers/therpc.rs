@@ -1,8 +1,5 @@
 use {
-    super::{
-        is_internal_error_rpc_code, is_node_error_rpc_message, is_rate_limited_error_rpc_message,
-        Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory,
-    },
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
         env::TheRpcConfig,
         error::{RpcError, RpcResult},
@@ -66,32 +63,16 @@ impl RpcProvider for TheRpcProvider {
         let status = response.status();
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
-        if status.is_success() {
+        if status.is_success() || status.is_client_error() {
             if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
                 if let Some(error) = &response.error {
                     debug!(
                         "Strange: provider returned JSON RPC error, but status {status} is \
                          success: TheRpc: {response:?}"
                     );
-                    match error.code {
-                        // TheRpc-specific rate limit codes
-                        -32029 => {
-                            return Ok((http::StatusCode::TOO_MANY_REQUESTS, body).into_response())
-                        }
-                        // Handle other internal error codes with message-based classification
-                        code if is_internal_error_rpc_code(code) => {
-                            if is_rate_limited_error_rpc_message(&error.message) {
-                                return Ok(
-                                    (http::StatusCode::TOO_MANY_REQUESTS, body).into_response()
-                                );
-                            }
-                            if is_node_error_rpc_message(&error.message) {
-                                return Ok(
-                                    (http::StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
-                                );
-                            }
-                        }
-                        _ => {}
+                    // TheRpc-specific rate limit codes
+                    if error.code == -32029 {
+                        return Ok((http::StatusCode::TOO_MANY_REQUESTS, body).into_response());
                     }
                 }
             }

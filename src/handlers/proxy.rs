@@ -3,7 +3,10 @@ use {
     crate::{
         analytics::MessageInfo,
         error::RpcError,
-        providers::{is_internal_error_rpc_code, ProviderKind},
+        providers::{
+            is_internal_error_rpc_code, is_known_rpc_error_message, is_node_error_rpc_message,
+            is_rate_limited_error_rpc_message, ProviderKind,
+        },
         state::AppState,
         utils::{batch_json_rpc_request::MaybeBatchRequest, crypto, network},
     },
@@ -149,7 +152,7 @@ pub async fn rpc_call(
     };
 
     for (i, provider) in providers.iter().enumerate() {
-        let response = rpc_provider_call(
+        let provider_call = rpc_provider_call(
             state.clone(),
             addr,
             query_params.clone(),
@@ -159,80 +162,103 @@ pub async fn rpc_call(
         )
         .await;
 
-        match response {
-            Ok(response)
-                if (!response.status().is_server_error()
-                    && response.status() != http::StatusCode::TOO_MANY_REQUESTS) =>
-            {
-                let status = response.status();
-                let body_bytes = match hyper::body::to_bytes(response.into_body()).await {
-                    Ok(bytes) => bytes,
-                    Err(e) => {
-                        error!("Failed to read JSON-RPC response body from provider {{provider.provider_kind()}}: {e}");
-                        state
-                            .metrics
-                            .add_rpc_call_retries(i as u64, chain_id.clone());
-                        continue;
-                    }
-                };
-
-                // Check the JSON-RPC response schema and possible internal error codes
-                // if the status is success or bad request and error is present
-                if status.is_success() || status == http::StatusCode::BAD_REQUEST {
-                    match serde_json::from_slice::<jsonrpc::Response>(&body_bytes) {
-                        Ok(json_response) => {
-                            if let Some(error) = &json_response.error {
-                                // Check for possible unhandled internal error codes range -32000..-32099
-                                // https://www.jsonrpc.org/specification#error_object
-                                let error_code = error.code;
-                                let error_message = error.message.clone();
-                                if is_internal_error_rpc_code(error_code) {
-                                    error!("Provider {{provider.provider_kind()}} returned an internal error code: {error_code} and the message: {error_message}");
-                                    state.metrics.add_internal_error_code_for_provider(
-                                        provider.provider_kind(),
-                                        chain_id.clone(),
-                                        error.code,
-                                    );
-                                    state
-                                        .metrics
-                                        .add_rpc_call_retries(i as u64, chain_id.clone());
-                                    continue;
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            error!("Failed to parse JSON-RPC response from provider {{provider.provider_kind()}}: {e}");
-                            state
-                                .metrics
-                                .add_rpc_call_retries(i as u64, chain_id.clone());
-                            continue;
-                        }
-                    }
-                }
-
-                state
-                    .metrics
-                    .add_found_provider_for_chain(chain_id.clone(), &provider.provider_kind());
-
-                // Record successful chain latency for the provider that succeeded
-                state.metrics.add_chain_latency(
-                    &provider.provider_kind(),
-                    chain_request_start,
-                    chain_id.clone(),
+        let response_result = match provider_call {
+            Ok(response) => response,
+            Err(e) => {
+                debug!(
+                    "Call to provider '{}' returned an error {e:?}, trying the next provider",
+                    provider.provider_kind()
                 );
-
-                return Ok((status, body_bytes).into_response());
-            }
-            e => {
                 state
                     .metrics
                     .add_rpc_call_retries(i as u64, chain_id.clone());
-                debug!(
-                    "Provider '{}' returned an error {e:?}, trying the next provider",
-                    provider.provider_kind()
-                );
+                continue;
             }
+        };
+
+        // Proceed to the result if the status is success or
+        // any client error except the rate limited error
+        let provider_kind = provider.provider_kind();
+        let status = response_result.status();
+        if status.is_success() || status == http::StatusCode::BAD_REQUEST {
+            let body_bytes = match hyper::body::to_bytes(response_result.into_body()).await {
+                Ok(bytes) => bytes,
+                Err(e) => {
+                    error!(
+                        "Failed to read JSON-RPC response body from provider {provider_kind}: {e}"
+                    );
+                    state
+                        .metrics
+                        .add_rpc_call_retries(i as u64, chain_id.clone());
+                    continue;
+                }
+            };
+
+            // Check the JSON-RPC response schema and possible internal error codes
+            match serde_json::from_slice::<jsonrpc::Response>(&body_bytes) {
+                Ok(json_response) => {
+                    if let Some(error) = &json_response.error {
+                        let error_code = error.code;
+                        let error_message = error.message.clone();
+
+                        // Internal error codes range -32000..-32099 https://www.jsonrpc.org/specification#error_object
+                        if is_internal_error_rpc_code(error_code) {
+                            // Retry to another provider if the error is a rate limited or node error
+                            if is_rate_limited_error_rpc_message(&error_message)
+                                || is_node_error_rpc_message(&error_message)
+                            {
+                                state
+                                    .metrics
+                                    .add_rpc_call_retries(i as u64, chain_id.clone());
+                                continue;
+                            }
+
+                            // Log an error, increment the metrics for unknown error codes and continue
+                            // without retrying since it can be a contract execution error.
+                            // We should catch unknown errors by alarm for the metrics
+                            // and investigate it first without retrying.
+                            if !is_known_rpc_error_message(&error_message) {
+                                error!("Provider {provider_kind} returned an error code: {error_code} and the message: {error_message}");
+                                state.metrics.add_internal_error_code_for_provider(
+                                    provider_kind,
+                                    chain_id.clone(),
+                                    error.code,
+                                );
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to parse JSON-RPC response from provider {{provider.provider_kind()}}: {e}");
+                    state
+                        .metrics
+                        .add_rpc_call_retries(i as u64, chain_id.clone());
+                    continue;
+                }
+            }
+
+            state
+                .metrics
+                .add_found_provider_for_chain(chain_id.clone(), &provider.provider_kind());
+
+            // Record successful chain latency for the provider that succeeded
+            // and return the response
+            state.metrics.add_chain_latency(
+                &provider.provider_kind(),
+                chain_request_start,
+                chain_id.clone(),
+            );
+            return Ok((status, body_bytes).into_response());
         }
+
+        debug!(
+            "Provider '{}' returned unsuccessful status {}, trying the next provider",
+            provider.provider_kind(),
+            status
+        );
+        state
+            .metrics
+            .add_rpc_call_retries(i as u64, chain_id.clone());
     }
 
     state.metrics.add_no_providers_for_chain(chain_id.clone());
