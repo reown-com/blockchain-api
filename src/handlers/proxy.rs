@@ -75,7 +75,7 @@ pub async fn rpc_call(
 ) -> Result<Response, RpcError> {
     let chain_id = query_params.chain_id.clone();
 
-    // Deserialization the request body to a JSON-RPC request schema and
+    // Deserializing the request body to a JSON-RPC request schema and
     // check if a cached response can be returned
     // TODO: Optimize this to remove the second deserialization during the provider analytics
     match serde_json::from_slice::<JsonRpcRequest>(&body) {

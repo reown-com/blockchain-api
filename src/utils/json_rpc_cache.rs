@@ -50,19 +50,19 @@ async fn get_mem_cached_response(
 async fn set_mem_cached_response(
     caip2_chain_id: &str,
     method: &str,
-    chain_id_bytes: &str,
+    value: &str,
     moka_cache: &Cache<String, String>,
 ) {
     moka_cache
         .insert(
             construct_mem_cache_key(method, caip2_chain_id),
-            chain_id_bytes.to_string(),
+            value.to_string(),
         )
         .await;
 }
 
-// Get bytes representation of the chainID
-// by encoded as a hex‑string “quantity"
+// Get bytes representation of the chain ID
+// encoded as a hex‑string “quantity"
 // https://eips.ethereum.org/EIPS/eip-155#chain-id
 fn get_evm_chain_id_bytes(chain_id: &str) -> Option<String> {
     let chain_id_bytes = match chain_id.parse::<u64>() {
