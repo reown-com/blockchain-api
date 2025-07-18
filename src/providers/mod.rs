@@ -66,44 +66,70 @@ use {
 /// Checks if a JSON-RPC error message indicates common node error
 /// patterns that should be handled specially.
 pub fn is_node_error_rpc_message(error_message: &str) -> bool {
-    error_message.contains("cannot unmarshal")
-        || error_message.contains("Go value")
-        || error_message.contains("deserialization error")
-        || error_message.contains("node error")
-        || error_message.contains("try again later")
-        || error_message.contains("header not found")
+    const NODE_ERROR_PATTERNS: &[&str] = &[
+        "cannot unmarshal",
+        "Go value",
+        "deserialization error",
+        "node error",
+        "try again later",
+        "header not found",
+    ];
+
+    NODE_ERROR_PATTERNS
+        .iter()
+        .any(|pattern| error_message.contains(pattern))
 }
 
 /// Checks if a JSON-RPC error message indicates common rate-limited
 /// patterns that should be handled specially.
 pub fn is_rate_limited_error_rpc_message(error_message: &str) -> bool {
-    error_message.contains("quota exceed")
-        || error_message.contains("exceeded quota")
-        || error_message.contains("rate limit")
-        || error_message.contains("rate-limit")
-        || error_message.contains("paid")
-        || error_message.contains("upgrade plan")
-        || error_message.contains("subscription")
-        || error_message.contains("compute units for this month")
-        || error_message.contains("compute units exceeded")
-        || error_message.contains("your plan")
-        || error_message.contains("current plan")
-        || error_message.contains("you reached")
+    const RATE_LIMITED_ERROR_PATTERNS: &[&str] = &[
+        "quota exceed",
+        "exceeded quota",
+        "rate limit",
+        "rate-limit",
+        "paid",
+        "upgrade plan",
+        "subscription",
+        "compute units for this month",
+        "compute units exceeded",
+        "your plan",
+        "current plan",
+        "you reached",
+    ];
+
+    RATE_LIMITED_ERROR_PATTERNS
+        .iter()
+        .any(|pattern| error_message.contains(pattern))
 }
 
 /// Checks if a JSON-RPC error message indicates a known error
 /// that should be returned to the client.
 pub fn is_known_rpc_error_message(error_message: &str) -> bool {
-    error_message.contains("execution reverted")
-        || error_message.contains("EVM error:")
-        || error_message.contains("insufficient funds for ")
-        || error_message.contains("already known")
-        || error_message.contains("filter not found")
-        || error_message.contains("transaction")
-        || error_message.contains("nonce too")
-        || error_message.contains("stack underflow")
-        || error_message.contains("mined")
-        || error_message.contains("missing")
+    const KNOWN_ERROR_PATTERNS: &[&str] = &[
+        "execution reverted",
+        "EVM error",
+        "Transaction simulation failed",
+        "insufficient funds for ",
+        "gas ",
+        "already known",
+        "filter not found",
+        "execution aborted",
+        "transaction",
+        "nonce too ",
+        "stack underflow",
+        "mined",
+        "missing",
+        "batch ",
+        "state available for block",
+        "unsupported block number",
+        "block not found",
+        "invalid opcode",
+    ];
+
+    KNOWN_ERROR_PATTERNS
+        .iter()
+        .any(|pattern| error_message.contains(pattern))
 }
 
 /// Checks if a JSON-RPC error code indicates a server error specific codes.
