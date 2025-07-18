@@ -80,7 +80,9 @@ pub async fn rpc_call(
     // TODO: Optimize this to remove the second deserialization during the provider analytics
     match serde_json::from_slice::<JsonRpcRequest>(&body) {
         Ok(request) => {
-            if let Some(response) = is_cached_response(&chain_id, &request, &state.metrics) {
+            if let Some(response) =
+                is_cached_response(&chain_id, &request, &state.metrics, &state.moka_cache).await
+            {
                 return Ok(
                     (http::StatusCode::OK, serde_json::to_string(&response)?).into_response()
                 );
