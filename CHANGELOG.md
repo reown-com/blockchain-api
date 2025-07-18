@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.269.1 - 2025-07-18
+#### Bug Fixes
+- **(proxy)** extending known RPC errors list, debug only on unexpected JSON-RPC schema (#1155) - (cf55ba7) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.269.0 - 2025-07-17
 #### Features
 - **(proxy)** multiple optimizations for errors catch (#1154) - (7d50774) - Max Kalashnikoff | maksy.eth
