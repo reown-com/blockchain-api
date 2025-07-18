@@ -7,10 +7,10 @@ local targets   = grafana.targets;
 {
   new(ds, vars)::
     panels.timeseries(
-      title       = 'JSON-RPC server error code range responses',
+      title       = 'JSON-RPC server error code range responses percentage',
       datasource  = ds.prometheus,
     )
-    .configure(defaults.configuration.timeseries)
+    .configure(defaults.configuration.timeseries.withUnit('percent'))
     .setAlert(
       vars.environment,
       grafana.alert.new(
@@ -19,7 +19,7 @@ local targets   = grafana.targets;
         message       = '%(env)s - RPC high JSON-RPC server error code responses from provider'  % { env: grafana.utils.strings.capitalize(vars.environment) },
         notifications = vars.notifications,
         noDataState   = 'no_data',
-        period        = '5m',
+        period        = '1m',
         conditions    = [
           grafana.alertCondition.new(
             evaluatorParams = [ 20 ],
@@ -34,20 +34,11 @@ local targets   = grafana.targets;
       ),
     )
 
-    .addTarget(targets.prometheus(
-      datasource  = ds.prometheus,
-      expr          = 'sum by(provider) (increase(provider_internal_error_code_counter_total{}[$__rate_interval]))',
-      exemplar      = false,
-      legendFormat  = '__auto',
-    ))
-
-    // Hidden target for the high % of the JSON-RPC error responses alert
    .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr          = '(sum by(provider) (increase(provider_internal_error_code_counter_total{}[$__rate_interval])) / sum by(provider) (increase(provider_status_code_counter_total{status_code="200"}{}[$__rate_interval]))) * 100',
+      expr          = '(sum by(provider) (increase(provider_internal_error_code_counter_total{}[$__rate_interval])) / sum by(provider) (increase(provider_status_code_counter_total{status_code="200"}[$__rate_interval]))) * 100',
       exemplar      = false,
       legendFormat  = '__auto',
       refId         = 'JsonRPCErrorCodesPerCalls',
-      hide          = true,
     )) 
 }
