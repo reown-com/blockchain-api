@@ -95,15 +95,23 @@ pub fn is_rate_limited_error_rpc_message(error_message: &str) -> bool {
 /// that should be returned to the client.
 pub fn is_known_rpc_error_message(error_message: &str) -> bool {
     error_message.contains("execution reverted")
-        || error_message.contains("EVM error:")
+        || error_message.contains("EVM error")
+        || error_message.contains("Transaction simulation failed")
         || error_message.contains("insufficient funds for ")
+        || error_message.contains("gas ")
         || error_message.contains("already known")
         || error_message.contains("filter not found")
+        || error_message.contains("execution aborted")
         || error_message.contains("transaction")
-        || error_message.contains("nonce too")
+        || error_message.contains("nonce too ")
         || error_message.contains("stack underflow")
         || error_message.contains("mined")
         || error_message.contains("missing")
+        || error_message.contains("batch ")
+        || error_message.contains("state available for block")
+        || error_message.contains("unsupported block number")
+        || error_message.contains("block not found")
+        || error_message.contains("invalid opcode")
 }
 
 /// Checks if a JSON-RPC error code indicates a server error specific codes.

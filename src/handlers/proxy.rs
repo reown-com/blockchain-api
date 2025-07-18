@@ -229,11 +229,7 @@ pub async fn rpc_call(
                     }
                 }
                 Err(e) => {
-                    error!("Failed to parse JSON-RPC response from provider {{provider.provider_kind()}}: {e}");
-                    state
-                        .metrics
-                        .add_rpc_call_retries(i as u64, chain_id.clone());
-                    continue;
+                    error!("Failed to parse JSON-RPC response from provider {provider_kind}: {e}. Message: {}", String::from_utf8_lossy(&body_bytes));
                 }
             }
 
