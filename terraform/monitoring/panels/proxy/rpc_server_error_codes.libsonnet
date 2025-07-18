@@ -36,7 +36,7 @@ local targets   = grafana.targets;
 
    .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr          = '(sum by(provider) (increase(provider_internal_error_code_counter_total{}[$__rate_interval])) / sum by(provider) (increase(provider_status_code_counter_total{status_code="200"}[$__rate_interval]))) * 100',
+      expr          = '(sum by(provider) (increase(provider_internal_error_code_counter_total{}[$__rate_interval])) / (sum by(provider) (increase(provider_status_code_counter_total{status_code="200"}[$__rate_interval])) or vector(0))) * 100',
       exemplar      = false,
       legendFormat  = '__auto',
       refId         = 'JsonRPCErrorCodesPerCalls',
