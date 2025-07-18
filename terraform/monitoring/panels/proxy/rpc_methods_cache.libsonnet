@@ -16,5 +16,5 @@ local targets   = grafana.targets;
       expr          = '(sum by(method) (increase(rpc_cached_call_counter_total{}[$__rate_interval])) / sum(increase(rpc_call_counter_total{status_code="200"}[$__rate_interval]))) * 100',
       exemplar      = false,
       legendFormat  = '__auto',
-    )) 
+    ))
 }
