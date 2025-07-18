@@ -36,6 +36,7 @@ local redis  = panels.aws.redis;
     chains_unavailability:  (import 'proxy/chains_unavailability.libsonnet'  ).new,
     websocket_connections:  (import 'proxy/websocket_connections.libsonnet'  ).new,
     rpc_server_error_codes: (import 'proxy/rpc_server_error_codes.libsonnet' ).new,
+    rpc_methods_cache:      (import 'proxy/rpc_methods_cache.libsonnet'      ).new,
   },
 
   projects: {
