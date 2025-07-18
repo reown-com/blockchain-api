@@ -11,10 +11,12 @@ local targets   = grafana.targets;
       datasource  = ds.prometheus,
     )
     .configure(defaults.configuration.timeseries.withUnit('percent'))
+
+    // Specific target for 'eth_chainId'
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr          = '(sum by(method) (increase(rpc_cached_call_counter_total{}[$__rate_interval])) / sum(increase(rpc_call_counter_total{status_code="200"}[$__rate_interval]))) * 100',
+      expr          = '100 * (sum(increase(rpc_cached_call_counter_total{method="eth_chainId"}[$__rate_interval])) / on() sum(increase(rpc_call_counter_total[$__rate_interval])))',
       exemplar      = false,
-      legendFormat  = '__auto',
+      legendFormat  = 'eth_chainId',
     ))
 }
