@@ -3,12 +3,16 @@ use {
     crate::{
         analytics::MessageInfo,
         error::RpcError,
+        json_rpc::JsonRpcRequest,
         providers::{
             is_internal_error_rpc_code, is_known_rpc_error_message, is_node_error_rpc_message,
             is_rate_limited_error_rpc_message, ProviderKind,
         },
         state::AppState,
-        utils::{batch_json_rpc_request::MaybeBatchRequest, crypto, network},
+        utils::{
+            batch_json_rpc_request::MaybeBatchRequest, crypto, json_rpc_cache::is_cached_response,
+            network,
+        },
     },
     axum::{
         body::Bytes,
@@ -70,6 +74,24 @@ pub async fn rpc_call(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     let chain_id = query_params.chain_id.clone();
+
+    // Deserializing the request body to a JSON-RPC request schema and
+    // check if a cached response can be returned
+    // TODO: Optimize this to remove the second deserialization during the provider analytics
+    match serde_json::from_slice::<JsonRpcRequest>(&body) {
+        Ok(request) => {
+            if let Some(response) =
+                is_cached_response(&chain_id, &request, &state.metrics, &state.moka_cache).await
+            {
+                return Ok(
+                    (http::StatusCode::OK, serde_json::to_string(&response)?).into_response()
+                );
+            }
+        }
+        Err(e) => {
+            error!("Failed to deserialize JSON-RPC request: {e}");
+        }
+    };
 
     if query_params.session_id.is_some() {
         let provider_kind = match chain_id.as_str() {

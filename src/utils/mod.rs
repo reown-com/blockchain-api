@@ -5,6 +5,7 @@ pub mod build;
 pub mod crypto;
 pub mod erc4337;
 pub mod erc7677;
+pub mod json_rpc_cache;
 pub mod network;
 pub mod permissions;
 pub mod rate_limit;

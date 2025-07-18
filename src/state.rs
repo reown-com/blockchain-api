@@ -11,6 +11,7 @@ use {
         utils::{build::CompileInfo, rate_limit::RateLimit},
     },
     cerberus::project::ProjectDataWithQuota,
+    moka::future::Cache,
     sqlx::PgPool,
     std::sync::Arc,
     tap::TapFallible,
@@ -36,6 +37,8 @@ pub struct AppState {
     // Redis caching
     pub identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     pub balance_cache: Option<Arc<dyn KeyValueStorage<BalanceResponseBody>>>,
+    // Moka local instance in-memory cache
+    pub moka_cache: Cache<String, String>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -52,6 +55,7 @@ pub fn new_state(
     identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     balance_cache: Option<Arc<dyn KeyValueStorage<BalanceResponseBody>>>,
 ) -> AppState {
+    let moka_cache = Cache::builder().build();
     AppState {
         config,
         postgres,
@@ -66,6 +70,7 @@ pub fn new_state(
         irn,
         identity_cache,
         balance_cache,
+        moka_cache,
     }
 }
 
