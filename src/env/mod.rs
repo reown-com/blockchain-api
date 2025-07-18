@@ -16,9 +16,9 @@ use {
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
-    allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, blast::*, callstatic::*, drpc::*,
-    dune::*, hiro::*, mantle::*, monad::*, moonbeam::*, morph::*, near::*, odyssey::*, pokt::*,
-    publicnode::*, quicknode::*, rootstock::*, server::*, solscan::*, sui::*, syndica::*,
+    allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, blast::*, callstatic::*, deinfra::*,
+    drpc::*, dune::*, hiro::*, mantle::*, monad::*, moonbeam::*, morph::*, near::*, odyssey::*,
+    pokt::*, publicnode::*, quicknode::*, rootstock::*, server::*, solscan::*, sui::*, syndica::*,
     therpc::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
 };
 mod allnodes;
@@ -28,6 +28,7 @@ mod base;
 mod binance;
 mod blast;
 mod callstatic;
+mod deinfra;
 mod drpc;
 mod dune;
 mod hiro;

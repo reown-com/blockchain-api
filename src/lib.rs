@@ -21,22 +21,24 @@ use {
     },
     env::{
         AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, BlastConfig,
-        CallStaticConfig, DrpcConfig, DuneConfig, HiroConfig, MantleConfig, MonadConfig,
-        MoonbeamConfig, MorphConfig, NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig,
-        QuicknodeConfig, RootstockConfig, SolScanConfig, SuiConfig, SyndicaConfig, TheRpcConfig,
-        UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
+        CallStaticConfig, DeInfraConfig, DrpcConfig, DuneConfig, HiroConfig, MantleConfig,
+        MonadConfig, MoonbeamConfig, MorphConfig, NearConfig, OdysseyConfig, PoktConfig,
+        PublicnodeConfig, QuicknodeConfig, RootstockConfig, SolScanConfig, SuiConfig,
+        SyndicaConfig, TheRpcConfig, UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig,
+        ZoraConfig,
     },
     error::RpcResult,
     http::Request,
     hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
     providers::{
         AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
-        BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider,
-        HiroProvider, MantleProvider, MonadProvider, MoonbeamProvider, MorphProvider, NearProvider,
-        OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider,
-        QuicknodeWsProvider, RootstockProvider, SolScanProvider, SuiProvider, SyndicaProvider,
-        SyndicaWsProvider, TheRpcProvider, UnichainProvider, WemixProvider, ZKSyncProvider,
-        ZerionProvider, ZoraProvider, ZoraWsProvider,
+        BinanceProvider, BlastProvider, CallStaticProvider, DeInfraProvider, DrpcProvider,
+        DuneProvider, HiroProvider, MantleProvider, MonadProvider, MoonbeamProvider,
+        MorphProvider, NearProvider, OdysseyProvider, PoktProvider, ProviderRepository,
+        PublicnodeProvider, QuicknodeProvider, QuicknodeWsProvider, RootstockProvider,
+        SolScanProvider, SuiProvider, SyndicaProvider, SyndicaWsProvider, TheRpcProvider,
+        UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider, ZoraProvider,
+        ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -547,6 +549,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_rpc_provider::<CallStaticProvider, CallStaticConfig>(CallStaticConfig::new(
         config.callstatic_api_key.clone(),
     ));
+    providers.add_rpc_provider::<DeInfraProvider, DeInfraConfig>(DeInfraConfig::default());
     providers.add_rpc_provider::<BlastProvider, BlastConfig>(BlastConfig::new(
         config.blast_api_key.clone(),
     ));

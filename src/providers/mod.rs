@@ -146,6 +146,7 @@ mod blast;
 mod bungee;
 mod callstatic;
 mod coinbase;
+mod deinfra;
 mod drpc;
 mod dune;
 mod hiro;
@@ -184,6 +185,7 @@ pub use {
     blast::BlastProvider,
     bungee::BungeeProvider,
     callstatic::CallStaticProvider,
+    deinfra::DeInfraProvider,
     drpc::DrpcProvider,
     dune::DuneProvider,
     hiro::HiroProvider,
@@ -824,6 +826,7 @@ pub enum ProviderKind {
     Moonbeam,
     Blast,
     Rootstock,
+    DeInfra,
 }
 
 impl Display for ProviderKind {
@@ -866,6 +869,7 @@ impl Display for ProviderKind {
                 ProviderKind::Moonbeam => "Moonbeam",
                 ProviderKind::Blast => "Blast",
                 ProviderKind::Rootstock => "Rootstock",
+                ProviderKind::DeInfra => "DeInfra",
             }
         )
     }
@@ -909,6 +913,7 @@ impl ProviderKind {
             "Moonbeam" => Some(Self::Moonbeam),
             "Blast" => Some(Self::Blast),
             "Rootstock" => Some(Self::Rootstock),
+            "DeInfra" => Some(Self::DeInfra),
             _ => None,
         }
     }
