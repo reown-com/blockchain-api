@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.270.0 - 2025-07-18
+#### Bug Fixes
+- **(o11y)** fixing the JSON-RPC error codes Prometheus query (#1157) - (c46346e) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(proxy)** implementing RPC caching scaffold and adding `chainId` server-side calculation (#1156) - (5738f61) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.269.1 - 2025-07-18
 #### Bug Fixes
 - **(proxy)** extending known RPC errors list, debug only on unexpected JSON-RPC schema (#1155) - (cf55ba7) - Max Kalashnikoff | maksy.eth
