@@ -155,7 +155,7 @@ describe('Sessions/Permissions', () => {
     )
     expect(resp.status).toBe(200)
     expect(resp.data.pcis.length).toBe(1)
-    // Check revokedAt is fullfilled
+    // Check revokedAt is fulfilled
     expect(typeof resp.data.pcis[0].revokedAt).toBe('number')
   })
 })
