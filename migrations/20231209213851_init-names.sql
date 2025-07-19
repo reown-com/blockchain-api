@@ -10,6 +10,6 @@ CREATE TABLE names (
   -- We are using the hstore as a key-value for the extensible attributes list
   attributes hstore,
 
-  -- Check for the standartized name format
+  -- Check for the standardized name format
   CONSTRAINT ens_name_standard CHECK (name ~ '^[a-z0-9.-]*$')
 );
