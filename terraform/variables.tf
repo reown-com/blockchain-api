@@ -76,7 +76,6 @@ variable "project_cache_ttl" {
   default     = 300
 }
 
-
 #-------------------------------------------------------------------------------
 # Providers
 
@@ -204,6 +203,15 @@ variable "blast_api_key" {
   description = "Blast API key"
   type        = string
   sensitive   = true
+}
+
+#-------------------------------------------------------------------------------
+# RPC Proxy configuration
+
+variable "proxy_skip_quota_chains" {
+  description = "Comma separated list of CAIP-2 chains to skip quota check"
+  type        = string
+  default     = ""
 }
 
 #-------------------------------------------------------------------------------
