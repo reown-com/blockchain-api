@@ -39,7 +39,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         (
             "eip155:100501".into(),
             (
-                "https://c100501n3.deinfra.net:443/jsonrpc".into(),
+                "https://c100501n3.deinfra.net/jsonrpc".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
