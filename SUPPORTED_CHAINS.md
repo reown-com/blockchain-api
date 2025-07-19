@@ -15,6 +15,7 @@ Chain name with associated `chainId` query param to use.
 | Binance Smart Chain                                      | eip155:56            |
 | Binance Smart Chain Testnet <sup>[1](#footnote1)</sup>   | eip155:97            |
 | Gnosis Chain                                             | eip155:100           |
+| DeInfra Mainnet <sup>[1](#footnote1)</sup>               | eip155:100501        |
 | Unichain Mainnet <sup>[1](#footnote1)</sup>              | eip155:130           |
 | Polygon                                                  | eip155:137           |
 | Sonic                                                    | eip155:146           |
@@ -56,6 +57,7 @@ Chain name with associated `chainId` query param to use.
 | Zora Sepolia <sup>[1](#footnote1)</sup>                  | eip155:999999999     |
 | Aurora <sup>[1](#footnote1)</sup>                        | eip155:1313161554    |
 | Aurora Testnet <sup>[1](#footnote1)</sup>                | eip155:1313161555    |
+| DeInfra Devnet3 <sup>[1](#footnote1)</sup>               | eip155:1000000003    |
 | Near Mainnet                                             | near:mainnet         |
 
 ### Solana
