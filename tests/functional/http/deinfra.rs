@@ -14,7 +14,7 @@ async fn deinfra_provider(ctx: &mut ServerContext) {
         ctx,
         &provider_kind,
         "eip155:100501",
-        "0x188f5",
+        "0x18895",
     )
     .await;
 
@@ -23,7 +23,7 @@ async fn deinfra_provider(ctx: &mut ServerContext) {
         ctx,
         &provider_kind,
         "eip155:1000000003",
-        "0x3b9acae3",
+        "0x3b9aca03",
     )
     .await;
 }
