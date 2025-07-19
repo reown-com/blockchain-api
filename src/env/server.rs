@@ -18,6 +18,7 @@ pub struct ServerConfig {
     pub geoip_db_key: Option<String>,
     pub testing_project_id: Option<String>,
     pub validate_project_id: bool,
+    pub skip_quota_chains: Vec<String>,
 }
 
 impl Default for ServerConfig {
@@ -34,6 +35,7 @@ impl Default for ServerConfig {
             geoip_db_key: None,
             testing_project_id: None,
             validate_project_id: true,
+            skip_quota_chains: Vec::new(),
         }
     }
 }
