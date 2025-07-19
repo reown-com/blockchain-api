@@ -27,6 +27,7 @@ pub(crate) mod unichain;
 pub(crate) mod wemix;
 pub(crate) mod zksync;
 pub(crate) mod zora;
+pub(crate) mod edexa;
 
 async fn check_if_rpc_is_responding_correctly_for_supported_chain(
     ctx: &ServerContext,
