@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.271.0 - 2025-07-19
+#### Bug Fixes
+- **(o11y)** fixing Prometheus query and label for RPC caching (#1158) - (1aa3e24) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(proxy)** implementing skip the quota chains list (#1161) - (ab2050e) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.270.0 - 2025-07-18
 #### Bug Fixes
 - **(o11y)** fixing the JSON-RPC error codes Prometheus query (#1157) - (c46346e) - Max Kalashnikoff | maksy.eth
