@@ -107,6 +107,8 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_PROVIDER_CALLSTATIC_API_KEY", value = var.callstatic_api_key },
         { name = "RPC_PROXY_PROVIDER_BLAST_API_KEY", value = var.blast_api_key },
 
+        { name = "RPC_PROXY_SKIP_QUOTA_CHAINS", value = var.proxy_skip_quota_chains },
+
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_ENDPOINT", value = var.prometheus_endpoint },
         { name = "RPC_PROXY_PROVIDER_PROMETHEUS_WORKSPACE_ID", value = var.prometheus_workspace_id },
 

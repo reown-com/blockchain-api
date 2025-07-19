@@ -84,6 +84,9 @@ module "ecs" {
   callstatic_api_key   = var.callstatic_api_key
   blast_api_key        = var.blast_api_key
 
+  # RPC Proxy configuration
+  proxy_skip_quota_chains = var.proxy_skip_quota_chains
+
   # Project Registry
   registry_api_endpoint   = var.registry_api_endpoint
   registry_api_auth_token = var.registry_api_auth_token

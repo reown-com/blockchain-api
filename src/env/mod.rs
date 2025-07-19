@@ -291,6 +291,7 @@ mod test {
                     geoip_db_key: Some("GEOIP_DB_KEY".to_owned()),
                     testing_project_id: Some("TESTING_PROJECT_ID".to_owned()),
                     validate_project_id: true,
+                    skip_quota_chains: vec![],
                 },
                 registry: project::Config {
                     api_url: Some("API_URL".to_owned()),

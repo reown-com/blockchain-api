@@ -291,6 +291,14 @@ variable "testing_project_id" {
 }
 
 #-------------------------------------------------------------------------------
+# RPC Proxy configuration
+variable "proxy_skip_quota_chains" {
+  description = "Comma separated list of CAIP-2 chains to skip quota check"
+  type        = string
+  default     = ""
+}
+
+#-------------------------------------------------------------------------------
 # Project Registry
 
 variable "registry_api_endpoint" {

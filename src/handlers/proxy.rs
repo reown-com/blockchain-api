@@ -59,9 +59,23 @@ async fn handler_internal(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response, RpcError> {
-    state
-        .validate_project_access_and_quota(&query_params.project_id.clone())
-        .await?;
+    // Don't validate the quota and validate project access only
+    // if the chainId is in the skip_quota_chains list
+    if state
+        .config
+        .server
+        .skip_quota_chains
+        .contains(&query_params.chain_id)
+    {
+        state
+            .validate_project_access(&query_params.project_id.clone())
+            .await?;
+    } else {
+        state
+            .validate_project_access_and_quota(&query_params.project_id.clone())
+            .await?;
+    };
+
     rpc_call(state, addr, query_params, headers, body).await
 }
 
