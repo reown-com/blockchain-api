@@ -18,6 +18,7 @@ pub struct ServerConfig {
     pub geoip_db_key: Option<String>,
     pub testing_project_id: Option<String>,
     pub validate_project_id: bool,
+    /// Contains CAIP-2 chain identifiers that should bypass quota validation.
     pub skip_quota_chains: Vec<String>,
 }
 
