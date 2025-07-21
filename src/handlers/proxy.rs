@@ -38,6 +38,7 @@ use {
 
 const PROVIDER_PROXY_MAX_CALLS: usize = 5;
 const PROVIDER_PROXY_CALL_TIMEOUT: Duration = Duration::from_secs(10);
+const DEFAULT_CONTENT_TYPE: (&str, &str) = ("content-type", "application/json");
 
 pub async fn handler(
     state: State<Arc<AppState>>,
@@ -99,7 +100,7 @@ pub async fn rpc_call(
             {
                 return Ok((
                     http::StatusCode::OK,
-                    [("content-type", "application/json")],
+                    [DEFAULT_CONTENT_TYPE],
                     serde_json::to_string(&response)?,
                 )
                     .into_response());
@@ -283,7 +284,7 @@ pub async fn rpc_call(
                 chain_request_start,
                 chain_id.clone(),
             );
-            return Ok((status, [("content-type", "application/json")], body_bytes).into_response());
+            return Ok((status, [DEFAULT_CONTENT_TYPE], body_bytes).into_response());
         }
 
         debug!(
