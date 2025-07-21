@@ -97,9 +97,12 @@ pub async fn rpc_call(
             if let Some(response) =
                 is_cached_response(&chain_id, &request, &state.metrics, &state.moka_cache).await
             {
-                return Ok(
-                    (http::StatusCode::OK, serde_json::to_string(&response)?).into_response()
-                );
+                return Ok((
+                    http::StatusCode::OK,
+                    [("content-type", "application/json")],
+                    serde_json::to_string(&response)?,
+                )
+                    .into_response());
             }
         }
         Err(e) => {
@@ -280,7 +283,7 @@ pub async fn rpc_call(
                 chain_request_start,
                 chain_id.clone(),
             );
-            return Ok((status, body_bytes).into_response());
+            return Ok((status, [("content-type", "application/json")], body_bytes).into_response());
         }
 
         debug!(
