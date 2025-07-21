@@ -278,13 +278,16 @@ impl OnRampMultiProvider for MeldProvider {
         url.query_pairs_mut()
             .append_pair("categories", DEFAULT_CATEGORY);
 
-        // Excclude provider from DEFAULT_PROVIDERS_LIST if exclude_providers is provided
+        // Exclude provider from DEFAULT_PROVIDERS_LIST if exclude_providers is provided
         let providers_list = if let Some(exclude_providers) = params.exclude_providers {
-            let mut providers_list = DEFAULT_PROVIDERS_LIST.to_vec();
-            for provider in exclude_providers {
-                providers_list.retain(|p| p != &provider);
-            }
-            providers_list.join(",")
+            let exclude_set: std::collections::HashSet<&str> =
+                exclude_providers.iter().map(|s| s.as_str()).collect();
+            DEFAULT_PROVIDERS_LIST
+                .iter()
+                .filter(|p| !exclude_set.contains(*p))
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(",")
         } else {
             DEFAULT_PROVIDERS_LIST.join(",")
         };
