@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.272.0 - 2025-07-21
+#### Features
+- **(Meld)** adding default providers and exclude providers parameters (#1163) - (961e6e1) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.271.1 - 2025-07-21
 #### Bug Fixes
 - **(proxy)** force adding an application/json response header (#1162) - (168249b) - Max Kalashnikoff | maksy.eth
