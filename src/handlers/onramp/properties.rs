@@ -18,9 +18,10 @@ pub struct QueryParams {
     pub r#type: PropertyType,
     pub project_id: String,
     pub countries: Option<String>,
+    pub exclude_providers: Option<Vec<String>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum PropertyType {
     Countries,
