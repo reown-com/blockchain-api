@@ -279,20 +279,23 @@ impl OnRampMultiProvider for MeldProvider {
             .append_pair("categories", DEFAULT_CATEGORY);
 
         // Exclude provider from DEFAULT_PROVIDERS_LIST if exclude_providers is provided
-        let providers_list = if let Some(exclude_providers) = params.exclude_providers {
-            let exclude_set: std::collections::HashSet<&str> =
-                exclude_providers.iter().map(|s| s.as_str()).collect();
-            DEFAULT_PROVIDERS_LIST
-                .iter()
-                .filter(|p| !exclude_set.contains(*p))
-                .cloned()
-                .collect::<Vec<_>>()
-                .join(",")
-        } else {
-            DEFAULT_PROVIDERS_LIST.join(",")
+        // and the type is not `countries-defaults`
+        if params.r#type != PropertyType::CountriesDefaults {
+            let providers_list = if let Some(exclude_providers) = params.exclude_providers {
+                let exclude_set: std::collections::HashSet<&str> =
+                    exclude_providers.iter().map(|s| s.as_str()).collect();
+                DEFAULT_PROVIDERS_LIST
+                    .iter()
+                    .filter(|p| !exclude_set.contains(*p))
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .join(",")
+            } else {
+                DEFAULT_PROVIDERS_LIST.join(",")
+            };
+            url.query_pairs_mut()
+                .append_pair("serviceProviders", &providers_list);
         };
-        url.query_pairs_mut()
-            .append_pair("serviceProviders", &providers_list);
 
         let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await.map_err(|e| {
