@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.272.1 - 2025-07-22
+#### Bug Fixes
+- **(Meld)** fixing the excludeProviders query parameter (#1165) - (cea7058) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- exchange tests (#1149) - (87cda05) - Luka Isailovic
+
+- - -
+
 ## 0.272.0 - 2025-07-21
 #### Features
 - **(Meld)** adding default providers and exclude providers parameters (#1163) - (961e6e1) - Max Kalashnikoff | maksy.eth
