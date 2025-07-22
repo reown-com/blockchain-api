@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.273.0 - 2025-07-22
+#### Features
+- **(proxy)** extending the known list of json-rpc error messages (#1164) - (a6e834b) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.272.1 - 2025-07-22
 #### Bug Fixes
 - **(Meld)** fixing the excludeProviders query parameter (#1165) - (cea7058) - Max Kalashnikoff | maksy.eth
