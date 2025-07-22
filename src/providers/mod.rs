@@ -96,6 +96,7 @@ pub fn is_rate_limited_error_rpc_message(error_message: &str) -> bool {
         "your plan",
         "current plan",
         "you reached",
+        "no matched providers found",
     ];
 
     RATE_LIMITED_ERROR_PATTERNS
@@ -125,6 +126,8 @@ pub fn is_known_rpc_error_message(error_message: &str) -> bool {
         "unsupported block number",
         "block not found",
         "invalid opcode",
+        "unknown account",
+        "gapped-nonce tx",
     ];
 
     KNOWN_ERROR_PATTERNS

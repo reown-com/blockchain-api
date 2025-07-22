@@ -149,6 +149,22 @@ describe('OnRamp', () => {
     expect(resp.data.length).toBeGreaterThan(0)
     expect(resp.data[0].countryCode).toBe(defaultCountry)
     expect(resp.data[0].defaultCurrencyCode).toBe('USD')
+
+    // Check for excludeProviders parameter
+    type = 'crypto-currencies'
+    const excludeProviders = 'BINANCECONNECT,COINBASEPAY'
+    resp = await httpClient.get(
+      `${onRampPath}/providers/properties` +
+      `?projectId=${projectId}` +
+      `&type=${type}` +
+      `&excludeProviders=${excludeProviders}`
+    );
+    expect(resp.status).toBe(200)
+    expect(resp.data.length).toBeGreaterThan(0)
+    expect(typeof resp.data[0].currencyCode).toBe('string')
+    expect(typeof resp.data[0].name).toBe('string')
+    expect(typeof resp.data[0].chainCode).toBe('string')
+    expect(typeof resp.data[0].symbolImageUrl).toBe('string') 
   })
 
   it('get multi provider quotes', async () => {
