@@ -54,6 +54,8 @@ impl Registry {
                 api_url,
                 api_auth_token,
                 "https://rpc-service.walletconnect.org",
+                "blockchain-api",
+                "1.0.0",
             )?;
 
             let cache_addr = cfg_storage.project_data_redis_addr();
@@ -153,7 +155,6 @@ impl Registry {
             }))
         };
         self.metrics.fetch_registry_time(time.elapsed());
-
         data
     }
 }
