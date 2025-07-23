@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.274.0 - 2025-07-23
+#### Features
+- using the updated Cerberus which uses a new limits to check the quota (#1166) - (f861600) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.273.0 - 2025-07-22
 #### Features
 - **(proxy)** extending the known list of json-rpc error messages (#1164) - (a6e834b) - Max Kalashnikoff | maksy.eth
