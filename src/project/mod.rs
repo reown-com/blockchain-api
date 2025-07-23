@@ -8,7 +8,7 @@ use {
         storage::{error::StorageError, redis},
     },
     cerberus::{
-        project::{ProjectData, ProjectDataWithQuota, ProjectKey, Quota},
+        project::{PlanLimits, ProjectData, ProjectDataWithLimits, ProjectKey},
         registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult},
     },
     std::{sync::Arc, time::Instant},
@@ -81,7 +81,7 @@ impl Registry {
         })
     }
 
-    pub async fn project_data(&self, id: &str) -> RpcResult<ProjectDataWithQuota> {
+    pub async fn project_data(&self, id: &str) -> RpcResult<ProjectDataWithLimits> {
         let time = Instant::now();
         let (source, data) = self.project_data_internal(id).await?;
         self.metrics.request(time.elapsed(), source, &data);
@@ -121,13 +121,14 @@ impl Registry {
         Ok((ResponseSource::Registry, data))
     }
 
-    async fn fetch_registry(&self, id: &str) -> RegistryResult<Option<ProjectDataWithQuota>> {
+    async fn fetch_registry(&self, id: &str) -> RegistryResult<Option<ProjectDataWithLimits>> {
         let time = Instant::now();
+
         let data = if let Some(client) = &self.client {
-            client.project_data_with_quota(id).await
+            client.project_data_with_limits(id).await
         } else {
-            Ok(Some(ProjectDataWithQuota {
-                project_data: ProjectData {
+            Ok(Some(ProjectDataWithLimits {
+                data: ProjectData {
                     uuid: "".to_owned(),
                     creator: "".to_owned(),
                     name: "".to_owned(),
@@ -144,10 +145,10 @@ impl Registry {
                     bundle_ids: vec![],
                     package_names: vec![],
                 },
-                quota: Quota {
-                    current: 0,
-                    max: 0,
-                    is_valid: true,
+                limits: PlanLimits {
+                    tier: "".to_owned(),
+                    is_above_rpc_limit: false,
+                    is_above_mau_limit: false,
                 },
             }))
         };
