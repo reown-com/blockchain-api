@@ -84,7 +84,7 @@ tracing-subscriber = { version = "0.3", features = [
     "env-filter",
 ] }
 
-cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.13.3" }
+cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.14.0" }
 parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3", default-features = false, features = [
     "flate2",
 ] }
