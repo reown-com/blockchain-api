@@ -91,7 +91,7 @@ impl Display for SupportedCurrencies {
     }
 }
 
-/// Rate limit middleware that uses `rate_limiting`` token bucket sub crate
+/// Rate limit middleware that uses `rate_limiting` token bucket sub crate
 /// from the `utils-rs`. IP address and matched path are used as the token key.
 pub async fn rate_limit_middleware<B>(
     State(state): State<Arc<AppState>>,

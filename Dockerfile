@@ -46,7 +46,7 @@ ARG                 PROFILE="release-debug"
 ARG                 BUILD_PROFILE="--profile ${PROFILE}"
 
 WORKDIR             /app
-# Cache dependancies
+# Cache dependencies
 COPY --from=plan    /app/recipe.json recipe.json
 COPY                irn ./irn
 RUN                 cargo chef cook ${BUILD_PROFILE} --recipe-path recipe.json 
