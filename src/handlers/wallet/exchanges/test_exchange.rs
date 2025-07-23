@@ -12,7 +12,7 @@ use {
 
 pub struct TestExchange;
 
-const TEST_EXCHANGE_URL: &str = "http://localhost:3000";
+const TEST_EXCHANGE_URL: &str = "https://appkit-pay-test-exchange.reown.com";
 
 static CAIP_19_SUPPORTED_ASSETS: Lazy<Vec<Caip19Asset>> = Lazy::new(|| {
     vec![
@@ -39,7 +39,7 @@ impl ExchangeProvider for TestExchange {
     }
 
     fn image_url(&self) -> Option<&'static str> {
-        Some("https://pay-assets.reown.com/binance_128_128.webp")
+        Some("https://pay-assets.reown.com/reown_test_128_128.webp")
     }
 
     fn is_asset_supported(&self, asset: &Caip19Asset) -> bool {
@@ -63,7 +63,7 @@ impl TestExchange {
     pub async fn get_buy_status(&self, state: State<Arc<AppState>>, params: GetBuyStatusParams) -> Result<GetBuyStatusResponse, ExchangeError> {
         let response = state
             .http_client
-            .get(format!("{}/status?sessionId={}", TEST_EXCHANGE_URL, params.session_id))
+            .get(format!("{}/api/status?sessionId={}", TEST_EXCHANGE_URL, params.session_id))
             .send()
             .await
             .map_err(|e| ExchangeError::GetPayUrlError(e.to_string()))?;
