@@ -4,7 +4,7 @@ use super::*;
 fn test_request_serialized() {
     assert_eq!(
         &serde_json::to_string(&JsonRpcPayload::Request(JsonRpcRequest::new(
-            MessageId("1".into()),
+            "1".into(),
             "eth_chainId".into()
         )))
         .unwrap(),
@@ -19,14 +19,14 @@ fn test_request_deserialized() {
             "{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":null}"
         )
         .unwrap(),
-        &JsonRpcRequest::new(MessageId("1".into()), "eth_chainId".into(),),
+        &JsonRpcRequest::new(1.into(), "eth_chainId".into(),),
     );
     assert_eq!(
         &serde_json::from_str::<JsonRpcRequest>(
             "{\"id\":\"abc\",\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":null}"
         )
         .unwrap(),
-        &JsonRpcRequest::new(MessageId("abc".into()), "eth_chainId".into(),),
+        &JsonRpcRequest::new("abc".into(), "eth_chainId".into(),),
     );
 }
 
@@ -34,7 +34,7 @@ fn test_request_deserialized() {
 fn test_response_result() {
     let payload: JsonRpcPayload =
         JsonRpcPayload::Response(JsonRpcResponse::Result(JsonRpcResult {
-            id: MessageId("1".into()),
+            id: "1".into(),
             jsonrpc: JSON_RPC_VERSION.clone(),
             result: "some result".into(),
         }));
@@ -54,7 +54,7 @@ fn test_response_result() {
 #[test]
 fn test_response_error() {
     let payload: JsonRpcPayload = JsonRpcPayload::Response(JsonRpcResponse::Error(JsonRpcError {
-        id: MessageId(1.to_string()),
+        id: 1.into(),
         jsonrpc: JSON_RPC_VERSION.clone(),
         error: ErrorResponse {
             code: 32,
@@ -67,7 +67,7 @@ fn test_response_error() {
 
     assert_eq!(
         &serialized,
-        "{\"id\":\"1\",\"jsonrpc\":\"2.0\",\"error\":{\"code\":32,\"message\":\"some message\",\"data\":null}}"
+        "{\"id\":1,\"jsonrpc\":\"2.0\",\"error\":{\"code\":32,\"message\":\"some message\",\"data\":null}}"
     );
 
     let deserialized: JsonRpcPayload = serde_json::from_str(&serialized).unwrap();

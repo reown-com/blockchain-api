@@ -92,7 +92,7 @@ async fn handler_internal(
         result_pcis.push(Pci {
             project: ProjectItem {
                 id: storage_permissions_item.project_id.clone(),
-                name: project.project_data.name,
+                name: project.data.name,
                 url: None,
                 icon_url: None,
             },

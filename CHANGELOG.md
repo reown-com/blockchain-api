@@ -2,6 +2,32 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.275.2 - 2025-07-24
+#### Bug Fixes
+- preserving JSON-RPC `id` type (#1172) - (d7ee818) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.275.1 - 2025-07-24
+#### Bug Fixes
+- exchange tests (#1170) - (c1e466a) - Luka Isailovic
+#### Miscellaneous Chores
+- update test exchange implementation (#1171) - (50feb69) - Luka Isailovic
+
+- - -
+
+## 0.275.0 - 2025-07-24
+#### Features
+- test exchange (#1169) - (08955ad) - Luka Isailovic
+
+- - -
+
+## 0.274.0 - 2025-07-23
+#### Features
+- using the updated Cerberus which uses a new limits to check the quota (#1166) - (f861600) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.273.0 - 2025-07-22
 #### Features
 - **(proxy)** extending the known list of json-rpc error messages (#1164) - (a6e834b) - Max Kalashnikoff | maksy.eth

@@ -14,9 +14,11 @@ use {
 
 pub mod binance;
 pub mod coinbase;
+pub mod test_exchange;
 
 use binance::BinanceExchange;
 use coinbase::CoinbaseExchange;
+use test_exchange::TestExchange;
 
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
 pub struct Config {
@@ -85,6 +87,7 @@ pub trait ExchangeProvider {
 pub enum ExchangeType {
     Binance,
     Coinbase,
+    ReownTest,
 }
 
 #[derive(Error, Debug)]
@@ -110,6 +113,7 @@ impl ExchangeType {
         match self {
             ExchangeType::Binance => Box::new(BinanceExchange),
             ExchangeType::Coinbase => Box::new(CoinbaseExchange),
+            ExchangeType::ReownTest => Box::new(TestExchange),
         }
     }
 
@@ -129,6 +133,7 @@ impl ExchangeType {
         match self {
             ExchangeType::Binance => BinanceExchange.get_buy_url(state, params).await,
             ExchangeType::Coinbase => CoinbaseExchange.get_buy_url(state, params).await,
+            ExchangeType::ReownTest => TestExchange.get_buy_url(state, params),
         }
     }
 
@@ -140,6 +145,7 @@ impl ExchangeType {
         match self {
             ExchangeType::Binance => BinanceExchange.get_buy_status(state, params).await,
             ExchangeType::Coinbase => CoinbaseExchange.get_buy_status(state, params).await,
+            ExchangeType::ReownTest => TestExchange.get_buy_status(state, params).await,
         }
     }
 
