@@ -79,7 +79,7 @@ impl TestExchange {
     ) -> Result<GetBuyStatusResponse, ExchangeError> {
         let response = state
             .http_client
-            .post(format!("{}/api/status", TEST_EXCHANGE_URL))
+            .post(format!("{TEST_EXCHANGE_URL}/api/status"))
             .json(&TestExchangeStatusRequest {
                 session_id: params.session_id,
             })
