@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.275.0 - 2025-07-24
+#### Features
+- test exchange (#1169) - (08955ad) - Luka Isailovic
+
+- - -
+
 ## 0.274.0 - 2025-07-23
 #### Features
 - using the updated Cerberus which uses a new limits to check the quota (#1166) - (f861600) - Max Kalashnikoff | maksy.eth
