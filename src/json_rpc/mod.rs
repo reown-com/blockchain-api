@@ -4,9 +4,8 @@
 //! clients.
 
 use {
-    derive_more::{Display, From, Into},
+    derive_more::From,
     serde::{Deserialize, Serialize},
-    serde_aux::prelude::deserialize_string_from_number,
     std::sync::Arc,
 };
 
@@ -17,11 +16,6 @@ pub const JSON_RPC_VERSION_STR: &str = "2.0";
 
 pub static JSON_RPC_VERSION: once_cell::sync::Lazy<Arc<str>> =
     once_cell::sync::Lazy::new(|| Arc::from(JSON_RPC_VERSION_STR));
-
-/// Represents the message ID type.
-#[derive(Debug, Hash, Clone, PartialEq, Eq, Serialize, Deserialize, From, Into, Display)]
-#[serde(transparent)]
-pub struct MessageId(#[serde(deserialize_with = "deserialize_string_from_number")] String);
 
 /// Enum representing a JSON RPC Payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -37,7 +31,7 @@ pub enum JsonRpcPayload {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct JsonRpcRequest<T = serde_json::Value> {
     /// ID this message corresponds to.
-    pub id: MessageId,
+    pub id: serde_json::Value,
     /// The JSON RPC version.
     pub jsonrpc: Arc<str>,
     /// The RPC method.
@@ -48,7 +42,7 @@ pub struct JsonRpcRequest<T = serde_json::Value> {
 
 impl JsonRpcRequest {
     /// Create a new instance.
-    pub fn new(id: MessageId, method: Arc<str>) -> Self {
+    pub fn new(id: serde_json::Value, method: Arc<str>) -> Self {
         Self {
             id,
             jsonrpc: JSON_RPC_VERSION.clone(),
@@ -59,7 +53,7 @@ impl JsonRpcRequest {
 }
 
 impl<T> JsonRpcRequest<T> {
-    pub fn new_with_params(id: MessageId, method: Arc<str>, params: T) -> Self {
+    pub fn new_with_params(id: serde_json::Value, method: Arc<str>, params: T) -> Self {
         Self {
             id,
             jsonrpc: JSON_RPC_VERSION.clone(),
@@ -83,7 +77,7 @@ pub enum JsonRpcResponse {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct JsonRpcResult<T = serde_json::Value> {
     /// ID this message corresponds to.
-    pub id: MessageId,
+    pub id: serde_json::Value,
     /// RPC version.
     pub jsonrpc: Arc<str>,
     /// The result for the message.
@@ -91,7 +85,7 @@ pub struct JsonRpcResult<T = serde_json::Value> {
 }
 
 impl JsonRpcResult {
-    pub fn new(id: MessageId, result: serde_json::Value) -> Self {
+    pub fn new(id: serde_json::Value, result: serde_json::Value) -> Self {
         Self {
             id,
             jsonrpc: JSON_RPC_VERSION.clone(),
@@ -104,7 +98,7 @@ impl JsonRpcResult {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct JsonRpcError<T: Serialize = Option<Arc<str>>> {
     /// ID this message corresponds to.
-    pub id: MessageId,
+    pub id: serde_json::Value,
     /// RPC version.
     pub jsonrpc: Arc<str>,
     /// The ErrorResponse corresponding to this message.
@@ -112,7 +106,7 @@ pub struct JsonRpcError<T: Serialize = Option<Arc<str>>> {
 }
 
 impl<T: Serialize> JsonRpcError<T> {
-    pub fn new(id: MessageId, error: ErrorResponse<T>) -> Self {
+    pub fn new(id: serde_json::Value, error: ErrorResponse<T>) -> Self {
         Self {
             id,
             jsonrpc: JSON_RPC_VERSION.clone(),

@@ -129,7 +129,7 @@ async fn handle_eth_chain_id(
     set_mem_cached_response(
         caip2_chain_id,
         CachedMethods::EthChainId.to_string().as_str(),
-        &chain_id_bytes,
+        chain_id_bytes.as_str(),
         moka_cache,
     )
     .await;
