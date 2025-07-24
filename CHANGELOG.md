@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.275.2 - 2025-07-24
+#### Bug Fixes
+- preserving JSON-RPC `id` type (#1172) - (d7ee818) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.275.1 - 2025-07-24
 #### Bug Fixes
 - exchange tests (#1170) - (c1e466a) - Luka Isailovic
