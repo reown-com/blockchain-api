@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.275.1 - 2025-07-24
+#### Bug Fixes
+- exchange tests (#1170) - (c1e466a) - Luka Isailovic
+#### Miscellaneous Chores
+- update test exchange implementation (#1171) - (50feb69) - Luka Isailovic
+
+- - -
+
 ## 0.275.0 - 2025-07-24
 #### Features
 - test exchange (#1169) - (08955ad) - Luka Isailovic
