@@ -22,6 +22,8 @@ describe('Exchanges', () => {
   const nativeSOL = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/slip44:501';
   const unsupportedAsset = 'eip155:999/erc20:0x1234567890123456789012345678901234567890';
 
+  const supportedExchanges = ['binance', 'coinbase', 'reown_test'];
+
   const defaultAmount = '100';
   const hexAmount = '0x64';
   const floatAmount = '100.5';
@@ -53,7 +55,7 @@ describe('Exchanges', () => {
         expect(typeof exchange.name).toBe('string');
         expect(['string', 'undefined']).toContain(typeof exchange.imageUrl);
         
-        expect(['binance', 'coinbase']).toContain(exchange.id);
+        expect(supportedExchanges).toContain(exchange.id);
       }
     });
 
