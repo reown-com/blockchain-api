@@ -34,7 +34,7 @@ struct TestExchangeApiResponse {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct TestExchangeStatusRequest {
-    pub session_id: String
+    pub session_id: String,
 }
 
 impl ExchangeProvider for TestExchange {
@@ -79,10 +79,7 @@ impl TestExchange {
     ) -> Result<GetBuyStatusResponse, ExchangeError> {
         let response = state
             .http_client
-            .post(format!(
-                "{}/api/status",
-                TEST_EXCHANGE_URL
-            ))
+            .post(format!("{}/api/status", TEST_EXCHANGE_URL))
             .json(&TestExchangeStatusRequest {
                 session_id: params.session_id,
             })
