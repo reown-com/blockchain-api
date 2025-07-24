@@ -82,7 +82,7 @@ impl TestExchange {
 
         if response.status().is_success() {
             let api_response: TestExchangeApiResponse = response.json().await.map_err(|e| {
-                ExchangeError::GetPayUrlError(format!("Failed to parse response: {}", e))
+                ExchangeError::GetPayUrlError(format!("Failed to parse response: {e}"))
             })?;
 
             let status = match api_response.status.to_lowercase().as_str() {
