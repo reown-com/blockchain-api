@@ -22,7 +22,7 @@ pub async fn is_cached_response(
     metrics: &Metrics,
     moka_cache: &Cache<String, String>,
 ) -> Option<JsonRpcResponse> {
-    if let Ok(method) = (*request.method).parse::<CachedMethods>() {
+    if let Ok(method) = request.method.as_ref().parse::<CachedMethods>() {
         match method {
             CachedMethods::EthChainId => {
                 handle_eth_chain_id(caip2_chain_id, request, moka_cache, metrics).await
