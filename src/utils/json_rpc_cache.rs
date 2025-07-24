@@ -22,7 +22,7 @@ pub async fn is_cached_response(
     metrics: &Metrics,
     moka_cache: &Cache<String, String>,
 ) -> Option<JsonRpcResponse> {
-    if let Ok(method) = request.method.as_ref().parse::<CachedMethods>() {
+    if let Ok(method) = (*request.method).parse::<CachedMethods>() {
         match method {
             CachedMethods::EthChainId => {
                 handle_eth_chain_id(caip2_chain_id, request, moka_cache, metrics).await
@@ -129,7 +129,7 @@ async fn handle_eth_chain_id(
     set_mem_cached_response(
         caip2_chain_id,
         CachedMethods::EthChainId.to_string().as_str(),
-        &chain_id_bytes,
+        chain_id_bytes.as_str(),
         moka_cache,
     )
     .await;
