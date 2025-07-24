@@ -17,8 +17,8 @@ const TEST_EXCHANGE_URL: &str = "https://appkit-pay-test-exchange.reown.com";
 
 static CAIP_19_SUPPORTED_ASSETS: Lazy<Vec<Caip19Asset>> = Lazy::new(|| {
     vec![
-        Caip19Asset::parse("eip155:11155111/slip44:60").unwrap(),
-        Caip19Asset::parse("eip155:84532/slip44:60").unwrap(),
+        Caip19Asset::parse("eip155:11155111/slip44:60").expect("Invalid asset"),
+        Caip19Asset::parse("eip155:84532/slip44:60").expect("Invalid asset"),
     ]
 });
 
