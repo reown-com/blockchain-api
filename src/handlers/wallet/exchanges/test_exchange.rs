@@ -9,6 +9,7 @@ use {
     once_cell::sync::Lazy,
     serde::{Deserialize, Serialize},
     std::sync::Arc,
+    tracing::debug,
 };
 
 pub struct TestExchange;
@@ -28,6 +29,12 @@ struct TestExchangeApiResponse {
     pub status: String,
     pub txid: Option<String>,
     pub created_at: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TestExchangeStatusRequest {
+    pub session_id: String
 }
 
 impl ExchangeProvider for TestExchange {
@@ -72,10 +79,13 @@ impl TestExchange {
     ) -> Result<GetBuyStatusResponse, ExchangeError> {
         let response = state
             .http_client
-            .get(format!(
-                "{}/api/status?sessionId={}",
-                TEST_EXCHANGE_URL, params.session_id
+            .post(format!(
+                "{}/api/status",
+                TEST_EXCHANGE_URL
             ))
+            .json(&TestExchangeStatusRequest {
+                session_id: params.session_id,
+            })
             .send()
             .await
             .map_err(|e| ExchangeError::GetPayUrlError(e.to_string()))?;
@@ -91,16 +101,18 @@ impl TestExchange {
                 "failed" | "error" => BuyTransactionStatus::Failed,
                 _ => BuyTransactionStatus::Unknown,
             };
+            debug!("Test exchange status: {:?}", api_response);
 
             Ok(GetBuyStatusResponse {
                 status,
                 tx_hash: api_response.txid,
             })
         } else {
-            Err(ExchangeError::GetPayUrlError(format!(
-                "API returned error status: {}",
-                response.status()
-            )))
+            debug!("Test exchange status error: {:?}", response);
+            Ok(GetBuyStatusResponse {
+                status: BuyTransactionStatus::Unknown,
+                tx_hash: None,
+            })
         }
     }
 }
