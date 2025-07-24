@@ -436,11 +436,11 @@ impl BinanceExchange {
                 debug!("Failed to get project data: {}", e);
                 ExchangeError::InternalError(format!("Failed to get project data: {e}"))
             })?;
-        let project_name = if project.project_data.name.is_empty() {
+        let project_name = if project.data.name.is_empty() {
             debug!("Project name is empty, using fallback name");
             FALLBACK_MERCHANT_NAME.to_string()
         } else {
-            project.project_data.name
+            project.data.name
         };
 
         let request = PreOrderRequest {
