@@ -1,13 +1,14 @@
 use {
     crate::handlers::wallet::exchanges::{
-        ExchangeProvider, ExchangeError, GetBuyUrlParams, GetBuyStatusParams, GetBuyStatusResponse, BuyTransactionStatus,
+        BuyTransactionStatus, ExchangeError, ExchangeProvider, GetBuyStatusParams,
+        GetBuyStatusResponse, GetBuyUrlParams,
     },
-    crate::utils::crypto::Caip19Asset,
-    once_cell::sync::Lazy,
-    axum::extract::State,
-    std::sync::Arc,
     crate::state::AppState,
+    crate::utils::crypto::Caip19Asset,
+    axum::extract::State,
+    once_cell::sync::Lazy,
     serde::{Deserialize, Serialize},
+    std::sync::Arc,
 };
 
 pub struct TestExchange;
@@ -48,31 +49,41 @@ impl ExchangeProvider for TestExchange {
 }
 
 impl TestExchange {
-    pub fn get_buy_url(&self, _state: State<Arc<AppState>>, params: GetBuyUrlParams) -> Result<String, ExchangeError> {
+    pub fn get_buy_url(
+        &self,
+        _state: State<Arc<AppState>>,
+        params: GetBuyUrlParams,
+    ) -> Result<String, ExchangeError> {
         Ok(format!(
-            "{}/?asset={}&amount={}&recipient={}&sessionId={}&projectId={}", 
-            TEST_EXCHANGE_URL, 
-            params.asset, 
-            params.amount, 
-            params.recipient, 
-            params.session_id, 
+            "{}/?asset={}&amount={}&recipient={}&sessionId={}&projectId={}",
+            TEST_EXCHANGE_URL,
+            params.asset,
+            params.amount,
+            params.recipient,
+            params.session_id,
             params.project_id
         ))
     }
 
-    pub async fn get_buy_status(&self, state: State<Arc<AppState>>, params: GetBuyStatusParams) -> Result<GetBuyStatusResponse, ExchangeError> {
+    pub async fn get_buy_status(
+        &self,
+        state: State<Arc<AppState>>,
+        params: GetBuyStatusParams,
+    ) -> Result<GetBuyStatusResponse, ExchangeError> {
         let response = state
             .http_client
-            .get(format!("{}/api/status?sessionId={}", TEST_EXCHANGE_URL, params.session_id))
+            .get(format!(
+                "{}/api/status?sessionId={}",
+                TEST_EXCHANGE_URL, params.session_id
+            ))
             .send()
             .await
             .map_err(|e| ExchangeError::GetPayUrlError(e.to_string()))?;
 
         if response.status().is_success() {
-            let api_response: TestExchangeApiResponse = response
-                .json()
-                .await
-                .map_err(|e| ExchangeError::GetPayUrlError(format!("Failed to parse response: {}", e)))?;
+            let api_response: TestExchangeApiResponse = response.json().await.map_err(|e| {
+                ExchangeError::GetPayUrlError(format!("Failed to parse response: {}", e))
+            })?;
 
             let status = match api_response.status.to_lowercase().as_str() {
                 "success" => BuyTransactionStatus::Success,
@@ -87,7 +98,7 @@ impl TestExchange {
             })
         } else {
             Err(ExchangeError::GetPayUrlError(format!(
-                "API returned error status: {}", 
+                "API returned error status: {}",
                 response.status()
             )))
         }
