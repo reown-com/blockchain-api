@@ -12,7 +12,7 @@ use {
 };
 
 static DOMAIN_FORMAT_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"^[a-zA-Z0-9.-]+$").expect("Failed to initialize regexp for the domain format")
+    Regex::new(r"^[a-z0-9.-]+$").expect("Failed to initialize regexp for the domain format")
 });
 
 const NAME_MIN_LENGTH: usize = 3;
