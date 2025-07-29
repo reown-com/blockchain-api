@@ -39,6 +39,7 @@ pub enum ChainAbstractionNoBridgingNeededType {
 pub struct Metrics {
     pub rpc_call_counter: Counter<u64>,
     pub rpc_call_retries: Histogram<u64>,
+    pub rpc_cached_call_counter: Counter<u64>,
     pub chain_latency_tracker: Histogram<f64>, // Chain latency
     pub http_call_counter: Counter<u64>,
     pub provider_finished_call_counter: Counter<u64>,
@@ -111,6 +112,11 @@ impl Metrics {
         let rpc_call_retries = meter
             .u64_histogram("rpc_call_retries")
             .with_description("Retries per RPC call")
+            .init();
+
+        let rpc_cached_call_counter = meter
+            .u64_counter("rpc_cached_call_counter")
+            .with_description("The number of cached rpc calls served")
             .init();
 
         let chain_latency_tracker = meter
@@ -344,6 +350,7 @@ impl Metrics {
         Metrics {
             rpc_call_counter,
             rpc_call_retries,
+            rpc_cached_call_counter,
             chain_latency_tracker,
             http_call_counter,
             http_external_latency_tracker,
@@ -411,6 +418,17 @@ impl Metrics {
             retires_count,
             &[otel::KeyValue::new("chain_id", chain_id)],
         )
+    }
+
+    pub fn add_rpc_cached_call(&self, chain_id: String, method: String) {
+        self.rpc_cached_call_counter.add(
+            &otel::Context::new(),
+            1,
+            &[
+                otel::KeyValue::new("chain_id", chain_id),
+                otel::KeyValue::new("method", method),
+            ],
+        );
     }
 
     pub fn add_balance_lookup_retries(&self, retry_count: u64, namespace: CaipNamespaces) {

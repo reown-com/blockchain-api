@@ -154,9 +154,9 @@ async fn handler_internal(
                     error = %e,
                     "Internal error, unable to get exchange URL"
                 );
-                Err(GetExchangeUrlError::InternalError(
-                    "Unable to get exchange URL".to_string(),
-                ))
+                Err(GetExchangeUrlError::InternalError(format!(
+                    "Unable to get exchange URL: {e:?}"
+                )))
             }
         },
     }

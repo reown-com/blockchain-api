@@ -151,7 +151,7 @@ variable "provider_cache_endpoint" {
   type        = string
 }
 
-variable "ofac_blocked_countries" {
+variable "ofac_countries" {
   description = "The list of countries under OFAC sanctions"
   type        = string
 }
@@ -288,6 +288,14 @@ variable "testing_project_id" {
   description = "Project ID used in a testing suite"
   type        = string
   sensitive   = true
+}
+
+#-------------------------------------------------------------------------------
+# RPC Proxy configuration
+variable "proxy_skip_quota_chains" {
+  description = "Comma separated list of CAIP-2 chains to skip quota check"
+  type        = string
+  default     = ""
 }
 
 #-------------------------------------------------------------------------------

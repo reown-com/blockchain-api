@@ -2,6 +2,117 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.275.2 - 2025-07-24
+#### Bug Fixes
+- preserving JSON-RPC `id` type (#1172) - (d7ee818) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.275.1 - 2025-07-24
+#### Bug Fixes
+- exchange tests (#1170) - (c1e466a) - Luka Isailovic
+#### Miscellaneous Chores
+- update test exchange implementation (#1171) - (50feb69) - Luka Isailovic
+
+- - -
+
+## 0.275.0 - 2025-07-24
+#### Features
+- test exchange (#1169) - (08955ad) - Luka Isailovic
+
+- - -
+
+## 0.274.0 - 2025-07-23
+#### Features
+- using the updated Cerberus which uses a new limits to check the quota (#1166) - (f861600) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.273.0 - 2025-07-22
+#### Features
+- **(proxy)** extending the known list of json-rpc error messages (#1164) - (a6e834b) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.272.1 - 2025-07-22
+#### Bug Fixes
+- **(Meld)** fixing the excludeProviders query parameter (#1165) - (cea7058) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- exchange tests (#1149) - (87cda05) - Luka Isailovic
+
+- - -
+
+## 0.272.0 - 2025-07-21
+#### Features
+- **(Meld)** adding default providers and exclude providers parameters (#1163) - (961e6e1) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.271.1 - 2025-07-21
+#### Bug Fixes
+- **(proxy)** force adding an application/json response header (#1162) - (168249b) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.271.0 - 2025-07-19
+#### Bug Fixes
+- **(o11y)** fixing Prometheus query and label for RPC caching (#1158) - (1aa3e24) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(proxy)** implementing skip the quota chains list (#1161) - (ab2050e) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.270.0 - 2025-07-18
+#### Bug Fixes
+- **(o11y)** fixing the JSON-RPC error codes Prometheus query (#1157) - (c46346e) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(proxy)** implementing RPC caching scaffold and adding `chainId` server-side calculation (#1156) - (5738f61) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.269.1 - 2025-07-18
+#### Bug Fixes
+- **(proxy)** extending known RPC errors list, debug only on unexpected JSON-RPC schema (#1155) - (cf55ba7) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.269.0 - 2025-07-17
+#### Features
+- **(proxy)** multiple optimizations for errors catch (#1154) - (7d50774) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.268.0 - 2025-07-17
+#### Features
+- **(proxy)** adding an error check only when the response is success and debugging message (#1153) - (9a44588) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.267.1 - 2025-07-17
+#### Bug Fixes
+- **(RPC)** fixing the check for server error codes (#1146) - (72100c5) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.267.0 - 2025-07-16
+#### Features
+- **(OnRamp)** adding an `excludeProviders` filter for quotes (#1152) - (77c911c) - Max Kalashnikoff | maksy.eth
+- removing a repository ofac variable usage in a favor of the terraform cloud (#1151) - (4ebe3cc) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.266.1 - 2025-07-15
+#### Bug Fixes
+- **(exchanges)** passing an error into the internal server error message (#1150) - (490b2f6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.266.0 - 2025-07-14
+#### Features
+- coinbase secure init migration (#1148) - (3f21fa2) - Luka Isailovic
+
+- - -
+
 ## 0.265.0 - 2025-07-11
 #### Features
 - **(RPC)** extending the Quicknode provider to Solana WSS support (#1147) - (7d783dc) - Max Kalashnikoff | maksy.eth

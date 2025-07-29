@@ -25,6 +25,7 @@ pub struct QueryParams {
     pub source_amount: f64,
     pub source_currency_code: String,
     pub wallet_address: Option<String>,
+    pub exclude_providers: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -67,7 +68,8 @@ async fn handler_internal(
         .validate_project_access_and_quota(&request_payload.project_id)
         .await?;
 
-    let quotes = state
+    let exclude_providers = request_payload.exclude_providers.clone();
+    let mut quotes = state
         .providers
         .onramp_multi_provider
         .get_quotes(request_payload, state.metrics.clone())
@@ -75,6 +77,18 @@ async fn handler_internal(
         .tap_err(|e| {
             error!("Failed to call onramp multi providers quotes with {e}");
         })?;
+
+    // If exclude_providers is provided, remove the providers from the quotes
+    // since there is no way to exclude providers in the multi provider API
+    if let Some(exclude_providers) = exclude_providers {
+        let exclude_set: std::collections::HashSet<_> = exclude_providers.into_iter().collect();
+        quotes.retain(|quote| {
+            !quote
+                .service_provider
+                .as_ref()
+                .is_some_and(|provider| exclude_set.contains(provider))
+        });
+    }
 
     Ok(Json(quotes).into_response())
 }

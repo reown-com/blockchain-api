@@ -50,7 +50,7 @@ variable "app_autoscaling_max_capacity" {
   default     = 10
 }
 
-variable "ofac_blocked_countries" {
+variable "ofac_countries" {
   description = "The list of countries to block"
   type        = string
   default     = ""
@@ -75,7 +75,6 @@ variable "project_cache_ttl" {
   type        = number
   default     = 300
 }
-
 
 #-------------------------------------------------------------------------------
 # Providers
@@ -204,6 +203,15 @@ variable "blast_api_key" {
   description = "Blast API key"
   type        = string
   sensitive   = true
+}
+
+#-------------------------------------------------------------------------------
+# RPC Proxy configuration
+
+variable "proxy_skip_quota_chains" {
+  description = "Comma separated list of CAIP-2 chains to skip quota check"
+  type        = string
+  default     = ""
 }
 
 #-------------------------------------------------------------------------------
