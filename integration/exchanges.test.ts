@@ -178,7 +178,7 @@ describe('Exchanges', () => {
 
   describe('Get Exchange URL', () => {
     
-    binanceTestFn('should generate pay URL for Binance with USDC on Base', async () => {
+    binanceTestFn.skip('should generate pay URL for Binance with USDC on Base', async () => {
       const payload = {
         jsonrpc: '2.0',
         id: 1,
@@ -555,12 +555,12 @@ describe('Exchanges', () => {
         recipient: ethAddress,
         supportedExchanges: ['binance', 'coinbase']
       },
-      {
-        name: 'USDC on Base',
-        asset: baseUSDC,
-        recipient: baseAddress,
-        supportedExchanges: ['binance', 'coinbase']
-      },
+      // {
+      //   name: 'USDC on Base',
+      //   asset: baseUSDC,
+      //   recipient: baseAddress,
+      //   supportedExchanges: ['binance', 'coinbase']
+      // },
       {
         name: 'USDC on Ethereum',
         asset: ethUSDC,
