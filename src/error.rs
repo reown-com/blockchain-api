@@ -559,8 +559,8 @@ impl IntoResponse for RpcError {
             Self::RateLimited(e) => (
                 StatusCode::TOO_MANY_REQUESTS,
                 Json(new_error_response(
-                    "rate_limit".to_string(),
-                    format!("Rate limited: {e}"),
+                    "rate_limited".to_string(),
+                    format!("Requests per second limit exceeded: {e}"),
                 )),
             )
                 .into_response(),
