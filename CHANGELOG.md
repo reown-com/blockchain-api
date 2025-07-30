@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.276.0 - 2025-07-30
+#### Bug Fixes
+- disable failing tests (#1174) - (587a29d) - Chris Smith
+#### Features
+- better rate-limited error message (#1175) - (7bfa3f0) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.275.2 - 2025-07-24
 #### Bug Fixes
 - preserving JSON-RPC `id` type (#1172) - (d7ee818) - Max Kalashnikoff | maksy.eth
