@@ -182,14 +182,14 @@ variable "quicknode_api_tokens" {
   sensitive   = true
 }
 
-variable "coinbase_api_key" {
-  description = "The API key for Coinbase Pay SDK"
+variable "coinbase_api_key_id" {
+  description = "The API key ID for Coinbase API"
   type        = string
   sensitive   = true
 }
 
-variable "coinbase_app_id" {
-  description = "The APP-ID for Coinbase Pay SDK"
+variable "coinbase_api_key_secret" {
+  description = "The API key secret for Coinbase API"
   type        = string
   sensitive   = true
 }

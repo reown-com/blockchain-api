@@ -3,18 +3,14 @@ use {
         BuyTransactionStatus, ExchangeError, ExchangeProvider, GetBuyStatusParams,
         GetBuyStatusResponse, GetBuyUrlParams,
     },
+    crate::providers::coinbase::generate_jwt_key,
     crate::state::AppState,
     crate::utils::crypto::Caip19Asset,
     axum::extract::State,
-    base64::engine::general_purpose::STANDARD,
-    base64::prelude::*,
-    ed25519_dalek::{Signer, SigningKey},
     once_cell::sync::Lazy,
-    rand::RngCore,
     serde::{Deserialize, Serialize},
     std::collections::HashMap,
     std::sync::Arc,
-    std::time::{SystemTime, UNIX_EPOCH},
     tracing::debug,
     url::Url,
 };
@@ -241,8 +237,7 @@ impl CoinbaseExchange {
     ) -> Result<reqwest::Response, ExchangeError> {
         let (pub_key, priv_key) = self.get_api_credentials(state)?;
 
-        let jwt_key =
-            generate_coinbase_jwt_key(&pub_key, &priv_key, "GET", COINBASE_API_HOST, path)?;
+        let jwt_key = generate_jwt_key(&pub_key, &priv_key, "GET", COINBASE_API_HOST, path)?;
 
         let url = format!("https://{COINBASE_API_HOST}{path}");
 
@@ -266,8 +261,7 @@ impl CoinbaseExchange {
     ) -> Result<reqwest::Response, ExchangeError> {
         let (pub_key, priv_key) = self.get_api_credentials(state)?;
 
-        let jwt_key =
-            generate_coinbase_jwt_key(&pub_key, &priv_key, "POST", COINBASE_API_HOST, path)?;
+        let jwt_key = generate_jwt_key(&pub_key, &priv_key, "POST", COINBASE_API_HOST, path)?;
 
         let url = format!("https://{COINBASE_API_HOST}{path}");
 
@@ -428,66 +422,4 @@ impl CoinbaseExchange {
             }),
         }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Claims {
-    iss: String,
-    nbf: usize,
-    exp: usize,
-    sub: String,
-    uri: String,
-}
-
-fn generate_coinbase_jwt_key(
-    key_name: &str,
-    key_secret: &str,
-    request_method: &str,
-    request_host: &str,
-    request_path: &str,
-) -> Result<String, ExchangeError> {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|_| ExchangeError::InternalError("Failed to get current time".to_string()))?
-        .as_secs() as usize;
-    let uri = format!("{request_method} {request_host}{request_path}");
-    let claims = Claims {
-        iss: "cdp".to_string(),
-        nbf: now,
-        exp: now + 120,
-        sub: key_name.to_string(),
-        uri,
-    };
-    let mut nonce_bytes = [0u8; 16];
-    rand::thread_rng()
-        .try_fill_bytes(&mut nonce_bytes)
-        .map_err(|_| ExchangeError::InternalError("Failed to generate nonce".to_string()))?;
-    let nonce = hex::encode(nonce_bytes);
-    let header = serde_json::json!({
-        "alg": "EdDSA",
-        "kid": key_name,
-        "nonce": nonce,
-        "typ": "JWT"
-    });
-    let header = serde_json::to_vec(&header)
-        .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize header: {e}")))?;
-    let header_b64 = BASE64_URL_SAFE_NO_PAD.encode(&header);
-    let claims = serde_json::to_vec(&claims)
-        .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize claims: {e}")))?;
-    let claims_b64 = BASE64_URL_SAFE_NO_PAD.encode(&claims);
-    let message = format!("{header_b64}.{claims_b64}");
-
-    let secret_bytes = STANDARD
-        .decode(key_secret.trim())
-        .map_err(|_| ExchangeError::InternalError("Failed to decode key secret".to_string()))?;
-
-    let secret_array: [u8; 32] = secret_bytes[..32]
-        .try_into()
-        .map_err(|_| ExchangeError::InternalError("Invalid key length".to_string()))?;
-
-    let signing_key = SigningKey::from_bytes(&secret_array);
-    let signature = signing_key.sign(message.as_bytes());
-    let signature_b64 = BASE64_URL_SAFE_NO_PAD.encode(signature.to_bytes());
-
-    Ok(format!("{header_b64}.{claims_b64}.{signature_b64}"))
 }

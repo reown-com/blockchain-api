@@ -63,26 +63,26 @@ module "ecs" {
   postgres_url                       = module.postgres.database_url
 
   # Providers
-  pokt_project_id      = var.pokt_project_id
-  quicknode_api_tokens = var.quicknode_api_tokens
-  zerion_api_key       = var.zerion_api_key
-  coinbase_api_key     = var.coinbase_api_key
-  coinbase_app_id      = var.coinbase_app_id
-  one_inch_api_key     = var.one_inch_api_key
-  one_inch_referrer    = var.one_inch_referrer
-  pimlico_api_key      = var.pimlico_api_key
-  solscan_api_v2_token = var.solscan_api_v2_token
-  bungee_api_key       = var.bungee_api_key
-  tenderly_api_key     = var.tenderly_api_key
-  tenderly_account_id  = var.tenderly_account_id
-  tenderly_project_id  = var.tenderly_project_id
-  dune_api_key         = var.dune_api_key
-  syndica_api_key      = var.syndica_api_key
-  allnodes_api_key     = var.allnodes_api_key
-  meld_api_key         = var.meld_api_key
-  meld_api_url         = var.meld_api_url
-  callstatic_api_key   = var.callstatic_api_key
-  blast_api_key        = var.blast_api_key
+  pokt_project_id         = var.pokt_project_id
+  quicknode_api_tokens    = var.quicknode_api_tokens
+  zerion_api_key          = var.zerion_api_key
+  coinbase_api_key_id     = var.coinbase_api_key_id
+  coinbase_api_key_secret = var.coinbase_api_key_secret
+  one_inch_api_key        = var.one_inch_api_key
+  one_inch_referrer       = var.one_inch_referrer
+  pimlico_api_key         = var.pimlico_api_key
+  solscan_api_v2_token    = var.solscan_api_v2_token
+  bungee_api_key          = var.bungee_api_key
+  tenderly_api_key        = var.tenderly_api_key
+  tenderly_account_id     = var.tenderly_account_id
+  tenderly_project_id     = var.tenderly_project_id
+  dune_api_key            = var.dune_api_key
+  syndica_api_key         = var.syndica_api_key
+  allnodes_api_key        = var.allnodes_api_key
+  meld_api_key            = var.meld_api_key
+  meld_api_url            = var.meld_api_url
+  callstatic_api_key      = var.callstatic_api_key
+  blast_api_key           = var.blast_api_key
 
   # RPC Proxy configuration
   proxy_skip_quota_chains = var.proxy_skip_quota_chains
