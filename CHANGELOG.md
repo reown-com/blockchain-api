@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.276.1 - 2025-08-05
+#### Bug Fixes
+- **(o11y)** fixing the no provider for chain chart and alert (#1167) - (8485671) - Max Kalashnikoff | maksy.eth
+- enforce lowercase names (#1173) - (39f0849) - Chris Smith
+
+- - -
+
 ## 0.276.0 - 2025-07-30
 #### Bug Fixes
 - disable failing tests (#1174) - (587a29d) - Chris Smith
