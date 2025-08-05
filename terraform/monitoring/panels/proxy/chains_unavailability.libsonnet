@@ -9,7 +9,7 @@ local alertCondition  = grafana.alertCondition;
 {
   new(ds, vars)::
     panels.timeseries(
-      title       = 'ChainID Unavailability',
+      title       = 'No provider for chain responses',
       datasource  = ds.prometheus,
     )
     .configure(defaults.configuration.timeseries)
@@ -17,8 +17,8 @@ local alertCondition  = grafana.alertCondition;
       vars.environment,
       grafana.alert.new(
         namespace     = vars.namespace,
-        name          = "%(env)s - RPC chain unavailability alert"  % { env: grafana.utils.strings.capitalize(vars.environment) },
-        message       = '%(env)s - RPC chain unavailability alert'  % { env: grafana.utils.strings.capitalize(vars.environment) },
+        name          = "%(env)s - RPC no provider for chain alert"  % { env: grafana.utils.strings.capitalize(vars.environment) },
+        message       = '%(env)s - RPC no provider for chain alert'  % { env: grafana.utils.strings.capitalize(vars.environment) },
         notifications = vars.notifications,
         noDataState   = 'no_data',
         period        = '5m',
