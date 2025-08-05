@@ -13,6 +13,7 @@ local _alert(namespace, env, notifications) = grafana.alert.new(
   period        = '0m',
   conditions    = [
     grafana.alertCondition.new(
+      // Threshold set to 15 based on operational experience: alert if average 5xx errors exceed 15 in 15 minutes, which typically indicates a significant issue requiring attention.
       evaluatorParams = [ 15 ],
       evaluatorType   = 'gt',
       operatorType    = 'or',
