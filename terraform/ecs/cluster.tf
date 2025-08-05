@@ -14,7 +14,7 @@ locals {
   prometheus_proxy_cpu    = module.this.stage == "prod" ? 128 : 64
   prometheus_proxy_memory = module.this.stage == "prod" ? 128 : 64
 
-  file_descriptor_soft_limit = pow(2, 18)
+  file_descriptor_soft_limit = pow(2, 19)
   file_descriptor_hard_limit = local.file_descriptor_soft_limit * 2
 }
 
@@ -169,6 +169,21 @@ resource "aws_ecs_task_definition" "app_task" {
           name      = "nofile",
           softLimit = local.file_descriptor_soft_limit,
           hardLimit = local.file_descriptor_hard_limit,
+        }
+      ],
+
+      systemControls : [
+        {
+          namespace = "net.core.somaxconn",
+          value     = "8192"
+        },
+        {
+          namespace = "net.ipv4.tcp_max_syn_backlog",
+          value     = "4096"
+        },
+        {
+          namespace = "net.core.netdev_max_backlog",
+          value     = "5000"
         }
       ],
 
