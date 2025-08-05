@@ -486,7 +486,32 @@ fn create_server(
     app: Router,
     addr: &SocketAddr,
 ) -> Server<AddrIncoming, IntoMakeServiceWithConnectInfo<Router, SocketAddr>> {
-    axum::Server::bind(addr).serve(app.into_make_service_with_connect_info::<SocketAddr>())
+    // Create TCP socket with custom backlog of 4096
+    let socket = if addr.is_ipv4() {
+        tokio::net::TcpSocket::new_v4()
+    } else {
+        tokio::net::TcpSocket::new_v6()
+    }
+    .expect("Failed to create TCP socket");
+
+    socket
+        .set_reuseaddr(true)
+        .expect("Failed to set SO_REUSEADDR");
+    socket.bind(*addr).expect("Failed to bind socket");
+
+    let listener = socket
+        .listen(4096)
+        .expect("Failed to listen with backlog 4096");
+    let std_listener = listener
+        .into_std()
+        .expect("Failed to convert to std listener");
+
+    let incoming =
+        AddrIncoming::from_std(std_listener).expect("Failed to create AddrIncoming from listener");
+
+    info!("TCP listener configured with backlog of 4096 for {}", addr);
+
+    axum::Server::builder(incoming).serve(app.into_make_service_with_connect_info::<SocketAddr>())
 }
 
 fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
