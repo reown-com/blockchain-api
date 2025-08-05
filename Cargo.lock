@@ -8356,6 +8356,7 @@ dependencies = [
  "serde_json",
  "serde_piecewise_default",
  "sha256",
+ "socket2 0.5.10",
  "sqlx",
  "strum 0.26.3",
  "strum_macros 0.26.4",

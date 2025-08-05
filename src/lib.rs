@@ -38,9 +38,10 @@ use {
         SyndicaWsProvider, TheRpcProvider, UnichainProvider, WemixProvider, ZKSyncProvider,
         ZerionProvider, ZoraProvider, ZoraWsProvider,
     },
+    socket2::{Domain, Protocol, Socket, Type},
     sqlx::postgres::PgPoolOptions,
     std::{
-        net::{IpAddr, Ipv4Addr, SocketAddr},
+        net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener},
         sync::Arc,
         time::Duration,
     },
@@ -62,6 +63,7 @@ use {
     },
 };
 
+const TCP_STACK_BACKLOG: i32 = 4096;
 const DB_STATS_POLLING_INTERVAL: Duration = Duration::from_secs(3600);
 
 mod analytics;
@@ -486,32 +488,47 @@ fn create_server(
     app: Router,
     addr: &SocketAddr,
 ) -> Server<AddrIncoming, IntoMakeServiceWithConnectInfo<Router, SocketAddr>> {
-    // Create TCP socket with custom backlog of 4096
-    let socket = if addr.is_ipv4() {
-        tokio::net::TcpSocket::new_v4()
+    // Create a custom TCP listener with backlog
+    let listener = create_tcp_listener_with_backlog(addr, TCP_STACK_BACKLOG)
+        .expect("Failed to create TCP listener with custom backlog");
+
+    info!("TCP listener configured with backlog of {TCP_STACK_BACKLOG} for {addr}");
+
+    // Use hyper::Server::from_tcp directly with our configured std::net::TcpListener
+    hyper::Server::from_tcp(listener)
+        .expect("Failed to create server from TCP listener")
+        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+}
+
+fn create_tcp_listener_with_backlog(
+    addr: &SocketAddr,
+    backlog: i32,
+) -> Result<TcpListener, std::io::Error> {
+    let domain = if addr.is_ipv4() {
+        Domain::IPV4
     } else {
-        tokio::net::TcpSocket::new_v6()
+        Domain::IPV6
+    };
+
+    let socket = Socket::new(domain, Type::STREAM, Some(Protocol::TCP))?;
+
+    // Enable address reuse
+    socket.set_reuse_address(true)?;
+
+    // Bind to the address
+    match addr {
+        SocketAddr::V4(v4) => socket.bind(&(*v4).into())?,
+        SocketAddr::V6(v6) => socket.bind(&(*v6).into())?,
     }
-    .expect("Failed to create TCP socket");
 
-    socket
-        .set_reuseaddr(true)
-        .expect("Failed to set SO_REUSEADDR");
-    socket.bind(*addr).expect("Failed to bind socket");
+    // Listen with the specified backlog
+    socket.listen(backlog)?;
 
-    let listener = socket
-        .listen(4096)
-        .expect("Failed to listen with backlog 4096");
-    let std_listener = listener
-        .into_std()
-        .expect("Failed to convert to std listener");
+    // Convert to std::net::TcpListener and set non-blocking for axum
+    let std_listener: TcpListener = socket.into();
+    std_listener.set_nonblocking(true)?;
 
-    let incoming =
-        AddrIncoming::from_std(std_listener).expect("Failed to create AddrIncoming from listener");
-
-    info!("TCP listener configured with backlog of 4096 for {}", addr);
-
-    axum::Server::builder(incoming).serve(app.into_make_service_with_connect_info::<SocketAddr>())
+    Ok(std_listener)
 }
 
 fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
