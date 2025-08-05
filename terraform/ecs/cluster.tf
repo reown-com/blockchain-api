@@ -172,21 +172,6 @@ resource "aws_ecs_task_definition" "app_task" {
         }
       ],
 
-      systemControls : [
-        {
-          namespace = "net.core.somaxconn",
-          value     = "8192"
-        },
-        {
-          namespace = "net.ipv4.tcp_max_syn_backlog",
-          value     = "4096"
-        },
-        {
-          namespace = "net.core.netdev_max_backlog",
-          value     = "5000"
-        }
-      ],
-
       logConfiguration : {
         logDriver = "awslogs",
         options = {
