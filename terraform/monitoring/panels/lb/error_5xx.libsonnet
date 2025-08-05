@@ -13,7 +13,7 @@ local _alert(namespace, env, notifications) = grafana.alert.new(
   period        = '0m',
   conditions    = [
     grafana.alertCondition.new(
-      evaluatorParams = [ 0 ],
+      evaluatorParams = [ 15 ],
       evaluatorType   = 'gt',
       operatorType    = 'or',
       queryRefId      = 'ELB',
