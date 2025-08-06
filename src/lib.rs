@@ -63,6 +63,8 @@ use {
     },
 };
 
+// The backlog value for TCP connections. 4096 is chosen as a high default to support a large number of simultaneous connection attempts,
+// which is suitable for high-load servers. This value should be tuned according to system limits (e.g., SOMAXCONN) and expected traffic.
 const TCP_STACK_BACKLOG: i32 = 4096;
 const DB_STATS_POLLING_INTERVAL: Duration = Duration::from_secs(3600);
 
