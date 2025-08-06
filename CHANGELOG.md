@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.276.3 - 2025-08-06
+#### Bug Fixes
+- reverting of adding axum custom listener with the backlog size (#1179)" (#1181) - (8c87451) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.276.2 - 2025-08-06
 #### Bug Fixes
 - **(o11y)** tune the 502 alert (#1180) - (ef38ae6) - Max Kalashnikoff | maksy.eth
