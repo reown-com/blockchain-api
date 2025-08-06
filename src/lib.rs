@@ -38,10 +38,9 @@ use {
         SyndicaWsProvider, TheRpcProvider, UnichainProvider, WemixProvider, ZKSyncProvider,
         ZerionProvider, ZoraProvider, ZoraWsProvider,
     },
-    socket2::{Domain, Protocol, Socket, Type},
     sqlx::postgres::PgPoolOptions,
     std::{
-        net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener},
+        net::{IpAddr, Ipv4Addr, SocketAddr},
         sync::Arc,
         time::Duration,
     },
@@ -63,9 +62,6 @@ use {
     },
 };
 
-// The backlog value for TCP connections. 4096 is chosen as a high default to support a large number of simultaneous connection attempts,
-// which is suitable for high-load servers. This value should be tuned according to system limits (e.g., SOMAXCONN) and expected traffic.
-const TCP_STACK_BACKLOG: i32 = 4096;
 const DB_STATS_POLLING_INTERVAL: Duration = Duration::from_secs(3600);
 
 mod analytics;
@@ -490,47 +486,7 @@ fn create_server(
     app: Router,
     addr: &SocketAddr,
 ) -> Server<AddrIncoming, IntoMakeServiceWithConnectInfo<Router, SocketAddr>> {
-    // Create a custom TCP listener with backlog
-    let listener = create_tcp_listener_with_backlog(addr, TCP_STACK_BACKLOG)
-        .expect("Failed to create TCP listener with custom backlog");
-
-    info!("TCP listener configured with backlog of {TCP_STACK_BACKLOG} for {addr}");
-
-    // Use hyper::Server::from_tcp directly with our configured std::net::TcpListener
-    hyper::Server::from_tcp(listener)
-        .expect("Failed to create server from TCP listener")
-        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-}
-
-fn create_tcp_listener_with_backlog(
-    addr: &SocketAddr,
-    backlog: i32,
-) -> Result<TcpListener, std::io::Error> {
-    let domain = if addr.is_ipv4() {
-        Domain::IPV4
-    } else {
-        Domain::IPV6
-    };
-
-    let socket = Socket::new(domain, Type::STREAM, Some(Protocol::TCP))?;
-
-    // Enable address reuse
-    socket.set_reuse_address(true)?;
-
-    // Bind to the address
-    match addr {
-        SocketAddr::V4(v4) => socket.bind(&(*v4).into())?,
-        SocketAddr::V6(v6) => socket.bind(&(*v6).into())?,
-    }
-
-    // Listen with the specified backlog
-    socket.listen(backlog)?;
-
-    // Convert to std::net::TcpListener and set non-blocking for axum
-    let std_listener: TcpListener = socket.into();
-    std_listener.set_nonblocking(true)?;
-
-    Ok(std_listener)
+    axum::Server::bind(addr).serve(app.into_make_service_with_connect_info::<SocketAddr>())
 }
 
 fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
