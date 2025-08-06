@@ -30,7 +30,6 @@ tower-http = { version = "0.4", features = [
     "request-id",
     "util",
 ] }
-socket2 = "0.5.5"
 jsonrpc = "0.18.0"
 async-tungstenite = { version = "0.20.0", features = [
     "tokio",
