@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.276.2 - 2025-08-06
+#### Bug Fixes
+- **(o11y)** tune the 502 alert (#1180) - (ef38ae6) - Max Kalashnikoff | maksy.eth
+- adding axum custom listener with the backlog size (#1179) - (246f87f) - Max Kalashnikoff | maksy.eth
+- removing setting of the network syn in the terraform (#1178) - (e062509) - Max Kalashnikoff | maksy.eth
+- increasing the ulimts and network syn backlogs (#1177) - (1742782) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.276.1 - 2025-08-05
 #### Bug Fixes
 - **(o11y)** fixing the no provider for chain chart and alert (#1167) - (8485671) - Max Kalashnikoff | maksy.eth
