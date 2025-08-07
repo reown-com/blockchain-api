@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.277.0 - 2025-08-07
+#### Bug Fixes
+- fixing the ulimit to the Fargate maximum (#1183) - (d37f3de) - Max Kalashnikoff | maksy.eth
+#### Features
+- makes deployment rollouts smooth (#1182) - (8f6c46f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.276.3 - 2025-08-06
 #### Bug Fixes
 - reverting of adding axum custom listener with the backlog size (#1179)" (#1181) - (8c87451) - Max Kalashnikoff | maksy.eth
