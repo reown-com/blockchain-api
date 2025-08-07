@@ -14,8 +14,8 @@ locals {
   prometheus_proxy_cpu    = module.this.stage == "prod" ? 128 : 64
   prometheus_proxy_memory = module.this.stage == "prod" ? 128 : 64
 
-  file_descriptor_soft_limit = pow(2, 19)
-  file_descriptor_hard_limit = local.file_descriptor_soft_limit * 2
+  file_descriptor_soft_limit = pow(2, 20) # 1024 x 1024 = 1,048,576 is the Fargate maximum
+  file_descriptor_hard_limit = pow(2, 20)
 }
 
 module "ecs_cpu_mem" {
