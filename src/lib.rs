@@ -63,6 +63,7 @@ use {
 };
 
 const DB_STATS_POLLING_INTERVAL: Duration = Duration::from_secs(3600);
+const GRACEFUL_SHUTDOWN_DELAY: Duration = Duration::from_secs(5);
 
 mod analytics;
 pub mod database;
@@ -435,7 +436,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
                     }
                 }
             }
-            Ok::<(), hyper::Error>(())
+            Ok(())
         }
     };
 
@@ -461,7 +462,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
                     }
                 }
             }
-            Ok::<(), hyper::Error>(())
+            Ok(())
         }
     };
 
@@ -495,7 +496,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
                         }
                     }
                 }
-                Ok::<(), hyper::Error>(())
+                Ok(())
             }
         }),
     ];
@@ -510,7 +511,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         _ = shutdown_signal() => {
             info!("Graceful shutdown initiated, allowing services to complete current work...");
             // Give services a moment to finish current requests
-            tokio::time::sleep(Duration::from_secs(5)).await;
+            tokio::time::sleep(GRACEFUL_SHUTDOWN_DELAY).await;
             info!("Graceful shutdown completed");
         }
     }

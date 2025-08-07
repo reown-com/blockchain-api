@@ -55,6 +55,12 @@ variable "cloudwatch_retention_in_days" {
   default     = 14
 }
 
+variable "container_stop_timeout" {
+  description = "The number of seconds to wait for the container to stop gracefully before forcefully killing it"
+  type        = number
+  default     = 30
+}
+
 #-------------------------------------------------------------------------------
 # DNS
 

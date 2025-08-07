@@ -74,7 +74,7 @@ resource "aws_ecs_task_definition" "app_task" {
       cpu         = local.task_cpu - local.otel_cpu - local.prometheus_proxy_cpu,
       memory      = local.task_memory - local.otel_memory - local.prometheus_proxy_memory,
       essential   = true,
-      stopTimeout = 30, # Allow 30 seconds for graceful shutdown
+      stopTimeout = var.container_stop_timeout, # Allow container to gracefully shutdown
 
       environment = [
         { name = "RPC_PROXY_LOG_LEVEL", value = var.log_level },
