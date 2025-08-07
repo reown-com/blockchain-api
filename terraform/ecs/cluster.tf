@@ -69,11 +69,12 @@ resource "aws_ecs_task_definition" "app_task" {
 
   container_definitions = jsonencode([
     {
-      name      = module.this.id,
-      image     = local.image,
-      cpu       = local.task_cpu - local.otel_cpu - local.prometheus_proxy_cpu,
-      memory    = local.task_memory - local.otel_memory - local.prometheus_proxy_memory,
-      essential = true,
+      name        = module.this.id,
+      image       = local.image,
+      cpu         = local.task_cpu - local.otel_cpu - local.prometheus_proxy_cpu,
+      memory      = local.task_memory - local.otel_memory - local.prometheus_proxy_memory,
+      essential   = true,
+      stopTimeout = var.container_stop_timeout, # Allow container to gracefully shutdown
 
       environment = [
         { name = "RPC_PROXY_LOG_LEVEL", value = var.log_level },
@@ -262,6 +263,14 @@ resource "aws_ecs_service" "app_service" {
 
   # Wait for the service deployment to succeed
   wait_for_steady_state = true
+
+  # Grace period for health checks during startup
+  # This prevents ELB health checks from failing during container initialization
+  health_check_grace_period_seconds = 60
+
+  # Deployment configuration for smooth rolling updates
+  deployment_minimum_healthy_percent = 50  # Keep at least 50% of tasks healthy during deployment
+  deployment_maximum_percent         = 200 # Allow up to 200% of desired tasks during deployment
 
   network_configuration {
     subnets          = var.private_subnets

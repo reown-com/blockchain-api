@@ -14,7 +14,6 @@ use {
     aws_config::meta::region::RegionProviderChain,
     aws_sdk_s3::{config::Region, Client as S3Client},
     axum::{
-        extract::connect_info::IntoMakeServiceWithConnectInfo,
         middleware,
         routing::{get, post},
         Router,
@@ -28,7 +27,7 @@ use {
     },
     error::RpcResult,
     http::Request,
-    hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
+    hyper::{header::HeaderName, http, Body},
     providers::{
         AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
         BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider,
@@ -44,6 +43,7 @@ use {
         sync::Arc,
         time::Duration,
     },
+    tokio::signal,
     tower::ServiceBuilder,
     tower_http::{
         cors::{Any, CorsLayer},
@@ -63,6 +63,7 @@ use {
 };
 
 const DB_STATS_POLLING_INTERVAL: Duration = Duration::from_secs(3600);
+const GRACEFUL_SHUTDOWN_DELAY: Duration = Duration::from_secs(5);
 
 mod analytics;
 pub mod database;
@@ -425,9 +426,17 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         async move {
             let mut interval = tokio::time::interval(Duration::from_secs(15));
             loop {
-                interval.tick().await;
-                state_arc.clone().update_provider_weights().await;
+                tokio::select! {
+                    _ = interval.tick() => {
+                        state_arc.clone().update_provider_weights().await;
+                    }
+                    _ = signal::ctrl_c() => {
+                        info!("Weights updater received shutdown signal");
+                        break;
+                    }
+                }
             }
+            Ok(())
         }
     };
 
@@ -436,16 +445,24 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         async move {
             let mut interval = tokio::time::interval(Duration::from_secs(10));
             loop {
-                interval.tick().await;
-                // Gather system metrics (CPU and Memory usage)
-                state_arc.clone().metrics.gather_system_metrics().await;
-                // Gather current rate limited in-memory entries count
-                if let Some(rate_limit) = &state_arc.rate_limit {
-                    state_arc
-                        .metrics
-                        .add_rate_limited_entries_count(rate_limit.get_rate_limited_count().await);
+                tokio::select! {
+                    _ = interval.tick() => {
+                        // Gather system metrics (CPU and Memory usage)
+                        state_arc.clone().metrics.gather_system_metrics().await;
+                        // Gather current rate limited in-memory entries count
+                        if let Some(rate_limit) = &state_arc.rate_limit {
+                            state_arc
+                                .metrics
+                                .add_rate_limited_entries_count(rate_limit.get_rate_limited_count().await);
+                        }
+                    }
+                    _ = signal::ctrl_c() => {
+                        info!("System metrics updater received shutdown signal");
+                        break;
+                    }
                 }
             }
+            Ok(())
         }
     };
 
@@ -465,19 +482,39 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         // Spawning a new task to observe metrics from the database by interval polling
         tokio::spawn({
             let postgres = state_arc.postgres.clone();
+            let metrics = metrics.clone();
             async move {
                 let mut interval = tokio::time::interval(DB_STATS_POLLING_INTERVAL);
                 loop {
-                    interval.tick().await;
-                    metrics.update_account_names_count(&postgres).await;
+                    tokio::select! {
+                        _ = interval.tick() => {
+                            metrics.update_account_names_count(&postgres).await;
+                        }
+                        _ = signal::ctrl_c() => {
+                            info!("Database metrics updater received shutdown signal");
+                            break;
+                        }
+                    }
                 }
+                Ok(())
             }
         }),
     ];
 
-    if let Err(e) = futures_util::future::select_all(services).await.0 {
-        warn!("Server error: {e:?}");
-    };
+    // Wait for either services to complete or shutdown signal
+    tokio::select! {
+        result = futures_util::future::select_all(services) => {
+            if let Err(e) = result.0 {
+                warn!("Server error: {e:?}");
+            }
+        }
+        _ = shutdown_signal() => {
+            info!("Graceful shutdown initiated, allowing services to complete current work...");
+            // Give services a moment to finish current requests
+            tokio::time::sleep(GRACEFUL_SHUTDOWN_DELAY).await;
+            info!("Graceful shutdown completed");
+        }
+    }
 
     Ok(())
 }
@@ -485,8 +522,36 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 fn create_server(
     app: Router,
     addr: &SocketAddr,
-) -> Server<AddrIncoming, IntoMakeServiceWithConnectInfo<Router, SocketAddr>> {
-    axum::Server::bind(addr).serve(app.into_make_service_with_connect_info::<SocketAddr>())
+) -> impl std::future::Future<Output = Result<(), hyper::Error>> {
+    axum::Server::bind(addr)
+        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+        .with_graceful_shutdown(shutdown_signal())
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
+    info!("Signal received, starting graceful shutdown");
 }
 
 fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
