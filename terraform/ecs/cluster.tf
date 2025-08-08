@@ -269,7 +269,7 @@ resource "aws_ecs_service" "app_service" {
   health_check_grace_period_seconds = 60
 
   # Deployment configuration for smooth rolling updates
-  deployment_minimum_healthy_percent = 50  # Keep at least 50% of tasks healthy during deployment
+  deployment_minimum_healthy_percent = 100 # Keep all healthy tasks running during deployment
   deployment_maximum_percent         = 200 # Allow up to 200% of desired tasks during deployment
 
   network_configuration {
