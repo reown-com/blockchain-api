@@ -7,7 +7,7 @@ resource "aws_elasticache_cluster" "cache" {
   engine               = "redis"
   node_type            = var.node_type
   num_cache_nodes      = var.num_cache_nodes
-  parameter_group_name = "default.redis6.x"
+  parameter_group_name = "default.redis7"
   engine_version       = var.node_engine_version
   port                 = 6379
   subnet_group_name    = aws_elasticache_subnet_group.private_subnets.name
