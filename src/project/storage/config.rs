@@ -29,7 +29,7 @@ impl Default for Config {
 }
 
 impl Config {
-    pub fn project_data_redis_addr(&self) -> Option<RedisAddr> {
+    pub fn project_data_redis_addr(&self) -> Option<RedisAddr<'_>> {
         match (
             &self.project_data_redis_addr_read,
             &self.project_data_redis_addr_write,
@@ -39,7 +39,7 @@ impl Config {
         }
     }
 
-    pub fn identity_cache_redis_addr(&self) -> Option<RedisAddr> {
+    pub fn identity_cache_redis_addr(&self) -> Option<RedisAddr<'_>> {
         match (
             &self.identity_cache_redis_addr_read,
             &self.identity_cache_redis_addr_write,
@@ -49,7 +49,7 @@ impl Config {
         }
     }
 
-    pub fn rate_limiting_cache_redis_addr(&self) -> Option<RedisAddr> {
+    pub fn rate_limiting_cache_redis_addr(&self) -> Option<RedisAddr<'_>> {
         match (
             &self.rate_limiting_cache_redis_addr_read,
             &self.rate_limiting_cache_redis_addr_write,
