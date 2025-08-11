@@ -17,8 +17,8 @@ use {
 };
 pub use {
     allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, blast::*, callstatic::*, drpc::*,
-    dune::*, hiro::*, mantle::*, monad::*, moonbeam::*, morph::*, near::*, odyssey::*, pokt::*,
-    publicnode::*, quicknode::*, rootstock::*, server::*, solscan::*, sui::*, syndica::*,
+    dune::*, hiro::*, katana::*, mantle::*, monad::*, moonbeam::*, morph::*, near::*, odyssey::*,
+    pokt::*, publicnode::*, quicknode::*, rootstock::*, server::*, solscan::*, sui::*, syndica::*,
     therpc::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
 };
 mod allnodes;
@@ -31,6 +31,7 @@ mod callstatic;
 mod drpc;
 mod dune;
 mod hiro;
+mod katana;
 mod mantle;
 mod monad;
 mod moonbeam;
