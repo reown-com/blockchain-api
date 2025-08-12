@@ -29,19 +29,16 @@ variable "task_memory" {
 variable "autoscaling_desired_count" {
   description = "Minimum number of instances in the autoscaling group"
   type        = number
-  default     = 2
 }
 
 variable "autoscaling_min_capacity" {
   description = "Minimum number of instances in the autoscaling group"
   type        = number
-  default     = 2
 }
 
 variable "autoscaling_max_capacity" {
   description = "Maximum number of instances in the autoscaling group"
   type        = number
-  default     = 8
 }
 
 variable "cloudwatch_logs_key_arn" {
