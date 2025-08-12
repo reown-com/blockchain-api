@@ -53,3 +53,8 @@ variable "aws_account_id" {
   type        = string
 }
 
+variable "app_autoscaling_min_capacity" {
+  description = "The minimum number of ECS tasks (desired capacity) used for alerting."
+  type        = number
+}
+
