@@ -8,11 +8,11 @@ locals {
 
   otel_port   = var.port + 1
   otel_cpu    = module.this.stage == "prod" ? 128 : 64
-  otel_memory = module.this.stage == "prod" ? 128 : 64
+  otel_memory = module.this.stage == "prod" ? 256 : 64
 
   prometheus_proxy_port   = var.port + 2
   prometheus_proxy_cpu    = module.this.stage == "prod" ? 128 : 64
-  prometheus_proxy_memory = module.this.stage == "prod" ? 128 : 64
+  prometheus_proxy_memory = module.this.stage == "prod" ? 256 : 64
 
   file_descriptor_soft_limit = pow(2, 20) # 1024 x 1024 = 1,048,576 is the Fargate maximum
   file_descriptor_hard_limit = pow(2, 20)
@@ -191,7 +191,7 @@ resource "aws_ecs_task_definition" "app_task" {
     # Forward telemetry data to AWS CloudWatch
     {
       name      = "aws-otel-collector",
-      image     = "public.ecr.aws/aws-observability/aws-otel-collector:v0.31.0",
+      image     = "public.ecr.aws/aws-observability/aws-otel-collector:v0.44.0",
       cpu       = local.otel_cpu,
       memory    = local.otel_memory,
       essential = true,
@@ -221,7 +221,7 @@ resource "aws_ecs_task_definition" "app_task" {
     # SigV4 Proxy to sign HTTP requests to Prometheus (for providers weight updates)
     {
       name      = "sigv4-prometheus-proxy",
-      image     = "public.ecr.aws/aws-observability/aws-sigv4-proxy:latest",
+      image     = "public.ecr.aws/aws-observability/aws-sigv4-proxy:1.10",
       cpu       = local.prometheus_proxy_cpu,
       memory    = local.prometheus_proxy_memory
       essential = true,
