@@ -131,6 +131,8 @@ enum CoinbaseTransactionStatus {
     Success,
     #[serde(rename = "ONRAMP_TRANSACTION_STATUS_FAILED")]
     Failed,
+    #[serde(rename = "ONRAMP_TRANSACTION_STATUS_CREATED")]
+    Created,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -418,6 +420,7 @@ impl CoinbaseExchange {
                     }
                     CoinbaseTransactionStatus::InProgress => BuyTransactionStatus::InProgress,
                     CoinbaseTransactionStatus::Failed => BuyTransactionStatus::Failed,
+                    CoinbaseTransactionStatus::Created => BuyTransactionStatus::InProgress,
                 };
 
                 Ok(GetBuyStatusResponse { status, tx_hash })
