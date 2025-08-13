@@ -10,15 +10,15 @@ local _alert(namespace, env, notifications) = grafana.alert.new(
   message       = '%(env)s - 5XX alert'  % { env: grafana.utils.strings.capitalize(env) },
   notifications = notifications,
   noDataState   = 'no_data',
-  period        = '0m',
+  period        = '1m',
   conditions    = [
     grafana.alertCondition.new(
-      // Threshold set to 15 based on operational experience: alert if average 5xx errors exceed 15 in 15 minutes, which typically indicates a significant issue requiring attention.
-      evaluatorParams = [ 15 ],
+      // Threshold set to 100 based on operational experience: indicates a possible flood or DDoS attack.
+      evaluatorParams = [ 100 ],
       evaluatorType   = 'gt',
       operatorType    = 'or',
       queryRefId      = 'ELB',
-      queryTimeStart  = '15m',
+      queryTimeStart  = '5m',
       queryTimeEnd    = 'now',
       reducerType     = grafana.alert_reducers.Avg
     ),
