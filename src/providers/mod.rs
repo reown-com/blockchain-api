@@ -17,6 +17,7 @@ use {
                 transaction::{ConvertTransactionQueryParams, ConvertTransactionResponseBody},
             },
             fungible_price::PriceResponseBody,
+            generators::onrampurl::OnRampURLRequest,
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
                 multi_quotes::{
@@ -148,7 +149,7 @@ mod binance;
 mod blast;
 mod bungee;
 mod callstatic;
-mod coinbase;
+pub mod coinbase;
 mod drpc;
 mod dune;
 mod hiro;
@@ -237,8 +238,8 @@ pub struct ProvidersConfig {
     pub quicknode_api_tokens: String,
 
     pub zerion_api_key: String,
-    pub coinbase_api_key: Option<String>,
-    pub coinbase_app_id: Option<String>,
+    pub coinbase_api_key_id: Option<String>,
+    pub coinbase_api_key_secret: Option<String>,
     pub one_inch_api_key: Option<String>,
     pub one_inch_referrer: Option<String>,
     /// Pimlico API token key
@@ -356,17 +357,14 @@ impl ProviderRepository {
 
         // Don't crash the application if the COINBASE_API_KEY_UNDEFINED is not set
         // TODO: find a better way to handle this
-        let coinbase_api_key = config
-            .coinbase_api_key
+        let coinbase_api_key_id = config
+            .coinbase_api_key_id
             .clone()
             .unwrap_or("COINBASE_API_KEY_UNDEFINED".into());
-
-        // Don't crash the application if the COINBASE_APP_ID_UNDEFINED is not set
-        // TODO: find a better way to handle this
-        let coinbase_app_id = config
-            .coinbase_app_id
+        let coinbase_api_key_secret = config
+            .coinbase_api_key_secret
             .clone()
-            .unwrap_or("COINBASE_APP_ID_UNDEFINED".into());
+            .unwrap_or("COINBASE_API_KEY_SECRET_UNDEFINED".into());
 
         // Don't crash the application if the ONE_INCH_API_KEY is not set
         // TODO: find a better way to handle this
@@ -398,8 +396,8 @@ impl ProviderRepository {
         history_providers.insert(CaipNamespaces::Solana, solscan_provider.clone());
 
         let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
-            coinbase_api_key,
-            coinbase_app_id,
+            coinbase_api_key_id,
+            coinbase_api_key_secret,
             "https://pay.coinbase.com/api/v1".into(),
         ));
 
@@ -1070,6 +1068,12 @@ pub trait OnRampProvider: Send + Sync + Debug {
         params: OnRampBuyQuotesParams,
         metrics: Arc<Metrics>,
     ) -> RpcResult<OnRampBuyQuotesResponse>;
+
+    async fn generate_on_ramp_url(
+        &self,
+        parameters: OnRampURLRequest,
+        metrics: Arc<Metrics>,
+    ) -> Result<String, anyhow::Error>;
 }
 
 #[async_trait]
