@@ -2,6 +2,20 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.278.0 - 2025-08-13
+#### Bug Fixes
+- **(ecs)** fix deployment minimum - (462b36d) - Max Kalashnikoff
+- **(o11y)** including 503 errors in the availability chart (#1186) - (4b23ab4) - Max Kalashnikoff | maksy.eth
+- **(otel)** increasing the otel collector memory and pinning the sigv4-proxy version (#1190) - (7200782) - Max Kalashnikoff | maksy.eth
+- **(terraform)** removing duplicated ECS defaults for variables (#1191) - (5ecd55d) - Max Kalashnikoff | maksy.eth
+- fixing clippy warnings (#1189) - (5d8135f) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(ecs)** increasing the minimal cluster count (#1184) - (5383c3a) - Max Kalashnikoff | maksy.eth
+- **(o11y)** implementing an alert for the cluster minimal healthy hosts (#1192) - (9525057) - Max Kalashnikoff | maksy.eth
+- **(redis)** updating the Redis cache engine version to 7 on staging environment (#1185) - (125c88f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.277.0 - 2025-08-07
 #### Bug Fixes
 - fixing the ulimit to the Fargate maximum (#1183) - (d37f3de) - Max Kalashnikoff | maksy.eth
