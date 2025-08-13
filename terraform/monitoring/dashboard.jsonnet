@@ -28,6 +28,8 @@ local vars  = {
   log_group_app_name: std.extVar('log_group_app_name'),
   log_group_app_arn:  std.extVar('log_group_app_arn'),
   aws_account_id:     std.extVar('aws_account_id'),
+  
+  app_autoscaling_min_capacity: std.parseInt(std.extVar('app_autoscaling_min_capacity')),
 };
 
 ////////////////////////////////////////////////////////////////////////////////
