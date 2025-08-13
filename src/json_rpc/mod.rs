@@ -18,6 +18,7 @@ pub static JSON_RPC_VERSION: once_cell::sync::Lazy<Arc<str>> =
     once_cell::sync::Lazy::new(|| Arc::from(JSON_RPC_VERSION_STR));
 
 /// Enum representing a JSON RPC Payload.
+#[cfg(test)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum JsonRpcPayload {

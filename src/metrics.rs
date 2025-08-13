@@ -858,8 +858,8 @@ impl Metrics {
     /// Gathering system CPU(s) and Memory usage metrics
     pub async fn gather_system_metrics(&self) {
         let mut system = System::new_with_specifics(
-            RefreshKind::new()
-                .with_memory(MemoryRefreshKind::new().with_ram())
+            RefreshKind::nothing()
+                .with_memory(MemoryRefreshKind::everything().with_ram())
                 .with_cpu(CpuRefreshKind::everything().without_frequency()),
         );
         system.refresh_all();
@@ -867,7 +867,7 @@ impl Metrics {
         // Wait a bit because CPU usage is based on diff.
         // https://docs.rs/sysinfo/0.30.5/sysinfo/struct.Cpu.html#method.cpu_usage
         tokio::time::sleep(MINIMUM_CPU_UPDATE_INTERVAL).await;
-        system.refresh_cpu();
+        system.refresh_cpu_all();
 
         for (i, processor) in system.cpus().iter().enumerate() {
             self.add_cpu_usage(processor.cpu_usage() as f64, i as f64);

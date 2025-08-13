@@ -15,8 +15,8 @@ relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", ta
 yttrium = { git = "https://github.com/reown-com/yttrium.git", rev = "5e1b5f4", features = ["solana"] }
 
 # Async
-async-trait = "0.1.82"
-tokio = { version = "1.45", features = ["full"] }
+async-trait = "0.1.88"
+tokio = { version = "1.47", features = ["full"] }
 
 # Web
 hyper = "0.14"
@@ -47,10 +47,10 @@ serde_piecewise_default = "0.2"
 serde-aux = "3.1"
 validator = { version = "0.20.0", features = ["derive"] }
 num_enum = "0.7"
-strum = "0.26"
-strum_macros = "0.26"
+strum = "0.27"
+strum_macros = "0.27"
 hex = "0.4"
-phf = { version = "0.11", features = ["macros"] }
+phf = { version = "0.12", features = ["macros"] }
 
 # Storage
 aws-config = "1.1"
@@ -105,7 +105,7 @@ bytes = "1.7.1"
 data-encoding = "2.6.0"
 base64 = "0.22"
 bs58 = "0.5"
-regex = "1.10"
+regex = "1.11"
 sha256 = "1.5"
 uuid = { version = "1.13.1", features = ["serde"] }
 openssl = "0.10"
@@ -113,7 +113,7 @@ ed25519-dalek = "2.1"
 
 
 # System CPU and Memory metrics
-sysinfo = "0.30"
+sysinfo = "0.37"
 eyre = "0.6.12"
 wiremock = "0.6.3"
 
