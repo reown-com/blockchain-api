@@ -36,7 +36,7 @@ local _configuration = defaults.configuration.timeseries
               queryRefId      = 'HealthyHosts',
               queryTimeStart  = '1m',
               queryTimeEnd    = 'now',
-              reducerType     = grafana.alert_reducers.Avg,
+              reducerType     = grafana.alert_reducers.Min,
             ),
           ],
         ),
