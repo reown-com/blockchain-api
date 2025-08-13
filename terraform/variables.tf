@@ -157,8 +157,8 @@ variable "tenderly_project_id" {
   sensitive   = true
 }
 
-variable "dune_api_key" {
-  description = "Dune API key"
+variable "dune_sim_api_key" {
+  description = "Dune Sim API key"
   type        = string
   sensitive   = true
 }

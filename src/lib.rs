@@ -634,7 +634,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
         None,
     );
     providers.add_balance_provider::<DuneProvider, DuneConfig>(
-        DuneConfig::new(config.dune_api_key.clone()),
+        DuneConfig::new(config.dune_sim_api_key.clone()),
         None,
     );
     providers.add_balance_provider::<SolScanProvider, SolScanConfig>(

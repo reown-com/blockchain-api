@@ -23,7 +23,7 @@ use {
     url::Url,
 };
 
-const DUNE_API_BASE_URL: &str = "https://api.dune.com/api";
+const DUNE_API_BASE_URL: &str = "https://api.sim.dune.com";
 const MIN_POOL_SIZE: f64 = 10.0; // Minimum pool size to consider a token valid
 
 /// Native token icons, since Dune doesn't provide them yet
@@ -69,7 +69,7 @@ impl DuneProvider {
     async fn send_request(&self, url: Url) -> Result<reqwest::Response, reqwest::Error> {
         self.http_client
             .get(url)
-            .header("X-Dune-Api-Key", self.api_key.clone())
+            .header("X-Sim-Api-Key", self.api_key.clone())
             .send()
             .await
     }
@@ -80,7 +80,7 @@ impl DuneProvider {
         params: BalanceQueryParams,
         metrics: Arc<Metrics>,
     ) -> RpcResult<DuneBalanceResponseBody> {
-        let base = format!("{}/echo/v1/balances/evm/{}", DUNE_API_BASE_URL, &address);
+        let base = format!("{}/v1/evm/balances/{}", DUNE_API_BASE_URL, &address);
         let mut url = Url::parse(&base).map_err(|_| RpcError::BalanceParseURLError)?;
         url.query_pairs_mut().append_pair("metadata", "logo");
         if let Some(chain_id_param) = params.chain_id {
@@ -124,7 +124,7 @@ impl DuneProvider {
         address: String,
         metrics: Arc<Metrics>,
     ) -> RpcResult<DuneBalanceResponseBody> {
-        let base = format!("{}/echo/beta2/balances/svm/{}", DUNE_API_BASE_URL, &address);
+        let base = format!("{}/beta/svm/balances/{}", DUNE_API_BASE_URL, &address);
         let mut url = Url::parse(&base).map_err(|_| RpcError::BalanceParseURLError)?;
         url.query_pairs_mut()
             .append_pair("exclude_spam_tokens", "true");
