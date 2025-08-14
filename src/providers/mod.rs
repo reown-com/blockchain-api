@@ -253,8 +253,8 @@ pub struct ProvidersConfig {
     pub tenderly_account_id: String,
     /// Tenderly Project ID
     pub tenderly_project_id: String,
-    /// Dune API key
-    pub dune_api_key: String,
+    /// Dune Sim API key
+    pub dune_sim_api_key: String,
     /// Syndica API key
     pub syndica_api_key: String,
     /// Allnodes API key

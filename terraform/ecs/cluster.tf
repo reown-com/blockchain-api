@@ -100,7 +100,7 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_PROVIDER_TENDERLY_API_KEY", value = var.tenderly_api_key },
         { name = "RPC_PROXY_PROVIDER_TENDERLY_ACCOUNT_ID", value = var.tenderly_account_id },
         { name = "RPC_PROXY_PROVIDER_TENDERLY_PROJECT_ID", value = var.tenderly_project_id },
-        { name = "RPC_PROXY_PROVIDER_DUNE_API_KEY", value = var.dune_api_key },
+        { name = "RPC_PROXY_PROVIDER_DUNE_SIM_API_KEY", value = var.dune_sim_api_key },
         { name = "RPC_PROXY_PROVIDER_SYNDICA_API_KEY", value = var.syndica_api_key },
         { name = "RPC_PROXY_PROVIDER_ALLNODES_API_KEY", value = var.allnodes_api_key },
         { name = "RPC_PROXY_PROVIDER_MELD_API_KEY", value = var.meld_api_key },
