@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.278.1 - 2025-08-14
+#### Bug Fixes
+- coinbase api created status (#1195) - (e10a3ee) - Luka Isailovic
+
+- - -
+
 ## 0.278.0 - 2025-08-13
 #### Bug Fixes
 - **(ecs)** fix deployment minimum - (462b36d) - Max Kalashnikoff
