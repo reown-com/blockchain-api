@@ -2,8 +2,15 @@ use {
     crate::{
         state::AppState,
         utils::crypto::{self, Caip19Asset},
-    }, axum::extract::State, cerberus::project::{Feature, ProjectDataRequest}, serde::{Deserialize, Serialize}, std::sync::Arc, strum::IntoEnumIterator, strum_macros::{AsRefStr, EnumIter}, thiserror::Error, tracing::debug
-   
+    },
+    axum::extract::State,
+    cerberus::project::{Feature, ProjectDataRequest},
+    serde::{Deserialize, Serialize},
+    std::sync::Arc,
+    strum::IntoEnumIterator,
+    strum_macros::{AsRefStr, EnumIter},
+    thiserror::Error,
+    tracing::debug,
 };
 
 pub mod binance;
@@ -168,9 +175,18 @@ pub fn get_exchange_by_id(id: &str) -> Option<Exchange> {
     ExchangeType::from_id(id).map(|e| e.to_exchange())
 }
 
-async fn get_enabled_features( state: State<Arc<AppState>>, project_id: &String) -> Result<Vec<Feature>, ExchangeError> {
-    let request = ProjectDataRequest::new(project_id.as_str()).include_features().include_limits();
-    let project_data = state.registry.project_data_request(request).await.map_err(|e| ExchangeError::InternalError(e.to_string()))?;
+async fn get_enabled_features(
+    state: State<Arc<AppState>>,
+    project_id: &str,
+) -> Result<Vec<Feature>, ExchangeError> {
+    let request = ProjectDataRequest::new(project_id)
+        .include_features()
+        .include_limits();
+    let project_data = state
+        .registry
+        .project_data_request(request)
+        .await
+        .map_err(|e| ExchangeError::InternalError(e.to_string()))?;
     debug!("project_data: {:?}", project_data);
     let features = project_data.features.unwrap_or_default();
     Ok(features)
@@ -178,7 +194,7 @@ async fn get_enabled_features( state: State<Arc<AppState>>, project_id: &String)
 
 pub async fn is_feature_enabled_for_project_id(
     state: State<Arc<AppState>>,
-    project_id: &String,
+    project_id: &str,
 ) -> Result<(), ExchangeError> {
     if let Some(testing_project_id) = state.config.server.testing_project_id.as_ref() {
         if crypto::constant_time_eq(testing_project_id, project_id) {
@@ -188,18 +204,21 @@ pub async fn is_feature_enabled_for_project_id(
 
     if let Some(allowed_project_ids) = state.config.exchanges.allowed_project_ids.as_ref() {
         debug!("allowed_project_ids: {:?}", allowed_project_ids);
-        if allowed_project_ids.contains(project_id) {
+        if allowed_project_ids.iter().any(|id| id == project_id) {
             return Ok(());
         }
     }
 
     let features = get_enabled_features(state, project_id).await?;
     debug!("features: {:?}", features);
-    if features.iter().any(|f| f.id == PAYMENTS_FEATURE_ID && f.is_enabled) {
+    if features
+        .iter()
+        .any(|f| f.id == PAYMENTS_FEATURE_ID && f.is_enabled)
+    {
         return Ok(());
     }
 
-    return Err(ExchangeError::FeatureNotEnabled(
+    Err(ExchangeError::FeatureNotEnabled(
         "Project is not allowed to use this feature".to_string(),
-    ));
+    ))
 }

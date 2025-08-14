@@ -8,7 +8,10 @@ use {
         storage::{error::StorageError, redis},
     },
     cerberus::{
-        project::{PlanLimits, ProjectData, ProjectDataRequest, ProjectDataResponse, ProjectDataWithLimits, ProjectKey},
+        project::{
+            PlanLimits, ProjectData, ProjectDataRequest, ProjectDataResponse,
+            ProjectDataWithLimits, ProjectKey,
+        },
         registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult},
     },
     std::{sync::Arc, time::Instant},
@@ -99,7 +102,10 @@ impl Registry {
         })
     }
 
-    pub async fn project_data_request(&self, request: ProjectDataRequest<'_>) -> RpcResult<ProjectDataResponse> {
+    pub async fn project_data_request(
+        &self,
+        request: ProjectDataRequest<'_>,
+    ) -> RpcResult<ProjectDataResponse> {
         let time = Instant::now();
         let (source, data) = self.project_data_internal(request).await?;
         self.metrics.request(time.elapsed(), source, &data);
@@ -112,7 +118,7 @@ impl Registry {
     ) -> RpcResult<(ResponseSource, ProjectDataResult)> {
         if let Some(cache) = &self.cache {
             let time = Instant::now();
-            let data = cache.fetch(&request.id).await?;
+            let data = cache.fetch(request.id).await?;
             self.metrics.fetch_cache_time(time.elapsed());
 
             if let Some(data) = data {
@@ -122,7 +128,7 @@ impl Registry {
 
         let id = request.id;
         let data = self.fetch_registry(request).await;
-        
+
         // Cache all responses that we get, even errors.
         let data = match data {
             Ok(Some(data)) => Ok(data),
@@ -140,7 +146,10 @@ impl Registry {
         Ok((ResponseSource::Registry, data))
     }
 
-    async fn fetch_registry(&self, request: ProjectDataRequest<'_>) -> RegistryResult<Option<ProjectDataResponse>> {
+    async fn fetch_registry(
+        &self,
+        request: ProjectDataRequest<'_>,
+    ) -> RegistryResult<Option<ProjectDataResponse>> {
         let time = Instant::now();
 
         let data = if let Some(client) = &self.client {
