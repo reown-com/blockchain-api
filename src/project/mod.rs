@@ -8,7 +8,7 @@ use {
         storage::{error::StorageError, redis},
     },
     cerberus::{
-        project::{PlanLimits, ProjectData, ProjectDataWithLimits, ProjectKey},
+        project::{PlanLimits, ProjectData, ProjectDataRequest, ProjectDataResponse, ProjectDataWithLimits, ProjectKey},
         registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult},
     },
     std::{sync::Arc, time::Instant},
@@ -85,18 +85,34 @@ impl Registry {
 
     pub async fn project_data(&self, id: &str) -> RpcResult<ProjectDataWithLimits> {
         let time = Instant::now();
-        let (source, data) = self.project_data_internal(id).await?;
+        let request = ProjectDataRequest::new(id).include_limits();
+        let (source, data) = self.project_data_internal(request).await?;
+        self.metrics.request(time.elapsed(), source, &data);
+        let project_data = data?;
+        Ok(ProjectDataWithLimits {
+            data: project_data.data,
+            limits: project_data.limits.unwrap_or(PlanLimits {
+                tier: "".to_owned(),
+                is_above_rpc_limit: false,
+                is_above_mau_limit: false,
+            }),
+        })
+    }
+
+    pub async fn project_data_request(&self, request: ProjectDataRequest<'_>) -> RpcResult<ProjectDataResponse> {
+        let time = Instant::now();
+        let (source, data) = self.project_data_internal(request).await?;
         self.metrics.request(time.elapsed(), source, &data);
         Ok(data?)
     }
 
     async fn project_data_internal(
         &self,
-        id: &str,
+        request: ProjectDataRequest<'_>,
     ) -> RpcResult<(ResponseSource, ProjectDataResult)> {
         if let Some(cache) = &self.cache {
             let time = Instant::now();
-            let data = cache.fetch(id).await?;
+            let data = cache.fetch(&request.id).await?;
             self.metrics.fetch_cache_time(time.elapsed());
 
             if let Some(data) = data {
@@ -104,8 +120,9 @@ impl Registry {
             }
         }
 
-        let data = self.fetch_registry(id).await;
-
+        let id = request.id;
+        let data = self.fetch_registry(request).await;
+        
         // Cache all responses that we get, even errors.
         let data = match data {
             Ok(Some(data)) => Ok(data),
@@ -123,20 +140,20 @@ impl Registry {
         Ok((ResponseSource::Registry, data))
     }
 
-    async fn fetch_registry(&self, id: &str) -> RegistryResult<Option<ProjectDataWithLimits>> {
+    async fn fetch_registry(&self, request: ProjectDataRequest<'_>) -> RegistryResult<Option<ProjectDataResponse>> {
         let time = Instant::now();
 
         let data = if let Some(client) = &self.client {
-            client.project_data_with_limits(id).await
+            client.project_data_with(request).await
         } else {
-            Ok(Some(ProjectDataWithLimits {
+            Ok(Some(ProjectDataResponse {
                 data: ProjectData {
                     uuid: "".to_owned(),
                     creator: "".to_owned(),
                     name: "".to_owned(),
                     push_url: None,
                     keys: vec![ProjectKey {
-                        value: id.to_owned(),
+                        value: request.id.to_owned(),
                         is_valid: true,
                     }],
                     is_enabled: true,
@@ -147,11 +164,12 @@ impl Registry {
                     bundle_ids: vec![],
                     package_names: vec![],
                 },
-                limits: PlanLimits {
+                limits: Some(PlanLimits {
                     tier: "".to_owned(),
                     is_above_rpc_limit: false,
                     is_above_mau_limit: false,
-                },
+                }),
+                features: None,
             }))
         };
         self.metrics.fetch_registry_time(time.elapsed());
