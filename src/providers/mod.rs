@@ -44,12 +44,9 @@ use {
         rpc::json_rpc::Id,
     },
     async_trait::async_trait,
-    // hyper 1 client helpers
-    axum::extract::ws::WebSocketUpgrade,
-    axum::response::Response,
+    axum::{extract::ws::WebSocketUpgrade, response::Response},
     deadpool_redis::Pool,
     hyper::http::HeaderValue,
-    
     mock_alto::{MockAltoProvider, MockAltoUrls},
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
     serde::{Deserialize, Serialize},
@@ -64,8 +61,6 @@ use {
     wc::metrics::TaskMetrics,
     yttrium::chain_abstraction::api::Transaction,
 };
-
-// Hyper client no longer used in providers; using reqwest::Client per-provider
 
 /// Checks if a JSON-RPC error message indicates common node error
 /// patterns that should be handled specially.

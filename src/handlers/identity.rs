@@ -22,7 +22,6 @@ use {
         types::H160,
         utils::to_checksum,
     },
-    // http_body_util::BodyExt,
     hyper::{header::CACHE_CONTROL, HeaderMap, StatusCode},
     serde::{de::DeserializeOwned, Deserialize, Serialize},
     std::{

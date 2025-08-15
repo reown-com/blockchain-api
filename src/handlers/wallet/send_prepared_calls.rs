@@ -31,7 +31,6 @@ use {
         extract::{Path, Query, State},
         response::IntoResponse,
     },
-    // http_body_util::BodyExt,
     parquet::data_type::AsBytes,
     serde::{Deserialize, Serialize},
     std::sync::Arc,

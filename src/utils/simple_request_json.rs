@@ -1,7 +1,9 @@
 use async_trait::async_trait;
-use axum::extract::{rejection::JsonRejection, FromRequest, Request};
-use axum::http::HeaderValue;
-use axum::Json;
+use axum::{
+    extract::{rejection::JsonRejection, FromRequest, Request},
+    http::HeaderValue,
+    Json,
+};
 use serde::de::DeserializeOwned;
 
 /// Same as axum::Json but doesn't care what the Content-Type header is
