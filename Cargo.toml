@@ -24,7 +24,6 @@ hyper-tls = "0.6"
 tap = "1.0"
 axum = { version = "0.7", features = ["ws"] }
 tower = "0.4.13"
-http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["client", "http1", "tokio"] }
 hyper-rustls = { version = "0.27", features = ["native-tokio"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }

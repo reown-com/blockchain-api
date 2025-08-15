@@ -10,6 +10,7 @@ use {
     },
     async_trait::async_trait,
     axum::{
+        body::to_bytes,
         extract::{ConnectInfo, Path, Query, State},
         response::{IntoResponse, Response},
         Json,
@@ -41,6 +42,8 @@ const CACHE_TTL_STD: Duration = Duration::from_secs(CACHE_TTL);
 const SELF_PROVIDER_ERROR_PREFIX: &str = "SelfProviderError: ";
 const EMPTY_RPC_RESPONSE: &str = "0x";
 pub const ETHEREUM_MAINNET: &str = "eip155:1";
+/// Cap to 50 Kb max size for the identity response
+const IDENTITY_RESPONSE_MAX_BYTES: usize = 50 * 1024;
 
 /// Error codes that reflect an `execution reverted` and should proceed with Ok() during
 /// the identity avatar lookup because of an absence of the ERC-721 contract address or
@@ -548,11 +551,9 @@ impl JsonRpcClient for SelfProvider {
                 body: format!("{:?}", response.body()),
             });
         }
-
-        let bytes = http_body_util::BodyExt::collect(response.into_body())
+        let bytes = to_bytes(response.into_body(), IDENTITY_RESPONSE_MAX_BYTES)
             .await
-            .map_err(SelfProviderError::ProviderBody)?
-            .to_bytes();
+            .map_err(SelfProviderError::ProviderBody)?;
 
         let response = serde_json::from_slice::<JsonRpcResponse>(&bytes)
             .map_err(SelfProviderError::ProviderBodySerde)?;

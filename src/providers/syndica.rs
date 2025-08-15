@@ -139,7 +139,7 @@ impl RpcWsProvider for SyndicaWsProvider {
         let uri = format!("{}/api-key/{}", base_uri, self.api_key);
         let (websocket_provider, _) = async_tungstenite::tokio::connect_async(uri)
             .await
-            .map_err(|e| RpcError::AxumTungstenite(Box::new(e)))?;
+            .map_err(|e| RpcError::WebSocketError(e.to_string()))?;
 
         Ok(ws.on_upgrade(move |socket| {
             ws::proxy(project_id, socket, websocket_provider)
