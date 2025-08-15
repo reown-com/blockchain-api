@@ -13,8 +13,8 @@ local _alert(namespace, env, notifications) = grafana.alert.new(
   period        = '1m',
   conditions    = [
     grafana.alertCondition.new(
-      // Threshold set to 100 based on operational experience: indicates a possible flood or DDoS attack.
-      evaluatorParams = [ 100 ],
+      // Threshold set to 50 based on operational experience: indicates a possible flood or DDoS attack.
+      evaluatorParams = [ 50 ],
       evaluatorType   = 'gt',
       operatorType    = 'or',
       queryRefId      = 'ELB',
