@@ -13,6 +13,8 @@ use {
 pub enum CachedMethods {
     #[strum(serialize = "eth_chainId")]
     EthChainId,
+    #[strum(serialize = "net_listening")]
+    NetListening,
 }
 
 /// Check if the response is cached and apply caching
@@ -26,6 +28,9 @@ pub async fn is_cached_response(
         match method {
             CachedMethods::EthChainId => {
                 handle_eth_chain_id(caip2_chain_id, request, moka_cache, metrics).await
+            }
+            CachedMethods::NetListening => {
+                handle_net_listening(caip2_chain_id, request, moka_cache, metrics).await
             }
         }
     } else {
@@ -94,7 +99,7 @@ async fn check_cached_chain_id_response(
     })
 }
 
-/// Handle the eth_chainId RPC method caching
+/// Handle the `eth_chainId` RPC method caching
 async fn handle_eth_chain_id(
     caip2_chain_id: &str,
     request: &JsonRpcRequest,
@@ -136,6 +141,21 @@ async fn handle_eth_chain_id(
     metrics.add_rpc_cached_call(
         caip2_chain_id.to_string(),
         CachedMethods::EthChainId.to_string(),
+    );
+    Some(response)
+}
+
+/// Handle the `net_listening` RPC method by always returning `true` as a result
+async fn handle_net_listening(
+    caip2_chain_id: &str,
+    request: &JsonRpcRequest,
+    _moka_cache: &Cache<String, String>, // We don't need to cache the result for this method
+    metrics: &Metrics,
+) -> Option<JsonRpcResponse> {
+    let response = JsonRpcResponse::Result(JsonRpcResult::new(request.id.clone(), true.into()));
+    metrics.add_rpc_cached_call(
+        caip2_chain_id.to_string(),
+        CachedMethods::NetListening.to_string(),
     );
     Some(response)
 }
