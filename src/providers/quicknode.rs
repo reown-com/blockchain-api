@@ -10,11 +10,10 @@ use {
     },
     async_trait::async_trait,
     axum::{
+        extract::ws::WebSocketUpgrade,
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    axum::extract::ws::WebSocketUpgrade,
-    
     hyper::http,
     std::collections::HashMap,
     wc::future::FutureExt,

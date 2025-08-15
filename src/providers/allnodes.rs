@@ -9,8 +9,8 @@ use {
         ws,
     },
     async_trait::async_trait,
-    axum::extract::ws::WebSocketUpgrade,
     axum::{
+        extract::ws::WebSocketUpgrade,
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
