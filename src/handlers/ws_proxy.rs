@@ -26,16 +26,12 @@ async fn handler_internal(
     State(state): State<Arc<AppState>>,
     Query(query_params): Query<RpcQueryParams>,
     headers: HeaderMap,
-    ws_result: WebSocketUpgrade,
+    ws: WebSocketUpgrade,
 ) -> Result<Response, RpcError> {
     // Check if this is actually a WebSocket connection
     if !is_websocket_request(&headers) {
         return Err(RpcError::WebSocketConnectionExpected);
     }
-
-    // If WebSocket header extraction failed (malformed WebSocket connection), return the error
-    let ws = ws_result;
-
     state
         .validate_project_access_and_quota(&query_params.project_id)
         .await?;
