@@ -9,14 +9,13 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    hyper::{self, client::HttpConnector, Client, Method, StatusCode},
-    hyper_tls::HttpsConnector,
+    hyper::{self, StatusCode},
     std::collections::HashMap,
 };
 
 #[derive(Debug)]
 pub struct BlastProvider {
-    pub client: Client<HttpsConnector<HttpConnector>>,
+    pub client: reqwest::Client,
     pub api_key: String,
     pub supported_chains: HashMap<String, String>,
 }
@@ -45,7 +44,7 @@ impl RateLimited for BlastProvider {
 #[async_trait]
 impl RpcProvider for BlastProvider {
     #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
-    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
+    async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response> {
         let chain = &self
             .supported_chains
             .get(chain_id)
@@ -53,15 +52,15 @@ impl RpcProvider for BlastProvider {
 
         let uri = format!("https://{}.blastapi.io/{}", chain, self.api_key);
 
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::POST)
-            .uri(uri)
-            .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(body))?;
-
-        let response = self.client.request(hyper_request).await?;
+        let response = self
+            .client
+            .post(uri)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()
+            .await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = response.bytes().await?;
         let response = (
             status,
             [(
@@ -78,7 +77,7 @@ impl RpcProvider for BlastProvider {
 impl RpcProviderFactory<BlastConfig> for BlastProvider {
     #[tracing::instrument(level = "debug")]
     fn new(provider_config: &BlastConfig) -> Self {
-        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let forward_proxy_client = reqwest::Client::new();
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()

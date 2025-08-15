@@ -9,15 +9,14 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    hyper::{client::HttpConnector, http, Client, Method},
-    hyper_tls::HttpsConnector,
+    hyper::http,
     std::collections::HashMap,
     tracing::debug,
 };
 
 #[derive(Debug)]
 pub struct RootstockProvider {
-    pub client: Client<HttpsConnector<HttpConnector>>,
+    pub client: reqwest::Client,
     pub supported_chains: HashMap<String, String>,
 }
 
@@ -48,21 +47,21 @@ impl RateLimited for RootstockProvider {
 #[async_trait]
 impl RpcProvider for RootstockProvider {
     #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
-    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
+    async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response> {
         let uri = self
             .supported_chains
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::POST)
-            .uri(uri)
-            .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(body))?;
-
-        let response = self.client.request(hyper_request).await?;
+        let response = self
+            .client
+            .post(uri)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()
+            .await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = response.bytes().await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
@@ -84,7 +83,7 @@ impl RpcProvider for RootstockProvider {
 impl RpcProviderFactory<RootstockConfig> for RootstockProvider {
     #[tracing::instrument(level = "debug")]
     fn new(provider_config: &RootstockConfig) -> Self {
-        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let forward_proxy_client = reqwest::Client::new();
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()

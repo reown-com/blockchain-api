@@ -10,19 +10,18 @@ use {
     },
     async_trait::async_trait,
     axum::{
+        extract::ws::WebSocketUpgrade,
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    axum_tungstenite::WebSocketUpgrade,
-    hyper::{client::HttpConnector, http, Client, Method},
-    hyper_tls::HttpsConnector,
+    hyper::http,
     std::collections::HashMap,
     wc::future::FutureExt,
 };
 
 #[derive(Debug)]
 pub struct QuicknodeProvider {
-    pub client: Client<HttpsConnector<HttpConnector>>,
+    pub client: reqwest::Client,
     pub supported_chains: HashMap<String, String>,
     pub chain_subdomains: HashMap<String, String>,
 }
@@ -51,7 +50,7 @@ impl RateLimited for QuicknodeProvider {
 #[async_trait]
 impl RpcProvider for QuicknodeProvider {
     #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
-    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
+    async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response> {
         let token = &self
             .supported_chains
             .get(chain_id)
@@ -66,15 +65,15 @@ impl RpcProvider for QuicknodeProvider {
                 )))?;
         let uri = format!("https://{chain_subdomain}.quiknode.pro/{token}");
 
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::POST)
-            .uri(uri)
-            .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(body))?;
-
-        let response = self.client.request(hyper_request).await?;
+        let response = self
+            .client
+            .post(uri)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()
+            .await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = response.bytes().await?;
         let mut response = (status, body).into_response();
         response
             .headers_mut()
@@ -86,7 +85,7 @@ impl RpcProvider for QuicknodeProvider {
 impl RpcProviderFactory<QuicknodeConfig> for QuicknodeProvider {
     #[tracing::instrument(level = "debug")]
     fn new(provider_config: &QuicknodeConfig) -> Self {
-        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let forward_proxy_client = reqwest::Client::new();
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
@@ -145,7 +144,7 @@ impl RpcWsProvider for QuicknodeWsProvider {
         let uri = format!("wss://{chain_subdomain}.quiknode.pro/{token}");
         let (websocket_provider, _) = async_tungstenite::tokio::connect_async(uri)
             .await
-            .map_err(|e| RpcError::AxumTungstenite(Box::new(e)))?;
+            .map_err(|e| RpcError::WebSocketError(e.to_string()))?;
 
         Ok(ws.on_upgrade(move |socket| {
             ws::proxy(project_id, socket, websocket_provider)

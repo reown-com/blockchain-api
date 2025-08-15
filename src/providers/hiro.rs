@@ -10,8 +10,7 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    hyper::{client::HttpConnector, http, Client, Method},
-    hyper_tls::HttpsConnector,
+    hyper::http,
     serde::{Deserialize, Serialize},
     std::collections::HashMap,
     tracing::debug,
@@ -19,7 +18,7 @@ use {
 
 #[derive(Debug)]
 pub struct HiroProvider {
-    pub client: Client<HttpsConnector<HttpConnector>>,
+    pub client: reqwest::Client,
     pub supported_chains: HashMap<String, String>,
 }
 
@@ -96,24 +95,21 @@ impl HiroProvider {
             .get(&chain_id)
             .ok_or(RpcError::ChainNotFound)?;
         let uri = format!("{}/v2/transactions", uri.trim_end_matches('/'));
-        let uri = uri.parse::<hyper::Uri>().map_err(|_| {
-            RpcError::InvalidParameter("Failed to parse URI for stacks_transactions".into())
-        })?;
 
         let stacks_transactions_request = serde_json::to_string(&TransactionsRequest { tx })
             .map_err(|e| {
                 RpcError::InvalidParameter(format!("Failed to serialize transaction: {e}"))
             })?;
 
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::POST)
-            .uri(uri)
-            .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(stacks_transactions_request))?;
-
-        let response = self.client.request(hyper_request).await?;
+        let response = self
+            .client
+            .post(uri)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(stacks_transactions_request)
+            .send()
+            .await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = response.bytes().await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
@@ -139,19 +135,15 @@ impl HiroProvider {
             .get(&chain_id)
             .ok_or(RpcError::ChainNotFound)?;
         let uri = format!("{}/v2/accounts/{}", uri.trim_end_matches('/'), principal);
-        let uri = uri.parse::<hyper::Uri>().map_err(|_| {
-            RpcError::InvalidParameter("Failed to parse URI for stacks_accounts".into())
-        })?;
 
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::GET)
-            .uri(uri)
-            .header("Content-Type", "application/json")
-            .body(hyper::body::Body::empty())?;
-
-        let response = self.client.request(hyper_request).await?;
+        let response = self
+            .client
+            .get(uri)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .send()
+            .await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = response.bytes().await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
@@ -181,9 +173,6 @@ impl HiroProvider {
             .get(&chain_id)
             .ok_or(RpcError::ChainNotFound)?;
         let uri = format!("{}/v2/fees/transaction", uri.trim_end_matches('/'));
-        let uri = uri.parse::<hyper::Uri>().map_err(|_| {
-            RpcError::InvalidParameter("Failed to parse URI for hiro_fees_transaction".into())
-        })?;
 
         let hiro_fees_transaction_request = serde_json::to_string(&FeesTransactionRequest {
             transaction_payload,
@@ -192,15 +181,15 @@ impl HiroProvider {
             RpcError::InvalidParameter(format!("Failed to serialize fees transaction: {e}"))
         })?;
 
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::POST)
-            .uri(uri)
-            .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(hiro_fees_transaction_request))?;
-
-        let response = self.client.request(hyper_request).await?;
+        let response = self
+            .client
+            .post(uri)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(hiro_fees_transaction_request)
+            .send()
+            .await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = response.bytes().await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
@@ -226,18 +215,10 @@ impl HiroProvider {
             .get(&chain_id)
             .ok_or(RpcError::ChainNotFound)?;
         let uri = format!("{}/v2/fees/transfer", uri.trim_end_matches('/'));
-        let uri = uri.parse::<hyper::Uri>().map_err(|_| {
-            RpcError::InvalidParameter("Failed to parse URI for stacks_transfer_fees".into())
-        })?;
 
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::GET)
-            .uri(uri)
-            .body(hyper::body::Body::empty())?;
-
-        let response = self.client.request(hyper_request).await?;
+        let response = self.client.get(uri).send().await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = response.bytes().await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
@@ -267,19 +248,15 @@ impl HiroProvider {
             uri.trim_end_matches('/'),
             principal
         );
-        let uri = uri.parse::<hyper::Uri>().map_err(|_| {
-            RpcError::InvalidParameter("Failed to parse URI for stacks_extended_nonces".into())
-        })?;
 
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::GET)
-            .uri(uri)
-            .header("Content-Type", "application/json")
-            .body(hyper::body::Body::empty())?;
-
-        let response = self.client.request(hyper_request).await?;
+        let response = self
+            .client
+            .get(uri)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .send()
+            .await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = response.bytes().await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
@@ -395,7 +372,7 @@ impl RpcProvider for HiroProvider {
 impl RpcProviderFactory<HiroConfig> for HiroProvider {
     #[tracing::instrument(level = "debug")]
     fn new(provider_config: &HiroConfig) -> Self {
-        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let forward_proxy_client = reqwest::Client::new();
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()

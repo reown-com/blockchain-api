@@ -2,13 +2,11 @@ use {
     super::{RpcQueryParams, HANDLER_TASK_METRICS},
     crate::{error::RpcError, state::AppState},
     axum::{
-        extract::{Query, State},
+        extract::{ws::WebSocketUpgrade, Query, State},
         http::HeaderMap,
         response::Response,
     },
-    axum_tungstenite::{rejection::WebSocketUpgradeRejection, WebSocketUpgrade},
     std::sync::Arc,
-    tracing::error,
     wc::future::FutureExt,
 };
 
@@ -16,7 +14,7 @@ pub async fn handler(
     state: State<Arc<AppState>>,
     query_params: Query<RpcQueryParams>,
     headers: HeaderMap,
-    ws: Result<WebSocketUpgrade, WebSocketUpgradeRejection>,
+    ws: WebSocketUpgrade,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query_params, headers, ws)
         .with_metrics(HANDLER_TASK_METRICS.with_name("ws_proxy"))
@@ -28,19 +26,12 @@ async fn handler_internal(
     State(state): State<Arc<AppState>>,
     Query(query_params): Query<RpcQueryParams>,
     headers: HeaderMap,
-    ws_result: Result<WebSocketUpgrade, WebSocketUpgradeRejection>,
+    ws: WebSocketUpgrade,
 ) -> Result<Response, RpcError> {
     // Check if this is actually a WebSocket connection
     if !is_websocket_request(&headers) {
         return Err(RpcError::WebSocketConnectionExpected);
     }
-
-    // If WebSocket header extraction failed (malformed WebSocket connection), return the error
-    let ws = ws_result.map_err(|_| {
-        error!("Headers 'Connection: upgrade' and 'Upgrade: websocket' are required.");
-        RpcError::WebSocketConnectionExpected
-    })?;
-
     state
         .validate_project_access_and_quota(&query_params.project_id)
         .await?;
