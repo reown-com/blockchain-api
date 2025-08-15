@@ -3740,6 +3740,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "enum-as-inner"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1e6a265c649f3f5979b601d26f1d05ada116434c87741c9493cb56218f76cbc"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2 1.0.97",
+ "quote 1.0.40",
+ "syn 2.0.105",
+]
+
+[[package]]
 name = "enum-iterator"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7518,14 +7530,14 @@ dependencies = [
 
 [[package]]
 name = "prometheus-http-query"
-version = "0.6.7"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6704e3a7a78545b1496524d518658005a6cc308abc90ce5fccf01891ecdc298b"
+checksum = "0fcebfa99f03ae51220778316b37d24981e36322c82c24848f48c5bd0f64cbdb"
 dependencies = [
+ "enum-as-inner",
  "mime",
- "reqwest 0.11.27",
+ "reqwest 0.12.23",
  "serde",
- "serde_json",
  "time",
  "url",
 ]

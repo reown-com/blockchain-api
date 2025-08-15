@@ -99,7 +99,7 @@ tokio-stream = "0.1.12"
 
 rand = "0.8.5"
 rand_core = "0.6"
-prometheus-http-query = "0.6.6"
+prometheus-http-query = "0.8.3"
 ethers = { version = "2.0.11", git = "https://github.com/gakonst/ethers-rs" } # using Git version because crates.io version fails clippy
 alloy = { version = "0.11.1", features = ["providers", "json-rpc"] }
 fastlz-rs = "0.0.3"
