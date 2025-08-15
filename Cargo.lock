@@ -8336,7 +8336,6 @@ dependencies = [
  "fastlz-rs",
  "futures-util",
  "hex",
- "http-body-util",
  "hyper 1.6.0",
  "hyper-rustls 0.27.7",
  "hyper-tls 0.6.0",

@@ -1,6 +1,9 @@
 use {
     super::SdkInfoParams,
-    crate::{analytics::MessageSource, error::RpcError, handlers::RpcQueryParams, state::AppState},
+    crate::{
+        analytics::MessageSource, error::RpcError, handlers::proxy::PROVIDER_RESPONSE_MAX_BYTES,
+        handlers::RpcQueryParams, state::AppState,
+    },
     alloy::{
         providers::{Provider, ProviderBuilder},
         rpc::{
@@ -9,6 +12,7 @@ use {
         },
         transports::{TransportError, TransportErrorKind, TransportFut},
     },
+    axum::body::to_bytes,
     bytes::Bytes,
     hyper::HeaderMap,
     relay_rpc::domain::ProjectId,
@@ -109,10 +113,11 @@ impl Service<RequestPacket> for SelfRpcTransport {
             .await
             .map_err(|e| TransportErrorKind::custom(SelfRpcTransportError::Rpc(e)))?;
 
-            let bytes = http_body_util::BodyExt::collect(result.into_body())
+            let bytes = to_bytes(result.into_body(), PROVIDER_RESPONSE_MAX_BYTES)
                 .await
-                .map_err(|e| TransportErrorKind::custom(SelfRpcTransportError::ResponseToBytes(e)))?
-                .to_bytes();
+                .map_err(|e| {
+                    TransportErrorKind::custom(SelfRpcTransportError::ResponseToBytes(e))
+                })?;
 
             let response = serde_json::from_slice::<ResponsePacket>(bytes.as_ref())
                 .map_err(|e| TransportErrorKind::custom(SelfRpcTransportError::ResponseParse(e)))?;

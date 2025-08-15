@@ -6,11 +6,11 @@ use {
     },
     async_trait::async_trait,
     axum::{
-        http::HeaderValue,
+        http::{HeaderValue, StatusCode},
         response::{IntoResponse, Response},
     },
-    hyper::http,
     std::collections::HashMap,
+    tracing::debug,
 };
 
 #[derive(Debug)]
@@ -36,7 +36,7 @@ impl Provider for TheRpcProvider {
 #[async_trait]
 impl RateLimited for TheRpcProvider {
     async fn is_rate_limited(&self, response: &mut Response) -> bool {
-        response.status() == http::StatusCode::TOO_MANY_REQUESTS
+        response.status() == StatusCode::TOO_MANY_REQUESTS
     }
 }
 
@@ -44,11 +44,11 @@ impl RateLimited for TheRpcProvider {
 impl RpcProvider for TheRpcProvider {
     #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
     async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response> {
-        let uri = self
+        let chain = self
             .supported_chains
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
-
+        let uri = format!("https://rpc.therpc.io/{chain}");
         let response = self
             .client
             .post(uri)
@@ -58,6 +58,22 @@ impl RpcProvider for TheRpcProvider {
             .await?;
         let status = response.status();
         let body = response.bytes().await?;
+
+        if status.is_success() || status.is_client_error() {
+            if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+                if let Some(error) = &response.error {
+                    debug!(
+                        "Strange: provider returned JSON RPC error, but status {status} is \
+                         success: TheRpc: {response:?}"
+                    );
+                    // TheRpc-specific rate limit codes
+                    if error.code == -32029 {
+                        return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response());
+                    }
+                }
+            }
+        }
+
         let mut response = (status, body).into_response();
         response
             .headers_mut()

@@ -416,10 +416,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/metrics", get(handlers::metrics::handler))
         .with_state(state_arc.clone());
 
-    let addr_public = addr.to_owned();
-    let public_server = create_server(app, addr_public);
-    let private_addr_public = private_addr.to_owned();
-    let private_server = create_server(private_app, private_addr_public);
+    let public_server = create_server(app, addr);
+    let private_server = create_server(private_app, private_addr);
 
     let weights_updater = {
         let state_arc = state_arc.clone();

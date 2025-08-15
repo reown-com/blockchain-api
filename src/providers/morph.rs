@@ -44,10 +44,11 @@ impl RateLimited for MorphProvider {
 impl RpcProvider for MorphProvider {
     #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
     async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response> {
-        let uri = self
+        let chain = self
             .supported_chains
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
+        let uri = format!("https://{chain}.morphl2.io");
 
         let response = self
             .client

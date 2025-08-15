@@ -109,8 +109,8 @@ pub enum RpcError {
     #[error("Invalid scheme used. Try http(s):// or ws(s)://")]
     InvalidScheme,
 
-    #[error(transparent)]
-    AxumTungstenite(Box<dyn std::error::Error + Send + Sync>),
+    #[error("WebSocket error: {0}")]
+    WebSocketError(String),
 
     #[error("Only WebSocket connections are supported for GET method on this endpoint")]
     WebSocketConnectionExpected,
@@ -283,7 +283,7 @@ pub enum RpcError {
 impl IntoResponse for RpcError {
     fn into_response(self) -> axum::response::Response {
         let response =  match &self {
-            Self::AxumTungstenite(err) => (StatusCode::GONE, err.to_string()).into_response(),
+            Self::WebSocketError(err) => (StatusCode::GONE, err.to_string()).into_response(),
             Self::UnsupportedChain(chain_id) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(

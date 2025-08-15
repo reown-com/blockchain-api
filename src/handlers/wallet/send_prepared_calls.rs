@@ -11,6 +11,7 @@ use {
     crate::{
         analytics::MessageSource,
         handlers::{
+            proxy::PROVIDER_RESPONSE_MAX_BYTES,
             sessions::{
                 cosign::{self, CoSignQueryParams},
                 get::{
@@ -28,6 +29,7 @@ use {
         providers::ProviderBuilder,
     },
     axum::{
+        body::to_bytes,
         extract::{Path, Query, State},
         response::IntoResponse,
     },
@@ -285,11 +287,10 @@ async fn handler_internal(
                         let response = e.into_response();
                         let status = response.status();
                         let response = String::from_utf8(
-                            http_body_util::BodyExt::collect(response.into_body())
+                            to_bytes(response.into_body(), PROVIDER_RESPONSE_MAX_BYTES)
                                 .await
                                 // Lazy error handling here for now. We will refactor soon to avoid all this
                                 .unwrap_or_default()
-                                .to_bytes()
                                 .to_vec(),
                         )
                         // Lazy error handling here for now. We will refactor soon to avoid all this
@@ -307,22 +308,19 @@ async fn handler_internal(
                 if !response.status().is_success() {
                     return Err(SendPreparedCallsError::InternalError(
                         SendPreparedCallsInternalError::CosignUnsuccessful(
-                            http_body_util::BodyExt::collect(response.into_body())
-                                .await
-                                .map(|c| c.to_bytes()),
+                            to_bytes(response.into_body(), PROVIDER_RESPONSE_MAX_BYTES).await,
                         ),
                     ));
                 }
 
                 let response_json = serde_json::from_slice::<serde_json::Value>(
-                    &http_body_util::BodyExt::collect(response.into_body())
+                    &to_bytes(response.into_body(), PROVIDER_RESPONSE_MAX_BYTES)
                         .await
                         .map_err(|e| {
                             SendPreparedCallsError::InternalError(
                                 SendPreparedCallsInternalError::CosignReadResponse(e),
                             )
-                        })?
-                        .to_bytes(),
+                        })?,
                 )
                 .map_err(|e| {
                     SendPreparedCallsError::InternalError(

@@ -15,7 +15,7 @@ use {
         },
     },
     axum::{
-        body::Bytes,
+        body::{to_bytes, Bytes},
         extract::{ConnectInfo, Query, State},
         response::{IntoResponse, Response},
     },
@@ -39,6 +39,7 @@ use {
 const PROVIDER_PROXY_MAX_CALLS: usize = 5;
 const PROVIDER_PROXY_CALL_TIMEOUT: Duration = Duration::from_secs(10);
 const DEFAULT_CONTENT_TYPE: (&str, &str) = ("content-type", "application/json");
+pub const PROVIDER_RESPONSE_MAX_BYTES: usize = 512 * 1024; // 512 Kb
 
 pub async fn handler(
     state: State<Arc<AppState>>,
@@ -222,8 +223,8 @@ pub async fn rpc_call(
         let status = response_result.status();
         if status.is_success() || status == http::StatusCode::BAD_REQUEST {
             let body_bytes =
-                match http_body_util::BodyExt::collect(response_result.into_body()).await {
-                    Ok(bytes) => bytes.to_bytes(),
+                match to_bytes(response_result.into_body(), PROVIDER_RESPONSE_MAX_BYTES).await {
+                    Ok(bytes) => bytes,
                     Err(e) => {
                         error!(
                         "Failed to read JSON-RPC response body from provider {provider_kind}: {e}"
