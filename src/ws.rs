@@ -49,7 +49,10 @@ pub async fn proxy(
                         reason: f.reason,
                     }))
                 }
-                tungstenite::Message::Frame(_) => continue,
+                tungstenite::Message::Frame(_) => {
+                    debug!("Received unhandled WebSocket raw frame type. Skipping.");
+                    continue;
+                }
             };
             if client_ws_sender.send(amsg).await.is_err() {
                 break;
