@@ -747,7 +747,7 @@ impl ProviderRepository {
             return;
         };
 
-        let Ok(_header_value) = HeaderValue::from_str(&self.prometheus_workspace_header) else {
+        let Ok(header_value) = HeaderValue::from_str(&self.prometheus_workspace_header) else {
             error!(
                 "Failed to parse prometheus workspace header from {}",
                 self.prometheus_workspace_header
@@ -757,6 +757,7 @@ impl ProviderRepository {
 
         match prometheus_client
             .query("round(increase(provider_status_code_counter_total[3h]))")
+            .header("host", header_value)
             .get()
             .await
         {
