@@ -9,7 +9,6 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    
     hyper::{self, StatusCode},
     std::collections::HashMap,
 };
@@ -62,7 +61,15 @@ impl RpcProvider for CallStaticProvider {
             .await?;
         let status = response.status();
         let body = response.bytes().await?;
-        let response = (status, [(hyper::header::CONTENT_TYPE, HeaderValue::from_static("application/json"))], body).into_response();
+        let response = (
+            status,
+            [(
+                hyper::header::CONTENT_TYPE,
+                HeaderValue::from_static("application/json"),
+            )],
+            body,
+        )
+            .into_response();
         Ok(response)
     }
 }

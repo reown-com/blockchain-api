@@ -9,7 +9,6 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    
     hyper::http,
     std::collections::HashMap,
     tracing::debug,
