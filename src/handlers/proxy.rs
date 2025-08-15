@@ -221,18 +221,19 @@ pub async fn rpc_call(
         let provider_kind = provider.provider_kind();
         let status = response_result.status();
         if status.is_success() || status == http::StatusCode::BAD_REQUEST {
-            let body_bytes = match hyper::body::to_bytes(response_result.into_body()).await {
-                Ok(bytes) => bytes,
-                Err(e) => {
-                    error!(
+            let body_bytes =
+                match http_body_util::BodyExt::collect(response_result.into_body()).await {
+                    Ok(bytes) => bytes.to_bytes(),
+                    Err(e) => {
+                        error!(
                         "Failed to read JSON-RPC response body from provider {provider_kind}: {e}"
                     );
-                    state
-                        .metrics
-                        .add_rpc_call_retries(i as u64, chain_id.clone());
-                    continue;
-                }
-            };
+                        state
+                            .metrics
+                            .add_rpc_call_retries(i as u64, chain_id.clone());
+                        continue;
+                    }
+                };
 
             // Check the JSON-RPC response schema and possible internal error codes
             match serde_json::from_slice::<jsonrpc::Response>(&body_bytes) {
