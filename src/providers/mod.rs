@@ -45,16 +45,11 @@ use {
     },
     async_trait::async_trait,
     // hyper 1 client helpers
-    axum::body::Body,
     axum::extract::ws::WebSocketUpgrade,
     axum::response::Response,
     deadpool_redis::Pool,
     hyper::http::HeaderValue,
-    hyper_rustls::HttpsConnectorBuilder,
-    hyper_util::{
-        client::legacy::{connect::HttpConnector, Client as HyperClientLegacy},
-        rt::TokioExecutor,
-    },
+    
     mock_alto::{MockAltoProvider, MockAltoUrls},
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
     serde::{Deserialize, Serialize},
@@ -70,17 +65,7 @@ use {
     yttrium::chain_abstraction::api::Transaction,
 };
 
-// Common HTTPS hyper client type for all providers
-pub type HyperClient = HyperClientLegacy<hyper_rustls::HttpsConnector<HttpConnector>, Body>;
-
-pub fn build_hyper_client() -> HyperClient {
-    let https = HttpsConnectorBuilder::new()
-        .with_webpki_roots()
-        .https_only()
-        .enable_http1()
-        .build();
-    HyperClientLegacy::builder(TokioExecutor::new()).build(https)
-}
+// Hyper client no longer used in providers; using reqwest::Client per-provider
 
 /// Checks if a JSON-RPC error message indicates common node error
 /// patterns that should be handled specially.

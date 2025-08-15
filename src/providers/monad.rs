@@ -9,16 +9,13 @@ use {
 		http::HeaderValue,
 		response::{IntoResponse, Response},
 	},
-	http_body_util::BodyExt,
-	hyper::{http, Method},
-	hyper_rustls::HttpsConnectorBuilder,
-	hyper_util::client::legacy::{connect::HttpConnector, Client as HyperClientLegacy},
+	hyper::http,
 	std::collections::HashMap,
 };
 
 #[derive(Debug)]
 pub struct MonadProvider {
-	pub client: HyperClientLegacy<hyper_rustls::HttpsConnector<HttpConnector>, axum::body::Body>,
+	pub client: reqwest::Client,
 	pub supported_chains: HashMap<String, String>,
 }
 
@@ -52,15 +49,15 @@ impl RpcProvider for MonadProvider {
 			.get(chain_id)
 			.ok_or(RpcError::ChainNotFound)?;
 
-		let hyper_request = hyper::http::Request::builder()
-			.method(Method::POST)
-			.uri(uri)
-			.header("Content-Type", "application/json")
-			.body(axum::body::Body::from(body))?;
-
-		let response = self.client.request(hyper_request).await?;
+		let response = self
+			.client
+			.post(uri)
+			.header(reqwest::header::CONTENT_TYPE, "application/json")
+			.body(body)
+			.send()
+			.await?;
 		let status = response.status();
-		let body = response.into_body().collect().await?.to_bytes();
+		let body = response.bytes().await?;
 		let mut response = (status, body).into_response();
 		response
 			.headers_mut()
@@ -72,13 +69,7 @@ impl RpcProvider for MonadProvider {
 impl RpcProviderFactory<MonadConfig> for MonadProvider {
 	#[tracing::instrument(level = "debug")]
 	fn new(provider_config: &MonadConfig) -> Self {
-		let https = HttpsConnectorBuilder::new()
-			.with_webpki_roots()
-			.https_only()
-			.enable_http1()
-			.build();
-		let forward_proxy_client: HyperClientLegacy<_, axum::body::Body> =
-			HyperClientLegacy::builder(hyper_util::rt::TokioExecutor::new()).build(https);
+		let forward_proxy_client = reqwest::Client::new();
 		let supported_chains: HashMap<String, String> = provider_config
 			.supported_chains
 			.iter()

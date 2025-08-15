@@ -9,22 +9,19 @@ use {
         ws,
     },
     async_trait::async_trait,
+    axum::extract::ws::WebSocketUpgrade,
     axum::{
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    http_body_util::BodyExt,
-    axum::extract::ws::WebSocketUpgrade,
-    hyper::{http, Method},
-    hyper_rustls::HttpsConnectorBuilder,
-    hyper_util::client::legacy::{connect::HttpConnector, Client as HyperClientLegacy},
+    hyper::http,
     std::collections::HashMap,
     wc::future::FutureExt,
 };
 
 #[derive(Debug)]
 pub struct AllnodesProvider {
-    pub client: HyperClientLegacy<hyper_rustls::HttpsConnector<HttpConnector>, axum::body::Body>,
+    pub client: reqwest::Client,
     pub supported_chains: HashMap<String, String>,
     pub api_key: String,
 }
@@ -117,15 +114,15 @@ impl RpcProvider for AllnodesProvider {
 
         let uri = format!("https://{}.allnodes.me:8545/{}", chain, &self.api_key);
 
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::POST)
-            .uri(uri)
-            .header("Content-Type", "application/json")
-            .body(axum::body::Body::from(body))?;
-
-        let response = self.client.request(hyper_request).await?;
+        let response = self
+            .client
+            .post(uri)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()
+            .await?;
         let status = response.status();
-        let body = response.into_body().collect().await?.to_bytes();
+        let body = response.bytes().await?;
         let mut response = (status, body).into_response();
         response
             .headers_mut()
@@ -137,13 +134,7 @@ impl RpcProvider for AllnodesProvider {
 impl RpcProviderFactory<AllnodesConfig> for AllnodesProvider {
     #[tracing::instrument(level = "debug")]
     fn new(provider_config: &AllnodesConfig) -> Self {
-        let https = HttpsConnectorBuilder::new()
-            .with_webpki_roots()
-            .https_only()
-            .enable_http1()
-            .build();
-        let forward_proxy_client: HyperClientLegacy<_, axum::body::Body> =
-            HyperClientLegacy::builder(hyper_util::rt::TokioExecutor::new()).build(https);
+        let forward_proxy_client = reqwest::Client::new();
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
