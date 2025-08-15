@@ -10,7 +10,7 @@ authors = [
 build = "build.rs"
 
 [dependencies]
-wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.9.0", features = ["alloc", "analytics", "future", "http", "metrics", "geoip", "geoblock", "rate_limit"] }
+wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.9.0", features = ["alloc", "analytics", "future", "metrics", "geoip", "rate_limit"] }
 relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", tag = "v0.32.0", features = ["cacao"] }
 yttrium = { git = "https://github.com/reown-com/yttrium.git", rev = "5e1b5f4", features = ["solana"] }
 
@@ -19,12 +19,16 @@ async-trait = "0.1.88"
 tokio = { version = "1.47", features = ["full"] }
 
 # Web
-hyper = "0.14"
-hyper-tls = "0.5.0"
+hyper = "1"
+hyper-tls = "0.6"
 tap = "1.0"
-axum = { version = "0.6", features = ["json", "tokio", "ws"] }
+axum = { version = "0.7", features = ["json", "ws"] }
 tower = "0.4.13"
-tower-http = { version = "0.4", features = [
+http-body-util = "0.1"
+hyper-util = { version = "0.1", features = ["client", "http1", "tokio"] }
+hyper-rustls = { version = "0.27", features = ["native-tokio"] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+tower-http = { version = "0.5", features = [
     "cors",
     "trace",
     "request-id",
@@ -92,7 +96,7 @@ parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = 
 chrono = { version = "0.4", features = ["serde"] }
 futures-util = "0.3.30"
 tokio-stream = "0.1.12"
-axum-tungstenite = "0.2.0"
+# axum-tungstenite is not needed with axum 0.7; using built-in ws
 
 rand = "0.8.5"
 rand_core = "0.6"

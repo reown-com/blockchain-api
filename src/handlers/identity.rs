@@ -22,7 +22,8 @@ use {
         types::H160,
         utils::to_checksum,
     },
-    hyper::{body::to_bytes, header::CACHE_CONTROL, HeaderMap, StatusCode},
+    // http_body_util::BodyExt,
+    hyper::{header::CACHE_CONTROL, HeaderMap, StatusCode},
     serde::{de::DeserializeOwned, Deserialize, Serialize},
     std::{
         net::SocketAddr,
@@ -549,9 +550,10 @@ impl JsonRpcClient for SelfProvider {
             });
         }
 
-        let bytes = to_bytes(response.into_body())
+        let bytes = http_body_util::BodyExt::collect(response.into_body())
             .await
-            .map_err(SelfProviderError::ProviderBody)?;
+            .map_err(SelfProviderError::ProviderBody)?
+            .to_bytes();
 
         let response = serde_json::from_slice::<JsonRpcResponse>(&bytes)
             .map_err(SelfProviderError::ProviderBodySerde)?;

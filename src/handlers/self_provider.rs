@@ -109,11 +109,10 @@ impl Service<RequestPacket> for SelfRpcTransport {
             .await
             .map_err(|e| TransportErrorKind::custom(SelfRpcTransportError::Rpc(e)))?;
 
-            let bytes = hyper::body::to_bytes(result.into_body())
+            let bytes = http_body_util::BodyExt::collect(result.into_body())
                 .await
-                .map_err(|e| {
-                    TransportErrorKind::custom(SelfRpcTransportError::ResponseToBytes(e))
-                })?;
+                .map_err(|e| TransportErrorKind::custom(SelfRpcTransportError::ResponseToBytes(e)))?
+                .to_bytes();
 
             let response = serde_json::from_slice::<ResponsePacket>(bytes.as_ref())
                 .map_err(|e| TransportErrorKind::custom(SelfRpcTransportError::ResponseParse(e)))?;

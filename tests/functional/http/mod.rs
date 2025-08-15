@@ -1,7 +1,10 @@
 use {
     crate::{context::ServerContext, utils::send_jsonrpc_request, JSONRPC_VERSION},
-    hyper::{Body, Client, Method, Request, StatusCode},
-    hyper_tls::HttpsConnector,
+    axum::body::Body,
+    http_body_util::BodyExt,
+    hyper::{Method, Request, StatusCode},
+    hyper_rustls::HttpsConnectorBuilder,
+    hyper_util::{client::legacy::Client, rt::TokioExecutor},
     rpc_proxy::{handlers::history::HistoryResponseBody, providers::ProviderKind},
     test_context::test_context,
 };
@@ -39,7 +42,12 @@ async fn check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx.server.public_addr, ctx.server.project_id, provider_id
     );
 
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let https = HttpsConnectorBuilder::new()
+        .with_webpki_roots()
+        .https_only()
+        .enable_http1()
+        .build();
+    let client = Client::builder(TokioExecutor::new()).build::<_, Body>(https);
     let request = jsonrpc::Request {
         method: "eth_chainId",
         params: None,
@@ -70,7 +78,12 @@ async fn check_if_rpc_is_responding_correctly_for_near_protocol(
         ctx.server.public_addr, ctx.server.project_id, provider_id
     );
 
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let https = HttpsConnectorBuilder::new()
+        .with_webpki_roots()
+        .https_only()
+        .enable_http1()
+        .build();
+    let client = Client::builder(TokioExecutor::new()).build::<_, Body>(https);
     let request = jsonrpc::Request {
         method: "EXPERIMENTAL_genesis_config",
         params: None,
@@ -110,7 +123,12 @@ async fn check_if_rpc_is_responding_correctly_for_solana(
         ctx.server.public_addr, ctx.server.project_id, provider_id
     );
 
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let https = HttpsConnectorBuilder::new()
+        .with_webpki_roots()
+        .https_only()
+        .enable_http1()
+        .build();
+    let client = Client::builder(TokioExecutor::new()).build::<_, Body>(https);
     let request = jsonrpc::Request {
         method: "getHealth",
         params: None,
@@ -142,7 +160,12 @@ async fn check_if_rpc_is_responding_correctly_for_sui(
         ctx.server.public_addr, ctx.server.project_id, provider_id
     );
 
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let https = HttpsConnectorBuilder::new()
+        .with_webpki_roots()
+        .https_only()
+        .enable_http1()
+        .build();
+    let client = Client::builder(TokioExecutor::new()).build::<_, Body>(https);
     let request = jsonrpc::Request {
         method: "sui_getChainIdentifier",
         params: None,
@@ -173,7 +196,12 @@ async fn check_if_rpc_is_responding_correctly_for_bitcoin(
         ctx.server.public_addr, ctx.server.project_id, provider_id
     );
 
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let https = HttpsConnectorBuilder::new()
+        .with_webpki_roots()
+        .https_only()
+        .enable_http1()
+        .build();
+    let client = Client::builder(TokioExecutor::new()).build::<_, Body>(https);
     let request = jsonrpc::Request {
         method: "getblockcount",
         params: None,
@@ -198,7 +226,12 @@ async fn check_if_rpc_is_responding_correctly_for_bitcoin(
 #[tokio::test]
 async fn health_check(ctx: &mut ServerContext) {
     let addr = format!("{}health", ctx.server.public_addr);
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let https = HttpsConnectorBuilder::new()
+        .with_webpki_roots()
+        .https_only()
+        .enable_http1()
+        .build();
+    let client = Client::builder(TokioExecutor::new()).build::<_, Body>(https);
 
     let request = Request::builder()
         .method(Method::GET)
@@ -221,7 +254,12 @@ async fn account_history_check(ctx: &mut ServerContext) {
         ctx.server.public_addr, account, project_id
     );
 
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let https = HttpsConnectorBuilder::new()
+        .with_webpki_roots()
+        .https_only()
+        .enable_http1()
+        .build();
+    let client = Client::builder(TokioExecutor::new()).build::<_, Body>(https);
 
     let request = Request::builder()
         .method(Method::GET)
@@ -233,7 +271,7 @@ async fn account_history_check(ctx: &mut ServerContext) {
     let status = response.status();
     assert_eq!(status, StatusCode::OK);
 
-    let bytes = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
     let body_str = String::from_utf8_lossy(&bytes);
 
     let json_response: HistoryResponseBody =

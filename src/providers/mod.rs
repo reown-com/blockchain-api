@@ -44,10 +44,17 @@ use {
         rpc::json_rpc::Id,
     },
     async_trait::async_trait,
+    // hyper 1 client helpers
+    axum::body::Body,
+    axum::extract::ws::WebSocketUpgrade,
     axum::response::Response,
-    axum_tungstenite::WebSocketUpgrade,
     deadpool_redis::Pool,
     hyper::http::HeaderValue,
+    hyper_rustls::HttpsConnectorBuilder,
+    hyper_util::{
+        client::legacy::{connect::HttpConnector, Client as HyperClientLegacy},
+        rt::TokioExecutor,
+    },
     mock_alto::{MockAltoProvider, MockAltoUrls},
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
     serde::{Deserialize, Serialize},
@@ -62,6 +69,18 @@ use {
     wc::metrics::TaskMetrics,
     yttrium::chain_abstraction::api::Transaction,
 };
+
+// Common HTTPS hyper client type for all providers
+pub type HyperClient = HyperClientLegacy<hyper_rustls::HttpsConnector<HttpConnector>, Body>;
+
+pub fn build_hyper_client() -> HyperClient {
+    let https = HttpsConnectorBuilder::new()
+        .with_webpki_roots()
+        .https_only()
+        .enable_http1()
+        .build();
+    HyperClientLegacy::builder(TokioExecutor::new()).build(https)
+}
 
 /// Checks if a JSON-RPC error message indicates common node error
 /// patterns that should be handled specially.
@@ -748,7 +767,7 @@ impl ProviderRepository {
             return;
         };
 
-        let Ok(header_value) = HeaderValue::from_str(&self.prometheus_workspace_header) else {
+        let Ok(_header_value) = HeaderValue::from_str(&self.prometheus_workspace_header) else {
             error!(
                 "Failed to parse prometheus workspace header from {}",
                 self.prometheus_workspace_header
@@ -758,7 +777,6 @@ impl ProviderRepository {
 
         match prometheus_client
             .query("round(increase(provider_status_code_counter_total[3h]))")
-            .header("host", header_value)
             .get()
             .await
         {
@@ -920,7 +938,7 @@ impl ProviderKind {
 
 #[async_trait]
 pub trait RpcProvider: Provider {
-    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response>;
+    async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response>;
 }
 
 pub trait RpcProviderFactory<T: ProviderConfig>: Provider {

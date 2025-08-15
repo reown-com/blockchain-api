@@ -1,13 +1,14 @@
 use {
-    axum::http::HeaderValue,
-    hyper::{body, client::HttpConnector, Body, Client, Method, Request, StatusCode},
-    hyper_tls::HttpsConnector,
+    axum::{body::Body, http::HeaderValue},
+    http_body_util::BodyExt,
+    hyper::{Method, Request, StatusCode},
+    hyper_util::client::legacy::{connect::HttpConnector, Client},
     sqlx::{postgres::PgPoolOptions, PgPool},
     std::env,
 };
 
 pub async fn send_jsonrpc_request(
-    client: Client<HttpsConnector<HttpConnector>>,
+    client: Client<hyper_rustls::HttpsConnector<HttpConnector>, Body>,
     base_addr: String,
     chain: &str,
     rpc_request: jsonrpc::Request<'static>,
@@ -31,7 +32,7 @@ pub async fn send_jsonrpc_request(
     );
 
     let (parts, body) = response.into_parts();
-    let body = body::to_bytes(body).await.unwrap();
+    let body = body.collect().await.unwrap().to_bytes();
     (
         parts.status,
         serde_json::from_slice(&body).unwrap_or_else(|_| {

@@ -1,5 +1,6 @@
 use {
     crate::{context::ServerContext, JSONRPC_VERSION},
+    async_tungstenite::tungstenite::Message,
     futures_util::{SinkExt, StreamExt},
 };
 
@@ -26,11 +27,9 @@ async fn check_if_rpc_is_responding_correctly_for_supported_chain(
 
     let (mut tx, mut rx) = client.split();
 
-    tx.send(axum_tungstenite::Message::Text(
-        serde_json::to_string(&request).unwrap(),
-    ))
-    .await
-    .unwrap();
+    tx.send(Message::Text(serde_json::to_string(&request).unwrap()))
+        .await
+        .unwrap();
 
     let response = rx.next().await.unwrap().unwrap();
     let response: jsonrpc::Response = serde_json::from_str(&response.to_string()).unwrap();

@@ -12,6 +12,11 @@ static ALLOC: wc::alloc::Jemalloc = wc::alloc::Jemalloc;
 async fn main() -> error::RpcResult<()> {
     dotenv().ok();
 
+    // Install default CryptoProvider for rustls (required since rustls 0.23)
+    // Prefer ring backend by default.
+    rustls::crypto::CryptoProvider::install_default(rustls::crypto::ring::default_provider())
+        .expect("failed to install default rustls CryptoProvider");
+
     let config = Config::from_env()
         .map_err(|e| dbg!(e))
         .expect("Failed to load config, please ensure all env variables are defined.");

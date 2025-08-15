@@ -9,14 +9,16 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    hyper::{client::HttpConnector, http, Client, Method},
-    hyper_tls::HttpsConnector,
+    http_body_util::BodyExt,
+    hyper::{http, Method},
+    hyper_rustls::HttpsConnectorBuilder,
+    hyper_util::client::legacy::{connect::HttpConnector, Client as HyperClientLegacy},
     std::collections::HashMap,
 };
 
 #[derive(Debug)]
 pub struct DrpcProvider {
-    pub client: Client<HttpsConnector<HttpConnector>>,
+    pub client: HyperClientLegacy<hyper_rustls::HttpsConnector<HttpConnector>, axum::body::Body>,
     pub supported_chains: HashMap<String, String>,
 }
 
@@ -44,7 +46,7 @@ impl RateLimited for DrpcProvider {
 #[async_trait]
 impl RpcProvider for DrpcProvider {
     #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
-    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
+    async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response> {
         let uri = self
             .supported_chains
             .get(chain_id)
@@ -54,11 +56,11 @@ impl RpcProvider for DrpcProvider {
             .method(Method::POST)
             .uri(uri)
             .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(body))?;
+            .body(axum::body::Body::from(body))?;
 
         let response = self.client.request(hyper_request).await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = response.into_body().collect().await?.to_bytes();
         let mut response = (status, body).into_response();
         response
             .headers_mut()
@@ -70,7 +72,13 @@ impl RpcProvider for DrpcProvider {
 impl RpcProviderFactory<DrpcConfig> for DrpcProvider {
     #[tracing::instrument(level = "debug")]
     fn new(provider_config: &DrpcConfig) -> Self {
-        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let https = HttpsConnectorBuilder::new()
+            .with_webpki_roots()
+            .https_only()
+            .enable_http1()
+            .build();
+        let forward_proxy_client: HyperClientLegacy<_, axum::body::Body> =
+            HyperClientLegacy::builder(hyper_util::rt::TokioExecutor::new()).build(https);
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()

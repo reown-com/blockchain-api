@@ -40,6 +40,8 @@ pub enum RpcError {
 
     #[error("Transport error: {0}")]
     TransportError(#[from] hyper::Error),
+    #[error("Hyper util error: {0}")]
+    HyperUtilError(#[from] hyper_util::client::legacy::Error),
 
     #[error("Proxy timeout error: {0}")]
     ProxyTimeoutError(tokio::time::error::Elapsed),
@@ -108,7 +110,7 @@ pub enum RpcError {
     InvalidScheme,
 
     #[error(transparent)]
-    AxumTungstenite(Box<axum_tungstenite::Error>),
+    AxumTungstenite(Box<dyn std::error::Error + Send + Sync>),
 
     #[error("Only WebSocket connections are supported for GET method on this endpoint")]
     WebSocketConnectionExpected,

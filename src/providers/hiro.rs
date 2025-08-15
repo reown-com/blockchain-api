@@ -10,8 +10,9 @@ use {
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    hyper::{client::HttpConnector, http, Client, Method},
-    hyper_tls::HttpsConnector,
+    hyper::{http, Method},
+    hyper_rustls::HttpsConnectorBuilder,
+    hyper_util::client::legacy::{connect::HttpConnector, Client as HyperClientLegacy},
     serde::{Deserialize, Serialize},
     std::collections::HashMap,
     tracing::debug,
@@ -19,7 +20,7 @@ use {
 
 #[derive(Debug)]
 pub struct HiroProvider {
-    pub client: Client<HttpsConnector<HttpConnector>>,
+    pub client: HyperClientLegacy<hyper_rustls::HttpsConnector<HttpConnector>, axum::body::Body>,
     pub supported_chains: HashMap<String, String>,
 }
 
@@ -109,11 +110,13 @@ impl HiroProvider {
             .method(Method::POST)
             .uri(uri)
             .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(stacks_transactions_request))?;
+            .body(axum::body::Body::from(stacks_transactions_request))?;
 
         let response = self.client.request(hyper_request).await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = http_body_util::BodyExt::collect(response.into_body())
+            .await?
+            .to_bytes();
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
@@ -147,11 +150,13 @@ impl HiroProvider {
             .method(Method::GET)
             .uri(uri)
             .header("Content-Type", "application/json")
-            .body(hyper::body::Body::empty())?;
+            .body(axum::body::Body::empty())?;
 
         let response = self.client.request(hyper_request).await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = http_body_util::BodyExt::collect(response.into_body())
+            .await?
+            .to_bytes();
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
@@ -196,11 +201,13 @@ impl HiroProvider {
             .method(Method::POST)
             .uri(uri)
             .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(hiro_fees_transaction_request))?;
+            .body(axum::body::Body::from(hiro_fees_transaction_request))?;
 
         let response = self.client.request(hyper_request).await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = http_body_util::BodyExt::collect(response.into_body())
+            .await?
+            .to_bytes();
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
@@ -233,11 +240,13 @@ impl HiroProvider {
         let hyper_request = hyper::http::Request::builder()
             .method(Method::GET)
             .uri(uri)
-            .body(hyper::body::Body::empty())?;
+            .body(axum::body::Body::empty())?;
 
         let response = self.client.request(hyper_request).await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = http_body_util::BodyExt::collect(response.into_body())
+            .await?
+            .to_bytes();
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
@@ -275,11 +284,13 @@ impl HiroProvider {
             .method(Method::GET)
             .uri(uri)
             .header("Content-Type", "application/json")
-            .body(hyper::body::Body::empty())?;
+            .body(axum::body::Body::empty())?;
 
         let response = self.client.request(hyper_request).await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = http_body_util::BodyExt::collect(response.into_body())
+            .await?
+            .to_bytes();
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
@@ -395,7 +406,13 @@ impl RpcProvider for HiroProvider {
 impl RpcProviderFactory<HiroConfig> for HiroProvider {
     #[tracing::instrument(level = "debug")]
     fn new(provider_config: &HiroConfig) -> Self {
-        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let https = HttpsConnectorBuilder::new()
+            .with_webpki_roots()
+            .https_only()
+            .enable_http1()
+            .build();
+        let forward_proxy_client: HyperClientLegacy<_, axum::body::Body> =
+            HyperClientLegacy::builder(hyper_util::rt::TokioExecutor::new()).build(https);
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
