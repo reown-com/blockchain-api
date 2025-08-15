@@ -4,7 +4,7 @@ use {
         project::{error::ProjectDataError, metrics::ProjectDataMetrics},
         storage::{error::StorageError, KeyValueStorage, StorageResult},
     },
-    cerberus::project::ProjectDataWithLimits,
+    cerberus::project::ProjectDataResponse,
     std::{
         sync::Arc,
         time::{Duration, Instant},
@@ -15,7 +15,7 @@ use {
 
 mod config;
 
-pub type ProjectDataResult = Result<ProjectDataWithLimits, ProjectDataError>;
+pub type ProjectDataResult = Result<ProjectDataResponse, ProjectDataError>;
 
 #[derive(Clone, Debug)]
 pub struct ProjectStorage {
@@ -85,5 +85,5 @@ impl ProjectStorage {
 
 #[inline]
 fn build_cache_key(id: &str) -> String {
-    format!("project-data-v2/{id}")
+    format!("project-data-v3/{id}")
 }

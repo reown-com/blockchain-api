@@ -2652,7 +2652,7 @@ dependencies = [
 [[package]]
 name = "cerberus"
 version = "0.2.0"
-source = "git+https://github.com/WalletConnect/cerberus.git?tag=v0.14.0#c0072028c20774acf4e3d4b529557045b63df85a"
+source = "git+https://github.com/WalletConnect/cerberus.git?tag=v0.15.0#273a9361978d1b6cbe1dfdb6f6d88df7c5cb271a"
 dependencies = [
  "async-trait",
  "bitflags 2.9.1",
@@ -2660,6 +2660,7 @@ dependencies = [
  "regex",
  "reqwest 0.11.27",
  "serde",
+ "serde_json",
  "thiserror 1.0.69",
  "url",
 ]
