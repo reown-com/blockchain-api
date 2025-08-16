@@ -128,6 +128,7 @@ pub fn is_known_rpc_error_message(error_message: &str) -> bool {
         "invalid opcode",
         "unknown account",
         "gapped-nonce tx",
+        "can not found a matching policy",
     ];
 
     KNOWN_ERROR_PATTERNS
