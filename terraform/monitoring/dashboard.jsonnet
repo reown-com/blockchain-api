@@ -162,6 +162,7 @@ dashboard.new(
 
   row.new('RPC Proxy Metrics'),
     panels.proxy.calls(ds, vars)                     { gridPos: pos._3 },
+    panels.proxy.rps_per_chain(ds, vars)             { gridPos: pos._3 },
     panels.proxy.websocket_connections(ds, vars)     { gridPos: pos._3 },
     panels.proxy.latency(ds, vars)                   { gridPos: pos._3 },
     panels.proxy.chains_unavailability(ds, vars)     { gridPos: pos._3 },
