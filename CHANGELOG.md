@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.281.0 - 2025-08-18
+#### Features
+- **(proxy)** always return `true` for the `net_listening` method (#1198) - (973bc22) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.280.0 - 2025-08-18
 #### Bug Fixes
 - **(o11y)** tuning the 5xx alert threshold (#1193) - (33e4a65) - Max Kalashnikoff | maksy.eth
