@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.282.0 - 2025-08-18
+#### Features
+- **(proxy)** hardcoding of the `net_version` method response (#1201) - (72db15b) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.281.0 - 2025-08-18
 #### Features
 - **(proxy)** always return `true` for the `net_listening` method (#1198) - (973bc22) - Max Kalashnikoff | maksy.eth
