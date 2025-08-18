@@ -103,6 +103,19 @@ dependencies = [
 [[package]]
 name = "alloc"
 version = "0.1.0"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
+dependencies = [
+ "metrics 0.1.0",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tikv-jemalloc-ctl",
+ "tikv-jemallocator",
+]
+
+[[package]]
+name = "alloc"
+version = "0.1.0"
 source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1#bf8f50a711180afbf79b8c334c65b57886173d4b"
 dependencies = [
  "serde",
@@ -111,19 +124,6 @@ dependencies = [
  "tikv-jemalloc-ctl",
  "tikv-jemallocator",
  "wc_metrics",
-]
-
-[[package]]
-name = "alloc"
-version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.9.0#e2bc55dd0e06f30471d39bfbaedc71362136b677"
-dependencies = [
- "metrics 0.1.0",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tikv-jemalloc-ctl",
- "tikv-jemallocator",
 ]
 
 [[package]]
@@ -1093,14 +1093,14 @@ dependencies = [
 [[package]]
 name = "analytics"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.9.0#e2bc55dd0e06f30471d39bfbaedc71362136b677"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
 dependencies = [
  "anyhow",
  "async-trait",
  "aws-sdk-s3",
  "bytes",
  "chrono",
- "future 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.9.0)",
+ "future 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0)",
  "parquet",
  "parquet_derive",
  "tap",
@@ -2063,6 +2063,17 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
+]
+
+[[package]]
+name = "axum-client-ip"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e7c467bdcd2bd982ce5c8742a1a178aba7b03db399fd18f5d5d438f5aa91cb4"
+dependencies = [
+ "axum",
+ "forwarded-header-value",
+ "serde",
 ]
 
 [[package]]
@@ -4370,6 +4381,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "forwarded-header-value"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8835f84f38484cc86f110a805655697908257fb9a7af005234060891557198e9"
+dependencies = [
+ "nonempty",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "fs2"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4394,8 +4415,9 @@ checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 [[package]]
 name = "future"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1#bf8f50a711180afbf79b8c334c65b57886173d4b"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
 dependencies = [
+ "metrics 0.1.0",
  "pin-project 1.1.10",
  "thiserror 1.0.69",
  "tokio",
@@ -4405,9 +4427,8 @@ dependencies = [
 [[package]]
 name = "future"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.9.0#e2bc55dd0e06f30471d39bfbaedc71362136b677"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1#bf8f50a711180afbf79b8c334c65b57886173d4b"
 dependencies = [
- "metrics 0.1.0",
  "pin-project 1.1.10",
  "thiserror 1.0.69",
  "tokio",
@@ -4638,15 +4659,19 @@ dependencies = [
 [[package]]
 name = "geoip"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.9.0#e2bc55dd0e06f30471d39bfbaedc71362136b677"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
 dependencies = [
  "aws-sdk-s3",
+ "axum-client-ip",
  "bitflags 2.9.1",
  "bytes",
  "futures",
- "hyper 0.14.32",
+ "http-body 1.0.1",
+ "hyper 1.6.0",
  "maxminddb",
  "thiserror 1.0.69",
+ "tower 0.4.13",
+ "tower-layer",
  "tracing",
 ]
 
@@ -5019,10 +5044,10 @@ dependencies = [
 [[package]]
 name = "http"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.9.0#e2bc55dd0e06f30471d39bfbaedc71362136b677"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
 dependencies = [
- "future 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.9.0)",
- "hyper 0.14.32",
+ "future 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0)",
+ "hyper 1.6.0",
  "metrics 0.1.0",
  "tokio",
 ]
@@ -6253,7 +6278,7 @@ dependencies = [
 [[package]]
 name = "metrics"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.9.0#e2bc55dd0e06f30471d39bfbaedc71362136b677"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
 dependencies = [
  "once_cell",
  "opentelemetry",
@@ -6475,6 +6500,12 @@ dependencies = [
  "memchr",
  "minimal-lexical",
 ]
+
+[[package]]
+name = "nonempty"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9e591e719385e6ebaeb5ce5d3887f7d5676fceca6411d1925ccc95745f3d6f7"
 
 [[package]]
 name = "nonzero_ext"
@@ -7902,7 +7933,7 @@ dependencies = [
 [[package]]
 name = "rate_limit"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.9.0#e2bc55dd0e06f30471d39bfbaedc71362136b677"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
 dependencies = [
  "chrono",
  "deadpool-redis",
@@ -8380,7 +8411,7 @@ dependencies = [
  "uuid 1.18.0",
  "validator",
  "vergen",
- "wc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.9.0)",
+ "wc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0)",
  "wcn_replication",
  "wiremock",
  "yttrium",
@@ -13247,26 +13278,26 @@ dependencies = [
 [[package]]
 name = "wc"
 version = "0.1.0"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
+dependencies = [
+ "alloc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0)",
+ "analytics",
+ "future 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0)",
+ "geoip",
+ "http 0.1.0",
+ "metrics 0.1.0",
+ "rate_limit",
+]
+
+[[package]]
+name = "wc"
+version = "0.1.0"
 source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1#bf8f50a711180afbf79b8c334c65b57886173d4b"
 dependencies = [
  "alloc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1)",
  "collections",
  "future 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1)",
  "wc_metrics",
-]
-
-[[package]]
-name = "wc"
-version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.9.0#e2bc55dd0e06f30471d39bfbaedc71362136b677"
-dependencies = [
- "alloc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.9.0)",
- "analytics",
- "future 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.9.0)",
- "geoip",
- "http 0.1.0",
- "metrics 0.1.0",
- "rate_limit",
 ]
 
 [[package]]

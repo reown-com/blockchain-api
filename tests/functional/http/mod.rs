@@ -213,8 +213,7 @@ async fn account_history_check(ctx: &mut ServerContext) {
     );
 
     let response = reqwest::Client::new().get(addr).send().await.unwrap();
-    let status = StatusCode::from_u16(response.status().as_u16()).unwrap();
-    assert_eq!(status, StatusCode::OK);
+    assert_eq!(response.status(), reqwest::StatusCode::OK);
 
     let bytes = response.bytes().await.unwrap();
     let body = Body::from(bytes);

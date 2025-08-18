@@ -55,7 +55,10 @@ use {
     tracing::{error, info, log::warn},
     utils::rate_limit::RateLimit,
     wc::{
-        geoip::{block::BlockingPolicy, MaxMindResolver},
+        geoip::{
+            block::{middleware::GeoBlockLayer, BlockingPolicy},
+            MaxMindResolver,
+        },
         metrics::ServiceMetrics,
     },
 };
@@ -156,11 +159,12 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     .await
     .context("failed to init analytics")?;
 
-    // TODO: Enable GeoBlock middleware
-    let _geoblock = analytics.geoip_resolver().as_ref().map(|_resolver| {
-        // GeoBlockLayer requires the optional middleware feature in wc::geoip; disabled here.
-        // Use basic BlockingPolicy where applicable elsewhere.
-        BlockingPolicy::AllowAll
+    let geoblock = analytics.geoip_resolver().as_ref().map(|resolver| {
+        GeoBlockLayer::new(
+            resolver.clone(),
+            config.server.blocked_countries.clone(),
+            BlockingPolicy::AllowAll,
+        )
     });
 
     let postgres = PgPoolOptions::new()
@@ -381,13 +385,11 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     ));
 
     // GeoBlock middleware
-    let app = app;
-    // GeoBlock middleware disabled for now
-    // let app = if let Some(geoblock) = geoblock {
-    //     app.route_layer(geoblock)
-    // } else {
-    //     app
-    // };
+    let app = if let Some(geoblock) = geoblock {
+        app.route_layer(geoblock)
+    } else {
+        app
+    };
 
     // Rate-limiting middleware
     let app = if state_arc.rate_limit.is_some() {
