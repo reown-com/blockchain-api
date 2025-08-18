@@ -15,6 +15,8 @@ pub enum CachedMethods {
     EthChainId,
     #[strum(serialize = "net_listening")]
     NetListening,
+    #[strum(serialize = "net_version")]
+    NetVersion,
 }
 
 /// Check if the response is cached and apply caching
@@ -31,6 +33,9 @@ pub async fn is_cached_response(
             }
             CachedMethods::NetListening => {
                 handle_net_listening(caip2_chain_id, request, moka_cache, metrics).await
+            }
+            CachedMethods::NetVersion => {
+                handle_net_version(caip2_chain_id, request, moka_cache, metrics).await
             }
         }
     } else {
@@ -156,6 +161,25 @@ async fn handle_net_listening(
     metrics.add_rpc_cached_call(
         caip2_chain_id.to_string(),
         CachedMethods::NetListening.to_string(),
+    );
+    Some(response)
+}
+
+/// Handle the `net_version` RPC method by always returning the chain ID as a result
+async fn handle_net_version(
+    caip2_chain_id: &str,
+    request: &JsonRpcRequest,
+    _moka_cache: &Cache<String, String>, // Calculated result should not be cached
+    metrics: &Metrics,
+) -> Option<JsonRpcResponse> {
+    let Ok((_, chain_id)) = crypto::disassemble_caip2(caip2_chain_id) else {
+        error!("Failed to disassemble CAIP2 chainId: {caip2_chain_id}");
+        return None;
+    };
+    let response = JsonRpcResponse::Result(JsonRpcResult::new(request.id.clone(), chain_id.into()));
+    metrics.add_rpc_cached_call(
+        caip2_chain_id.to_string(),
+        CachedMethods::NetVersion.to_string(),
     );
     Some(response)
 }
