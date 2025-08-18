@@ -69,7 +69,7 @@ describe('Proxy', () => {
     const chains = chainsResp.data.http
     expect(chains.length).toBeGreaterThan(0)
   
-    // Check each supported eip155 chain for the net_listening RPC method
+    // Check each supported eip155 chain for the net_version RPC method
     for (const chain of chains) {
       if (!chain.includes('eip155:')) {
         continue
