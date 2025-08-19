@@ -13,6 +13,7 @@ use {
     anyhow::Context,
     aws_config::meta::region::RegionProviderChain,
     aws_sdk_s3::{config::Region, Client as S3Client},
+    axum::body::Body,
     axum::{
         middleware,
         routing::{get, post},
@@ -27,7 +28,7 @@ use {
     },
     error::RpcResult,
     http::Request,
-    hyper::{header::HeaderName, http, Body},
+    hyper::{header::HeaderName, http},
     providers::{
         AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
         BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider,
@@ -159,7 +160,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     .context("failed to init analytics")?;
 
     let geoblock = analytics.geoip_resolver().as_ref().map(|resolver| {
-        // let r = resolver.clone().deref();
         GeoBlockLayer::new(
             resolver.clone(),
             config.server.blocked_countries.clone(),
@@ -249,21 +249,21 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/v1/", get(handlers::ws_proxy::handler))
         .route("/ws", get(handlers::ws_proxy::handler))
         .route("/v1/supported-chains", get(handlers::supported_chains::handler))
-        .route("/v1/identity/:address", get(handlers::identity::handler))
+        .route("/v1/identity/{address}", get(handlers::identity::handler))
         .route(
-            "/v1/account/:address/identity",
+            "/v1/account/{address}/identity",
             get(handlers::identity::handler),
         )
         .route(
-            "/v1/account/:address/history",
+            "/v1/account/{address}/history",
             get(handlers::history::handler),
         )
         .route(
-            "/v1/account/:address/portfolio",
+            "/v1/account/{address}/portfolio",
             get(handlers::portfolio::handler),
         )
         .route(
-            "/v1/account/:address/balance",
+            "/v1/account/{address}/balance",
             get(handlers::balance::handler),
         )
         // Register account name
@@ -273,27 +273,27 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         )
          // Update account name attributes
          .route(
-            "/v1/profile/account/:name/attributes",
+            "/v1/profile/account/{name}/attributes",
             post(handlers::profile::attributes::handler),
         )
         // Update account name address
         .route(
-            "/v1/profile/account/:name/address",
+            "/v1/profile/account/{name}/address",
             post(handlers::profile::address::handler),
         )
         // Forward address lookup
         .route(
-            "/v1/profile/account/:name",
+            "/v1/profile/account/{name}",
             get(handlers::profile::lookup::handler),
         )
         // Reverse name lookup
         .route(
-            "/v1/profile/reverse/:address",
+            "/v1/profile/reverse/{address}",
             get(handlers::profile::reverse::handler),
         )
         // Reverse name lookup
         .route(
-            "/v1/profile/suggestions/:name",
+            "/v1/profile/suggestions/{name}",
             get(handlers::profile::suggestions::handler),
         )
         // Generators
@@ -357,12 +357,12 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             post(handlers::fungible_price::handler),
         )
         // Sessions
-        .route("/v1/sessions/:address", post(handlers::sessions::create::handler))
-        .route("/v1/sessions/:address", get(handlers::sessions::list::handler))
-        .route("/v1/sessions/:address/getcontext", get(handlers::sessions::get::handler))
-        .route("/v1/sessions/:address/activate", post(handlers::sessions::context::handler))
-        .route("/v1/sessions/:address/revoke", post(handlers::sessions::revoke::handler))
-        .route("/v1/sessions/:address/sign", post(handlers::sessions::cosign::handler))
+        .route("/v1/sessions/{address}", post(handlers::sessions::create::handler))
+        .route("/v1/sessions/{address}", get(handlers::sessions::list::handler))
+        .route("/v1/sessions/{address}/getcontext", get(handlers::sessions::get::handler))
+        .route("/v1/sessions/{address}/activate", post(handlers::sessions::context::handler))
+        .route("/v1/sessions/{address}/revoke", post(handlers::sessions::revoke::handler))
+        .route("/v1/sessions/{address}/sign", post(handlers::sessions::cosign::handler))
         // Bundler
         .route("/v1/bundler", post(handlers::bundler::handler))
         // Wallet
@@ -418,8 +418,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/metrics", get(handlers::metrics::handler))
         .with_state(state_arc.clone());
 
-    let public_server = create_server(app, &addr);
-    let private_server = create_server(private_app, &private_addr);
+    let public_server = create_server(app, addr);
+    let private_server = create_server(private_app, private_addr);
 
     let weights_updater = {
         let state_arc = state_arc.clone();
@@ -519,13 +519,16 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     Ok(())
 }
 
-fn create_server(
-    app: Router,
-    addr: &SocketAddr,
-) -> impl std::future::Future<Output = Result<(), hyper::Error>> {
-    axum::Server::bind(addr)
-        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-        .with_graceful_shutdown(shutdown_signal())
+async fn create_server(app: Router, addr: SocketAddr) -> Result<(), std::io::Error> {
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .expect("failed to bind listener");
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
 }
 
 async fn shutdown_signal() {

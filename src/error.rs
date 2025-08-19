@@ -40,6 +40,8 @@ pub enum RpcError {
 
     #[error("Transport error: {0}")]
     TransportError(#[from] hyper::Error),
+    #[error("Hyper util error: {0}")]
+    HyperUtilError(#[from] hyper_util::client::legacy::Error),
 
     #[error("Proxy timeout error: {0}")]
     ProxyTimeoutError(tokio::time::error::Elapsed),
@@ -107,8 +109,8 @@ pub enum RpcError {
     #[error("Invalid scheme used. Try http(s):// or ws(s)://")]
     InvalidScheme,
 
-    #[error(transparent)]
-    AxumTungstenite(Box<axum_tungstenite::Error>),
+    #[error("WebSocket error: {0}")]
+    WebSocketError(String),
 
     #[error("Only WebSocket connections are supported for GET method on this endpoint")]
     WebSocketConnectionExpected,
@@ -281,7 +283,7 @@ pub enum RpcError {
 impl IntoResponse for RpcError {
     fn into_response(self) -> axum::response::Response {
         let response =  match &self {
-            Self::AxumTungstenite(err) => (StatusCode::GONE, err.to_string()).into_response(),
+            Self::WebSocketError(err) => (StatusCode::GONE, err.to_string()).into_response(),
             Self::UnsupportedChain(chain_id) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(

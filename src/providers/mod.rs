@@ -44,8 +44,7 @@ use {
         rpc::json_rpc::Id,
     },
     async_trait::async_trait,
-    axum::response::Response,
-    axum_tungstenite::WebSocketUpgrade,
+    axum::{extract::ws::WebSocketUpgrade, response::Response},
     deadpool_redis::Pool,
     hyper::http::HeaderValue,
     mock_alto::{MockAltoProvider, MockAltoUrls},
@@ -920,7 +919,7 @@ impl ProviderKind {
 
 #[async_trait]
 pub trait RpcProvider: Provider {
-    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response>;
+    async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response>;
 }
 
 pub trait RpcProviderFactory<T: ProviderConfig>: Provider {
