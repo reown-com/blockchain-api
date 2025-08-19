@@ -72,6 +72,7 @@ pub async fn handler(
     Json(request): Json<GetExchangeBuyStatusRequest>,
 ) -> Result<GetExchangeBuyStatusResponse, GetExchangeBuyStatusError> {
     is_feature_enabled_for_project_id(state.clone(), &project_id)
+        .await
         .map_err(|e| GetExchangeBuyStatusError::ValidationError(e.to_string()))?;
     handler_internal(state, connect_info, headers, query, request)
         .with_metrics(HANDLER_TASK_METRICS.with_name("pay_get_exchange_buy_status"))
