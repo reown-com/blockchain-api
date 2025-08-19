@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.283.0 - 2025-08-19
+#### Features
+- updating Axum to 0.7, using reqwest in providers instead of hyper (#1197) - (f60d533) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- projectId feature validation (#1196) - (f3ee2c7) - Luka Isailovic
+
+- - -
+
 ## 0.282.0 - 2025-08-18
 #### Features
 - **(proxy)** hardcoding of the `net_version` method response (#1201) - (72db15b) - Max Kalashnikoff | maksy.eth
