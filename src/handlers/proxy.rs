@@ -39,7 +39,7 @@ use {
 const PROVIDER_PROXY_MAX_CALLS: usize = 5;
 const PROVIDER_PROXY_CALL_TIMEOUT: Duration = Duration::from_secs(10);
 const DEFAULT_CONTENT_TYPE: (&str, &str) = ("content-type", "application/json");
-pub const PROVIDER_RESPONSE_MAX_BYTES: usize = 512 * 1024; // 512 Kb
+pub const PROVIDER_RESPONSE_MAX_BYTES: usize = 10 * 1024 * 1024; // 10 Mb
 
 pub async fn handler(
     state: State<Arc<AppState>>,
