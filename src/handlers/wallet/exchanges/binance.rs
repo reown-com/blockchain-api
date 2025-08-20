@@ -403,11 +403,12 @@ impl BinanceExchange {
         let chain_id = asset.chain_id().to_string();
 
         let crypto = CAIP19_TO_BINANCE_CRYPTO
-            .get(full_caip19.as_str())
+            .iter()
+            .find(|(k, _)| k.to_lowercase() == full_caip19.to_lowercase())
+            .map(|(_, v)| v.to_string())
             .ok_or_else(|| {
                 ExchangeError::ValidationError(format!("Unsupported asset: {full_caip19}"))
-            })?
-            .to_string();
+            })?;
 
         let network = CHAIN_ID_TO_BINANCE_NETWORK
             .get(chain_id.as_str())
