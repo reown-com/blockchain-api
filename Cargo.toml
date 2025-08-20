@@ -7,6 +7,7 @@ authors = [
     "Chris <chris@reown.com>",
     "Max <max@reown.com>",
 ]
+license-file = "LICENSE.md"
 build = "build.rs"
 
 [dependencies]
