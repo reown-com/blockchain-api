@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.284.0 - 2025-08-20
+#### Bug Fixes
+- adding a license to the `Cargo.toml` and make the license file a markdown (#1206) - (64dfd95) - Max Kalashnikoff | maksy.eth
+#### Features
+- updating the LICENSE (#1204) - (dce6316) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.283.1 - 2025-08-19
 #### Bug Fixes
 - fixing the axum query parameter (#1202) - (372dd19) - Max Kalashnikoff | maksy.eth
