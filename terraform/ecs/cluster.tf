@@ -8,11 +8,11 @@ locals {
 
   otel_port   = var.port + 1
   otel_cpu    = module.this.stage == "prod" ? 128 : 64
-  otel_memory = module.this.stage == "prod" ? 256 : 64
+  otel_memory = module.this.stage == "prod" ? 256 : 128
 
   prometheus_proxy_port   = var.port + 2
   prometheus_proxy_cpu    = module.this.stage == "prod" ? 128 : 64
-  prometheus_proxy_memory = module.this.stage == "prod" ? 256 : 64
+  prometheus_proxy_memory = module.this.stage == "prod" ? 256 : 128
 
   file_descriptor_soft_limit = pow(2, 20) # 1024 x 1024 = 1,048,576 is the Fargate maximum
   file_descriptor_hard_limit = pow(2, 20)
