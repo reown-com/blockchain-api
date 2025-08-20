@@ -33,11 +33,11 @@ static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
             "USDC",
         ), // USDC on Polygon
         (
-            "eip155:8453/erc20:0x833589fCD6EDb6E08f4c7C32D4f71b54bDa02913",
+            "eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
             "USDC",
         ), // USDC on Base
         (
-            "eip155:42161/erc20:0xAf88d065E77C8CC2239327C5EDb3A432268e5831",
+            "eip155:42161/erc20:0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
             "USDC",
         ), // USDC on Arbitrum
         ("eip155:1/slip44:60", "ETH"), // Native ETH
@@ -47,7 +47,7 @@ static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
             "USDT",
         ), // USDT on Ethereum
         (
-            "eip155:42161/erc20:0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCBb9",
+            "eip155:42161/erc20:0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
             "USDT",
         ), // USDT on Arbitrum
         (
@@ -67,7 +67,7 @@ static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
             "USDT",
         ), // USDT on Solana
         (
-            "eip155:30/erc20:0x2AcC95758f8B5F583470Ba265EB685a8F45fC9D5",
+            "eip155:30/erc20:0x2AcC95758f8b5F583470ba265EB685a8F45fC9D5",
             "RIF",
         ), // RIF on Rootstock
     ])

@@ -27,7 +27,7 @@ const COINBASE_API_HOST: &str = "api.developer.coinbase.com";
 static CAIP19_TO_COINBASE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
     HashMap::from([
         (
-            "eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71B54bDa02913",
+            "eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
             "USDC",
         ), // USDC on Base
         (
@@ -43,7 +43,7 @@ static CAIP19_TO_COINBASE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
             "USDC",
         ), // USDC on Polygon
         (
-            "eip155:1/erc20:0xA0b86991c6218B36c1d19D4a2e9Eb0cE3606eB48",
+            "eip155:1/erc20:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
             "USDC",
         ), // USDC on Ethereum
         ("eip155:1/slip44:60", "ETH"), // Native ETH
