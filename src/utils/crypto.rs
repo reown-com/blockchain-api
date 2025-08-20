@@ -21,7 +21,7 @@ use {
         prelude::{abigen, EthAbiCodec, EthAbiType},
         providers::{Http, Middleware, Provider as EthersProvider},
         types::{Address as EthersAddress, Bytes, H160, H256, U128, U256},
-        utils::keccak256,
+        utils::{keccak256, to_checksum},
     },
     once_cell::sync::Lazy,
     regex::Regex,
@@ -1141,6 +1141,23 @@ pub fn convert_token_amount_to_value(balance: U256, price: f64, decimals: u8) ->
 pub fn convert_alloy_address_to_h160(addr: Address) -> H160 {
     let bytes = addr.as_ref();
     H160::from_slice(bytes)
+}
+
+/// Normalize any Ethereum-style address to its checksummed form.
+/// If invalid, returns Err.
+pub fn normalize_to_checksum(addr: &str) -> Result<String> {
+    let h160 = H160::from_str(addr)
+        .map_err(|_| format!("Invalid address: {addr}"))?;
+    Ok(to_checksum(&h160))
+}
+
+pub fn normalize_caip19_to_checksum(caip19: &Caip19Asset) -> Result<Caip19Asset, String> {
+    let namespace = caip19.chain_id().namespace();
+    let asset_namespace = caip19.asset_namespace();
+    let asset_reference = caip19.asset_reference();
+    let token_id = caip19.token_id();
+    let address = normalize_to_checksum(asset_reference)?;
+    Ok(Caip19Asset::new(caip19.chain_id().clone(), asset_namespace, &address, token_id)?)
 }
 
 #[cfg(test)]

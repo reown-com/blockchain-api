@@ -25,19 +25,19 @@ const FALLBACK_MERCHANT_NAME: &str = " ";
 static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
     HashMap::from([
         (
-            "eip155:1/erc20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "eip155:1/erc20:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
             "USDC",
         ), // USDC on Ethereum
         (
-            "eip155:137/erc20:0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+            "eip155:137/erc20:0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
             "USDC",
         ), // USDC on Polygon
         (
-            "eip155:8453/erc20:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            "eip155:8453/erc20:0x833589fCD6EDb6E08f4c7C32D4f71b54bDa02913",
             "USDC",
         ), // USDC on Base
         (
-            "eip155:42161/erc20:0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+            "eip155:42161/erc20:0xAf88d065E77C8CC2239327C5EDb3A432268e5831",
             "USDC",
         ), // USDC on Arbitrum
         ("eip155:1/slip44:60", "ETH"), // Native ETH
@@ -47,7 +47,7 @@ static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
             "USDT",
         ), // USDT on Ethereum
         (
-            "eip155:42161/erc20:0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+            "eip155:42161/erc20:0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCBb9",
             "USDT",
         ), // USDT on Arbitrum
         (
@@ -67,7 +67,7 @@ static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
             "USDT",
         ), // USDT on Solana
         (
-            "eip155:30/erc20:0x2AcC95758f8b5F583470ba265EB685a8F45fC9D5",
+            "eip155:30/erc20:0x2AcC95758f8B5F583470Ba265EB685a8F45fC9D5",
             "RIF",
         ), // RIF on Rootstock
     ])
@@ -269,6 +269,12 @@ impl ExchangeProvider for BinanceExchange {
     }
 
     fn is_asset_supported(&self, asset: &Caip19Asset) -> bool {
+        let namespace = asset.chain_id().namespace();
+        if namespace == "eip155" {
+            let checksummed = crate::utils::crypto::normalize_caip19_to_checksum(asset);
+            self.map_asset_to_binance_format(&checksummed).is_ok()
+        }
+
         self.map_asset_to_binance_format(asset).is_ok()
     }
 }
@@ -404,7 +410,7 @@ impl BinanceExchange {
 
         let crypto = CAIP19_TO_BINANCE_CRYPTO
             .iter()
-            .find(|(k, _)| k.to_lowercase() == full_caip19.to_lowercase())
+            .find(|(k, _)| k == &full_caip19)
             .map(|(_, v)| v.to_string())
             .ok_or_else(|| {
                 ExchangeError::ValidationError(format!("Unsupported asset: {full_caip19}"))
