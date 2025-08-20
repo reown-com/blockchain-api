@@ -9,6 +9,7 @@ authors = [
 ]
 license-file = "LICENSE.md"
 build = "build.rs"
+publish = false
 
 [dependencies]
 wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.10.0", features = ["alloc", "analytics", "future", "metrics", "geoip", "rate_limit", "geoblock"] }
