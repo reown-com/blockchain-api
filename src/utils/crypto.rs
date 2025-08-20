@@ -1145,19 +1145,21 @@ pub fn convert_alloy_address_to_h160(addr: Address) -> H160 {
 
 /// Normalize any Ethereum-style address to its checksummed form.
 /// If invalid, returns Err.
-pub fn normalize_to_checksum(addr: &str) -> Result<String> {
-    let h160 = H160::from_str(addr)
-        .map_err(|_| format!("Invalid address: {addr}"))?;
-    Ok(to_checksum(&h160))
+pub fn normalize_to_checksum(addr: &str) -> Result<String, CryptoUitlsError> {
+    let h160 =
+        H160::from_str(addr).map_err(|_| CryptoUitlsError::WrongAddressFormat(addr.into()))?;
+    Ok(to_checksum(&h160, None))
 }
 
-pub fn normalize_caip19_to_checksum(caip19: &Caip19Asset) -> Result<Caip19Asset, String> {
-    let namespace = caip19.chain_id().namespace();
-    let asset_namespace = caip19.asset_namespace();
+pub fn normalize_caip19_to_checksum(caip19: &Caip19Asset) -> Result<Caip19Asset, CryptoUitlsError> {
     let asset_reference = caip19.asset_reference();
-    let token_id = caip19.token_id();
     let address = normalize_to_checksum(asset_reference)?;
-    Ok(Caip19Asset::new(caip19.chain_id().clone(), asset_namespace, &address, token_id)?)
+    Caip19Asset::new(
+        caip19.chain_id().clone(),
+        caip19.asset_namespace(),
+        &address,
+        caip19.token_id(),
+    )
 }
 
 #[cfg(test)]

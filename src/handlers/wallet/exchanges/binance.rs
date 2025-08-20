@@ -4,7 +4,7 @@ use {
         GetBuyStatusResponse, GetBuyUrlParams,
     },
     crate::state::AppState,
-    crate::utils::crypto::Caip19Asset,
+    crate::utils::crypto::{normalize_caip19_to_checksum, Caip19Asset},
     axum::extract::State,
     base64::{engine::general_purpose::STANDARD, Engine},
     once_cell::sync::Lazy,
@@ -271,8 +271,9 @@ impl ExchangeProvider for BinanceExchange {
     fn is_asset_supported(&self, asset: &Caip19Asset) -> bool {
         let namespace = asset.chain_id().namespace();
         if namespace == "eip155" {
-            let checksummed = crate::utils::crypto::normalize_caip19_to_checksum(asset);
-            self.map_asset_to_binance_format(&checksummed).is_ok()
+            if let Ok(checksummed) = normalize_caip19_to_checksum(asset) {
+                return self.map_asset_to_binance_format(&checksummed).is_ok();
+            }
         }
 
         self.map_asset_to_binance_format(asset).is_ok()
@@ -410,7 +411,7 @@ impl BinanceExchange {
 
         let crypto = CAIP19_TO_BINANCE_CRYPTO
             .iter()
-            .find(|(k, _)| k == &full_caip19)
+            .find(|(k, _)| **k == full_caip19.as_str())
             .map(|(_, v)| v.to_string())
             .ok_or_else(|| {
                 ExchangeError::ValidationError(format!("Unsupported asset: {full_caip19}"))
