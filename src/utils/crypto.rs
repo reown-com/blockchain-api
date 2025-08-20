@@ -714,6 +714,7 @@ pub enum ChainId {
     Blast = 81032,
     Celo = 42220,
     Degen = 666666666,
+    DeInfra = 100501,
     #[strum(serialize = "ethereum", serialize = "mainnet")]
     Ethereum = 1,
     Fantom = 250,

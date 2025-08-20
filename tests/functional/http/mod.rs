@@ -13,6 +13,7 @@ pub(crate) mod arbitrum;
 pub(crate) mod aurora;
 pub(crate) mod base;
 pub(crate) mod binance;
+pub(crate) mod deinfra;
 pub(crate) mod drpc;
 pub(crate) mod mantle;
 pub(crate) mod monad;

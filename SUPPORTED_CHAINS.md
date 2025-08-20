@@ -45,6 +45,7 @@ Chain name with associated `chainId` query param to use.
 | Berachain bArtio <sup>[1](#footnote1)</sup>              | eip155:80084         |
 | Berachain Mainnet <sup>[1](#footnote1)</sup>             | eip155:80094         |
 | Base Sepolia                                             | eip155:84532         |
+| DeInfra Mainnet <sup>[1](#footnote1)</sup>               | eip155:100501        |
 | Arbitrum Sepolia                                         | eip155:421614        |
 | Scroll Mainnet <sup>[1](#footnote1)</sup>                | eip155:534352        |
 | Scroll Sepolia Testnet <sup>[1](#footnote1)</sup>        | eip155:534351        |
@@ -54,6 +55,7 @@ Chain name with associated `chainId` query param to use.
 | Ethereum Sepolia                                         | eip155:11155111      |
 | Optimism Sepolia                                         | eip155:11155420      |
 | Zora Sepolia <sup>[1](#footnote1)</sup>                  | eip155:999999999     |
+| DeInfra Devnet3 <sup>[1](#footnote1)</sup>               | eip155:1000000003    |
 | Aurora <sup>[1](#footnote1)</sup>                        | eip155:1313161554    |
 | Aurora Testnet <sup>[1](#footnote1)</sup>                | eip155:1313161555    |
 | Near Mainnet                                             | near:mainnet         |
