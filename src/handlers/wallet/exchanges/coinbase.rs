@@ -27,7 +27,7 @@ const COINBASE_API_HOST: &str = "api.developer.coinbase.com";
 static CAIP19_TO_COINBASE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
     HashMap::from([
         (
-            "eip155:8453/erc20:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            "eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71B54bDa02913",
             "USDC",
         ), // USDC on Base
         (
@@ -35,15 +35,15 @@ static CAIP19_TO_COINBASE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
             "USDC",
         ), // USDC on Optimism
         (
-            "eip155:42161/erc20:0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+            "eip155:42161/erc20:0xAf88d065E77C8Ccc2239327C5EDb3A432268e5831",
             "USDC",
         ), // USDC on Arbitrum
         (
-            "eip155:137/erc20:0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+            "eip155:137/erc20:0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
             "USDC",
         ), // USDC on Polygon
         (
-            "eip155:1/erc20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "eip155:1/erc20:0xA0b86991c6218B36c1d19D4a2e9Eb0cE3606eB48",
             "USDC",
         ), // USDC on Ethereum
         ("eip155:1/slip44:60", "ETH"), // Native ETH
