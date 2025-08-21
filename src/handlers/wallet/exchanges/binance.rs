@@ -4,7 +4,7 @@ use {
         GetBuyStatusResponse, GetBuyUrlParams,
     },
     crate::state::AppState,
-    crate::utils::crypto::{normalize_caip19_to_checksum, Caip19Asset},
+    crate::utils::crypto::Caip19Asset,
     axum::extract::State,
     base64::{engine::general_purpose::STANDARD, Engine},
     once_cell::sync::Lazy,
@@ -269,13 +269,6 @@ impl ExchangeProvider for BinanceExchange {
     }
 
     fn is_asset_supported(&self, asset: &Caip19Asset) -> bool {
-        let namespace = asset.chain_id().namespace();
-        if namespace == "eip155" {
-            if let Ok(checksummed) = normalize_caip19_to_checksum(asset) {
-                return self.map_asset_to_binance_format(&checksummed).is_ok();
-            }
-        }
-
         self.map_asset_to_binance_format(asset).is_ok()
     }
 }

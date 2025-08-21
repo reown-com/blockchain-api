@@ -924,9 +924,15 @@ impl Caip19Asset {
             }
         }
 
+        let normalized_asset_namespace = if chain_id.namespace() == "eip155" {
+            normalize_to_checksum(asset_namespace)?
+        } else {
+            asset_namespace.to_string()
+        };
+
         Ok(Self {
             chain_id,
-            asset_namespace: asset_namespace.to_string(),
+            asset_namespace: normalized_asset_namespace,
             asset_reference: asset_reference.to_string(),
             token_id: token_id.map(ToString::to_string),
         })
@@ -1149,17 +1155,6 @@ pub fn normalize_to_checksum(addr: &str) -> Result<String, CryptoUitlsError> {
     let h160 =
         H160::from_str(addr).map_err(|_| CryptoUitlsError::WrongAddressFormat(addr.into()))?;
     Ok(to_checksum(&h160, None))
-}
-
-pub fn normalize_caip19_to_checksum(caip19: &Caip19Asset) -> Result<Caip19Asset, CryptoUitlsError> {
-    let asset_reference = caip19.asset_reference();
-    let address = normalize_to_checksum(asset_reference)?;
-    Caip19Asset::new(
-        caip19.chain_id().clone(),
-        caip19.asset_namespace(),
-        &address,
-        caip19.token_id(),
-    )
 }
 
 #[cfg(test)]
