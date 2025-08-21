@@ -924,16 +924,16 @@ impl Caip19Asset {
             }
         }
 
-        let normalized_asset_namespace = if chain_id.namespace() == "eip155" {
-            normalize_to_checksum(asset_namespace)?
+        let normalized_asset_reference = if chain_id.namespace() == "eip155" {
+            normalize_to_checksum(asset_reference)?
         } else {
             asset_namespace.to_string()
         };
 
         Ok(Self {
             chain_id,
-            asset_namespace: normalized_asset_namespace,
-            asset_reference: asset_reference.to_string(),
+            asset_namespace: asset_namespace.to_string(),
+            asset_reference: normalized_asset_reference,
             token_id: token_id.map(ToString::to_string),
         })
     }
