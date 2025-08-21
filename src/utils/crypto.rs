@@ -925,7 +925,10 @@ impl Caip19Asset {
         }
 
         let normalized_asset_reference = if chain_id.namespace() == "eip155"
-            && (asset_namespace == "erc20" || asset_namespace == "erc721" || asset_namespace == "erc1155") {
+            && (asset_namespace == "erc20"
+                || asset_namespace == "erc721"
+                || asset_namespace == "erc1155")
+        {
             normalize_to_checksum(asset_reference)?
         } else {
             asset_reference.to_string()
@@ -1298,7 +1301,10 @@ mod tests {
         assert_eq!(erc20_asset.chain_id().namespace(), "eip155");
         assert_eq!(erc20_asset.chain_id().reference(), "1");
         assert_eq!(erc20_asset.asset_namespace(), "erc20");
-        assert_eq!(erc20_asset.asset_reference(), normalize_to_checksum(erc20_address).unwrap());
+        assert_eq!(
+            erc20_asset.asset_reference(),
+            normalize_to_checksum(erc20_address).unwrap()
+        );
         assert!(erc20_asset.token_id().is_none());
         assert!(erc20_asset.token_id().is_none());
         assert_eq!(erc20_asset.to_string(), erc20_asset_str);
@@ -1311,7 +1317,10 @@ mod tests {
         assert_eq!(nft_asset.chain_id().namespace(), "eip155");
         assert_eq!(nft_asset.chain_id().reference(), "1");
         assert_eq!(nft_asset.asset_namespace(), "erc721");
-        assert_eq!(nft_asset.asset_reference(), normalize_to_checksum(nft_address).unwrap());
+        assert_eq!(
+            nft_asset.asset_reference(),
+            normalize_to_checksum(nft_address).unwrap()
+        );
         assert_eq!(nft_asset.token_id(), Some(token_id));
         assert!(nft_asset.token_id().is_some());
         assert_eq!(nft_asset.to_string(), nft_asset_str);
