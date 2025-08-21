@@ -927,7 +927,7 @@ impl Caip19Asset {
         let normalized_asset_reference = if chain_id.namespace() == "eip155" {
             normalize_to_checksum(asset_reference)?
         } else {
-            asset_namespace.to_string()
+            asset_reference.to_string()
         };
 
         Ok(Self {
