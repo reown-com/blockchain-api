@@ -410,9 +410,8 @@ impl BinanceExchange {
         let chain_id = asset.chain_id().to_string();
 
         let crypto = CAIP19_TO_BINANCE_CRYPTO
-            .iter()
-            .find(|(k, _)| **k == full_caip19.as_str())
-            .map(|(_, v)| v.to_string())
+            .get(full_caip19.as_str())
+            .map(|v| v.to_string())
             .ok_or_else(|| {
                 ExchangeError::ValidationError(format!("Unsupported asset: {full_caip19}"))
             })?;
