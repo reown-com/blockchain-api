@@ -1295,7 +1295,7 @@ mod tests {
         assert!(eth_asset.token_id().is_none());
         assert_eq!(eth_asset.to_string(), eth_asset_str);
 
-        let erc20_address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+        let erc20_address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
         let erc20_asset_str = format!("eip155:1/erc20:{erc20_address}");
         let erc20_asset = Caip19Asset::parse(&erc20_asset_str).unwrap();
         assert_eq!(erc20_asset.chain_id().namespace(), "eip155");
@@ -1360,7 +1360,7 @@ mod tests {
         let eth_asset = Caip19Asset::from_str(eth_asset_str).unwrap();
         assert_eq!(eth_asset.to_string(), eth_asset_str);
 
-        let erc20_address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+        let erc20_address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
         let erc20_asset_str = format!("eip155:1/erc20:{erc20_address}");
         let erc20_asset = Caip19Asset::from_str(&erc20_asset_str).unwrap();
         assert_eq!(erc20_asset.to_string(), erc20_asset_str);
