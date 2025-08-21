@@ -213,7 +213,7 @@ pub async fn is_feature_enabled_for_project_id(
     debug!("features: {:?}", features);
     if features
         .iter()
-        .any(|f| f.id == PAYMENTS_FEATURE_ID && f.is_enabled || true)
+        .any(|f| f.id == PAYMENTS_FEATURE_ID && f.is_enabled)
     {
         return Ok(());
     }
