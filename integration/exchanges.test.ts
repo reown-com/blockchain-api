@@ -178,7 +178,7 @@ describe('Exchanges', () => {
 
   describe('Get Exchange URL', () => {
     
-    binanceTestFn.skip('should generate pay URL for Binance with USDC on Base', async () => {
+    binanceTestFn('should generate pay URL for Binance with USDC on Base', async () => {
       const payload = {
         jsonrpc: '2.0',
         id: 1,

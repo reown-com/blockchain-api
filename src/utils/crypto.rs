@@ -1295,11 +1295,11 @@ mod tests {
         assert!(eth_asset.token_id().is_none());
         assert_eq!(eth_asset.to_string(), eth_asset_str);
 
-        let erc20_address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-        let erc20_asset_str = format!("eip155:1/erc20:{erc20_address}");
+        let erc20_address = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+        let erc20_asset_str = format!("eip155:8453/erc20:{erc20_address}");
         let erc20_asset = Caip19Asset::parse(&erc20_asset_str).unwrap();
         assert_eq!(erc20_asset.chain_id().namespace(), "eip155");
-        assert_eq!(erc20_asset.chain_id().reference(), "1");
+        assert_eq!(erc20_asset.chain_id().reference(), "8453");
         assert_eq!(erc20_asset.asset_namespace(), "erc20");
         assert_eq!(
             erc20_asset.asset_reference(),
@@ -1309,6 +1309,20 @@ mod tests {
         assert!(erc20_asset.token_id().is_none());
         assert_eq!(erc20_asset.to_string(), erc20_asset_str);
 
+        // Test with non-checksummed address
+        let non_checksummed_address = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+        let non_checksummed_asset_str = format!("eip155:8453/erc20:{non_checksummed_address}");
+        let non_checksummed_asset = Caip19Asset::parse(&non_checksummed_asset_str).unwrap();
+        assert_eq!(non_checksummed_asset.chain_id().namespace(), "eip155");
+        assert_eq!(non_checksummed_asset.chain_id().reference(), "8453");
+        assert_eq!(non_checksummed_asset.asset_namespace(), "erc20");
+        assert_eq!(
+            non_checksummed_asset.asset_reference(),
+            normalize_to_checksum(non_checksummed_address).unwrap()
+        );
+        assert!(non_checksummed_asset.token_id().is_none());
+        assert_eq!(non_checksummed_asset.to_string(), non_checksummed_asset_str);
+        
         // Test parsing valid CAIP-19 identifiers with token ID
         let nft_address = "0x06012c8cf97BEaD5deAe237070F9587f8E7A266d";
         let token_id = "771769";
@@ -1360,8 +1374,8 @@ mod tests {
         let eth_asset = Caip19Asset::from_str(eth_asset_str).unwrap();
         assert_eq!(eth_asset.to_string(), eth_asset_str);
 
-        let erc20_address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-        let erc20_asset_str = format!("eip155:1/erc20:{erc20_address}");
+        let erc20_address = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+        let erc20_asset_str = format!("eip155:8453/erc20:{erc20_address}");
         let erc20_asset = Caip19Asset::from_str(&erc20_asset_str).unwrap();
         assert_eq!(erc20_asset.to_string(), erc20_asset_str);
 
@@ -1371,6 +1385,12 @@ mod tests {
         let nft_asset_str = format!("eip155:1/erc721:{nft_address}/{token_id}");
         let nft_asset = Caip19Asset::from_str(&nft_asset_str).unwrap();
         assert_eq!(nft_asset.to_string(), nft_asset_str);
+
+        // Test with non-checksummed address
+        let non_checksummed_address = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+        let non_checksummed_asset_str = format!("eip155:8453/erc20:{non_checksummed_address}");
+        let non_checksummed_asset = Caip19Asset::from_str(&non_checksummed_asset_str).unwrap();
+        assert_eq!(non_checksummed_asset.to_string(), non_checksummed_asset_str);
     }
 
     #[test]
