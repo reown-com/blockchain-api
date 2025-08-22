@@ -21,7 +21,7 @@ use {
         prelude::{abigen, EthAbiCodec, EthAbiType},
         providers::{Http, Middleware, Provider as EthersProvider},
         types::{Address as EthersAddress, Bytes, H160, H256, U128, U256},
-        utils::keccak256,
+        utils::{keccak256, to_checksum},
     },
     once_cell::sync::Lazy,
     regex::Regex,
@@ -924,10 +924,20 @@ impl Caip19Asset {
             }
         }
 
+        let normalized_asset_reference = if chain_id.namespace() == "eip155"
+            && (asset_namespace == "erc20"
+                || asset_namespace == "erc721"
+                || asset_namespace == "erc1155")
+        {
+            normalize_to_checksum(asset_reference)?
+        } else {
+            asset_reference.to_string()
+        };
+
         Ok(Self {
             chain_id,
             asset_namespace: asset_namespace.to_string(),
-            asset_reference: asset_reference.to_string(),
+            asset_reference: normalized_asset_reference,
             token_id: token_id.map(ToString::to_string),
         })
     }
@@ -1143,6 +1153,14 @@ pub fn convert_alloy_address_to_h160(addr: Address) -> H160 {
     H160::from_slice(bytes)
 }
 
+/// Normalize any Ethereum-style address to its checksummed form.
+/// If invalid, returns Err.
+pub fn normalize_to_checksum(addr: &str) -> Result<String, CryptoUitlsError> {
+    let h160 =
+        H160::from_str(addr).map_err(|_| CryptoUitlsError::WrongAddressFormat(addr.into()))?;
+    Ok(to_checksum(&h160, None))
+}
+
 #[cfg(test)]
 mod tests {
     use {
@@ -1277,13 +1295,16 @@ mod tests {
         assert!(eth_asset.token_id().is_none());
         assert_eq!(eth_asset.to_string(), eth_asset_str);
 
-        let erc20_address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+        let erc20_address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
         let erc20_asset_str = format!("eip155:1/erc20:{erc20_address}");
         let erc20_asset = Caip19Asset::parse(&erc20_asset_str).unwrap();
         assert_eq!(erc20_asset.chain_id().namespace(), "eip155");
         assert_eq!(erc20_asset.chain_id().reference(), "1");
         assert_eq!(erc20_asset.asset_namespace(), "erc20");
-        assert_eq!(erc20_asset.asset_reference(), erc20_address);
+        assert_eq!(
+            erc20_asset.asset_reference(),
+            normalize_to_checksum(erc20_address).unwrap()
+        );
         assert!(erc20_asset.token_id().is_none());
         assert!(erc20_asset.token_id().is_none());
         assert_eq!(erc20_asset.to_string(), erc20_asset_str);
@@ -1296,7 +1317,10 @@ mod tests {
         assert_eq!(nft_asset.chain_id().namespace(), "eip155");
         assert_eq!(nft_asset.chain_id().reference(), "1");
         assert_eq!(nft_asset.asset_namespace(), "erc721");
-        assert_eq!(nft_asset.asset_reference(), nft_address);
+        assert_eq!(
+            nft_asset.asset_reference(),
+            normalize_to_checksum(nft_address).unwrap()
+        );
         assert_eq!(nft_asset.token_id(), Some(token_id));
         assert!(nft_asset.token_id().is_some());
         assert_eq!(nft_asset.to_string(), nft_asset_str);
@@ -1336,7 +1360,7 @@ mod tests {
         let eth_asset = Caip19Asset::from_str(eth_asset_str).unwrap();
         assert_eq!(eth_asset.to_string(), eth_asset_str);
 
-        let erc20_address = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+        let erc20_address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
         let erc20_asset_str = format!("eip155:1/erc20:{erc20_address}");
         let erc20_asset = Caip19Asset::from_str(&erc20_asset_str).unwrap();
         assert_eq!(erc20_asset.to_string(), erc20_asset_str);

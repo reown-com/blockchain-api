@@ -16,8 +16,8 @@ describe('Exchanges', () => {
   const baseAddress = 'eip155:8453:0x2aae531a81461f029cd55cb46703211c9227ba05';
   const solanaAddress = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:5PUrktzVvJPNFYpxNzFkGp4a5Dcj1Dduif5dAzuUUhsr';
   
-  const ethUSDC = 'eip155:1/erc20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
-  const baseUSDC = 'eip155:8453/erc20:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
+  const ethUSDC = 'eip155:1/erc20:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+  const baseUSDC = 'eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
   const nativeETH = 'eip155:1/slip44:60';
   const nativeSOL = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/slip44:501';
   const unsupportedAsset = 'eip155:999/erc20:0x1234567890123456789012345678901234567890';
