@@ -1317,15 +1317,12 @@ mod tests {
         assert_eq!(caip19_asset.chain_id().namespace(), "eip155");
         assert_eq!(caip19_asset.chain_id().reference(), "8453");
         assert_eq!(caip19_asset.asset_namespace(), "erc20");
-        assert_eq!(
-            caip19_asset.asset_reference(),
-            checksummed_address
-        );
+        assert_eq!(caip19_asset.asset_reference(), checksummed_address);
         assert!(caip19_asset.token_id().is_none());
 
         let checksummed_asset_str = format!("eip155:8453/erc20:{checksummed_address}");
         assert_eq!(caip19_asset.to_string(), checksummed_asset_str);
-        
+
         // Test parsing valid CAIP-19 identifiers with token ID
         let nft_address = "0x06012c8cf97BEaD5deAe237070F9587f8E7A266d";
         let token_id = "771769";
