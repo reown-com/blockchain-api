@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.284.1 - 2025-08-25
+#### Bug Fixes
+- increasing otel memory for staging and jest test timeout (#1203) - (df0e109) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- compare checksummed caip19 ids (#1205) - (9bc83c5) - tomiir
+
+- - -
+
 ## 0.284.0 - 2025-08-20
 #### Bug Fixes
 - adding a license to the `Cargo.toml` and make the license file a markdown (#1206) - (64dfd95) - Max Kalashnikoff | maksy.eth
