@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.285.0 - 2025-08-26
+#### Features
+- fund wallet feature validation (#1209) - (cd51c52) - Luka Isailovic
+
+- - -
+
 ## 0.284.1 - 2025-08-25
 #### Bug Fixes
 - increasing otel memory for staging and jest test timeout (#1203) - (df0e109) - Max Kalashnikoff | maksy.eth
