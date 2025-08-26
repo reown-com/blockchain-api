@@ -11,7 +11,6 @@ use {
     strum_macros::{AsRefStr, Display, EnumIter},
     thiserror::Error,
     tracing::debug,
-
 };
 
 pub mod binance;
@@ -24,7 +23,11 @@ use test_exchange::TestExchange;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display, AsRefStr, EnumProperty)]
 pub enum FeatureType {
-    #[strum(serialize = "payments", to_string = "Payments", props(feature_id = "payments"))]
+    #[strum(
+        serialize = "payments",
+        to_string = "Payments",
+        props(feature_id = "payments")
+    )]
     Payments,
     #[strum(
         serialize = "fund_from_exchange",
