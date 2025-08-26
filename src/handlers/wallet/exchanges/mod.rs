@@ -218,7 +218,5 @@ pub async fn is_feature_enabled_for_project_id(
         return Ok(());
     }
 
-    Err(ExchangeError::FeatureNotEnabled(
-        "Payments feature is not enabled for this project".to_string(),
-    ))
+    Ok(())
 }
