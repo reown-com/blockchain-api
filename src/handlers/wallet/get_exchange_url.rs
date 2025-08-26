@@ -41,7 +41,7 @@ pub struct GeneratePayUrlResponse {
 pub struct QueryParams {
     #[serde(flatten)]
     pub sdk_info: SdkInfoParams,
-    pub source: Option<String>
+    pub source: Option<String>,
 }
 
 #[derive(Error, Debug)]

@@ -25,7 +25,6 @@ const PAYMENTS_FEATURE_ID: &str = "payments";
 const FUND_WALLET_FEATURE_ID: &str = "fund_from_exchange";
 const FUND_WALLET_SOURCE: &str = "fund_wallet";
 
-
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
 pub struct Config {
     pub coinbase_project_id: Option<String>,
@@ -221,14 +220,12 @@ pub async fn is_feature_enabled_for_project_id(
         _ => (PAYMENTS_FEATURE_ID, "Payments"),
     };
 
-    if features
-        .iter()
-        .any(|f| f.id == feature_id && f.is_enabled)
-    {
+    if features.iter().any(|f| f.id == feature_id && f.is_enabled) {
         return Ok(());
     }
 
-    Err(ExchangeError::FeatureNotEnabled(
-        format!("{} feature is not enabled for this project", feature_name),
-    ))
+    Err(ExchangeError::FeatureNotEnabled(format!(
+        "{} feature is not enabled for this project",
+        feature_name
+    )))
 }
