@@ -7,8 +7,8 @@ use {
     cerberus::project::{Feature, ProjectDataRequest},
     serde::{Deserialize, Serialize},
     std::sync::Arc,
-    strum::IntoEnumIterator,
-    strum_macros::{AsRefStr, EnumIter},
+    strum::{EnumProperty, IntoEnumIterator},
+    strum_macros::{AsRefStr, Display, EnumIter},
     thiserror::Error,
     tracing::debug,
 };
@@ -21,7 +21,21 @@ use binance::BinanceExchange;
 use coinbase::CoinbaseExchange;
 use test_exchange::TestExchange;
 
-const PAYMENTS_FEATURE_ID: &str = "payments";
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display, AsRefStr, EnumProperty)]
+pub enum FeatureType {
+    #[strum(
+        serialize = "payments",
+        to_string = "Payments",
+        props(feature_id = "payments")
+    )]
+    Payments,
+    #[strum(
+        serialize = "fund_from_exchange",
+        to_string = "Fund Wallet",
+        props(feature_id = "fund_from_exchange")
+    )]
+    FundWallet,
+}
 
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
 pub struct Config {
@@ -195,6 +209,7 @@ async fn get_enabled_features(
 pub async fn is_feature_enabled_for_project_id(
     state: State<Arc<AppState>>,
     project_id: &str,
+    source: Option<&str>,
 ) -> Result<(), ExchangeError> {
     if let Some(testing_project_id) = state.config.server.testing_project_id.as_ref() {
         if crypto::constant_time_eq(testing_project_id, project_id) {
@@ -211,14 +226,22 @@ pub async fn is_feature_enabled_for_project_id(
 
     let features = get_enabled_features(state, project_id).await?;
     debug!("features: {:?}", features);
-    if features
-        .iter()
-        .any(|f| f.id == PAYMENTS_FEATURE_ID && f.is_enabled)
-    {
+
+    let feature_type = match source {
+        Some("fund-wallet") => FeatureType::FundWallet,
+        _ => FeatureType::Payments,
+    };
+
+    let feature_id = feature_type
+        .get_str("feature_id")
+        .unwrap_or_else(|| feature_type.as_ref());
+
+    if features.iter().any(|f| f.id == feature_id && f.is_enabled) {
         return Ok(());
     }
 
-    Err(ExchangeError::FeatureNotEnabled(
-        "Payments feature is not enabled for this project".to_string(),
-    ))
+    Err(ExchangeError::FeatureNotEnabled(format!(
+        "{} feature is not enabled for this project",
+        feature_type
+    )))
 }
