@@ -11,6 +11,7 @@ use {
     strum_macros::{AsRefStr, EnumIter},
     thiserror::Error,
     tracing::debug,
+    std::fmt::{Display, Formatter, Result as FmtResult},
 };
 
 pub mod binance;
@@ -21,9 +22,23 @@ use binance::BinanceExchange;
 use coinbase::CoinbaseExchange;
 use test_exchange::TestExchange;
 
-const PAYMENTS_FEATURE_ID: &str = "payments";
-const FUND_WALLET_FEATURE_ID: &str = "fund_from_exchange";
-const FUND_WALLET_SOURCE: &str = "fund_wallet";
+#[derive(Debug, Clone, Copy, PartialEq, Eq, AsRefStr)]
+pub enum FeatureType {
+    #[strum(serialize = "payments")]
+    Payments,
+    #[strum(serialize = "fund_from_exchange")]
+    FundWallet,
+}
+
+impl Display for FeatureType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let display_name = match self {
+            Self::Payments => "Payments",
+            Self::FundWallet => "Fund wallet",
+        };
+        write!(f, "{}", display_name)
+    }
+}
 
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
 pub struct Config {
@@ -205,20 +220,23 @@ pub async fn is_feature_enabled_for_project_id(
         }
     }
 
-    if let Some(allowed_project_ids) = state.config.exchanges.allowed_project_ids.as_ref() {
-        debug!("allowed_project_ids: {:?}", allowed_project_ids);
-        if allowed_project_ids.iter().any(|id| id == project_id) {
-            return Ok(());
-        }
-    }
+    // if let Some(allowed_project_ids) = state.config.exchanges.allowed_project_ids.as_ref() {
+    //     debug!("allowed_project_ids: {:?}", allowed_project_ids);
+    //     if allowed_project_ids.iter().any(|id| id == project_id) {
+    //         return Ok(());
+    //     }
+    // }
 
     let features = get_enabled_features(state, project_id).await?;
     debug!("features: {:?}", features);
 
-    let (feature_id, feature_name) = match source {
-        Some(FUND_WALLET_SOURCE) => (FUND_WALLET_FEATURE_ID, "Fund wallet"),
-        _ => (PAYMENTS_FEATURE_ID, "Payments"),
+    let feature_type = match source {
+        Some("fund-wallet") => FeatureType::FundWallet,
+        _ => FeatureType::Payments,
     };
+
+    let feature_id = feature_type.as_ref();
+    debug!("feature_id: {:?}", feature_id);
 
     if features.iter().any(|f| f.id == feature_id && f.is_enabled) {
         return Ok(());
@@ -226,6 +244,6 @@ pub async fn is_feature_enabled_for_project_id(
 
     Err(ExchangeError::FeatureNotEnabled(format!(
         "{} feature is not enabled for this project",
-        feature_name
+        feature_type
     )))
 }
