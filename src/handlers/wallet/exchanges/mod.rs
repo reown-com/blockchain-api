@@ -7,11 +7,11 @@ use {
     cerberus::project::{Feature, ProjectDataRequest},
     serde::{Deserialize, Serialize},
     std::sync::Arc,
-    strum::IntoEnumIterator,
-    strum_macros::{AsRefStr, EnumIter},
+    strum::{EnumProperty, IntoEnumIterator},
+    strum_macros::{AsRefStr, Display, EnumIter},
     thiserror::Error,
     tracing::debug,
-    std::fmt::{Display, Formatter, Result as FmtResult},
+
 };
 
 pub mod binance;
@@ -22,22 +22,16 @@ use binance::BinanceExchange;
 use coinbase::CoinbaseExchange;
 use test_exchange::TestExchange;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, AsRefStr)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display, AsRefStr, EnumProperty)]
 pub enum FeatureType {
-    #[strum(serialize = "payments")]
+    #[strum(serialize = "payments", to_string = "Payments", props(feature_id = "payments"))]
     Payments,
-    #[strum(serialize = "fund_from_exchange")]
+    #[strum(
+        serialize = "fund_from_exchange",
+        to_string = "Fund Wallet",
+        props(feature_id = "fund_from_exchange")
+    )]
     FundWallet,
-}
-
-impl Display for FeatureType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let display_name = match self {
-            Self::Payments => "Payments",
-            Self::FundWallet => "Fund wallet",
-        };
-        write!(f, "{}", display_name)
-    }
 }
 
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
@@ -220,12 +214,12 @@ pub async fn is_feature_enabled_for_project_id(
         }
     }
 
-    // if let Some(allowed_project_ids) = state.config.exchanges.allowed_project_ids.as_ref() {
-    //     debug!("allowed_project_ids: {:?}", allowed_project_ids);
-    //     if allowed_project_ids.iter().any(|id| id == project_id) {
-    //         return Ok(());
-    //     }
-    // }
+    if let Some(allowed_project_ids) = state.config.exchanges.allowed_project_ids.as_ref() {
+        debug!("allowed_project_ids: {:?}", allowed_project_ids);
+        if allowed_project_ids.iter().any(|id| id == project_id) {
+            return Ok(());
+        }
+    }
 
     let features = get_enabled_features(state, project_id).await?;
     debug!("features: {:?}", features);
@@ -235,8 +229,9 @@ pub async fn is_feature_enabled_for_project_id(
         _ => FeatureType::Payments,
     };
 
-    let feature_id = feature_type.as_ref();
-    debug!("feature_id: {:?}", feature_id);
+    let feature_id = feature_type
+        .get_str("feature_id")
+        .unwrap_or_else(|| feature_type.as_ref());
 
     if features.iter().any(|f| f.id == feature_id && f.is_enabled) {
         return Ok(());
