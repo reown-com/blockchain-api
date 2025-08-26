@@ -35,6 +35,7 @@ pub struct WalletQueryParams {
     pub project_id: String,
     #[serde(flatten)]
     pub sdk_info: SdkInfoParams,
+    pub source: Option<String>,
 }
 
 // TODO support batch requests (and validate unique RPC IDs)
@@ -249,6 +250,7 @@ async fn handle_rpc(
                 headers,
                 Query(get_exchanges::QueryParams {
                     sdk_info: query.sdk_info,
+                    source: query.source,
                 }),
                 Json(serde_json::from_value(params).map_err(Error::InvalidParams)?),
             )
@@ -264,6 +266,7 @@ async fn handle_rpc(
                 headers,
                 Query(get_exchange_url::QueryParams {
                     sdk_info: query.sdk_info,
+                    source: query.source,
                 }),
                 Json(serde_json::from_value(params).map_err(Error::InvalidParams)?),
             )
@@ -279,6 +282,7 @@ async fn handle_rpc(
                 headers,
                 Query(get_exchange_buy_status::QueryParams {
                     sdk_info: query.sdk_info,
+                    source: query.source,
                 }),
                 Json(serde_json::from_value(params).map_err(Error::InvalidParams)?),
             )

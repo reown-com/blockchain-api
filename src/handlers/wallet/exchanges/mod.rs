@@ -22,6 +22,9 @@ use coinbase::CoinbaseExchange;
 use test_exchange::TestExchange;
 
 const PAYMENTS_FEATURE_ID: &str = "payments";
+const FUND_WALLET_FEATURE_ID: &str = "fund_from_exchange";
+const FUND_WALLET_SOURCE: &str = "fund_wallet";
+
 
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
 pub struct Config {
@@ -195,6 +198,7 @@ async fn get_enabled_features(
 pub async fn is_feature_enabled_for_project_id(
     state: State<Arc<AppState>>,
     project_id: &str,
+    source: Option<&str>,
 ) -> Result<(), ExchangeError> {
     if let Some(testing_project_id) = state.config.server.testing_project_id.as_ref() {
         if crypto::constant_time_eq(testing_project_id, project_id) {
@@ -211,14 +215,20 @@ pub async fn is_feature_enabled_for_project_id(
 
     let features = get_enabled_features(state, project_id).await?;
     debug!("features: {:?}", features);
+
+    let (feature_id, feature_name) = match source {
+        Some(FUND_WALLET_SOURCE) => (FUND_WALLET_FEATURE_ID, "Fund wallet"),
+        _ => (PAYMENTS_FEATURE_ID, "Payments"),
+    };
+
     if features
         .iter()
-        .any(|f| f.id == PAYMENTS_FEATURE_ID && f.is_enabled)
+        .any(|f| f.id == feature_id && f.is_enabled)
     {
         return Ok(());
     }
 
     Err(ExchangeError::FeatureNotEnabled(
-        "Payments feature is not enabled for this project".to_string(),
+        format!("{} feature is not enabled for this project", feature_name),
     ))
 }

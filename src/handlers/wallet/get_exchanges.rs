@@ -44,6 +44,7 @@ pub struct GetExchangesResponse {
 pub struct QueryParams {
     #[serde(flatten)]
     pub sdk_info: SdkInfoParams,
+    pub source: Option<String>
 }
 
 #[derive(Error, Debug)]
@@ -75,7 +76,7 @@ pub async fn handler(
     query: Query<QueryParams>,
     Json(request): Json<GetExchangesRequest>,
 ) -> Result<GetExchangesResponse, GetExchangesError> {
-    is_feature_enabled_for_project_id(state.clone(), &project_id)
+    is_feature_enabled_for_project_id(state.clone(), &project_id, query.source.as_deref())
         .await
         .map_err(|e| GetExchangesError::ValidationError(e.to_string()))?;
     handler_internal(state, connect_info, headers, query, request)
