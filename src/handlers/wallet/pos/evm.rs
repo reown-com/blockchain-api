@@ -6,7 +6,7 @@ use {
     crate::{
         analytics::MessageSource,
         state::AppState,
-        utils::crypto::{disassemble_caip10, Caip19Asset},
+        utils::crypto::{disassemble_caip10, Caip19Asset, CaipNamespaces, Caip2ChainId},
     },
     alloy::{
         network::TransactionBuilder as AlloyTransactionBuilder,
@@ -20,6 +20,7 @@ use {
     serde::Serialize,
     std::sync::Arc,
     strum_macros::EnumString,
+    tracing::debug,
 };
 
 sol! {
@@ -77,14 +78,24 @@ impl TransactionBuilder for EvmTransactionBuilder {
             disassemble_caip10(&params.sender)
                 .map_err(|e| BuildPosTxError::Validation(format!("Invalid Sender: {e}")))?;
 
-        let (asset_namespace, asset_chain_id, asset_address) = disassemble_caip10(&params.asset)
-            .map_err(|e| BuildPosTxError::Validation(format!("Invalid Asset: {e}")))?;
+        let asset_chain_id = asset.chain_id().reference();
+        let asset_namespace = asset
+            .chain_id()
+            .namespace()
+            .parse::<CaipNamespaces>()
+            .map_err(|e| {
+                BuildPosTxError::Validation(format!("Cannot parse asset namespace: {e}"))
+            })?;
 
         if asset_namespace != recipient_namespace || asset_namespace != sender_namespace {
             return Err(BuildPosTxError::Validation(format!(
                 "Asset namespace must match recipient and sender namespaces"
             )));
         }
+
+        debug!("asset_chain_id: {}", asset_chain_id);
+        debug!("recipient_chain_id: {}", recipient_chain_id);
+        debug!("sender_chain_id: {}", sender_chain_id);
 
         if asset_chain_id != recipient_chain_id || asset_chain_id != sender_chain_id {
             return Err(BuildPosTxError::Validation(format!(
@@ -101,7 +112,7 @@ impl TransactionBuilder for EvmTransactionBuilder {
             AssetNamespace::Slip44 => {
                 build_native_transaction(
                     &project_id,
-                    &asset_chain_id,
+                    &asset.chain_id(),
                     &recipient_address,
                     &sender_address,
                     &params.amount,
@@ -111,9 +122,9 @@ impl TransactionBuilder for EvmTransactionBuilder {
             AssetNamespace::Erc20 => {
                 build_erc20_transaction(
                     &project_id,
-                    &asset_chain_id,
+                    &asset.chain_id(),
                     &recipient_address,
-                    &asset_address,
+                    &asset.asset_reference(),
                     &params.amount,
                 )
                 .await?
@@ -126,21 +137,13 @@ impl TransactionBuilder for EvmTransactionBuilder {
 
 async fn build_native_transaction(
     project_id: &str,
-    chain_id: &str,
+    chain_id: &Caip2ChainId,
     recipient: &str,
     sender: &str,
     amount: &str,
 ) -> Result<BuildTransactionResult, BuildPosTxError> {
-    let provider = ProviderBuilder::new().on_http(
-        format!(
-            "https://rpc.walletconnect.org/v1?chainId={}&projectId={}&source={}",
-            chain_id,
-            project_id,
-            MessageSource::WalletBuildPosTx,
-        )
-        .parse()
-        .unwrap(),
-    );
+    let provider = get_provider(chain_id, project_id)?;
+    
     let to = recipient
         .parse::<Address>()
         .map_err(|e| BuildPosTxError::Validation(format!("Invalid recipient: {}", e)))?;
@@ -169,11 +172,13 @@ async fn build_native_transaction(
         .with_from(from)
         .with_max_fee_per_gas(fees.max_fee_per_gas)
         .with_max_priority_fee_per_gas(fees.max_priority_fee_per_gas);
+    
 
+    debug!("native tx: {:?}", tx);
     Ok(BuildTransactionResult {
         transaction_rpc: TransactionRpc {
             method: "eth_sendTransaction".to_string(),
-            params: serde_json::json!(tx),
+            params: serde_json::json!([tx]),
         },
         id: "1".to_string(),
     })
@@ -181,7 +186,7 @@ async fn build_native_transaction(
 
 async fn build_erc20_transaction(
     project_id: &str,
-    chain_id: &str,
+    chain_id: &Caip2ChainId,
     recipient_address: &str,
     asset_address: &str,
     amount: &str,
@@ -203,4 +208,16 @@ async fn build_erc20_transaction(
         },
         id: "1".to_string(),
     })
+}
+
+
+fn get_provider(chain_id: &Caip2ChainId, project_id: &str) -> Result<impl Provider, BuildPosTxError> {
+    let url = format!(
+        "http://localhost:3080/v1?chainId={}&projectId={}&source={}",
+        chain_id,
+        project_id,
+        MessageSource::WalletBuildPosTx,
+    ).parse().map_err(|_| BuildPosTxError::Validation("Invalid provider URL".to_string()))?;
+
+    Ok(ProviderBuilder::new().on_http(url))
 }

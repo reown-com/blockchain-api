@@ -130,6 +130,12 @@ mod tests {
 
         let source = MessageSource::ChainAgnosticCheck;
         assert_eq!(source.to_string(), "chain_agnostic_check");
+
+        let source = MessageSource::WalletBuildPosTx;
+        assert_eq!(source.to_string(), "wallet_build_pos_tx");
+
+        let source = MessageSource::WalletSendPosTx;
+        assert_eq!(source.to_string(), "wallet_send_pos_tx");
     }
 
     #[test]
