@@ -21,6 +21,7 @@ use {
     std::sync::Arc,
     strum_macros::EnumString,
     tracing::debug,
+    uuid::Uuid,
 };
 
 sol! {
@@ -124,6 +125,7 @@ impl TransactionBuilder for EvmTransactionBuilder {
                     &project_id,
                     &asset.chain_id(),
                     &recipient_address,
+                    &sender_address,
                     &asset.asset_reference(),
                     &params.amount,
                 )
@@ -143,7 +145,7 @@ async fn build_native_transaction(
     amount: &str,
 ) -> Result<BuildTransactionResult, BuildPosTxError> {
     let provider = get_provider(chain_id, project_id)?;
-    
+
     let to = recipient
         .parse::<Address>()
         .map_err(|e| BuildPosTxError::Validation(format!("Invalid recipient: {}", e)))?;
@@ -180,33 +182,72 @@ async fn build_native_transaction(
             method: "eth_sendTransaction".to_string(),
             params: serde_json::json!([tx]),
         },
-        id: "1".to_string(),
+        id: Uuid::new_v4().to_string(),
     })
 }
 
 async fn build_erc20_transaction(
     project_id: &str,
     chain_id: &Caip2ChainId,
-    recipient_address: &str,
+    recipient: &str,
+    sender: &str,
     asset_address: &str,
     amount: &str,
 ) -> Result<BuildTransactionResult, BuildPosTxError> {
-    // let provider = ProviderBuilder::default().on_http(
-    //     format!(
-    //         "https://rpc.walletconnect.org/v1?chainId={}&projectId={}&source={}",
-    //         chain_id,
-    //         project_id,
-    //         MessageSource::WalletBuildPosTx,
-    //     )
-    //     .parse()
-    //     .unwrap(),
-    // );
+    let to = recipient
+    .parse::<Address>()
+    .map_err(|e| BuildPosTxError::Validation(format!("Invalid recipient: {}", e)))?;
+
+    let from = sender
+        .parse::<Address>()
+        .map_err(|e| BuildPosTxError::Validation(format!("Invalid sender: {}", e)))?;
+
+    let token_address = asset_address
+        .parse::<Address>()
+        .map_err(|e| BuildPosTxError::Validation(format!("Invalid asset address: {}", e)))?;
+
+    let erc20 = ERC20Token::new(token_address, get_provider(chain_id, project_id)?);
+
+    let decimals_call_result = erc20.decimals().call().await.map_err(|e| BuildPosTxError::Validation(format!("Failed to get decimals: {}", e)))?;
+    
+    let decimals = decimals_call_result._0;
+    
+    debug!("decimals: {:?}", decimals);
+    
+    let value = parse_units(amount, decimals).map_err(|e| {
+        BuildPosTxError::Validation(format!("Unable to parse amount with {} decimals: {}", decimals, e))
+    })?;
+    
+    let token_amount: U256 = value
+        .try_into()
+        .map_err(|e| BuildPosTxError::Validation(format!("Invalid token amount: {}", e)))?;
+    
+
+    let transfer_data = erc20.transfer(to, token_amount);
+    
+    let fees = get_provider(chain_id, project_id)?
+        .estimate_eip1559_fees(None)
+        .await
+        .map_err(|e| BuildPosTxError::Validation(format!("Failed to estimate fees: {}", e)))?;
+    
+    let tx = TransactionRequest::default()
+        .with_to(token_address)
+        .with_value(U256::ZERO)
+        .with_input(transfer_data.calldata().clone())
+        .with_gas_limit(100000) // Standard ERC20 transfer gas limit
+        .with_from(from)
+        .with_max_fee_per_gas(fees.max_fee_per_gas)
+        .with_max_priority_fee_per_gas(fees.max_priority_fee_per_gas);
+    
+    debug!("erc20 tx: {:?}", tx);
+    
+
     Ok(BuildTransactionResult {
         transaction_rpc: TransactionRpc {
             method: "eth_sendTransaction".to_string(),
-            params: serde_json::json!([]),
+            params: serde_json::json!([tx]),
         },
-        id: "1".to_string(),
+        id: Uuid::new_v4().to_string(),
     })
 }
 
