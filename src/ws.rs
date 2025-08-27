@@ -1,6 +1,7 @@
 use {
     async_tungstenite::{tokio::ConnectStream, tungstenite, WebSocketStream},
     axum::extract::ws::{Message as AxumWsMessage, WebSocket},
+    bytes::Bytes,
     futures_util::{SinkExt, StreamExt},
     tracing::log::debug,
 };
@@ -18,14 +19,15 @@ pub async fn proxy(
     let write = async {
         while let Some(Ok(msg)) = client_ws_receiver.next().await {
             let tmsg = match msg {
-                AxumWsMessage::Text(s) => tungstenite::Message::Text(s),
+                AxumWsMessage::Text(s) => tungstenite::Message::Text(s.to_string()),
                 AxumWsMessage::Binary(b) => tungstenite::Message::Binary(b.to_vec()),
                 AxumWsMessage::Ping(b) => tungstenite::Message::Ping(b.to_vec()),
                 AxumWsMessage::Pong(b) => tungstenite::Message::Pong(b.to_vec()),
                 AxumWsMessage::Close(frame) => {
+                    use std::borrow::Cow;
                     tungstenite::Message::Close(frame.map(|f| tungstenite::protocol::CloseFrame {
                         code: f.code.into(),
-                        reason: f.reason,
+                        reason: Cow::Owned(f.reason.to_string()),
                     }))
                 }
             };
@@ -39,14 +41,14 @@ pub async fn proxy(
     let read = async {
         while let Some(Ok(msg)) = provider_ws_receiver.next().await {
             let amsg = match msg {
-                tungstenite::Message::Text(s) => AxumWsMessage::Text(s),
-                tungstenite::Message::Binary(b) => AxumWsMessage::Binary(b),
-                tungstenite::Message::Ping(b) => AxumWsMessage::Ping(b),
-                tungstenite::Message::Pong(b) => AxumWsMessage::Pong(b),
+                tungstenite::Message::Text(s) => AxumWsMessage::Text(s.into()),
+                tungstenite::Message::Binary(b) => AxumWsMessage::Binary(Bytes::from(b)),
+                tungstenite::Message::Ping(b) => AxumWsMessage::Ping(Bytes::from(b)),
+                tungstenite::Message::Pong(b) => AxumWsMessage::Pong(Bytes::from(b)),
                 tungstenite::Message::Close(frame) => {
                     AxumWsMessage::Close(frame.map(|f| axum::extract::ws::CloseFrame {
                         code: f.code.into(),
-                        reason: f.reason,
+                        reason: f.reason.as_ref().into(),
                     }))
                 }
                 tungstenite::Message::Frame(_) => {
