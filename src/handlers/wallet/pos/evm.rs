@@ -9,7 +9,6 @@ use {
         utils::crypto::{disassemble_caip10, Caip19Asset, Caip2ChainId, CaipNamespaces},
     },
     alloy::{
-        network::TransactionBuilder as AlloyTransactionBuilder,
         primitives::{utils::parse_units, Address, U256},
         providers::{Provider, ProviderBuilder},
         rpc::types::TransactionRequest,
@@ -17,12 +16,15 @@ use {
     },
     async_trait::async_trait,
     axum::extract::State,
-    serde::Serialize,
-    std::sync::Arc,
+    std::{convert::TryFrom, sync::Arc},
     strum_macros::EnumString,
     tracing::debug,
     uuid::Uuid,
 };
+
+const NATIVE_GAS_LIMIT: u64 = 21_000;
+const ETH_SEND_TRANSACTION_METHOD: &str = "eth_sendTransaction";
+const BASE_URL: &str = "http://localhost:3080/v1";
 
 sol! {
     #[sol(rpc)]
@@ -30,13 +32,6 @@ sol! {
         function transfer(address to, uint256 value) external returns (bool);
         function decimals() external view returns (uint8);
     }
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum EvmTransactionType {
-    Erc20,
-    Slip44,
 }
 
 #[derive(Debug, Clone, PartialEq, EnumString)]
@@ -48,16 +43,68 @@ pub enum AssetNamespace {
 
 pub struct EvmTransactionBuilder;
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EthTx {
-    pub to: String,
-    pub value: String,
-    pub data: String,
+#[derive(Debug)]
+struct ValidatedTransactionParams {
+    asset: Caip19Asset,
+    recipient_address: String,
+    sender_address: String,
+    namespace: AssetNamespace,
+}
+
+impl TryFrom<&BuildTransactionParams> for ValidatedTransactionParams {
+    type Error = BuildPosTxError;
+
+    fn try_from(params: &BuildTransactionParams) -> Result<Self, Self::Error> {
+        let asset = Caip19Asset::parse(&params.asset)
+            .map_err(|e| BuildPosTxError::Validation(format!("Invalid Asset: {e}")))?;
+
+        let (recipient_namespace, recipient_chain_id, recipient_address) =
+            disassemble_caip10(&params.recipient)
+                .map_err(|e| BuildPosTxError::Validation(format!("Invalid Recipient: {e}")))?;
+
+        let (sender_namespace, sender_chain_id, sender_address) =
+            disassemble_caip10(&params.sender)
+                .map_err(|e| BuildPosTxError::Validation(format!("Invalid Sender: {e}")))?;
+
+        let asset_chain_id = asset.chain_id().reference();
+        let asset_namespace = asset
+            .chain_id()
+            .namespace()
+            .parse::<CaipNamespaces>()
+            .map_err(|e| BuildPosTxError::Validation(format!("Cannot parse asset namespace: {e}")))?;
+
+        if asset_namespace != recipient_namespace || asset_namespace != sender_namespace {
+            return Err(BuildPosTxError::Validation(
+                "Asset namespace must match recipient and sender namespaces".to_string(),
+            ));
+        }
+
+        debug!("asset_chain_id: {asset_chain_id}");
+        debug!("recipient_chain_id: {recipient_chain_id}");
+        debug!("sender_chain_id: {sender_chain_id}");
+
+        if asset_chain_id != recipient_chain_id || asset_chain_id != sender_chain_id {
+            return Err(BuildPosTxError::Validation(
+                "Asset chain ID must match recipient and sender chain IDs".to_string(),
+            ));
+        }
+
+        let namespace = asset
+            .asset_namespace()
+            .parse::<AssetNamespace>()
+            .map_err(|e| BuildPosTxError::Validation(format!("Invalid asset namespace: {e}")))?;
+
+        Ok(Self {
+            asset,
+            recipient_address,
+            sender_address,
+            namespace,
+        })
+    }
 }
 
 #[derive(Debug)]
-pub struct TxBuilder {
+struct EvmTxBuilder {
     to: Address,
     from: Address,
     tx_request: TransactionRequest,
@@ -65,7 +112,7 @@ pub struct TxBuilder {
     chain_id: Caip2ChainId,
 }
 
-impl TxBuilder {
+impl EvmTxBuilder {
     fn new(
         project_id: &str,
         chain_id: &Caip2ChainId,
@@ -90,19 +137,13 @@ impl TxBuilder {
     }
 
     async fn with_native_transfer(mut self, amount: &str) -> Result<Self, BuildPosTxError> {
-        let value = parse_units(amount, "ether").map_err(|e| {
-            BuildPosTxError::Validation(format!("Unable to parse amount in ether: {}", e))
-        })?;
-
-        let amount: U256 = value
-            .try_into()
-            .map_err(|e| BuildPosTxError::Validation(format!("Invalid amount: {}", e)))?;
+        let wei_value = parse_ether_amount(amount)?;
 
         self.tx_request = self
             .tx_request
-            .with_to(self.to)
-            .with_value(amount)
-            .with_from(self.from);
+            .to(self.to)
+            .value(wei_value)
+            .from(self.from);
 
         Ok(self)
     }
@@ -115,37 +156,17 @@ impl TxBuilder {
         let token_address = asset_address
             .parse::<Address>()
             .map_err(|e| BuildPosTxError::Validation(format!("Invalid asset address: {}", e)))?;
-
         let provider = get_provider(&self.chain_id, &self.project_id)?;
-        let erc20 = ERC20Token::new(token_address, provider);
-
-        let decimals_call_result =
-            erc20.decimals().call().await.map_err(|e| {
-                BuildPosTxError::Validation(format!("Failed to get decimals: {}", e))
-            })?;
-
-        let decimals = decimals_call_result._0;
-        debug!("decimals: {:?}", decimals);
-
-        let value = parse_units(amount, decimals).map_err(|e| {
-            BuildPosTxError::Validation(format!(
-                "Unable to parse amount with {} decimals: {}",
-                decimals, e
-            ))
-        })?;
-
-        let token_amount: U256 = value
-            .try_into()
-            .map_err(|e| BuildPosTxError::Validation(format!("Invalid token amount: {}", e)))?;
-
-        let transfer_data = erc20.transfer(self.to, token_amount);
+        
+        let token_amount = get_erc20_transfer_amount(&provider, token_address, amount).await?;
+        let transfer_calldata = create_erc20_transfer_calldata(token_address, &provider, self.to, token_amount).await?;
 
         self.tx_request = self
             .tx_request
-            .with_to(token_address)
-            .with_value(U256::ZERO)
-            .with_input(transfer_data.calldata().clone())
-            .with_from(self.from);
+            .to(token_address)
+            .value(U256::ZERO)
+            .input(transfer_calldata)
+            .from(self.from);
 
         Ok(self)
     }
@@ -156,30 +177,28 @@ impl TxBuilder {
         let fees = provider
             .estimate_eip1559_fees(None)
             .await
-            .map_err(|e| BuildPosTxError::Validation(format!("Failed to estimate fees: {}", e)))?;
+            .map_err(|e| BuildPosTxError::Validation(format!("Failed to estimate fees: {e}")))?;
 
         self.tx_request = self
             .tx_request
-            .with_max_fee_per_gas(fees.max_fee_per_gas)
-            .with_max_priority_fee_per_gas(fees.max_priority_fee_per_gas);
+            .max_fee_per_gas(fees.max_fee_per_gas)
+            .max_priority_fee_per_gas(fees.max_priority_fee_per_gas);
 
-        let has_data =
-            self.tx_request.input.data.is_some() || self.tx_request.input.input.is_some();
-        let gas_limit = if !has_data {
-            21000u64
+        let gas_limit = if has_transaction_data(&self.tx_request) {
+            provider
+                .estimate_gas(&self.tx_request)
+                .await
+                .map_err(|e| BuildPosTxError::Validation(format!("Failed to estimate gas: {e}")))?
         } else {
-            provider.estimate_gas(&self.tx_request).await.map_err(|e| {
-                BuildPosTxError::Validation(format!("Failed to estimate gas: {}", e))
-            })?
+            NATIVE_GAS_LIMIT
         };
 
-        self.tx_request = self.tx_request.with_gas_limit(gas_limit);
-
+        self.tx_request = self.tx_request.gas_limit(gas_limit);
         debug!("finalized tx: {:?}", self.tx_request);
 
         Ok(BuildTransactionResult {
             transaction_rpc: TransactionRpc {
-                method: "eth_sendTransaction".to_string(),
+                method: ETH_SEND_TRANSACTION_METHOD.to_string(),
                 params: serde_json::json!([self.tx_request]),
             },
             id: Uuid::new_v4().to_string(),
@@ -199,55 +218,16 @@ impl TransactionBuilder for EvmTransactionBuilder {
         project_id: String,
         params: BuildTransactionParams,
     ) -> Result<BuildTransactionResult, BuildPosTxError> {
-        let asset = Caip19Asset::parse(&params.asset)
-            .map_err(|e| BuildPosTxError::Validation(format!("Invalid Asset: {e}")))?;
-
-        let (recipient_namespace, recipient_chain_id, recipient_address) =
-            disassemble_caip10(&params.recipient)
-                .map_err(|e| BuildPosTxError::Validation(format!("Invalid Recipient: {e}")))?;
-
-        let (sender_namespace, sender_chain_id, sender_address) =
-            disassemble_caip10(&params.sender)
-                .map_err(|e| BuildPosTxError::Validation(format!("Invalid Sender: {e}")))?;
-
-        let asset_chain_id = asset.chain_id().reference();
-        let asset_namespace = asset
-            .chain_id()
-            .namespace()
-            .parse::<CaipNamespaces>()
-            .map_err(|e| {
-                BuildPosTxError::Validation(format!("Cannot parse asset namespace: {e}"))
-            })?;
-
-        if asset_namespace != recipient_namespace || asset_namespace != sender_namespace {
-            return Err(BuildPosTxError::Validation(
-                "Asset namespace must match recipient and sender namespaces".to_string(),
-            ));
-        }
-
-        debug!("asset_chain_id: {}", asset_chain_id);
-        debug!("recipient_chain_id: {}", recipient_chain_id);
-        debug!("sender_chain_id: {}", sender_chain_id);
-
-        if asset_chain_id != recipient_chain_id || asset_chain_id != sender_chain_id {
-            return Err(BuildPosTxError::Validation(
-                "Asset chain ID must match recipient and sender chain IDs".to_string(),
-            ));
-        }
-
-        let namespace = asset
-            .asset_namespace()
-            .parse::<AssetNamespace>()
-            .map_err(|e| BuildPosTxError::Validation(format!("Invalid asset namespace: {}", e)))?;
-
-        let builder = TxBuilder::new(
+        let validated_params = ValidatedTransactionParams::try_from(&params)?;
+        
+        let builder = EvmTxBuilder::new(
             &project_id,
-            &asset.chain_id(),
-            &recipient_address,
-            &sender_address,
+            &validated_params.asset.chain_id(),
+            &validated_params.recipient_address,
+            &validated_params.sender_address,
         )?;
 
-        let tx = match namespace {
+        let tx = match validated_params.namespace {
             AssetNamespace::Slip44 => {
                 builder
                     .with_native_transfer(&params.amount)
@@ -257,7 +237,7 @@ impl TransactionBuilder for EvmTransactionBuilder {
             }
             AssetNamespace::Erc20 => {
                 builder
-                    .with_erc20_transfer(&asset.asset_reference(), &params.amount)
+                    .with_erc20_transfer(&validated_params.asset.asset_reference(), &params.amount)
                     .await?
                     .finalize()
                     .await?
@@ -268,14 +248,59 @@ impl TransactionBuilder for EvmTransactionBuilder {
     }
 }
 
+fn parse_ether_amount(amount: &str) -> Result<U256, BuildPosTxError> {
+    let value = parse_units(amount, "ether")
+        .map_err(|e| BuildPosTxError::Validation(format!("Unable to parse amount in ether: {e}")))?;
+
+    value
+        .try_into()
+        .map_err(|e| BuildPosTxError::Validation(format!("Invalid amount: {e}")))
+}
+
+fn has_transaction_data(tx_request: &TransactionRequest) -> bool {
+    tx_request.input.data.is_some() || tx_request.input.input.is_some()
+}
+
+async fn get_erc20_transfer_amount(
+    provider: &impl Provider,
+    token_address: Address,
+    amount: &str,
+) -> Result<U256, BuildPosTxError> {
+    let erc20 = ERC20Token::new(token_address, provider);
+    
+    let decimals = erc20
+        .decimals()
+        .call()
+        .await
+        .map_err(|e| BuildPosTxError::Validation(format!("Failed to get decimals: {e}")))?._0;
+
+    debug!("decimals: {decimals}");
+
+    let value = parse_units(amount, decimals).map_err(|e| {
+        BuildPosTxError::Validation(format!("Unable to parse amount with {decimals} decimals: {e}"))
+    })?;
+
+    value
+        .try_into()
+        .map_err(|e| BuildPosTxError::Validation(format!("Invalid token amount: {e}")))
+}
+
+async fn create_erc20_transfer_calldata(
+    token_address: Address,
+    provider: &impl Provider,
+    to: Address,
+    amount: U256,
+) -> Result<alloy::rpc::types::TransactionInput, BuildPosTxError> {
+    let erc20 = ERC20Token::new(token_address, provider);
+    Ok(erc20.transfer(to, amount).calldata().clone().into())
+}
+
 fn get_provider(
     chain_id: &Caip2ChainId,
     project_id: &str,
 ) -> Result<impl Provider, BuildPosTxError> {
     let url = format!(
-        "http://localhost:3080/v1?chainId={}&projectId={}&source={}",
-        chain_id,
-        project_id,
+        "{BASE_URL}?chainId={chain_id}&projectId={project_id}&source={}",
         MessageSource::WalletBuildPosTx,
     )
     .parse()
