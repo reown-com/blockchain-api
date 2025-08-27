@@ -229,19 +229,21 @@ async fn build_erc20_transaction(
         .estimate_eip1559_fees(None)
         .await
         .map_err(|e| BuildPosTxError::Validation(format!("Failed to estimate fees: {}", e)))?;
-    
+
     let tx = TransactionRequest::default()
         .with_to(token_address)
         .with_value(U256::ZERO)
         .with_input(transfer_data.calldata().clone())
-        .with_gas_limit(100000) // Standard ERC20 transfer gas limit
         .with_from(from)
         .with_max_fee_per_gas(fees.max_fee_per_gas)
         .with_max_priority_fee_per_gas(fees.max_priority_fee_per_gas);
     
+    let gas_limit = get_provider(chain_id, project_id)?.estimate_gas(&tx).await.map_err(|e| BuildPosTxError::Validation(format!("Failed to estimate gas: {}", e)))?;
+
+    let tx = tx.with_gas_limit(gas_limit);
+
     debug!("erc20 tx: {:?}", tx);
     
-
     Ok(BuildTransactionResult {
         transaction_rpc: TransactionRpc {
             method: "eth_sendTransaction".to_string(),
