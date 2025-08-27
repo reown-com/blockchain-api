@@ -3,8 +3,8 @@ use super::get_calls_status::{self, GetCallsStatusError};
 use super::get_exchange_buy_status::{self, GetExchangeBuyStatusError};
 use super::get_exchange_url::{self, GetExchangeUrlError};
 use super::get_exchanges::{self, GetExchangesError};
-use super::prepare_calls::{self, PrepareCallsError};
 use super::pos::{self, BuildPosTxError, CheckPosTxError};
+use super::prepare_calls::{self, PrepareCallsError};
 use super::send_prepared_calls::{self, SendPreparedCallsError};
 use crate::error::RpcError;
 use crate::json_rpc::{

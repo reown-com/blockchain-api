@@ -97,6 +97,8 @@ pub enum MessageSource {
     WalletGetCallsStatus,
     WalletGetAssets,
     ChainAgnosticCheck,
+    WalletBuildPosTx,
+    WalletSendPosTx,
 }
 
 #[cfg(test)]

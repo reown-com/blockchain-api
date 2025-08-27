@@ -28,5 +28,3 @@ pub async fn handler(
         status: "CONFIRMED".into(),
     })
 }
-
-

@@ -74,6 +74,3 @@ pub trait TransactionBuilder {
         params: BuildTransactionParams,
     ) -> Result<BuildTransactionResult, BuildPosTxError>;
 }
-
-
-    
