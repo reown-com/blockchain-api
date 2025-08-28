@@ -24,7 +24,7 @@ tokio = { version = "1.47", features = ["full"] }
 hyper = "1"
 hyper-tls = "0.6"
 tap = "1.0"
-axum = { version = "0.7", features = ["ws"] }
+axum = { version = "0.8", features = ["ws"] }
 tower = "0.4.13"
 hyper-util = { version = "0.1", features = ["client", "http1", "tokio"] }
 hyper-rustls = { version = "0.27", features = ["native-tokio"] }
@@ -62,8 +62,9 @@ aws-config = "1.1"
 aws-sdk-s3 = "1.13"
 deadpool-redis = "0.14"
 moka = "0.12"
-sqlx = { version = "0.7.4", features = [
-    "runtime-tokio-native-tls",
+sqlx = { version = "0.8", features = [
+    "runtime-tokio",
+    "tls-native-tls",
     "postgres",
     "chrono",
 ] }
