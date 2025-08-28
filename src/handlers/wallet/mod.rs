@@ -6,6 +6,7 @@ pub mod get_exchange_buy_status;
 pub mod get_exchange_url;
 pub mod get_exchanges;
 pub mod handler;
+pub mod pos;
 pub mod prepare_calls;
 pub mod send_prepared_calls;
 mod types;
