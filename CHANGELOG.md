@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.287.0 - 2025-08-28
+#### Features
+- updating axum and sqlx to 0.8 (#1210) - (ab6b601) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.286.0 - 2025-08-28
 #### Features
 - pos transaction builder (#1211) - (04624ee) - Luka Isailovic
