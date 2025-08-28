@@ -1,13 +1,15 @@
 use {
     super::{
         CheckPosTxError, CheckTransactionParams, CheckTransactionResult, SupportedNamespaces,
-        TransactionId,
+        TransactionId, TransactionStatus,
     },
     crate::handlers::wallet::pos::evm::get_transaction_status,
     crate::state::AppState,
     axum::extract::State,
     std::{str::FromStr, sync::Arc},
 };
+
+const DEFAULT_CHECK_IN: usize = 1000;
 
 pub async fn handler(
     state: State<Arc<AppState>>,
@@ -27,7 +29,26 @@ pub async fn handler(
                     .await
                     .map_err(|e| CheckPosTxError::Validation(e.to_string()))?;
 
-            Ok(CheckTransactionResult { status })
+            match status {
+                TransactionStatus::Pending => {
+                    Ok(CheckTransactionResult {
+                        status,
+                        check_in: Some(DEFAULT_CHECK_IN),
+                    })
+                }
+                TransactionStatus::Confirmed => {
+                    Ok(CheckTransactionResult {
+                        status,
+                        check_in: None,
+                    })
+                }
+                TransactionStatus::Failed => {
+                    Ok(CheckTransactionResult {
+                        status,
+                        check_in: None,
+                    })
+                }
         }
+    }
     }
 }

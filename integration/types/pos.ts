@@ -76,6 +76,7 @@ export interface BuildTransactionResult {
 
 export interface CheckTransactionResult {
   status: string;
+  checkIn: number;
 }
 
 export type BuildTransactionResponse = BaseJsonRpcResponse<BuildTransactionResult>;
