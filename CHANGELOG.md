@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.286.0 - 2025-08-28
+#### Features
+- pos transaction builder (#1211) - (04624ee) - Luka Isailovic
+
+- - -
+
 ## 0.285.0 - 2025-08-26
 #### Features
 - fund wallet feature validation (#1209) - (cd51c52) - Luka Isailovic
