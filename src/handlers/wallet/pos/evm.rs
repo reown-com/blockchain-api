@@ -23,7 +23,7 @@ use {
 
 const NATIVE_GAS_LIMIT: u64 = 21_000;
 const ETH_SEND_TRANSACTION_METHOD: &str = "eth_sendTransaction";
-const BASE_URL: &str = "http://localhost:3080/v1";
+const BASE_URL: &str = "https://rpc.walletconnect.org/v1";
 
 sol! {
     #[sol(rpc)]
