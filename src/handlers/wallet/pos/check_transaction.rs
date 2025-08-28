@@ -34,11 +34,7 @@ pub async fn handler(
                     status,
                     check_in: Some(DEFAULT_CHECK_IN),
                 }),
-                TransactionStatus::Confirmed => Ok(CheckTransactionResult {
-                    status,
-                    check_in: None,
-                }),
-                TransactionStatus::Failed => Ok(CheckTransactionResult {
+                _ => Ok(CheckTransactionResult {
                     status,
                     check_in: None,
                 }),
