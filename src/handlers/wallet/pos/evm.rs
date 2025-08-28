@@ -166,6 +166,8 @@ impl EvmTxBuilder {
             .input(transfer_calldata)
             .from(self.from);
 
+        self.tx_request.input.data = self.tx_request.input.input.clone();
+
         Ok(self)
     }
 

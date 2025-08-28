@@ -68,6 +68,8 @@ describe('POS', () => {
       expect(params.from).toBe(fromAddress.toLowerCase());
       expect(params.value).toBe('0x0');
       expect(params.input).toBeDefined();
+      expect(params.data).toBeDefined();
+      expect(params.data).toBe(params.input);
       expect(params.input?.length).toBeGreaterThan(0);
       const decodedData = erc20Interface.decodeFunctionData('transfer', params.input || '');
       expect(decodedData[0].toLowerCase()).toBe(toAddress.toLowerCase());

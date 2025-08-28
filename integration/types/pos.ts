@@ -45,6 +45,7 @@ export interface EvmTransactionParams {
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
   input?: string;
+  data?: string;
 }
 
 export interface BaseTransactionRpc {
