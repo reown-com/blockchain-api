@@ -1,30 +1,33 @@
 use {
-    super::CheckPosTxError,
+    super::{
+        CheckPosTxError, CheckTransactionParams, CheckTransactionResult, SupportedNamespaces,
+        TransactionId,
+    },
+    crate::handlers::wallet::pos::evm::get_transaction_status,
     crate::state::AppState,
     axum::extract::State,
-    serde::{Deserialize, Serialize},
-    std::sync::Arc,
+    std::{str::FromStr, sync::Arc},
 };
 
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CheckTransactionParams {
-    pub id: String,
-    pub txid: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CheckTransactionResult {
-    pub status: String,
-}
-
 pub async fn handler(
-    _state: State<Arc<AppState>>,
-    _project_id: String,
-    _params: CheckTransactionParams,
+    state: State<Arc<AppState>>,
+    project_id: String,
+    params: CheckTransactionParams,
 ) -> Result<CheckTransactionResult, CheckPosTxError> {
-    Ok(CheckTransactionResult {
-        status: "CONFIRMED".into(),
-    })
+    let transaction_id = TransactionId::try_from(params.id)
+        .map_err(|e| CheckPosTxError::Validation(e.to_string()))?;
+
+    let namespace = SupportedNamespaces::from_str(transaction_id.chain_id().namespace())
+        .map_err(|e| CheckPosTxError::Validation(e.to_string()))?;
+
+    match namespace {
+        SupportedNamespaces::Eip155 => {
+            let status =
+                get_transaction_status(state, &project_id, &params.txid, transaction_id.chain_id())
+                    .await
+                    .map_err(|e| CheckPosTxError::Validation(e.to_string()))?;
+
+            Ok(CheckTransactionResult { status })
+        }
+    }
 }

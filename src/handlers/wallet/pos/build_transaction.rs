@@ -1,11 +1,14 @@
 use {
-    super::{BuildPosTxError, BuildTransactionParams, BuildTransactionResult, TransactionBuilder},
+    super::{
+        BuildPosTxError, BuildTransactionParams, BuildTransactionResult, SupportedNamespaces,
+        TransactionBuilder,
+    },
     crate::{
         handlers::wallet::pos::evm::EvmTransactionBuilder, state::AppState,
         utils::crypto::Caip19Asset,
     },
     axum::extract::State,
-    std::sync::Arc,
+    std::{str::FromStr, sync::Arc},
 };
 
 #[tracing::instrument(skip(_state), level = "debug")]
@@ -17,14 +20,14 @@ pub async fn handler(
     let asset = Caip19Asset::parse(&params.asset)
         .map_err(|e| BuildPosTxError::Validation(format!("Invalid Asset: {e}")))?;
 
-    match asset.chain_id().namespace() {
-        "eip155" => {
+    let namespace = SupportedNamespaces::from_str(asset.chain_id().namespace())
+        .map_err(|e| BuildPosTxError::Validation(format!("Invalid namespace: {e}")))?;
+
+    match namespace {
+        SupportedNamespaces::Eip155 => {
             EvmTransactionBuilder
                 .build(_state, project_id, params)
                 .await
         }
-        ns => Err(BuildPosTxError::Validation(format!(
-            "Unsupported namespace: {ns}"
-        ))),
     }
 }
