@@ -220,7 +220,7 @@ impl TransactionBuilder for EvmTransactionBuilder {
 
         let builder = EvmTxBuilder::new(
             &project_id,
-            &validated_params.asset.chain_id(),
+            validated_params.asset.chain_id(),
             &validated_params.recipient_address,
             &validated_params.sender_address,
         )?;
@@ -235,7 +235,7 @@ impl TransactionBuilder for EvmTransactionBuilder {
             }
             AssetNamespace::Erc20 => {
                 builder
-                    .with_erc20_transfer(&validated_params.asset.asset_reference(), &params.amount)
+                    .with_erc20_transfer(validated_params.asset.asset_reference(), &params.amount)
                     .await?
                     .finalize()
                     .await?
@@ -251,9 +251,7 @@ fn parse_ether_amount(amount: &str) -> Result<U256, BuildPosTxError> {
         BuildPosTxError::Validation(format!("Unable to parse amount in ether: {e}"))
     })?;
 
-    value
-        .try_into()
-        .map_err(|e| BuildPosTxError::Validation(format!("Invalid amount: {e}")))
+    Ok(value.into())
 }
 
 fn has_transaction_data(tx_request: &TransactionRequest) -> bool {
@@ -282,9 +280,7 @@ async fn get_erc20_transfer_amount(
         ))
     })?;
 
-    value
-        .try_into()
-        .map_err(|e| BuildPosTxError::Validation(format!("Invalid token amount: {e}")))
+    Ok(value.into())
 }
 
 async fn create_erc20_transfer_calldata(
