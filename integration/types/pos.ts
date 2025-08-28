@@ -31,9 +31,18 @@ export interface EvmBuildTransactionParams extends BaseBuildTransactionParams {
 
 export type BuildTransactionParams = EvmBuildTransactionParams;
 
+export type CheckTransactionParams = {
+  id: string;
+  txid: string;
+};
+
 export interface BuildTransactionRequest extends BaseJsonRpcRequest {
   method: 'reown_pos_buildTransaction';
   params: BuildTransactionParams;
+}
+export interface CheckTransactionRequest extends BaseJsonRpcRequest {
+  method: 'reown_pos_checkTransaction';
+  params: CheckTransactionParams;
 }
 
 export interface EvmTransactionParams {
@@ -65,11 +74,18 @@ export interface BuildTransactionResult {
   transactionRpc: TransactionRpc;
 }
 
+export interface CheckTransactionResult {
+  status: string;
+}
+
 export type BuildTransactionResponse = BaseJsonRpcResponse<BuildTransactionResult>;
+
+export type CheckTransactionResponse = BaseJsonRpcResponse<CheckTransactionResult>;
 
 export type BuildTransactionErrorResponse = BaseJsonRpcResponse<never> & {
   result?: never;
   error: JsonRpcError;
 };
+
 
 export type PosResponse = BuildTransactionResponse | BuildTransactionErrorResponse;

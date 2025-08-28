@@ -4,7 +4,9 @@ import {
   BuildTransactionRequest,
   BuildTransactionResponse,
   BuildTransactionErrorResponse,
-  EvmTransactionParams
+  EvmTransactionParams,
+  CheckTransactionRequest,
+  CheckTransactionResponse
 } from './types/pos';
 
 
@@ -34,6 +36,9 @@ describe('POS', () => {
   const unsupportedRecipient = `${unsupportedNamespace}:0x1234567890123456789012345678901234567891`;
   const unsupportedNamespaceAsset = `${unsupportedNamespace}:0x1234567890123456789012345678901234567892`;
 
+
+  const txIdBaseSepolia = 'djF8ZWlwMTU1Ojg0NTMyfGZlZjMzYjE0LTlhMmQtNDZhMC1hYTk5LThmOTY1OGQwNzc2Nw'
+  const confirmedTxId = '0x5005606b67977f2641b29f4c03b05473a11b2f7f5709e4b6a38d442bc356a5e9' 
   const erc20Interface = new Interface([
     'function transfer(address to, uint256 amount)',
   ]);
@@ -166,5 +171,25 @@ describe('POS', () => {
       const errorResponse = response.data as BuildTransactionErrorResponse;
       expect(errorResponse.error.message.includes('Validation error')).toBe(true);
     });
+
+
+    it('should check the transaction status', async () => {
+      const payload: CheckTransactionRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'reown_pos_checkTransaction',
+        params: {
+          id: txIdBaseSepolia,
+          txid: confirmedTxId,
+        }
+      };
+
+      const response = await httpClient.post(`${baseUrl}/v1/json-rpc?projectId=${projectId}`, payload);
+
+      expect(response.status).toBe(200);
+      const responseData = response.data as CheckTransactionResponse;
+      expect(responseData.result).toBeDefined();
+      expect(responseData.result.status).toBe('CONFIRMED');
+    })
   });
 });
