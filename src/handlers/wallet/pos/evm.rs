@@ -166,6 +166,8 @@ impl EvmTxBuilder {
             .input(transfer_calldata)
             .from(self.from);
 
+        self.tx_request.input.data = self.tx_request.input.input.clone();
+
         Ok(self)
     }
 
@@ -326,8 +328,11 @@ pub async fn get_transaction_status(
             BuildPosTxError::Validation(format!("Failed to get transaction receipt: {e}"))
         })?;
 
-    if receipt.is_some() {
-        Ok(TransactionStatus::Confirmed)
+    if let Some(receipt) = receipt {
+        match receipt.status() {
+            true => Ok(TransactionStatus::Confirmed),
+            false => Ok(TransactionStatus::Failed),
+        }
     } else {
         Ok(TransactionStatus::Pending)
     }
