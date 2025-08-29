@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.288.0 - 2025-08-29
+#### Features
+- adding validate project ID as TFC variable (#1213) - (ccde834) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- add POS evm tests (#1212) - (20ef2d8) - Luka Isailovic
+
+- - -
+
 ## 0.287.0 - 2025-08-28
 #### Features
 - updating axum and sqlx to 0.8 (#1210) - (ab6b601) - Max Kalashnikoff | maksy.eth
