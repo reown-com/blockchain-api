@@ -293,6 +293,11 @@ variable "testing_project_id" {
   sensitive   = true
 }
 
+variable "validate_project_id" {
+  description = "Project ID and quota validation"
+  type        = bool
+}
+
 #-------------------------------------------------------------------------------
 # RPC Proxy configuration
 variable "proxy_skip_quota_chains" {

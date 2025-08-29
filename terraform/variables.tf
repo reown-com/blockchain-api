@@ -175,6 +175,12 @@ variable "testing_project_id" {
   sensitive   = true
 }
 
+variable "validate_project_id" {
+  description = "Project ID and quota validation"
+  type        = bool
+  default     = true
+}
+
 variable "allnodes_api_key" {
   description = "Allnodes API key"
   type        = string

@@ -125,6 +125,9 @@ module "ecs" {
   # Project ID used in a testing suite
   testing_project_id = var.testing_project_id
 
+  # Validate project ID
+  validate_project_id = var.validate_project_id
+
   # Exchanges
   coinbase_project_id     = var.coinbase_project_id
   coinbase_key_name       = var.coinbase_key_name
