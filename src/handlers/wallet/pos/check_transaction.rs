@@ -24,10 +24,14 @@ pub async fn handler(
 
     match namespace {
         SupportedNamespaces::Eip155 => {
-            let status =
-                get_transaction_status(state, &project_id, &params.send_result, transaction_id.chain_id())
-                    .await
-                    .map_err(|e| CheckPosTxError::Validation(e.to_string()))?;
+            let status = get_transaction_status(
+                state,
+                &project_id,
+                &params.send_result,
+                transaction_id.chain_id(),
+            )
+            .await
+            .map_err(|e| CheckPosTxError::Validation(e.to_string()))?;
 
             match status {
                 TransactionStatus::Pending => Ok(CheckTransactionResult {
