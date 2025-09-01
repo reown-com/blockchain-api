@@ -180,7 +180,7 @@ describe('POS', () => {
         method: 'reown_pos_checkTransaction',
         params: {
           id: txIdBaseSepolia,
-          txid: confirmedTxId,
+          sendResult: confirmedTxId,
         }
       };
 

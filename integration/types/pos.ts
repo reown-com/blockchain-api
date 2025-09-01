@@ -33,7 +33,7 @@ export type BuildTransactionParams = EvmBuildTransactionParams;
 
 export type CheckTransactionParams = {
   id: string;
-  txid: string;
+  sendResult: string;
 };
 
 export interface BuildTransactionRequest extends BaseJsonRpcRequest {
