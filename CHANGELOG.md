@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.288.1 - 2025-09-01
+#### Bug Fixes
+- **(CD)** adding a delay before TS tests by waiting Rust tests to compile (#1215) - (6954298) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- change check transaction field (#1214) - (2dcac85) - Luka Isailovic
+
+- - -
+
 ## 0.288.0 - 2025-08-29
 #### Features
 - adding validate project ID as TFC variable (#1213) - (ccde834) - Max Kalashnikoff | maksy.eth
