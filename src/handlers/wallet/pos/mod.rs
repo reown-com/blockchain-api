@@ -103,7 +103,7 @@ pub enum TransactionStatus {
 #[serde(rename_all = "camelCase")]
 pub struct CheckTransactionParams {
     pub id: String,
-    pub txid: String,
+    pub send_result: String,
 }
 
 #[derive(Debug, Clone, Serialize)]

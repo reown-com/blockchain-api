@@ -25,7 +25,7 @@ pub async fn handler(
     match namespace {
         SupportedNamespaces::Eip155 => {
             let status =
-                get_transaction_status(state, &project_id, &params.txid, transaction_id.chain_id())
+                get_transaction_status(state, &project_id, &params.send_result, transaction_id.chain_id())
                     .await
                     .map_err(|e| CheckPosTxError::Validation(e.to_string()))?;
 
