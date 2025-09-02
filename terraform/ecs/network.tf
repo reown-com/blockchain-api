@@ -71,19 +71,20 @@ resource "aws_lb_listener" "listener-http" {
 }
 
 resource "aws_lb_target_group" "target_group" {
-  name        = local.lb_name
-  port        = var.port
-  protocol    = "HTTP"
-  target_type = "ip"
-  vpc_id      = var.vpc_id
-  slow_start  = 30
+  name                 = local.lb_name
+  port                 = var.port
+  protocol             = "HTTP"
+  target_type          = "ip"
+  vpc_id               = var.vpc_id
+  slow_start           = 30
+  deregistration_delay = 30
 
   health_check {
     protocol            = "HTTP"
     path                = "/health" # Blockchain-API health path
     port                = var.port
-    interval            = 15
-    timeout             = 10
+    interval            = 10
+    timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 2
   }
