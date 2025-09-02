@@ -274,6 +274,12 @@ resource "aws_ecs_service" "app_service" {
   deployment_minimum_healthy_percent = 100 # Keep all healthy tasks running during deployment
   deployment_maximum_percent         = 200 # Allow up to 200% of desired tasks during deployment
 
+  # Automatically rollback if a deployment fails
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
   network_configuration {
     subnets          = var.private_subnets
     assign_public_ip = false
