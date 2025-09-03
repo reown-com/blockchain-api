@@ -29,6 +29,8 @@ mod error;
 pub mod metrics;
 pub mod storage;
 
+/// Circuit breaker cooldown period in milliseconds in case of registry internal error
+/// to prevent the registry from being overwhelmed since we don't cache errors
 const CIRCUIT_COOLDOWN_MS: u64 = 1_000;
 
 #[derive(Debug, Clone)]
