@@ -14,7 +14,11 @@ use {
         },
         registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult},
     },
-    std::{sync::Arc, time::Instant},
+    std::{
+        sync::atomic::{AtomicU64, Ordering},
+        sync::Arc,
+        time::{Duration, Instant},
+    },
     wc::metrics::ServiceMetrics,
 };
 pub use {config::*, error::*};
@@ -25,11 +29,16 @@ mod error;
 pub mod metrics;
 pub mod storage;
 
+const CIRCUIT_COOLDOWN_MS: u64 = 1_000;
+
 #[derive(Debug, Clone)]
 pub struct Registry {
     client: Option<RegistryHttpClient>,
     cache: Option<ProjectStorage>,
     metrics: ProjectDataMetrics,
+    circuit_base_instant: Instant,
+    circuit_last_error_ms: Arc<AtomicU64>,
+    circuit_cooldown: Duration,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -83,7 +92,32 @@ impl Registry {
             client,
             cache,
             metrics,
+            circuit_base_instant: Instant::now(),
+            circuit_last_error_ms: Arc::new(AtomicU64::new(0)),
+            circuit_cooldown: Duration::from_millis(CIRCUIT_COOLDOWN_MS),
         })
+    }
+
+    #[inline]
+    fn now_ms_since_base(&self) -> u64 {
+        self.circuit_base_instant.elapsed().as_millis() as u64
+    }
+
+    fn is_circuit_open(&self) -> bool {
+        if self.circuit_cooldown.is_zero() {
+            return false;
+        }
+        let last_ms = self.circuit_last_error_ms.load(Ordering::Relaxed);
+        if last_ms == 0 {
+            return false;
+        }
+        let elapsed_ms = self.now_ms_since_base().saturating_sub(last_ms);
+        elapsed_ms < self.circuit_cooldown.as_millis() as u64
+    }
+
+    fn open_circuit(&self) {
+        let now = self.now_ms_since_base();
+        self.circuit_last_error_ms.store(now, Ordering::Relaxed);
     }
 
     pub async fn project_data(&self, id: &str) -> RpcResult<ProjectDataWithLimits> {
@@ -126,17 +160,29 @@ impl Registry {
             }
         }
 
+        // Circuit breaker: if open, skip calling the registry for a short cooldown
+        // to prevent the registry from being overwhelmed
+        if self.is_circuit_open() {
+            return Err(RpcError::ProjectDataError(
+                ProjectDataError::RegistryTemporarilyUnavailable,
+            ));
+        }
+
         let id = request.id;
         let data = self.fetch_registry(request).await;
 
-        // Cache all responses that we get, even errors.
+        // Cache all responses that we get
         let data = match data {
             Ok(Some(data)) => Ok(data),
             Ok(None) => Err(ProjectDataError::NotFound),
             Err(RegistryError::Config(..)) => Err(ProjectDataError::RegistryConfigError),
 
             // This is a retryable error, don't cache the result.
-            Err(err) => return Err(err.into()),
+            // Open the circuit so we skip further registry calls for a cooldown period
+            Err(err) => {
+                self.open_circuit();
+                return Err(err.into());
+            }
         };
 
         if let Some(cache) = &self.cache {

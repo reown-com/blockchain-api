@@ -83,6 +83,7 @@ fn response_tag(resp: &ProjectDataResult) -> KeyValue {
         Ok(_) => "ok",
         Err(ProjectDataError::NotFound) => "not_found",
         Err(ProjectDataError::RegistryConfigError) => "registry_config_error",
+        Err(ProjectDataError::RegistryTemporarilyUnavailable) => "registry_temporarily_unavailable",
     };
 
     KeyValue::new("response", value)
