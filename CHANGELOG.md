@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.289.0 - 2025-09-03
+#### Features
+- **(ECS)** decreasing deregistration delay and health check timeout, enabling  deployment rollback (#1216) - (b44d629) - Max Kalashnikoff | maksy.eth
+- **(projects)** implementing projects registry fetcher circuit breaker (#1217) - (6e65aa3) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.288.1 - 2025-09-01
 #### Bug Fixes
 - **(CD)** adding a delay before TS tests by waiting Rust tests to compile (#1215) - (6954298) - Max Kalashnikoff | maksy.eth
