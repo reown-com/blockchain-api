@@ -5,7 +5,7 @@ use {
         error::RpcError,
         handlers::{balance::BalanceResponseBody, identity::IdentityResponse},
         metrics::Metrics,
-        project::Registry,
+        project::{ProjectDataError, Registry},
         providers::ProviderRepository,
         storage::{irn::Irn, KeyValueStorage},
         utils::{build::CompileInfo, rate_limit::RateLimit},
@@ -15,7 +15,7 @@ use {
     sqlx::PgPool,
     std::sync::Arc,
     tap::TapFallible,
-    tracing::debug,
+    tracing::{debug, error},
 };
 
 pub struct AppState {
@@ -103,7 +103,17 @@ impl AppState {
             return Ok(());
         }
 
-        self.get_project_data_validated(id).await.map(drop)
+        // Handle RegistryTemporarilyUnavailable error by not counting it as a quota limited project
+        match self.get_project_data_validated(id).await {
+            Ok(_) => Ok(()),
+            Err(RpcError::ProjectDataError(ProjectDataError::RegistryTemporarilyUnavailable)) => {
+                error!(
+                    "Registry is temporarily unavailable, skipping access check for project: {id}"
+                );
+                Ok(())
+            }
+            Err(e) => Err(e),
+        }
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
@@ -112,7 +122,17 @@ impl AppState {
             return Ok(());
         }
 
-        let project = self.get_project_data_validated(id).await?;
+        // Handle RegistryTemporarilyUnavailable error by not counting it as a quota limited project
+        let project = match self.get_project_data_validated(id).await {
+            Ok(project) => project,
+            Err(RpcError::ProjectDataError(ProjectDataError::RegistryTemporarilyUnavailable)) => {
+                error!(
+                    "Registry is temporarily unavailable, skipping access and quota check for project: {id}"
+                );
+                return Ok(());
+            }
+            Err(e) => return Err(e),
+        };
 
         validate_project_quota(&project).tap_err(|e| {
             debug!(

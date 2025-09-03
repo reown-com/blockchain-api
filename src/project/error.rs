@@ -10,4 +10,7 @@ pub enum ProjectDataError {
 
     #[error("Registry configuration error")]
     RegistryConfigError,
+
+    #[error("Registry is temporarily unavailable")]
+    RegistryTemporarilyUnavailable,
 }
