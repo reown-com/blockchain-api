@@ -19,6 +19,7 @@ use {
         sync::Arc,
         time::{Duration, Instant},
     },
+    tracing::error,
     wc::metrics::ServiceMetrics,
 };
 pub use {config::*, error::*};
@@ -158,7 +159,7 @@ impl Registry {
             }
         }
 
-        // Circuit breaker
+        // Skip check if circuit breaker is open
         if self.is_circuit_open() {
             return Err(RpcError::ProjectDataError(
                 ProjectDataError::RegistryTemporarilyUnavailable,
@@ -174,10 +175,14 @@ impl Registry {
             Ok(None) => Err(ProjectDataError::NotFound),
             Err(RegistryError::Config(..)) => Err(ProjectDataError::RegistryConfigError),
 
-            // This is a retryable error, don't cache the result.
+            // This is an innternal error, we should not cache it and open the circuit breaker
+            // to prevent the registry from being overwhelmed
             Err(err) => {
+                error!("Error on fetching project registry API data: {:?}", err);
                 self.open_circuit();
-                return Err(err.into());
+                return Err(RpcError::ProjectDataError(
+                    ProjectDataError::RegistryTemporarilyUnavailable,
+                ));
             }
         };
 
