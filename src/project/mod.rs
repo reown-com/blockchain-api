@@ -104,20 +104,16 @@ impl Registry {
     }
 
     fn is_circuit_open(&self) -> bool {
-        if self.circuit_cooldown.is_zero() {
-            return false;
-        }
-        let last_ms = self.circuit_last_error_ms.load(Ordering::Relaxed);
-        if last_ms == 0 {
-            return false;
-        }
-        let elapsed_ms = self.now_ms_since_base().saturating_sub(last_ms);
-        elapsed_ms < self.circuit_cooldown.as_millis() as u64
+        let last = self.circuit_last_error_ms.load(Ordering::Relaxed);
+        !self.circuit_cooldown.is_zero()
+            && last != 0
+            && self.now_ms_since_base().saturating_sub(last)
+                < self.circuit_cooldown.as_millis() as u64
     }
 
     fn open_circuit(&self) {
-        let now = self.now_ms_since_base();
-        self.circuit_last_error_ms.store(now, Ordering::Relaxed);
+        self.circuit_last_error_ms
+            .store(self.now_ms_since_base(), Ordering::Relaxed);
     }
 
     pub async fn project_data(&self, id: &str) -> RpcResult<ProjectDataWithLimits> {
@@ -160,8 +156,7 @@ impl Registry {
             }
         }
 
-        // Circuit breaker: if open, skip calling the registry for a short cooldown
-        // to prevent the registry from being overwhelmed
+        // Circuit breaker
         if self.is_circuit_open() {
             return Err(RpcError::ProjectDataError(
                 ProjectDataError::RegistryTemporarilyUnavailable,
@@ -178,7 +173,6 @@ impl Registry {
             Err(RegistryError::Config(..)) => Err(ProjectDataError::RegistryConfigError),
 
             // This is a retryable error, don't cache the result.
-            // Open the circuit so we skip further registry calls for a cooldown period
             Err(err) => {
                 self.open_circuit();
                 return Err(err.into());
