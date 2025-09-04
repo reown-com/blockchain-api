@@ -6,6 +6,7 @@ use {
     crate::handlers::wallet::pos::{
         evm::get_transaction_status,
         solana::get_transaction_status as solana_get_transaction_status,
+        tron::get_transaction_status as tron_get_transaction_status,
     },
     crate::state::AppState,
     axum::extract::State,
@@ -46,9 +47,30 @@ pub async fn handler(
                     check_in: None,
                 }),
             }
-        }
+        },
         SupportedNamespaces::Solana => {
             let status = solana_get_transaction_status(
+                state,
+                &project_id,
+                &params.send_result,
+                transaction_id.chain_id(),
+            )
+            .await
+            .map_err(|e| CheckPosTxError::Validation(e.to_string()))?;
+
+            match status {
+                TransactionStatus::Pending => Ok(CheckTransactionResult {
+                    status,
+                    check_in: Some(DEFAULT_CHECK_IN),
+                }),
+                _ => Ok(CheckTransactionResult {
+                    status,
+                    check_in: None,
+                }),
+            }
+        },
+        SupportedNamespaces::Tron => {
+            let status = tron_get_transaction_status(
                 state,
                 &project_id,
                 &params.send_result,
