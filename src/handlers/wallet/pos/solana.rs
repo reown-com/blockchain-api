@@ -169,29 +169,21 @@ async fn get_token_decimals(
         .map_err(|_| BuildPosTxError::Internal("Invalid SPL Token-2022 program ID".to_string()))?;
     let is_spl_token_2022 = token_program_id == spl_token_2022_id;
 
-    if !is_spl_token && !is_spl_token_2022 {
-        if mint_account.data.len() < Mint::LEN {
-            return Err(BuildPosTxError::Validation(format!(
-                "Invalid mint account owner: {}. Expected SPL Token program.",
-                mint_account.owner
-            )));
-        }
+    if !is_spl_token && !is_spl_token_2022 && mint_account.data.len() < Mint::LEN {
+        return Err(BuildPosTxError::Validation(format!(
+            "Invalid mint account owner: {}. Expected SPL Token program.",
+            mint_account.owner
+        )));
     }
 
     match Mint::unpack_from_slice(&mint_account.data[..Mint::LEN]) {
-        Ok(mint_data) => {
-            debug!(
-                "Successfully parsed mint data. Decimals: {}",
-                mint_data.decimals
-            );
-            return Ok((mint_data.decimals, token_program_id));
-        }
+        Ok(mint_data) => Ok((mint_data.decimals, token_program_id)),
         Err(e) => {
             debug!("Failed to parse as SPL Token mint: {}", e);
-            return Err(BuildPosTxError::Internal(format!(
+            Err(BuildPosTxError::Internal(format!(
                 "Failed to parse as SPL Token mint: {}",
                 e
-            )));
+            )))
         }
     }
 }
