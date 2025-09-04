@@ -403,7 +403,6 @@ impl Metrics {
 impl Metrics {
     pub fn add_rpc_call(&self, chain_id: String, provider_kind: &ProviderKind) {
         self.rpc_call_counter.add(
-            &otel::Context::new(),
             1,
             &[
                 otel::KeyValue::new("chain_id", chain_id),
@@ -413,16 +412,12 @@ impl Metrics {
     }
 
     pub fn add_rpc_call_retries(&self, retires_count: u64, chain_id: String) {
-        self.rpc_call_retries.record(
-            &otel::Context::new(),
-            retires_count,
-            &[otel::KeyValue::new("chain_id", chain_id)],
-        )
+        self.rpc_call_retries
+            .record(retires_count, &[otel::KeyValue::new("chain_id", chain_id)])
     }
 
     pub fn add_rpc_cached_call(&self, chain_id: String, method: String) {
         self.rpc_cached_call_counter.add(
-            &otel::Context::new(),
             1,
             &[
                 otel::KeyValue::new("chain_id", chain_id),
@@ -433,7 +428,6 @@ impl Metrics {
 
     pub fn add_balance_lookup_retries(&self, retry_count: u64, namespace: CaipNamespaces) {
         self.balance_lookup_retries.record(
-            &otel::Context::new(),
             retry_count,
             &[otel::KeyValue::new("namespace", namespace.to_string())],
         )
@@ -441,7 +435,6 @@ impl Metrics {
 
     pub fn add_http_call(&self, code: u16, route: String) {
         self.http_call_counter.add(
-            &otel::Context::new(),
             1,
             &[
                 otel::KeyValue::new("code", i64::from(code)),
@@ -452,7 +445,6 @@ impl Metrics {
 
     pub fn add_http_latency(&self, code: u16, route: String, latency: f64) {
         self.http_latency_tracker.record(
-            &otel::Context::new(),
             latency,
             &[
                 otel::KeyValue::new("code", i64::from(code)),
@@ -477,7 +469,6 @@ impl Metrics {
         }
 
         self.http_external_latency_tracker.record(
-            &otel::Context::new(),
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -488,19 +479,16 @@ impl Metrics {
 
     #[tracing::instrument(skip(self), level = "debug")]
     pub fn add_rejected_project(&self) {
-        self.rejected_project_counter
-            .add(&otel::Context::new(), 1, &[])
+        self.rejected_project_counter.add(1, &[])
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
     pub fn add_quota_limited_project(&self) {
-        self.quota_limited_project_counter
-            .add(&otel::Context::new(), 1, &[])
+        self.quota_limited_project_counter.add(1, &[])
     }
 
     pub fn add_rate_limited_call(&self, provider: &dyn RpcProvider, project_id: String) {
         self.rate_limited_call_counter.add(
-            &otel::Context::new(),
             1,
             &[
                 otel::KeyValue::new("provider_kind", provider.provider_kind().to_string()),
@@ -511,7 +499,6 @@ impl Metrics {
 
     pub fn add_failed_provider_call(&self, chain_id: String, provider: &dyn RpcProvider) {
         self.provider_failed_call_counter.add(
-            &otel::Context::new(),
             1,
             &[
                 otel::KeyValue::new("chain_id", chain_id),
@@ -522,7 +509,6 @@ impl Metrics {
 
     pub fn add_finished_provider_call(&self, chain_id: String, provider: &dyn RpcProvider) {
         self.provider_finished_call_counter.add(
-            &otel::Context::new(),
             1,
             &[
                 otel::KeyValue::new("chain_id", chain_id),
@@ -549,8 +535,7 @@ impl Metrics {
             attributes.push(otel::KeyValue::new("endpoint", endpoint));
         }
 
-        self.provider_status_code_counter
-            .add(&otel::Context::new(), 1, &attributes)
+        self.provider_status_code_counter.add(1, &attributes)
     }
 
     pub fn add_internal_error_code_for_provider(
@@ -566,7 +551,7 @@ impl Metrics {
         ];
 
         self.provider_internal_error_code_counter
-            .add(&otel::Context::new(), 1, &attributes)
+            .add(1, &attributes)
     }
 
     pub fn add_latency_and_status_code_for_provider(
@@ -588,7 +573,6 @@ impl Metrics {
 
     pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: String, weight: u64) {
         self.weights_value_recorder.record(
-            &otel::Context::new(),
             weight,
             &[
                 otel::KeyValue::new("provider", provider.to_string()),
@@ -598,16 +582,12 @@ impl Metrics {
     }
 
     pub fn add_no_providers_for_chain(&self, chain_id: String) {
-        self.no_providers_for_chain_counter.add(
-            &otel::Context::new(),
-            1,
-            &[otel::KeyValue::new("chain_id", chain_id)],
-        );
+        self.no_providers_for_chain_counter
+            .add(1, &[otel::KeyValue::new("chain_id", chain_id)]);
     }
 
     pub fn add_found_provider_for_chain(&self, chain_id: String, provider_kind: &ProviderKind) {
         self.found_provider_for_chain_counter.add(
-            &otel::Context::new(),
             1,
             &[
                 otel::KeyValue::new("chain_id", chain_id),
@@ -623,7 +603,6 @@ impl Metrics {
         chain_id: String,
     ) {
         self.chain_latency_tracker.record(
-            &otel::Context::new(),
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -636,21 +615,16 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup(&self) {
-        self.identity_lookup_counter
-            .add(&otel::Context::new(), 1, &[]);
+        self.identity_lookup_counter.add(1, &[]);
     }
 
     pub fn add_identity_lookup_success(&self, source: &IdentityLookupSource) {
-        self.identity_lookup_success_counter.add(
-            &otel::Context::new(),
-            1,
-            &[otel::KeyValue::new("source", source.as_str())],
-        );
+        self.identity_lookup_success_counter
+            .add(1, &[otel::KeyValue::new("source", source.as_str())]);
     }
 
     pub fn add_identity_lookup_latency(&self, latency: Duration, source: &IdentityLookupSource) {
         self.identity_lookup_latency_tracker.record(
-            &otel::Context::new(),
             latency.as_secs_f64(),
             &[otel::KeyValue::new("source", source.as_str())],
         );
@@ -658,7 +632,6 @@ impl Metrics {
 
     pub fn add_identity_lookup_cache_latency(&self, start: SystemTime) {
         self.identity_lookup_cache_latency_tracker.record(
-            &otel::Context::new(),
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -668,18 +641,15 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup_name(&self) {
-        self.identity_lookup_name_counter
-            .add(&otel::Context::new(), 1, &[]);
+        self.identity_lookup_name_counter.add(1, &[]);
     }
 
     pub fn add_identity_lookup_name_success(&self) {
-        self.identity_lookup_name_success_counter
-            .add(&otel::Context::new(), 1, &[]);
+        self.identity_lookup_name_success_counter.add(1, &[]);
     }
 
     pub fn add_identity_lookup_name_latency(&self, start: SystemTime) {
         self.identity_lookup_name_latency_tracker.record(
-            &otel::Context::new(),
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -689,18 +659,15 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup_avatar(&self) {
-        self.identity_lookup_avatar_counter
-            .add(&otel::Context::new(), 1, &[]);
+        self.identity_lookup_avatar_counter.add(1, &[]);
     }
 
     pub fn add_identity_lookup_avatar_success(&self) {
-        self.identity_lookup_avatar_success_counter
-            .add(&otel::Context::new(), 1, &[]);
+        self.identity_lookup_avatar_success_counter.add(1, &[]);
     }
 
     pub fn add_identity_lookup_avatar_latency(&self, start: SystemTime) {
         self.identity_lookup_avatar_latency_tracker.record(
-            &otel::Context::new(),
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -710,71 +677,54 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup_name_present(&self) {
-        self.identity_lookup_name_present_counter
-            .add(&otel::Context::new(), 1, &[]);
+        self.identity_lookup_name_present_counter.add(1, &[]);
     }
 
     pub fn add_identity_lookup_avatar_present(&self) {
-        self.identity_lookup_avatar_present_counter
-            .add(&otel::Context::new(), 1, &[]);
+        self.identity_lookup_avatar_present_counter.add(1, &[]);
     }
 
     pub fn add_websocket_connection(&self, chain_id: String) {
-        self.websocket_connection_counter.add(
-            &otel::Context::new(),
-            1,
-            &[otel::KeyValue::new("chain_id", chain_id)],
-        );
+        self.websocket_connection_counter
+            .add(1, &[otel::KeyValue::new("chain_id", chain_id)]);
     }
 
     pub fn add_history_lookup(&self, provider: &ProviderKind) {
-        self.history_lookup_counter.add(
-            &otel::Context::new(),
-            1,
-            &[otel::KeyValue::new("provider", provider.to_string())],
-        );
+        self.history_lookup_counter
+            .add(1, &[otel::KeyValue::new("provider", provider.to_string())]);
     }
 
     pub fn add_history_lookup_success(&self, provider: &ProviderKind) {
-        self.history_lookup_success_counter.add(
-            &otel::Context::new(),
-            1,
-            &[otel::KeyValue::new("provider", provider.to_string())],
-        );
+        self.history_lookup_success_counter
+            .add(1, &[otel::KeyValue::new("provider", provider.to_string())]);
     }
 
     pub fn add_history_lookup_latency(&self, provider: &ProviderKind, latency: Duration) {
         self.history_lookup_latency_tracker.record(
-            &otel::Context::new(),
             latency.as_secs_f64(),
             &[otel::KeyValue::new("provider", provider.to_string())],
         );
     }
 
     fn add_cpu_usage(&self, usage: f64, cpu_id: f64) {
-        self.cpu_usage.record(
-            &otel::Context::new(),
-            usage,
-            &[otel::KeyValue::new("cpu", cpu_id)],
-        );
+        self.cpu_usage
+            .record(usage, &[otel::KeyValue::new("cpu", cpu_id)]);
     }
 
     fn add_memory_total(&self, memory: f64) {
-        self.memory_total.record(&otel::Context::new(), memory, &[]);
+        self.memory_total.record(memory, &[]);
     }
 
     fn add_memory_used(&self, memory: f64) {
-        self.memory_used.record(&otel::Context::new(), memory, &[]);
+        self.memory_used.record(memory, &[]);
     }
 
     pub fn add_rate_limited_entries_count(&self, entry: u64) {
-        self.rate_limited_entries_counter
-            .record(&otel::Context::new(), entry, &[]);
+        self.rate_limited_entries_counter.record(entry, &[]);
     }
 
     pub fn add_rate_limiting_latency(&self, start: SystemTime) {
         self.rate_limiting_latency_tracker.record(
-            &otel::Context::new(),
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -785,7 +735,6 @@ impl Metrics {
 
     pub fn add_non_rpc_providers_cache_latency(&self, start: SystemTime) {
         self.non_rpc_providers_cache_latency_tracker.record(
-            &otel::Context::new(),
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -795,13 +744,11 @@ impl Metrics {
     }
 
     pub fn add_rate_limited_response(&self) {
-        self.rate_limited_responses_counter
-            .add(&otel::Context::new(), 1, &[]);
+        self.rate_limited_responses_counter.add(1, &[]);
     }
 
     pub fn add_irn_latency(&self, start: SystemTime, operation: OperationType) {
         self.irn_latency_tracker.record(
-            &otel::Context::new(),
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -817,7 +764,6 @@ impl Metrics {
         tx_type: ChainAbstractionTransactionType,
     ) {
         self.ca_gas_estimation_tracker.record(
-            &otel::Context::new(),
             gas as f64,
             &[
                 otel::KeyValue::new("chain_id", chain_id),
@@ -827,32 +773,22 @@ impl Metrics {
     }
 
     pub fn add_ca_no_routes_found(&self, route: String) {
-        self.ca_no_routes_found_counter.add(
-            &otel::Context::new(),
-            1,
-            &[otel::KeyValue::new("route", route)],
-        );
+        self.ca_no_routes_found_counter
+            .add(1, &[otel::KeyValue::new("route", route)]);
     }
 
     pub fn add_ca_routes_found(&self, route: String) {
-        self.ca_no_routes_found_counter.add(
-            &otel::Context::new(),
-            1,
-            &[otel::KeyValue::new("route", route)],
-        );
+        self.ca_no_routes_found_counter
+            .add(1, &[otel::KeyValue::new("route", route)]);
     }
 
     pub fn add_ca_insufficient_funds(&self) {
-        self.ca_insufficient_funds_counter
-            .add(&otel::Context::new(), 1, &[]);
+        self.ca_insufficient_funds_counter.add(1, &[]);
     }
 
     pub fn add_ca_no_bridging_needed(&self, ca_type: ChainAbstractionNoBridgingNeededType) {
-        self.ca_no_bridging_needed_counter.add(
-            &otel::Context::new(),
-            1,
-            &[otel::KeyValue::new("type", ca_type.to_string())],
-        );
+        self.ca_no_bridging_needed_counter
+            .add(1, &[otel::KeyValue::new("type", ca_type.to_string())]);
     }
 
     /// Gathering system CPU(s) and Memory usage metrics
@@ -883,17 +819,11 @@ impl Metrics {
         let names_stats = get_account_names_stats(postgres).await;
         match names_stats {
             Ok(names_stats) => {
-                self.account_names_count.observe(
-                    &otel::Context::new(),
-                    names_stats.count as u64,
-                    &[],
-                );
+                self.account_names_count
+                    .observe(names_stats.count as u64, &[]);
             }
             Err(e) => {
-                error!(
-                    "Error on getting account names stats from database: {:?}",
-                    e
-                );
+                error!("Error on getting account names stats from database: {e:?}");
             }
         }
     }

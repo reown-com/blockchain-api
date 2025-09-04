@@ -2,7 +2,6 @@ use {
     crate::project::{error::ProjectDataError, storage::ProjectDataResult, ResponseSource},
     std::time::Duration,
     wc::metrics::otel::{
-        self,
         metrics::{Counter, Histogram, Meter},
         KeyValue,
     },
@@ -49,23 +48,17 @@ impl ProjectDataMetrics {
     }
 
     pub fn fetch_cache_time(&self, time: Duration) {
-        self.local_cache_time
-            .record(&otel::Context::new(), duration_ms(time), &[]);
+        self.local_cache_time.record(duration_ms(time), &[]);
     }
 
     pub fn fetch_registry_time(&self, time: Duration) {
-        self.registry_api_time
-            .record(&otel::Context::new(), duration_ms(time), &[]);
+        self.registry_api_time.record(duration_ms(time), &[]);
     }
 
     pub fn request(&self, time: Duration, source: ResponseSource, resp: &ProjectDataResult) {
-        self.requests_total.add(
-            &otel::Context::new(),
-            1,
-            &[source_tag(source), response_tag(resp)],
-        );
-        self.total_time
-            .record(&otel::Context::new(), duration_ms(time), &[]);
+        self.requests_total
+            .add(1, &[source_tag(source), response_tag(resp)]);
+        self.total_time.record(duration_ms(time), &[]);
     }
 }
 
