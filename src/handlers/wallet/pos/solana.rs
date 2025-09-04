@@ -227,15 +227,20 @@ pub async fn get_transaction_status(
 
     let rpc_client = create_rpc_client(chain_id, project_id)?;
 
-    let status = rpc_client
-        .get_signature_status_with_commitment(&parsed_signature, CommitmentConfig::finalized())
+    let response = rpc_client
+        .get_signature_statuses_with_history(&[parsed_signature])
         .await
         .map_err(|e| BuildPosTxError::Internal(format!("Failed to get signature status: {}", e)))?;
 
-    debug!("Solana transaction status: {:?}", status);
-    match status {
-        Some(Ok(())) => Ok(TransactionStatus::Confirmed),
-        Some(Err(_)) => Ok(TransactionStatus::Failed),
+    match response.value.first() {
+        Some(Some(status)) => {
+            if status.err.is_some() {
+                Ok(TransactionStatus::Failed)
+            } else {
+                Ok(TransactionStatus::Confirmed)
+            }
+        }
+        Some(None) => Ok(TransactionStatus::Pending),
         None => Ok(TransactionStatus::Pending),
     }
 }
