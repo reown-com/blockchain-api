@@ -82,6 +82,8 @@ async fn build_spl_transfer(params: ValidatedTransactionParams<AssetNamespace>, 
     let mint_pubkey = Pubkey::from_str(params.asset.asset_reference())
         .map_err(|e| BuildPosTxError::Validation(format!("Invalid token mint address: {}", e)))?;
     
+    let rpc_client = create_rpc_client(params.asset.chain_id(), project_id)?;
+    
     let (decimals, token_program_id) = get_token_decimals(&mint_pubkey, params.asset.chain_id(), project_id).await?;
     let amount_lamports = parse_token_amount(amount, decimals)?;
     
@@ -99,8 +101,14 @@ async fn build_spl_transfer(params: ValidatedTransactionParams<AssetNamespace>, 
         decimals,
     ).map_err(|e| BuildPosTxError::Validation(format!("Failed to create transfer instruction: {}", e)))?;
     
+    let recent_blockhash = rpc_client
+        .get_latest_blockhash_with_commitment(CommitmentConfig::finalized())
+        .await
+        .map_err(|e| BuildPosTxError::Internal(format!("Failed to fetch recent blockhash: {}", e)))?
+        .0;
+    
     let instructions = vec![transfer_instruction];
-    let message = Message::new(&instructions, Some(&sender_pubkey));
+    let message = Message::new_with_blockhash(&instructions, Some(&sender_pubkey), &recent_blockhash);
     let transaction = Transaction::new_unsigned(message);
     
     let serialized_tx = bincode::serialize(&transaction)
