@@ -139,6 +139,9 @@ pub enum RpcError {
     #[error("invalid parameter: {0}")]
     InvalidParameter(String),
 
+    #[error("Asset is not supported: {0}")]
+    AssetNotSupported(String),
+
     // Conversion errors
     #[error("Failed to reach the conversion provider")]
     ConversionProviderError,
@@ -467,6 +470,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response_with_code(
                     code.to_string(),
                     format!("Conversion parameter error: {message}"),
+                )),
+            )
+                .into_response(),
+            Self::AssetNotSupported(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "asset".to_string(),
+                    format!("Asset is not supported: {e}"),
                 )),
             )
                 .into_response(),

@@ -108,6 +108,10 @@ impl OneInchProvider {
                 };
                 return Err(RpcError::ConversionInvalidParameter(response_error));
             }
+            // 404 response is expected when the asset is not supported
+            if price_response.status() == reqwest::StatusCode::NOT_FOUND {
+                return Err(RpcError::AssetNotSupported(address.clone()));
+            }
 
             error!(
                 "Error on getting fungible price from 1inch provider. Status is not OK: {:?}",
@@ -170,6 +174,10 @@ impl OneInchProvider {
                     }
                 };
                 return Err(RpcError::ConversionInvalidParameter(response_error));
+            }
+            // 404 response is expected when the asset is not supported
+            if response.status() == reqwest::StatusCode::NOT_FOUND {
+                return Err(RpcError::AssetNotSupported(address.clone()));
             }
 
             error!(
@@ -300,6 +308,14 @@ impl ConversionProvider for OneInchProvider {
         );
 
         if !response.status().is_success() {
+            // 404 response is expected when the chain ID is not supported
+            if response.status() == reqwest::StatusCode::NOT_FOUND {
+                return Err(RpcError::ConversionInvalidParameter(format!(
+                    "Chain ID {} is not supported",
+                    params.chain_id
+                )));
+            };
+
             // Passing through error description for the error context
             // if user parameter is invalid (got 400 status code from the provider)
             if response.status() == reqwest::StatusCode::BAD_REQUEST {
@@ -313,13 +329,6 @@ impl ConversionProvider for OneInchProvider {
                 };
                 return Err(RpcError::ConversionInvalidParameter(response_error));
             }
-            // 404 response is expected when the chain ID is not supported
-            if response.status() == reqwest::StatusCode::NOT_FOUND {
-                return Err(RpcError::ConversionInvalidParameter(format!(
-                    "Chain ID {} is not supported",
-                    params.chain_id
-                )));
-            };
 
             error!(
                 "Error on getting tokens list for conversion from 1inch provider. Status is not \
@@ -671,6 +680,14 @@ impl ConversionProvider for OneInchProvider {
         );
 
         if !response.status().is_success() {
+            // 404 response is expected when the chain ID is not supported
+            if response.status() == reqwest::StatusCode::NOT_FOUND {
+                return Err(RpcError::ConversionInvalidParameter(format!(
+                    "Chain ID {} is not supported",
+                    params.chain_id
+                )));
+            };
+
             // Passing through error description for the error context
             // if user parameter is invalid (got 400 status code from the provider)
             if response.status() == reqwest::StatusCode::BAD_REQUEST {
@@ -684,13 +701,6 @@ impl ConversionProvider for OneInchProvider {
                 };
                 return Err(RpcError::ConversionInvalidParameter(response_error));
             }
-            // 404 response is expected when the chain ID is not supported
-            if response.status() == reqwest::StatusCode::NOT_FOUND {
-                return Err(RpcError::ConversionInvalidParameter(format!(
-                    "Chain ID {} is not supported",
-                    params.chain_id
-                )));
-            };
 
             error!(
                 "Error on getting gas price for conversion from 1inch provider. Status is not OK: \
