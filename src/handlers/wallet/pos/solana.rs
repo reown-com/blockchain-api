@@ -1,7 +1,8 @@
 use {
     super::{
         AssetNamespaceType, BuildPosTxError, BuildTransactionParams, BuildTransactionResult,
-        TransactionBuilder, TransactionId, TransactionRpc, ValidatedTransactionParams,
+        TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
+        ValidatedTransactionParams,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     async_trait::async_trait,
@@ -10,7 +11,7 @@ use {
     solana_client::nonblocking::rpc_client::RpcClient,
     solana_sdk::{
         commitment_config::CommitmentConfig, message::Message, pubkey::Pubkey,
-        transaction::Transaction,
+        signature::Signature, transaction::Transaction,
     },
     spl_associated_token_account::get_associated_token_address,
     spl_token::{instruction::transfer_checked, solana_program::program_pack::Pack, state::Mint},
@@ -205,4 +206,27 @@ fn parse_token_amount(amount: &str, decimals: u8) -> Result<u64, BuildPosTxError
     let lamports = (parsed_amount * decimal_multiplier) as u64;
 
     Ok(lamports)
+}
+
+pub async fn get_transaction_status(
+    _state: State<Arc<AppState>>,
+    project_id: &str,
+    signature: &str,
+    chain_id: &Caip2ChainId,
+) -> Result<TransactionStatus, BuildPosTxError> {
+    let parsed_signature = Signature::from_str(signature)
+        .map_err(|e| BuildPosTxError::Validation(format!("Invalid signature: {}", e)))?;
+
+    let rpc_client = create_rpc_client(chain_id, project_id)?;
+
+    let status = rpc_client
+        .get_signature_status_with_commitment(&parsed_signature, CommitmentConfig::confirmed())
+        .await
+        .map_err(|e| BuildPosTxError::Internal(format!("Failed to get signature status: {}", e)))?;
+
+    match status {
+        Some(Ok(())) => Ok(TransactionStatus::Confirmed),
+        Some(Err(_)) => Ok(TransactionStatus::Failed),
+        None => Ok(TransactionStatus::Pending),
+    }
 }
