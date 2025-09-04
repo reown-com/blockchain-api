@@ -199,6 +199,7 @@ dashboard.new(
     panels.projects.quota_limited_projects(ds, vars)    { gridPos: pos._4 },
     panels.projects.cache_latency(ds, vars)             { gridPos: pos._4 },
     panels.projects.fetch_latency(ds, vars)             { gridPos: pos._4 },
+    panels.projects.error_responses(ds, vars)           { gridPos: pos._4 },
 
   row.new('Rate limiting'),
     panels.rate_limiting.counter(ds, vars)      { gridPos: pos._3 },

@@ -44,6 +44,7 @@ local redis  = panels.aws.redis;
     quota_limited_projects: (import 'projects/quota_limited_projects.libsonnet').new,
     cache_latency:          (import 'projects/cache_latency.libsonnet'         ).new,
     fetch_latency:          (import 'projects/fetch_latency.libsonnet'         ).new,
+    error_responses:        (import 'projects/error_responses.libsonnet'       ).new,
   },
 
   rate_limiting: {
