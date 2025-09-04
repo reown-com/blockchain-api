@@ -5,6 +5,7 @@ use {
         ValidatedTransactionParams,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
+    alloy::primitives::{utils::parse_units, U256},
     async_trait::async_trait,
     axum::extract::State,
     base64::{engine::general_purpose, Engine as _},
@@ -201,14 +202,22 @@ fn create_rpc_client(
 }
 
 fn parse_token_amount(amount: &str, decimals: u8) -> Result<u64, BuildPosTxError> {
-    let parsed_amount: f64 = amount
-        .parse()
-        .map_err(|e| BuildPosTxError::Validation(format!("Invalid amount format: {}", e)))?;
+    let parsed_value = parse_units(amount, decimals).map_err(|e| {
+        BuildPosTxError::Validation(format!(
+            "Unable to parse amount with {} decimals: {}",
+            decimals, e
+        ))
+    })?;
 
-    let decimal_multiplier = 10_u64.pow(decimals as u32) as f64;
-    let lamports = (parsed_amount * decimal_multiplier) as u64;
+    let value: U256 = parsed_value.into();
 
-    Ok(lamports)
+    if value > U256::from(u64::MAX) {
+        return Err(BuildPosTxError::Validation(
+            "Amount too large for u64".to_string(),
+        ));
+    }
+
+    Ok(value.to::<u64>())
 }
 
 pub async fn get_transaction_status(
