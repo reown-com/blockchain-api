@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.290.0 - 2025-09-04
+#### Features
+- pos solana (#1218) - (ae9e0c2) - Luka Isailovic
+
+- - -
+
 ## 0.289.0 - 2025-09-03
 #### Features
 - **(ECS)** decreasing deregistration delay and health check timeout, enabling  deployment rollback (#1216) - (b44d629) - Max Kalashnikoff | maksy.eth
