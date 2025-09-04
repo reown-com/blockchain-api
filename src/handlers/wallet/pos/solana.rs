@@ -10,8 +10,11 @@ use {
     base64::{engine::general_purpose, Engine as _},
     solana_client::nonblocking::rpc_client::RpcClient,
     solana_sdk::{
-        commitment_config::CommitmentConfig, message::{v0, VersionedMessage}, pubkey::Pubkey,
-        signature::Signature, transaction::VersionedTransaction,
+        commitment_config::CommitmentConfig,
+        message::{v0, VersionedMessage},
+        pubkey::Pubkey,
+        signature::Signature,
+        transaction::VersionedTransaction,
     },
     spl_associated_token_account::get_associated_token_address,
     spl_token::{instruction::transfer_checked, solana_program::program_pack::Pack, state::Mint},
@@ -112,7 +115,7 @@ async fn build_spl_transfer(
 
     let instructions = vec![transfer_instruction];
 
-    let v0_message = v0::Message::try_compile(&sender_pubkey, &instructions, &[],  recent_blockhash)
+    let v0_message = v0::Message::try_compile(&sender_pubkey, &instructions, &[], recent_blockhash)
         .map_err(|e| BuildPosTxError::Internal(format!("Failed to compile v0 message: {}", e)))?;
 
     let message = VersionedMessage::V0(v0_message);

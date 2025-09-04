@@ -3,7 +3,10 @@ use {
         CheckPosTxError, CheckTransactionParams, CheckTransactionResult, SupportedNamespaces,
         TransactionId, TransactionStatus,
     },
-    crate::handlers::wallet::pos::{evm::get_transaction_status, solana::get_transaction_status as solana_get_transaction_status},
+    crate::handlers::wallet::pos::{
+        evm::get_transaction_status,
+        solana::get_transaction_status as solana_get_transaction_status,
+    },
     crate::state::AppState,
     axum::extract::State,
     std::{str::FromStr, sync::Arc},
@@ -43,7 +46,7 @@ pub async fn handler(
                     check_in: None,
                 }),
             }
-        },
+        }
         SupportedNamespaces::Solana => {
             let status = solana_get_transaction_status(
                 state,
