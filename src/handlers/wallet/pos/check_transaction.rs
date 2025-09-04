@@ -44,5 +44,8 @@ pub async fn handler(
                 }),
             }
         }
+        _ => {
+            Err(CheckPosTxError::Validation("Unsupported namespace".to_string()))
+        }
     }
 }

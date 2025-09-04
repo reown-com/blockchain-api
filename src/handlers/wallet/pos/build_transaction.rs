@@ -4,16 +4,16 @@ use {
         TransactionBuilder,
     },
     crate::{
-        handlers::wallet::pos::evm::EvmTransactionBuilder, state::AppState,
+        handlers::wallet::pos::{evm::EvmTransactionBuilder, solana::SolanaTransactionBuilder}, state::AppState,
         utils::crypto::Caip19Asset,
     },
     axum::extract::State,
     std::{str::FromStr, sync::Arc},
 };
 
-#[tracing::instrument(skip(_state), level = "debug")]
+#[tracing::instrument(skip(state), level = "debug")]
 pub async fn handler(
-    _state: State<Arc<AppState>>,
+    state: State<Arc<AppState>>,
     project_id: String,
     params: BuildTransactionParams,
 ) -> Result<BuildTransactionResult, BuildPosTxError> {
@@ -26,7 +26,12 @@ pub async fn handler(
     match namespace {
         SupportedNamespaces::Eip155 => {
             EvmTransactionBuilder
-                .build(_state, project_id, params)
+                .build(state, project_id, params)
+                .await
+        }
+        SupportedNamespaces::Solana => {
+            SolanaTransactionBuilder
+                .build(state, project_id, params)
                 .await
         }
     }

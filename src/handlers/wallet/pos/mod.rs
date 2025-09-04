@@ -1,17 +1,17 @@
 pub mod build_transaction;
 pub mod check_transaction;
 pub mod evm;
-
+pub mod solana;
 use {
     crate::{
         state::AppState,
-        utils::crypto::{Caip2ChainId, CryptoUitlsError},
+        utils::crypto::{Caip2ChainId, CryptoUitlsError, disassemble_caip10, Caip19Asset, CaipNamespaces},
     },
     axum::extract::State,
     base64::{engine::general_purpose, DecodeError, Engine as _},
     serde::{Deserialize, Serialize},
     serde_json::Value,
-    std::{convert::TryFrom, fmt::Display, sync::Arc},
+    std::{convert::TryFrom, fmt::Display, sync::Arc, str::FromStr},
     strum_macros::EnumString,
     thiserror::Error,
     uuid::Uuid,
@@ -24,6 +24,11 @@ const TRANSACTION_ID_VERSION: &str = "v1";
 #[strum(serialize_all = "lowercase")]
 pub enum SupportedNamespaces {
     Eip155,
+    Solana,
+}
+
+pub trait AssetNamespaceType: FromStr + Clone + std::fmt::Debug + PartialEq {
+    fn is_native(&self) -> bool;
 }
 
 #[derive(Debug, Error)]
@@ -204,5 +209,62 @@ impl TryFrom<&str> for TransactionId {
             .ok_or_else(|| TransactionIdError::InvalidFormat(decoded_str.clone()))?;
 
         Ok(TransactionId::from(id, &chain_id))
+    }
+}
+
+pub struct ValidatedTransactionParams<T: AssetNamespaceType> {
+    pub asset: Caip19Asset,
+    pub recipient_address: String,
+    pub sender_address: String,
+    pub namespace: T,
+}
+
+impl<T: AssetNamespaceType> ValidatedTransactionParams<T> {
+    pub fn validate_params(params: &BuildTransactionParams) -> Result<Self, BuildPosTxError> {
+        let asset = Caip19Asset::parse(&params.asset)
+            .map_err(|e| BuildPosTxError::Validation(format!("Invalid Asset: {e}")))?;
+
+        let (recipient_namespace, recipient_chain_id, recipient_address) =
+            disassemble_caip10(&params.recipient)
+                .map_err(|e| BuildPosTxError::Validation(format!("Invalid Recipient: {e}")))?;
+
+        let (sender_namespace, sender_chain_id, sender_address) =
+            disassemble_caip10(&params.sender)
+                .map_err(|e| BuildPosTxError::Validation(format!("Invalid Sender: {e}")))?;
+
+        let asset_chain_id = asset.chain_id().reference();
+        let asset_namespace = asset
+            .chain_id()
+            .namespace()
+            .parse::<CaipNamespaces>()
+            .map_err(|e| {
+                BuildPosTxError::Validation(format!("Cannot parse asset namespace: {e}"))
+            })?;
+
+        if asset_namespace != recipient_namespace || asset_namespace != sender_namespace {
+            return Err(BuildPosTxError::Validation(
+                "Asset namespace must match recipient and sender namespaces".to_string(),
+            ));
+        }
+
+        tracing::debug!("asset_chain_id: {asset_chain_id}");
+        tracing::debug!("recipient_chain_id: {recipient_chain_id}");
+        tracing::debug!("sender_chain_id: {sender_chain_id}");
+
+        if asset_chain_id != recipient_chain_id || asset_chain_id != sender_chain_id {
+            return Err(BuildPosTxError::Validation(
+                "Asset chain ID must match recipient and sender chain IDs".to_string(),
+            ));
+        }
+
+        let namespace = T::from_str(asset.asset_namespace())
+            .map_err(|_| BuildPosTxError::Validation(format!("Invalid asset namespace: {}", asset.asset_namespace())))?;
+
+        Ok(Self {
+            asset,
+            recipient_address,
+            sender_address,
+            namespace,
+        })
     }
 }
