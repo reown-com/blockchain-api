@@ -45,6 +45,10 @@ export interface CheckTransactionRequest extends BaseJsonRpcRequest {
   params: CheckTransactionParams;
 }
 
+export interface SolanaTransactionParams {
+  transaction: string;
+  pubkey: string;
+}
 export interface EvmTransactionParams {
   from: string;
   to: string;
@@ -57,9 +61,10 @@ export interface EvmTransactionParams {
   data?: string;
 }
 
+
 export interface BaseTransactionRpc {
   method: string;
-  params: unknown[];
+  params: unknown;
 }
 
 export interface EvmTransactionRpc extends BaseTransactionRpc {
@@ -67,7 +72,12 @@ export interface EvmTransactionRpc extends BaseTransactionRpc {
   params: [EvmTransactionParams];
 }
 
-export type TransactionRpc = EvmTransactionRpc;
+export interface SolanaTransactionRpc extends BaseTransactionRpc {
+  method: 'solana_signAndSendTransaction';
+  params: SolanaTransactionParams;
+}
+
+export type TransactionRpc = EvmTransactionRpc | SolanaTransactionRpc;
 
 export interface BuildTransactionResult {
   id: string;

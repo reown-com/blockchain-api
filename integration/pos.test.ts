@@ -6,7 +6,8 @@ import {
   BuildTransactionErrorResponse,
   EvmTransactionParams,
   CheckTransactionRequest,
-  CheckTransactionResponse
+  CheckTransactionResponse,
+  SolanaTransactionParams
 } from './types/pos';
 
 
@@ -42,6 +43,19 @@ describe('POS', () => {
   const erc20Interface = new Interface([
     'function transfer(address to, uint256 amount)',
   ]);
+
+
+  // SOLANA
+  const solanaMainnetChainId = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp';
+  const solanaUsdcAsset = `${solanaMainnetChainId}/token:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`
+  const solanaMainnetSender = `7VHUFJHWu2CuExkJcJrzhQPJ2oygupTWkL2A2For4BmE`
+  const solanaMainnetRecipient = `5tzFkiKscXHK5ZXCGbXZxdw7gTjjD1mBwuoFbhUvuAi9`
+  const solanaMainnetSenderCaip10 = `${solanaMainnetChainId}:${solanaMainnetSender}`
+  const solanaMainnetRecipientCaip10 = `${solanaMainnetChainId}:${solanaMainnetRecipient}`
+  const solanaMainnetAmount = '0.001'
+
+  const solanaDevnetTransactionId = 'djF8c29sYW5hOkV0V1RSQUJaYVlxNmlNZmVZS291UnUxNjZWVTJ4cWExfDE0MjkxMTM0LTEzMDUtNDZlOS04NDMyLTZhZjI4ZjYwODQyYQ'
+  const solanaDevnetSignature = '2SCP4z9Bs2WEcBZZzwH812HNoBJKGcGz2d41UmSvp2QBaQ9BeqPqybgsiTn9LVtYnKNqJTFctWQbrGvgW7J7WxHV'
 
   describe('EVM', () => {
     it('should build an ERC20 transfer transaction', async () => {
@@ -191,5 +205,59 @@ describe('POS', () => {
       expect(responseData.result).toBeDefined();
       expect(responseData.result.status).toBe('CONFIRMED');
     })
+  });
+
+
+  describe('Solana', () => {
+    it('should build a Solana transfer transaction', async () => {
+      const payload: BuildTransactionRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'reown_pos_buildTransaction',
+        params: {
+          asset: solanaUsdcAsset,
+          amount: solanaMainnetAmount,
+          recipient: solanaMainnetRecipientCaip10,
+          sender: solanaMainnetSenderCaip10,
+        }
+      };
+
+      const response = await httpClient.post(`${baseUrl}/v1/json-rpc?projectId=${projectId}`, payload);
+
+      expect(response.status).toBe(200);
+      const responseData = response.data as BuildTransactionResponse;
+      const result = responseData.result;
+      expect(result).toBeDefined();
+      expect(result.id).toBeDefined();
+      expect(result.id.length).toBeGreaterThan(10);
+      expect(result.transactionRpc).toBeDefined();
+      expect(result.transactionRpc.method).toBe('solana_signAndSendTransaction')
+      const params = result.transactionRpc.params as SolanaTransactionParams; 
+      expect(params).toBeDefined();
+      expect(params.transaction).toBeDefined();
+      expect(params.transaction.length).toBeGreaterThan(0);
+      expect(params.pubkey).toBe(solanaMainnetSender);
+    });
+
+
+    it('should check the transaction status', async () => {
+      const payload: CheckTransactionRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'reown_pos_checkTransaction',
+        params: {
+          id: solanaDevnetTransactionId,
+          sendResult: solanaDevnetSignature,
+        }
+      };
+
+      const response = await httpClient.post(`${baseUrl}/v1/json-rpc?projectId=${projectId}`, payload);
+
+      expect(response.status).toBe(200);
+      const responseData = response.data as CheckTransactionResponse;
+      expect(responseData.result).toBeDefined();
+      expect(responseData.result.status).toBe('CONFIRMED');
+    });
+    
   });
 });

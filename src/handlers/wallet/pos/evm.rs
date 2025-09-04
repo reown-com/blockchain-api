@@ -1,13 +1,10 @@
 use {
     super::{
-        BuildPosTxError, BuildTransactionParams, BuildTransactionResult, TransactionBuilder,
-        TransactionId, TransactionRpc, TransactionStatus,
+        AssetNamespaceType, BuildPosTxError, BuildTransactionParams, BuildTransactionResult,
+        TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
+        ValidatedTransactionParams,
     },
-    crate::{
-        analytics::MessageSource,
-        state::AppState,
-        utils::crypto::{disassemble_caip10, Caip19Asset, Caip2ChainId, CaipNamespaces},
-    },
+    crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::{
         primitives::{utils::parse_units, Address, TxHash, U256},
         providers::{Provider, ProviderBuilder},
@@ -16,7 +13,7 @@ use {
     },
     async_trait::async_trait,
     axum::extract::State,
-    std::{convert::TryFrom, sync::Arc},
+    std::sync::Arc,
     strum_macros::EnumString,
     tracing::debug,
 };
@@ -40,69 +37,13 @@ pub enum AssetNamespace {
     Slip44,
 }
 
-pub struct EvmTransactionBuilder;
-
-#[derive(Debug)]
-struct ValidatedTransactionParams {
-    asset: Caip19Asset,
-    recipient_address: String,
-    sender_address: String,
-    namespace: AssetNamespace,
-}
-
-impl TryFrom<&BuildTransactionParams> for ValidatedTransactionParams {
-    type Error = BuildPosTxError;
-
-    fn try_from(params: &BuildTransactionParams) -> Result<Self, Self::Error> {
-        let asset = Caip19Asset::parse(&params.asset)
-            .map_err(|e| BuildPosTxError::Validation(format!("Invalid Asset: {e}")))?;
-
-        let (recipient_namespace, recipient_chain_id, recipient_address) =
-            disassemble_caip10(&params.recipient)
-                .map_err(|e| BuildPosTxError::Validation(format!("Invalid Recipient: {e}")))?;
-
-        let (sender_namespace, sender_chain_id, sender_address) =
-            disassemble_caip10(&params.sender)
-                .map_err(|e| BuildPosTxError::Validation(format!("Invalid Sender: {e}")))?;
-
-        let asset_chain_id = asset.chain_id().reference();
-        let asset_namespace = asset
-            .chain_id()
-            .namespace()
-            .parse::<CaipNamespaces>()
-            .map_err(|e| {
-                BuildPosTxError::Validation(format!("Cannot parse asset namespace: {e}"))
-            })?;
-
-        if asset_namespace != recipient_namespace || asset_namespace != sender_namespace {
-            return Err(BuildPosTxError::Validation(
-                "Asset namespace must match recipient and sender namespaces".to_string(),
-            ));
-        }
-
-        debug!("asset_chain_id: {asset_chain_id}");
-        debug!("recipient_chain_id: {recipient_chain_id}");
-        debug!("sender_chain_id: {sender_chain_id}");
-
-        if asset_chain_id != recipient_chain_id || asset_chain_id != sender_chain_id {
-            return Err(BuildPosTxError::Validation(
-                "Asset chain ID must match recipient and sender chain IDs".to_string(),
-            ));
-        }
-
-        let namespace = asset
-            .asset_namespace()
-            .parse::<AssetNamespace>()
-            .map_err(|e| BuildPosTxError::Validation(format!("Invalid asset namespace: {e}")))?;
-
-        Ok(Self {
-            asset,
-            recipient_address,
-            sender_address,
-            namespace,
-        })
+impl AssetNamespaceType for AssetNamespace {
+    fn is_native(&self) -> bool {
+        matches!(self, AssetNamespace::Slip44)
     }
 }
+
+pub struct EvmTransactionBuilder;
 
 #[derive(Debug)]
 struct EvmTxBuilder {
@@ -218,7 +159,8 @@ impl TransactionBuilder for EvmTransactionBuilder {
         project_id: String,
         params: BuildTransactionParams,
     ) -> Result<BuildTransactionResult, BuildPosTxError> {
-        let validated_params = ValidatedTransactionParams::try_from(&params)?;
+        let validated_params: ValidatedTransactionParams<AssetNamespace> =
+            ValidatedTransactionParams::validate_params(&params)?;
 
         let builder = EvmTxBuilder::new(
             &project_id,
