@@ -488,8 +488,10 @@ impl OnRampMultiProvider for MeldProvider {
         }
 
         // If we have no quotes and there were errors, return the first error
-        if quotes.is_empty() && first_error.is_some() {
-            return Err(first_error.unwrap());
+        if quotes.is_empty() {
+            if let Some(err) = first_error {
+                return Err(err);
+            }
         }
 
         Ok(quotes)
