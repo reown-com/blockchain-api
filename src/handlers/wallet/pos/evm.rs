@@ -1,13 +1,10 @@
 use {
     super::{
-        AssetNamespaceType, BuildPosTxError, BuildTransactionParams, BuildTransactionResult, 
-        TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus, ValidatedTransactionParams,
+        AssetNamespaceType, BuildPosTxError, BuildTransactionParams, BuildTransactionResult,
+        TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
+        ValidatedTransactionParams,
     },
-    crate::{
-        analytics::MessageSource,
-        state::AppState,
-        utils::crypto::Caip2ChainId,
-    },
+    crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::{
         primitives::{utils::parse_units, Address, TxHash, U256},
         providers::{Provider, ProviderBuilder},
@@ -46,10 +43,7 @@ impl AssetNamespaceType for AssetNamespace {
     }
 }
 
-
 pub struct EvmTransactionBuilder;
-
-
 
 #[derive(Debug)]
 struct EvmTxBuilder {
@@ -165,7 +159,7 @@ impl TransactionBuilder for EvmTransactionBuilder {
         project_id: String,
         params: BuildTransactionParams,
     ) -> Result<BuildTransactionResult, BuildPosTxError> {
-        let validated_params: ValidatedTransactionParams<AssetNamespace> = 
+        let validated_params: ValidatedTransactionParams<AssetNamespace> =
             ValidatedTransactionParams::validate_params(&params)?;
 
         let builder = EvmTxBuilder::new(

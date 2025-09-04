@@ -5,13 +5,15 @@ pub mod solana;
 use {
     crate::{
         state::AppState,
-        utils::crypto::{Caip2ChainId, CryptoUitlsError, disassemble_caip10, Caip19Asset, CaipNamespaces},
+        utils::crypto::{
+            disassemble_caip10, Caip19Asset, Caip2ChainId, CaipNamespaces, CryptoUitlsError,
+        },
     },
     axum::extract::State,
     base64::{engine::general_purpose, DecodeError, Engine as _},
     serde::{Deserialize, Serialize},
     serde_json::Value,
-    std::{convert::TryFrom, fmt::Display, sync::Arc, str::FromStr},
+    std::{convert::TryFrom, fmt::Display, str::FromStr, sync::Arc},
     strum_macros::EnumString,
     thiserror::Error,
     uuid::Uuid,
@@ -257,8 +259,12 @@ impl<T: AssetNamespaceType> ValidatedTransactionParams<T> {
             ));
         }
 
-        let namespace = T::from_str(asset.asset_namespace())
-            .map_err(|_| BuildPosTxError::Validation(format!("Invalid asset namespace: {}", asset.asset_namespace())))?;
+        let namespace = T::from_str(asset.asset_namespace()).map_err(|_| {
+            BuildPosTxError::Validation(format!(
+                "Invalid asset namespace: {}",
+                asset.asset_namespace()
+            ))
+        })?;
 
         Ok(Self {
             asset,

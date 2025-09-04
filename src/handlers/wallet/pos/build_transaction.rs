@@ -4,7 +4,8 @@ use {
         TransactionBuilder,
     },
     crate::{
-        handlers::wallet::pos::{evm::EvmTransactionBuilder, solana::SolanaTransactionBuilder}, state::AppState,
+        handlers::wallet::pos::{evm::EvmTransactionBuilder, solana::SolanaTransactionBuilder},
+        state::AppState,
         utils::crypto::Caip19Asset,
     },
     axum::extract::State,
@@ -24,11 +25,7 @@ pub async fn handler(
         .map_err(|e| BuildPosTxError::Validation(format!("Invalid namespace: {e}")))?;
 
     match namespace {
-        SupportedNamespaces::Eip155 => {
-            EvmTransactionBuilder
-                .build(state, project_id, params)
-                .await
-        }
+        SupportedNamespaces::Eip155 => EvmTransactionBuilder.build(state, project_id, params).await,
         SupportedNamespaces::Solana => {
             SolanaTransactionBuilder
                 .build(state, project_id, params)
