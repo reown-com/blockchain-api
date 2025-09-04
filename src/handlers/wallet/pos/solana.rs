@@ -6,6 +6,7 @@ use {
     crate::{
         state::AppState,
         analytics::MessageSource,
+        utils::crypto::Caip2ChainId,
     },
     async_trait::async_trait,
     axum::extract::State,
@@ -25,9 +26,11 @@ use {
     },
     std::{str::FromStr, sync::Arc},
     strum_macros::{EnumString},
+    tracing::debug,
 };
 
 const SOLANA_RPC_METHOD: &str = "solana_signAndSendTransaction";
+const SPL_TOKEN_2022_ID: &str = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
 const BASE_URL: &str = "https://rpc.walletconnect.org/v1";
 
 #[derive(Debug, Clone, PartialEq, EnumString)]
@@ -79,15 +82,14 @@ async fn build_spl_transfer(params: ValidatedTransactionParams<AssetNamespace>, 
     let mint_pubkey = Pubkey::from_str(params.asset.asset_reference())
         .map_err(|e| BuildPosTxError::Validation(format!("Invalid token mint address: {}", e)))?;
     
+    let (decimals, token_program_id) = get_token_decimals(&mint_pubkey, params.asset.chain_id(), project_id).await?;
+    let amount_lamports = parse_token_amount(amount, decimals)?;
+    
     let sender_ata = get_associated_token_address(&sender_pubkey, &mint_pubkey);
     let recipient_ata = get_associated_token_address(&recipient_pubkey, &mint_pubkey);
     
-    // Fetch token decimals from the mint account
-    let decimals = get_token_decimals(&mint_pubkey, params.asset.chain_id(), project_id).await?;
-    let amount_lamports = parse_token_amount(amount, decimals)?;
-    
     let transfer_instruction = transfer_checked(
-        &spl_token::id(),
+        &token_program_id,
         &sender_ata,
         &mint_pubkey,
         &recipient_ata,
@@ -124,9 +126,9 @@ async fn build_spl_transfer(params: ValidatedTransactionParams<AssetNamespace>, 
 
 async fn get_token_decimals(
     mint_pubkey: &Pubkey, 
-    chain_id: &crate::utils::crypto::Caip2ChainId,
+    chain_id: &Caip2ChainId,
     project_id: &str
-) -> Result<u8, BuildPosTxError> {
+) -> Result<(u8, Pubkey), BuildPosTxError> {
     let rpc_client = create_rpc_client(chain_id, project_id)?;
     
     let mint_account = rpc_client
@@ -135,12 +137,33 @@ async fn get_token_decimals(
         .map_err(|e| BuildPosTxError::Internal(format!("Failed to fetch mint account: {}", e)))?
         .value
         .ok_or_else(|| BuildPosTxError::Validation("Mint account not found".to_string()))?;
+
+    let token_program_id = mint_account.owner;
+    let is_spl_token = token_program_id == spl_token::id();
     
-    
-    let mint_data = Mint::unpack_from_slice(&mint_account.data)
-        .map_err(|e| BuildPosTxError::Internal(format!("Failed to parse mint data: {}", e)))?;
-    
-    Ok(mint_data.decimals)
+    let spl_token_2022_id = Pubkey::from_str(SPL_TOKEN_2022_ID)
+        .map_err(|_| BuildPosTxError::Internal("Invalid SPL Token-2022 program ID".to_string()))?;
+    let is_spl_token_2022 = token_program_id == spl_token_2022_id;
+
+    if !is_spl_token && !is_spl_token_2022 {
+        if mint_account.data.len() < Mint::LEN {
+            return Err(BuildPosTxError::Validation(format!(
+                "Invalid mint account owner: {}. Expected SPL Token program.", 
+                mint_account.owner
+            )));
+        }
+    }
+
+    match Mint::unpack_from_slice(&mint_account.data[..Mint::LEN]) {
+        Ok(mint_data) => {
+            debug!("Successfully parsed mint data. Decimals: {}", mint_data.decimals);
+            return Ok((mint_data.decimals, token_program_id));
+        }
+        Err(e) => {
+            debug!("Failed to parse as SPL Token mint: {}", e);
+            return Err(BuildPosTxError::Internal(format!("Failed to parse as SPL Token mint: {}", e)));
+        }
+    }
 }
 
 fn create_rpc_client(
