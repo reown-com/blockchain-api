@@ -169,7 +169,7 @@ async fn get_token_decimals(
         .map_err(|_| BuildPosTxError::Internal("Invalid SPL Token-2022 program ID".to_string()))?;
     let is_spl_token_2022 = token_program_id == spl_token_2022_id;
 
-    if !is_spl_token && !is_spl_token_2022 && mint_account.data.len() < Mint::LEN {
+    if (!is_spl_token && !is_spl_token_2022) || mint_account.data.len() < Mint::LEN {
         return Err(BuildPosTxError::Validation(format!(
             "Invalid mint account owner: {}. Expected SPL Token program.",
             mint_account.owner
