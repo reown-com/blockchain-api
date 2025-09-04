@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.290.1 - 2025-09-04
+#### Bug Fixes
+- **(1Inch)** respond with the asset is not supported instead of provider is not available (#1219) - (d29f734) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.290.0 - 2025-09-04
 #### Features
 - pos solana (#1218) - (ae9e0c2) - Luka Isailovic
