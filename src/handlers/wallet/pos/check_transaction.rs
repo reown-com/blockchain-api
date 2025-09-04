@@ -3,7 +3,7 @@ use {
         CheckPosTxError, CheckTransactionParams, CheckTransactionResult, SupportedNamespaces,
         TransactionId, TransactionStatus,
     },
-    crate::handlers::wallet::pos::evm::get_transaction_status,
+    crate::handlers::wallet::pos::{evm::get_transaction_status, solana::get_transaction_status as solana_get_transaction_status},
     crate::state::AppState,
     axum::extract::State,
     std::{str::FromStr, sync::Arc},
@@ -43,9 +43,27 @@ pub async fn handler(
                     check_in: None,
                 }),
             }
+        },
+        SupportedNamespaces::Solana => {
+            let status = solana_get_transaction_status(
+                state,
+                &project_id,
+                &params.send_result,
+                transaction_id.chain_id(),
+            )
+            .await
+            .map_err(|e| CheckPosTxError::Validation(e.to_string()))?;
+
+            match status {
+                TransactionStatus::Pending => Ok(CheckTransactionResult {
+                    status,
+                    check_in: Some(DEFAULT_CHECK_IN),
+                }),
+                _ => Ok(CheckTransactionResult {
+                    status,
+                    check_in: None,
+                }),
+            }
         }
-        _ => Err(CheckPosTxError::Validation(
-            "Unsupported namespace".to_string(),
-        )),
     }
 }
