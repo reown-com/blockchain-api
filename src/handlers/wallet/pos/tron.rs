@@ -104,7 +104,7 @@ async fn build_trx20_transfer(
     let body = serde_json::json!({
         "owner_address": owner_address,
         "contract_address": contract_address,
-        "function_selector": "approve(address,uint256)",
+        "function_selector": "transfer(address,uint256)",
         "parameter": params_hex,
         "fee_limit": DEFAULT_FEE_LIMIT,
         "call_value": 0,
@@ -158,12 +158,110 @@ fn parse_token_amount(amount: &str) -> Result<U256, BuildPosTxError> {
 }
 
 pub async fn get_transaction_status(
-    _state: State<Arc<AppState>>,
+    State(state): State<Arc<AppState>>,
     _project_id: &str,
-    _signature: &str,
+    response: &str,
     _chain_id: &Caip2ChainId,
 ) -> Result<TransactionStatus, BuildPosTxError> {
-    Ok(TransactionStatus::Pending)
+    let signed_tx: serde_json::Value = serde_json::from_str(response)
+        .map_err(|e| BuildPosTxError::Validation(format!("Invalid wallet response: {}", e)))?;
+
+    let txid = signed_tx
+        .get("txID")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| BuildPosTxError::Validation("Missing txID in wallet response".to_string()))?;
+
+    let get_tx_url = format!("{}/wallet/gettransactionbyid", TRON_BASE_URL);
+    let get_tx_body = serde_json::json!({ "value": txid });
+    let existing_tx: serde_json::Value = state
+        .http_client
+        .post(&get_tx_url)
+        .json(&get_tx_body)
+        .send()
+        .await
+        .map_err(|e| BuildPosTxError::Internal(format!("Failed to send request: {}", e)))?
+        .error_for_status()
+        .map_err(|e| BuildPosTxError::Internal(format!("HTTP error: {}", e)))?
+        .json()
+        .await
+        .map_err(|e| BuildPosTxError::Internal(format!("Failed to parse response: {}", e)))?;
+
+    let already_broadcasted = match &existing_tx {
+        serde_json::Value::Object(map) => !map.is_empty(),
+        _ => false,
+    };
+
+    if !already_broadcasted {
+        let broadcast_url = format!("{}/wallet/broadcasttransaction", TRON_BASE_URL);
+        let broadcast_resp: serde_json::Value = state
+            .http_client
+            .post(&broadcast_url)
+            .json(&signed_tx)
+            .send()
+            .await
+            .map_err(|e| BuildPosTxError::Internal(format!("Failed to send request: {}", e)))?
+            .error_for_status()
+            .map_err(|e| BuildPosTxError::Internal(format!("HTTP error: {}", e)))?
+            .json()
+            .await
+            .map_err(|e| BuildPosTxError::Internal(format!("Failed to parse response: {}", e)))?;
+
+        debug!("tron broadcast resp: {:?}", broadcast_resp);
+
+        let ok = broadcast_resp.get("result").and_then(|v| v.as_bool()).unwrap_or(false);
+        if !ok {
+            let code = broadcast_resp
+                .get("code")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let message = broadcast_resp
+                .get("message")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            return Err(BuildPosTxError::Internal(format!(
+                "Broadcast failed: {} {}",
+                code, message
+            )));
+        }
+
+        return Ok(TransactionStatus::Pending);
+    }
+
+    let info_url = format!("{}/wallet/gettransactioninfobyid", TRON_BASE_URL);
+    let info_body = serde_json::json!({ "value": txid });
+    let info_resp: serde_json::Value = state
+        .http_client
+        .post(&info_url)
+        .json(&info_body)
+        .send()
+        .await
+        .map_err(|e| BuildPosTxError::Internal(format!("Failed to send request: {}", e)))?
+        .error_for_status()
+        .map_err(|e| BuildPosTxError::Internal(format!("HTTP error: {}", e)))?
+        .json()
+        .await
+        .map_err(|e| BuildPosTxError::Internal(format!("Failed to parse response: {}", e)))?;
+
+    debug!("tron tx info resp: {:?}", info_resp);
+
+    match &info_resp {
+        serde_json::Value::Object(map) if map.is_empty() => Ok(TransactionStatus::Pending),
+        serde_json::Value::Object(_) => {
+            if let Some(receipt) = info_resp.get("receipt") {
+                if let Some(result) = receipt.get("result").and_then(|v| v.as_str()) {
+                    return match result {
+                        "SUCCESS" => Ok(TransactionStatus::Confirmed),
+                        _ => Ok(TransactionStatus::Failed),
+                    };
+                }
+            }
+            if info_resp.get("blockNumber").is_some() {
+                return Ok(TransactionStatus::Confirmed);
+            }
+            Ok(TransactionStatus::Pending)
+        }
+        _ => Ok(TransactionStatus::Pending),
+    }
 }
 
 fn tron_base58_to_eth_address(b58: &str) -> Result<EthAddress, BuildPosTxError> {
