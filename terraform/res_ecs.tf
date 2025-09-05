@@ -88,10 +88,10 @@ module "ecs" {
   proxy_skip_quota_chains = var.proxy_skip_quota_chains
 
   # Project Registry
-  registry_api_endpoint   = var.registry_api_endpoint
-  registry_api_auth_token = var.registry_api_auth_token
-  project_cache_ttl       = var.project_cache_ttl
-
+  registry_api_endpoint        = var.registry_api_endpoint
+  registry_api_auth_token      = var.registry_api_auth_token
+  project_cache_ttl            = var.project_cache_ttl
+  registry_circuit_cooldown_ms = var.registry_circuit_cooldown_ms
   # Rate Limiting
   rate_limiting_max_tokens      = var.rate_limiting_max_tokens
   rate_limiting_refill_interval = var.rate_limiting_refill_interval

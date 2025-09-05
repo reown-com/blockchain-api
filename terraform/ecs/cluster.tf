@@ -121,6 +121,7 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_REGISTRY_API_URL", value = var.registry_api_endpoint },
         { name = "RPC_PROXY_REGISTRY_API_AUTH_TOKEN", value = var.registry_api_auth_token },
         { name = "RPC_PROXY_REGISTRY_PROJECT_DATA_CACHE_TTL", value = tostring(var.project_cache_ttl) },
+        { name = "RPC_PROXY_REGISTRY_CIRCUIT_COOLDOWN_MS", value = tostring(var.registry_circuit_cooldown_ms) },
 
         { name = "RPC_PROXY_STORAGE_REDIS_MAX_CONNECTIONS", value = tostring(var.redis_max_connections) },
         { name = "RPC_PROXY_STORAGE_PROJECT_DATA_REDIS_ADDR_READ", value = "redis://${var.project_cache_endpoint_read}/0" },

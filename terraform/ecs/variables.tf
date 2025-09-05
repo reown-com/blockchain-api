@@ -325,6 +325,11 @@ variable "project_cache_ttl" {
   type        = number
 }
 
+variable "registry_circuit_cooldown_ms" {
+  description = "Circuit breaker cooldown in milliseconds for registry failures"
+  type        = number
+}
+
 #-------------------------------------------------------------------------------
 # Analytics
 

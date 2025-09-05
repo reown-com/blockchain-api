@@ -149,6 +149,7 @@ mod test {
             ("RPC_PROXY_REGISTRY_API_URL", "API_URL"),
             ("RPC_PROXY_REGISTRY_API_AUTH_TOKEN", "API_AUTH_TOKEN"),
             ("RPC_PROXY_REGISTRY_PROJECT_DATA_CACHE_TTL", "345"),
+            ("RPC_PROXY_REGISTRY_CIRCUIT_COOLDOWN_MS", "1000"),
             // Storage config.
             ("RPC_PROXY_STORAGE_REDIS_MAX_CONNECTIONS", "456"),
             (
@@ -297,6 +298,7 @@ mod test {
                     api_url: Some("API_URL".to_owned()),
                     api_auth_token: Some("API_AUTH_TOKEN".to_owned()),
                     project_data_cache_ttl: 345,
+                    circuit_cooldown_ms: 1_000,
                 },
                 storage: project::storage::Config {
                     redis_max_connections: 456,
