@@ -274,7 +274,7 @@ async fn build_trx20_transfer(
     let params_hex = &hex::encode(&data[4..]);
 
     let owner_address = tron_b58_to_hex41(&params.sender_address)?;
-    let contract_address = tron_b58_to_hex41(&params.asset.asset_reference())?;
+    let contract_address = tron_b58_to_hex41(params.asset.asset_reference())?;
 
     let trigger_req = TronTriggerSmartContractRequest {
         owner_address,
@@ -387,7 +387,7 @@ fn tron_b58_to_hex41(b58: &str) -> Result<String, BuildPosTxError> {
             "invalid TRON address".to_string(),
         ));
     }
-    Ok(format!("{}", hex::encode(bytes)))
+    Ok(hex::encode(bytes).to_string())
 }
 
 pub async fn check_transaction(
