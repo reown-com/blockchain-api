@@ -12,13 +12,7 @@ use {
         CpuRefreshKind, MemoryRefreshKind, RefreshKind, System, MINIMUM_CPU_UPDATE_INTERVAL,
     },
     tracing::{error, instrument},
-    wc::metrics::{
-        otel::{
-            self,
-            metrics::{Counter, Histogram, ObservableGauge},
-        },
-        ServiceMetrics,
-    },
+    wc::metrics::{counter, Histogram, ObservableGauge, ServiceMetrics, StringLabel},
 };
 
 #[derive(strum_macros::Display)]
@@ -37,66 +31,38 @@ pub enum ChainAbstractionNoBridgingNeededType {
 
 #[derive(Debug)]
 pub struct Metrics {
-    pub rpc_call_counter: Counter<u64>,
-    pub rpc_call_retries: Histogram<u64>,
-    pub rpc_cached_call_counter: Counter<u64>,
-    pub chain_latency_tracker: Histogram<f64>, // Chain latency
-    pub http_call_counter: Counter<u64>,
-    pub provider_finished_call_counter: Counter<u64>,
-    pub provider_failed_call_counter: Counter<u64>,
-    pub no_providers_for_chain_counter: Counter<u64>, // Chain availability
-    pub found_provider_for_chain_counter: Counter<u64>, // Chain availability
-    pub http_latency_tracker: Histogram<f64>,
-    pub http_external_latency_tracker: Histogram<f64>,
-    pub rejected_project_counter: Counter<u64>,
-    pub quota_limited_project_counter: Counter<u64>,
-    pub rate_limited_call_counter: Counter<u64>,
-    pub provider_status_code_counter: Counter<u64>,
-    pub provider_internal_error_code_counter: Counter<u64>,
-    pub weights_value_recorder: Histogram<u64>,
-    pub identity_lookup_latency_tracker: Histogram<f64>,
-    pub identity_lookup_counter: Counter<u64>,
-    pub identity_lookup_success_counter: Counter<u64>,
-    pub identity_lookup_cache_latency_tracker: Histogram<f64>,
-    pub identity_lookup_name_counter: Counter<u64>,
-    pub identity_lookup_name_success_counter: Counter<u64>,
-    pub identity_lookup_name_latency_tracker: Histogram<f64>,
-    pub identity_lookup_avatar_counter: Counter<u64>,
-    pub identity_lookup_avatar_success_counter: Counter<u64>,
-    pub identity_lookup_avatar_latency_tracker: Histogram<f64>,
-    pub identity_lookup_avatar_present_counter: Counter<u64>,
-    pub identity_lookup_name_present_counter: Counter<u64>,
-    pub websocket_connection_counter: Counter<u64>,
-    pub history_lookup_counter: Counter<u64>,
-    pub history_lookup_success_counter: Counter<u64>,
-    pub history_lookup_latency_tracker: Histogram<f64>,
-    pub balance_lookup_retries: Histogram<u64>,
+    pub rpc_call_retries: Histogram,
+    pub chain_latency_tracker: Histogram, // Chain latency
+    pub http_latency_tracker: Histogram,
+    pub http_external_latency_tracker: Histogram,
+    pub weights_value_recorder: Histogram,
+    pub identity_lookup_latency_tracker: Histogram,
+    pub identity_lookup_cache_latency_tracker: Histogram,
+    pub identity_lookup_name_latency_tracker: Histogram,
+    pub identity_lookup_avatar_latency_tracker: Histogram,
+    pub history_lookup_latency_tracker: Histogram,
+    pub balance_lookup_retries: Histogram,
 
     // Generic Non-RPC providers caching
-    pub non_rpc_providers_cache_latency_tracker: Histogram<f64>,
+    pub non_rpc_providers_cache_latency_tracker: Histogram,
 
     // System metrics
-    pub cpu_usage: Histogram<f64>,
-    pub memory_total: Histogram<f64>,
-    pub memory_used: Histogram<f64>,
+    pub cpu_usage: Histogram,
+    pub memory_total: Histogram,
+    pub memory_used: Histogram,
 
     // Rate limiting
-    pub rate_limited_entries_counter: Histogram<u64>,
-    pub rate_limiting_latency_tracker: Histogram<f64>,
-    pub rate_limited_responses_counter: Counter<u64>,
+    pub rate_limited_entries_counter: Histogram,
+    pub rate_limiting_latency_tracker: Histogram,
 
     // Account names
     pub account_names_count: ObservableGauge<u64>,
 
     // IRN client
-    pub irn_latency_tracker: Histogram<f64>,
+    pub irn_latency_tracker: Histogram,
 
     // Chain Abstracton
-    pub ca_gas_estimation_tracker: Histogram<f64>,
-    pub ca_no_routes_found_counter: Counter<u64>,
-    pub ca_routes_found_counter: Counter<u64>,
-    pub ca_insufficient_funds_counter: Counter<u64>,
-    pub ca_no_bridging_needed_counter: Counter<u64>,
+    pub ca_gas_estimation_tracker: Histogram,
 }
 
 impl Metrics {
@@ -348,38 +314,15 @@ impl Metrics {
             .init();
 
         Metrics {
-            rpc_call_counter,
             rpc_call_retries,
-            rpc_cached_call_counter,
             chain_latency_tracker,
-            http_call_counter,
             http_external_latency_tracker,
             http_latency_tracker,
-            rejected_project_counter,
-            quota_limited_project_counter,
-            rate_limited_call_counter,
-            provider_failed_call_counter,
-            provider_finished_call_counter,
-            provider_status_code_counter,
-            provider_internal_error_code_counter,
-            no_providers_for_chain_counter,
-            found_provider_for_chain_counter,
             weights_value_recorder,
-            identity_lookup_counter,
-            identity_lookup_success_counter,
             identity_lookup_latency_tracker,
             identity_lookup_cache_latency_tracker,
-            identity_lookup_name_counter,
-            identity_lookup_name_success_counter,
             identity_lookup_name_latency_tracker,
-            identity_lookup_avatar_counter,
-            identity_lookup_avatar_success_counter,
             identity_lookup_avatar_latency_tracker,
-            identity_lookup_name_present_counter,
-            identity_lookup_avatar_present_counter,
-            websocket_connection_counter,
-            history_lookup_counter,
-            history_lookup_success_counter,
             history_lookup_latency_tracker,
             balance_lookup_retries,
             non_rpc_providers_cache_latency_tracker,
@@ -389,58 +332,42 @@ impl Metrics {
             account_names_count,
             irn_latency_tracker,
             rate_limiting_latency_tracker,
-            rate_limited_entries_counter,
-            rate_limited_responses_counter,
             ca_gas_estimation_tracker,
-            ca_no_routes_found_counter,
-            ca_routes_found_counter,
-            ca_insufficient_funds_counter,
-            ca_no_bridging_needed_counter,
         }
     }
 }
 
 impl Metrics {
     pub fn add_rpc_call(&self, chain_id: String, provider_kind: &ProviderKind) {
-        self.rpc_call_counter.add(
-            1,
-            &[
-                otel::KeyValue::new("chain_id", chain_id),
-                otel::KeyValue::new("provider", provider_kind.to_string()),
-            ],
-        );
+        counter!("rpc_call_counter", 
+            StringLabel<"chain_id", String> => &chain_id, 
+            StringLabel<"provider", String> => &provider_kind.to_string())
+        .increment(1);
     }
 
     pub fn add_rpc_call_retries(&self, retires_count: u64, chain_id: String) {
-        self.rpc_call_retries
-            .record(retires_count, &[otel::KeyValue::new("chain_id", chain_id)])
+        counter!("rpc_call_retries", StringLabel<"chain_id", String> => &chain_id)
+            .increment(retires_count);
     }
 
     pub fn add_rpc_cached_call(&self, chain_id: String, method: String) {
-        self.rpc_cached_call_counter.add(
-            1,
-            &[
-                otel::KeyValue::new("chain_id", chain_id),
-                otel::KeyValue::new("method", method),
-            ],
-        );
+        counter!("rpc_cached_call_counter", 
+            StringLabel<"chain_id", String> => &chain_id, 
+            StringLabel<"method", String> => &method)
+        .increment(1);
     }
 
     pub fn add_balance_lookup_retries(&self, retry_count: u64, namespace: CaipNamespaces) {
-        self.balance_lookup_retries.record(
-            retry_count,
-            &[otel::KeyValue::new("namespace", namespace.to_string())],
-        )
+        counter!("balance_lookup_retries", 
+            StringLabel<"namespace", String> => &namespace.to_string())
+        .increment(retry_count);
     }
 
     pub fn add_http_call(&self, code: u16, route: String) {
-        self.http_call_counter.add(
-            1,
-            &[
-                otel::KeyValue::new("code", i64::from(code)),
-                otel::KeyValue::new("route", route),
-            ],
-        );
+        counter!("http_call_counter", 
+            StringLabel<"code", String> => &code.to_string(), 
+            StringLabel<"route", String> => &route)
+        .increment(1);
     }
 
     pub fn add_http_latency(&self, code: u16, route: String, latency: f64) {
@@ -479,42 +406,33 @@ impl Metrics {
 
     #[tracing::instrument(skip(self), level = "debug")]
     pub fn add_rejected_project(&self) {
-        self.rejected_project_counter.add(1, &[])
+        counter!("rejected_project_counter").increment(1);
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
     pub fn add_quota_limited_project(&self) {
-        self.quota_limited_project_counter.add(1, &[])
+        counter!("quota_limited_project_counter").increment(1);
     }
 
     pub fn add_rate_limited_call(&self, provider: &dyn RpcProvider, project_id: String) {
-        self.rate_limited_call_counter.add(
-            1,
-            &[
-                otel::KeyValue::new("provider_kind", provider.provider_kind().to_string()),
-                otel::KeyValue::new("project_id", project_id),
-            ],
-        )
+        counter!("rate_limited_call_counter", 
+            StringLabel<"provider_kind", String> => &provider.provider_kind().to_string(), 
+            StringLabel<"project_id", String> => &project_id)
+        .increment(1);
     }
 
     pub fn add_failed_provider_call(&self, chain_id: String, provider: &dyn RpcProvider) {
-        self.provider_failed_call_counter.add(
-            1,
-            &[
-                otel::KeyValue::new("chain_id", chain_id),
-                otel::KeyValue::new("provider", provider.provider_kind().to_string()),
-            ],
-        )
+        counter!("provider_failed_call_counter", 
+            StringLabel<"chain_id", String> => &chain_id, 
+            StringLabel<"provider", String> => &provider.provider_kind().to_string())
+        .increment(1);
     }
 
     pub fn add_finished_provider_call(&self, chain_id: String, provider: &dyn RpcProvider) {
-        self.provider_finished_call_counter.add(
-            1,
-            &[
-                otel::KeyValue::new("chain_id", chain_id),
-                otel::KeyValue::new("provider", provider.provider_kind().to_string()),
-            ],
-        )
+        counter!("provider_finished_call_counter", 
+            StringLabel<"chain_id", String> => &chain_id, 
+            StringLabel<"provider", String> => &provider.provider_kind().to_string())
+        .increment(1);
     }
 
     pub fn add_status_code_for_provider(
@@ -524,18 +442,12 @@ impl Metrics {
         chain_id: Option<String>,
         endpoint: Option<String>,
     ) {
-        let mut attributes = vec![
-            otel::KeyValue::new("provider", provider_kind.to_string()),
-            otel::KeyValue::new("status_code", format!("{status}")),
-        ];
-        if let Some(chain_id) = chain_id {
-            attributes.push(otel::KeyValue::new("chain_id", chain_id));
-        }
-        if let Some(endpoint) = endpoint {
-            attributes.push(otel::KeyValue::new("endpoint", endpoint));
-        }
-
-        self.provider_status_code_counter.add(1, &attributes)
+        counter!("provider_status_code_counter", 
+            StringLabel<"provider", String> => &provider_kind.to_string(), 
+            StringLabel<"status_code", String> => &status.to_string(), 
+            StringLabel<"chain_id", String> => &chain_id.unwrap_or_default(), 
+            StringLabel<"endpoint", String> => &endpoint.unwrap_or_default())
+        .increment(1);
     }
 
     pub fn add_internal_error_code_for_provider(
@@ -544,14 +456,11 @@ impl Metrics {
         chain_id: String,
         code: i32,
     ) {
-        let attributes = vec![
-            otel::KeyValue::new("provider", provider_kind.to_string()),
-            otel::KeyValue::new("chain_id", chain_id),
-            otel::KeyValue::new("code", format!("{code}")),
-        ];
-
-        self.provider_internal_error_code_counter
-            .add(1, &attributes)
+        counter!("provider_internal_error_code_counter", 
+            StringLabel<"provider", String> => &provider_kind.to_string(), 
+            StringLabel<"chain_id", String> => &chain_id, 
+            StringLabel<"code", String> => &code.to_string())
+        .increment(1);
     }
 
     pub fn add_latency_and_status_code_for_provider(
@@ -582,18 +491,13 @@ impl Metrics {
     }
 
     pub fn add_no_providers_for_chain(&self, chain_id: String) {
-        self.no_providers_for_chain_counter
-            .add(1, &[otel::KeyValue::new("chain_id", chain_id)]);
+        counter!("no_providers_for_chain_counter", StringLabel<"chain_id", String> => &chain_id)
+            .increment(1);
     }
 
     pub fn add_found_provider_for_chain(&self, chain_id: String, provider_kind: &ProviderKind) {
-        self.found_provider_for_chain_counter.add(
-            1,
-            &[
-                otel::KeyValue::new("chain_id", chain_id),
-                otel::KeyValue::new("provider", provider_kind.to_string()),
-            ],
-        );
+        counter!("found_provider_for_chain_counter", StringLabel<"chain_id", String> => &chain_id, StringLabel<"provider", String> => &provider_kind.to_string())
+            .increment(1);
     }
 
     pub fn add_chain_latency(
@@ -615,12 +519,12 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup(&self) {
-        self.identity_lookup_counter.add(1, &[]);
+        counter!("identity_lookup_counter").increment(1);
     }
 
     pub fn add_identity_lookup_success(&self, source: &IdentityLookupSource) {
-        self.identity_lookup_success_counter
-            .add(1, &[otel::KeyValue::new("source", source.as_str())]);
+        counter!("identity_lookup_success_counter", StringLabel<"source", String> => &source.as_str())
+            .increment(1);
     }
 
     pub fn add_identity_lookup_latency(&self, latency: Duration, source: &IdentityLookupSource) {
@@ -641,11 +545,11 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup_name(&self) {
-        self.identity_lookup_name_counter.add(1, &[]);
+        counter!("identity_lookup_name_counter").increment(1);
     }
 
     pub fn add_identity_lookup_name_success(&self) {
-        self.identity_lookup_name_success_counter.add(1, &[]);
+        counter!("identity_lookup_name_success_counter").increment(1);
     }
 
     pub fn add_identity_lookup_name_latency(&self, start: SystemTime) {
@@ -659,11 +563,11 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup_avatar(&self) {
-        self.identity_lookup_avatar_counter.add(1, &[]);
+        counter!("identity_lookup_avatar_counter").increment(1);
     }
 
     pub fn add_identity_lookup_avatar_success(&self) {
-        self.identity_lookup_avatar_success_counter.add(1, &[]);
+        counter!("identity_lookup_avatar_success_counter").increment(1);
     }
 
     pub fn add_identity_lookup_avatar_latency(&self, start: SystemTime) {
@@ -677,26 +581,26 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup_name_present(&self) {
-        self.identity_lookup_name_present_counter.add(1, &[]);
+        counter!("identity_lookup_name_present_counter").increment(1);
     }
 
     pub fn add_identity_lookup_avatar_present(&self) {
-        self.identity_lookup_avatar_present_counter.add(1, &[]);
+        counter!("identity_lookup_avatar_present_counter").increment(1);
     }
 
     pub fn add_websocket_connection(&self, chain_id: String) {
-        self.websocket_connection_counter
-            .add(1, &[otel::KeyValue::new("chain_id", chain_id)]);
+        counter!("websocket_connection_counter", StringLabel<"chain_id", String> => &chain_id)
+            .increment(1);
     }
 
     pub fn add_history_lookup(&self, provider: &ProviderKind) {
-        self.history_lookup_counter
-            .add(1, &[otel::KeyValue::new("provider", provider.to_string())]);
+        counter!("history_lookup_counter", StringLabel<"provider", String> => &provider.to_string())
+            .increment(1);
     }
 
     pub fn add_history_lookup_success(&self, provider: &ProviderKind) {
-        self.history_lookup_success_counter
-            .add(1, &[otel::KeyValue::new("provider", provider.to_string())]);
+        counter!("history_lookup_success_counter", StringLabel<"provider", String> => &provider.to_string())
+            .increment(1);
     }
 
     pub fn add_history_lookup_latency(&self, provider: &ProviderKind, latency: Duration) {
@@ -744,7 +648,7 @@ impl Metrics {
     }
 
     pub fn add_rate_limited_response(&self) {
-        self.rate_limited_responses_counter.add(1, &[]);
+        counter!("rate_limited_responses_counter").increment(1);
     }
 
     pub fn add_irn_latency(&self, start: SystemTime, operation: OperationType) {
@@ -773,22 +677,20 @@ impl Metrics {
     }
 
     pub fn add_ca_no_routes_found(&self, route: String) {
-        self.ca_no_routes_found_counter
-            .add(1, &[otel::KeyValue::new("route", route)]);
+        counter!("ca_no_routes_found_counter", StringLabel<"route", String> => &route).increment(1);
     }
 
     pub fn add_ca_routes_found(&self, route: String) {
-        self.ca_no_routes_found_counter
-            .add(1, &[otel::KeyValue::new("route", route)]);
+        counter!("ca_routes_found_counter", StringLabel<"route", String> => &route).increment(1);
     }
 
     pub fn add_ca_insufficient_funds(&self) {
-        self.ca_insufficient_funds_counter.add(1, &[]);
+        counter!("ca_insufficient_funds_counter").increment(1);
     }
 
     pub fn add_ca_no_bridging_needed(&self, ca_type: ChainAbstractionNoBridgingNeededType) {
-        self.ca_no_bridging_needed_counter
-            .add(1, &[otel::KeyValue::new("type", ca_type.to_string())]);
+        counter!("ca_no_bridging_needed_counter", StringLabel<"type", String> => &ca_type.to_string())
+            .increment(1);
     }
 
     /// Gathering system CPU(s) and Memory usage metrics
