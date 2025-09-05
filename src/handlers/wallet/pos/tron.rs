@@ -1,7 +1,7 @@
 use {
     super::{
         AssetNamespaceType, BuildPosTxError, BuildTransactionParams, BuildTransactionResult,
-        TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
+        TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus, CheckTransactionResult,
         ValidatedTransactionParams,
     },
     crate::{state::AppState, utils::crypto::Caip2ChainId},
@@ -23,6 +23,7 @@ use {
 
 const TRON_SIGN_TRANSACTION_METHOD: &str = "tron_signTransaction";
 const DEFAULT_FEE_LIMIT: u64 = 200_000_000;
+const DEFAULT_CHECK_IN: usize = 400;
 
 static TRON_NETWORK_URL: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
     HashMap::from([
@@ -387,4 +388,23 @@ fn tron_b58_to_hex41(b58: &str) -> Result<String, BuildPosTxError> {
         ));
     }
     Ok(format!("{}", hex::encode(bytes)))
+}
+
+
+pub async fn check_transaction( state: State<Arc<AppState>>,
+    project_id: &str,
+    response: &str,
+    chain_id: &Caip2ChainId) -> Result<CheckTransactionResult, BuildPosTxError> {
+    let status = get_transaction_status(state, project_id, response, chain_id).await?;
+
+    match status {
+        TransactionStatus::Pending => Ok(CheckTransactionResult {
+            status,
+            check_in: Some(DEFAULT_CHECK_IN),
+        }),
+        _ => Ok(CheckTransactionResult {
+            status,
+            check_in: None,
+        }),
+    }
 }
