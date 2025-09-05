@@ -1,18 +1,17 @@
 use {
     super::{
         CheckPosTxError, CheckTransactionParams, CheckTransactionResult, SupportedNamespaces,
-        TransactionId, TransactionStatus,
+        TransactionId,
     },
     crate::handlers::wallet::pos::{
-        evm::get_transaction_status,
-        solana::get_transaction_status as solana_get_transaction_status,
+        evm::check_transaction as evm_check_transaction,
+        solana::check_transaction as solana_check_transaction,
+        tron::check_transaction as tron_check_transaction,
     },
     crate::state::AppState,
     axum::extract::State,
     std::{str::FromStr, sync::Arc},
 };
-
-const DEFAULT_CHECK_IN: usize = 1000;
 
 pub async fn handler(
     state: State<Arc<AppState>>,
@@ -26,47 +25,29 @@ pub async fn handler(
         .map_err(|e| CheckPosTxError::Validation(e.to_string()))?;
 
     match namespace {
-        SupportedNamespaces::Eip155 => {
-            let status = get_transaction_status(
-                state,
-                &project_id,
-                &params.send_result,
-                transaction_id.chain_id(),
-            )
-            .await
-            .map_err(|e| CheckPosTxError::Validation(e.to_string()))?;
-
-            match status {
-                TransactionStatus::Pending => Ok(CheckTransactionResult {
-                    status,
-                    check_in: Some(DEFAULT_CHECK_IN),
-                }),
-                _ => Ok(CheckTransactionResult {
-                    status,
-                    check_in: None,
-                }),
-            }
-        }
-        SupportedNamespaces::Solana => {
-            let status = solana_get_transaction_status(
-                state,
-                &project_id,
-                &params.send_result,
-                transaction_id.chain_id(),
-            )
-            .await
-            .map_err(|e| CheckPosTxError::Validation(e.to_string()))?;
-
-            match status {
-                TransactionStatus::Pending => Ok(CheckTransactionResult {
-                    status,
-                    check_in: Some(DEFAULT_CHECK_IN),
-                }),
-                _ => Ok(CheckTransactionResult {
-                    status,
-                    check_in: None,
-                }),
-            }
-        }
+        SupportedNamespaces::Eip155 => evm_check_transaction(
+            state,
+            &project_id,
+            &params.send_result,
+            transaction_id.chain_id(),
+        )
+        .await
+        .map_err(|e| CheckPosTxError::Validation(e.to_string())),
+        SupportedNamespaces::Solana => solana_check_transaction(
+            state,
+            &project_id,
+            &params.send_result,
+            transaction_id.chain_id(),
+        )
+        .await
+        .map_err(|e| CheckPosTxError::Validation(e.to_string())),
+        SupportedNamespaces::Tron => tron_check_transaction(
+            state,
+            &project_id,
+            &params.send_result,
+            transaction_id.chain_id(),
+        )
+        .await
+        .map_err(|e| CheckPosTxError::Validation(e.to_string())),
     }
 }

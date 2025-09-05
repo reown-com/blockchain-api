@@ -670,8 +670,22 @@ pub fn is_coin_type_supported(coin_type: u32) -> bool {
     ChainId::iter().any(|x| x as u64 == evm_chain_id as u64)
 }
 
+pub trait NamespaceValidator {
+    fn validate_address(&self, address: &str) -> bool;
+}
+
+impl NamespaceValidator for CaipNamespaces {
+    fn validate_address(&self, address: &str) -> bool {
+        is_address_valid_impl(address, self)
+    }
+}
+
 /// Check if the address is in correct format
 pub fn is_address_valid(address: &str, namespace: &CaipNamespaces) -> bool {
+    is_address_valid_impl(address, namespace)
+}
+
+fn is_address_valid_impl(address: &str, namespace: &CaipNamespaces) -> bool {
     match namespace {
         CaipNamespaces::Eip155 => {
             if !CAIP_ETH_ADDRESS_REGEX.is_match(address) {
@@ -1061,16 +1075,26 @@ pub fn disassemble_caip2(caip2: &str) -> Result<(CaipNamespaces, String), Crypto
     Ok((namespace, chain_id))
 }
 
-/// Disassemble CAIP-10 to namespace, chainId and address
+/// Disassemble CAIP-10 to namespace, chainId and address (with default CaipNamespaces)
 pub fn disassemble_caip10(
     caip10: &str,
 ) -> Result<(CaipNamespaces, String, String), CryptoUitlsError> {
+    disassemble_caip10_with_namespace::<CaipNamespaces>(caip10)
+}
+
+/// Disassemble CAIP-10 to namespace, chainId and address (generic version)
+pub fn disassemble_caip10_with_namespace<T>(
+    caip10: &str,
+) -> Result<(T, String, String), CryptoUitlsError>
+where
+    T: std::str::FromStr + Clone + NamespaceValidator,
+{
     let parts = caip10.split(':').collect::<Vec<&str>>();
     if parts.len() != 3 {
         return Err(CryptoUitlsError::WrongCaip10Format(caip10.into()));
     };
     let namespace = match parts.first() {
-        Some(namespace) => match namespace.parse::<CaipNamespaces>() {
+        Some(namespace) => match namespace.parse::<T>() {
             Ok(namespace) => namespace,
             Err(_) => return Err(CryptoUitlsError::WrongNamespace(caip10.into())),
         },
@@ -1083,7 +1107,7 @@ pub fn disassemble_caip10(
         .ok_or(CryptoUitlsError::WrongChainIdFormat(chain_id.clone()))?;
 
     let address = parts[2].to_string();
-    if !is_address_valid(&address, &namespace) {
+    if !namespace.validate_address(&address) {
         return Err(CryptoUitlsError::WrongAddressFormat(address.clone()));
     };
 

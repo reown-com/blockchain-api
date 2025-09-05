@@ -1,8 +1,8 @@
 use {
     super::{
         AssetNamespaceType, BuildPosTxError, BuildTransactionParams, BuildTransactionResult,
-        TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
-        ValidatedTransactionParams,
+        CheckTransactionResult, TransactionBuilder, TransactionId, TransactionRpc,
+        TransactionStatus, ValidatedTransactionParams,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::primitives::{utils::parse_units, U256},
@@ -27,6 +27,7 @@ use {
 const SOLANA_RPC_METHOD: &str = "solana_signAndSendTransaction";
 const SPL_TOKEN_2022_ID: &str = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
 const BASE_URL: &str = "https://rpc.walletconnect.org/v1";
+const DEFAULT_CHECK_IN: usize = 400;
 
 #[derive(Debug, Clone, PartialEq, EnumString)]
 #[strum(serialize_all = "lowercase")]
@@ -246,5 +247,25 @@ pub async fn get_transaction_status(
         }
         Some(None) => Ok(TransactionStatus::Pending),
         None => Ok(TransactionStatus::Pending),
+    }
+}
+
+pub async fn check_transaction(
+    state: State<Arc<AppState>>,
+    project_id: &str,
+    signature: &str,
+    chain_id: &Caip2ChainId,
+) -> Result<CheckTransactionResult, BuildPosTxError> {
+    let status = get_transaction_status(state, project_id, signature, chain_id).await?;
+
+    match status {
+        TransactionStatus::Pending => Ok(CheckTransactionResult {
+            status,
+            check_in: Some(DEFAULT_CHECK_IN),
+        }),
+        _ => Ok(CheckTransactionResult {
+            status,
+            check_in: None,
+        }),
     }
 }
