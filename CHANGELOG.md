@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.291.0 - 2025-09-05
+#### Features
+- **(o11y)** adding registry responses chart (#1220) - (f05f599) - Max Kalashnikoff | maksy.eth
+- exposing the registry fetching cooldown period to TFC (#1222) - (8594b10) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.290.1 - 2025-09-04
 #### Bug Fixes
 - **(1Inch)** respond with the asset is not supported instead of provider is not available (#1219) - (d29f734) - Max Kalashnikoff | maksy.eth
