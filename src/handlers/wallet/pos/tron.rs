@@ -370,7 +370,7 @@ fn compute_fee_limit(energy_required: u128, energy_fee: u128) -> Result<u64, Bui
 #[derive(Debug, Clone, PartialEq, EnumString)]
 #[strum(serialize_all = "lowercase")]
 pub enum AssetNamespace {
-    Trx20,
+    Trc20,
     Slip44,
 }
 
@@ -398,8 +398,8 @@ impl TransactionBuilder for TronTransactionBuilder {
             ValidatedTransactionParams::validate_params(&params)?;
 
         match validated_params.namespace {
-            AssetNamespace::Trx20 => {
-                build_trx20_transfer(state, validated_params, &params.amount, &project_id).await
+            AssetNamespace::Trc20 => {
+                build_trc20_transfer(state, validated_params, &params.amount, &project_id).await
             }
             _ => {
                 return Err(BuildPosTxError::Validation(
@@ -410,7 +410,7 @@ impl TransactionBuilder for TronTransactionBuilder {
     }
 }
 
-async fn build_trx20_transfer(
+async fn build_trc20_transfer(
     state: State<Arc<AppState>>,
     params: ValidatedTransactionParams<AssetNamespace>,
     amount: &str,
