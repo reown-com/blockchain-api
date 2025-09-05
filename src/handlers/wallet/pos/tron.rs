@@ -14,7 +14,7 @@ use {
     axum::extract::State,
     bs58, hex,
     once_cell::sync::Lazy,
-    serde::{Deserialize, Serialize},
+    serde::{de::DeserializeOwned, Deserialize, Serialize},
     std::collections::HashMap,
     std::sync::Arc,
     strum_macros::EnumString,
@@ -151,26 +151,64 @@ fn get_provider_url(chain_id: &Caip2ChainId) -> Result<String, BuildPosTxError> 
     }
 }
 
+async fn post_tron_request<TReq: Serialize, TResp: DeserializeOwned + 'static>(
+    state: State<Arc<AppState>>,
+    chain_id: &Caip2ChainId,
+    path: &str,
+    body: &TReq,
+) -> Result<TResp, BuildPosTxError> {
+    let base = get_provider_url(chain_id)?;
+    let url = format!("{}{}", base, path);
+    let resp = state
+        .http_client
+        .post(&url)
+        .json(body)
+        .send()
+        .await
+        .map_err(|e| {
+            BuildPosTxError::Internal(format!("Failed to send request on {}: {}", path, e))
+        })?
+        .error_for_status()
+        .map_err(|e| BuildPosTxError::Internal(format!("HTTP error on {}: {}", path, e)))?
+        .json::<TResp>()
+        .await
+        .map_err(|e| {
+            BuildPosTxError::Internal(format!("Failed to parse response from {}: {}", path, e))
+        })?;
+    Ok(resp)
+}
+
+async fn get_tron_request<TResp: DeserializeOwned + 'static>(
+    state: State<Arc<AppState>>,
+    chain_id: &Caip2ChainId,
+    path: &str,
+) -> Result<TResp, BuildPosTxError> {
+    let base = get_provider_url(chain_id)?;
+    let url = format!("{}{}", base, path);
+    let resp = state
+        .http_client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| {
+            BuildPosTxError::Internal(format!("Failed to send request on {}: {}", path, e))
+        })?
+        .error_for_status()
+        .map_err(|e| BuildPosTxError::Internal(format!("HTTP error on {}: {}", path, e)))?
+        .json::<TResp>()
+        .await
+        .map_err(|e| {
+            BuildPosTxError::Internal(format!("Failed to parse response from {}: {}", path, e))
+        })?;
+    Ok(resp)
+}
+
 async fn trigger_smart_contract(
     state: State<Arc<AppState>>,
     chain_id: &Caip2ChainId,
     req: &TriggerSmartContractRequest,
 ) -> Result<TriggerSmartContractResponse, BuildPosTxError> {
-    let base = get_provider_url(chain_id)?;
-    let url = format!("{}/wallet/triggersmartcontract", base);
-    let resp = state
-        .http_client
-        .post(&url)
-        .json(req)
-        .send()
-        .await
-        .map_err(|e| BuildPosTxError::Internal(format!("Failed to send request: {}", e)))?
-        .error_for_status()
-        .map_err(|e| BuildPosTxError::Internal(format!("HTTP error: {}", e)))?
-        .json::<TriggerSmartContractResponse>()
-        .await
-        .map_err(|e| BuildPosTxError::Internal(format!("Failed to parse response: {}", e)))?;
-    Ok(resp)
+    post_tron_request(state, chain_id, "/wallet/triggersmartcontract", req).await
 }
 
 async fn trigger_constant_contract(
@@ -178,21 +216,7 @@ async fn trigger_constant_contract(
     chain_id: &Caip2ChainId,
     req: &TriggerConstantContractRequest,
 ) -> Result<TriggerConstantContractResponse, BuildPosTxError> {
-    let base = get_provider_url(chain_id)?;
-    let url = format!("{}/wallet/triggerconstantcontract", base);
-    let resp = state
-        .http_client
-        .post(&url)
-        .json(req)
-        .send()
-        .await
-        .map_err(|e| BuildPosTxError::Internal(format!("Failed to send request: {}", e)))?
-        .error_for_status()
-        .map_err(|e| BuildPosTxError::Internal(format!("HTTP error: {}", e)))?
-        .json::<TriggerConstantContractResponse>()
-        .await
-        .map_err(|e| BuildPosTxError::Internal(format!("Failed to parse response: {}", e)))?;
-    Ok(resp)
+    post_tron_request(state, chain_id, "/wallet/triggerconstantcontract", req).await
 }
 
 async fn get_transaction_by_id(
@@ -200,23 +224,11 @@ async fn get_transaction_by_id(
     chain_id: &Caip2ChainId,
     txid: &str,
 ) -> Result<Option<GetTransactionByIdResponse>, BuildPosTxError> {
-    let base = get_provider_url(chain_id)?;
-    let url = format!("{}/wallet/gettransactionbyid", base);
     let body = GetByIdRequest {
         value: txid.to_string(),
     };
-    let resp = state
-        .http_client
-        .post(&url)
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| BuildPosTxError::Internal(format!("Failed to send request: {}", e)))?
-        .error_for_status()
-        .map_err(|e| BuildPosTxError::Internal(format!("HTTP error: {}", e)))?
-        .json::<GetTransactionByIdResponse>()
-        .await
-        .map_err(|e| BuildPosTxError::Internal(format!("Failed to parse response: {}", e)))?;
+    let resp: GetTransactionByIdResponse =
+        post_tron_request(state, chain_id, "/wallet/gettransactionbyid", &body).await?;
 
     if resp.tx_id.is_some() {
         Ok(Some(resp))
@@ -230,21 +242,7 @@ async fn broadcast_transaction(
     chain_id: &Caip2ChainId,
     tx: &SignedTransaction,
 ) -> Result<BroadcastTransactionResponse, BuildPosTxError> {
-    let base = get_provider_url(chain_id)?;
-    let url = format!("{}/wallet/broadcasttransaction", base);
-    let resp = state
-        .http_client
-        .post(&url)
-        .json(tx)
-        .send()
-        .await
-        .map_err(|e| BuildPosTxError::Internal(format!("Failed to send request: {}", e)))?
-        .error_for_status()
-        .map_err(|e| BuildPosTxError::Internal(format!("HTTP error: {}", e)))?
-        .json::<BroadcastTransactionResponse>()
-        .await
-        .map_err(|e| BuildPosTxError::Internal(format!("Failed to parse response: {}", e)))?;
-    Ok(resp)
+    post_tron_request(state, chain_id, "/wallet/broadcasttransaction", tx).await
 }
 
 async fn get_transaction_info_by_id(
@@ -252,23 +250,11 @@ async fn get_transaction_info_by_id(
     chain_id: &Caip2ChainId,
     txid: &str,
 ) -> Result<Option<GetTransactionInfoByIdResponse>, BuildPosTxError> {
-    let base = get_provider_url(chain_id)?;
-    let url = format!("{}/wallet/gettransactioninfobyid", base);
     let body = GetByIdRequest {
         value: txid.to_string(),
     };
-    let resp = state
-        .http_client
-        .post(&url)
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| BuildPosTxError::Internal(format!("Failed to send request: {}", e)))?
-        .error_for_status()
-        .map_err(|e| BuildPosTxError::Internal(format!("HTTP error: {}", e)))?
-        .json::<GetTransactionInfoByIdResponse>()
-        .await
-        .map_err(|e| BuildPosTxError::Internal(format!("Failed to parse response: {}", e)))?;
+    let resp: GetTransactionInfoByIdResponse =
+        post_tron_request(state, chain_id, "/wallet/gettransactioninfobyid", &body).await?;
 
     if resp.id.is_some() || resp.block_number.is_some() || resp.receipt.is_some() {
         Ok(Some(resp))
@@ -282,45 +268,14 @@ async fn estimate_energy(
     chain_id: &Caip2ChainId,
     req: &TriggerSmartContractRequest,
 ) -> Result<EstimateEnergyResponse, BuildPosTxError> {
-    let base = get_provider_url(chain_id)?;
-    let url = format!("{}/wallet/estimateenergy", base);
-    let resp = state
-        .http_client
-        .post(&url)
-        .json(req)
-        .send()
-        .await
-        .map_err(|e| BuildPosTxError::Internal(format!("Failed to send request: {}", e)))?
-        .error_for_status()
-        .map_err(|e| BuildPosTxError::Internal(format!("HTTP error: {}", e)))?
-        .json::<EstimateEnergyResponse>()
-        .await
-        .map_err(|e| {
-            BuildPosTxError::Internal(format!("Failed to parse estimate energy response: {}", e))
-        })?;
-    Ok(resp)
+    post_tron_request(state, chain_id, "/wallet/estimateenergy", req).await
 }
 
 async fn get_chain_parameters(
     state: State<Arc<AppState>>,
     chain_id: &Caip2ChainId,
 ) -> Result<ChainParametersResponse, BuildPosTxError> {
-    let base = get_provider_url(chain_id)?;
-    let url = format!("{}/wallet/getchainparameters", base);
-    let resp = state
-        .http_client
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| BuildPosTxError::Internal(format!("Failed to send request: {}", e)))?
-        .error_for_status()
-        .map_err(|e| BuildPosTxError::Internal(format!("HTTP error: {}", e)))?
-        .json::<ChainParametersResponse>()
-        .await
-        .map_err(|e| {
-            BuildPosTxError::Internal(format!("Failed to parse chain parameters response: {}", e))
-        })?;
-    Ok(resp)
+    get_tron_request(state, chain_id, "/wallet/getchainparameters").await
 }
 
 async fn estimate_trc20_fee_limit(
