@@ -47,7 +47,7 @@ pub async fn handler(
                     check_in: None,
                 }),
             }
-        },
+        }
         SupportedNamespaces::Solana => {
             let status = solana_get_transaction_status(
                 state,
@@ -68,7 +68,7 @@ pub async fn handler(
                     check_in: None,
                 }),
             }
-        },
+        }
         SupportedNamespaces::Tron => {
             let status = tron_get_transaction_status(
                 state,

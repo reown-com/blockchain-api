@@ -8,8 +8,8 @@ use {
     crate::{
         state::AppState,
         utils::crypto::{
-            disassemble_caip10_with_namespace, Caip19Asset, Caip2ChainId, CaipNamespaces, CryptoUitlsError,
-            NamespaceValidator, is_address_valid,
+            disassemble_caip10_with_namespace, is_address_valid, Caip19Asset, Caip2ChainId,
+            CaipNamespaces, CryptoUitlsError, NamespaceValidator,
         },
     },
     axum::extract::State,
