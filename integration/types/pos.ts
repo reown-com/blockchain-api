@@ -62,6 +62,27 @@ export interface EvmTransactionParams {
 }
 
 
+
+export interface TronTransactionObject {
+  raw_data: unknown;
+  raw_data_hex: string;
+  signature: string[] | null;
+  txID: string;
+  visible: boolean;
+}
+
+export interface TronTransaction {
+  result: {
+    result: boolean;
+  };
+  transaction: TronTransactionObject;
+}
+
+export interface TronTransactionParams {
+  transaction: TronTransaction;
+  address: string;
+}
+
 export interface BaseTransactionRpc {
   method: string;
   params: unknown;
@@ -77,7 +98,12 @@ export interface SolanaTransactionRpc extends BaseTransactionRpc {
   params: SolanaTransactionParams;
 }
 
-export type TransactionRpc = EvmTransactionRpc | SolanaTransactionRpc;
+export interface TronTransactionRpc extends BaseTransactionRpc {
+  method: 'tron_signTransaction';
+  params: TronTransactionParams;
+}
+
+export type TransactionRpc = EvmTransactionRpc | SolanaTransactionRpc | TronTransactionRpc;
 
 export interface BuildTransactionResult {
   id: string;
