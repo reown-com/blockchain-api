@@ -30,10 +30,6 @@ mod error;
 pub mod metrics;
 pub mod storage;
 
-/// Circuit breaker cooldown period in milliseconds in case of registry internal error
-/// to prevent the registry from being overwhelmed since we don't cache errors
-const CIRCUIT_COOLDOWN_MS: u64 = 1_000;
-
 #[derive(Debug, Clone)]
 pub struct Registry {
     client: Option<RegistryHttpClient>,
@@ -97,7 +93,7 @@ impl Registry {
             metrics,
             circuit_base_instant: Instant::now(),
             circuit_last_error_ms: Arc::new(AtomicU64::new(0)),
-            circuit_cooldown: Duration::from_millis(CIRCUIT_COOLDOWN_MS),
+            circuit_cooldown: cfg_registry.circuit_cooldown(),
         })
     }
 

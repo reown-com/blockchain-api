@@ -76,6 +76,12 @@ variable "project_cache_ttl" {
   default     = 300
 }
 
+variable "registry_circuit_cooldown_ms" {
+  description = "Circuit breaker cooldown in milliseconds for registry failures"
+  type        = number
+  default     = 1000
+}
+
 #-------------------------------------------------------------------------------
 # Providers
 
