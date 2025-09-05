@@ -22,8 +22,10 @@ use {
 };
 
 const TRON_SIGN_TRANSACTION_METHOD: &str = "tron_signTransaction";
-const DEFAULT_FEE_LIMIT: u64 = 200_000_000;
 const DEFAULT_CHECK_IN: usize = 400;
+const FEE_MARGIN_BPS: u16 = 2000;
+const BPS_DEN: u128 = 10_000;
+const GET_ENERGY_FEE: &str = "getEnergyFee";
 
 static TRON_NETWORK_URL: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
     HashMap::from([
@@ -37,13 +39,14 @@ sol! {
     function approve(address spender, uint256 value) external returns (bool);
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 struct TriggerSmartContractRequest {
     owner_address: String,
     contract_address: String,
     function_selector: String,
     parameter: String,
-    fee_limit: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    fee_limit: Option<u64>,
     call_value: u64,
     visible: bool,
 }
@@ -75,6 +78,31 @@ struct TriggerConstantContractRequest {
 #[derive(Debug, Deserialize)]
 struct TriggerConstantContractResponse {
     constant_result: Option<Vec<String>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct EstimateEnergyResult {
+    result: bool,
+    message: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct EstimateEnergyResponse {
+    result: EstimateEnergyResult,
+    energy_required: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ChainParameter {
+    key: String,
+    #[serde(default)]
+    value: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ChainParametersResponse {
+    #[serde(rename = "chainParameter")]
+    chain_parameter: Vec<ChainParameter>,
 }
 
 #[derive(Debug, Serialize)]
@@ -249,6 +277,96 @@ async fn get_transaction_info_by_id(
     }
 }
 
+async fn estimate_energy(
+    state: State<Arc<AppState>>,
+    chain_id: &Caip2ChainId,
+    req: &TriggerSmartContractRequest,
+) -> Result<EstimateEnergyResponse, BuildPosTxError> {
+    let base = get_provider_url(chain_id)?;
+    let url = format!("{}/wallet/estimateenergy", base);
+    let resp = state
+        .http_client
+        .post(&url)
+        .json(req)
+        .send()
+        .await
+        .map_err(|e| BuildPosTxError::Internal(format!("Failed to send request: {}", e)))?
+        .error_for_status()
+        .map_err(|e| BuildPosTxError::Internal(format!("HTTP error: {}", e)))?
+        .json::<EstimateEnergyResponse>()
+        .await
+        .map_err(|e| {
+            BuildPosTxError::Internal(format!("Failed to parse estimate energy response: {}", e))
+        })?;
+    Ok(resp)
+}
+
+async fn get_chain_parameters(
+    state: State<Arc<AppState>>,
+    chain_id: &Caip2ChainId,
+) -> Result<ChainParametersResponse, BuildPosTxError> {
+    let base = get_provider_url(chain_id)?;
+    let url = format!("{}/wallet/getchainparameters", base);
+    let resp = state
+        .http_client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| BuildPosTxError::Internal(format!("Failed to send request: {}", e)))?
+        .error_for_status()
+        .map_err(|e| BuildPosTxError::Internal(format!("HTTP error: {}", e)))?
+        .json::<ChainParametersResponse>()
+        .await
+        .map_err(|e| {
+            BuildPosTxError::Internal(format!("Failed to parse chain parameters response: {}", e))
+        })?;
+    Ok(resp)
+}
+
+async fn estimate_trc20_fee_limit(
+    state: State<Arc<AppState>>,
+    chain_id: &Caip2ChainId,
+    call: &TriggerSmartContractRequest,
+) -> Result<u64, BuildPosTxError> {
+    let est = estimate_energy(state.clone(), chain_id, call).await?;
+    if !est.result.result {
+        let msg = est.result.message.unwrap_or_default();
+        return Err(BuildPosTxError::Validation(format!(
+            "Energy estimate failed: {}",
+            msg
+        )));
+    }
+    let energy_required = est
+        .energy_required
+        .ok_or_else(|| BuildPosTxError::Internal("Missing energy_required".to_string()))?;
+
+    let params = get_chain_parameters(state, chain_id).await?;
+    let energy_fee = params
+        .chain_parameter
+        .into_iter()
+        .find(|p| p.key == GET_ENERGY_FEE)
+        .and_then(|p| p.value)
+        .ok_or_else(|| {
+            BuildPosTxError::Internal("Missing getEnergyFee chain parameter".to_string())
+        })?;
+
+    let energy_required_u128 = u128::try_from(energy_required)
+        .map_err(|_| BuildPosTxError::Internal("negative energy_required".to_string()))?;
+    let energy_fee_u128 = u128::try_from(energy_fee)
+        .map_err(|_| BuildPosTxError::Internal("negative getEnergyFee".to_string()))?;
+
+    compute_fee_limit(energy_required_u128, energy_fee_u128)
+}
+
+fn compute_fee_limit(energy_required: u128, energy_fee: u128) -> Result<u64, BuildPosTxError> {
+    let total = energy_required
+        .checked_mul(energy_fee)
+        .and_then(|base| base.checked_mul(BPS_DEN + FEE_MARGIN_BPS as u128))
+        .and_then(|v| v.checked_div(BPS_DEN))
+        .ok_or_else(|| BuildPosTxError::Internal("fee_limit overflow".to_string()))?;
+    u64::try_from(total).map_err(|_| BuildPosTxError::Internal("fee_limit exceeds u64".to_string()))
+}
+
 #[derive(Debug, Clone, PartialEq, EnumString)]
 #[strum(serialize_all = "lowercase")]
 pub enum AssetNamespace {
@@ -324,9 +442,17 @@ async fn build_trx20_transfer(
         contract_address,
         function_selector: "transfer(address,uint256)".to_string(),
         parameter: params_hex.to_string(),
-        fee_limit: DEFAULT_FEE_LIMIT,
+        fee_limit: None,
         call_value: 0,
         visible: false,
+    };
+
+    let fee_limit =
+        estimate_trc20_fee_limit(state.clone(), params.asset.chain_id(), &trigger_req).await?;
+
+    let trigger_req = TriggerSmartContractRequest {
+        fee_limit: Some(fee_limit),
+        ..trigger_req
     };
 
     let resp = trigger_smart_contract(state, params.asset.chain_id(), &trigger_req).await?;
