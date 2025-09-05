@@ -1,8 +1,8 @@
 use {
     super::{
         AssetNamespaceType, BuildPosTxError, BuildTransactionParams, BuildTransactionResult,
-        TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus, CheckTransactionResult,
-        ValidatedTransactionParams,
+        CheckTransactionResult, TransactionBuilder, TransactionId, TransactionRpc,
+        TransactionStatus, ValidatedTransactionParams,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::{
@@ -281,10 +281,12 @@ pub async fn get_transaction_status(
     }
 }
 
-pub async fn check_transaction( state: State<Arc<AppState>>,
+pub async fn check_transaction(
+    state: State<Arc<AppState>>,
     project_id: &str,
     txid: &str,
-    chain_id: &Caip2ChainId) -> Result<CheckTransactionResult, BuildPosTxError> {
+    chain_id: &Caip2ChainId,
+) -> Result<CheckTransactionResult, BuildPosTxError> {
     let status = get_transaction_status(state, project_id, txid, chain_id).await?;
 
     match status {

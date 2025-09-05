@@ -13,7 +13,6 @@ use {
     std::{str::FromStr, sync::Arc},
 };
 
-
 pub async fn handler(
     state: State<Arc<AppState>>,
     project_id: String,
@@ -26,14 +25,29 @@ pub async fn handler(
         .map_err(|e| CheckPosTxError::Validation(e.to_string()))?;
 
     match namespace {
-        SupportedNamespaces::Eip155 => {
-            evm_check_transaction(state, &project_id, &params.send_result, transaction_id.chain_id()).await.map_err(|e| CheckPosTxError::Validation(e.to_string()))
-        }
-        SupportedNamespaces::Solana => {
-            solana_check_transaction(state, &project_id, &params.send_result, transaction_id.chain_id()).await.map_err(|e| CheckPosTxError::Validation(e.to_string()))
-        }
-        SupportedNamespaces::Tron => {
-            tron_check_transaction(state, &project_id, &params.send_result, transaction_id.chain_id()).await.map_err(|e| CheckPosTxError::Validation(e.to_string()))
-        }
+        SupportedNamespaces::Eip155 => evm_check_transaction(
+            state,
+            &project_id,
+            &params.send_result,
+            transaction_id.chain_id(),
+        )
+        .await
+        .map_err(|e| CheckPosTxError::Validation(e.to_string())),
+        SupportedNamespaces::Solana => solana_check_transaction(
+            state,
+            &project_id,
+            &params.send_result,
+            transaction_id.chain_id(),
+        )
+        .await
+        .map_err(|e| CheckPosTxError::Validation(e.to_string())),
+        SupportedNamespaces::Tron => tron_check_transaction(
+            state,
+            &project_id,
+            &params.send_result,
+            transaction_id.chain_id(),
+        )
+        .await
+        .map_err(|e| CheckPosTxError::Validation(e.to_string())),
     }
 }

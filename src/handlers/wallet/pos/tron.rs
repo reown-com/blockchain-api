@@ -1,8 +1,8 @@
 use {
     super::{
         AssetNamespaceType, BuildPosTxError, BuildTransactionParams, BuildTransactionResult,
-        TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus, CheckTransactionResult,
-        ValidatedTransactionParams,
+        CheckTransactionResult, TransactionBuilder, TransactionId, TransactionRpc,
+        TransactionStatus, ValidatedTransactionParams,
     },
     crate::{state::AppState, utils::crypto::Caip2ChainId},
     alloy::{
@@ -390,11 +390,12 @@ fn tron_b58_to_hex41(b58: &str) -> Result<String, BuildPosTxError> {
     Ok(format!("{}", hex::encode(bytes)))
 }
 
-
-pub async fn check_transaction( state: State<Arc<AppState>>,
+pub async fn check_transaction(
+    state: State<Arc<AppState>>,
     project_id: &str,
     response: &str,
-    chain_id: &Caip2ChainId) -> Result<CheckTransactionResult, BuildPosTxError> {
+    chain_id: &Caip2ChainId,
+) -> Result<CheckTransactionResult, BuildPosTxError> {
     let status = get_transaction_status(state, project_id, response, chain_id).await?;
 
     match status {
