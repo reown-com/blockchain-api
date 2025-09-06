@@ -29,6 +29,7 @@ pub(crate) mod unichain;
 pub(crate) mod wemix;
 pub(crate) mod zksync;
 pub(crate) mod zora;
+pub(crate) mod edexa;
 
 const RESPONSE_MAX_BYTES: usize = 512 * 1024; // 512 KB
 
