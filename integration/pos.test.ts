@@ -5,6 +5,7 @@ import {
   BuildTransactionResponse,
   BuildTransactionErrorResponse,
   EvmTransactionParams,
+  EvmTransactionRpc,
   CheckTransactionRequest,
   CheckTransactionResponse,
   SolanaTransactionParams,
@@ -75,12 +76,16 @@ describe('POS', () => {
       const payload: BuildTransactionRequest = {
         jsonrpc: '2.0',
         id: 1,
-        method: 'reown_pos_buildTransaction',
+        method: 'wc_pos_buildTransactions',
         params: {
-          asset: baseUSDC,
-          amount: usdcAmount,
-          recipient: baseToAddress,
-          sender: baseFromAddress,
+          paymentIntents: [
+            {
+              asset: baseUSDC,
+              amount: usdcAmount,
+              recipient: baseToAddress,
+              sender: baseFromAddress,
+            }
+          ]
         }
       };
 
@@ -90,11 +95,13 @@ describe('POS', () => {
       const responseData = response.data as BuildTransactionResponse;
       const result = responseData.result;
       expect(result).toBeDefined();
-      expect(result.id).toBeDefined();
-      expect(result.id.length).toBeGreaterThan(10);
-      expect(result.transactionRpc).toBeDefined();
-      expect(result.transactionRpc.method).toBe('eth_sendTransaction')
-      const params: EvmTransactionParams = result.transactionRpc.params[0];
+      expect(result.transactions).toBeDefined();
+      expect(result.transactions.length).toBe(1);
+      const tx = result.transactions[0];
+      expect(tx.id).toBeDefined();
+      expect(tx.id.length).toBeGreaterThan(10);
+      expect(tx.method).toBe('eth_sendTransaction')
+      const params: EvmTransactionParams = (tx as EvmTransactionRpc).params[0];
       expect(params).toBeDefined();
       expect(params.to).toBe(baseUSDCContractAddress.toLowerCase());
       expect(params.from).toBe(fromAddress.toLowerCase());
@@ -112,12 +119,16 @@ describe('POS', () => {
       const payload: BuildTransactionRequest = {
         jsonrpc: '2.0',
         id: 1,
-        method: 'reown_pos_buildTransaction',
+        method: 'wc_pos_buildTransactions',
         params: {
-          asset: baseNative,
-          amount: nativeAmount,
-          recipient: baseToAddress,
-          sender: baseFromAddress,
+          paymentIntents: [
+            {
+              asset: baseNative,
+              amount: nativeAmount,
+              recipient: baseToAddress,
+              sender: baseFromAddress,
+            }
+          ]
         }
       };
 
@@ -127,11 +138,13 @@ describe('POS', () => {
       const responseData = response.data as BuildTransactionResponse;
       const result = responseData.result;
       expect(result).toBeDefined();
-      expect(result.id).toBeDefined();
-      expect(result.id.length).toBeGreaterThan(10);
-      expect(result.transactionRpc).toBeDefined();
-      expect(result.transactionRpc.method).toBe('eth_sendTransaction')
-      const params: EvmTransactionParams = result.transactionRpc.params[0];
+      expect(result.transactions).toBeDefined();
+      expect(result.transactions.length).toBe(1);
+      const tx = result.transactions[0];
+      expect(tx.id).toBeDefined();
+      expect(tx.id.length).toBeGreaterThan(10);
+      expect(tx.method).toBe('eth_sendTransaction')
+      const params: EvmTransactionParams = (tx as EvmTransactionRpc).params[0];
       expect(params).toBeDefined();
       expect(params.to).toBe(toAddress.toLowerCase());
       expect(params.from).toBe(fromAddress.toLowerCase());
@@ -144,12 +157,16 @@ describe('POS', () => {
       const payload = {
         jsonrpc: '2.0' as const,
         id: 1,
-        method: 'reown_pos_buildTransaction' as const,
+        method: 'wc_pos_buildTransactions' as const,
         params: {
-          asset: baseUSDC,
-          amount: usdcAmount,
-          recipient: '0x1234567890123456789012345678901234567890',
-          sender: baseFromAddress,
+          paymentIntents: [
+            {
+              asset: baseUSDC,
+              amount: usdcAmount,
+              recipient: '0x1234567890123456789012345678901234567890',
+              sender: baseFromAddress,
+            }
+          ]
         }
       };
 
@@ -164,12 +181,16 @@ describe('POS', () => {
       const payload = {
         jsonrpc: '2.0' as const,
         id: 1,
-        method: 'reown_pos_buildTransaction' as const,
+        method: 'wc_pos_buildTransactions' as const,
         params: {
-          asset: unsupportedAsset,
-          amount: usdcAmount,
-          recipient: baseToAddress,
-          sender: baseFromAddress,
+          paymentIntents: [
+            {
+              asset: unsupportedAsset,
+              amount: usdcAmount,
+              recipient: baseToAddress,
+              sender: baseFromAddress,
+            }
+          ]
         }
       };
 
@@ -184,12 +205,16 @@ describe('POS', () => {
       const payload = {
         jsonrpc: '2.0' as const,
         id: 1,
-        method: 'reown_pos_buildTransaction' as const,
+        method: 'wc_pos_buildTransactions' as const,
         params: {
-          asset: unsupportedNamespaceAsset,
-          amount: usdcAmount,
-          recipient: unsupportedRecipient,
-          sender: unsupportedSender,
+          paymentIntents: [
+            {
+              asset: unsupportedNamespaceAsset,
+              amount: usdcAmount,
+              recipient: unsupportedRecipient,
+              sender: unsupportedSender,
+            }
+          ]
         }
       };
       const response = await httpClient.post(`${baseUrl}/v1/json-rpc?projectId=${projectId}`, payload);
@@ -204,7 +229,7 @@ describe('POS', () => {
       const payload: CheckTransactionRequest = {
         jsonrpc: '2.0',
         id: 1,
-        method: 'reown_pos_checkTransaction',
+        method: 'wc_pos_checkTransaction',
         params: {
           id: txIdBaseSepolia,
           sendResult: confirmedTxId,
@@ -226,12 +251,16 @@ describe('POS', () => {
       const payload: BuildTransactionRequest = {
         jsonrpc: '2.0',
         id: 1,
-        method: 'reown_pos_buildTransaction',
+        method: 'wc_pos_buildTransactions',
         params: {
-          asset: solanaUsdcAsset,
-          amount: solanaMainnetAmount,
-          recipient: solanaMainnetRecipientCaip10,
-          sender: solanaMainnetSenderCaip10,
+          paymentIntents: [
+            {
+              asset: solanaUsdcAsset,
+              amount: solanaMainnetAmount,
+              recipient: solanaMainnetRecipientCaip10,
+              sender: solanaMainnetSenderCaip10,
+            }
+          ]
         }
       };
 
@@ -241,11 +270,13 @@ describe('POS', () => {
       const responseData = response.data as BuildTransactionResponse;
       const result = responseData.result;
       expect(result).toBeDefined();
-      expect(result.id).toBeDefined();
-      expect(result.id.length).toBeGreaterThan(10);
-      expect(result.transactionRpc).toBeDefined();
-      expect(result.transactionRpc.method).toBe('solana_signAndSendTransaction')
-      const params = result.transactionRpc.params as SolanaTransactionParams; 
+      expect(result.transactions).toBeDefined();
+      expect(result.transactions.length).toBe(1);
+      const tx = result.transactions[0];
+      expect(tx.id).toBeDefined();
+      expect(tx.id.length).toBeGreaterThan(10);
+      expect(tx.method).toBe('solana_signAndSendTransaction')
+      const params = tx.params as SolanaTransactionParams; 
       expect(params).toBeDefined();
       expect(params.transaction).toBeDefined();
       expect(params.transaction.length).toBeGreaterThan(0);
@@ -257,7 +288,7 @@ describe('POS', () => {
       const payload: CheckTransactionRequest = {
         jsonrpc: '2.0',
         id: 1,
-        method: 'reown_pos_checkTransaction',
+        method: 'wc_pos_checkTransaction',
         params: {
           id: solanaDevnetTransactionId,
           sendResult: solanaDevnetSignature,
@@ -278,12 +309,16 @@ describe('POS', () => {
       const payload: BuildTransactionRequest = {
         jsonrpc: '2.0',
         id: 1,
-        method: 'reown_pos_buildTransaction',
+        method: 'wc_pos_buildTransactions',
         params: {
-          asset: tronUsdtAsset,
-          amount: tronNileTestnetAmount,
-          recipient: tronNileTestnetRecipientCaip10,
-          sender: tronNileTestnetSenderCaip10,
+          paymentIntents: [
+            {
+              asset: tronUsdtAsset,
+              amount: tronNileTestnetAmount,
+              recipient: tronNileTestnetRecipientCaip10,
+              sender: tronNileTestnetSenderCaip10,
+            }
+          ]
         }
       };
 
@@ -293,11 +328,13 @@ describe('POS', () => {
       const responseData = response.data as BuildTransactionResponse;
       const result = responseData.result;
       expect(result).toBeDefined();
-      expect(result.id).toBeDefined();
-      expect(result.id.length).toBeGreaterThan(10);
-      expect(result.transactionRpc).toBeDefined();
-      expect(result.transactionRpc.method).toBe('tron_signTransaction')
-      const params = result.transactionRpc.params as TronTransactionParams; 
+      expect(result.transactions).toBeDefined();
+      expect(result.transactions.length).toBe(1);
+      const tx = result.transactions[0];
+      expect(tx.id).toBeDefined();
+      expect(tx.id.length).toBeGreaterThan(10);
+      expect(tx.method).toBe('tron_signTransaction')
+      const params = tx.params as TronTransactionParams; 
       expect(params).toBeDefined();
       expect(params.address ).toBeDefined();
       expect(params.transaction).toBeDefined();
@@ -317,7 +354,7 @@ describe('POS', () => {
       const payload: CheckTransactionRequest = {
         jsonrpc: '2.0',
         id: 1,
-        method: 'reown_pos_checkTransaction',
+        method: 'wc_pos_checkTransaction',
         params: {
   
           id: tronNileTestnetTransactionId,
