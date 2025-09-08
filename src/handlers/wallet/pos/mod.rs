@@ -93,7 +93,7 @@ pub enum TransactionIdError {
 #[serde(rename_all = "camelCase")]
 pub struct BuildTransactionParams {
     pub payment_intents: Vec<PaymentIntent>,
-    pub capabilities: Value,
+    pub capabilities: Option<Value>,
 }
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
