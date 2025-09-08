@@ -3,7 +3,7 @@ use super::get_calls_status::{self, GetCallsStatusError};
 use super::get_exchange_buy_status::{self, GetExchangeBuyStatusError};
 use super::get_exchange_url::{self, GetExchangeUrlError};
 use super::get_exchanges::{self, GetExchangesError};
-use super::pos::{self, BuildPosTxError, CheckPosTxError};
+use super::pos::{self, BuildPosTxsError, CheckPosTxError};
 use super::prepare_calls::{self, PrepareCallsError};
 use super::send_prepared_calls::{self, SendPreparedCallsError};
 use crate::error::RpcError;
@@ -99,7 +99,7 @@ pub const WALLET_GET_CALLS_STATUS: &str = "wallet_getCallsStatus";
 pub const PAY_GET_EXCHANGES: &str = "reown_getExchanges";
 pub const PAY_GET_EXCHANGE_URL: &str = "reown_getExchangePayUrl";
 pub const PAY_GET_EXCHANGE_BUY_STATUS: &str = "reown_getExchangeBuyStatus";
-pub const POS_BUILD_TRANSACTION: &str = "reown_pos_buildTransaction";
+pub const POS_BUILD_TRANSACTIONS: &str = "reown_pos_buildTransactions";
 pub const POS_CHECK_TRANSACTION: &str = "reown_pos_checkTransaction";
 
 #[derive(Debug, Error)]
@@ -128,8 +128,8 @@ enum Error {
     #[error("{PAY_GET_EXCHANGE_BUY_STATUS}: {0}")]
     GetExchangeBuyStatus(GetExchangeBuyStatusError),
 
-    #[error("{POS_BUILD_TRANSACTION}: {0}")]
-    PosBuildTransaction(BuildPosTxError),
+    #[error("{POS_BUILD_TRANSACTIONS}: {0}")]
+    PosBuildTransactions(BuildPosTxsError),
 
     #[error("{POS_CHECK_TRANSACTION}: {0}")]
     PosCheckTransaction(CheckPosTxError),
@@ -161,7 +161,7 @@ impl Error {
             Error::GetExchanges(_) => -6,
             Error::GetUrl(_) => -7,
             Error::GetExchangeBuyStatus(_) => -8,
-            Error::PosBuildTransaction(_) => -9,
+            Error::PosBuildTransactions(_) => -9,
             Error::PosCheckTransaction(_) => -10,
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
@@ -179,7 +179,7 @@ impl Error {
             Error::GetExchanges(e) => e.is_internal(),
             Error::GetUrl(e) => e.is_internal(),
             Error::GetExchangeBuyStatus(e) => e.is_internal(),
-            Error::PosBuildTransaction(e) => e.is_internal(),
+            Error::PosBuildTransactions(e) => e.is_internal(),
             Error::PosCheckTransaction(e) => e.is_internal(),
             Error::MethodNotFound => false,
             Error::InvalidParams(_) => false,
@@ -303,14 +303,14 @@ async fn handle_rpc(
             .map_err(Error::GetExchangeBuyStatus)?,
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
-        POS_BUILD_TRANSACTION => serde_json::to_value(
-            &pos::build_transaction::handler(
+        POS_BUILD_TRANSACTIONS => serde_json::to_value(
+            &pos::build_transactions::handler(
                 state,
                 project_id,
                 serde_json::from_value(params).map_err(Error::InvalidParams)?,
             )
             .await
-            .map_err(Error::PosBuildTransaction)?,
+            .map_err(Error::PosBuildTransactions)?,
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
         POS_CHECK_TRANSACTION => serde_json::to_value(
