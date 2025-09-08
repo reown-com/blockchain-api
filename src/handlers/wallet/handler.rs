@@ -99,8 +99,8 @@ pub const WALLET_GET_CALLS_STATUS: &str = "wallet_getCallsStatus";
 pub const PAY_GET_EXCHANGES: &str = "reown_getExchanges";
 pub const PAY_GET_EXCHANGE_URL: &str = "reown_getExchangePayUrl";
 pub const PAY_GET_EXCHANGE_BUY_STATUS: &str = "reown_getExchangeBuyStatus";
-pub const POS_BUILD_TRANSACTIONS: &str = "reown_pos_buildTransactions";
-pub const POS_CHECK_TRANSACTION: &str = "reown_pos_checkTransaction";
+pub const POS_BUILD_TRANSACTIONS: &str = "wc_pos_buildTransactions";
+pub const POS_CHECK_TRANSACTION: &str = "wc_pos_checkTransaction";
 
 #[derive(Debug, Error)]
 enum Error {
