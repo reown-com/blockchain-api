@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.292.0 - 2025-09-08
+#### Features
+- pos tron (#1221) - (275978e) - Luka Isailovic
+
+- - -
+
 ## 0.291.0 - 2025-09-05
 #### Features
 - **(o11y)** adding registry responses chart (#1220) - (f05f599) - Max Kalashnikoff | maksy.eth
