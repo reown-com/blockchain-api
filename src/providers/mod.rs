@@ -152,6 +152,7 @@ mod coinbase;
 mod drpc;
 mod dune;
 mod hiro;
+mod katana;
 mod mantle;
 mod meld;
 pub mod mock_alto;
@@ -190,6 +191,7 @@ pub use {
     drpc::DrpcProvider,
     dune::DuneProvider,
     hiro::HiroProvider,
+    katana::KatanaProvider,
     mantle::MantleProvider,
     meld::MeldProvider,
     monad::MonadProvider,
@@ -827,6 +829,7 @@ pub enum ProviderKind {
     Moonbeam,
     Blast,
     Rootstock,
+    Katana,
 }
 
 impl Display for ProviderKind {
@@ -869,6 +872,7 @@ impl Display for ProviderKind {
                 ProviderKind::Moonbeam => "Moonbeam",
                 ProviderKind::Blast => "Blast",
                 ProviderKind::Rootstock => "Rootstock",
+                ProviderKind::Katana => "Katana",
             }
         )
     }
@@ -912,6 +916,7 @@ impl ProviderKind {
             "Moonbeam" => Some(Self::Moonbeam),
             "Blast" => Some(Self::Blast),
             "Rootstock" => Some(Self::Rootstock),
+            "Katana" => Some(Self::Katana),
             _ => None,
         }
     }
