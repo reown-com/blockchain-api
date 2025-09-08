@@ -12,6 +12,7 @@ import {
   TronTransactionParams,
   SolanaTransactionRpc
 } from './types/pos';
+import { SupportedNetworksRequest, SupportedNetworksResponse } from './types/pos';
 
 
 describe('POS', () => {
@@ -489,6 +490,54 @@ describe('POS', () => {
       expect(params2.transaction).toBeDefined();
       expect(params2.transaction.length).toBeGreaterThan(0);
       expect(params2.pubkey).toBe(solanaMainnetSender);
+    });
+  });
+
+  describe('Supported Networks', () => {
+    it('should return supported namespaces with correct properties', async () => {
+      const payload: SupportedNetworksRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'wc_pos_supportedNetworks',
+        params: {},
+      };
+
+      const response = await httpClient.post(`${baseUrl}/v1/json-rpc?projectId=${projectId}`, payload);
+      expect(response.status).toBe(200);
+      const data = response.data as SupportedNetworksResponse;
+      expect(data.result).toBeDefined();
+      if (!data.result) return;
+      const { namespaces } = data.result;
+      expect(Array.isArray(namespaces)).toBe(true);
+      expect(namespaces.length).toBeGreaterThanOrEqual(3);
+
+      for (const ns of namespaces) {
+        expect(ns.name).toBe(ns.name.toLowerCase());
+        expect(Array.isArray(ns.methods)).toBe(true);
+        expect(Array.isArray(ns.events)).toBe(true);
+        expect(Array.isArray(ns.assetNamespaces)).toBe(true);
+        for (const an of ns.assetNamespaces) {
+          expect(an).toBe(an.toLowerCase());
+        }
+      }
+
+      const eip155 = namespaces.find(n => n.name === 'eip155');
+      expect(eip155).toBeDefined();
+      if (!eip155) return;
+      expect(eip155.methods).toContain('eth_sendTransaction');
+      expect(eip155.assetNamespaces).toEqual(expect.arrayContaining(['erc20', 'slip44']));
+
+      const solana = namespaces.find(n => n.name === 'solana');
+      expect(solana).toBeDefined();
+      if (!solana) return;
+      expect(solana.methods).toContain('solana_signAndSendTransaction');
+      expect(solana.assetNamespaces).toEqual(expect.arrayContaining(['token', 'slip44']));
+
+      const tron = namespaces.find(n => n.name === 'tron');
+      expect(tron).toBeDefined();
+      if (!tron) return;
+      expect(tron.methods).toContain('tron_signTransaction');
+      expect(tron.assetNamespaces).toEqual(expect.arrayContaining(['trc20', 'slip44']));
     });
   });
 });

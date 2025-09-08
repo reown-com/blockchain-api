@@ -123,3 +123,23 @@ export type BuildTransactionErrorResponse = BaseJsonRpcResponse<never> & {
 
 
 export type PosResponse = BuildTransactionResponse | BuildTransactionErrorResponse;
+
+// Supported Networks
+export interface SupportedNetworksRequest extends BaseJsonRpcRequest {
+  method: 'wc_pos_supportedNetworks';
+  params: Record<string, never>;
+}
+
+export interface SupportedNamespaceInfo {
+  name: string;
+  methods: string[];
+  events: string[];
+  capabilities: unknown | null;
+  assetNamespaces: string[];
+}
+
+export interface SupportedNetworksResult {
+  namespaces: SupportedNamespaceInfo[];
+}
+
+export type SupportedNetworksResponse = BaseJsonRpcResponse<SupportedNetworksResult>;
