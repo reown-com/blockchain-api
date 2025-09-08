@@ -4,7 +4,10 @@ use {
         TransactionBuilder,
     },
     crate::{
-        handlers::wallet::pos::{evm::EvmTransactionBuilder, solana::SolanaTransactionBuilder},
+        handlers::wallet::pos::{
+            evm::EvmTransactionBuilder, solana::SolanaTransactionBuilder,
+            tron::TronTransactionBuilder,
+        },
         state::AppState,
         utils::crypto::Caip19Asset,
     },
@@ -28,6 +31,11 @@ pub async fn handler(
         SupportedNamespaces::Eip155 => EvmTransactionBuilder.build(state, project_id, params).await,
         SupportedNamespaces::Solana => {
             SolanaTransactionBuilder
+                .build(state, project_id, params)
+                .await
+        }
+        SupportedNamespaces::Tron => {
+            TronTransactionBuilder
                 .build(state, project_id, params)
                 .await
         }

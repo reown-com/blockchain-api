@@ -1,8 +1,8 @@
 use {
     super::{
         AssetNamespaceType, BuildPosTxError, BuildTransactionParams, BuildTransactionResult,
-        TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
-        ValidatedTransactionParams,
+        CheckTransactionResult, TransactionBuilder, TransactionId, TransactionRpc,
+        TransactionStatus, ValidatedTransactionParams,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::{
@@ -21,6 +21,7 @@ use {
 const NATIVE_GAS_LIMIT: u64 = 21_000;
 const ETH_SEND_TRANSACTION_METHOD: &str = "eth_sendTransaction";
 const BASE_URL: &str = "https://rpc.walletconnect.org/v1";
+const DEFAULT_CHECK_IN: usize = 1000;
 
 sol! {
     #[sol(rpc)]
@@ -277,5 +278,25 @@ pub async fn get_transaction_status(
         }
     } else {
         Ok(TransactionStatus::Pending)
+    }
+}
+
+pub async fn check_transaction(
+    state: State<Arc<AppState>>,
+    project_id: &str,
+    txid: &str,
+    chain_id: &Caip2ChainId,
+) -> Result<CheckTransactionResult, BuildPosTxError> {
+    let status = get_transaction_status(state, project_id, txid, chain_id).await?;
+
+    match status {
+        TransactionStatus::Pending => Ok(CheckTransactionResult {
+            status,
+            check_in: Some(DEFAULT_CHECK_IN),
+        }),
+        _ => Ok(CheckTransactionResult {
+            status,
+            check_in: None,
+        }),
     }
 }

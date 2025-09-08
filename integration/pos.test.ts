@@ -7,7 +7,8 @@ import {
   EvmTransactionParams,
   CheckTransactionRequest,
   CheckTransactionResponse,
-  SolanaTransactionParams
+  SolanaTransactionParams,
+  TronTransactionParams
 } from './types/pos';
 
 
@@ -56,6 +57,18 @@ describe('POS', () => {
 
   const solanaDevnetTransactionId = 'djF8c29sYW5hOkV0V1RSQUJaYVlxNmlNZmVZS291UnUxNjZWVTJ4cWExfDE0MjkxMTM0LTEzMDUtNDZlOS04NDMyLTZhZjI4ZjYwODQyYQ'
   const solanaDevnetSignature = '2SCP4z9Bs2WEcBZZzwH812HNoBJKGcGz2d41UmSvp2QBaQ9BeqPqybgsiTn9LVtYnKNqJTFctWQbrGvgW7J7WxHV'
+
+  // TRON
+  const tronNileTestnetChainId = 'tron:0xcd8690dc'
+  const tronUsdtAsset = `${tronNileTestnetChainId}/trc20:TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf`
+  const tronNileTestnetSender = 'TDGSR64oU4QDpViKfdwawSiqwyqpUB6JUD'
+  const tronNileTestnetRecipient = 'TKGRE6oiU3rEzasue4MsB6sCXXSTx9BAe3'
+  const tronNileTestnetSenderCaip10 = `${tronNileTestnetChainId}:${tronNileTestnetSender}`
+  const tronNileTestnetRecipientCaip10 = `${tronNileTestnetChainId}:${tronNileTestnetRecipient}`
+  const tronNileTestnetAmount = '0.001'
+
+  const tronNileTestnetTransactionId = 'djF8dHJvbjoweGNkODY5MGRjfDQwZDEzZjMyLTUxNmYtNDgyMC05N2QyLWZlMTljMjJiNzk3OQ'
+  const tronNileTestnetSendResult= "{\"raw_data\":{\"contract\":[{\"parameter\":{\"type_url\":\"type.googleapis.com/protocol.TriggerSmartContract\",\"value\":{\"contract_address\":\"41eca9bc828a3005b9a3b909f2cc5c2a54794de05f\",\"data\":\"a9059cbb000000000000000000000000250bcf7ea20ca27ad3fa7577d63d1a7ccb44363700000000000000000000000000000000000000000000000000000000000f4240\",\"owner_address\":\"417c972ef270213301735b0039e8405dbabf91356c\"}},\"type\":\"TriggerSmartContract\"}],\"expiration\":1757072835000,\"fee_limit\":2637000,\"ref_block_bytes\":\"e2b0\",\"ref_block_hash\":\"6c5fe40810979f92\",\"timestamp\":1757072775461},\"raw_data_hex\":\"0a02e2b022086c5fe40810979f9240b883cfcd91335aae01081f12a9010a31747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e54726967676572536d617274436f6e747261637412740a15417c972ef270213301735b0039e8405dbabf91356c121541eca9bc828a3005b9a3b909f2cc5c2a54794de05f2244a9059cbb000000000000000000000000250bcf7ea20ca27ad3fa7577d63d1a7ccb44363700000000000000000000000000000000000000000000000000000000000f424070a5b2cbcd91339001c8f9a001\",\"signature\":[\"1ec03374b4a5ee0579aca0c029022433fb7558be5e2405d54c9cb29523fa980740b6f8f77398b6ddb7fcf86583f908fdf4b837d3497cd12f5d76cb2913e576a301\"],\"txID\":\"3673cd659cbb7ef8c14e3972eb03d194d43db9a53d7cb3df31c1cf9194864c76\",\"visible\":false}"
 
   describe('EVM', () => {
     it('should build an ERC20 transfer transaction', async () => {
@@ -258,6 +271,66 @@ describe('POS', () => {
       expect(responseData.result).toBeDefined();
       expect(responseData.result.status).toBe('CONFIRMED');
     });
-    
+  });
+
+  describe('Tron', () => {
+    it('should build a Tron transfer transaction', async () => {
+      const payload: BuildTransactionRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'reown_pos_buildTransaction',
+        params: {
+          asset: tronUsdtAsset,
+          amount: tronNileTestnetAmount,
+          recipient: tronNileTestnetRecipientCaip10,
+          sender: tronNileTestnetSenderCaip10,
+        }
+      };
+
+      const response = await httpClient.post(`${baseUrl}/v1/json-rpc?projectId=${projectId}`, payload);
+
+      expect(response.status).toBe(200);
+      const responseData = response.data as BuildTransactionResponse;
+      const result = responseData.result;
+      expect(result).toBeDefined();
+      expect(result.id).toBeDefined();
+      expect(result.id.length).toBeGreaterThan(10);
+      expect(result.transactionRpc).toBeDefined();
+      expect(result.transactionRpc.method).toBe('tron_signTransaction')
+      const params = result.transactionRpc.params as TronTransactionParams; 
+      expect(params).toBeDefined();
+      expect(params.address ).toBeDefined();
+      expect(params.transaction).toBeDefined();
+      expect(params.transaction.transaction).toBeDefined();
+      expect(params.transaction.transaction.raw_data_hex).toBeDefined();
+      expect(params.transaction.transaction.raw_data_hex.length).toBeGreaterThan(0);
+      expect(params.transaction.transaction.signature).toBeNull();
+      expect(params.transaction.transaction.txID).toBeDefined();
+      expect(params.transaction.transaction.txID.length).toBeGreaterThan(0);
+      expect(params.transaction.transaction.visible).toBeDefined();
+      expect(params.transaction.transaction.visible).toBe(false);
+    });
+  });
+
+  describe('Tron', () => {
+    it('should check the transaction status', async () => {
+      const payload: CheckTransactionRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'reown_pos_checkTransaction',
+        params: {
+  
+          id: tronNileTestnetTransactionId,
+          sendResult: tronNileTestnetSendResult,
+        }
+      };
+
+      const response = await httpClient.post(`${baseUrl}/v1/json-rpc?projectId=${projectId}`, payload);
+      console.log(response.data);
+      expect(response.status).toBe(200);
+      const responseData = response.data as CheckTransactionResponse;
+      expect(responseData.result).toBeDefined();
+      expect(responseData.result.status).toBe('CONFIRMED');
+    });
   });
 });
