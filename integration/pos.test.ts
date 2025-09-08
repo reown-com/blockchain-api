@@ -9,7 +9,8 @@ import {
   CheckTransactionRequest,
   CheckTransactionResponse,
   SolanaTransactionParams,
-  TronTransactionParams
+  TronTransactionParams,
+  SolanaTransactionRpc
 } from './types/pos';
 
 
@@ -368,6 +369,127 @@ describe('POS', () => {
       const responseData = response.data as CheckTransactionResponse;
       expect(responseData.result).toBeDefined();
       expect(responseData.result.status).toBe('CONFIRMED');
+    });
+  });
+
+  describe('Multiple transactions', () => {
+    it('should build multiple evm transactions', async () => {
+      const payload: BuildTransactionRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'wc_pos_buildTransactions',
+        params: {
+          paymentIntents: [
+            {
+              asset: baseUSDC,
+              amount: usdcAmount,
+              recipient: baseToAddress,
+              sender: baseFromAddress,
+            },
+            {
+              asset: baseUSDC,
+              amount: usdcAmount,
+              recipient: baseToAddress,
+              sender: baseFromAddress,
+            }
+          ]
+        }
+      };
+
+      const response = await httpClient.post(`${baseUrl}/v1/json-rpc?projectId=${projectId}`, payload);
+      expect(response.status).toBe(200);
+      const responseData = response.data as BuildTransactionResponse;
+      expect(responseData.result).toBeDefined();
+      expect(responseData.result.transactions).toBeDefined();
+      expect(responseData.result.transactions.length).toBe(2);
+      const tx = responseData.result.transactions[0];
+      expect(tx.id).toBeDefined();
+      expect(tx.id.length).toBeGreaterThan(10);
+      expect(tx.method).toBe('eth_sendTransaction')
+      const params: EvmTransactionParams = (tx as EvmTransactionRpc).params[0];
+      expect(params).toBeDefined();
+      expect(params.to).toBe(baseUSDCContractAddress.toLowerCase());
+      expect(params.from).toBe(fromAddress.toLowerCase());
+      expect(params.value).toBe('0x0');
+      expect(params.input).toBeDefined();
+      expect(params.data).toBeDefined();
+      expect(params.data).toBe(params.input);
+      expect(params.input?.length).toBeGreaterThan(0);
+      const decodedData = erc20Interface.decodeFunctionData('transfer', params.input || '');
+      expect(decodedData[0].toLowerCase()).toBe(toAddress.toLowerCase());
+      expect(decodedData[1]).toBe(usdcAmountBigInt);
+      const tx2 = responseData.result.transactions[1];
+      expect(tx2.id).toBeDefined();
+      expect(tx2.id.length).toBeGreaterThan(10);
+      expect(tx2.method).toBe('eth_sendTransaction')
+      const params2: EvmTransactionParams = (tx2 as EvmTransactionRpc).params[0];
+      expect(params2).toBeDefined();
+      expect(params2.to).toBe(baseUSDCContractAddress.toLowerCase());
+      expect(params2.from).toBe(fromAddress.toLowerCase());
+      expect(params2.value).toBe('0x0');
+      expect(params2.input).toBeDefined();
+      expect(params2.data).toBeDefined();
+      expect(params2.data).toBe(params2.input);
+      expect(params2.input?.length).toBeGreaterThan(0);
+      const decodedData2 = erc20Interface.decodeFunctionData('transfer', params2.input || '');
+      expect(decodedData2[0].toLowerCase()).toBe(toAddress.toLowerCase());
+      expect(decodedData2[1]).toBe(usdcAmountBigInt);
+    });
+
+    it('should build multiple transactions on different chains', async () => {
+      const payload: BuildTransactionRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'wc_pos_buildTransactions',
+        params: {
+          paymentIntents: [
+            {
+              asset: baseUSDC,
+              amount: usdcAmount,
+              recipient: baseToAddress,
+              sender: baseFromAddress,
+            },
+            {
+              asset: solanaUsdcAsset,
+              amount: solanaMainnetAmount,
+              recipient: solanaMainnetRecipientCaip10,
+              sender: solanaMainnetSenderCaip10,
+            }
+          ]
+        }
+      };
+
+      const response = await httpClient.post(`${baseUrl}/v1/json-rpc?projectId=${projectId}`, payload);
+      expect(response.status).toBe(200);
+      const responseData = response.data as BuildTransactionResponse;
+      expect(responseData.result).toBeDefined();
+      expect(responseData.result.transactions).toBeDefined();
+      expect(responseData.result.transactions.length).toBe(2);
+      const tx = responseData.result.transactions[0];
+      expect(tx.id).toBeDefined();
+      expect(tx.id.length).toBeGreaterThan(10);
+      expect(tx.method).toBe('eth_sendTransaction')
+      const params: EvmTransactionParams = (tx as EvmTransactionRpc).params[0];
+      expect(params).toBeDefined();
+      expect(params.to).toBe(baseUSDCContractAddress.toLowerCase());
+      expect(params.from).toBe(fromAddress.toLowerCase());
+      expect(params.value).toBe('0x0');
+      expect(params.input).toBeDefined();
+      expect(params.data).toBeDefined();
+      expect(params.data).toBe(params.input);
+      expect(params.input?.length).toBeGreaterThan(0);
+      const decodedData = erc20Interface.decodeFunctionData('transfer', params.input || '');
+      expect(decodedData[0].toLowerCase()).toBe(toAddress.toLowerCase());
+      expect(decodedData[1]).toBe(usdcAmountBigInt);
+      const tx2 = responseData.result.transactions[1];
+      expect(tx2.id).toBeDefined();
+      expect(tx2.id.length).toBeGreaterThan(10);
+      expect(tx2.method).toBe('solana_signAndSendTransaction')
+      const params2: SolanaTransactionParams = (tx2 as SolanaTransactionRpc).params;
+      expect(params2).toBeDefined();
+      expect(params2.transaction).toBeDefined();
+      expect(params2.transaction.length).toBeGreaterThan(0);
+      expect(params2.pubkey).toBe(solanaMainnetSender);
     });
   });
 });
