@@ -3,6 +3,7 @@ use {
         AssetNamespaceType, BuildPosTxsError,
         CheckTransactionResult, TransactionBuilder, TransactionId, TransactionRpc,
         TransactionStatus, ValidatedPaymentIntent, PaymentIntent,
+        SupportedNamespace,
     },
     crate::{state::AppState, utils::crypto::Caip2ChainId},
     alloy::{
@@ -17,8 +18,9 @@ use {
     serde::{de::DeserializeOwned, Deserialize, Serialize},
     std::collections::HashMap,
     std::sync::Arc,
-    strum_macros::EnumString,
+    strum_macros::{EnumString, Display},
     tracing::debug,
+    strum::{IntoEnumIterator, EnumIter},
 };
 
 const TRON_SIGN_TRANSACTION_METHOD: &str = "tron_signTransaction";
@@ -26,6 +28,7 @@ const DEFAULT_CHECK_IN: usize = 400;
 const FEE_MARGIN_BPS: u16 = 2000;
 const BPS_DEN: u128 = 10_000;
 const GET_ENERGY_FEE: &str = "getEnergyFee";
+const NAMESPACE_NAME: &str = "tron";
 
 static TRON_NETWORK_URL: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
     HashMap::from([
@@ -322,7 +325,7 @@ fn compute_fee_limit(energy_required: u128, energy_fee: u128) -> Result<u64, Bui
     u64::try_from(total).map_err(|_| BuildPosTxsError::Internal("fee_limit exceeds u64".to_string()))
 }
 
-#[derive(Debug, Clone, PartialEq, EnumString)]
+#[derive(Debug, Clone, PartialEq, EnumString, Display, EnumIter)]
 #[strum(serialize_all = "lowercase")]
 pub enum AssetNamespace {
     Trc20,
@@ -571,5 +574,15 @@ pub async fn check_transaction(
             status,
             check_in: None,
         }),
+    }
+}
+
+pub fn get_namespace_info() -> SupportedNamespace {
+    SupportedNamespace {
+        name: NAMESPACE_NAME.to_string(),
+        methods: vec![TRON_SIGN_TRANSACTION_METHOD.to_string()],
+        events: vec![],
+        capabilities: None,
+        asset_namespaces: AssetNamespace::iter().map(|x| x.to_string().to_ascii_lowercase()).collect(),
     }
 }

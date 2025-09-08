@@ -3,6 +3,7 @@ use {
         AssetNamespaceType, BuildPosTxsError,
         CheckTransactionResult, TransactionBuilder, TransactionId, TransactionRpc,
         TransactionStatus, ValidatedPaymentIntent, PaymentIntent,
+        SupportedNamespace,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::{
@@ -14,14 +15,16 @@ use {
     async_trait::async_trait,
     axum::extract::State,
     std::sync::Arc,
-    strum_macros::EnumString,
+    strum_macros::{EnumString, Display},
     tracing::debug,
+    strum::{IntoEnumIterator, EnumIter}
 };
 
 const NATIVE_GAS_LIMIT: u64 = 21_000;
 const ETH_SEND_TRANSACTION_METHOD: &str = "eth_sendTransaction";
 const BASE_URL: &str = "https://rpc.walletconnect.org/v1";
 const DEFAULT_CHECK_IN: usize = 1000;
+const NAMESPACE_NAME: &str = "eip155";
 
 sol! {
     #[sol(rpc)]
@@ -31,7 +34,7 @@ sol! {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, EnumString)]
+#[derive(Debug, Clone, PartialEq, EnumString, Display, EnumIter)]
 #[strum(serialize_all = "lowercase")]
 pub enum AssetNamespace {
     Erc20,
@@ -149,7 +152,7 @@ impl EvmTxBuilder {
 #[async_trait]
 impl TransactionBuilder<AssetNamespace> for EvmTransactionBuilder {
     fn namespace(&self) -> &'static str {
-        "eip155"
+        NAMESPACE_NAME
     }
 
     async fn validate_and_build(
@@ -305,5 +308,16 @@ pub async fn check_transaction(
             status,
             check_in: None,
         }),
+    }
+}
+
+
+pub fn get_namespace_info() -> SupportedNamespace {
+    SupportedNamespace {
+        name: NAMESPACE_NAME.to_string(),
+        methods: vec![ETH_SEND_TRANSACTION_METHOD.to_string()],
+        events: vec![],
+        capabilities: None,
+        asset_namespaces: AssetNamespace::iter().map(|x| x.to_string()).collect(),
     }
 }

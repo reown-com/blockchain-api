@@ -3,6 +3,7 @@ use {
         AssetNamespaceType, BuildPosTxsError,
         CheckTransactionResult, TransactionBuilder, TransactionId, TransactionRpc,
         TransactionStatus, ValidatedPaymentIntent, PaymentIntent,
+        SupportedNamespace,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::primitives::{utils::parse_units, U256},
@@ -20,16 +21,18 @@ use {
     spl_associated_token_account::get_associated_token_address,
     spl_token::{instruction::transfer_checked, solana_program::program_pack::Pack, state::Mint},
     std::{str::FromStr, sync::Arc},
-    strum_macros::EnumString,
+    strum_macros::{EnumString, Display},
     tracing::debug,
+    strum::{IntoEnumIterator, EnumIter},
 };
 
 const SOLANA_RPC_METHOD: &str = "solana_signAndSendTransaction";
 const SPL_TOKEN_2022_ID: &str = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
 const BASE_URL: &str = "https://rpc.walletconnect.org/v1";
 const DEFAULT_CHECK_IN: usize = 400;
+const NAMESPACE_NAME: &str = "solana";
 
-#[derive(Debug, Clone, PartialEq, EnumString)]
+#[derive(Debug, Clone, PartialEq, EnumString, Display, EnumIter)]
 #[strum(serialize_all = "lowercase")]
 pub enum AssetNamespace {
     Token,
@@ -47,7 +50,7 @@ pub struct SolanaTransactionBuilder;
 #[async_trait]
 impl TransactionBuilder<AssetNamespace> for SolanaTransactionBuilder {
     fn namespace(&self) -> &'static str {
-        "solana"
+        NAMESPACE_NAME
     }
     async fn validate_and_build(
         &self,
@@ -269,5 +272,16 @@ pub async fn check_transaction(
             status,
             check_in: None,
         }),
+    }
+}
+
+
+pub fn get_namespace_info() -> SupportedNamespace {
+    SupportedNamespace {
+        name: NAMESPACE_NAME.to_string(),
+        methods: vec![SOLANA_RPC_METHOD.to_string()],
+        events: vec![],
+        capabilities: None,
+        asset_namespaces: AssetNamespace::iter().map(|x| x.to_string().to_ascii_lowercase()).collect(),
     }
 }

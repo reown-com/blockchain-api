@@ -1,5 +1,6 @@
 pub mod build_transactions;
 pub mod check_transaction;
+pub mod supported_networks;
 pub mod evm;
 pub mod solana;
 pub mod tron;
@@ -77,6 +78,20 @@ impl CheckPosTxError {
     }
 }
 
+
+#[derive(Debug, Error)]
+pub enum SupportedNetworksError {
+
+    #[error("Internal error: {0}")]
+    Internal(String),
+}
+
+impl SupportedNetworksError {
+    pub fn is_internal(&self) -> bool {
+        matches!(self, SupportedNetworksError::Internal(_))
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum TransactionIdError {
     #[error("Invalid transaction encoding: {0}")]
@@ -87,6 +102,21 @@ pub enum TransactionIdError {
 
     #[error("Invalid chain ID: {0}")]
     InvalidChainId(#[from] CryptoUitlsError),
+}
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SupportedNetworksResult {
+    pub namespaces: Vec<SupportedNamespace>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SupportedNamespace {
+    pub name: String,
+    pub methods: Vec<String>,
+    pub events: Vec<String>,
+    pub capabilities: Option<Value>,
+    pub asset_namespaces: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

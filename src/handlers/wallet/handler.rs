@@ -3,7 +3,7 @@ use super::get_calls_status::{self, GetCallsStatusError};
 use super::get_exchange_buy_status::{self, GetExchangeBuyStatusError};
 use super::get_exchange_url::{self, GetExchangeUrlError};
 use super::get_exchanges::{self, GetExchangesError};
-use super::pos::{self, BuildPosTxsError, CheckPosTxError};
+use super::pos::{self, BuildPosTxsError, CheckPosTxError, SupportedNetworksError};
 use super::prepare_calls::{self, PrepareCallsError};
 use super::send_prepared_calls::{self, SendPreparedCallsError};
 use crate::error::RpcError;
@@ -101,6 +101,7 @@ pub const PAY_GET_EXCHANGE_URL: &str = "reown_getExchangePayUrl";
 pub const PAY_GET_EXCHANGE_BUY_STATUS: &str = "reown_getExchangeBuyStatus";
 pub const POS_BUILD_TRANSACTIONS: &str = "wc_pos_buildTransactions";
 pub const POS_CHECK_TRANSACTION: &str = "wc_pos_checkTransaction";
+pub const POS_SUPPORTED_NETWORKS: &str = "wc_pos_supportedNetworks";
 
 #[derive(Debug, Error)]
 enum Error {
@@ -134,6 +135,9 @@ enum Error {
     #[error("{POS_CHECK_TRANSACTION}: {0}")]
     PosCheckTransaction(CheckPosTxError),
 
+    #[error("{POS_SUPPORTED_NETWORKS}: {0}")]
+    PosSupportedNetworks(SupportedNetworksError),
+
     #[error("Method not found")]
     MethodNotFound,
 
@@ -163,6 +167,7 @@ impl Error {
             Error::GetExchangeBuyStatus(_) => -8,
             Error::PosBuildTransactions(_) => -9,
             Error::PosCheckTransaction(_) => -10,
+            Error::PosSupportedNetworks(_) => -11,
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,
@@ -181,6 +186,7 @@ impl Error {
             Error::GetExchangeBuyStatus(e) => e.is_internal(),
             Error::PosBuildTransactions(e) => e.is_internal(),
             Error::PosCheckTransaction(e) => e.is_internal(),
+            Error::PosSupportedNetworks(e) => e.is_internal(),
             Error::MethodNotFound => false,
             Error::InvalidParams(_) => false,
             Error::Internal(_) => true,
@@ -321,6 +327,15 @@ async fn handle_rpc(
             )
             .await
             .map_err(Error::PosCheckTransaction)?,
+        )
+        .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
+        POS_SUPPORTED_NETWORKS => serde_json::to_value(
+            &pos::supported_networks::handler(
+                state,
+                project_id,
+            )
+            .await
+            .map_err(Error::PosSupportedNetworks)?,
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
         _ => Err(Error::MethodNotFound),
