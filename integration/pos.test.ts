@@ -57,8 +57,8 @@ describe('POS', () => {
   const solanaMainnetRecipientCaip10 = `${solanaMainnetChainId}:${solanaMainnetRecipient}`
   const solanaMainnetAmount = '0.001'
 
-  const solanaDevnetTransactionId = 'djF8c29sYW5hOkV0V1RSQUJaYVlxNmlNZmVZS291UnUxNjZWVTJ4cWExfDE0MjkxMTM0LTEzMDUtNDZlOS04NDMyLTZhZjI4ZjYwODQyYQ'
-  const solanaDevnetSignature = '2SCP4z9Bs2WEcBZZzwH812HNoBJKGcGz2d41UmSvp2QBaQ9BeqPqybgsiTn9LVtYnKNqJTFctWQbrGvgW7J7WxHV'
+  const solanaMainnetTransactionId = 'djF8c29sYW5hOjVleWt0NFVzRnY4UDhOSmRUUkVwWTF2enFLcVpLdmRwfDE0MjkxMTM0LTEzMDUtNDZlOS04NDMyLTZhZjI4ZjYwODQyYQ'
+  const solanaMainnetSignature = '5FYVna6GX6Rg2k1XwWvrq5bqAr7CT2u4mhUJJJFASj3Y91P5DMbGAANVXsRCvWuVShYB6aboFjwJuLR95WPAkWxy'
 
   // TRON
   const tronNileTestnetChainId = 'tron:0xcd8690dc'
@@ -291,8 +291,8 @@ describe('POS', () => {
         id: 1,
         method: 'wc_pos_checkTransaction',
         params: {
-          id: solanaDevnetTransactionId,
-          sendResult: solanaDevnetSignature,
+          id: solanaMainnetTransactionId,
+          sendResult: solanaMainnetSignature,
         }
       };
 
@@ -364,7 +364,6 @@ describe('POS', () => {
       };
 
       const response = await httpClient.post(`${baseUrl}/v1/json-rpc?projectId=${projectId}`, payload);
-      console.log(response.data);
       expect(response.status).toBe(200);
       const responseData = response.data as CheckTransactionResponse;
       expect(responseData.result).toBeDefined();
