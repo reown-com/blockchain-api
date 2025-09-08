@@ -1,7 +1,7 @@
 use {
     super::{
-        BuildPosTxsError, BuildTransactionParams, BuildTransactionResult, SupportedNamespaces,
-        TransactionBuilder, PaymentIntent, TransactionRpc,
+        BuildPosTxsError, BuildTransactionParams, BuildTransactionResult, PaymentIntent,
+        SupportedNamespaces, TransactionBuilder, TransactionRpc,
     },
     crate::{
         handlers::wallet::pos::{
@@ -50,7 +50,9 @@ pub async fn handler(
     params: BuildTransactionParams,
 ) -> Result<BuildTransactionResult, BuildPosTxsError> {
     if params.payment_intents.is_empty() {
-        return Err(BuildPosTxsError::Validation("No payment intents found".to_string()));
+        return Err(BuildPosTxsError::Validation(
+            "No payment intents found".to_string(),
+        ));
     }
 
     let futures = params.payment_intents.into_iter().map(|intent| {

@@ -1,9 +1,8 @@
 use {
     super::{
-        AssetNamespaceType, BuildPosTxsError,
-        CheckTransactionResult, TransactionBuilder, TransactionId, TransactionRpc,
-        TransactionStatus, ValidatedPaymentIntent, PaymentIntent,
-        SupportedNamespace,
+        AssetNamespaceType, BuildPosTxsError, CheckTransactionResult, PaymentIntent,
+        SupportedNamespace, TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
+        ValidatedPaymentIntent,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::{
@@ -15,9 +14,9 @@ use {
     async_trait::async_trait,
     axum::extract::State,
     std::sync::Arc,
-    strum_macros::{EnumString, Display},
+    strum::{EnumIter, IntoEnumIterator},
+    strum_macros::{Display, EnumString},
     tracing::debug,
-    strum::{IntoEnumIterator, EnumIter}
 };
 
 const NATIVE_GAS_LIMIT: u64 = 21_000;
@@ -171,8 +170,6 @@ impl TransactionBuilder<AssetNamespace> for EvmTransactionBuilder {
         project_id: String,
         params: ValidatedPaymentIntent<AssetNamespace>,
     ) -> Result<TransactionRpc, BuildPosTxsError> {
-      
-
         let builder = EvmTxBuilder::new(
             &project_id,
             params.asset.chain_id(),
@@ -310,7 +307,6 @@ pub async fn check_transaction(
         }),
     }
 }
-
 
 pub fn get_namespace_info() -> SupportedNamespace {
     SupportedNamespace {

@@ -1,9 +1,8 @@
 use {
     super::{
-        AssetNamespaceType, BuildPosTxsError,
-        CheckTransactionResult, TransactionBuilder, TransactionId, TransactionRpc,
-        TransactionStatus, ValidatedPaymentIntent, PaymentIntent,
-        SupportedNamespace,
+        AssetNamespaceType, BuildPosTxsError, CheckTransactionResult, PaymentIntent,
+        SupportedNamespace, TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
+        ValidatedPaymentIntent,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::primitives::{utils::parse_units, U256},
@@ -21,9 +20,9 @@ use {
     spl_associated_token_account::get_associated_token_address,
     spl_token::{instruction::transfer_checked, solana_program::program_pack::Pack, state::Mint},
     std::{str::FromStr, sync::Arc},
-    strum_macros::{EnumString, Display},
+    strum::{EnumIter, IntoEnumIterator},
+    strum_macros::{Display, EnumString},
     tracing::debug,
-    strum::{IntoEnumIterator, EnumIter},
 };
 
 const SOLANA_RPC_METHOD: &str = "solana_signAndSendTransaction";
@@ -68,11 +67,8 @@ impl TransactionBuilder<AssetNamespace> for SolanaTransactionBuilder {
         project_id: String,
         params: ValidatedPaymentIntent<AssetNamespace>,
     ) -> Result<TransactionRpc, BuildPosTxsError> {
-
         match params.namespace {
-            AssetNamespace::Token => {
-                build_spl_transfer(params, &project_id).await
-            }
+            AssetNamespace::Token => build_spl_transfer(params, &project_id).await,
             _ => {
                 return Err(BuildPosTxsError::Validation(
                     "Unsupported asset namespace".to_string(),
@@ -121,7 +117,9 @@ async fn build_spl_transfer(
     let recent_blockhash = rpc_client
         .get_latest_blockhash_with_commitment(CommitmentConfig::finalized())
         .await
-        .map_err(|e| BuildPosTxsError::Internal(format!("Failed to fetch recent blockhash: {}", e)))?
+        .map_err(|e| {
+            BuildPosTxsError::Internal(format!("Failed to fetch recent blockhash: {}", e))
+        })?
         .0;
 
     let instructions = vec![transfer_instruction];
@@ -143,7 +141,7 @@ async fn build_spl_transfer(
 
     let transaction_b64 = general_purpose::STANDARD.encode(serialized_tx);
 
-   Ok(TransactionRpc {
+    Ok(TransactionRpc {
         id: TransactionId::new(params.asset.chain_id()).to_string(),
         method: SOLANA_RPC_METHOD.to_string(),
         params: serde_json::json!({
@@ -238,7 +236,9 @@ pub async fn get_transaction_status(
     let response = rpc_client
         .get_signature_statuses_with_history(&[parsed_signature])
         .await
-        .map_err(|e| BuildPosTxsError::Internal(format!("Failed to get signature status: {}", e)))?;
+        .map_err(|e| {
+            BuildPosTxsError::Internal(format!("Failed to get signature status: {}", e))
+        })?;
 
     debug!("solana check transaction response: {:?}", response);
 
@@ -275,13 +275,14 @@ pub async fn check_transaction(
     }
 }
 
-
 pub fn get_namespace_info() -> SupportedNamespace {
     SupportedNamespace {
         name: NAMESPACE_NAME.to_string(),
         methods: vec![SOLANA_RPC_METHOD.to_string()],
         events: vec![],
         capabilities: None,
-        asset_namespaces: AssetNamespace::iter().map(|x| x.to_string().to_ascii_lowercase()).collect(),
+        asset_namespaces: AssetNamespace::iter()
+            .map(|x| x.to_string().to_ascii_lowercase())
+            .collect(),
     }
 }

@@ -1,9 +1,8 @@
 use {
     super::{
-        AssetNamespaceType, BuildPosTxsError,
-        CheckTransactionResult, TransactionBuilder, TransactionId, TransactionRpc,
-        TransactionStatus, ValidatedPaymentIntent, PaymentIntent,
-        SupportedNamespace,
+        AssetNamespaceType, BuildPosTxsError, CheckTransactionResult, PaymentIntent,
+        SupportedNamespace, TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
+        ValidatedPaymentIntent,
     },
     crate::{state::AppState, utils::crypto::Caip2ChainId},
     alloy::{
@@ -18,9 +17,9 @@ use {
     serde::{de::DeserializeOwned, Deserialize, Serialize},
     std::collections::HashMap,
     std::sync::Arc,
-    strum_macros::{EnumString, Display},
+    strum::{EnumIter, IntoEnumIterator},
+    strum_macros::{Display, EnumString},
     tracing::debug,
-    strum::{IntoEnumIterator, EnumIter},
 };
 
 const TRON_SIGN_TRANSACTION_METHOD: &str = "tron_signTransaction";
@@ -322,7 +321,8 @@ fn compute_fee_limit(energy_required: u128, energy_fee: u128) -> Result<u64, Bui
         .and_then(|base| base.checked_mul(BPS_DEN + FEE_MARGIN_BPS as u128))
         .and_then(|v| v.checked_div(BPS_DEN))
         .ok_or_else(|| BuildPosTxsError::Internal("fee_limit overflow".to_string()))?;
-    u64::try_from(total).map_err(|_| BuildPosTxsError::Internal("fee_limit exceeds u64".to_string()))
+    u64::try_from(total)
+        .map_err(|_| BuildPosTxsError::Internal("fee_limit exceeds u64".to_string()))
 }
 
 #[derive(Debug, Clone, PartialEq, EnumString, Display, EnumIter)]
@@ -362,9 +362,7 @@ impl TransactionBuilder<AssetNamespace> for TronTransactionBuilder {
         params: ValidatedPaymentIntent<AssetNamespace>,
     ) -> Result<TransactionRpc, BuildPosTxsError> {
         match params.namespace {
-            AssetNamespace::Trc20 => {
-                build_trc20_transfer(state, params, &project_id).await
-            }
+            AssetNamespace::Trc20 => build_trc20_transfer(state, params, &project_id).await,
             _ => {
                 return Err(BuildPosTxsError::Validation(
                     "Unsupported asset namespace".to_string(),
@@ -583,6 +581,8 @@ pub fn get_namespace_info() -> SupportedNamespace {
         methods: vec![TRON_SIGN_TRANSACTION_METHOD.to_string()],
         events: vec![],
         capabilities: None,
-        asset_namespaces: AssetNamespace::iter().map(|x| x.to_string().to_ascii_lowercase()).collect(),
+        asset_namespaces: AssetNamespace::iter()
+            .map(|x| x.to_string().to_ascii_lowercase())
+            .collect(),
     }
 }

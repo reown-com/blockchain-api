@@ -1,8 +1,8 @@
 pub mod build_transactions;
 pub mod check_transaction;
-pub mod supported_networks;
 pub mod evm;
 pub mod solana;
+pub mod supported_networks;
 pub mod tron;
 
 use {
@@ -78,10 +78,8 @@ impl CheckPosTxError {
     }
 }
 
-
 #[derive(Debug, Error)]
 pub enum SupportedNetworksError {
-
     #[error("Internal error: {0}")]
     Internal(String),
 }
@@ -134,13 +132,11 @@ pub struct PaymentIntent {
     pub sender: String,
 }
 
-
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BuildTransactionResult {
     pub transactions: Vec<TransactionRpc>,
 }
-
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

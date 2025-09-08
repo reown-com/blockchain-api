@@ -330,12 +330,9 @@ async fn handle_rpc(
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
         POS_SUPPORTED_NETWORKS => serde_json::to_value(
-            &pos::supported_networks::handler(
-                state,
-                project_id,
-            )
-            .await
-            .map_err(Error::PosSupportedNetworks)?,
+            &pos::supported_networks::handler(state, project_id)
+                .await
+                .map_err(Error::PosSupportedNetworks)?,
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
         _ => Err(Error::MethodNotFound),
