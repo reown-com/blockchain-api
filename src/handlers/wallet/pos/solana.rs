@@ -237,7 +237,7 @@ pub async fn get_transaction_status(
         .await
         .map_err(|e| BuildPosTxsError::Internal(format!("Failed to get signature status: {}", e)))?;
 
-    debug!("solana check transactionresponse: {:?}", response);
+    debug!("solana check transaction response: {:?}", response);
 
     match response.value.first() {
         Some(Some(status)) => {
