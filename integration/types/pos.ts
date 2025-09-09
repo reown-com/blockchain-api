@@ -82,6 +82,7 @@ export interface TronTransactionParams {
 
 export interface BaseTransactionRpc {
   id: string;
+  chainId: string;
   method: string;
   params: unknown;
 }

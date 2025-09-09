@@ -422,6 +422,7 @@ async fn build_trc20_transfer(
 
     Ok(TransactionRpc {
         id: TransactionId::new(params.asset.chain_id()).to_string(),
+        chain_id: params.asset.chain_id().to_string(),
         method: TRON_SIGN_TRANSACTION_METHOD.to_string(),
         params: serde_json::json!({
             "address": params.sender_address,

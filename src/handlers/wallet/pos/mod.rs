@@ -142,6 +142,7 @@ pub struct BuildTransactionResult {
 #[serde(rename_all = "camelCase")]
 pub struct TransactionRpc {
     pub id: String,
+    pub chain_id: String,
     pub method: String,
     pub params: Value,
 }

@@ -143,6 +143,7 @@ impl EvmTxBuilder {
         Ok(TransactionRpc {
             method: ETH_SEND_TRANSACTION_METHOD.to_string(),
             params: serde_json::json!([self.tx_request]),
+            chain_id: self.chain_id.to_string(),
             id: TransactionId::new(&self.chain_id).to_string(),
         })
     }

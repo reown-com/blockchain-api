@@ -143,6 +143,7 @@ async fn build_spl_transfer(
 
     Ok(TransactionRpc {
         id: TransactionId::new(params.asset.chain_id()).to_string(),
+        chain_id: params.asset.chain_id().to_string(),
         method: SOLANA_RPC_METHOD.to_string(),
         params: serde_json::json!({
             "transaction": transaction_b64,
