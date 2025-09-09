@@ -2,10 +2,7 @@ use {
     crate::handlers::wallet::exchanges::{
         get_supported_exchanges, is_feature_enabled_for_project_id, Exchange,
     },
-    crate::{
-        handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
-        state::AppState,
-    },
+    crate::{handlers::SdkInfoParams, state::AppState},
     axum::{
         extract::{ConnectInfo, Query, State},
         Json,
@@ -15,7 +12,7 @@ use {
     std::{net::SocketAddr, sync::Arc},
     thiserror::Error,
     tracing::debug,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize)]
@@ -80,7 +77,7 @@ pub async fn handler(
         .await
         .map_err(|e| GetExchangesError::ValidationError(e.to_string()))?;
     handler_internal(state, connect_info, headers, query, request)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("pay_get_exchanges"))
+        .with_metrics(future_metrics!("handler:pay_get_exchanges"))
         .await
 }
 

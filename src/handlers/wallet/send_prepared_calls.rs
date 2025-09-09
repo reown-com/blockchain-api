@@ -19,7 +19,6 @@ use {
                 },
                 CoSignRequest,
             },
-            HANDLER_TASK_METRICS,
         },
         state::AppState,
         utils::{crypto::UserOperation, simple_request_json::SimpleRequestJson},
@@ -38,7 +37,7 @@ use {
     std::sync::Arc,
     thiserror::Error,
     uuid::Uuid,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
     yttrium::{
         bundler::{client::BundlerClient, config::BundlerConfig},
         chain::ChainId,
@@ -159,7 +158,7 @@ pub async fn handler(
     request: SendPreparedCallsRequest,
 ) -> Result<SendPreparedCallsResponse, SendPreparedCallsError> {
     handler_internal(state, project_id, request)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("wallet_send_prepared_calls"))
+        .with_metrics(future_metrics!("handler:wallet_send_prepared_calls"))
         .await
 }
 

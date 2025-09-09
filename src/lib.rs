@@ -29,6 +29,7 @@ use {
     error::RpcResult,
     http::Request,
     hyper::{header::HeaderName, http},
+    metrics_exporter_prometheus::PrometheusBuilder,
     providers::{
         AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
         BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider,
@@ -54,12 +55,9 @@ use {
     },
     tracing::{error, info, log::warn},
     utils::rate_limit::RateLimit,
-    wc::{
-        geoip::{
-            block::{middleware::GeoBlockLayer, BlockingPolicy},
-            MaxMindResolver,
-        },
-        metrics::ServiceMetrics,
+    wc::geoip::{
+        block::{middleware::GeoBlockLayer, BlockingPolicy},
+        MaxMindResolver,
     },
 };
 
@@ -84,7 +82,9 @@ pub mod utils;
 mod ws;
 
 pub async fn bootstrap(config: Config) -> RpcResult<()> {
-    ServiceMetrics::init_with_name("rpc-proxy");
+    let prometheus_handler = PrometheusBuilder::new()
+        .install_recorder()
+        .context("failed to initialize prometheus")?;
 
     let s3_client = get_s3_client(&config).await;
     let geoip_resolver = get_geoip_resolver(&config, &s3_client).await;
@@ -414,8 +414,12 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 
     info!("Starting metric server on {}", private_addr);
 
+    // TODO: Check metrics endpoint is working
     let private_app = Router::new()
-        .route("/metrics", get(handlers::metrics::handler))
+        .route(
+            "/metrics",
+            get(move || async move { prometheus_handler.render() }),
+        )
         .with_state(state_arc.clone());
 
     let public_server = create_server(app, addr);

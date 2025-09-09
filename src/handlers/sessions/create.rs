@@ -1,7 +1,5 @@
 use {
-    super::{
-        super::HANDLER_TASK_METRICS, NewPermissionPayload, QueryParams, StoragePermissionsItem,
-    },
+    super::{NewPermissionPayload, QueryParams, StoragePermissionsItem},
     crate::{
         error::RpcError,
         state::AppState,
@@ -17,7 +15,7 @@ use {
     rand_core::OsRng,
     serde::{Deserialize, Serialize},
     std::{sync::Arc, time::SystemTime},
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -46,7 +44,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<NewPermissionPayload>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, query_params, request_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("sessions_create"))
+        .with_metrics(future_metrics!("handler:sessions_create"))
         .await
 }
 

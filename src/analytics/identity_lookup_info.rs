@@ -4,6 +4,7 @@ use {
     parquet_derive::ParquetRecordWriter,
     serde::Serialize,
     std::{sync::Arc, time::Duration},
+    wc::metrics::Enum,
 };
 
 #[derive(Debug, Clone, Serialize, ParquetRecordWriter)]

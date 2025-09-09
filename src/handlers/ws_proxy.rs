@@ -1,5 +1,5 @@
 use {
-    super::{RpcQueryParams, HANDLER_TASK_METRICS},
+    super::RpcQueryParams,
     crate::{error::RpcError, state::AppState},
     axum::{
         extract::{ws::WebSocketUpgrade, Query, State},
@@ -7,7 +7,7 @@ use {
         response::Response,
     },
     std::sync::Arc,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 pub async fn handler(
@@ -17,7 +17,7 @@ pub async fn handler(
     ws: WebSocketUpgrade,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query_params, headers, ws)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("ws_proxy"))
+        .with_metrics(future_metrics!("handler:ws_proxy"))
         .await
 }
 

@@ -2,6 +2,7 @@ use {
     super::StorageError,
     serde::Deserialize,
     std::{collections::HashSet, str::FromStr, time::Duration},
+    wc::metrics::{self, enum_ordinalize::Ordinalize, Enum},
     wcn_replication::{
         auth::{client_key_from_secret, peer_id, PublicKey},
         identity::Keypair,
@@ -15,7 +16,7 @@ const CONNECTION_TIMEOUT: Duration = Duration::from_secs(3);
 const RECORDS_TTL: Duration = Duration::from_secs(60 * 60 * 24 * 30); // 30 days
 
 /// IRN storage operation type
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, Ordinalize)]
 pub enum OperationType {
     Hset,
     Hget,
@@ -25,8 +26,8 @@ pub enum OperationType {
     Get,
 }
 
-impl OperationType {
-    pub fn as_str(&self) -> &'static str {
+impl metrics::Enum for OperationType {
+    fn as_str(&self) -> &'static str {
         match self {
             OperationType::Hset => "hset",
             OperationType::Hget => "hget",

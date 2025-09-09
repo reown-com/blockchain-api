@@ -1,8 +1,5 @@
 use {
-    super::{
-        super::{SdkInfoParams, HANDLER_TASK_METRICS},
-        RegisterPayload, RegisterRequest, UNIXTIMESTAMP_SYNC_THRESHOLD,
-    },
+    super::{super::SdkInfoParams, RegisterPayload, RegisterRequest, UNIXTIMESTAMP_SYNC_THRESHOLD},
     crate::{
         analytics::{AccountNameRegistration, MessageSource},
         database::{
@@ -36,7 +33,7 @@ use {
     sqlx::Error as SqlxError,
     std::{collections::HashMap, net::SocketAddr, sync::Arc},
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -54,7 +51,7 @@ pub async fn handler(
     SimpleRequestJson(register_request): SimpleRequestJson<RegisterRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, connect_info, headers, query, register_request)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("profile_register"))
+        .with_metrics(future_metrics!("handler:profile_register"))
         .await
 }
 

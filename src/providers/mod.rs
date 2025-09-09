@@ -58,7 +58,6 @@ use {
         sync::Arc,
     },
     tracing::{debug, error, log::warn},
-    wc::metrics::TaskMetrics,
     yttrium::chain_abstraction::api::Transaction,
 };
 
@@ -214,8 +213,6 @@ pub use {
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
 };
-
-static WS_PROXY_TASK_METRICS: TaskMetrics = TaskMetrics::new("ws_proxy_task");
 
 pub type ChainsWeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
 pub type NamespacesWeightResolver = HashMap<CaipNamespaces, HashMap<ProviderKind, Weight>>;

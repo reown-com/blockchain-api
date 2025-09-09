@@ -12,10 +12,7 @@ use crate::json_rpc::{
 };
 use crate::utils::simple_request_json::SimpleRequestJson;
 use crate::{
-    handlers::{
-        wallet::get_calls_status::QueryParams as CallStatusQueryParams, SdkInfoParams,
-        HANDLER_TASK_METRICS,
-    },
+    handlers::{wallet::get_calls_status::QueryParams as CallStatusQueryParams, SdkInfoParams},
     state::AppState,
 };
 use axum::extract::{ConnectInfo, Query};
@@ -27,7 +24,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use thiserror::Error;
 use tracing::error;
-use wc::future::FutureExt;
+use wc::metrics::{future_metrics, FutureExt};
 use yttrium::wallet_service_api;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -48,7 +45,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<JsonRpcRequest>,
 ) -> Response {
     handler_internal(state, connect_info, headers, query, request_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("wallet"))
+        .with_metrics(future_metrics!("handler:wallet"))
         .await
 }
 

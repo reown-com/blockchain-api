@@ -1,5 +1,5 @@
 use {
-    crate::{error::RpcError, handlers::HANDLER_TASK_METRICS, state::AppState},
+    crate::{error::RpcError, state::AppState},
     axum::{
         extract::{ConnectInfo, Query, State},
         response::{IntoResponse, Response},
@@ -11,7 +11,7 @@ use {
     tap::TapFallible,
     tracing::log::error,
     validator::Validate,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone, Validate)]
@@ -71,7 +71,7 @@ pub async fn handler(
     headers: HeaderMap,
 ) -> Result<Response, RpcError> {
     handler_internal(state, connect_info, query, headers)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("onrmap_buy_options"))
+        .with_metrics(future_metrics!("handler:onrmap_buy_options"))
         .await
 }
 

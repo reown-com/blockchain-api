@@ -1,5 +1,5 @@
 use {
-    super::{super::HANDLER_TASK_METRICS, SuggestionsParams},
+    super::SuggestionsParams,
     crate::{
         error::RpcError,
         names::suggestions::dictionary_suggestions,
@@ -13,7 +13,7 @@ use {
     },
     serde::{Deserialize, Serialize},
     std::sync::Arc,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 const SUGGESTION_OPTIONS: usize = 5;
@@ -36,7 +36,7 @@ pub async fn handler(
     query: Query<SuggestionsParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, name, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("name_suggestions"))
+        .with_metrics(future_metrics!("handler:name_suggestions"))
         .await
 }
 

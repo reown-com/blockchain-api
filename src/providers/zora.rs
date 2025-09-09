@@ -1,7 +1,7 @@
 use {
     super::{
         Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams,
-        RpcWsProvider, WS_PROXY_TASK_METRICS,
+        RpcWsProvider,
     },
     crate::{
         env::ZoraConfig,
@@ -17,7 +17,7 @@ use {
     hyper::http,
     std::collections::HashMap,
     tracing::debug,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug)]
@@ -76,7 +76,7 @@ impl RpcWsProvider for ZoraWsProvider {
 
         Ok(ws.on_upgrade(move |socket| {
             ws::proxy(project_id, socket, websocket_provider)
-                .with_metrics(WS_PROXY_TASK_METRICS.with_name("Zora"))
+                .with_metrics(future_metrics!("ws_proxy_task:zora"))
         }))
     }
 }

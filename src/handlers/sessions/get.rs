@@ -1,5 +1,5 @@
 use {
-    super::{super::HANDLER_TASK_METRICS, StoragePermissionsItem},
+    super::StoragePermissionsItem,
     crate::{
         error::RpcError,
         metrics::Metrics,
@@ -20,7 +20,7 @@ use {
     serde_json::json,
     std::{sync::Arc, time::SystemTime},
     uuid::Uuid,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -36,7 +36,7 @@ pub async fn handler(
     query_params: Query<QueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, query_params)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("sessions_create"))
+        .with_metrics(future_metrics!("handler:sessions_create"))
         .await
 }
 

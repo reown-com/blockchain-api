@@ -1,5 +1,4 @@
 use {
-    super::HANDLER_TASK_METRICS,
     crate::{
         error::RpcError,
         providers::SupportedBundlerOps,
@@ -19,7 +18,7 @@ use {
     std::sync::Arc,
     tracing::info,
     url::Url,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -45,7 +44,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<BundlerJsonRpcRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query_params, request_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("bundler_ops"))
+        .with_metrics(future_metrics!("handler:bundler_ops"))
         .await
 }
 

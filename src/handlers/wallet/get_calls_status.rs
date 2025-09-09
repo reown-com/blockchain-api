@@ -1,7 +1,7 @@
 use super::call_id::CallId;
 use crate::{
     analytics::MessageSource,
-    handlers::{RpcQueryParams, SdkInfoParams, HANDLER_TASK_METRICS},
+    handlers::{RpcQueryParams, SdkInfoParams},
     state::AppState,
 };
 use alloy::{
@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, sync::Arc};
 use thiserror::Error;
 use tracing::error;
-use wc::future::FutureExt;
+use wc::metrics::{future_metrics, FutureExt};
 use yttrium::{chain::ChainId, erc4337::get_user_operation_receipt};
 
 pub type GetCallsStatusParams = (CallId,);
@@ -89,7 +89,7 @@ pub async fn handler(
     query: Query<QueryParams>,
 ) -> Result<GetCallsStatusResult, GetCallsStatusError> {
     handler_internal(state, project_id, request, connect_info, headers, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("wallet_get_calls_status"))
+        .with_metrics(future_metrics!("handler:wallet_get_calls_status"))
         .await
 }
 

@@ -1,5 +1,4 @@
 use {
-    super::super::HANDLER_TASK_METRICS,
     crate::{error::RpcError, state::AppState, utils::simple_request_json::SimpleRequestJson},
     axum::{
         extract::State,
@@ -10,7 +9,7 @@ use {
     std::sync::Arc,
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -60,7 +59,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<ConvertTransactionQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, request_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("convert_build_transaction"))
+        .with_metrics(future_metrics!("handler:convert_build_transaction"))
         .await
 }
 

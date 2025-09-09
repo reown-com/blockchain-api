@@ -1,8 +1,5 @@
 use {
-    super::{
-        super::HANDLER_TASK_METRICS, BridgingStatus, StorageBridgingItem, BRIDGING_TIMEOUT,
-        STATUS_POLLING_INTERVAL,
-    },
+    super::{BridgingStatus, StorageBridgingItem, BRIDGING_TIMEOUT, STATUS_POLLING_INTERVAL},
     crate::{
         analytics::MessageSource, error::RpcError, state::AppState, storage::irn::OperationType,
         utils::crypto::get_erc20_balance,
@@ -16,7 +13,7 @@ use {
     ethers::types::H160 as EthersH160,
     std::{sync::Arc, time::SystemTime},
     tracing::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
     yttrium::chain_abstraction::api::status::{
         StatusQueryParams, StatusResponse, StatusResponseCompleted, StatusResponseError,
         StatusResponsePendingObject,
@@ -28,7 +25,7 @@ pub async fn handler(
     query_params: Query<StatusQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query_params)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("ca_status"))
+        .with_metrics(future_metrics!("handler:ca_status"))
         .await
 }
 

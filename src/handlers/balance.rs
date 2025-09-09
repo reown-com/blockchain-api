@@ -1,5 +1,5 @@
 use {
-    super::{SdkInfoParams, SupportedCurrencies, HANDLER_TASK_METRICS},
+    super::{SdkInfoParams, SupportedCurrencies},
     crate::{
         analytics::{BalanceLookupInfo, MessageSource},
         error::RpcError,
@@ -20,7 +20,7 @@ use {
     std::{net::SocketAddr, sync::Arc, time::Duration},
     tap::TapFallible,
     tracing::log::{debug, error},
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 // Empty address for the contract address mimicking the Ethereum native token
@@ -131,7 +131,7 @@ pub async fn handler(
     address: Path<String>,
 ) -> Result<Json<BalanceResponseBody>, RpcError> {
     handler_internal(state, query, connect_info, headers, address)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("balance"))
+        .with_metrics(future_metrics!("handler:balance"))
         .await
 }
 

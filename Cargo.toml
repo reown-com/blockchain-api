@@ -69,6 +69,13 @@ sqlx = { version = "0.8", features = [
     "chrono",
 ] }
 
+# Metrics and analytics
+metrics-exporter-prometheus = "0.17"
+parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3", default-features = false, features = [
+    "flate2",
+] }
+parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3" }
+
 # IRN
 wcn_replication = { package = "wcn_replication", path = "irn/crates/replication" }
 
@@ -91,10 +98,6 @@ tracing-subscriber = { version = "0.3", features = [
 ] }
 
 cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.15.0" }
-parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3", default-features = false, features = [
-    "flate2",
-] }
-parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3" }
 chrono = { version = "0.4", features = ["serde"] }
 futures-util = "0.3.30"
 tokio-stream = "0.1.12"

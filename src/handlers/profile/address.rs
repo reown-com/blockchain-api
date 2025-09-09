@@ -1,8 +1,5 @@
 use {
-    super::{
-        super::HANDLER_TASK_METRICS, RegisterRequest, UpdateAddressPayload,
-        UNIXTIMESTAMP_SYNC_THRESHOLD,
-    },
+    super::{RegisterRequest, UpdateAddressPayload, UNIXTIMESTAMP_SYNC_THRESHOLD},
     crate::{
         analytics::MessageSource,
         database::{
@@ -30,7 +27,7 @@ use {
     sqlx::Error as SqlxError,
     std::{str::FromStr, sync::Arc},
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 pub async fn handler(
@@ -39,7 +36,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<RegisterRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, name, request_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("profile_address_update"))
+        .with_metrics(future_metrics!("handler:profile_address_update"))
         .await
 }
 

@@ -1,9 +1,5 @@
 use {
-    crate::{
-        error::RpcError,
-        handlers::{generators::GeneratorQueryParams, HANDLER_TASK_METRICS},
-        state::AppState,
-    },
+    crate::{error::RpcError, handlers::generators::GeneratorQueryParams, state::AppState},
     axum::{
         body::Bytes,
         extract::{ConnectInfo, MatchedPath, Query, State},
@@ -16,7 +12,7 @@ use {
     tracing::log::{debug, error},
     url::Url,
     validator::Validate,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 /// Request according to the Coinbase Pay SDK `generateOnRampURL`
@@ -82,7 +78,7 @@ pub async fn handler(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     handler_internal(state, addr, query_params, path, headers, body)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("onrampurl"))
+        .with_metrics(future_metrics!("handler:onrampurl"))
         .await
 }
 

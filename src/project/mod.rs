@@ -20,7 +20,7 @@ use {
         time::{Duration, Instant},
     },
     tracing::error,
-    wc::metrics::ServiceMetrics,
+    wc::metrics::{self as wc_metrics, enum_ordinalize::Ordinalize},
 };
 pub use {config::*, error::*};
 
@@ -34,25 +34,32 @@ pub mod storage;
 pub struct Registry {
     client: Option<RegistryHttpClient>,
     cache: Option<ProjectStorage>,
-    metrics: ProjectDataMetrics,
     circuit_base_instant: Instant,
     circuit_last_error_ms: Arc<AtomicU64>,
     circuit_cooldown: Duration,
+    metrics: ProjectDataMetrics,
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Ordinalize, Copy, Clone)]
 pub enum ResponseSource {
     Cache,
     Registry,
 }
 
+impl wc_metrics::Enum for ResponseSource {
+    fn as_str(&self) -> &'static str {
+        match self {
+            ResponseSource::Cache => "cache",
+            ResponseSource::Registry => "registry",
+        }
+    }
+}
+
 impl Registry {
     pub fn new(cfg_registry: &Config, cfg_storage: &StorageConfig) -> RpcResult<Self> {
-        let meter = ServiceMetrics::meter();
-        let metrics = ProjectDataMetrics::new(meter);
-
         let api_url = cfg_registry.api_url.as_ref();
         let api_auth_token = cfg_registry.api_auth_token.as_ref();
+        let metrics = ProjectDataMetrics::new();
 
         let (client, cache) = if let Some(api_url) = api_url {
             let Some(api_auth_token) = api_auth_token else {
@@ -90,10 +97,10 @@ impl Registry {
         Ok(Self {
             client,
             cache,
-            metrics,
             circuit_base_instant: Instant::now(),
             circuit_last_error_ms: Arc::new(AtomicU64::new(0)),
             circuit_cooldown: cfg_registry.circuit_cooldown(),
+            metrics,
         })
     }
 

@@ -1,5 +1,4 @@
 use {
-    super::HANDLER_TASK_METRICS,
     crate::{error::RpcError, state::AppState},
     axum::{
         extract::{ConnectInfo, MatchedPath, Path, Query, State},
@@ -12,7 +11,7 @@ use {
     std::{net::SocketAddr, sync::Arc},
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -45,7 +44,7 @@ pub async fn handler(
     address: Path<String>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, connect_info, query, path, headers, address)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("portfolio"))
+        .with_metrics(future_metrics!("handler:portfolio"))
         .await
 }
 

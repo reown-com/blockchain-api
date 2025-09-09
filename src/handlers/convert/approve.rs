@@ -1,5 +1,4 @@
 use {
-    super::super::HANDLER_TASK_METRICS,
     crate::{error::RpcError, state::AppState},
     axum::{
         extract::{Query, State},
@@ -10,7 +9,7 @@ use {
     std::sync::Arc,
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -47,7 +46,7 @@ pub async fn handler(
     query: Query<ConvertApproveQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("convert_approve_tx"))
+        .with_metrics(future_metrics!("handler:convert_approve_tx"))
         .await
 }
 

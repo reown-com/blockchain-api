@@ -1,9 +1,9 @@
 use {
     super::{
-        super::HANDLER_TASK_METRICS, assets::NATIVE_TOKEN_ADDRESS,
-        check_bridging_for_erc20_transfer, convert_amount, find_supported_bridging_asset,
-        get_assets_changes_from_simulation, nonce_manager::NonceManager, BridgingStatus,
-        StorageBridgingItem, BRIDGING_FEE_SLIPPAGE, STATUS_POLLING_INTERVAL,
+        assets::NATIVE_TOKEN_ADDRESS, check_bridging_for_erc20_transfer, convert_amount,
+        find_supported_bridging_asset, get_assets_changes_from_simulation,
+        nonce_manager::NonceManager, BridgingStatus, StorageBridgingItem, BRIDGING_FEE_SLIPPAGE,
+        STATUS_POLLING_INTERVAL,
     },
     crate::{
         analytics::{
@@ -42,7 +42,7 @@ use {
     },
     tracing::{debug, error},
     uuid::Uuid,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
     yttrium::{
         chain_abstraction::{
             api::{
@@ -80,7 +80,7 @@ pub async fn handler_v1(
     SimpleRequestJson(request_payload): SimpleRequestJson<PrepareRequest>,
 ) -> Result<Json<PrepareResponseV1>, RpcError> {
     handler_internal(state, connect_info, headers, query_params, request_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("ca_route"))
+        .with_metrics(future_metrics!("handler:ca_route"))
         .await
         .map(|Json(j)| Json(j.into()))
 }
@@ -215,7 +215,7 @@ pub async fn handler_v2(
     SimpleRequestJson(request_payload): SimpleRequestJson<PrepareRequest>,
 ) -> Result<Json<PrepareResponse>, RpcError> {
     handler_internal(state, connect_info, headers, query_params, request_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("ca_route"))
+        .with_metrics(future_metrics!("ca_route"))
         .await
 }
 

@@ -1,5 +1,5 @@
 use {
-    super::{super::HANDLER_TASK_METRICS, CoSignRequest, StoragePermissionsItem},
+    super::{CoSignRequest, StoragePermissionsItem},
     crate::{
         error::RpcError,
         state::AppState,
@@ -34,7 +34,7 @@ use {
     serde::{Deserialize, Serialize},
     serde_json::json,
     std::{str::FromStr, sync::Arc, time::SystemTime},
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 const ENTRY_POINT_V07_CONTRACT_ADDRESS: &str = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
@@ -75,7 +75,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<CoSignRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, request_payload, query_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("sessions_co_sign"))
+        .with_metrics(future_metrics!("handler:sessions_co_sign"))
         .await
 }
 

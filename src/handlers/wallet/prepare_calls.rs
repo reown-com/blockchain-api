@@ -7,7 +7,6 @@ use {
                 get_session_context, GetSessionContextError, InternalGetSessionContextError,
             },
             wallet::types::SignatureRequestType,
-            HANDLER_TASK_METRICS,
         },
         state::AppState,
         utils::{
@@ -28,7 +27,7 @@ use {
     tracing::error,
     url::Url,
     uuid::Uuid,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
     yttrium::{
         bundler::{config::BundlerConfig, pimlico::client::BundlerClient},
         chain::ChainId,
@@ -219,7 +218,7 @@ pub async fn handler(
     request: PrepareCallsRequest,
 ) -> Result<PrepareCallsResponse, PrepareCallsError> {
     handler_internal(state, project_id, request)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("wallet_prepare_calls"))
+        .with_metrics(future_metrics!("handler:wallet_prepare_calls"))
         .await
 }
 

@@ -1,8 +1,5 @@
 use {
-    super::{
-        super::HANDLER_TASK_METRICS, RegisterRequest, UpdateAttributesPayload,
-        UNIXTIMESTAMP_SYNC_THRESHOLD,
-    },
+    super::{RegisterRequest, UpdateAttributesPayload, UNIXTIMESTAMP_SYNC_THRESHOLD},
     crate::{
         analytics::MessageSource,
         database::helpers::{get_name_and_addresses_by_name, update_name_attributes},
@@ -28,7 +25,7 @@ use {
     hyper::StatusCode,
     std::{str::FromStr, sync::Arc},
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 pub async fn handler(
@@ -37,7 +34,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<RegisterRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, name, request_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("profile_attributes_update"))
+        .with_metrics(future_metrics!("handler:profile_attributes_update"))
         .await
 }
 

@@ -1,5 +1,4 @@
 use {
-    super::HANDLER_TASK_METRICS,
     crate::{error::RpcError, state::AppState},
     axum::{
         extract::State,
@@ -8,12 +7,12 @@ use {
     },
     hyper::header::CACHE_CONTROL,
     std::sync::Arc,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 pub async fn handler(state: State<Arc<AppState>>) -> Result<Response, RpcError> {
     handler_internal(state)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("supported_chains"))
+        .with_metrics(future_metrics!("handler:supported_chains"))
         .await
 }
 

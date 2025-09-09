@@ -1,5 +1,5 @@
 use {
-    super::{super::HANDLER_TASK_METRICS, PermissionTypeData, QueryParams, StoragePermissionsItem},
+    super::{PermissionTypeData, QueryParams, StoragePermissionsItem},
     crate::{
         error::RpcError, state::AppState, storage::irn::OperationType,
         utils::crypto::disassemble_caip10,
@@ -12,7 +12,7 @@ use {
     },
     serde::{Deserialize, Serialize},
     std::{sync::Arc, time::SystemTime},
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 // Hardcoded maximum number of PCIs to return since currently we don't have a pagination
@@ -52,7 +52,7 @@ pub async fn handler(
     query_params: Query<QueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, query_params)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("sessions_list"))
+        .with_metrics(future_metrics!("handler:sessions_list"))
         .await
 }
 
