@@ -14,7 +14,7 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
-      expr          = 'sum by(task_name) (rate(handler_task_duration_count[$__rate_interval]))',
-      legendFormat  = "{{task_name}}"
+      expr          = 'sum by(future_name) (rate(future_duration_count[$__rate_interval]))',
+      legendFormat  = "{{future_name}}"
     ))
 }

@@ -12,7 +12,7 @@ use {
         CpuRefreshKind, MemoryRefreshKind, RefreshKind, System, MINIMUM_CPU_UPDATE_INTERVAL,
     },
     tracing::{error, instrument},
-    wc::metrics::{counter, gauge, EnumLabel, StringLabel},
+    wc::metrics::{counter, gauge, histogram, EnumLabel, StringLabel},
 };
 
 #[derive(strum_macros::Display)]
@@ -36,7 +36,6 @@ impl Metrics {
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Metrics {}
-        // TODO: check for histogram metrics
     }
 }
 
@@ -49,7 +48,7 @@ impl Metrics {
     }
 
     pub fn add_rpc_call_retries(&self, retires_count: u64, chain_id: String) {
-        counter!("rpc_call_retries", StringLabel<"chain_id", String> => &chain_id)
+        histogram!("rpc_call_retries", StringLabel<"chain_id", String> => &chain_id)
             .increment(retires_count);
     }
 
@@ -61,7 +60,7 @@ impl Metrics {
     }
 
     pub fn add_balance_lookup_retries(&self, retry_count: u64, namespace: CaipNamespaces) {
-        counter!("balance_lookup_retries", 
+        histogram!("balance_lookup_retries", 
             StringLabel<"namespace", String> => &namespace.to_string())
         .increment(retry_count);
     }
@@ -74,8 +73,11 @@ impl Metrics {
     }
 
     pub fn add_http_latency(&self, code: u16, route: String, latency: f64) {
-        gauge!("http_latency_tracker", StringLabel<"code", String> => &code.to_string(), StringLabel<"route", String> => &route)
-            .set(latency);
+        histogram!("http_latency_tracker",
+            StringLabel<"code", String> => &code.to_string(),
+            StringLabel<"route", String> => &route
+        )
+        .set(latency);
     }
 
     pub fn add_external_http_latency(
@@ -85,7 +87,7 @@ impl Metrics {
         chain_id: Option<String>,
         endpoint: Option<String>,
     ) {
-        gauge!("http_external_latency_tracker", 
+        histogram!("http_external_latency_tracker", 
             StringLabel<"provider", String> => &provider_kind.to_string(), 
             StringLabel<"chain_id", String> => &chain_id.unwrap_or_default(), 
             StringLabel<"endpoint", String> => &endpoint.unwrap_or_default())
@@ -174,18 +176,26 @@ impl Metrics {
     }
 
     pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: String, weight: u64) {
-        gauge!("provider_weights", StringLabel<"provider", String> => &provider.to_string(), StringLabel<"chain_id", String> => &chain_id)
-            .set(weight as f64);
+        gauge!("provider_weights",
+            StringLabel<"provider", String> => &provider.to_string(),
+            StringLabel<"chain_id", String> => &chain_id
+        )
+        .set(weight as f64);
     }
 
     pub fn add_no_providers_for_chain(&self, chain_id: String) {
-        counter!("no_providers_for_chain_counter", StringLabel<"chain_id", String> => &chain_id)
-            .increment(1);
+        counter!("no_providers_for_chain_counter",
+            StringLabel<"chain_id", String> => &chain_id
+        )
+        .increment(1);
     }
 
     pub fn add_found_provider_for_chain(&self, chain_id: String, provider_kind: &ProviderKind) {
-        counter!("found_provider_for_chain_counter", StringLabel<"chain_id", String> => &chain_id, StringLabel<"provider", String> => &provider_kind.to_string())
-            .increment(1);
+        counter!("found_provider_for_chain_counter",
+            StringLabel<"chain_id", String> => &chain_id,
+            StringLabel<"provider", String> => &provider_kind.to_string()
+        )
+        .increment(1);
     }
 
     pub fn add_chain_latency(
@@ -194,8 +204,16 @@ impl Metrics {
         start: SystemTime,
         chain_id: String,
     ) {
-        gauge!("chain_latency_tracker", StringLabel<"provider", String> => &provider_kind.to_string(), StringLabel<"chain_id", String> => &chain_id)
-            .set(start.elapsed().unwrap_or(Duration::from_secs(0)).as_secs_f64());
+        histogram!("chain_latency_tracker",
+            StringLabel<"provider", String> => &provider_kind.to_string(),
+            StringLabel<"chain_id", String> => &chain_id
+        )
+        .set(
+            start
+                .elapsed()
+                .unwrap_or(Duration::from_secs(0))
+                .as_secs_f64(),
+        );
     }
 
     pub fn add_identity_lookup(&self) {
@@ -208,12 +226,12 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup_latency(&self, latency: Duration, source: &IdentityLookupSource) {
-        gauge!("identity_lookup_latency_tracker", EnumLabel<"source", IdentityLookupSource> => *source)
+        histogram!("identity_lookup_latency_tracker", EnumLabel<"source", IdentityLookupSource> => *source)
             .set(latency.as_secs_f64());
     }
 
     pub fn add_identity_lookup_cache_latency(&self, start: SystemTime) {
-        gauge!("identity_lookup_cache_latency_tracker").set(
+        histogram!("identity_lookup_cache_latency_tracker").set(
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -230,7 +248,7 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup_name_latency(&self, start: SystemTime) {
-        gauge!("identity_lookup_name_latency_tracker").set(
+        histogram!("identity_lookup_name_latency_tracker").set(
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -247,7 +265,7 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup_avatar_latency(&self, start: SystemTime) {
-        gauge!("identity_lookup_avatar_latency_tracker").set(
+        histogram!("identity_lookup_avatar_latency_tracker").set(
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -279,28 +297,28 @@ impl Metrics {
     }
 
     pub fn add_history_lookup_latency(&self, provider: &ProviderKind, latency: Duration) {
-        gauge!("history_lookup_latency_tracker", StringLabel<"provider", String> => &provider.to_string())
+        histogram!("history_lookup_latency_tracker", StringLabel<"provider", String> => &provider.to_string())
             .set(latency.as_secs_f64());
     }
 
     fn add_cpu_usage(&self, usage: f64, cpu_id: f64) {
-        gauge!("cpu_usage", StringLabel<"cpu", String> => &cpu_id.to_string()).set(usage);
+        histogram!("cpu_usage", StringLabel<"cpu", String> => &cpu_id.to_string()).set(usage);
     }
 
     fn add_memory_total(&self, memory: f64) {
-        gauge!("memory_total").set(memory);
+        histogram!("memory_total").set(memory);
     }
 
     fn add_memory_used(&self, memory: f64) {
-        gauge!("memory_used").set(memory);
+        histogram!("memory_used").set(memory);
     }
 
     pub fn add_rate_limited_entries_count(&self, entry: u64) {
-        gauge!("rate_limited_entries_counter").set(entry as f64);
+        histogram!("rate_limited_entries_counter").set(entry as f64);
     }
 
     pub fn add_rate_limiting_latency(&self, start: SystemTime) {
-        gauge!("rate_limiting_latency_tracker").set(
+        histogram!("rate_limiting_latency_tracker").set(
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -309,7 +327,7 @@ impl Metrics {
     }
 
     pub fn add_non_rpc_providers_cache_latency(&self, start: SystemTime) {
-        gauge!("non_rpc_providers_cache_latency_tracker").set(
+        histogram!("non_rpc_providers_cache_latency_tracker").set(
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -322,7 +340,7 @@ impl Metrics {
     }
 
     pub fn add_irn_latency(&self, start: SystemTime, operation: OperationType) {
-        gauge!("irn_latency_tracker", EnumLabel<"operation", OperationType> => operation).set(
+        histogram!("irn_latency_tracker", EnumLabel<"operation", OperationType> => operation).set(
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -336,8 +354,11 @@ impl Metrics {
         chain_id: String,
         tx_type: ChainAbstractionTransactionType,
     ) {
-        gauge!("ca_gas_estimation_tracker", StringLabel<"chain_id", String> => &chain_id, StringLabel<"tx_type", String> => &tx_type.to_string())
-            .set(gas as f64);
+        histogram!("ca_gas_estimation_tracker",
+            StringLabel<"chain_id", String> => &chain_id,
+            StringLabel<"tx_type", String> => &tx_type.to_string()
+        )
+        .set(gas as f64);
     }
 
     pub fn add_ca_no_routes_found(&self, route: String) {

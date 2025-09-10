@@ -414,7 +414,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
 
     info!("Starting metric server on {}", private_addr);
 
-    // TODO: Check metrics endpoint is working
     let private_app = Router::new()
         .route(
             "/metrics",
