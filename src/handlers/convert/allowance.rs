@@ -31,7 +31,7 @@ pub async fn handler(
     query: Query<AllowanceQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(future_metrics!("handler:conversion_allowance"))
+        .with_metrics(future_metrics!("handler_task", "name" => "conversion_allowance"))
         .await
 }
 

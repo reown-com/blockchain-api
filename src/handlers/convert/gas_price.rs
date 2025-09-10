@@ -32,7 +32,7 @@ pub async fn handler(
     query: Query<GasPriceQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(future_metrics!("handler:gas_price"))
+        .with_metrics(future_metrics!("handler_task", "name" => "gas_price"))
         .await
 }
 

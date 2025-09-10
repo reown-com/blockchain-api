@@ -70,7 +70,7 @@ sqlx = { version = "0.8", features = [
 ] }
 
 # Metrics and analytics
-metrics-exporter-prometheus = "0.17"
+metrics-exporter-prometheus = { version = "0.15", default-features = false }
 parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3", default-features = false, features = [
     "flate2",
 ] }

@@ -77,7 +77,7 @@ pub async fn handler(
         .await
         .map_err(|e| GetExchangesError::ValidationError(e.to_string()))?;
     handler_internal(state, connect_info, headers, query, request)
-        .with_metrics(future_metrics!("handler:pay_get_exchanges"))
+        .with_metrics(future_metrics!("handler_task", "name" => "pay_get_exchanges"))
         .await
 }
 

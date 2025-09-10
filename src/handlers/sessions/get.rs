@@ -36,7 +36,7 @@ pub async fn handler(
     query_params: Query<QueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, query_params)
-        .with_metrics(future_metrics!("handler:sessions_create"))
+        .with_metrics(future_metrics!("handler_task", "name" => "sessions_create"))
         .await
 }
 

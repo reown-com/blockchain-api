@@ -59,7 +59,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<ConvertTransactionQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, request_payload)
-        .with_metrics(future_metrics!("handler:convert_build_transaction"))
+        .with_metrics(future_metrics!("handler_task", "name" => "convert_build_transaction"))
         .await
 }
 

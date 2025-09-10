@@ -22,7 +22,7 @@ pub async fn handler(
     query: Query<LookupQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, query)
-        .with_metrics(future_metrics!("handler:reverse_lookup"))
+        .with_metrics(future_metrics!("handler_task", "name" => "reverse_lookup"))
         .await
 }
 

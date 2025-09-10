@@ -21,7 +21,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<PermissionRevokeRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, query_params, request_payload)
-        .with_metrics(future_metrics!("handler:sessions_revoke"))
+        .with_metrics(future_metrics!("handler_task", "name" => "sessions_revoke"))
         .await
 }
 

@@ -12,7 +12,7 @@ use {
 
 pub async fn handler(state: State<Arc<AppState>>) -> Result<Response, RpcError> {
     handler_internal(state)
-        .with_metrics(future_metrics!("handler:supported_chains"))
+        .with_metrics(future_metrics!("handler_task", "name" => "supported_chains"))
         .await
 }
 

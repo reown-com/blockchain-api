@@ -46,7 +46,7 @@ pub async fn handler(
     query: Query<ConvertApproveQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(future_metrics!("handler:convert_approve_tx"))
+        .with_metrics(future_metrics!("handler_task", "name" => "convert_approve_tx"))
         .await
 }
 

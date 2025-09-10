@@ -54,7 +54,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<QueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, request_payload)
-        .with_metrics(future_metrics!("handler:onramp_widget"))
+        .with_metrics(future_metrics!("handler_task", "name" => "onramp_widget"))
         .await
 }
 

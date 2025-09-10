@@ -75,7 +75,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<CoSignRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, request_payload, query_payload)
-        .with_metrics(future_metrics!("handler:sessions_co_sign"))
+        .with_metrics(future_metrics!("handler_task", "name" => "sessions_co_sign"))
         .await
 }
 

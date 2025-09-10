@@ -44,7 +44,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<NewPermissionPayload>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, query_params, request_payload)
-        .with_metrics(future_metrics!("handler:sessions_create"))
+        .with_metrics(future_metrics!("handler_task", "name" => "sessions_create"))
         .await
 }
 

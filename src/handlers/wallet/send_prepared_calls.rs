@@ -158,7 +158,7 @@ pub async fn handler(
     request: SendPreparedCallsRequest,
 ) -> Result<SendPreparedCallsResponse, SendPreparedCallsError> {
     handler_internal(state, project_id, request)
-        .with_metrics(future_metrics!("handler:wallet_send_prepared_calls"))
+        .with_metrics(future_metrics!("handler_task", "name" => "wallet_send_prepared_calls"))
         .await
 }
 

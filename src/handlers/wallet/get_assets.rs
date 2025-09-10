@@ -54,7 +54,7 @@ pub async fn handler(
     query: Query<QueryParams>,
 ) -> Result<GetAssetsResult, GetAssetsError> {
     handler_internal(state, project_id, request, connect_info, headers, query)
-        .with_metrics(future_metrics!("handler:wallet_get_assets"))
+        .with_metrics(future_metrics!("handler_task", "name" => "wallet_get_assets"))
         .await
 }
 

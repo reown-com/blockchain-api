@@ -43,7 +43,7 @@ pub async fn handler(
     query: Query<TokensListQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(future_metrics!("handler:tokens_list"))
+        .with_metrics(future_metrics!("handler_task", "name" => "tokens_list"))
         .await
 }
 

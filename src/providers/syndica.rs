@@ -143,7 +143,7 @@ impl RpcWsProvider for SyndicaWsProvider {
 
         Ok(ws.on_upgrade(move |socket| {
             ws::proxy(project_id, socket, websocket_provider)
-                .with_metrics(future_metrics!("ws_proxy_task:syndica"))
+                .with_metrics(future_metrics!("ws_proxy_task", "name" => "syndica"))
         }))
     }
 }

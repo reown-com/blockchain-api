@@ -36,7 +36,7 @@ pub async fn handler(
     query: Query<SuggestionsParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, name, query)
-        .with_metrics(future_metrics!("handler:name_suggestions"))
+        .with_metrics(future_metrics!("handler_task", "name" => "name_suggestions"))
         .await
 }
 

@@ -49,7 +49,7 @@ pub async fn handler(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     handler_internal(state, addr, query_params, headers, body)
-        .with_metrics(future_metrics!("handler:proxy"))
+        .with_metrics(future_metrics!("handler_task", "name" => "proxy"))
         .await
 }
 

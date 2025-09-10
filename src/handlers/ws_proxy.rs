@@ -17,7 +17,7 @@ pub async fn handler(
     ws: WebSocketUpgrade,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query_params, headers, ws)
-        .with_metrics(future_metrics!("handler:ws_proxy"))
+        .with_metrics(future_metrics!("handler_task", "name" => "ws_proxy"))
         .await
 }
 

@@ -80,7 +80,7 @@ pub async fn handler_v1(
     SimpleRequestJson(request_payload): SimpleRequestJson<PrepareRequest>,
 ) -> Result<Json<PrepareResponseV1>, RpcError> {
     handler_internal(state, connect_info, headers, query_params, request_payload)
-        .with_metrics(future_metrics!("handler:ca_route"))
+        .with_metrics(future_metrics!("handler_task", "name" => "ca_route"))
         .await
         .map(|Json(j)| Json(j.into()))
 }
@@ -215,7 +215,7 @@ pub async fn handler_v2(
     SimpleRequestJson(request_payload): SimpleRequestJson<PrepareRequest>,
 ) -> Result<Json<PrepareResponse>, RpcError> {
     handler_internal(state, connect_info, headers, query_params, request_payload)
-        .with_metrics(future_metrics!("handler:ca_route"))
+        .with_metrics(future_metrics!("handler_task", "name" => "ca_route"))
         .await
 }
 

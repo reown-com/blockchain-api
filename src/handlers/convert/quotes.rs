@@ -43,7 +43,7 @@ pub async fn handler(
     query: Query<ConvertQuoteQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(future_metrics!("handler:convert_quote"))
+        .with_metrics(future_metrics!("handler_task", "name" => "convert_quote"))
         .await
 }
 

@@ -34,7 +34,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<RegisterRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, name, request_payload)
-        .with_metrics(future_metrics!("handler:profile_attributes_update"))
+        .with_metrics(future_metrics!("handler_task", "name" => "profile_attributes_update"))
         .await
 }
 

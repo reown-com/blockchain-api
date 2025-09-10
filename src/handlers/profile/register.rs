@@ -51,7 +51,7 @@ pub async fn handler(
     SimpleRequestJson(register_request): SimpleRequestJson<RegisterRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, connect_info, headers, query, register_request)
-        .with_metrics(future_metrics!("handler:profile_register"))
+        .with_metrics(future_metrics!("handler_task", "name" => "profile_register"))
         .await
 }
 

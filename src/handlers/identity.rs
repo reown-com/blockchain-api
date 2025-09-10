@@ -85,7 +85,7 @@ pub async fn handler(
     address: Path<String>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, connect_info, query, headers, address)
-        .with_metrics(future_metrics!("handler:identity"))
+        .with_metrics(future_metrics!("handler_task", "name" => "identity"))
         .await
 }
 

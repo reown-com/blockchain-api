@@ -45,7 +45,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<JsonRpcRequest>,
 ) -> Response {
     handler_internal(state, connect_info, headers, query, request_payload)
-        .with_metrics(future_metrics!("handler:wallet"))
+        .with_metrics(future_metrics!("handler_task", "name" => "wallet"))
         .await
 }
 

@@ -25,7 +25,7 @@ pub async fn handler(
     query_params: Query<StatusQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query_params)
-        .with_metrics(future_metrics!("handler:ca_status"))
+        .with_metrics(future_metrics!("handler_task", "name" => "ca_status"))
         .await
 }
 

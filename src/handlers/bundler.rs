@@ -44,7 +44,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<BundlerJsonRpcRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query_params, request_payload)
-        .with_metrics(future_metrics!("handler:bundler_ops"))
+        .with_metrics(future_metrics!("handler_task", "name" => "bundler_ops"))
         .await
 }
 

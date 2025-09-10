@@ -51,7 +51,7 @@ local _configuration = defaults.configuration.timeseries
 
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
-      expr          = 'sum by(future_name) (rate(future_duration_sum{future_name!="handler:transactions"}[$__rate_interval])) / sum by(future_name) (rate(future_duration_count{future_name!="handler:transactions"}[$__rate_interval]))',
+      expr          = 'sum by(name) (rate(future_duration_sum{name!="transactions", future_name="handler_task"}[$__rate_interval])) / sum by(name) (rate(future_duration_count{name!="transactions", future_name="handler_task"}[$__rate_interval]))',
       exemplar      = false,
       legendFormat  = '__auto',
       refId         = 'HandlersLatency',
@@ -59,7 +59,7 @@ local _configuration = defaults.configuration.timeseries
 
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
-      expr          = 'sum by(future_name) (rate(future_duration_sum{future_name="handler:transactions"}[$__rate_interval])) / sum by(future_name) (rate(future_duration_count{future_name="handler:transactions"}[$__rate_interval]))',
+      expr          = 'sum by(name) (rate(future_duration_sum{name="transactions", future_name="handler_task"}[$__rate_interval])) / sum by(name) (rate(future_duration_count{name="transactions", future_name="handler_task"}[$__rate_interval]))',
       exemplar      = false,
       legendFormat  = '__auto',
       refId         = 'TransactionsHandlerLatency',

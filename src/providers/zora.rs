@@ -76,7 +76,7 @@ impl RpcWsProvider for ZoraWsProvider {
 
         Ok(ws.on_upgrade(move |socket| {
             ws::proxy(project_id, socket, websocket_provider)
-                .with_metrics(future_metrics!("ws_proxy_task:zora"))
+                .with_metrics(future_metrics!("ws_proxy_task", "name" => "zora"))
         }))
     }
 }

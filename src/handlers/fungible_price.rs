@@ -47,7 +47,7 @@ pub async fn handler(
     SimpleRequestJson(query): SimpleRequestJson<PriceQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(future_metrics!("handler:fungible_price"))
+        .with_metrics(future_metrics!("handler_task", "name" => "fungible_price"))
         .await
 }
 

@@ -131,7 +131,7 @@ pub async fn handler(
     address: Path<String>,
 ) -> Result<Json<BalanceResponseBody>, RpcError> {
     handler_internal(state, query, connect_info, headers, address)
-        .with_metrics(future_metrics!("handler:balance"))
+        .with_metrics(future_metrics!("handler_task", "name" => "balance"))
         .await
 }
 

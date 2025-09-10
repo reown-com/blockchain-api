@@ -52,7 +52,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<QueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, request_payload)
-        .with_metrics(future_metrics!("handler:onramp_multiproviders_quotes"))
+        .with_metrics(future_metrics!("handler_task", "name" => "onramp_multiproviders_quotes"))
         .await
 }
 
