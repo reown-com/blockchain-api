@@ -49,7 +49,7 @@ impl Metrics {
 
     pub fn add_rpc_call_retries(&self, retires_count: u64, chain_id: String) {
         histogram!("rpc_call_retries", StringLabel<"chain_id", String> => &chain_id)
-            .increment(retires_count);
+            .record(retires_count as f64);
     }
 
     pub fn add_rpc_cached_call(&self, chain_id: String, method: String) {
@@ -62,7 +62,7 @@ impl Metrics {
     pub fn add_balance_lookup_retries(&self, retry_count: u64, namespace: CaipNamespaces) {
         histogram!("balance_lookup_retries", 
             StringLabel<"namespace", String> => &namespace.to_string())
-        .increment(retry_count);
+        .record(retry_count as f64);
     }
 
     pub fn add_http_call(&self, code: u16, route: String) {
@@ -77,7 +77,7 @@ impl Metrics {
             StringLabel<"code", String> => &code.to_string(),
             StringLabel<"route", String> => &route
         )
-        .set(latency);
+        .record(latency);
     }
 
     pub fn add_external_http_latency(
@@ -91,7 +91,7 @@ impl Metrics {
             StringLabel<"provider", String> => &provider_kind.to_string(), 
             StringLabel<"chain_id", String> => &chain_id.unwrap_or_default(), 
             StringLabel<"endpoint", String> => &endpoint.unwrap_or_default())
-        .set(
+        .record(
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -208,7 +208,7 @@ impl Metrics {
             StringLabel<"provider", String> => &provider_kind.to_string(),
             StringLabel<"chain_id", String> => &chain_id
         )
-        .set(
+        .record(
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -227,11 +227,11 @@ impl Metrics {
 
     pub fn add_identity_lookup_latency(&self, latency: Duration, source: &IdentityLookupSource) {
         histogram!("identity_lookup_latency_tracker", EnumLabel<"source", IdentityLookupSource> => *source)
-            .set(latency.as_secs_f64());
+            .record(latency.as_secs_f64());
     }
 
     pub fn add_identity_lookup_cache_latency(&self, start: SystemTime) {
-        histogram!("identity_lookup_cache_latency_tracker").set(
+        histogram!("identity_lookup_cache_latency_tracker").record(
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -248,7 +248,7 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup_name_latency(&self, start: SystemTime) {
-        histogram!("identity_lookup_name_latency_tracker").set(
+        histogram!("identity_lookup_name_latency_tracker").record(
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -265,7 +265,7 @@ impl Metrics {
     }
 
     pub fn add_identity_lookup_avatar_latency(&self, start: SystemTime) {
-        histogram!("identity_lookup_avatar_latency_tracker").set(
+        histogram!("identity_lookup_avatar_latency_tracker").record(
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -298,27 +298,27 @@ impl Metrics {
 
     pub fn add_history_lookup_latency(&self, provider: &ProviderKind, latency: Duration) {
         histogram!("history_lookup_latency_tracker", StringLabel<"provider", String> => &provider.to_string())
-            .set(latency.as_secs_f64());
+            .record(latency.as_secs_f64());
     }
 
     fn add_cpu_usage(&self, usage: f64, cpu_id: f64) {
-        histogram!("cpu_usage", StringLabel<"cpu", String> => &cpu_id.to_string()).set(usage);
+        histogram!("cpu_usage", StringLabel<"cpu", String> => &cpu_id.to_string()).record(usage);
     }
 
     fn add_memory_total(&self, memory: f64) {
-        histogram!("memory_total").set(memory);
+        histogram!("memory_total").record(memory);
     }
 
     fn add_memory_used(&self, memory: f64) {
-        histogram!("memory_used").set(memory);
+        histogram!("memory_used").record(memory);
     }
 
     pub fn add_rate_limited_entries_count(&self, entry: u64) {
-        histogram!("rate_limited_entries_counter").set(entry as f64);
+        histogram!("rate_limited_entries_counter").record(entry as f64);
     }
 
     pub fn add_rate_limiting_latency(&self, start: SystemTime) {
-        histogram!("rate_limiting_latency_tracker").set(
+        histogram!("rate_limiting_latency_tracker").record(
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -327,7 +327,7 @@ impl Metrics {
     }
 
     pub fn add_non_rpc_providers_cache_latency(&self, start: SystemTime) {
-        histogram!("non_rpc_providers_cache_latency_tracker").set(
+        histogram!("non_rpc_providers_cache_latency_tracker").record(
             start
                 .elapsed()
                 .unwrap_or(Duration::from_secs(0))
@@ -340,12 +340,13 @@ impl Metrics {
     }
 
     pub fn add_irn_latency(&self, start: SystemTime, operation: OperationType) {
-        histogram!("irn_latency_tracker", EnumLabel<"operation", OperationType> => operation).set(
-            start
-                .elapsed()
-                .unwrap_or(Duration::from_secs(0))
-                .as_secs_f64(),
-        );
+        histogram!("irn_latency_tracker", EnumLabel<"operation", OperationType> => operation)
+            .record(
+                start
+                    .elapsed()
+                    .unwrap_or(Duration::from_secs(0))
+                    .as_secs_f64(),
+            );
     }
 
     pub fn add_ca_gas_estimation(
@@ -358,7 +359,7 @@ impl Metrics {
             StringLabel<"chain_id", String> => &chain_id,
             StringLabel<"tx_type", String> => &tx_type.to_string()
         )
-        .set(gas as f64);
+        .record(gas as f64);
     }
 
     pub fn add_ca_no_routes_found(&self, route: String) {

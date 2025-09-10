@@ -71,7 +71,7 @@ pub async fn handler(
     headers: HeaderMap,
 ) -> Result<Response, RpcError> {
     handler_internal(state, connect_info, query, headers)
-        .with_metrics(future_metrics!("handler:onrmap_buy_options"))
+        .with_metrics(future_metrics!("handler:onramp_buy_options"))
         .await
 }
 
