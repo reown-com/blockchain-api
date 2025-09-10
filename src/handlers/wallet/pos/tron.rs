@@ -120,9 +120,9 @@ struct GetTransactionByIdResponse {
 
 #[derive(Debug, Deserialize)]
 struct BroadcastTransactionResponse {
-    result: bool,
-    code: Option<String>,
+    result: Option<bool>,
     message: Option<String>,
+    code: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -503,7 +503,7 @@ pub async fn get_transaction_status(
     if !already_broadcasted {
         let broadcast_resp = broadcast_transaction(state, chain_id, &signed_tx).await?;
         debug!("tron broadcast resp: {:?}", broadcast_resp);
-        if !broadcast_resp.result {
+        if broadcast_resp.result.is_none() || broadcast_resp.result == Some(false) {
             return Err(BuildPosTxsError::Internal(format!(
                 "Broadcast failed: {} {}",
                 broadcast_resp.code.unwrap_or_default(),
