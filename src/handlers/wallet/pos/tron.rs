@@ -498,7 +498,7 @@ pub async fn get_transaction_status(
         .is_some();
 
     if !already_broadcasted {
-        let broadcast_resp = broadcast_transaction(state, chain_id, &signed_tx).await?;
+        let broadcast_resp = broadcast_transaction(state, chain_id, signed_tx).await?;
         debug!("tron broadcast resp: {:?}", broadcast_resp);
         if broadcast_resp.result.is_none() || broadcast_resp.result == Some(false) {
             return Err(BuildPosTxsError::Internal(format!(
