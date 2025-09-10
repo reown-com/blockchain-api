@@ -491,7 +491,6 @@ pub async fn get_transaction_status(
     signed_tx: &SignedTransaction,
     chain_id: &Caip2ChainId,
 ) -> Result<TransactionStatus, BuildPosTxsError> {
-   
     let txid = signed_tx.tx_id.as_str();
 
     let already_broadcasted = get_transaction_by_id(state.clone(), chain_id, txid)
@@ -561,7 +560,7 @@ pub async fn check_transaction(
     chain_id: &Caip2ChainId,
 ) -> Result<CheckTransactionResult, BuildPosTxsError> {
     let signed_tx: SignedTransaction = serde_json::from_str(response)
-    .map_err(|e| BuildPosTxsError::Validation(format!("Invalid wallet response: {}", e)))?;
+        .map_err(|e| BuildPosTxsError::Validation(format!("Invalid wallet response: {}", e)))?;
 
     let status = get_transaction_status(state, project_id, &signed_tx, chain_id).await?;
 
