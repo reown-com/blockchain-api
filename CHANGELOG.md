@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.293.0 - 2025-09-10
+#### Bug Fixes
+- **(tests)** adding a small delay before check for names count (#1224) - (8c8a82a) - Max Kalashnikoff | maksy.eth
+#### Features
+- migrate metrics to NG and an updated `utils-rs` dependency (#1225) - (2e05f23) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.292.0 - 2025-09-08
 #### Features
 - pos tron (#1221) - (275978e) - Luka Isailovic
