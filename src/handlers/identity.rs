@@ -101,11 +101,25 @@ async fn handler_internal(
         .validate_project_access_and_quota(&query.project_id)
         .await?;
 
-    let start = SystemTime::now();
+    // If the address is a valid Solana address, return an empty identity response
+    // since we don't support Solana yet, but want to avoid returning an error
+    if crypto::is_address_valid(&address, &crypto::CaipNamespaces::Solana) {
+        let res = IdentityResponse {
+            name: None,
+            avatar: None,
+            resolved_at: Some(Utc::now()),
+        };
+        // Cache control for 1 hour
+        let ttl_secs = 60 * 60;
+        let cache_control = format!("public, max-age={ttl_secs}, s-maxage={ttl_secs}");
+        return Ok(([(CACHE_CONTROL, cache_control)], Json(res)).into_response());
+    }
+
     let address = address
         .parse::<Address>()
         .map_err(|_| RpcError::InvalidAddress)?;
 
+    let start = SystemTime::now();
     let identity_result = lookup_identity(
         address,
         state.clone(),

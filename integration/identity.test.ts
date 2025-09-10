@@ -61,4 +61,19 @@ describe('Identity', () => {
     expect(age2).toBeGreaterThan(86395)
     expect(resp2.data.name).toBe(null)
   })
+  it('solana address', async () => {
+    const address = 'So11111111111111111111111111111111111111112';
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/identity/${address}?projectId=${projectId}`,
+    )
+    expect(resp.status).toBe(200)
+    expect(resp.data.name).toBe(null)
+  })
+  it('invalid address', async () => {
+    const address = '0x1234567890123456789012345678901234567890A';
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/identity/${address}?projectId=${projectId}`,
+    )
+    expect(resp.status).toBe(400)
+  })
 })
