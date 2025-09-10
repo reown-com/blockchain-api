@@ -268,10 +268,17 @@ pub async fn check_transaction(
         TransactionStatus::Pending => Ok(CheckTransactionResult {
             status,
             check_in: Some(DEFAULT_CHECK_IN),
+            txid: Some(signature.to_string()),
         }),
-        _ => Ok(CheckTransactionResult {
+        TransactionStatus::Confirmed => Ok(CheckTransactionResult {
             status,
             check_in: None,
+            txid: Some(signature.to_string()),
+        }),
+        TransactionStatus::Failed => Ok(CheckTransactionResult {
+            status,
+            check_in: None,
+            txid: None,
         }),
     }
 }

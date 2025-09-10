@@ -54,7 +54,7 @@ struct TriggerSmartContractRequest {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-struct SignedTransaction {
+pub struct SignedTransaction {
     raw_data: serde_json::Value,
     raw_data_hex: String,
     #[serde(rename = "txID")]
@@ -488,12 +488,10 @@ async fn fetch_trc20_decimals(
 pub async fn get_transaction_status(
     state: State<Arc<AppState>>,
     _project_id: &str,
-    response: &str,
+    signed_tx: &SignedTransaction,
     chain_id: &Caip2ChainId,
 ) -> Result<TransactionStatus, BuildPosTxsError> {
-    let signed_tx: SignedTransaction = serde_json::from_str(response)
-        .map_err(|e| BuildPosTxsError::Validation(format!("Invalid wallet response: {}", e)))?;
-
+   
     let txid = signed_tx.tx_id.as_str();
 
     let already_broadcasted = get_transaction_by_id(state.clone(), chain_id, txid)
@@ -562,16 +560,26 @@ pub async fn check_transaction(
     response: &str,
     chain_id: &Caip2ChainId,
 ) -> Result<CheckTransactionResult, BuildPosTxsError> {
-    let status = get_transaction_status(state, project_id, response, chain_id).await?;
+    let signed_tx: SignedTransaction = serde_json::from_str(response)
+    .map_err(|e| BuildPosTxsError::Validation(format!("Invalid wallet response: {}", e)))?;
+
+    let status = get_transaction_status(state, project_id, &signed_tx, chain_id).await?;
 
     match status {
         TransactionStatus::Pending => Ok(CheckTransactionResult {
             status,
             check_in: Some(DEFAULT_CHECK_IN),
+            txid: Some(signed_tx.tx_id),
         }),
-        _ => Ok(CheckTransactionResult {
+        TransactionStatus::Confirmed => Ok(CheckTransactionResult {
             status,
             check_in: None,
+            txid: Some(signed_tx.tx_id),
+        }),
+        TransactionStatus::Failed => Ok(CheckTransactionResult {
+            status,
+            check_in: None,
+            txid: None,
         }),
     }
 }
