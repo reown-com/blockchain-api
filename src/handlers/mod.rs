@@ -8,7 +8,6 @@ use {
     serde::{Deserialize, Serialize},
     std::{fmt::Display, sync::Arc, time::Instant},
     tracing::error,
-    wc::metrics::TaskMetrics,
 };
 
 pub mod balance;
@@ -20,7 +19,6 @@ pub mod generators;
 pub mod health;
 pub mod history;
 pub mod identity;
-pub mod metrics;
 pub mod onramp;
 pub mod portfolio;
 pub mod profile;
@@ -30,8 +28,6 @@ pub mod sessions;
 pub mod supported_chains;
 pub mod wallet;
 pub mod ws_proxy;
-
-static HANDLER_TASK_METRICS: TaskMetrics = TaskMetrics::new("handler_task");
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

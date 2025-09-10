@@ -1,7 +1,5 @@
 use {
-    super::{
-        super::HANDLER_TASK_METRICS, ActivatePermissionPayload, QueryParams, StoragePermissionsItem,
-    },
+    super::{ActivatePermissionPayload, QueryParams, StoragePermissionsItem},
     crate::{
         error::RpcError,
         state::AppState,
@@ -13,7 +11,7 @@ use {
         response::{IntoResponse, Response},
     },
     std::{sync::Arc, time::SystemTime},
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 pub async fn handler(
@@ -23,7 +21,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<ActivatePermissionPayload>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, query_params, request_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("sessions_context_update"))
+        .with_metrics(future_metrics!("handler_task", "name" => "sessions_context_update"))
         .await
 }
 

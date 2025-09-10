@@ -1,5 +1,5 @@
 use {
-    super::{super::HANDLER_TASK_METRICS, LookupQueryParams, EMPTY_RESPONSE},
+    super::{LookupQueryParams, EMPTY_RESPONSE},
     crate::{
         database::helpers::get_name_and_addresses_by_name,
         error::RpcError,
@@ -15,7 +15,7 @@ use {
     sqlx::Error as SqlxError,
     std::sync::Arc,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 pub async fn handler(
@@ -24,7 +24,7 @@ pub async fn handler(
     query: Query<LookupQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, name, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("profile"))
+        .with_metrics(future_metrics!("handler_task", "name" => "profile"))
         .await
 }
 

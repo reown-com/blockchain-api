@@ -3,10 +3,7 @@ use {
         is_feature_enabled_for_project_id, BuyTransactionStatus, ExchangeError, ExchangeType,
         GetBuyStatusParams,
     },
-    crate::{
-        handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
-        state::AppState,
-    },
+    crate::{handlers::SdkInfoParams, state::AppState},
     axum::{
         extract::{ConnectInfo, Query, State},
         Json,
@@ -16,7 +13,7 @@ use {
     std::{net::SocketAddr, sync::Arc},
     thiserror::Error,
     tracing::debug,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 const MAX_SESSION_ID_LENGTH: usize = 50;
@@ -76,7 +73,7 @@ pub async fn handler(
         .await
         .map_err(|e| GetExchangeBuyStatusError::ValidationError(e.to_string()))?;
     handler_internal(state, connect_info, headers, query, request)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("pay_get_exchange_buy_status"))
+        .with_metrics(future_metrics!("handler_task", "name" => "pay_get_exchange_buy_status"))
         .await
 }
 

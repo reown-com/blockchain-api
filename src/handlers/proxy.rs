@@ -1,5 +1,5 @@
 use {
-    super::{RpcQueryParams, HANDLER_TASK_METRICS},
+    super::RpcQueryParams,
     crate::{
         analytics::MessageInfo,
         error::RpcError,
@@ -33,7 +33,7 @@ use {
         log::{debug, error, warn},
         Span,
     },
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 const PROVIDER_PROXY_MAX_CALLS: usize = 5;
@@ -49,7 +49,7 @@ pub async fn handler(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     handler_internal(state, addr, query_params, headers, body)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("proxy"))
+        .with_metrics(future_metrics!("handler_task", "name" => "proxy"))
         .await
 }
 

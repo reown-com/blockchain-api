@@ -22,7 +22,7 @@ use {
             ParquetBatchFactory,
         },
         geoip::{self, MaxMindResolver, Resolver},
-        metrics::otel,
+        metrics::{counter, BoolLabel, StringLabel},
     },
 };
 
@@ -62,15 +62,6 @@ impl DataKind {
             Self::ChainAbstraction => "chain_abstraction",
         }
     }
-
-    #[inline]
-    fn as_kv(&self) -> otel::KeyValue {
-        otel::KeyValue::new("data_kind", self.as_str())
-    }
-}
-
-fn success_kv(success: bool) -> otel::KeyValue {
-    otel::KeyValue::new("success", success)
 }
 
 #[derive(Clone, Copy)]
@@ -83,12 +74,11 @@ where
     fn observe_batch_serialization(&self, elapsed: Duration, res: &Result<Vec<u8>, E>) {
         let size = res.as_deref().map(|data| data.len()).unwrap_or(0);
         let elapsed = elapsed.as_millis() as u64;
-
-        wc::metrics::counter!(
-            "analytics_batches_finished",
-            1,
-            &[self.0.as_kv(), success_kv(res.is_ok())]
-        );
+        counter!("analytics_batches_finished",
+            StringLabel<"data_kind", String> => self.0.as_str(),
+            BoolLabel<"success"> => res.is_ok()
+        )
+        .increment(1);
 
         if let Err(err) = res {
             tracing::warn!(
@@ -112,11 +102,11 @@ where
     E: std::error::Error,
 {
     fn observe_collection(&self, res: &Result<(), E>) {
-        wc::metrics::counter!(
-            "analytics_records_collected",
-            1,
-            &[self.0.as_kv(), success_kv(res.is_ok())]
-        );
+        counter!("analytics_records_collected",
+            StringLabel<"data_kind", String> => self.0.as_str(),
+            BoolLabel<"success"> => res.is_ok()
+        )
+        .increment(1);
 
         if let Err(err) = res {
             tracing::warn!(
@@ -133,11 +123,11 @@ where
     E: std::error::Error,
 {
     fn observe_export(&self, elapsed: Duration, res: &Result<(), E>) {
-        wc::metrics::counter!(
-            "analytics_batches_exported",
-            1,
-            &[self.0.as_kv(), success_kv(res.is_ok())]
-        );
+        counter!("analytics_batches_exported",
+            StringLabel<"data_kind", String> => self.0.as_str(),
+            BoolLabel<"success"> => res.is_ok()
+        )
+        .increment(1);
 
         let elapsed = elapsed.as_millis() as u64;
 

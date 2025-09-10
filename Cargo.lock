@@ -103,19 +103,6 @@ dependencies = [
 [[package]]
 name = "alloc"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
-dependencies = [
- "metrics 0.1.0",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tikv-jemalloc-ctl",
- "tikv-jemallocator",
-]
-
-[[package]]
-name = "alloc"
-version = "0.1.0"
 source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1#bf8f50a711180afbf79b8c334c65b57886173d4b"
 dependencies = [
  "serde",
@@ -1093,14 +1080,14 @@ dependencies = [
 [[package]]
 name = "analytics"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1#bf8f50a711180afbf79b8c334c65b57886173d4b"
 dependencies = [
  "anyhow",
  "async-trait",
  "aws-sdk-s3",
  "bytes",
  "chrono",
- "future 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0)",
+ "future",
  "parquet",
  "parquet_derive",
  "tap",
@@ -4502,18 +4489,6 @@ checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 [[package]]
 name = "future"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
-dependencies = [
- "metrics 0.1.0",
- "pin-project 1.1.10",
- "thiserror 1.0.69",
- "tokio",
- "tokio-util",
-]
-
-[[package]]
-name = "future"
-version = "0.1.0"
 source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1#bf8f50a711180afbf79b8c334c65b57886173d4b"
 dependencies = [
  "pin-project 1.1.10",
@@ -4746,7 +4721,7 @@ dependencies = [
 [[package]]
 name = "geoip"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1#bf8f50a711180afbf79b8c334c65b57886173d4b"
 dependencies = [
  "aws-sdk-s3",
  "axum-client-ip",
@@ -5117,17 +5092,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "589533453244b0995c858700322199b2becb13b627df2851f64a2775d024abcf"
 dependencies = [
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "http"
-version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
-dependencies = [
- "future 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0)",
- "hyper 1.7.0",
- "metrics 0.1.0",
- "tokio",
 ]
 
 [[package]]
@@ -6362,25 +6326,41 @@ dependencies = [
 
 [[package]]
 name = "metrics"
-version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
-dependencies = [
- "once_cell",
- "opentelemetry",
- "opentelemetry-prometheus",
- "pin-project 1.1.10",
- "prometheus",
- "smallvec",
-]
-
-[[package]]
-name = "metrics"
 version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3045b4193fbdc5b5681f32f11070da9be3609f189a79f3390706d42587f46bb5"
 dependencies = [
  "ahash",
  "portable-atomic",
+]
+
+[[package]]
+name = "metrics-exporter-prometheus"
+version = "0.15.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4f0c8427b39666bf970460908b213ec09b3b350f20c0c2eabcbba51704a08e6"
+dependencies = [
+ "base64 0.22.1",
+ "indexmap 2.11.0",
+ "metrics",
+ "metrics-util",
+ "quanta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "metrics-util"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4259040465c955f9f2f1a4a8a16dc46726169bca0f88e8fb2dbeced487c3e828"
+dependencies = [
+ "crossbeam-epoch",
+ "crossbeam-utils",
+ "hashbrown 0.14.5",
+ "metrics",
+ "num_cpus",
+ "quanta",
+ "sketches-ddsketch",
 ]
 
 [[package]]
@@ -6945,65 +6925,6 @@ dependencies = [
  "libc",
  "pkg-config",
  "vcpkg",
-]
-
-[[package]]
-name = "opentelemetry"
-version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f4b8347cc26099d3aeee044065ecc3ae11469796b4d65d065a23a584ed92a6f"
-dependencies = [
- "opentelemetry_api",
- "opentelemetry_sdk",
-]
-
-[[package]]
-name = "opentelemetry-prometheus"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a9f186f6293ebb693caddd0595e66b74a6068fa51048e26e0bf9c95478c639c"
-dependencies = [
- "opentelemetry",
- "prometheus",
- "protobuf",
-]
-
-[[package]]
-name = "opentelemetry_api"
-version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed41783a5bf567688eb38372f2b7a8530f5a607a4b49d38dd7573236c23ca7e2"
-dependencies = [
- "fnv",
- "futures-channel",
- "futures-util",
- "indexmap 1.9.3",
- "once_cell",
- "pin-project-lite",
- "thiserror 1.0.69",
- "urlencoding",
-]
-
-[[package]]
-name = "opentelemetry_sdk"
-version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b3a2a91fdbfdd4d212c0dcc2ab540de2c2bcbbd90be17de7a7daf8822d010c1"
-dependencies = [
- "async-trait",
- "crossbeam-channel",
- "dashmap 5.5.3",
- "fnv",
- "futures-channel",
- "futures-executor",
- "futures-util",
- "once_cell",
- "opentelemetry_api",
- "percent-encoding",
- "rand 0.8.5",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
 ]
 
 [[package]]
@@ -7600,21 +7521,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "prometheus"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d33c28a30771f7f96db69893f78b857f7450d7e0237e9c8fc6427a81bae7ed1"
-dependencies = [
- "cfg-if",
- "fnv",
- "lazy_static",
- "memchr",
- "parking_lot",
- "protobuf",
- "thiserror 1.0.69",
-]
-
-[[package]]
 name = "prometheus-client"
 version = "0.22.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7736,12 +7642,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "protobuf"
-version = "2.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
-
-[[package]]
 name = "pulse_monitor"
 version = "0.1.0"
 dependencies = [
@@ -7753,7 +7653,7 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "tracing",
- "wc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1)",
+ "wc",
  "wcn_domain",
  "wcn_echo_api",
  "wcn_rpc",
@@ -8011,7 +7911,7 @@ dependencies = [
 [[package]]
 name = "rate_limit"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1#bf8f50a711180afbf79b8c334c65b57886173d4b"
 dependencies = [
  "chrono",
  "deadpool-redis",
@@ -8437,6 +8337,7 @@ dependencies = [
  "hyper-util",
  "ipnet",
  "jsonrpc",
+ "metrics-exporter-prometheus",
  "moka",
  "num_enum",
  "once_cell",
@@ -8479,7 +8380,7 @@ dependencies = [
  "uuid 1.18.1",
  "validator",
  "vergen",
- "wc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0)",
+ "wc",
  "wcn_replication",
  "wiremock",
  "yttrium",
@@ -9313,6 +9214,12 @@ name = "siphasher"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
+
+[[package]]
+name = "sketches-ddsketch"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85636c14b73d81f541e525f585c0a2109e6744e1565b5c1668e31c70c10ed65c"
 
 [[package]]
 name = "slab"
@@ -13307,25 +13214,14 @@ dependencies = [
 [[package]]
 name = "wc"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0#dfb9d5902271e4f27027f78948ea4f9b7e0e9072"
-dependencies = [
- "alloc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0)",
- "analytics",
- "future 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.10.0)",
- "geoip",
- "http 0.1.0",
- "metrics 0.1.0",
- "rate_limit",
-]
-
-[[package]]
-name = "wc"
-version = "0.1.0"
 source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1#bf8f50a711180afbf79b8c334c65b57886173d4b"
 dependencies = [
- "alloc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1)",
+ "alloc",
+ "analytics",
  "collections",
- "future 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1)",
+ "future",
+ "geoip",
+ "rate_limit",
  "wc_metrics",
 ]
 
@@ -13337,7 +13233,7 @@ dependencies = [
  "arc-swap",
  "enum-ordinalize",
  "futures",
- "metrics 0.23.1",
+ "metrics",
  "parking_lot",
  "pin-project 1.1.10",
  "smallvec",
@@ -13375,7 +13271,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
- "wc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1)",
+ "wc",
  "wcn_auth",
  "wcn_domain",
  "wcn_rpc",
@@ -13400,7 +13296,7 @@ dependencies = [
  "futures-util",
  "itertools 0.12.1",
  "libp2p",
- "metrics 0.23.1",
+ "metrics",
  "num-traits",
  "once_cell",
  "pin-project 1.1.10",
@@ -13414,7 +13310,7 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "tracing",
- "wc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1)",
+ "wc",
  "xxhash-rust",
 ]
 
@@ -13447,7 +13343,7 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "tracing",
- "wc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1)",
+ "wc",
 ]
 
 [[package]]
@@ -13461,7 +13357,7 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tracing",
- "wc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1)",
+ "wc",
  "wcn_client_api",
  "wcn_core",
  "wcn_domain",
@@ -13479,7 +13375,7 @@ dependencies = [
  "indexmap 2.11.0",
  "libp2p",
  "libp2p-tls",
- "metrics 0.23.1",
+ "metrics",
  "nix 0.28.0",
  "pin-project 1.1.10",
  "quinn",
@@ -13496,7 +13392,7 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "tracing",
- "wc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1)",
+ "wc",
 ]
 
 [[package]]
@@ -13509,7 +13405,7 @@ dependencies = [
  "thiserror 1.0.69",
  "time",
  "tracing",
- "wc 0.1.0 (git+https://github.com/WalletConnect/utils-rs.git?tag=v0.14.1)",
+ "wc",
  "wcn_auth",
  "wcn_rpc",
 ]

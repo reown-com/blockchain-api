@@ -3,7 +3,7 @@ use crate::{
     handlers::{
         self,
         balance::{BalanceItem, BalanceQuantity, BalanceQueryParams, BalanceResponseBody},
-        SdkInfoParams, SupportedCurrencies, HANDLER_TASK_METRICS,
+        SdkInfoParams, SupportedCurrencies,
     },
     state::AppState,
 };
@@ -14,7 +14,7 @@ use serde::Deserialize;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use thiserror::Error;
 use tracing::error;
-use wc::future::FutureExt;
+use wc::metrics::{future_metrics, FutureExt};
 use yttrium::wallet_service_api::{
     AddressOrNative, Asset, AssetData, AssetFilter, AssetType, AssetTypeFilter, ChainFilter,
     Erc20Metadata, GetAssetsFilters, GetAssetsParams, GetAssetsResult, NativeMetadata,
@@ -54,7 +54,7 @@ pub async fn handler(
     query: Query<QueryParams>,
 ) -> Result<GetAssetsResult, GetAssetsError> {
     handler_internal(state, project_id, request, connect_info, headers, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("wallet_get_assets"))
+        .with_metrics(future_metrics!("handler_task", "name" => "wallet_get_assets"))
         .await
 }
 

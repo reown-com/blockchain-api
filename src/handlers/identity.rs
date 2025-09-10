@@ -1,5 +1,5 @@
 use {
-    super::{proxy::rpc_call, RpcQueryParams, SdkInfoParams, HANDLER_TASK_METRICS},
+    super::{proxy::rpc_call, RpcQueryParams, SdkInfoParams},
     crate::{
         analytics::IdentityLookupInfo,
         database::helpers::get_names_by_address,
@@ -32,7 +32,8 @@ use {
     },
     tap::TapFallible,
     tracing::{debug, error, warn},
-    wc::future::FutureExt,
+    wc::metrics::{self, enum_ordinalize::Ordinalize},
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 const CACHE_TTL: u64 = 60 * 60 * 24;
@@ -84,7 +85,7 @@ pub async fn handler(
     address: Path<String>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, connect_info, query, headers, address)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("identity"))
+        .with_metrics(future_metrics!("handler_task", "name" => "identity"))
         .await
 }
 
@@ -176,7 +177,7 @@ fn ttl_from_resolved_at(resolved_at: DateTime<Utc>, now: DateTime<Utc>) -> TimeD
     (expires - now).max(TimeDelta::zero())
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Copy, Debug, Ordinalize)]
 pub enum IdentityLookupSource {
     /// Redis cached results
     Cache,
@@ -186,8 +187,8 @@ pub enum IdentityLookupSource {
     Local,
 }
 
-impl IdentityLookupSource {
-    pub fn as_str(&self) -> &'static str {
+impl metrics::Enum for IdentityLookupSource {
+    fn as_str(&self) -> &'static str {
         match self {
             Self::Cache => "cache",
             Self::Rpc => "rpc",

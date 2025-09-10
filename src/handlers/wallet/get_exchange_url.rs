@@ -3,7 +3,7 @@ use {
         is_feature_enabled_for_project_id, ExchangeError, ExchangeType, GetBuyUrlParams,
     },
     crate::{
-        handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
+        handlers::SdkInfoParams,
         state::AppState,
         utils::crypto::{disassemble_caip10, Caip19Asset},
     },
@@ -17,7 +17,7 @@ use {
     thiserror::Error,
     tracing::debug,
     uuid::Uuid,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize)]
@@ -74,7 +74,7 @@ pub async fn handler(
         .await
         .map_err(|e| GetExchangeUrlError::ValidationError(e.to_string()))?;
     handler_internal(state, project_id, connect_info, headers, query, request)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("pay_get_exchange_url"))
+        .with_metrics(future_metrics!("handler_task", "name" => "pay_get_exchange_url"))
         .await
 }
 

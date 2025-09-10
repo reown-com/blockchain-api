@@ -3,7 +3,7 @@ use {
     thiserror::Error as ThisError,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize, ThisError)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, ThisError, Eq, PartialEq)]
 pub enum ProjectDataError {
     #[error("Project not found in registry")]
     NotFound,
