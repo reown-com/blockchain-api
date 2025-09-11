@@ -16,6 +16,7 @@ const CLAIM_BATCH_SIZE: i64 = 200;
 const EXPIRE_PENDING_AFTER_HOURS: i64 = 12;
 
 pub async fn run(state: Arc<AppState>) {
+    debug!("[exchange reconciler] starting");
     let mut poll = interval(POLL_INTERVAL);
     poll.set_missed_tick_behavior(MissedTickBehavior::Delay);
     loop {
@@ -27,6 +28,7 @@ pub async fn run(state: Arc<AppState>) {
                 if rows.is_empty() {
                     continue;
                 }
+                debug!("[exchange reconciler] fetched {} exchange transactions", rows.len());
 
                 let mut rate = interval(Duration::from_millis(200));
                 rate.set_missed_tick_behavior(MissedTickBehavior::Delay);
@@ -45,7 +47,7 @@ pub async fn run(state: Arc<AppState>) {
                             .get_buy_status(State(state.clone()), GetBuyStatusParams { session_id: internal_id.clone() })
                             .await,
                         _ => {
-                            warn!(exchange_id, "unknown exchange id for reconciliation");
+                            warn!(exchange_id, "[exchange reconciler] unknown exchange id for reconciliation");
                             continue;
                         }
                     };
@@ -54,9 +56,11 @@ pub async fn run(state: Arc<AppState>) {
                         Ok(status) => {
                             match status.status {
                                 BuyTransactionStatus::Success => {
+                                    debug!(exchange_id, internal_id, "[exchange reconciler] marking transaction as succeeded");
                                     let _ = super::transactions::mark_succeeded(&state, &internal_id, status.tx_hash.as_deref()).await;
                                 }
                                 BuyTransactionStatus::Failed => {
+                                    debug!(exchange_id, internal_id, "[exchange reconciler] marking transaction as failed");
                                     let _ = super::transactions::mark_failed(
                                         &state,
                                         &internal_id,
