@@ -9,7 +9,7 @@ use {
     async_trait::async_trait,
     axum::extract::State,
     base64::{engine::general_purpose, Engine as _},
-    solana_client::nonblocking::rpc_client::RpcClient,
+    solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcTransactionConfig},
     solana_sdk::{
         commitment_config::CommitmentConfig,
         message::{v0, VersionedMessage},
@@ -251,9 +251,41 @@ pub async fn get_transaction_status(
                 Ok(TransactionStatus::Confirmed)
             }
         }
-        Some(None) => Ok(TransactionStatus::Pending),
-        None => Ok(TransactionStatus::Pending),
+        Some(None) | None => {
+            let fallback = get_status_via_get_transaction(&rpc_client, &parsed_signature).await?;
+            match fallback {
+                Some(status) => Ok(status),
+                None => Ok(TransactionStatus::Pending),
+            }
+        }
     }
+}
+
+async fn get_status_via_get_transaction(
+    rpc_client: &RpcClient,
+    signature: &Signature,
+) -> Result<Option<TransactionStatus>, BuildPosTxsError> {
+    let config = RpcTransactionConfig {
+        commitment: Some(CommitmentConfig::confirmed()),
+        max_supported_transaction_version: Some(0),
+        ..Default::default()
+    };
+
+    let tx = match rpc_client
+        .get_transaction_with_config(signature, config)
+        .await
+    {
+        Ok(tx) => tx,
+        Err(_e) => return Ok(None),
+    };
+    debug!("solana get transaction response: {:?}", tx);
+
+    if let Some(meta) = tx.transaction.meta {
+        if meta.err.is_some() {
+            return Ok(Some(TransactionStatus::Failed));
+        }
+    }
+    Ok(Some(TransactionStatus::Confirmed))
 }
 
 pub async fn check_transaction(
