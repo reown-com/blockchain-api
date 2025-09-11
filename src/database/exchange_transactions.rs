@@ -109,10 +109,7 @@ pub async fn update_status(
     Ok(row)
 }
 
-pub async fn touch_non_terminal(
-    postgres: &PgPool,
-    id: &str,
-) -> Result<(), DatabaseError> {
+pub async fn touch_non_terminal(postgres: &PgPool, id: &str) -> Result<(), DatabaseError> {
     let query = r#"
         UPDATE exchange_transactions SET
             last_checked_at = NOW(),
@@ -175,5 +172,3 @@ pub async fn expire_old_pending(
         .await?;
     Ok(res.rows_affected())
 }
-
-

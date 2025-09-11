@@ -15,8 +15,8 @@ use {
 
 pub mod binance;
 pub mod coinbase;
-pub mod test_exchange;
 pub mod reconciler;
+pub mod test_exchange;
 pub mod transactions;
 
 use binance::BinanceExchange;

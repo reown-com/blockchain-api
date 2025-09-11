@@ -1,12 +1,11 @@
 use {
     crate::handlers::wallet::exchanges::{
-        is_feature_enabled_for_project_id, BuyTransactionStatus, ExchangeError, ExchangeType,
-        GetBuyStatusParams,
+        is_feature_enabled_for_project_id,
         transactions::{
-            mark_failed as mark_transaction_failed,
-            mark_succeeded as mark_transaction_succeeded,
+            mark_failed as mark_transaction_failed, mark_succeeded as mark_transaction_succeeded,
             touch_pending as touch_pending_transaction,
         },
+        BuyTransactionStatus, ExchangeError, ExchangeType, GetBuyStatusParams,
     },
     crate::{handlers::SdkInfoParams, state::AppState},
     axum::{
@@ -117,7 +116,9 @@ async fn handler_internal(
             match response.status {
                 BuyTransactionStatus::Success => {
                     let tx_hash = response.tx_hash.clone();
-                    let _ = mark_transaction_succeeded(&state, &request.session_id, tx_hash.as_deref()).await;
+                    let _ =
+                        mark_transaction_succeeded(&state, &request.session_id, tx_hash.as_deref())
+                            .await;
                 }
                 BuyTransactionStatus::Failed => {
                     let tx_hash = response.tx_hash.clone();

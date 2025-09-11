@@ -2,8 +2,8 @@ use {
     crate::{
         analytics::exchange_event_info::{ExchangeEventInfo, ExchangeEventType},
         database::{
-            exchange_transactions::{self, TxStatus},
             error::DatabaseError,
+            exchange_transactions::{self, TxStatus},
         },
         state::AppState,
     },
@@ -115,6 +115,3 @@ pub async fn touch_pending(
 ) -> Result<(), crate::database::error::DatabaseError> {
     exchange_transactions::touch_non_terminal(&state.postgres, id).await
 }
-
-
-

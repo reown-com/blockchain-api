@@ -5,11 +5,11 @@ pub use {
         ChainAbstractionBridgingInfo, ChainAbstractionFundingInfo, ChainAbstractionInitialTxInfo,
     },
     config::Config,
+    exchange_event_info::ExchangeEventInfo,
     history_lookup_info::HistoryLookupInfo,
     identity_lookup_info::IdentityLookupInfo,
     message_info::*,
     onramp_history_lookup_info::OnrampHistoryLookupInfo,
-    exchange_event_info::ExchangeEventInfo,
 };
 use {
     aws_sdk_s3::Client as S3Client,
@@ -31,11 +31,11 @@ mod account_names_info;
 mod balance_lookup_info;
 mod chain_abstraction_info;
 mod config;
+pub mod exchange_event_info;
 mod history_lookup_info;
 mod identity_lookup_info;
 mod message_info;
 mod onramp_history_lookup_info;
-pub mod exchange_event_info;
 
 const ANALYTICS_EXPORT_TIMEOUT: Duration = Duration::from_secs(30);
 const DATA_QUEUE_CAPACITY: usize = 8192;

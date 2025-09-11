@@ -1,9 +1,10 @@
 use {
-    super::{binance::BinanceExchange, coinbase::CoinbaseExchange, ExchangeType, GetBuyStatusParams},
+    super::{
+        binance::BinanceExchange, coinbase::CoinbaseExchange, ExchangeType, GetBuyStatusParams,
+    },
     crate::{
-        database::exchange_transactions as db,
-        handlers::wallet::exchanges::BuyTransactionStatus,
-        state::AppState
+        database::exchange_transactions as db, handlers::wallet::exchanges::BuyTransactionStatus,
+        state::AppState,
     },
     axum::extract::State,
     std::{sync::Arc, time::Duration},
@@ -24,11 +25,16 @@ pub async fn run(state: Arc<AppState>) {
         let fetch_started = std::time::SystemTime::now();
         match db::claim_due_batch(&state.postgres, CLAIM_BATCH_SIZE).await {
             Ok(mut rows) => {
-                state.metrics.add_exchange_reconciler_fetch_batch_latency(fetch_started);
+                state
+                    .metrics
+                    .add_exchange_reconciler_fetch_batch_latency(fetch_started);
                 if rows.is_empty() {
                     continue;
                 }
-                debug!("[exchange reconciler] fetched {} exchange transactions", rows.len());
+                debug!(
+                    "[exchange reconciler] fetched {} exchange transactions",
+                    rows.len()
+                );
 
                 let mut rate = interval(Duration::from_millis(200));
                 rate.set_missed_tick_behavior(MissedTickBehavior::Delay);
@@ -40,40 +46,69 @@ pub async fn run(state: Arc<AppState>) {
                     let exchange_id = row.exchange_id.as_str();
                     let internal_id = row.id.clone();
                     let res = match ExchangeType::from_id(exchange_id) {
-                        Some(ExchangeType::Coinbase) => CoinbaseExchange
-                            .get_buy_status(State(state.clone()), GetBuyStatusParams { session_id: internal_id.clone() })
-                            .await,
-                        Some(ExchangeType::Binance) => BinanceExchange
-                            .get_buy_status(State(state.clone()), GetBuyStatusParams { session_id: internal_id.clone() })
-                            .await,
+                        Some(ExchangeType::Coinbase) => {
+                            CoinbaseExchange
+                                .get_buy_status(
+                                    State(state.clone()),
+                                    GetBuyStatusParams {
+                                        session_id: internal_id.clone(),
+                                    },
+                                )
+                                .await
+                        }
+                        Some(ExchangeType::Binance) => {
+                            BinanceExchange
+                                .get_buy_status(
+                                    State(state.clone()),
+                                    GetBuyStatusParams {
+                                        session_id: internal_id.clone(),
+                                    },
+                                )
+                                .await
+                        }
                         _ => {
-                            warn!(exchange_id, "[exchange reconciler] unknown exchange id for reconciliation");
+                            warn!(
+                                exchange_id,
+                                "[exchange reconciler] unknown exchange id for reconciliation"
+                            );
                             continue;
                         }
                     };
 
                     match res {
-                        Ok(status) => {
-                            match status.status {
-                                BuyTransactionStatus::Success => {
-                                    debug!(exchange_id, internal_id, "[exchange reconciler] marking transaction as succeeded");
-                                    let _ = super::transactions::mark_succeeded(&state, &internal_id, status.tx_hash.as_deref()).await;
-                                }
-                                BuyTransactionStatus::Failed => {
-                                    debug!(exchange_id, internal_id, "[exchange reconciler] marking transaction as failed");
-                                    let _ = super::transactions::mark_failed(
-                                        &state,
-                                        &internal_id,
-                                        Some("provider_failed"),
-                                        status.tx_hash.as_deref(),
-                                    )
-                                    .await;
-                                }
-                                _ => {
-                                    let _ = super::transactions::touch_pending(&state, &internal_id).await;
-                                }
+                        Ok(status) => match status.status {
+                            BuyTransactionStatus::Success => {
+                                debug!(
+                                    exchange_id,
+                                    internal_id,
+                                    "[exchange reconciler] marking transaction as succeeded"
+                                );
+                                let _ = super::transactions::mark_succeeded(
+                                    &state,
+                                    &internal_id,
+                                    status.tx_hash.as_deref(),
+                                )
+                                .await;
                             }
-                        }
+                            BuyTransactionStatus::Failed => {
+                                debug!(
+                                    exchange_id,
+                                    internal_id,
+                                    "[exchange reconciler] marking transaction as failed"
+                                );
+                                let _ = super::transactions::mark_failed(
+                                    &state,
+                                    &internal_id,
+                                    Some("provider_failed"),
+                                    status.tx_hash.as_deref(),
+                                )
+                                .await;
+                            }
+                            _ => {
+                                let _ =
+                                    super::transactions::touch_pending(&state, &internal_id).await;
+                            }
+                        },
                         Err(err) => {
                             debug!(exchange_id, internal_id, error = %err, "reconciler provider check failed");
                             let _ = db::touch_non_terminal(&state.postgres, &internal_id).await;
@@ -81,7 +116,9 @@ pub async fn run(state: Arc<AppState>) {
                     }
                 }
 
-                state.metrics.add_exchange_reconciler_process_batch_latency(process_started);
+                state
+                    .metrics
+                    .add_exchange_reconciler_process_batch_latency(process_started);
                 let _ = db::expire_old_pending(&state.postgres, EXPIRE_PENDING_AFTER_HOURS).await;
             }
             Err(e) => {
@@ -90,5 +127,3 @@ pub async fn run(state: Arc<AppState>) {
         }
     }
 }
-
-
