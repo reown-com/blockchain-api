@@ -12,8 +12,8 @@ pub enum StorageError {
     #[error("error on serialize data")]
     Serialize,
     /// Unable to deserialize data from store
-    #[error("error on deserialize data")]
-    Deserialize,
+    #[error("error on deserialize data: {0}")]
+    Deserialize(String),
     /// Error on establishing a connection with the storage
     #[error("error on open connection")]
     Connection(String),

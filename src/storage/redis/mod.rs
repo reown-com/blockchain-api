@@ -132,7 +132,7 @@ where
                 None => Ok(None),
                 Some(data) => deserialize(&data)
                     .map(Some)
-                    .map_err(|_| StorageError::Deserialize),
+                    .map_err(|e| StorageError::Deserialize(e.to_string())),
             })
     }
 
