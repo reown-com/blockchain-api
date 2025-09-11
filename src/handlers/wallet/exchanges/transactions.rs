@@ -3,7 +3,7 @@ use {
         analytics::exchange_event_info::{ExchangeEventInfo, ExchangeEventType},
         database::{
             error::DatabaseError,
-            exchange_transactions::{self, TxStatus},
+            exchange_transactions::{self, NewExchangeTransaction, TxStatus},
         },
         state::AppState,
     },
@@ -12,25 +12,9 @@ use {
 
 pub async fn create(
     state: &Arc<AppState>,
-    id: &str,
-    exchange_id: &str,
-    project_id: &str,
-    asset: &str,
-    amount: f64,
-    recipient: &str,
-    pay_url: &str,
-) -> Result<(), crate::database::error::DatabaseError> {
-    let row = exchange_transactions::upsert_new(
-        &state.postgres,
-        id,
-        exchange_id,
-        Some(project_id),
-        Some(asset),
-        Some(amount),
-        Some(recipient),
-        Some(pay_url),
-    )
-    .await?;
+    args: NewExchangeTransaction<'_>,
+) -> Result<(), DatabaseError> {
+    let row = exchange_transactions::upsert_new(&state.postgres, args).await?;
 
     state.analytics.exchange_event(ExchangeEventInfo::new(
         ExchangeEventType::Started,
@@ -55,10 +39,12 @@ pub async fn mark_succeeded(
 ) -> Result<(), DatabaseError> {
     let row = exchange_transactions::update_status(
         &state.postgres,
-        id,
-        TxStatus::Succeeded,
-        tx_hash,
-        None,
+        exchange_transactions::UpdateExchangeStatus {
+            id,
+            status: TxStatus::Succeeded,
+            tx_hash,
+            failure_reason: None,
+        },
     )
     .await?;
 
@@ -86,10 +72,12 @@ pub async fn mark_failed(
 ) -> Result<(), DatabaseError> {
     let row = exchange_transactions::update_status(
         &state.postgres,
-        id,
-        TxStatus::Failed,
-        tx_hash,
-        failure_reason,
+        exchange_transactions::UpdateExchangeStatus {
+            id,
+            status: TxStatus::Failed,
+            tx_hash,
+            failure_reason,
+        },
     )
     .await?;
 

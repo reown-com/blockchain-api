@@ -1,10 +1,13 @@
 use {
-    crate::handlers::wallet::exchanges::{
-        is_feature_enabled_for_project_id, transactions::create as create_transaction,
-        ExchangeError, ExchangeType, GetBuyUrlParams,
-    },
     crate::{
-        handlers::SdkInfoParams,
+        database::exchange_transactions::NewExchangeTransaction,
+        handlers::{
+            wallet::exchanges::{
+                is_feature_enabled_for_project_id, transactions::create as create_transaction,
+                ExchangeError, ExchangeType, GetBuyUrlParams,
+            },
+            SdkInfoParams,
+        },
         state::AppState,
         utils::crypto::{disassemble_caip10, Caip19Asset},
     },
@@ -152,13 +155,15 @@ async fn handler_internal(
         Ok(url) => {
             create_transaction(
                 &state,
-                &session_id,
-                &request.exchange_id,
-                &project_id,
-                &request.asset,
-                amount,
-                &address,
-                &url,
+                NewExchangeTransaction {
+                    id: &session_id,
+                    exchange_id: &request.exchange_id,
+                    project_id: Some(&project_id),
+                    asset: Some(&request.asset),
+                    amount: Some(amount),
+                    recipient: Some(&address),
+                    pay_url: Some(&url),
+                },
             )
             .await
             .map_err(|e| {

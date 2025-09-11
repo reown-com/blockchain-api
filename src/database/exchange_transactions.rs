@@ -40,15 +40,19 @@ pub struct ExchangeTransaction {
     pub locked_at: Option<DateTime<Utc>>,
 }
 
+pub struct NewExchangeTransaction<'a> {
+    pub id: &'a str,
+    pub exchange_id: &'a str,
+    pub project_id: Option<&'a str>,
+    pub asset: Option<&'a str>,
+    pub amount: Option<f64>,
+    pub recipient: Option<&'a str>,
+    pub pay_url: Option<&'a str>,
+}
+
 pub async fn upsert_new(
     postgres: &PgPool,
-    id: &str,
-    exchange_id: &str,
-    project_id: Option<&str>,
-    asset: Option<&str>,
-    amount: Option<f64>,
-    recipient: Option<&str>,
-    pay_url: Option<&str>,
+    tx: NewExchangeTransaction<'_>,
 ) -> Result<ExchangeTransaction, DatabaseError> {
     let query = r#"
         INSERT INTO exchange_transactions
@@ -59,27 +63,31 @@ pub async fn upsert_new(
     "#;
 
     let row = sqlx::query_as::<Postgres, ExchangeTransaction>(query)
-        .bind(id)
-        .bind(exchange_id)
-        .bind(project_id)
-        .bind(asset)
-        .bind(amount)
-        .bind(recipient)
-        .bind(pay_url)
+        .bind(tx.id)
+        .bind(tx.exchange_id)
+        .bind(tx.project_id)
+        .bind(tx.asset)
+        .bind(tx.amount)
+        .bind(tx.recipient)
+        .bind(tx.pay_url)
         .fetch_one(postgres)
         .await?;
     Ok(row)
 }
 
+pub struct UpdateExchangeStatus<'a> {
+    pub id: &'a str,
+    pub status: TxStatus,
+    pub tx_hash: Option<&'a str>,
+    pub failure_reason: Option<&'a str>,
+}
+
 pub async fn update_status(
     postgres: &PgPool,
-    id: &str,
-    status: TxStatus,
-    tx_hash: Option<&str>,
-    failure_reason: Option<&str>,
+    tx: UpdateExchangeStatus<'_>,
 ) -> Result<ExchangeTransaction, DatabaseError> {
-    let (completed_at_set, failure_reason_bind) = match status {
-        TxStatus::Succeeded | TxStatus::Failed => ("NOW()", failure_reason),
+    let (completed_at_set, failure_reason_bind) = match tx.status {
+        TxStatus::Succeeded | TxStatus::Failed => ("NOW()", tx.failure_reason),
         TxStatus::Pending => ("NULL", None),
     };
 
@@ -100,9 +108,9 @@ pub async fn update_status(
     );
 
     let row = sqlx::query_as::<Postgres, ExchangeTransaction>(&query)
-        .bind(id)
-        .bind(status.as_str())
-        .bind(tx_hash)
+        .bind(tx.id)
+        .bind(tx.status.as_str())
+        .bind(tx.tx_hash)
         .bind(failure_reason_bind)
         .fetch_one(postgres)
         .await?;
