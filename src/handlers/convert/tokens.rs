@@ -1,5 +1,4 @@
 use {
-    super::super::HANDLER_TASK_METRICS,
     crate::{error::RpcError, state::AppState},
     axum::{
         extract::{Query, State},
@@ -10,7 +9,7 @@ use {
     std::sync::Arc,
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -44,7 +43,7 @@ pub async fn handler(
     query: Query<TokensListQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("tokens_list"))
+        .with_metrics(future_metrics!("handler_task", "name" => "tokens_list"))
         .await
 }
 

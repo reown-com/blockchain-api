@@ -380,6 +380,8 @@ async fn insert_and_check_names_count() {
     )
     .await;
     assert!(insert_result.is_ok(), "Inserting a new name should succeed");
+    // Add a delay to ensure the count is updated
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
     // Check the count of names AFTER inserting
     let stats_after_insert = get_account_names_stats(&pg_pool).await.unwrap().count;

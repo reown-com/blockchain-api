@@ -1,8 +1,5 @@
 use {
-    crate::{
-        error::RpcError, handlers::HANDLER_TASK_METRICS, state::AppState,
-        utils::simple_request_json::SimpleRequestJson,
-    },
+    crate::{error::RpcError, state::AppState, utils::simple_request_json::SimpleRequestJson},
     axum::{
         extract::State,
         response::{IntoResponse, Response},
@@ -12,7 +9,7 @@ use {
     std::sync::Arc,
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -57,7 +54,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<QueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, request_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("onramp_widget"))
+        .with_metrics(future_metrics!("handler_task", "name" => "onramp_widget"))
         .await
 }
 

@@ -29,19 +29,16 @@ variable "task_memory" {
 variable "autoscaling_desired_count" {
   description = "Minimum number of instances in the autoscaling group"
   type        = number
-  default     = 2
 }
 
 variable "autoscaling_min_capacity" {
   description = "Minimum number of instances in the autoscaling group"
   type        = number
-  default     = 2
 }
 
 variable "autoscaling_max_capacity" {
   description = "Maximum number of instances in the autoscaling group"
   type        = number
-  default     = 8
 }
 
 variable "cloudwatch_logs_key_arn" {
@@ -53,6 +50,12 @@ variable "cloudwatch_retention_in_days" {
   description = "The number of days to retain CloudWatch logs for the DB instance"
   type        = number
   default     = 14
+}
+
+variable "container_stop_timeout" {
+  description = "The number of seconds to wait for the container to stop gracefully before forcefully killing it"
+  type        = number
+  default     = 30
 }
 
 #-------------------------------------------------------------------------------
@@ -151,7 +154,7 @@ variable "provider_cache_endpoint" {
   type        = string
 }
 
-variable "ofac_blocked_countries" {
+variable "ofac_countries" {
   description = "The list of countries under OFAC sanctions"
   type        = string
 }
@@ -242,8 +245,8 @@ variable "tenderly_project_id" {
   sensitive   = true
 }
 
-variable "dune_api_key" {
-  description = "Dune API key"
+variable "dune_sim_api_key" {
+  description = "Dune Sim API key"
   type        = string
   sensitive   = true
 }
@@ -290,6 +293,19 @@ variable "testing_project_id" {
   sensitive   = true
 }
 
+variable "validate_project_id" {
+  description = "Project ID and quota validation"
+  type        = bool
+}
+
+#-------------------------------------------------------------------------------
+# RPC Proxy configuration
+variable "proxy_skip_quota_chains" {
+  description = "Comma separated list of CAIP-2 chains to skip quota check"
+  type        = string
+  default     = ""
+}
+
 #-------------------------------------------------------------------------------
 # Project Registry
 
@@ -306,6 +322,11 @@ variable "registry_api_auth_token" {
 
 variable "project_cache_ttl" {
   description = "The TTL for project data cache"
+  type        = number
+}
+
+variable "registry_circuit_cooldown_ms" {
+  description = "Circuit breaker cooldown in milliseconds for registry failures"
   type        = number
 }
 

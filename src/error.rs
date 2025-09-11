@@ -40,6 +40,8 @@ pub enum RpcError {
 
     #[error("Transport error: {0}")]
     TransportError(#[from] hyper::Error),
+    #[error("Hyper util error: {0}")]
+    HyperUtilError(#[from] hyper_util::client::legacy::Error),
 
     #[error("Proxy timeout error: {0}")]
     ProxyTimeoutError(tokio::time::error::Elapsed),
@@ -107,8 +109,8 @@ pub enum RpcError {
     #[error("Invalid scheme used. Try http(s):// or ws(s)://")]
     InvalidScheme,
 
-    #[error(transparent)]
-    AxumTungstenite(Box<axum_tungstenite::Error>),
+    #[error("WebSocket error: {0}")]
+    WebSocketError(String),
 
     #[error("Only WebSocket connections are supported for GET method on this endpoint")]
     WebSocketConnectionExpected,
@@ -136,6 +138,9 @@ pub enum RpcError {
 
     #[error("invalid parameter: {0}")]
     InvalidParameter(String),
+
+    #[error("Asset is not supported: {0}")]
+    AssetNotSupported(String),
 
     // Conversion errors
     #[error("Failed to reach the conversion provider")]
@@ -281,7 +286,7 @@ pub enum RpcError {
 impl IntoResponse for RpcError {
     fn into_response(self) -> axum::response::Response {
         let response =  match &self {
-            Self::AxumTungstenite(err) => (StatusCode::GONE, err.to_string()).into_response(),
+            Self::WebSocketError(err) => (StatusCode::GONE, err.to_string()).into_response(),
             Self::UnsupportedChain(chain_id) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
@@ -468,6 +473,14 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+            Self::AssetNotSupported(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "asset".to_string(),
+                    format!("Asset is not supported: {e}"),
+                )),
+            )
+                .into_response(),
             Self::UnsupportedCoinType(e) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
@@ -559,8 +572,8 @@ impl IntoResponse for RpcError {
             Self::RateLimited(e) => (
                 StatusCode::TOO_MANY_REQUESTS,
                 Json(new_error_response(
-                    "rate_limit".to_string(),
-                    format!("Rate limited: {e}"),
+                    "rate_limited".to_string(),
+                    format!("Requests per second limit exceeded: {e}"),
                 )),
             )
                 .into_response(),

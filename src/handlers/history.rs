@@ -1,5 +1,5 @@
 use {
-    super::{SdkInfoParams, HANDLER_TASK_METRICS},
+    super::SdkInfoParams,
     crate::{
         analytics::{HistoryLookupInfo, OnrampHistoryLookupInfo},
         error::RpcError,
@@ -17,7 +17,7 @@ use {
     std::{net::SocketAddr, sync::Arc},
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -128,7 +128,7 @@ pub async fn handler(
     address: Path<String>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, connect_info, query, path, headers, address)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("transactions"))
+        .with_metrics(future_metrics!("handler_task", "name" => "transactions"))
         .await
 }
 

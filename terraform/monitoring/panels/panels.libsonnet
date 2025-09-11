@@ -36,6 +36,7 @@ local redis  = panels.aws.redis;
     chains_unavailability:  (import 'proxy/chains_unavailability.libsonnet'  ).new,
     websocket_connections:  (import 'proxy/websocket_connections.libsonnet'  ).new,
     rpc_server_error_codes: (import 'proxy/rpc_server_error_codes.libsonnet' ).new,
+    rpc_methods_cache:      (import 'proxy/rpc_methods_cache.libsonnet'      ).new,
   },
 
   projects: {
@@ -43,6 +44,7 @@ local redis  = panels.aws.redis;
     quota_limited_projects: (import 'projects/quota_limited_projects.libsonnet').new,
     cache_latency:          (import 'projects/cache_latency.libsonnet'         ).new,
     fetch_latency:          (import 'projects/fetch_latency.libsonnet'         ).new,
+    error_responses:        (import 'projects/error_responses.libsonnet'       ).new,
   },
 
   rate_limiting: {

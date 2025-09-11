@@ -35,13 +35,13 @@ variable "log_level" {
 variable "app_autoscaling_desired_count" {
   description = "The desired number of tasks to run"
   type        = number
-  default     = 2
+  default     = 3
 }
 
 variable "app_autoscaling_min_capacity" {
   description = "The minimum number of tasks to run when autoscaling"
   type        = number
-  default     = 2
+  default     = 3
 }
 
 variable "app_autoscaling_max_capacity" {
@@ -50,7 +50,7 @@ variable "app_autoscaling_max_capacity" {
   default     = 10
 }
 
-variable "ofac_blocked_countries" {
+variable "ofac_countries" {
   description = "The list of countries to block"
   type        = string
   default     = ""
@@ -76,6 +76,11 @@ variable "project_cache_ttl" {
   default     = 300
 }
 
+variable "registry_circuit_cooldown_ms" {
+  description = "Circuit breaker cooldown in milliseconds for registry failures"
+  type        = number
+  default     = 1000
+}
 
 #-------------------------------------------------------------------------------
 # Providers
@@ -158,8 +163,8 @@ variable "tenderly_project_id" {
   sensitive   = true
 }
 
-variable "dune_api_key" {
-  description = "Dune API key"
+variable "dune_sim_api_key" {
+  description = "Dune Sim API key"
   type        = string
   sensitive   = true
 }
@@ -174,6 +179,12 @@ variable "testing_project_id" {
   description = "Project ID used in a testing suite"
   type        = string
   sensitive   = true
+}
+
+variable "validate_project_id" {
+  description = "Project ID and quota validation"
+  type        = bool
+  default     = true
 }
 
 variable "allnodes_api_key" {
@@ -204,6 +215,15 @@ variable "blast_api_key" {
   description = "Blast API key"
   type        = string
   sensitive   = true
+}
+
+#-------------------------------------------------------------------------------
+# RPC Proxy configuration
+
+variable "proxy_skip_quota_chains" {
+  description = "Comma separated list of CAIP-2 chains to skip quota check"
+  type        = string
+  default     = ""
 }
 
 #-------------------------------------------------------------------------------

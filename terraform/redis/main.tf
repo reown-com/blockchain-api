@@ -3,12 +3,14 @@ data "aws_vpc" "vpc" {
 }
 
 resource "aws_elasticache_cluster" "cache" {
-  cluster_id           = module.this.id
-  engine               = "redis"
-  node_type            = var.node_type
-  num_cache_nodes      = var.num_cache_nodes
-  parameter_group_name = "default.redis6.x"
-  engine_version       = var.node_engine_version
+  cluster_id      = module.this.id
+  engine          = "redis"
+  node_type       = var.node_type
+  num_cache_nodes = var.num_cache_nodes
+
+  # TODO: remove this once we have migrated to Redis 7 in the prod environment as well
+  parameter_group_name = module.this.stage == "prod" ? "default.redis6.x" : "default.redis7"
+  engine_version       = module.this.stage == "prod" ? "6.x" : var.node_engine_version
   port                 = 6379
   subnet_group_name    = aws_elasticache_subnet_group.private_subnets.name
   security_group_ids = [

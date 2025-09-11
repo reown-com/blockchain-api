@@ -1,8 +1,7 @@
 use {
     super::{
-        is_internal_error_rpc_code, is_node_error_rpc_message, is_rate_limited_error_rpc_message,
         Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams,
-        RpcWsProvider, WS_PROXY_TASK_METRICS,
+        RpcWsProvider,
     },
     crate::{
         env::AllnodesConfig,
@@ -11,20 +10,18 @@ use {
     },
     async_trait::async_trait,
     axum::{
+        extract::ws::WebSocketUpgrade,
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    axum_tungstenite::WebSocketUpgrade,
-    hyper::{client::HttpConnector, http, Client, Method},
-    hyper_tls::HttpsConnector,
+    hyper::http,
     std::collections::HashMap,
-    tracing::debug,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug)]
 pub struct AllnodesProvider {
-    pub client: Client<HttpsConnector<HttpConnector>>,
+    pub client: reqwest::Client,
     pub supported_chains: HashMap<String, String>,
     pub api_key: String,
 }
@@ -66,11 +63,11 @@ impl RpcWsProvider for AllnodesWsProvider {
         let uri = format!("wss://{}.allnodes.me:8546/{}", chain, &self.api_key);
         let (websocket_provider, _) = async_tungstenite::tokio::connect_async(uri)
             .await
-            .map_err(|e| RpcError::AxumTungstenite(Box::new(e)))?;
+            .map_err(|e| RpcError::WebSocketError(e.to_string()))?;
 
         Ok(ws.on_upgrade(move |socket| {
             ws::proxy(project_id, socket, websocket_provider)
-                .with_metrics(WS_PROXY_TASK_METRICS.with_name("allnodes"))
+                .with_metrics(future_metrics!("ws_proxy_task", "name" => "allnodes"))
         }))
     }
 }
@@ -109,7 +106,7 @@ impl RateLimited for AllnodesProvider {
 #[async_trait]
 impl RpcProvider for AllnodesProvider {
     #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
-    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
+    async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response> {
         let chain = &self
             .supported_chains
             .get(chain_id)
@@ -117,37 +114,15 @@ impl RpcProvider for AllnodesProvider {
 
         let uri = format!("https://{}.allnodes.me:8545/{}", chain, &self.api_key);
 
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::POST)
-            .uri(uri)
-            .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(body))?;
-
-        let response = self.client.request(hyper_request).await?;
+        let response = self
+            .client
+            .post(uri)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()
+            .await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
-
-        if status.is_success() {
-            if let Ok(json_response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-                if let Some(error) = &json_response.error {
-                    debug!(
-                        "Strange: provider returned JSON RPC error, but status {status} is success: \
-                     Allnodes: {json_response:?}"
-                    );
-                    if is_internal_error_rpc_code(error.code) {
-                        if is_rate_limited_error_rpc_message(&error.message) {
-                            return Ok((http::StatusCode::TOO_MANY_REQUESTS, body).into_response());
-                        }
-                        if is_node_error_rpc_message(&error.message) {
-                            return Ok(
-                                (http::StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
+        let body = response.bytes().await?;
         let mut response = (status, body).into_response();
         response
             .headers_mut()
@@ -159,7 +134,7 @@ impl RpcProvider for AllnodesProvider {
 impl RpcProviderFactory<AllnodesConfig> for AllnodesProvider {
     #[tracing::instrument(level = "debug")]
     fn new(provider_config: &AllnodesConfig) -> Self {
-        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let forward_proxy_client = reqwest::Client::new();
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()

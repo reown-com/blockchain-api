@@ -1,5 +1,5 @@
 use {
-    super::{super::HANDLER_TASK_METRICS, LookupQueryParams, EMPTY_RESPONSE},
+    super::{LookupQueryParams, EMPTY_RESPONSE},
     crate::{
         database::helpers::{get_name_and_addresses_by_name, get_names_by_address},
         error::RpcError,
@@ -13,7 +13,7 @@ use {
     hyper::StatusCode,
     std::sync::Arc,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 pub async fn handler(
@@ -22,7 +22,7 @@ pub async fn handler(
     query: Query<LookupQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, address, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("reverse_lookup"))
+        .with_metrics(future_metrics!("handler_task", "name" => "reverse_lookup"))
         .await
 }
 

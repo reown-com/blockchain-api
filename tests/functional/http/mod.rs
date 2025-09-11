@@ -1,7 +1,9 @@
 use {
     crate::{context::ServerContext, utils::send_jsonrpc_request, JSONRPC_VERSION},
-    hyper::{Body, Client, Method, Request, StatusCode},
-    hyper_tls::HttpsConnector,
+    axum::{
+        body::{to_bytes, Body},
+        http::StatusCode,
+    },
     rpc_proxy::{handlers::history::HistoryResponseBody, providers::ProviderKind},
     test_context::test_context,
 };
@@ -28,6 +30,8 @@ pub(crate) mod wemix;
 pub(crate) mod zksync;
 pub(crate) mod zora;
 
+const RESPONSE_MAX_BYTES: usize = 512 * 1024; // 512 KB
+
 async fn check_if_rpc_is_responding_correctly_for_supported_chain(
     ctx: &ServerContext,
     provider_id: &ProviderKind,
@@ -39,7 +43,6 @@ async fn check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx.server.public_addr, ctx.server.project_id, provider_id
     );
 
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
     let request = jsonrpc::Request {
         method: "eth_chainId",
         params: None,
@@ -47,7 +50,7 @@ async fn check_if_rpc_is_responding_correctly_for_supported_chain(
         jsonrpc: JSONRPC_VERSION,
     };
 
-    let (status, rpc_response) = send_jsonrpc_request(client, addr, chaind_id, request).await;
+    let (status, rpc_response) = send_jsonrpc_request(addr, chaind_id, request).await;
 
     match status {
         StatusCode::OK => {
@@ -70,7 +73,6 @@ async fn check_if_rpc_is_responding_correctly_for_near_protocol(
         ctx.server.public_addr, ctx.server.project_id, provider_id
     );
 
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
     let request = jsonrpc::Request {
         method: "EXPERIMENTAL_genesis_config",
         params: None,
@@ -78,7 +80,7 @@ async fn check_if_rpc_is_responding_correctly_for_near_protocol(
         jsonrpc: JSONRPC_VERSION,
     };
 
-    let (status, rpc_response) = send_jsonrpc_request(client, addr, "near:mainnet", request).await;
+    let (status, rpc_response) = send_jsonrpc_request(addr, "near:mainnet", request).await;
 
     #[derive(serde::Deserialize)]
     struct GenesisConfig {
@@ -110,7 +112,6 @@ async fn check_if_rpc_is_responding_correctly_for_solana(
         ctx.server.public_addr, ctx.server.project_id, provider_id
     );
 
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
     let request = jsonrpc::Request {
         method: "getHealth",
         params: None,
@@ -119,7 +120,7 @@ async fn check_if_rpc_is_responding_correctly_for_solana(
     };
 
     let (status, rpc_response) =
-        send_jsonrpc_request(client, addr, &format!("solana:{chain_id}"), request).await;
+        send_jsonrpc_request(addr, &format!("solana:{chain_id}"), request).await;
 
     // Verify that HTTP communication was successful
     assert_eq!(status, StatusCode::OK);
@@ -142,7 +143,6 @@ async fn check_if_rpc_is_responding_correctly_for_sui(
         ctx.server.public_addr, ctx.server.project_id, provider_id
     );
 
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
     let request = jsonrpc::Request {
         method: "sui_getChainIdentifier",
         params: None,
@@ -151,7 +151,7 @@ async fn check_if_rpc_is_responding_correctly_for_sui(
     };
 
     let (status, rpc_response) =
-        send_jsonrpc_request(client, addr, &format!("sui:{chain_id}"), request).await;
+        send_jsonrpc_request(addr, &format!("sui:{chain_id}"), request).await;
 
     // Verify that HTTP communication was successful
     assert_eq!(status, StatusCode::OK);
@@ -173,7 +173,6 @@ async fn check_if_rpc_is_responding_correctly_for_bitcoin(
         ctx.server.public_addr, ctx.server.project_id, provider_id
     );
 
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
     let request = jsonrpc::Request {
         method: "getblockcount",
         params: None,
@@ -182,7 +181,7 @@ async fn check_if_rpc_is_responding_correctly_for_bitcoin(
     };
 
     let (status, rpc_response) =
-        send_jsonrpc_request(client, addr, &format!("bip122:{chain_id}"), request).await;
+        send_jsonrpc_request(addr, &format!("bip122:{chain_id}"), request).await;
 
     // Verify that HTTP communication was successful
     assert_eq!(status, StatusCode::OK);
@@ -198,17 +197,9 @@ async fn check_if_rpc_is_responding_correctly_for_bitcoin(
 #[tokio::test]
 async fn health_check(ctx: &mut ServerContext) {
     let addr = format!("{}health", ctx.server.public_addr);
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
-
-    let request = Request::builder()
-        .method(Method::GET)
-        .uri(addr)
-        .body(Body::default())
-        .unwrap();
-
-    let response = client.request(request).await.unwrap();
-
-    assert_eq!(response.status(), StatusCode::OK)
+    let response = reqwest::Client::new().get(addr).send().await.unwrap();
+    let status = StatusCode::from_u16(response.status().as_u16()).unwrap();
+    assert_eq!(status, StatusCode::OK)
 }
 
 #[test_context(ServerContext)]
@@ -221,19 +212,12 @@ async fn account_history_check(ctx: &mut ServerContext) {
         ctx.server.public_addr, account, project_id
     );
 
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let response = reqwest::Client::new().get(addr).send().await.unwrap();
+    assert_eq!(response.status(), reqwest::StatusCode::OK);
 
-    let request = Request::builder()
-        .method(Method::GET)
-        .uri(addr)
-        .body(Body::default())
-        .unwrap();
-
-    let response = client.request(request).await.unwrap();
-    let status = response.status();
-    assert_eq!(status, StatusCode::OK);
-
-    let bytes = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let bytes = response.bytes().await.unwrap();
+    let body = Body::from(bytes);
+    let bytes = to_bytes(body, RESPONSE_MAX_BYTES).await.unwrap();
     let body_str = String::from_utf8_lossy(&bytes);
 
     let json_response: HistoryResponseBody =

@@ -28,6 +28,7 @@ local vars  = {
   log_group_app_name: std.extVar('log_group_app_name'),
   log_group_app_arn:  std.extVar('log_group_app_arn'),
   aws_account_id:     std.extVar('aws_account_id'),
+  app_autoscaling_min_capacity: std.parseInt(std.extVar('app_autoscaling_min_capacity')),
 
   // chain_config: std.parseJson(std.extVar('chain_config')),
   chain_config: import 'chain_config.json',
@@ -41,6 +42,7 @@ local pos_short       = grafana.layout.pos(6);
 
 // RPC provider specific alert period and availability depend on the provider tier
 local availability_top_tier = 90; // Expecting minimal 90% success responses
+local availability_mid_tier = 75; // 75% success responses
 local availability_free_tier = 25; // Expecting minimal 25% success rate
 // alert period for the success rate from above
 local alert_period_top_tier = '5m';
@@ -79,7 +81,7 @@ dashboard.new(
 
   row.new('RPC Proxy Chain Usage'),
     // Top-tier providers
-    panels.usage.provider(ds, vars, 'Pokt', alert_period_top_tier, availability_top_tier)        { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Pokt', alert_period_top_tier, availability_mid_tier)        { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Quicknode', alert_period_top_tier, availability_top_tier)   { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Allnodes', alert_period_top_tier, availability_top_tier)    { gridPos: pos._4 },
     // Free providers
@@ -169,6 +171,7 @@ dashboard.new(
     panels.proxy.rpc_server_error_codes(ds, vars)    { gridPos: pos._3 },
     panels.proxy.provider_retries(ds, vars)          { gridPos: pos._3 },
     panels.proxy.http_codes(ds, vars)                { gridPos: pos._3 },
+    panels.proxy.rpc_methods_cache(ds, vars)         { gridPos: pos._3 },
 
   row.new('Non-RPC providers Status Codes'),
     panels.status.provider(ds, vars, 'Zerion')       { gridPos: pos._4 },
@@ -198,6 +201,7 @@ dashboard.new(
     panels.projects.quota_limited_projects(ds, vars)    { gridPos: pos._4 },
     panels.projects.cache_latency(ds, vars)             { gridPos: pos._4 },
     panels.projects.fetch_latency(ds, vars)             { gridPos: pos._4 },
+    panels.projects.error_responses(ds, vars)           { gridPos: pos._4 },
 
   row.new('Rate limiting'),
     panels.rate_limiting.counter(ds, vars)      { gridPos: pos._3 },

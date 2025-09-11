@@ -23,6 +23,21 @@ use {
 const API_VERSION: &str = "2023-12-19";
 const DEFAULT_CATEGORY: &str = "CRYPTO_ONRAMP";
 const DEFAULT_SESSION_TYPE: &str = "BUY";
+const DEFAULT_PROVIDERS_LIST: &[&str] = &[
+    "BINANCECONNECT",
+    "BANXA",
+    "BLOCKCHAINDOTCOM",
+    "BTCDIRECT",
+    "COINBASEPAY",
+    "GUARDARIAN",
+    "ONMETA",
+    "ONRAMPMONEY",
+    "PAYBIS",
+    "SHIFT4",
+    "STRIPE",
+    "TRANSAK",
+    "UNLIMIT",
+];
 
 #[derive(Debug)]
 pub struct MeldProvider {
@@ -263,6 +278,29 @@ impl OnRampMultiProvider for MeldProvider {
         url.query_pairs_mut()
             .append_pair("categories", DEFAULT_CATEGORY);
 
+        // Exclude provider from DEFAULT_PROVIDERS_LIST if exclude_providers is provided
+        // and the type is not `countries-defaults`
+        if params.r#type != PropertyType::CountriesDefaults {
+            let providers_list = if let Some(exclude_providers) = params.exclude_providers {
+                // Split by comma and filter out empty strings
+                let exclude_providers_vec = exclude_providers
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect::<Vec<String>>();
+                DEFAULT_PROVIDERS_LIST
+                    .iter()
+                    .filter(|p| !exclude_providers_vec.contains(&p.to_string()))
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .join(",")
+            } else {
+                DEFAULT_PROVIDERS_LIST.join(",")
+            };
+            url.query_pairs_mut()
+                .append_pair("serviceProviders", &providers_list);
+        };
+
         let latency_start = SystemTime::now();
         let response = self.send_get_request(url).await.map_err(|e| {
             error!("Error sending request to Meld providers properties: {e:?}");
@@ -383,6 +421,7 @@ impl OnRampMultiProvider for MeldProvider {
                         project_id: params.project_id.clone(),
                         r#type: PropertyType::PaymentMethods,
                         countries: Some(country.to_string()),
+                        exclude_providers: params.exclude_providers.clone().map(|v| v.join(",")),
                     },
                     metrics.clone(),
                 )
@@ -449,8 +488,10 @@ impl OnRampMultiProvider for MeldProvider {
         }
 
         // If we have no quotes and there were errors, return the first error
-        if quotes.is_empty() && first_error.is_some() {
-            return Err(first_error.unwrap());
+        if quotes.is_empty() {
+            if let Some(err) = first_error {
+                return Err(err);
+            }
         }
 
         Ok(quotes)

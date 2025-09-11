@@ -3,10 +3,7 @@ use {
         is_feature_enabled_for_project_id, BuyTransactionStatus, ExchangeError, ExchangeType,
         GetBuyStatusParams,
     },
-    crate::{
-        handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
-        state::AppState,
-    },
+    crate::{handlers::SdkInfoParams, state::AppState},
     axum::{
         extract::{ConnectInfo, Query, State},
         Json,
@@ -16,7 +13,7 @@ use {
     std::{net::SocketAddr, sync::Arc},
     thiserror::Error,
     tracing::debug,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 const MAX_SESSION_ID_LENGTH: usize = 50;
@@ -40,6 +37,7 @@ pub struct GetExchangeBuyStatusResponse {
 pub struct QueryParams {
     #[serde(flatten)]
     pub sdk_info: SdkInfoParams,
+    pub source: Option<String>,
 }
 
 #[derive(Error, Debug)]
@@ -71,10 +69,11 @@ pub async fn handler(
     query: Query<QueryParams>,
     Json(request): Json<GetExchangeBuyStatusRequest>,
 ) -> Result<GetExchangeBuyStatusResponse, GetExchangeBuyStatusError> {
-    is_feature_enabled_for_project_id(state.clone(), &project_id)
+    is_feature_enabled_for_project_id(state.clone(), &project_id, query.source.as_deref())
+        .await
         .map_err(|e| GetExchangeBuyStatusError::ValidationError(e.to_string()))?;
     handler_internal(state, connect_info, headers, query, request)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("pay_get_exchange_buy_status"))
+        .with_metrics(future_metrics!("handler_task", "name" => "pay_get_exchange_buy_status"))
         .await
 }
 
@@ -123,9 +122,9 @@ async fn handler_internal(
                     exchange_id = %request.exchange_id,
                     "Internal error, unable to get exchange buy status"
                 );
-                Err(GetExchangeBuyStatusError::InternalError(
-                    "Unable to get exchange buy status".to_string(),
-                ))
+                Err(GetExchangeBuyStatusError::InternalError(format!(
+                    "Unable to get exchange buy status: {e:?}"
+                )))
             }
         },
     }

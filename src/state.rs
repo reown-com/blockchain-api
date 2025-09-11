@@ -5,16 +5,17 @@ use {
         error::RpcError,
         handlers::{balance::BalanceResponseBody, identity::IdentityResponse},
         metrics::Metrics,
-        project::Registry,
+        project::{ProjectDataError, Registry},
         providers::ProviderRepository,
         storage::{irn::Irn, KeyValueStorage},
         utils::{build::CompileInfo, rate_limit::RateLimit},
     },
-    cerberus::project::ProjectDataWithQuota,
+    cerberus::project::ProjectDataWithLimits,
+    moka::future::Cache,
     sqlx::PgPool,
     std::sync::Arc,
     tap::TapFallible,
-    tracing::debug,
+    tracing::{debug, error},
 };
 
 pub struct AppState {
@@ -36,6 +37,8 @@ pub struct AppState {
     // Redis caching
     pub identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     pub balance_cache: Option<Arc<dyn KeyValueStorage<BalanceResponseBody>>>,
+    // Moka local instance in-memory cache
+    pub moka_cache: Cache<String, String>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -52,6 +55,7 @@ pub fn new_state(
     identity_cache: Option<Arc<dyn KeyValueStorage<IdentityResponse>>>,
     balance_cache: Option<Arc<dyn KeyValueStorage<BalanceResponseBody>>>,
 ) -> AppState {
+    let moka_cache = Cache::builder().build();
     AppState {
         config,
         postgres,
@@ -66,6 +70,7 @@ pub fn new_state(
         irn,
         identity_cache,
         balance_cache,
+        moka_cache,
     }
 }
 
@@ -75,19 +80,19 @@ impl AppState {
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
-    async fn get_project_data_validated(&self, id: &str) -> Result<ProjectDataWithQuota, RpcError> {
+    async fn get_project_data_validated(
+        &self,
+        id: &str,
+    ) -> Result<ProjectDataWithLimits, RpcError> {
         let project = self.registry.project_data(id).await.tap_err(|e| {
             debug!("Denied access for project: {id}, with reason: {e}");
             self.metrics.add_rejected_project();
         })?;
 
-        project
-            .project_data
-            .validate_access(id, None)
-            .tap_err(|e| {
-                debug!("Denied access for project: {id}, with reason: {e}");
-                self.metrics.add_rejected_project();
-            })?;
+        project.data.validate_access(id, None).tap_err(|e| {
+            debug!("Denied access for project: {id}, with reason: {e}");
+            self.metrics.add_rejected_project();
+        })?;
 
         Ok(project)
     }
@@ -98,7 +103,17 @@ impl AppState {
             return Ok(());
         }
 
-        self.get_project_data_validated(id).await.map(drop)
+        // Handle RegistryTemporarilyUnavailable error by not counting it as a quota limited project
+        match self.get_project_data_validated(id).await {
+            Ok(_) => Ok(()),
+            Err(RpcError::ProjectDataError(ProjectDataError::RegistryTemporarilyUnavailable)) => {
+                error!(
+                    "Registry is temporarily unavailable, skipping access check for project: {id}"
+                );
+                Ok(())
+            }
+            Err(e) => Err(e),
+        }
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
@@ -107,13 +122,22 @@ impl AppState {
             return Ok(());
         }
 
-        let project = self.get_project_data_validated(id).await?;
+        // Handle RegistryTemporarilyUnavailable error by not counting it as a quota limited project
+        let project = match self.get_project_data_validated(id).await {
+            Ok(project) => project,
+            Err(RpcError::ProjectDataError(ProjectDataError::RegistryTemporarilyUnavailable)) => {
+                error!(
+                    "Registry is temporarily unavailable, skipping access and quota check for project: {id}"
+                );
+                return Ok(());
+            }
+            Err(e) => return Err(e),
+        };
 
         validate_project_quota(&project).tap_err(|e| {
             debug!(
                 project_id = id,
-                max = project.quota.max,
-                current = project.quota.current,
+                is_above_rpc_limit = project.limits.is_above_rpc_limit,
                 error = ?e,
                 "Quota limit reached"
             );
@@ -123,8 +147,8 @@ impl AppState {
 }
 
 #[tracing::instrument(level = "debug")]
-fn validate_project_quota(project_data: &ProjectDataWithQuota) -> Result<(), RpcError> {
-    if project_data.quota.is_valid {
+fn validate_project_quota(project_data: &ProjectDataWithLimits) -> Result<(), RpcError> {
+    if !project_data.limits.is_above_rpc_limit {
         Ok(())
     } else {
         Err(RpcError::QuotaLimitReached)
@@ -134,15 +158,15 @@ fn validate_project_quota(project_data: &ProjectDataWithQuota) -> Result<(), Rpc
 #[cfg(test)]
 mod test {
     use {
-        super::{ProjectDataWithQuota, RpcError},
-        cerberus::project::{ProjectData, Quota},
+        super::{ProjectDataWithLimits, RpcError},
+        cerberus::project::{PlanLimits, ProjectData},
     };
 
     #[test]
     fn validate_project_quota() {
         // TODO: Handle this in some stub implementation of "Registry" abstraction.
-        let mut project = ProjectDataWithQuota {
-            project_data: ProjectData {
+        let mut project = ProjectDataWithLimits {
+            data: ProjectData {
                 uuid: "".to_owned(),
                 creator: "".to_owned(),
                 name: "".to_owned(),
@@ -156,10 +180,10 @@ mod test {
                 bundle_ids: vec![],
                 package_names: vec![],
             },
-            quota: Quota {
-                current: 0,
-                max: 0,
-                is_valid: true,
+            limits: PlanLimits {
+                tier: "".to_owned(),
+                is_above_mau_limit: false,
+                is_above_rpc_limit: false,
             },
         };
 
@@ -168,7 +192,7 @@ mod test {
             res => panic!("Invalid result: {res:?}"),
         }
 
-        project.quota.is_valid = false;
+        project.limits.is_above_rpc_limit = true;
         match super::validate_project_quota(&project) {
             Err(RpcError::QuotaLimitReached) => {}
             res => panic!("Invalid result: {res:?}"),

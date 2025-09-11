@@ -1,5 +1,5 @@
 use {
-    super::{proxy::rpc_call, RpcQueryParams, SdkInfoParams, HANDLER_TASK_METRICS},
+    super::{proxy::rpc_call, RpcQueryParams, SdkInfoParams},
     crate::{
         analytics::IdentityLookupInfo,
         database::helpers::get_names_by_address,
@@ -10,6 +10,7 @@ use {
     },
     async_trait::async_trait,
     axum::{
+        body::to_bytes,
         extract::{ConnectInfo, Path, Query, State},
         response::{IntoResponse, Response},
         Json,
@@ -22,7 +23,7 @@ use {
         types::H160,
         utils::to_checksum,
     },
-    hyper::{body::to_bytes, header::CACHE_CONTROL, HeaderMap, StatusCode},
+    hyper::{header::CACHE_CONTROL, HeaderMap, StatusCode},
     serde::{de::DeserializeOwned, Deserialize, Serialize},
     std::{
         net::SocketAddr,
@@ -31,7 +32,8 @@ use {
     },
     tap::TapFallible,
     tracing::{debug, error, warn},
-    wc::future::FutureExt,
+    wc::metrics::{self, enum_ordinalize::Ordinalize},
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 const CACHE_TTL: u64 = 60 * 60 * 24;
@@ -41,6 +43,8 @@ const CACHE_TTL_STD: Duration = Duration::from_secs(CACHE_TTL);
 const SELF_PROVIDER_ERROR_PREFIX: &str = "SelfProviderError: ";
 const EMPTY_RPC_RESPONSE: &str = "0x";
 pub const ETHEREUM_MAINNET: &str = "eip155:1";
+/// Cap to 150 Kb max size for the identity response
+const IDENTITY_RESPONSE_MAX_BYTES: usize = 150 * 1024;
 
 /// Error codes that reflect an `execution reverted` and should proceed with Ok() during
 /// the identity avatar lookup because of an absence of the ERC-721 contract address or
@@ -81,7 +85,7 @@ pub async fn handler(
     address: Path<String>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, connect_info, query, headers, address)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("identity"))
+        .with_metrics(future_metrics!("handler_task", "name" => "identity"))
         .await
 }
 
@@ -173,7 +177,7 @@ fn ttl_from_resolved_at(resolved_at: DateTime<Utc>, now: DateTime<Utc>) -> TimeD
     (expires - now).max(TimeDelta::zero())
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Copy, Debug, Ordinalize)]
 pub enum IdentityLookupSource {
     /// Redis cached results
     Cache,
@@ -183,8 +187,8 @@ pub enum IdentityLookupSource {
     Local,
 }
 
-impl IdentityLookupSource {
-    pub fn as_str(&self) -> &'static str {
+impl metrics::Enum for IdentityLookupSource {
+    fn as_str(&self) -> &'static str {
         match self {
             Self::Cache => "cache",
             Self::Rpc => "rpc",
@@ -548,8 +552,7 @@ impl JsonRpcClient for SelfProvider {
                 body: format!("{:?}", response.body()),
             });
         }
-
-        let bytes = to_bytes(response.into_body())
+        let bytes = to_bytes(response.into_body(), IDENTITY_RESPONSE_MAX_BYTES)
             .await
             .map_err(SelfProviderError::ProviderBody)?;
 

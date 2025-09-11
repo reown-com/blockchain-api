@@ -1,5 +1,5 @@
 use {
-    crate::{error::RpcError, handlers::HANDLER_TASK_METRICS, state::AppState},
+    crate::{error::RpcError, state::AppState},
     axum::{
         extract::{Query, State},
         response::{IntoResponse, Response},
@@ -9,7 +9,7 @@ use {
     std::sync::Arc,
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -17,10 +17,13 @@ use {
 pub struct QueryParams {
     pub r#type: PropertyType,
     pub project_id: String,
+    /// Comma separated list of countries to filter by
     pub countries: Option<String>,
+    /// Comma separated list of provider names to exclude
+    pub exclude_providers: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum PropertyType {
     Countries,
@@ -36,7 +39,7 @@ pub async fn handler(
     query: Query<QueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("onramp_providers_properties"))
+        .with_metrics(future_metrics!("handler_task", "name" => "onramp_providers_properties"))
         .await
 }
 

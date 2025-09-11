@@ -8,11 +8,19 @@ use {
         storage::{error::StorageError, redis},
     },
     cerberus::{
-        project::{ProjectData, ProjectDataWithQuota, ProjectKey, Quota},
+        project::{
+            PlanLimits, ProjectData, ProjectDataRequest, ProjectDataResponse,
+            ProjectDataWithLimits, ProjectKey,
+        },
         registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult},
     },
-    std::{sync::Arc, time::Instant},
-    wc::metrics::ServiceMetrics,
+    std::{
+        sync::atomic::{AtomicU64, Ordering},
+        sync::Arc,
+        time::{Duration, Instant},
+    },
+    tracing::error,
+    wc::metrics::{self as wc_metrics, enum_ordinalize::Ordinalize},
 };
 pub use {config::*, error::*};
 
@@ -26,22 +34,32 @@ pub mod storage;
 pub struct Registry {
     client: Option<RegistryHttpClient>,
     cache: Option<ProjectStorage>,
+    circuit_base_instant: Instant,
+    circuit_last_error_ms: Arc<AtomicU64>,
+    circuit_cooldown: Duration,
     metrics: ProjectDataMetrics,
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Ordinalize, Copy, Clone)]
 pub enum ResponseSource {
     Cache,
     Registry,
 }
 
+impl wc_metrics::Enum for ResponseSource {
+    fn as_str(&self) -> &'static str {
+        match self {
+            ResponseSource::Cache => "cache",
+            ResponseSource::Registry => "registry",
+        }
+    }
+}
+
 impl Registry {
     pub fn new(cfg_registry: &Config, cfg_storage: &StorageConfig) -> RpcResult<Self> {
-        let meter = ServiceMetrics::meter();
-        let metrics = ProjectDataMetrics::new(meter);
-
         let api_url = cfg_registry.api_url.as_ref();
         let api_auth_token = cfg_registry.api_auth_token.as_ref();
+        let metrics = ProjectDataMetrics::new();
 
         let (client, cache) = if let Some(api_url) = api_url {
             let Some(api_auth_token) = api_auth_token else {
@@ -54,6 +72,8 @@ impl Registry {
                 api_url,
                 api_auth_token,
                 "https://rpc-service.walletconnect.org",
+                "blockchain-api",
+                "1.0.0",
             )?;
 
             let cache_addr = cfg_storage.project_data_redis_addr();
@@ -77,24 +97,64 @@ impl Registry {
         Ok(Self {
             client,
             cache,
+            circuit_base_instant: Instant::now(),
+            circuit_last_error_ms: Arc::new(AtomicU64::new(0)),
+            circuit_cooldown: cfg_registry.circuit_cooldown(),
             metrics,
         })
     }
 
-    pub async fn project_data(&self, id: &str) -> RpcResult<ProjectDataWithQuota> {
+    #[inline]
+    fn now_ms_since_base(&self) -> u64 {
+        self.circuit_base_instant.elapsed().as_millis() as u64
+    }
+
+    fn is_circuit_open(&self) -> bool {
+        let last = self.circuit_last_error_ms.load(Ordering::Relaxed);
+        !self.circuit_cooldown.is_zero()
+            && last != 0
+            && self.now_ms_since_base().saturating_sub(last)
+                < self.circuit_cooldown.as_millis() as u64
+    }
+
+    fn open_circuit(&self) {
+        self.circuit_last_error_ms
+            .store(self.now_ms_since_base(), Ordering::Relaxed);
+    }
+
+    pub async fn project_data(&self, id: &str) -> RpcResult<ProjectDataWithLimits> {
         let time = Instant::now();
-        let (source, data) = self.project_data_internal(id).await?;
+        let request = ProjectDataRequest::new(id).include_limits();
+        let (source, data) = self.project_data_internal(request).await?;
+        self.metrics.request(time.elapsed(), source, &data);
+        let project_data = data?;
+        Ok(ProjectDataWithLimits {
+            data: project_data.data,
+            limits: project_data.limits.unwrap_or(PlanLimits {
+                tier: "".to_owned(),
+                is_above_rpc_limit: false,
+                is_above_mau_limit: false,
+            }),
+        })
+    }
+
+    pub async fn project_data_request(
+        &self,
+        request: ProjectDataRequest<'_>,
+    ) -> RpcResult<ProjectDataResponse> {
+        let time = Instant::now();
+        let (source, data) = self.project_data_internal(request).await?;
         self.metrics.request(time.elapsed(), source, &data);
         Ok(data?)
     }
 
     async fn project_data_internal(
         &self,
-        id: &str,
+        request: ProjectDataRequest<'_>,
     ) -> RpcResult<(ResponseSource, ProjectDataResult)> {
         if let Some(cache) = &self.cache {
             let time = Instant::now();
-            let data = cache.fetch(id).await?;
+            let data = cache.fetch(request.id).await?;
             self.metrics.fetch_cache_time(time.elapsed());
 
             if let Some(data) = data {
@@ -102,16 +162,31 @@ impl Registry {
             }
         }
 
-        let data = self.fetch_registry(id).await;
+        // Skip check if circuit breaker is open
+        if self.is_circuit_open() {
+            return Err(RpcError::ProjectDataError(
+                ProjectDataError::RegistryTemporarilyUnavailable,
+            ));
+        }
 
-        // Cache all responses that we get, even errors.
+        let id = request.id;
+        let data = self.fetch_registry(request).await;
+
+        // Cache all responses that we get
         let data = match data {
             Ok(Some(data)) => Ok(data),
             Ok(None) => Err(ProjectDataError::NotFound),
             Err(RegistryError::Config(..)) => Err(ProjectDataError::RegistryConfigError),
 
-            // This is a retryable error, don't cache the result.
-            Err(err) => return Err(err.into()),
+            // This is an innternal error, we should not cache it and open the circuit breaker
+            // to prevent the registry from being overwhelmed
+            Err(err) => {
+                error!("Error on fetching project registry API data: {:?}", err);
+                self.open_circuit();
+                return Err(RpcError::ProjectDataError(
+                    ProjectDataError::RegistryTemporarilyUnavailable,
+                ));
+            }
         };
 
         if let Some(cache) = &self.cache {
@@ -121,19 +196,23 @@ impl Registry {
         Ok((ResponseSource::Registry, data))
     }
 
-    async fn fetch_registry(&self, id: &str) -> RegistryResult<Option<ProjectDataWithQuota>> {
+    async fn fetch_registry(
+        &self,
+        request: ProjectDataRequest<'_>,
+    ) -> RegistryResult<Option<ProjectDataResponse>> {
         let time = Instant::now();
+
         let data = if let Some(client) = &self.client {
-            client.project_data_with_quota(id).await
+            client.project_data_with(request).await
         } else {
-            Ok(Some(ProjectDataWithQuota {
-                project_data: ProjectData {
+            Ok(Some(ProjectDataResponse {
+                data: ProjectData {
                     uuid: "".to_owned(),
                     creator: "".to_owned(),
                     name: "".to_owned(),
                     push_url: None,
                     keys: vec![ProjectKey {
-                        value: id.to_owned(),
+                        value: request.id.to_owned(),
                         is_valid: true,
                     }],
                     is_enabled: true,
@@ -144,15 +223,15 @@ impl Registry {
                     bundle_ids: vec![],
                     package_names: vec![],
                 },
-                quota: Quota {
-                    current: 0,
-                    max: 0,
-                    is_valid: true,
-                },
+                limits: Some(PlanLimits {
+                    tier: "".to_owned(),
+                    is_above_rpc_limit: false,
+                    is_above_mau_limit: false,
+                }),
+                features: None,
             }))
         };
         self.metrics.fetch_registry_time(time.elapsed());
-
         data
     }
 }

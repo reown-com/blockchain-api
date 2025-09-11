@@ -13,8 +13,8 @@ use {
     anyhow::Context,
     aws_config::meta::region::RegionProviderChain,
     aws_sdk_s3::{config::Region, Client as S3Client},
+    axum::body::Body,
     axum::{
-        extract::connect_info::IntoMakeServiceWithConnectInfo,
         middleware,
         routing::{get, post},
         Router,
@@ -28,15 +28,17 @@ use {
     },
     error::RpcResult,
     http::Request,
-    hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
+    hyper::{header::HeaderName, http},
+    metrics_exporter_prometheus::PrometheusBuilder,
     providers::{
-        generic::GenericProvider, AllnodesProvider, AllnodesWsProvider, ArbitrumProvider,
-        AuroraProvider, BaseProvider, BinanceProvider, BlastProvider, CallStaticProvider,
-        DrpcProvider, DuneProvider, HiroProvider, MantleProvider, MonadProvider, MoonbeamProvider,
+        AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
+        BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider,
+        GenericProvider, HiroProvider, MantleProvider, MonadProvider, MoonbeamProvider,
         MorphProvider, NearProvider, OdysseyProvider, PoktProvider, ProviderRepository,
-        PublicnodeProvider, QuicknodeProvider, RootstockProvider, SolScanProvider, SuiProvider,
-        SyndicaProvider, SyndicaWsProvider, TheRpcProvider, UnichainProvider, WemixProvider,
-        ZKSyncProvider, ZerionProvider, ZoraProvider, ZoraWsProvider,
+        PublicnodeProvider, QuicknodeProvider, QuicknodeWsProvider, RootstockProvider,
+        SolScanProvider, SuiProvider, SyndicaProvider, SyndicaWsProvider, TheRpcProvider,
+        UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider, ZoraProvider,
+        ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -44,6 +46,7 @@ use {
         sync::Arc,
         time::Duration,
     },
+    tokio::signal,
     tower::ServiceBuilder,
     tower_http::{
         cors::{Any, CorsLayer},
@@ -53,16 +56,14 @@ use {
     },
     tracing::{error, info, log::warn},
     utils::rate_limit::RateLimit,
-    wc::{
-        geoip::{
-            block::{middleware::GeoBlockLayer, BlockingPolicy},
-            MaxMindResolver,
-        },
-        metrics::ServiceMetrics,
+    wc::geoip::{
+        block::{middleware::GeoBlockLayer, BlockingPolicy},
+        MaxMindResolver,
     },
 };
 
 const DB_STATS_POLLING_INTERVAL: Duration = Duration::from_secs(3600);
+const GRACEFUL_SHUTDOWN_DELAY: Duration = Duration::from_secs(5);
 
 mod analytics;
 pub mod chain_config;
@@ -83,7 +84,9 @@ pub mod utils;
 mod ws;
 
 pub async fn bootstrap(config: Config) -> RpcResult<()> {
-    ServiceMetrics::init_with_name("rpc-proxy");
+    let prometheus_handler = PrometheusBuilder::new()
+        .install_recorder()
+        .context("failed to initialize prometheus")?;
 
     let s3_client = get_s3_client(&config).await;
     let geoip_resolver = get_geoip_resolver(&config, &s3_client).await;
@@ -159,7 +162,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     .context("failed to init analytics")?;
 
     let geoblock = analytics.geoip_resolver().as_ref().map(|resolver| {
-        // let r = resolver.clone().deref();
         GeoBlockLayer::new(
             resolver.clone(),
             config.server.blocked_countries.clone(),
@@ -249,21 +251,21 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/v1/", get(handlers::ws_proxy::handler))
         .route("/ws", get(handlers::ws_proxy::handler))
         .route("/v1/supported-chains", get(handlers::supported_chains::handler))
-        .route("/v1/identity/:address", get(handlers::identity::handler))
+        .route("/v1/identity/{address}", get(handlers::identity::handler))
         .route(
-            "/v1/account/:address/identity",
+            "/v1/account/{address}/identity",
             get(handlers::identity::handler),
         )
         .route(
-            "/v1/account/:address/history",
+            "/v1/account/{address}/history",
             get(handlers::history::handler),
         )
         .route(
-            "/v1/account/:address/portfolio",
+            "/v1/account/{address}/portfolio",
             get(handlers::portfolio::handler),
         )
         .route(
-            "/v1/account/:address/balance",
+            "/v1/account/{address}/balance",
             get(handlers::balance::handler),
         )
         // Register account name
@@ -273,27 +275,27 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         )
          // Update account name attributes
          .route(
-            "/v1/profile/account/:name/attributes",
+            "/v1/profile/account/{name}/attributes",
             post(handlers::profile::attributes::handler),
         )
         // Update account name address
         .route(
-            "/v1/profile/account/:name/address",
+            "/v1/profile/account/{name}/address",
             post(handlers::profile::address::handler),
         )
         // Forward address lookup
         .route(
-            "/v1/profile/account/:name",
+            "/v1/profile/account/{name}",
             get(handlers::profile::lookup::handler),
         )
         // Reverse name lookup
         .route(
-            "/v1/profile/reverse/:address",
+            "/v1/profile/reverse/{address}",
             get(handlers::profile::reverse::handler),
         )
         // Reverse name lookup
         .route(
-            "/v1/profile/suggestions/:name",
+            "/v1/profile/suggestions/{name}",
             get(handlers::profile::suggestions::handler),
         )
         // Generators
@@ -357,12 +359,12 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             post(handlers::fungible_price::handler),
         )
         // Sessions
-        .route("/v1/sessions/:address", post(handlers::sessions::create::handler))
-        .route("/v1/sessions/:address", get(handlers::sessions::list::handler))
-        .route("/v1/sessions/:address/getcontext", get(handlers::sessions::get::handler))
-        .route("/v1/sessions/:address/activate", post(handlers::sessions::context::handler))
-        .route("/v1/sessions/:address/revoke", post(handlers::sessions::revoke::handler))
-        .route("/v1/sessions/:address/sign", post(handlers::sessions::cosign::handler))
+        .route("/v1/sessions/{address}", post(handlers::sessions::create::handler))
+        .route("/v1/sessions/{address}", get(handlers::sessions::list::handler))
+        .route("/v1/sessions/{address}/getcontext", get(handlers::sessions::get::handler))
+        .route("/v1/sessions/{address}/activate", post(handlers::sessions::context::handler))
+        .route("/v1/sessions/{address}/revoke", post(handlers::sessions::revoke::handler))
+        .route("/v1/sessions/{address}/sign", post(handlers::sessions::cosign::handler))
         // Bundler
         .route("/v1/bundler", post(handlers::bundler::handler))
         // Wallet
@@ -415,20 +417,31 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     info!("Starting metric server on {}", private_addr);
 
     let private_app = Router::new()
-        .route("/metrics", get(handlers::metrics::handler))
+        .route(
+            "/metrics",
+            get(move || async move { prometheus_handler.render() }),
+        )
         .with_state(state_arc.clone());
 
-    let public_server = create_server(app, &addr);
-    let private_server = create_server(private_app, &private_addr);
+    let public_server = create_server(app, addr);
+    let private_server = create_server(private_app, private_addr);
 
     let weights_updater = {
         let state_arc = state_arc.clone();
         async move {
             let mut interval = tokio::time::interval(Duration::from_secs(15));
             loop {
-                interval.tick().await;
-                state_arc.clone().update_provider_weights().await;
+                tokio::select! {
+                    _ = interval.tick() => {
+                        state_arc.clone().update_provider_weights().await;
+                    }
+                    _ = signal::ctrl_c() => {
+                        info!("Weights updater received shutdown signal");
+                        break;
+                    }
+                }
             }
+            Ok(())
         }
     };
 
@@ -437,16 +450,24 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         async move {
             let mut interval = tokio::time::interval(Duration::from_secs(10));
             loop {
-                interval.tick().await;
-                // Gather system metrics (CPU and Memory usage)
-                state_arc.clone().metrics.gather_system_metrics().await;
-                // Gather current rate limited in-memory entries count
-                if let Some(rate_limit) = &state_arc.rate_limit {
-                    state_arc
-                        .metrics
-                        .add_rate_limited_entries_count(rate_limit.get_rate_limited_count().await);
+                tokio::select! {
+                    _ = interval.tick() => {
+                        // Gather system metrics (CPU and Memory usage)
+                        state_arc.clone().metrics.gather_system_metrics().await;
+                        // Gather current rate limited in-memory entries count
+                        if let Some(rate_limit) = &state_arc.rate_limit {
+                            state_arc
+                                .metrics
+                                .add_rate_limited_entries_count(rate_limit.get_rate_limited_count().await);
+                        }
+                    }
+                    _ = signal::ctrl_c() => {
+                        info!("System metrics updater received shutdown signal");
+                        break;
+                    }
                 }
             }
+            Ok(())
         }
     };
 
@@ -466,28 +487,79 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         // Spawning a new task to observe metrics from the database by interval polling
         tokio::spawn({
             let postgres = state_arc.postgres.clone();
+            let metrics = metrics.clone();
             async move {
                 let mut interval = tokio::time::interval(DB_STATS_POLLING_INTERVAL);
                 loop {
-                    interval.tick().await;
-                    metrics.update_account_names_count(&postgres).await;
+                    tokio::select! {
+                        _ = interval.tick() => {
+                            metrics.update_account_names_count(&postgres).await;
+                        }
+                        _ = signal::ctrl_c() => {
+                            info!("Database metrics updater received shutdown signal");
+                            break;
+                        }
+                    }
                 }
+                Ok(())
             }
         }),
     ];
 
-    if let Err(e) = futures_util::future::select_all(services).await.0 {
-        warn!("Server error: {e:?}");
-    };
+    // Wait for either services to complete or shutdown signal
+    tokio::select! {
+        result = futures_util::future::select_all(services) => {
+            if let Err(e) = result.0 {
+                warn!("Server error: {e:?}");
+            }
+        }
+        _ = shutdown_signal() => {
+            info!("Graceful shutdown initiated, allowing services to complete current work...");
+            // Give services a moment to finish current requests
+            tokio::time::sleep(GRACEFUL_SHUTDOWN_DELAY).await;
+            info!("Graceful shutdown completed");
+        }
+    }
 
     Ok(())
 }
 
-fn create_server(
-    app: Router,
-    addr: &SocketAddr,
-) -> Server<AddrIncoming, IntoMakeServiceWithConnectInfo<Router, SocketAddr>> {
-    axum::Server::bind(addr).serve(app.into_make_service_with_connect_info::<SocketAddr>())
+async fn create_server(app: Router, addr: SocketAddr) -> Result<(), std::io::Error> {
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .expect("failed to bind listener");
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
+    info!("Signal received, starting graceful shutdown");
 }
 
 fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
@@ -553,12 +625,16 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     ));
     providers.add_rpc_provider::<MoonbeamProvider, MoonbeamConfig>(MoonbeamConfig::default());
     providers.add_rpc_provider::<TheRpcProvider, TheRpcConfig>(TheRpcConfig::default());
+
     providers.add_ws_provider::<AllnodesWsProvider, AllnodesConfig>(AllnodesConfig::new(
         config.allnodes_api_key.clone(),
     ));
     providers.add_ws_provider::<ZoraWsProvider, ZoraConfig>(ZoraConfig::default());
     providers.add_ws_provider::<SyndicaWsProvider, SyndicaConfig>(SyndicaConfig::new(
         config.syndica_api_key.clone(),
+    ));
+    providers.add_ws_provider::<QuicknodeWsProvider, QuicknodeConfig>(QuicknodeConfig::new(
+        config.quicknode_api_tokens.clone(),
     ));
 
     for chain in &chain_config::ACTIVE_CONFIG.chains {
@@ -576,7 +652,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
         None,
     );
     providers.add_balance_provider::<DuneProvider, DuneConfig>(
-        DuneConfig::new(config.dune_api_key.clone()),
+        DuneConfig::new(config.dune_sim_api_key.clone()),
         None,
     );
     providers.add_balance_provider::<SolScanProvider, SolScanConfig>(

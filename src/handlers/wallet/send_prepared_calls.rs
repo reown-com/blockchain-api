@@ -11,6 +11,7 @@ use {
     crate::{
         analytics::MessageSource,
         handlers::{
+            proxy::PROVIDER_RESPONSE_MAX_BYTES,
             sessions::{
                 cosign::{self, CoSignQueryParams},
                 get::{
@@ -18,7 +19,6 @@ use {
                 },
                 CoSignRequest,
             },
-            HANDLER_TASK_METRICS,
         },
         state::AppState,
         utils::{crypto::UserOperation, simple_request_json::SimpleRequestJson},
@@ -28,16 +28,16 @@ use {
         providers::ProviderBuilder,
     },
     axum::{
+        body::to_bytes,
         extract::{Path, Query, State},
         response::IntoResponse,
     },
-    hyper::body::to_bytes,
     parquet::data_type::AsBytes,
     serde::{Deserialize, Serialize},
     std::sync::Arc,
     thiserror::Error,
     uuid::Uuid,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
     yttrium::{
         bundler::{client::BundlerClient, config::BundlerConfig},
         chain::ChainId,
@@ -122,7 +122,7 @@ pub enum SendPreparedCallsInternalError {
     Cosign(String),
 
     #[error("Cosign unsuccessful: {0:?}")]
-    CosignUnsuccessful(std::result::Result<hyper::body::Bytes, axum::Error>),
+    CosignUnsuccessful(std::result::Result<bytes::Bytes, axum::Error>),
 
     #[error("Cosign read response: {0}")]
     CosignReadResponse(axum::Error),
@@ -158,7 +158,7 @@ pub async fn handler(
     request: SendPreparedCallsRequest,
 ) -> Result<SendPreparedCallsResponse, SendPreparedCallsError> {
     handler_internal(state, project_id, request)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("wallet_send_prepared_calls"))
+        .with_metrics(future_metrics!("handler_task", "name" => "wallet_send_prepared_calls"))
         .await
 }
 
@@ -286,7 +286,7 @@ async fn handler_internal(
                         let response = e.into_response();
                         let status = response.status();
                         let response = String::from_utf8(
-                            to_bytes(response.into_body())
+                            to_bytes(response.into_body(), PROVIDER_RESPONSE_MAX_BYTES)
                                 .await
                                 // Lazy error handling here for now. We will refactor soon to avoid all this
                                 .unwrap_or_default()
@@ -307,17 +307,19 @@ async fn handler_internal(
                 if !response.status().is_success() {
                     return Err(SendPreparedCallsError::InternalError(
                         SendPreparedCallsInternalError::CosignUnsuccessful(
-                            to_bytes(response.into_body()).await,
+                            to_bytes(response.into_body(), PROVIDER_RESPONSE_MAX_BYTES).await,
                         ),
                     ));
                 }
 
                 let response_json = serde_json::from_slice::<serde_json::Value>(
-                    &to_bytes(response.into_body()).await.map_err(|e| {
-                        SendPreparedCallsError::InternalError(
-                            SendPreparedCallsInternalError::CosignReadResponse(e),
-                        )
-                    })?,
+                    &to_bytes(response.into_body(), PROVIDER_RESPONSE_MAX_BYTES)
+                        .await
+                        .map_err(|e| {
+                            SendPreparedCallsError::InternalError(
+                                SendPreparedCallsInternalError::CosignReadResponse(e),
+                            )
+                        })?,
                 )
                 .map_err(|e| {
                     SendPreparedCallsError::InternalError(

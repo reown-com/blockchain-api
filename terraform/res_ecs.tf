@@ -59,7 +59,7 @@ module "ecs" {
   rate_limiting_cache_endpoint_read  = module.redis.endpoint
   rate_limiting_cache_endpoint_write = module.redis.endpoint
   provider_cache_endpoint            = module.redis.endpoint
-  ofac_blocked_countries             = var.ofac_blocked_countries
+  ofac_countries                     = var.ofac_countries
   postgres_url                       = module.postgres.database_url
 
   # Providers
@@ -76,7 +76,7 @@ module "ecs" {
   tenderly_api_key     = var.tenderly_api_key
   tenderly_account_id  = var.tenderly_account_id
   tenderly_project_id  = var.tenderly_project_id
-  dune_api_key         = var.dune_api_key
+  dune_sim_api_key     = var.dune_sim_api_key
   syndica_api_key      = var.syndica_api_key
   allnodes_api_key     = var.allnodes_api_key
   meld_api_key         = var.meld_api_key
@@ -84,11 +84,14 @@ module "ecs" {
   callstatic_api_key   = var.callstatic_api_key
   blast_api_key        = var.blast_api_key
 
-  # Project Registry
-  registry_api_endpoint   = var.registry_api_endpoint
-  registry_api_auth_token = var.registry_api_auth_token
-  project_cache_ttl       = var.project_cache_ttl
+  # RPC Proxy configuration
+  proxy_skip_quota_chains = var.proxy_skip_quota_chains
 
+  # Project Registry
+  registry_api_endpoint        = var.registry_api_endpoint
+  registry_api_auth_token      = var.registry_api_auth_token
+  project_cache_ttl            = var.project_cache_ttl
+  registry_circuit_cooldown_ms = var.registry_circuit_cooldown_ms
   # Rate Limiting
   rate_limiting_max_tokens      = var.rate_limiting_max_tokens
   rate_limiting_refill_interval = var.rate_limiting_refill_interval
@@ -121,6 +124,9 @@ module "ecs" {
 
   # Project ID used in a testing suite
   testing_project_id = var.testing_project_id
+
+  # Validate project ID
+  validate_project_id = var.validate_project_id
 
   # Exchanges
   coinbase_project_id     = var.coinbase_project_id

@@ -1,26 +1,21 @@
 use {
-    super::{
-        is_internal_error_rpc_code, is_node_error_rpc_message, is_rate_limited_error_rpc_message,
-        Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory,
-    },
+    super::{Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory},
     crate::{
         env::TheRpcConfig,
         error::{RpcError, RpcResult},
     },
     async_trait::async_trait,
     axum::{
-        http::HeaderValue,
+        http::{HeaderValue, StatusCode},
         response::{IntoResponse, Response},
     },
-    hyper::{client::HttpConnector, http, Client, Method},
-    hyper_tls::HttpsConnector,
     std::collections::HashMap,
     tracing::debug,
 };
 
 #[derive(Debug)]
 pub struct TheRpcProvider {
-    pub client: Client<HttpsConnector<HttpConnector>>,
+    pub client: reqwest::Client,
     pub supported_chains: HashMap<String, String>,
 }
 
@@ -41,57 +36,39 @@ impl Provider for TheRpcProvider {
 #[async_trait]
 impl RateLimited for TheRpcProvider {
     async fn is_rate_limited(&self, response: &mut Response) -> bool {
-        response.status() == http::StatusCode::TOO_MANY_REQUESTS
+        response.status() == StatusCode::TOO_MANY_REQUESTS
     }
 }
 
 #[async_trait]
 impl RpcProvider for TheRpcProvider {
     #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
-    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
-        let chain = &self
+    async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response> {
+        let chain = self
             .supported_chains
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
-
         let uri = format!("https://rpc.therpc.io/{chain}");
-
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::POST)
-            .uri(uri)
-            .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(body))?;
-
-        let response = self.client.request(hyper_request).await?;
+        let response = self
+            .client
+            .post(uri)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()
+            .await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = response.bytes().await?;
 
-        if status.is_success() {
+        if status.is_success() || status.is_client_error() {
             if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
                 if let Some(error) = &response.error {
                     debug!(
                         "Strange: provider returned JSON RPC error, but status {status} is \
                          success: TheRpc: {response:?}"
                     );
-                    match error.code {
-                        // TheRpc-specific rate limit codes
-                        -32029 => {
-                            return Ok((http::StatusCode::TOO_MANY_REQUESTS, body).into_response())
-                        }
-                        // Handle other internal error codes with message-based classification
-                        code if is_internal_error_rpc_code(code) => {
-                            if is_rate_limited_error_rpc_message(&error.message) {
-                                return Ok(
-                                    (http::StatusCode::TOO_MANY_REQUESTS, body).into_response()
-                                );
-                            }
-                            if is_node_error_rpc_message(&error.message) {
-                                return Ok(
-                                    (http::StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
-                                );
-                            }
-                        }
-                        _ => {}
+                    // TheRpc-specific rate limit codes
+                    if error.code == -32029 {
+                        return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response());
                     }
                 }
             }
@@ -108,7 +85,7 @@ impl RpcProvider for TheRpcProvider {
 impl RpcProviderFactory<TheRpcConfig> for TheRpcProvider {
     #[tracing::instrument(level = "debug")]
     fn new(provider_config: &TheRpcConfig) -> Self {
-        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let forward_proxy_client = reqwest::Client::new();
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()

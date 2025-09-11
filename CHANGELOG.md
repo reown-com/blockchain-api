@@ -2,6 +2,337 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.295.0 - 2025-09-11
+#### Features
+- pos api changes (#1223) - (53ed53d) - Luka Isailovic
+
+- - -
+
+## 0.294.0 - 2025-09-11
+#### Bug Fixes
+- **(identity)** increase identity provider response size cap (#1226) - (f87bda0) - Max Kalashnikoff | maksy.eth
+#### Features
+- adding CTA bot (#1227) - (958f081) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.293.0 - 2025-09-10
+#### Bug Fixes
+- **(tests)** adding a small delay before check for names count (#1224) - (8c8a82a) - Max Kalashnikoff | maksy.eth
+#### Features
+- migrate metrics to NG and an updated `utils-rs` dependency (#1225) - (2e05f23) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.292.0 - 2025-09-08
+#### Features
+- pos tron (#1221) - (275978e) - Luka Isailovic
+
+- - -
+
+## 0.291.0 - 2025-09-05
+#### Features
+- **(o11y)** adding registry responses chart (#1220) - (f05f599) - Max Kalashnikoff | maksy.eth
+- exposing the registry fetching cooldown period to TFC (#1222) - (8594b10) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.290.1 - 2025-09-04
+#### Bug Fixes
+- **(1Inch)** respond with the asset is not supported instead of provider is not available (#1219) - (d29f734) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.290.0 - 2025-09-04
+#### Features
+- pos solana (#1218) - (ae9e0c2) - Luka Isailovic
+
+- - -
+
+## 0.289.0 - 2025-09-03
+#### Features
+- **(ECS)** decreasing deregistration delay and health check timeout, enabling  deployment rollback (#1216) - (b44d629) - Max Kalashnikoff | maksy.eth
+- **(projects)** implementing projects registry fetcher circuit breaker (#1217) - (6e65aa3) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.288.1 - 2025-09-01
+#### Bug Fixes
+- **(CD)** adding a delay before TS tests by waiting Rust tests to compile (#1215) - (6954298) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- change check transaction field (#1214) - (2dcac85) - Luka Isailovic
+
+- - -
+
+## 0.288.0 - 2025-08-29
+#### Features
+- adding validate project ID as TFC variable (#1213) - (ccde834) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- add POS evm tests (#1212) - (20ef2d8) - Luka Isailovic
+
+- - -
+
+## 0.287.0 - 2025-08-28
+#### Features
+- updating axum and sqlx to 0.8 (#1210) - (ab6b601) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.286.0 - 2025-08-28
+#### Features
+- pos transaction builder (#1211) - (04624ee) - Luka Isailovic
+
+- - -
+
+## 0.285.0 - 2025-08-26
+#### Features
+- fund wallet feature validation (#1209) - (cd51c52) - Luka Isailovic
+
+- - -
+
+## 0.284.1 - 2025-08-25
+#### Bug Fixes
+- increasing otel memory for staging and jest test timeout (#1203) - (df0e109) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- compare checksummed caip19 ids (#1205) - (9bc83c5) - tomiir
+
+- - -
+
+## 0.284.0 - 2025-08-20
+#### Bug Fixes
+- adding a license to the `Cargo.toml` and make the license file a markdown (#1206) - (64dfd95) - Max Kalashnikoff | maksy.eth
+#### Features
+- updating the LICENSE (#1204) - (dce6316) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.283.1 - 2025-08-19
+#### Bug Fixes
+- fixing the axum query parameter (#1202) - (372dd19) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.283.0 - 2025-08-19
+#### Features
+- updating Axum to 0.7, using reqwest in providers instead of hyper (#1197) - (f60d533) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- projectId feature validation (#1196) - (f3ee2c7) - Luka Isailovic
+
+- - -
+
+## 0.282.0 - 2025-08-18
+#### Features
+- **(proxy)** hardcoding of the `net_version` method response (#1201) - (72db15b) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.281.0 - 2025-08-18
+#### Features
+- **(proxy)** always return `true` for the `net_listening` method (#1198) - (973bc22) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.280.0 - 2025-08-18
+#### Bug Fixes
+- **(o11y)** tuning the 5xx alert threshold (#1193) - (33e4a65) - Max Kalashnikoff | maksy.eth
+#### Features
+- extending the konwn rpc messages list (#1199) - (7b10786) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.279.0 - 2025-08-14
+#### Features
+- **(balance)** migrating Dune to the Sim API (#1194) - (81b60f3) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.278.1 - 2025-08-14
+#### Bug Fixes
+- coinbase api created status (#1195) - (e10a3ee) - Luka Isailovic
+
+- - -
+
+## 0.278.0 - 2025-08-13
+#### Bug Fixes
+- **(ecs)** fix deployment minimum - (462b36d) - Max Kalashnikoff
+- **(o11y)** including 503 errors in the availability chart (#1186) - (4b23ab4) - Max Kalashnikoff | maksy.eth
+- **(otel)** increasing the otel collector memory and pinning the sigv4-proxy version (#1190) - (7200782) - Max Kalashnikoff | maksy.eth
+- **(terraform)** removing duplicated ECS defaults for variables (#1191) - (5ecd55d) - Max Kalashnikoff | maksy.eth
+- fixing clippy warnings (#1189) - (5d8135f) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(ecs)** increasing the minimal cluster count (#1184) - (5383c3a) - Max Kalashnikoff | maksy.eth
+- **(o11y)** implementing an alert for the cluster minimal healthy hosts (#1192) - (9525057) - Max Kalashnikoff | maksy.eth
+- **(redis)** updating the Redis cache engine version to 7 on staging environment (#1185) - (125c88f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.277.0 - 2025-08-07
+#### Bug Fixes
+- fixing the ulimit to the Fargate maximum (#1183) - (d37f3de) - Max Kalashnikoff | maksy.eth
+#### Features
+- makes deployment rollouts smooth (#1182) - (8f6c46f) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.276.3 - 2025-08-06
+#### Bug Fixes
+- reverting of adding axum custom listener with the backlog size (#1179)" (#1181) - (8c87451) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.276.2 - 2025-08-06
+#### Bug Fixes
+- **(o11y)** tune the 502 alert (#1180) - (ef38ae6) - Max Kalashnikoff | maksy.eth
+- adding axum custom listener with the backlog size (#1179) - (246f87f) - Max Kalashnikoff | maksy.eth
+- removing setting of the network syn in the terraform (#1178) - (e062509) - Max Kalashnikoff | maksy.eth
+- increasing the ulimts and network syn backlogs (#1177) - (1742782) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.276.1 - 2025-08-05
+#### Bug Fixes
+- **(o11y)** fixing the no provider for chain chart and alert (#1167) - (8485671) - Max Kalashnikoff | maksy.eth
+- enforce lowercase names (#1173) - (39f0849) - Chris Smith
+
+- - -
+
+## 0.276.0 - 2025-07-30
+#### Bug Fixes
+- disable failing tests (#1174) - (587a29d) - Chris Smith
+#### Features
+- better rate-limited error message (#1175) - (7bfa3f0) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.275.2 - 2025-07-24
+#### Bug Fixes
+- preserving JSON-RPC `id` type (#1172) - (d7ee818) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.275.1 - 2025-07-24
+#### Bug Fixes
+- exchange tests (#1170) - (c1e466a) - Luka Isailovic
+#### Miscellaneous Chores
+- update test exchange implementation (#1171) - (50feb69) - Luka Isailovic
+
+- - -
+
+## 0.275.0 - 2025-07-24
+#### Features
+- test exchange (#1169) - (08955ad) - Luka Isailovic
+
+- - -
+
+## 0.274.0 - 2025-07-23
+#### Features
+- using the updated Cerberus which uses a new limits to check the quota (#1166) - (f861600) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.273.0 - 2025-07-22
+#### Features
+- **(proxy)** extending the known list of json-rpc error messages (#1164) - (a6e834b) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.272.1 - 2025-07-22
+#### Bug Fixes
+- **(Meld)** fixing the excludeProviders query parameter (#1165) - (cea7058) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- exchange tests (#1149) - (87cda05) - Luka Isailovic
+
+- - -
+
+## 0.272.0 - 2025-07-21
+#### Features
+- **(Meld)** adding default providers and exclude providers parameters (#1163) - (961e6e1) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.271.1 - 2025-07-21
+#### Bug Fixes
+- **(proxy)** force adding an application/json response header (#1162) - (168249b) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.271.0 - 2025-07-19
+#### Bug Fixes
+- **(o11y)** fixing Prometheus query and label for RPC caching (#1158) - (1aa3e24) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(proxy)** implementing skip the quota chains list (#1161) - (ab2050e) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.270.0 - 2025-07-18
+#### Bug Fixes
+- **(o11y)** fixing the JSON-RPC error codes Prometheus query (#1157) - (c46346e) - Max Kalashnikoff | maksy.eth
+#### Features
+- **(proxy)** implementing RPC caching scaffold and adding `chainId` server-side calculation (#1156) - (5738f61) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.269.1 - 2025-07-18
+#### Bug Fixes
+- **(proxy)** extending known RPC errors list, debug only on unexpected JSON-RPC schema (#1155) - (cf55ba7) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.269.0 - 2025-07-17
+#### Features
+- **(proxy)** multiple optimizations for errors catch (#1154) - (7d50774) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.268.0 - 2025-07-17
+#### Features
+- **(proxy)** adding an error check only when the response is success and debugging message (#1153) - (9a44588) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.267.1 - 2025-07-17
+#### Bug Fixes
+- **(RPC)** fixing the check for server error codes (#1146) - (72100c5) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.267.0 - 2025-07-16
+#### Features
+- **(OnRamp)** adding an `excludeProviders` filter for quotes (#1152) - (77c911c) - Max Kalashnikoff | maksy.eth
+- removing a repository ofac variable usage in a favor of the terraform cloud (#1151) - (4ebe3cc) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.266.1 - 2025-07-15
+#### Bug Fixes
+- **(exchanges)** passing an error into the internal server error message (#1150) - (490b2f6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.266.0 - 2025-07-14
+#### Features
+- coinbase secure init migration (#1148) - (3f21fa2) - Luka Isailovic
+
+- - -
+
+## 0.265.0 - 2025-07-11
+#### Features
+- **(RPC)** extending the Quicknode provider to Solana WSS support (#1147) - (7d783dc) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.264.1 - 2025-07-10
+#### Bug Fixes
+- **(balance)** fixing u64 overflow in a balance when using the force update (#1145) - (c4e1ac8) - Max Kalashnikoff | maksy.eth
+
+- - -
+
+## 0.264.0 - 2025-07-10
+#### Features
+- **(Pokt)** making exclusion for the weight recalculation and update the alert (#1144) - (71306e6) - Max Kalashnikoff | maksy.eth
+
+- - -
+
 ## 0.263.1 - 2025-07-09
 #### Bug Fixes
 - **(1Inch)** adding a proper handling of the API's 404 response in get_gas_price and get_allowance (#1143) - (04f6121) - Max Kalashnikoff | maksy.eth

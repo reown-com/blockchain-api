@@ -82,6 +82,7 @@ jobs:
 
   integration-tests-ts:
     name: TS Integration Tests - ${{ inputs.stage }}
+    needs: [health-check, integration-tests]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

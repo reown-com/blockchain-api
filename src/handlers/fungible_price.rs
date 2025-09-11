@@ -1,5 +1,5 @@
 use {
-    super::{SupportedCurrencies, HANDLER_TASK_METRICS},
+    super::SupportedCurrencies,
     crate::{
         error::RpcError,
         state::AppState,
@@ -14,7 +14,7 @@ use {
     std::sync::Arc,
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -47,7 +47,7 @@ pub async fn handler(
     SimpleRequestJson(query): SimpleRequestJson<PriceQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("fungible_price"))
+        .with_metrics(future_metrics!("handler_task", "name" => "fungible_price"))
         .await
 }
 

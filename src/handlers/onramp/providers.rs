@@ -1,5 +1,5 @@
 use {
-    crate::{error::RpcError, handlers::HANDLER_TASK_METRICS, state::AppState},
+    crate::{error::RpcError, state::AppState},
     axum::{
         extract::{Query, State},
         response::{IntoResponse, Response},
@@ -9,7 +9,7 @@ use {
     std::sync::Arc,
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -44,7 +44,7 @@ pub async fn handler(
     query: Query<QueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("onramp_providers"))
+        .with_metrics(future_metrics!("handler_task", "name" => "onramp_providers"))
         .await
 }
 

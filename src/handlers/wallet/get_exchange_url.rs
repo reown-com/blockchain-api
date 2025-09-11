@@ -3,7 +3,7 @@ use {
         is_feature_enabled_for_project_id, ExchangeError, ExchangeType, GetBuyUrlParams,
     },
     crate::{
-        handlers::{SdkInfoParams, HANDLER_TASK_METRICS},
+        handlers::SdkInfoParams,
         state::AppState,
         utils::crypto::{disassemble_caip10, Caip19Asset},
     },
@@ -17,7 +17,7 @@ use {
     thiserror::Error,
     tracing::debug,
     uuid::Uuid,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize)]
@@ -41,6 +41,7 @@ pub struct GeneratePayUrlResponse {
 pub struct QueryParams {
     #[serde(flatten)]
     pub sdk_info: SdkInfoParams,
+    pub source: Option<String>,
 }
 
 #[derive(Error, Debug)]
@@ -69,10 +70,11 @@ pub async fn handler(
     query: Query<QueryParams>,
     Json(request): Json<GeneratePayUrlRequest>,
 ) -> Result<GeneratePayUrlResponse, GetExchangeUrlError> {
-    is_feature_enabled_for_project_id(state.clone(), &project_id)
+    is_feature_enabled_for_project_id(state.clone(), &project_id, query.source.as_deref())
+        .await
         .map_err(|e| GetExchangeUrlError::ValidationError(e.to_string()))?;
     handler_internal(state, project_id, connect_info, headers, query, request)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("pay_get_exchange_url"))
+        .with_metrics(future_metrics!("handler_task", "name" => "pay_get_exchange_url"))
         .await
 }
 
@@ -154,9 +156,9 @@ async fn handler_internal(
                     error = %e,
                     "Internal error, unable to get exchange URL"
                 );
-                Err(GetExchangeUrlError::InternalError(
-                    "Unable to get exchange URL".to_string(),
-                ))
+                Err(GetExchangeUrlError::InternalError(format!(
+                    "Unable to get exchange URL: {e:?}"
+                )))
             }
         },
     }

@@ -1,16 +1,23 @@
 use {
-    super::{RpcQueryParams, HANDLER_TASK_METRICS},
+    super::RpcQueryParams,
     crate::{
         analytics::MessageInfo,
         error::RpcError,
-        providers::{is_internal_error_rpc_code, ProviderKind},
+        json_rpc::JsonRpcRequest,
+        providers::{
+            is_internal_error_rpc_code, is_known_rpc_error_message, is_node_error_rpc_message,
+            is_rate_limited_error_rpc_message, ProviderKind,
+        },
         state::AppState,
-        utils::{batch_json_rpc_request::MaybeBatchRequest, crypto, network},
+        utils::{
+            batch_json_rpc_request::MaybeBatchRequest, crypto, json_rpc_cache::is_cached_response,
+            network,
+        },
     },
     axum::{
-        body::Bytes,
+        body::{to_bytes, Bytes},
         extract::{ConnectInfo, Query, State},
-        response::Response,
+        response::{IntoResponse, Response},
     },
     hyper::{http, HeaderMap},
     std::{
@@ -26,11 +33,13 @@ use {
         log::{debug, error, warn},
         Span,
     },
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 const PROVIDER_PROXY_MAX_CALLS: usize = 5;
 const PROVIDER_PROXY_CALL_TIMEOUT: Duration = Duration::from_secs(10);
+const DEFAULT_CONTENT_TYPE: (&str, &str) = ("content-type", "application/json");
+pub const PROVIDER_RESPONSE_MAX_BYTES: usize = 10 * 1024 * 1024; // 10 Mb
 
 pub async fn handler(
     state: State<Arc<AppState>>,
@@ -40,7 +49,7 @@ pub async fn handler(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     handler_internal(state, addr, query_params, headers, body)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("proxy"))
+        .with_metrics(future_metrics!("handler_task", "name" => "proxy"))
         .await
 }
 
@@ -52,9 +61,23 @@ async fn handler_internal(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response, RpcError> {
-    state
-        .validate_project_access_and_quota(&query_params.project_id.clone())
-        .await?;
+    // Don't validate the quota and validate project access only
+    // if the chainId is in the skip_quota_chains list
+    if state
+        .config
+        .server
+        .skip_quota_chains
+        .contains(&query_params.chain_id)
+    {
+        state
+            .validate_project_access(&query_params.project_id.clone())
+            .await?;
+    } else {
+        state
+            .validate_project_access_and_quota(&query_params.project_id.clone())
+            .await?;
+    };
+
     rpc_call(state, addr, query_params, headers, body).await
 }
 
@@ -67,6 +90,27 @@ pub async fn rpc_call(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     let chain_id = query_params.chain_id.clone();
+
+    // Deserializing the request body to a JSON-RPC request schema and
+    // check if a cached response can be returned
+    // TODO: Optimize this to remove the second deserialization during the provider analytics
+    match serde_json::from_slice::<JsonRpcRequest>(&body) {
+        Ok(request) => {
+            if let Some(response) =
+                is_cached_response(&chain_id, &request, &state.metrics, &state.moka_cache).await
+            {
+                return Ok((
+                    http::StatusCode::OK,
+                    [DEFAULT_CONTENT_TYPE],
+                    serde_json::to_string(&response)?,
+                )
+                    .into_response());
+            }
+        }
+        Err(e) => {
+            error!("Failed to deserialize JSON-RPC request: {e}");
+        }
+    };
 
     if query_params.session_id.is_some() {
         let provider_kind = match chain_id.as_str() {
@@ -149,7 +193,7 @@ pub async fn rpc_call(
     };
 
     for (i, provider) in providers.iter().enumerate() {
-        let response = rpc_provider_call(
+        let provider_call = rpc_provider_call(
             state.clone(),
             addr,
             query_params.clone(),
@@ -159,43 +203,100 @@ pub async fn rpc_call(
         )
         .await;
 
-        match response {
-            Ok(response) if !response.status().is_server_error() => {
-                // Check for internal error codes range
-                // -32000 to -32099 in response and write to metrics
-                // https://www.jsonrpc.org/specification#error_object
-                if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-                    if let Some(error) = &response.error {
-                        if is_internal_error_rpc_code(error.code) {
-                            state.metrics.add_internal_error_code_for_provider(
-                                provider.provider_kind(),
-                                chain_id.clone(),
-                                error.code,
-                            );
-                        }
-                    }
-                }
-                state
-                    .metrics
-                    .add_found_provider_for_chain(chain_id.clone(), &provider.provider_kind());
-                // Record successful chain latency for the provider that succeeded
-                state.metrics.add_chain_latency(
-                    &provider.provider_kind(),
-                    chain_request_start,
-                    chain_id.clone(),
+        let response_result = match provider_call {
+            Ok(response) => response,
+            Err(e) => {
+                debug!(
+                    "Call to provider '{}' returned an error {e:?}, trying the next provider",
+                    provider.provider_kind()
                 );
-                return Ok(response);
-            }
-            e => {
                 state
                     .metrics
                     .add_rpc_call_retries(i as u64, chain_id.clone());
-                debug!(
-                    "Provider '{}' returned an error {e:?}, trying the next provider",
-                    provider.provider_kind()
-                );
+                continue;
             }
+        };
+
+        // Proceed to the result if the status is success or
+        // any client error except the rate limited error
+        let provider_kind = provider.provider_kind();
+        let status = response_result.status();
+        if status.is_success() || status == http::StatusCode::BAD_REQUEST {
+            let body_bytes =
+                match to_bytes(response_result.into_body(), PROVIDER_RESPONSE_MAX_BYTES).await {
+                    Ok(bytes) => bytes,
+                    Err(e) => {
+                        error!(
+                        "Failed to read JSON-RPC response body from provider {provider_kind}: {e}"
+                    );
+                        state
+                            .metrics
+                            .add_rpc_call_retries(i as u64, chain_id.clone());
+                        continue;
+                    }
+                };
+
+            // Check the JSON-RPC response schema and possible internal error codes
+            match serde_json::from_slice::<jsonrpc::Response>(&body_bytes) {
+                Ok(json_response) => {
+                    if let Some(error) = &json_response.error {
+                        let error_code = error.code;
+                        let error_message = error.message.clone();
+
+                        // Internal error codes range -32000..-32099 https://www.jsonrpc.org/specification#error_object
+                        if is_internal_error_rpc_code(error_code) {
+                            // Retry to another provider if the error is a rate limited or node error
+                            if is_rate_limited_error_rpc_message(&error_message)
+                                || is_node_error_rpc_message(&error_message)
+                            {
+                                state
+                                    .metrics
+                                    .add_rpc_call_retries(i as u64, chain_id.clone());
+                                continue;
+                            }
+
+                            // Log an error, increment the metrics for unknown error codes and continue
+                            // without retrying since it can be a contract execution error.
+                            // We should catch unknown errors by alarm for the metrics
+                            // and investigate it first without retrying.
+                            if !is_known_rpc_error_message(&error_message) {
+                                error!("Provider {provider_kind} returned an error code: {error_code} and the message: {error_message}");
+                                state.metrics.add_internal_error_code_for_provider(
+                                    provider_kind,
+                                    chain_id.clone(),
+                                    error.code,
+                                );
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to parse JSON-RPC response from provider {provider_kind}: {e}. Message: {}", String::from_utf8_lossy(&body_bytes));
+                }
+            }
+
+            state
+                .metrics
+                .add_found_provider_for_chain(chain_id.clone(), &provider.provider_kind());
+
+            // Record successful chain latency for the provider that succeeded
+            // and return the response
+            state.metrics.add_chain_latency(
+                &provider.provider_kind(),
+                chain_request_start,
+                chain_id.clone(),
+            );
+            return Ok((status, [DEFAULT_CONTENT_TYPE], body_bytes).into_response());
         }
+
+        debug!(
+            "Provider '{}' returned unsuccessful status {}, trying the next provider",
+            provider.provider_kind(),
+            status
+        );
+        state
+            .metrics
+            .add_rpc_call_retries(i as u64, chain_id.clone());
     }
 
     state.metrics.add_no_providers_for_chain(chain_id.clone());

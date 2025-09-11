@@ -27,7 +27,7 @@ const COINBASE_API_HOST: &str = "api.developer.coinbase.com";
 static CAIP19_TO_COINBASE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
     HashMap::from([
         (
-            "eip155:8453/erc20:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            "eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
             "USDC",
         ), // USDC on Base
         (
@@ -35,15 +35,15 @@ static CAIP19_TO_COINBASE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
             "USDC",
         ), // USDC on Optimism
         (
-            "eip155:42161/erc20:0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+            "eip155:42161/erc20:0xAf88d065E77C8Ccc2239327C5EDb3A432268e5831",
             "USDC",
         ), // USDC on Arbitrum
         (
-            "eip155:137/erc20:0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+            "eip155:137/erc20:0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
             "USDC",
         ), // USDC on Polygon
         (
-            "eip155:1/erc20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "eip155:1/erc20:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
             "USDC",
         ), // USDC on Ethereum
         ("eip155:1/slip44:60", "ETH"), // Native ETH
@@ -131,6 +131,8 @@ enum CoinbaseTransactionStatus {
     Success,
     #[serde(rename = "ONRAMP_TRANSACTION_STATUS_FAILED")]
     Failed,
+    #[serde(rename = "ONRAMP_TRANSACTION_STATUS_CREATED")]
+    Created,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -178,6 +180,24 @@ struct OnrampTransaction {
     failure_reason: Option<String>,
     end_partner_name: Option<String>,
     payment_total_usd: Option<CurrencyAmount>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SessionTokenAddresses {
+    address: String,
+    blockchains: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SessionTokenRequest {
+    addresses: Vec<SessionTokenAddresses>,
+    assets: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SessionTokenResponse {
+    token: String,
+    channel_id: Option<String>,
 }
 
 pub struct CoinbaseExchange;
@@ -240,6 +260,32 @@ impl CoinbaseExchange {
         Ok(res)
     }
 
+    async fn send_post_request<T: serde::Serialize>(
+        &self,
+        state: &Arc<AppState>,
+        path: &str,
+        body: &T,
+    ) -> Result<reqwest::Response, ExchangeError> {
+        let (pub_key, priv_key) = self.get_api_credentials(state)?;
+
+        let jwt_key =
+            generate_coinbase_jwt_key(&pub_key, &priv_key, "POST", COINBASE_API_HOST, path)?;
+
+        let url = format!("https://{COINBASE_API_HOST}{path}");
+
+        let res = state
+            .http_client
+            .post(url)
+            .bearer_auth(jwt_key)
+            .json(body)
+            .send()
+            .await
+            .map_err(|e| ExchangeError::InternalError(e.to_string()))?;
+
+        debug!("send_post_request response: {:?}", res);
+        Ok(res)
+    }
+
     fn map_asset_to_coinbase_format(
         &self,
         asset: &Caip19Asset,
@@ -284,44 +330,65 @@ impl CoinbaseExchange {
         Ok(body)
     }
 
+    async fn generate_session_token(
+        &self,
+        state: &Arc<AppState>,
+        asset: &Caip19Asset,
+        recipient: &str,
+    ) -> Result<String, ExchangeError> {
+        let (crypto, network) = self.map_asset_to_coinbase_format(asset)?;
+
+        let address_info = SessionTokenAddresses {
+            address: recipient.to_string(),
+            blockchains: vec![network],
+        };
+
+        let request = SessionTokenRequest {
+            addresses: vec![address_info],
+            assets: vec![crypto],
+        };
+
+        let res = self
+            .send_post_request(state, "/onramp/v1/token", &request)
+            .await?;
+
+        if !res.status().is_success() {
+            return Err(ExchangeError::InternalError(format!(
+                "Failed to generate session token: {}",
+                res.status()
+            )));
+        }
+
+        let session_response: SessionTokenResponse = res.json().await.map_err(|e| {
+            debug!("Error parsing session token response: {:?}", e);
+            ExchangeError::InternalError(e.to_string())
+        })?;
+
+        debug!("Generated session token successfully");
+        Ok(session_response.token)
+    }
+
     pub async fn get_buy_url(
         &self,
         state: State<Arc<AppState>>,
         params: GetBuyUrlParams,
     ) -> Result<String, ExchangeError> {
-        let project_id = state
-            .config
-            .exchanges
-            .coinbase_project_id
-            .as_ref()
-            .ok_or_else(|| {
-                ExchangeError::ConfigurationError("Coinbase exchange is not configured".to_string())
-            })?;
-
         let (crypto, network) = self.map_asset_to_coinbase_format(&params.asset)?;
 
-        let addresses = serde_json::to_string(&HashMap::from([(
-            params.recipient.clone(),
-            vec![network.clone()],
-        )]))
-        .map_err(|e| ExchangeError::InternalError(format!("Failed to serialize addresses: {e}")))?;
-
-        let assets = serde_json::to_string(&vec![crypto.clone()]).map_err(|e| {
-            ExchangeError::InternalError(format!("Failed to serialize assets: {e}"))
-        })?;
+        let session_token = self
+            .generate_session_token(&state, &params.asset, &params.recipient)
+            .await?;
 
         let mut url = Url::parse(COINBASE_ONE_CLICK_BUY_URL)
             .map_err(|e| ExchangeError::InternalError(format!("Failed to parse URL: {e}")))?;
 
         url.query_pairs_mut()
-            .append_pair("appId", project_id)
+            .append_pair("sessionToken", &session_token)
             .append_pair("partnerUserId", &params.session_id)
             .append_pair("defaultAsset", &crypto)
             .append_pair("defaultPaymentMethod", DEFAULT_PAYMENT_METHOD)
             .append_pair("presetCryptoAmount", &params.amount.to_string())
-            .append_pair("defaultNetwork", &network)
-            .append_pair("addresses", &addresses)
-            .append_pair("assets", &assets);
+            .append_pair("defaultNetwork", &network);
 
         Ok(url.to_string())
     }
@@ -353,6 +420,7 @@ impl CoinbaseExchange {
                     }
                     CoinbaseTransactionStatus::InProgress => BuyTransactionStatus::InProgress,
                     CoinbaseTransactionStatus::Failed => BuyTransactionStatus::Failed,
+                    CoinbaseTransactionStatus::Created => BuyTransactionStatus::InProgress,
                 };
 
                 Ok(GetBuyStatusResponse { status, tx_hash })

@@ -3,6 +3,7 @@ use super::get_calls_status::{self, GetCallsStatusError};
 use super::get_exchange_buy_status::{self, GetExchangeBuyStatusError};
 use super::get_exchange_url::{self, GetExchangeUrlError};
 use super::get_exchanges::{self, GetExchangesError};
+use super::pos::{self, BuildPosTxsError, CheckPosTxError, SupportedNetworksError};
 use super::prepare_calls::{self, PrepareCallsError};
 use super::send_prepared_calls::{self, SendPreparedCallsError};
 use crate::error::RpcError;
@@ -11,10 +12,7 @@ use crate::json_rpc::{
 };
 use crate::utils::simple_request_json::SimpleRequestJson;
 use crate::{
-    handlers::{
-        wallet::get_calls_status::QueryParams as CallStatusQueryParams, SdkInfoParams,
-        HANDLER_TASK_METRICS,
-    },
+    handlers::{wallet::get_calls_status::QueryParams as CallStatusQueryParams, SdkInfoParams},
     state::AppState,
 };
 use axum::extract::{ConnectInfo, Query};
@@ -26,7 +24,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use thiserror::Error;
 use tracing::error;
-use wc::future::FutureExt;
+use wc::metrics::{future_metrics, FutureExt};
 use yttrium::wallet_service_api;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -35,6 +33,7 @@ pub struct WalletQueryParams {
     pub project_id: String,
     #[serde(flatten)]
     pub sdk_info: SdkInfoParams,
+    pub source: Option<String>,
 }
 
 // TODO support batch requests (and validate unique RPC IDs)
@@ -46,7 +45,7 @@ pub async fn handler(
     SimpleRequestJson(request_payload): SimpleRequestJson<JsonRpcRequest>,
 ) -> Response {
     handler_internal(state, connect_info, headers, query, request_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("wallet"))
+        .with_metrics(future_metrics!("handler_task", "name" => "wallet"))
         .await
 }
 
@@ -97,6 +96,9 @@ pub const WALLET_GET_CALLS_STATUS: &str = "wallet_getCallsStatus";
 pub const PAY_GET_EXCHANGES: &str = "reown_getExchanges";
 pub const PAY_GET_EXCHANGE_URL: &str = "reown_getExchangePayUrl";
 pub const PAY_GET_EXCHANGE_BUY_STATUS: &str = "reown_getExchangeBuyStatus";
+pub const POS_BUILD_TRANSACTIONS: &str = "wc_pos_buildTransactions";
+pub const POS_CHECK_TRANSACTION: &str = "wc_pos_checkTransaction";
+pub const POS_SUPPORTED_NETWORKS: &str = "wc_pos_supportedNetworks";
 
 #[derive(Debug, Error)]
 enum Error {
@@ -123,6 +125,15 @@ enum Error {
 
     #[error("{PAY_GET_EXCHANGE_BUY_STATUS}: {0}")]
     GetExchangeBuyStatus(GetExchangeBuyStatusError),
+
+    #[error("{POS_BUILD_TRANSACTIONS}: {0}")]
+    PosBuildTransactions(BuildPosTxsError),
+
+    #[error("{POS_CHECK_TRANSACTION}: {0}")]
+    PosCheckTransaction(CheckPosTxError),
+
+    #[error("{POS_SUPPORTED_NETWORKS}: {0}")]
+    PosSupportedNetworks(SupportedNetworksError),
 
     #[error("Method not found")]
     MethodNotFound,
@@ -151,6 +162,9 @@ impl Error {
             Error::GetExchanges(_) => -6,
             Error::GetUrl(_) => -7,
             Error::GetExchangeBuyStatus(_) => -8,
+            Error::PosBuildTransactions(_) => -9,
+            Error::PosCheckTransaction(_) => -10,
+            Error::PosSupportedNetworks(_) => -11,
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,
@@ -167,6 +181,9 @@ impl Error {
             Error::GetExchanges(e) => e.is_internal(),
             Error::GetUrl(e) => e.is_internal(),
             Error::GetExchangeBuyStatus(e) => e.is_internal(),
+            Error::PosBuildTransactions(e) => e.is_internal(),
+            Error::PosCheckTransaction(e) => e.is_internal(),
+            Error::PosSupportedNetworks(e) => e.is_internal(),
             Error::MethodNotFound => false,
             Error::InvalidParams(_) => false,
             Error::Internal(_) => true,
@@ -249,6 +266,7 @@ async fn handle_rpc(
                 headers,
                 Query(get_exchanges::QueryParams {
                     sdk_info: query.sdk_info,
+                    source: query.source,
                 }),
                 Json(serde_json::from_value(params).map_err(Error::InvalidParams)?),
             )
@@ -264,6 +282,7 @@ async fn handle_rpc(
                 headers,
                 Query(get_exchange_url::QueryParams {
                     sdk_info: query.sdk_info,
+                    source: query.source,
                 }),
                 Json(serde_json::from_value(params).map_err(Error::InvalidParams)?),
             )
@@ -279,11 +298,38 @@ async fn handle_rpc(
                 headers,
                 Query(get_exchange_buy_status::QueryParams {
                     sdk_info: query.sdk_info,
+                    source: query.source,
                 }),
                 Json(serde_json::from_value(params).map_err(Error::InvalidParams)?),
             )
             .await
             .map_err(Error::GetExchangeBuyStatus)?,
+        )
+        .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
+        POS_BUILD_TRANSACTIONS => serde_json::to_value(
+            &pos::build_transactions::handler(
+                state,
+                project_id,
+                serde_json::from_value(params).map_err(Error::InvalidParams)?,
+            )
+            .await
+            .map_err(Error::PosBuildTransactions)?,
+        )
+        .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
+        POS_CHECK_TRANSACTION => serde_json::to_value(
+            &pos::check_transaction::handler(
+                state,
+                project_id,
+                serde_json::from_value(params).map_err(Error::InvalidParams)?,
+            )
+            .await
+            .map_err(Error::PosCheckTransaction)?,
+        )
+        .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
+        POS_SUPPORTED_NETWORKS => serde_json::to_value(
+            &pos::supported_networks::handler(state, project_id)
+                .await
+                .map_err(Error::PosSupportedNetworks)?,
         )
         .map_err(|e| Error::Internal(InternalError::SerializeResponse(e))),
         _ => Err(Error::MethodNotFound),

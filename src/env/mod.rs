@@ -150,6 +150,7 @@ mod test {
             ("RPC_PROXY_REGISTRY_API_URL", "API_URL"),
             ("RPC_PROXY_REGISTRY_API_AUTH_TOKEN", "API_AUTH_TOKEN"),
             ("RPC_PROXY_REGISTRY_PROJECT_DATA_CACHE_TTL", "345"),
+            ("RPC_PROXY_REGISTRY_CIRCUIT_COOLDOWN_MS", "1000"),
             // Storage config.
             ("RPC_PROXY_STORAGE_REDIS_MAX_CONNECTIONS", "456"),
             (
@@ -209,7 +210,7 @@ mod test {
                 "RPC_PROXY_PROVIDER_TENDERLY_PROJECT_ID",
                 "TENDERLY_PROJECT_ID",
             ),
-            ("RPC_PROXY_PROVIDER_DUNE_API_KEY", "DUNE_API_KEY"),
+            ("RPC_PROXY_PROVIDER_DUNE_SIM_API_KEY", "DUNE_SIM_API_KEY"),
             ("RPC_PROXY_PROVIDER_SYNDICA_API_KEY", "SYNDICA_API_KEY"),
             ("RPC_PROXY_PROVIDER_ALLNODES_API_KEY", "ALLNODES_API_KEY"),
             ("RPC_PROXY_PROVIDER_MELD_API_KEY", "MELD_API_KEY"),
@@ -292,11 +293,13 @@ mod test {
                     geoip_db_key: Some("GEOIP_DB_KEY".to_owned()),
                     testing_project_id: Some("TESTING_PROJECT_ID".to_owned()),
                     validate_project_id: true,
+                    skip_quota_chains: vec![],
                 },
                 registry: project::Config {
                     api_url: Some("API_URL".to_owned()),
                     api_auth_token: Some("API_AUTH_TOKEN".to_owned()),
                     project_data_cache_ttl: 345,
+                    circuit_cooldown_ms: 1_000,
                 },
                 storage: project::storage::Config {
                     redis_max_connections: 456,
@@ -341,7 +344,7 @@ mod test {
                     tenderly_api_key: "TENDERLY_KEY".to_string(),
                     tenderly_account_id: "TENDERLY_ACCOUNT_ID".to_string(),
                     tenderly_project_id: "TENDERLY_PROJECT_ID".to_string(),
-                    dune_api_key: "DUNE_API_KEY".to_string(),
+                    dune_sim_api_key: "DUNE_SIM_API_KEY".to_string(),
                     syndica_api_key: "SYNDICA_API_KEY".to_string(),
                     override_bundler_urls: None,
                     allnodes_api_key: "ALLNODES_API_KEY".to_string(),

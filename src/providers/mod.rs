@@ -44,8 +44,7 @@ use {
         rpc::json_rpc::Id,
     },
     async_trait::async_trait,
-    axum::response::Response,
-    axum_tungstenite::WebSocketUpgrade,
+    axum::{extract::ws::WebSocketUpgrade, response::Response},
     deadpool_redis::Pool,
     hyper::http::HeaderValue,
     mock_alto::{MockAltoProvider, MockAltoUrls},
@@ -60,35 +59,80 @@ use {
         sync::Arc,
     },
     tracing::{debug, error, log::warn},
-    wc::metrics::TaskMetrics,
     yttrium::chain_abstraction::api::Transaction,
 };
 
 /// Checks if a JSON-RPC error message indicates common node error
 /// patterns that should be handled specially.
 pub fn is_node_error_rpc_message(error_message: &str) -> bool {
-    error_message.contains("cannot unmarshal")
-        || error_message.contains("Go value")
-        || error_message.contains("deserialization error")
-        || error_message.contains("node error")
-        || error_message.contains("try again later")
+    const NODE_ERROR_PATTERNS: &[&str] = &[
+        "cannot unmarshal",
+        "Go value",
+        "deserialization error",
+        "node error",
+        "try again later",
+        "header not found",
+    ];
+
+    NODE_ERROR_PATTERNS
+        .iter()
+        .any(|pattern| error_message.contains(pattern))
 }
 
 /// Checks if a JSON-RPC error message indicates common rate-limited
 /// patterns that should be handled specially.
 pub fn is_rate_limited_error_rpc_message(error_message: &str) -> bool {
-    error_message.contains("quota exceed")
-        || error_message.contains("exceeded quota")
-        || error_message.contains("rate limit")
-        || error_message.contains("rate-limit")
-        || error_message.contains("paid")
-        || error_message.contains("upgrade plan")
-        || error_message.contains("subscription")
-        || error_message.contains("compute units for this month")
-        || error_message.contains("compute units exceeded")
-        || error_message.contains("your plan")
-        || error_message.contains("current plan")
-        || error_message.contains("you reached")
+    const RATE_LIMITED_ERROR_PATTERNS: &[&str] = &[
+        "quota exceed",
+        "exceeded quota",
+        "rate limit",
+        "rate-limit",
+        "paid",
+        "upgrade plan",
+        "subscription",
+        "compute units for this month",
+        "compute units exceeded",
+        "your plan",
+        "current plan",
+        "you reached",
+        "no matched providers found",
+    ];
+
+    RATE_LIMITED_ERROR_PATTERNS
+        .iter()
+        .any(|pattern| error_message.contains(pattern))
+}
+
+/// Checks if a JSON-RPC error message indicates a known error
+/// that should be returned to the client.
+pub fn is_known_rpc_error_message(error_message: &str) -> bool {
+    const KNOWN_ERROR_PATTERNS: &[&str] = &[
+        "execution reverted",
+        "EVM error",
+        "Transaction simulation failed",
+        "insufficient funds for ",
+        "gas ",
+        "already known",
+        "filter not found",
+        "execution aborted",
+        "transaction",
+        "nonce too ",
+        "stack underflow",
+        "mined",
+        "missing",
+        "batch ",
+        "state available for block",
+        "unsupported block number",
+        "block not found",
+        "invalid opcode",
+        "unknown account",
+        "gapped-nonce tx",
+        "can not found a matching policy",
+    ];
+
+    KNOWN_ERROR_PATTERNS
+        .iter()
+        .any(|pattern| error_message.contains(pattern))
 }
 
 /// Checks if a JSON-RPC error code indicates a server error specific codes.
@@ -146,6 +190,7 @@ pub use {
     callstatic::CallStaticProvider,
     drpc::DrpcProvider,
     dune::DuneProvider,
+    generic::GenericProvider,
     hiro::HiroProvider,
     mantle::MantleProvider,
     meld::MeldProvider,
@@ -158,7 +203,7 @@ pub use {
     pimlico::PimlicoProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
-    quicknode::QuicknodeProvider,
+    quicknode::{QuicknodeProvider, QuicknodeWsProvider},
     rootstock::RootstockProvider,
     solscan::SolScanProvider,
     sui::SuiProvider,
@@ -172,10 +217,13 @@ pub use {
     zora::{ZoraProvider, ZoraWsProvider},
 };
 
-static WS_PROXY_TASK_METRICS: TaskMetrics = TaskMetrics::new("ws_proxy_task");
-
 pub type ChainsWeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
 pub type NamespacesWeightResolver = HashMap<CaipNamespaces, HashMap<ProviderKind, Weight>>;
+
+/// Providers that are excluded from weight recalculation due to temporary issues
+/// or special handling requirements. These providers will maintain their current
+/// weights regardless of failure metrics from Prometheus.
+pub const WEIGHT_RECALCULATION_EXCLUDED_PROVIDERS: &[ProviderKind] = &[ProviderKind::Pokt];
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct ProvidersConfig {
@@ -205,8 +253,8 @@ pub struct ProvidersConfig {
     pub tenderly_account_id: String,
     /// Tenderly Project ID
     pub tenderly_project_id: String,
-    /// Dune API key
-    pub dune_api_key: String,
+    /// Dune Sim API key
+    pub dune_sim_api_key: String,
     /// Syndica API key
     pub syndica_api_key: String,
     /// Allnodes API key
@@ -873,7 +921,7 @@ impl ProviderKind {
 
 #[async_trait]
 pub trait RpcProvider: Provider {
-    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response>;
+    async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response>;
 }
 
 pub trait RpcProviderFactory<T: ProviderConfig>: Provider {
@@ -1286,5 +1334,19 @@ mod tests {
         assert_eq!(Priority::from_str("100"), Ok(Priority::Custom(100)));
         assert!(Priority::from_str("100.5").is_err());
         assert!(Priority::from_str("").is_err());
+    }
+
+    #[test]
+    fn test_is_node_error_rpc_message() {
+        let rate_limited_messages = vec![
+            "invalid request: json: cannot unmarshal array into Go value of type jsonrpc.Request",
+        ];
+
+        for message in rate_limited_messages {
+            assert!(
+                is_node_error_rpc_message(message),
+                "Message '{message}' should be detected as an internal error"
+            );
+        }
     }
 }

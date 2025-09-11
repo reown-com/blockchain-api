@@ -8,9 +8,6 @@ pub struct RpcProxy {
     pub project_id: String,
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum Error {}
-
 #[cfg(feature = "test-localhost")]
 impl RpcProxy {
     pub async fn start() -> Self {
