@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.295.0 - 2025-09-11
+#### Features
+- pos api changes (#1223) - (53ed53d) - Luka Isailovic
+
+- - -
+
 ## 0.294.0 - 2025-09-11
 #### Bug Fixes
 - **(identity)** increase identity provider response size cap (#1226) - (f87bda0) - Max Kalashnikoff | maksy.eth
