@@ -1,7 +1,8 @@
-pub mod build_transaction;
+pub mod build_transactions;
 pub mod check_transaction;
 pub mod evm;
 pub mod solana;
+pub mod supported_networks;
 pub mod tron;
 
 use {
@@ -48,7 +49,7 @@ pub trait AssetNamespaceType: FromStr + Clone + std::fmt::Debug + PartialEq {
 }
 
 #[derive(Debug, Error)]
-pub enum BuildPosTxError {
+pub enum BuildPosTxsError {
     #[error("Validation error: {0}")]
     Validation(String),
 
@@ -56,9 +57,9 @@ pub enum BuildPosTxError {
     Internal(String),
 }
 
-impl BuildPosTxError {
+impl BuildPosTxsError {
     pub fn is_internal(&self) -> bool {
-        matches!(self, BuildPosTxError::Internal(_))
+        matches!(self, BuildPosTxsError::Internal(_))
     }
 }
 
@@ -78,6 +79,18 @@ impl CheckPosTxError {
 }
 
 #[derive(Debug, Error)]
+pub enum SupportedNetworksError {
+    #[error("Internal error: {0}")]
+    Internal(String),
+}
+
+impl SupportedNetworksError {
+    pub fn is_internal(&self) -> bool {
+        matches!(self, SupportedNetworksError::Internal(_))
+    }
+}
+
+#[derive(Debug, Error)]
 pub enum TransactionIdError {
     #[error("Invalid transaction encoding: {0}")]
     InvalidBase64(#[from] DecodeError),
@@ -88,10 +101,31 @@ pub enum TransactionIdError {
     #[error("Invalid chain ID: {0}")]
     InvalidChainId(#[from] CryptoUitlsError),
 }
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SupportedNetworksResult {
+    pub namespaces: Vec<SupportedNamespace>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SupportedNamespace {
+    pub name: String,
+    pub methods: Vec<String>,
+    pub events: Vec<String>,
+    pub capabilities: Option<Value>,
+    pub asset_namespaces: Vec<String>,
+}
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BuildTransactionParams {
+    pub payment_intents: Vec<PaymentIntent>,
+    pub capabilities: Option<Value>,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PaymentIntent {
     pub asset: String,
     pub amount: String,
     pub recipient: String,
@@ -101,13 +135,14 @@ pub struct BuildTransactionParams {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BuildTransactionResult {
-    pub transaction_rpc: TransactionRpc,
-    pub id: String,
+    pub transactions: Vec<TransactionRpc>,
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionRpc {
+    pub id: String,
+    pub chain_id: String,
     pub method: String,
     pub params: Value,
 }
@@ -133,16 +168,26 @@ pub struct CheckTransactionResult {
     pub status: TransactionStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub check_in: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub txid: Option<String>,
 }
 #[async_trait::async_trait]
-pub trait TransactionBuilder {
+pub trait TransactionBuilder<T: AssetNamespaceType> {
     fn namespace(&self) -> &'static str;
+
+    async fn validate_and_build(
+        &self,
+        state: State<Arc<AppState>>,
+        project_id: String,
+        params: PaymentIntent,
+    ) -> Result<TransactionRpc, BuildPosTxsError>;
+
     async fn build(
         &self,
         state: State<Arc<AppState>>,
         project_id: String,
-        params: BuildTransactionParams,
-    ) -> Result<BuildTransactionResult, BuildPosTxError>;
+        params: ValidatedPaymentIntent<T>,
+    ) -> Result<TransactionRpc, BuildPosTxsError>;
 }
 
 pub struct TransactionId {
@@ -228,25 +273,26 @@ impl TryFrom<&str> for TransactionId {
     }
 }
 
-pub struct ValidatedTransactionParams<T: AssetNamespaceType> {
+pub struct ValidatedPaymentIntent<T: AssetNamespaceType> {
     pub asset: Caip19Asset,
+    pub amount: String,
     pub recipient_address: String,
     pub sender_address: String,
     pub namespace: T,
 }
 
-impl<T: AssetNamespaceType> ValidatedTransactionParams<T> {
-    pub fn validate_params(params: &BuildTransactionParams) -> Result<Self, BuildPosTxError> {
+impl<T: AssetNamespaceType> ValidatedPaymentIntent<T> {
+    pub fn validate_params(params: &PaymentIntent) -> Result<Self, BuildPosTxsError> {
         let asset = Caip19Asset::parse(&params.asset)
-            .map_err(|e| BuildPosTxError::Validation(format!("Invalid Asset: {e}")))?;
+            .map_err(|e| BuildPosTxsError::Validation(format!("Invalid Asset: {e}")))?;
 
         let (recipient_namespace, recipient_chain_id, recipient_address) =
             disassemble_caip10_with_namespace::<SupportedNamespaces>(&params.recipient)
-                .map_err(|e| BuildPosTxError::Validation(format!("Invalid Recipient: {e}")))?;
+                .map_err(|e| BuildPosTxsError::Validation(format!("Invalid Recipient: {e}")))?;
 
         let (sender_namespace, sender_chain_id, sender_address) =
             disassemble_caip10_with_namespace::<SupportedNamespaces>(&params.sender)
-                .map_err(|e| BuildPosTxError::Validation(format!("Invalid Sender: {e}")))?;
+                .map_err(|e| BuildPosTxsError::Validation(format!("Invalid Sender: {e}")))?;
 
         let asset_chain_id = asset.chain_id().reference();
         let asset_namespace = asset
@@ -254,11 +300,11 @@ impl<T: AssetNamespaceType> ValidatedTransactionParams<T> {
             .namespace()
             .parse::<SupportedNamespaces>()
             .map_err(|e| {
-                BuildPosTxError::Validation(format!("Cannot parse asset namespace: {e}"))
+                BuildPosTxsError::Validation(format!("Cannot parse asset namespace: {e}"))
             })?;
 
         if asset_namespace != recipient_namespace || asset_namespace != sender_namespace {
-            return Err(BuildPosTxError::Validation(
+            return Err(BuildPosTxsError::Validation(
                 "Asset namespace must match recipient and sender namespaces".to_string(),
             ));
         }
@@ -268,13 +314,13 @@ impl<T: AssetNamespaceType> ValidatedTransactionParams<T> {
         tracing::debug!("sender_chain_id: {sender_chain_id}");
 
         if asset_chain_id != recipient_chain_id || asset_chain_id != sender_chain_id {
-            return Err(BuildPosTxError::Validation(
+            return Err(BuildPosTxsError::Validation(
                 "Asset chain ID must match recipient and sender chain IDs".to_string(),
             ));
         }
 
         let namespace = T::from_str(asset.asset_namespace()).map_err(|_| {
-            BuildPosTxError::Validation(format!(
+            BuildPosTxsError::Validation(format!(
                 "Invalid asset namespace: {}",
                 asset.asset_namespace()
             ))
@@ -282,6 +328,7 @@ impl<T: AssetNamespaceType> ValidatedTransactionParams<T> {
 
         Ok(Self {
             asset,
+            amount: params.amount.clone(),
             recipient_address,
             sender_address,
             namespace,

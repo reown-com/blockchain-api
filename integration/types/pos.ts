@@ -16,20 +16,17 @@ export interface JsonRpcError {
   data?: unknown;
 }
 
-export interface BaseBuildTransactionParams {
+export interface PaymentIntent {
   asset: string;
   amount: string;
   recipient: string;
   sender: string;
 }
 
-export interface EvmBuildTransactionParams extends BaseBuildTransactionParams {
-  asset: string;
-  recipient: string;
-  sender: string;
+export interface BuildTransactionParams {
+  paymentIntents: PaymentIntent[];
+  capabilities?: unknown;
 }
-
-export type BuildTransactionParams = EvmBuildTransactionParams;
 
 export type CheckTransactionParams = {
   id: string;
@@ -37,11 +34,11 @@ export type CheckTransactionParams = {
 };
 
 export interface BuildTransactionRequest extends BaseJsonRpcRequest {
-  method: 'reown_pos_buildTransaction';
+  method: 'wc_pos_buildTransactions';
   params: BuildTransactionParams;
 }
 export interface CheckTransactionRequest extends BaseJsonRpcRequest {
-  method: 'reown_pos_checkTransaction';
+  method: 'wc_pos_checkTransaction';
   params: CheckTransactionParams;
 }
 
@@ -68,7 +65,7 @@ export interface TronTransactionObject {
   raw_data_hex: string;
   signature: string[] | null;
   txID: string;
-  visible: boolean;
+  visible: boolean | undefined;
 }
 
 export interface TronTransaction {
@@ -84,6 +81,8 @@ export interface TronTransactionParams {
 }
 
 export interface BaseTransactionRpc {
+  id: string;
+  chainId: string;
   method: string;
   params: unknown;
 }
@@ -106,13 +105,12 @@ export interface TronTransactionRpc extends BaseTransactionRpc {
 export type TransactionRpc = EvmTransactionRpc | SolanaTransactionRpc | TronTransactionRpc;
 
 export interface BuildTransactionResult {
-  id: string;
-  transactionRpc: TransactionRpc;
+  transactions: TransactionRpc[];
 }
 
 export interface CheckTransactionResult {
   status: string;
-  checkIn: number;
+  checkIn?: number;
 }
 
 export type BuildTransactionResponse = BaseJsonRpcResponse<BuildTransactionResult>;
@@ -126,3 +124,23 @@ export type BuildTransactionErrorResponse = BaseJsonRpcResponse<never> & {
 
 
 export type PosResponse = BuildTransactionResponse | BuildTransactionErrorResponse;
+
+// Supported Networks
+export interface SupportedNetworksRequest extends BaseJsonRpcRequest {
+  method: 'wc_pos_supportedNetworks';
+  params: Record<string, never>;
+}
+
+export interface SupportedNamespaceInfo {
+  name: string;
+  methods: string[];
+  events: string[];
+  capabilities: unknown | null;
+  assetNamespaces: string[];
+}
+
+export interface SupportedNetworksResult {
+  namespaces: SupportedNamespaceInfo[];
+}
+
+export type SupportedNetworksResponse = BaseJsonRpcResponse<SupportedNetworksResult>;
