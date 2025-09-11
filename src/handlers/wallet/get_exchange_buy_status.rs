@@ -2,12 +2,13 @@ use {
     crate::handlers::wallet::exchanges::{
         is_feature_enabled_for_project_id, BuyTransactionStatus, ExchangeError, ExchangeType,
         GetBuyStatusParams,
+        transactions::{
+            mark_failed as mark_transaction_failed,
+            mark_succeeded as mark_transaction_succeeded,
+            touch_pending as touch_pending_transaction,
+        },
     },
-    crate::{
-        database::exchange_transactions,
-        handlers::SdkInfoParams,
-        state::AppState,
-    },
+    crate::{handlers::SdkInfoParams, state::AppState},
     axum::{
         extract::{ConnectInfo, Query, State},
         Json,
@@ -115,31 +116,21 @@ async fn handler_internal(
         Ok(response) => {
             match response.status {
                 BuyTransactionStatus::Success => {
-                    let _ = exchange_transactions::update_status(
-                        &state.postgres,
-                        &request.session_id,
-                        exchange_transactions::TxStatus::Succeeded,
-                        response.tx_hash.as_deref(),
-                        None,
-                    )
-                    .await;
+                    let tx_hash = response.tx_hash.clone();
+                    let _ = mark_transaction_succeeded(&state, &request.session_id, tx_hash.as_deref()).await;
                 }
                 BuyTransactionStatus::Failed => {
-                    let _ = exchange_transactions::update_status(
-                        &state.postgres,
+                    let tx_hash = response.tx_hash.clone();
+                    let _ = mark_transaction_failed(
+                        &state,
                         &request.session_id,
-                        exchange_transactions::TxStatus::Failed,
-                        response.tx_hash.as_deref(),
                         Some("provider_failed"),
+                        tx_hash.as_deref(),
                     )
                     .await;
                 }
                 _ => {
-                    let _ = exchange_transactions::touch_non_terminal(
-                        &state.postgres,
-                        &request.session_id,
-                    )
-                    .await;
+                    let _ = touch_pending_transaction(&state, &request.session_id).await;
                 }
             }
 

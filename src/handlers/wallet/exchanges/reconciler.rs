@@ -3,7 +3,7 @@ use {
     crate::{
         database::exchange_transactions as db,
         handlers::wallet::exchanges::BuyTransactionStatus,
-        state::AppState,
+        state::AppState
     },
     axum::extract::State,
     std::{sync::Arc, time::Duration},
@@ -20,8 +20,10 @@ pub async fn run(state: Arc<AppState>) {
     poll.set_missed_tick_behavior(MissedTickBehavior::Delay);
     loop {
         poll.tick().await;
+        let fetch_started = std::time::SystemTime::now();
         match db::claim_due_batch(&state.postgres, CLAIM_BATCH_SIZE).await {
             Ok(mut rows) => {
+                state.metrics.add_exchange_reconciler_fetch_batch_latency(fetch_started);
                 if rows.is_empty() {
                     continue;
                 }
@@ -29,6 +31,7 @@ pub async fn run(state: Arc<AppState>) {
                 let mut rate = interval(Duration::from_millis(200));
                 rate.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
+                let process_started = std::time::SystemTime::now();
                 for row in rows.drain(..) {
                     rate.tick().await;
 
@@ -51,13 +54,19 @@ pub async fn run(state: Arc<AppState>) {
                         Ok(status) => {
                             match status.status {
                                 BuyTransactionStatus::Success => {
-                                    let _ = db::update_status(&state.postgres, &internal_id, db::TxStatus::Succeeded, status.tx_hash.as_deref(), None).await;
+                                    let _ = super::transactions::mark_succeeded(&state, &internal_id, status.tx_hash.as_deref()).await;
                                 }
                                 BuyTransactionStatus::Failed => {
-                                    let _ = db::update_status(&state.postgres, &internal_id, db::TxStatus::Failed, status.tx_hash.as_deref(), Some("provider_failed")).await;
+                                    let _ = super::transactions::mark_failed(
+                                        &state,
+                                        &internal_id,
+                                        Some("provider_failed"),
+                                        status.tx_hash.as_deref(),
+                                    )
+                                    .await;
                                 }
                                 _ => {
-                                    let _ = db::touch_non_terminal(&state.postgres, &internal_id).await;
+                                    let _ = super::transactions::touch_pending(&state, &internal_id).await;
                                 }
                             }
                         }
@@ -68,6 +77,7 @@ pub async fn run(state: Arc<AppState>) {
                     }
                 }
 
+                state.metrics.add_exchange_reconciler_process_batch_latency(process_started);
                 let _ = db::expire_old_pending(&state.postgres, EXPIRE_PENDING_AFTER_HOURS).await;
             }
             Err(e) => {

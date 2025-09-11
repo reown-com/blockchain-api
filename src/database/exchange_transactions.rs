@@ -49,14 +49,16 @@ pub async fn upsert_new(
     amount: Option<f64>,
     recipient: Option<&str>,
     pay_url: Option<&str>,
-) -> Result<(), DatabaseError> {
+) -> Result<ExchangeTransaction, DatabaseError> {
     let query = r#"
         INSERT INTO exchange_transactions
             (id, exchange_id, project_id, asset, amount, recipient, pay_url, status, last_checked_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW())
+        RETURNING id, exchange_id, project_id, asset, amount, recipient, pay_url, status,
+                  failure_reason, tx_hash, created_at, updated_at, last_checked_at, completed_at, locked_at
     "#;
 
-    sqlx::query::<Postgres>(query)
+    let row = sqlx::query_as::<Postgres, ExchangeTransaction>(query)
         .bind(id)
         .bind(exchange_id)
         .bind(project_id)
@@ -64,9 +66,9 @@ pub async fn upsert_new(
         .bind(amount)
         .bind(recipient)
         .bind(pay_url)
-        .execute(postgres)
+        .fetch_one(postgres)
         .await?;
-    Ok(())
+    Ok(row)
 }
 
 pub async fn update_status(
@@ -75,7 +77,7 @@ pub async fn update_status(
     status: TxStatus,
     tx_hash: Option<&str>,
     failure_reason: Option<&str>,
-) -> Result<(), DatabaseError> {
+) -> Result<ExchangeTransaction, DatabaseError> {
     let (completed_at_set, failure_reason_bind) = match status {
         TxStatus::Succeeded | TxStatus::Failed => ("NOW()", failure_reason),
         TxStatus::Pending => ("NULL", None),
@@ -92,17 +94,19 @@ pub async fn update_status(
             updated_at = NOW(),
             locked_at = NULL
         WHERE id = $1
+        RETURNING id, exchange_id, project_id, asset, amount, recipient, pay_url, status,
+                  failure_reason, tx_hash, created_at, updated_at, last_checked_at, completed_at, locked_at
     "#
     );
 
-    sqlx::query::<Postgres>(&query)
+    let row = sqlx::query_as::<Postgres, ExchangeTransaction>(&query)
         .bind(id)
         .bind(status.as_str())
         .bind(tx_hash)
         .bind(failure_reason_bind)
-        .execute(postgres)
+        .fetch_one(postgres)
         .await?;
-    Ok(())
+    Ok(row)
 }
 
 pub async fn touch_non_terminal(

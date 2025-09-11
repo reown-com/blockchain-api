@@ -1,12 +1,13 @@
 use {
     crate::handlers::wallet::exchanges::{
         is_feature_enabled_for_project_id, ExchangeError, ExchangeType, GetBuyUrlParams,
+        transactions::create as create_transaction,
     },
     crate::{
-        database::exchange_transactions,
         handlers::SdkInfoParams,
         state::AppState,
         utils::crypto::{disassemble_caip10, Caip19Asset},
+        
     },
     axum::{
         extract::{ConnectInfo, Query, State},
@@ -150,15 +151,15 @@ async fn handler_internal(
 
     match result {
         Ok(url) => {
-            exchange_transactions::upsert_new(
-                &state.postgres,
+            create_transaction(
+                &state,
                 &session_id,
-                request.exchange_id.as_str(),
-                Some(&project_id),
-                Some(&request.asset),
-                Some(amount),
-                Some(&address),
-                Some(&url),
+                &request.exchange_id,
+                &project_id,
+                &request.asset,
+                amount,
+                &address,
+                &url,
             )
             .await
             .map_err(|e| {
