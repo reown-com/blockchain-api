@@ -133,7 +133,7 @@ pub async fn claim_due_batch(
             SELECT id FROM exchange_transactions
             WHERE status = 'pending'
               AND (locked_at IS NULL OR locked_at < NOW() - INTERVAL '15 minutes')
-              AND (last_checked_at IS NULL OR last_checked_at < NOW() - INTERVAL '10 minutes')
+              AND (last_checked_at IS NULL OR last_checked_at < NOW() - INTERVAL '1 hour')
             ORDER BY last_checked_at NULLS FIRST, created_at ASC
             LIMIT $1
             FOR UPDATE SKIP LOCKED
