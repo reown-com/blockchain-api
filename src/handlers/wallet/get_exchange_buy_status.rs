@@ -3,7 +3,11 @@ use {
         is_feature_enabled_for_project_id, BuyTransactionStatus, ExchangeError, ExchangeType,
         GetBuyStatusParams,
     },
-    crate::{handlers::SdkInfoParams, state::AppState},
+    crate::{
+        database::exchange_transactions,
+        handlers::SdkInfoParams,
+        state::AppState,
+    },
     axum::{
         extract::{ConnectInfo, Query, State},
         Json,
@@ -97,9 +101,10 @@ async fn handler_internal(
         ));
     }
 
+    let arc_state = state.0.clone();
     let result = exchange
         .get_buy_status(
-            state,
+            State(arc_state),
             GetBuyStatusParams {
                 session_id: request.session_id.clone(),
             },
@@ -107,10 +112,42 @@ async fn handler_internal(
         .await;
 
     match result {
-        Ok(response) => Ok(GetExchangeBuyStatusResponse {
-            status: response.status,
-            tx_hash: response.tx_hash,
-        }),
+        Ok(response) => {
+            match response.status {
+                BuyTransactionStatus::Success => {
+                    let _ = exchange_transactions::update_status(
+                        &state.postgres,
+                        &request.session_id,
+                        exchange_transactions::TxStatus::Succeeded,
+                        response.tx_hash.as_deref(),
+                        None,
+                    )
+                    .await;
+                }
+                BuyTransactionStatus::Failed => {
+                    let _ = exchange_transactions::update_status(
+                        &state.postgres,
+                        &request.session_id,
+                        exchange_transactions::TxStatus::Failed,
+                        response.tx_hash.as_deref(),
+                        Some("provider_failed"),
+                    )
+                    .await;
+                }
+                _ => {
+                    let _ = exchange_transactions::touch_non_terminal(
+                        &state.postgres,
+                        &request.session_id,
+                    )
+                    .await;
+                }
+            }
+
+            Ok(GetExchangeBuyStatusResponse {
+                status: response.status,
+                tx_hash: response.tx_hash,
+            })
+        }
         Err(e) => match e {
             ExchangeError::ValidationError(msg) => {
                 Err(GetExchangeBuyStatusError::ValidationError(msg))

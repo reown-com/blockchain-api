@@ -3,6 +3,7 @@ use {
         is_feature_enabled_for_project_id, ExchangeError, ExchangeType, GetBuyUrlParams,
     },
     crate::{
+        database::exchange_transactions,
         handlers::SdkInfoParams,
         state::AppState,
         utils::crypto::{disassemble_caip10, Caip19Asset},
@@ -136,19 +137,36 @@ async fn handler_internal(
 
     let result = exchange
         .get_buy_url(
-            state,
+            state.clone(),
             GetBuyUrlParams {
-                project_id,
+                project_id: project_id.clone(),
                 asset,
                 amount,
-                recipient: address,
+                recipient: address.clone(),
                 session_id: session_id.clone(),
             },
         )
         .await;
 
     match result {
-        Ok(url) => Ok(GeneratePayUrlResponse { url, session_id }),
+        Ok(url) => {
+            exchange_transactions::upsert_new(
+                &state.postgres,
+                &session_id,
+                request.exchange_id.as_str(),
+                Some(&project_id),
+                Some(&request.asset),
+                Some(amount),
+                Some(&address),
+                Some(&url),
+            )
+            .await
+            .map_err(|e| {
+                debug!(error = %e, "Failed to persist exchange transaction");
+                GetExchangeUrlError::InternalError("Failed to persist exchange transaction".into())
+            })?;
+            Ok(GeneratePayUrlResponse { url, session_id })
+        }
         Err(e) => match e {
             ExchangeError::ValidationError(msg) => Err(GetExchangeUrlError::ValidationError(msg)),
             _ => {
