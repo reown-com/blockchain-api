@@ -1,6 +1,7 @@
 use {
     super::{
         binance::BinanceExchange, coinbase::CoinbaseExchange, ExchangeType, GetBuyStatusParams,
+        transactions::{mark_succeeded, mark_failed, touch_pending},
     },
     crate::{
         database::exchange_transactions as db, handlers::wallet::exchanges::BuyTransactionStatus,
@@ -83,7 +84,7 @@ pub async fn run(state: Arc<AppState>) {
                                     internal_id,
                                     "[exchange reconciler] marking transaction as succeeded"
                                 );
-                                let _ = super::transactions::mark_succeeded(
+                                let _ = mark_succeeded(
                                     &state,
                                     &internal_id,
                                     status.tx_hash.as_deref(),
@@ -96,7 +97,7 @@ pub async fn run(state: Arc<AppState>) {
                                     internal_id,
                                     "[exchange reconciler] marking transaction as failed"
                                 );
-                                let _ = super::transactions::mark_failed(
+                                let _ = mark_failed(
                                     &state,
                                     &internal_id,
                                     Some("provider_failed"),
@@ -106,12 +107,12 @@ pub async fn run(state: Arc<AppState>) {
                             }
                             _ => {
                                 let _ =
-                                    super::transactions::touch_pending(&state, &internal_id).await;
+                                    touch_pending(&state, &internal_id).await;
                             }
                         },
                         Err(err) => {
                             debug!(exchange_id, internal_id, error = %err, "reconciler provider check failed");
-                            let _ = db::touch_non_terminal(&state.postgres, &internal_id).await;
+                            let _ = touch_pending(&state, &internal_id).await;
                         }
                     }
                 }

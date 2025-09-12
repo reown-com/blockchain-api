@@ -1,7 +1,7 @@
 use {
     crate::database::error::DatabaseError,
     chrono::{DateTime, Utc},
-    sqlx::{FromRow, PgPool, Postgres},
+    sqlx::{FromRow, Postgres, PgExecutor},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -51,7 +51,7 @@ pub struct NewExchangeTransaction<'a> {
 }
 
 pub async fn upsert_new(
-    postgres: &PgPool,
+    executor: impl PgExecutor<'_>,
     tx: NewExchangeTransaction<'_>,
 ) -> Result<ExchangeTransaction, DatabaseError> {
     let query = r#"
@@ -70,7 +70,7 @@ pub async fn upsert_new(
         .bind(tx.amount)
         .bind(tx.recipient)
         .bind(tx.pay_url)
-        .fetch_one(postgres)
+        .fetch_one(executor)
         .await?;
     Ok(row)
 }
@@ -83,7 +83,7 @@ pub struct UpdateExchangeStatus<'a> {
 }
 
 pub async fn update_status(
-    postgres: &PgPool,
+    executor: impl PgExecutor<'_>,
     tx: UpdateExchangeStatus<'_>,
 ) -> Result<ExchangeTransaction, DatabaseError> {
     let (completed_at_set, failure_reason_bind) = match tx.status {
@@ -112,12 +112,15 @@ pub async fn update_status(
         .bind(tx.status.as_str())
         .bind(tx.tx_hash)
         .bind(failure_reason_bind)
-        .fetch_one(postgres)
+        .fetch_one(executor)
         .await?;
     Ok(row)
 }
 
-pub async fn touch_non_terminal(postgres: &PgPool, id: &str) -> Result<(), DatabaseError> {
+pub async fn touch_non_terminal(
+    executor: impl PgExecutor<'_>,
+    id: &str,
+) -> Result<(), DatabaseError> {
     let query = r#"
         UPDATE exchange_transactions SET
             last_checked_at = NOW(),
@@ -127,13 +130,13 @@ pub async fn touch_non_terminal(postgres: &PgPool, id: &str) -> Result<(), Datab
     "#;
     sqlx::query::<Postgres>(query)
         .bind(id)
-        .execute(postgres)
+        .execute(executor)
         .await?;
     Ok(())
 }
 
 pub async fn claim_due_batch(
-    postgres: &PgPool,
+    executor: impl PgExecutor<'_>,
     max_claim: i64,
 ) -> Result<Vec<ExchangeTransaction>, DatabaseError> {
     let query = r#"
@@ -156,13 +159,13 @@ pub async fn claim_due_batch(
 
     let rows = sqlx::query_as::<Postgres, ExchangeTransaction>(query)
         .bind(max_claim)
-        .fetch_all(postgres)
+        .fetch_all(executor)
         .await?;
     Ok(rows)
 }
 
 pub async fn expire_old_pending(
-    postgres: &PgPool,
+    executor: impl PgExecutor<'_>,
     max_age_hours: i64,
 ) -> Result<u64, DatabaseError> {
     let query = r#"
@@ -176,7 +179,7 @@ pub async fn expire_old_pending(
 
     let res = sqlx::query::<Postgres>(query)
         .bind(max_age_hours)
-        .execute(postgres)
+        .execute(executor)
         .await?;
     Ok(res.rows_affected())
 }

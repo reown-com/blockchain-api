@@ -20,7 +20,7 @@ use {
         analytics::{
             self, AnalyticsExt, ArcCollector, AwsConfig, AwsExporter, BatchCollector,
             BatchObserver, CollectionObserver, Collector, CollectorConfig, ExportObserver,
-            ParquetBatchFactory,
+            ParquetBatchFactory, CollectionError
         },
         geoip::{self, MaxMindResolver, Resolver},
         metrics::{counter, BoolLabel, StringLabel},
@@ -538,13 +538,7 @@ impl RPCAnalytics {
             .ok()
     }
 
-    pub fn exchange_event(&self, data: ExchangeEventInfo) {
-        if let Err(err) = self.exchange_events.collect(data) {
-            tracing::warn!(
-                ?err,
-                data_kind = DataKind::ExchangeEvents.as_str(),
-                "failed to collect analytics for exchange events"
-            );
-        }
+    pub fn exchange_transaction_event(&self, data: ExchangeEventInfo) -> Result<(), CollectionError> {
+        self.exchange_events.collect(data)
     }
 }
