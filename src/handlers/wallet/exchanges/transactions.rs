@@ -20,12 +20,10 @@ pub async fn create(
     let mut db_tx = state.postgres.begin().await?;
     let q_start = Instant::now();
     let row = exchange_transactions::insert_new(&mut *db_tx, args).await?;
-    state
-        .metrics
-        .add_exchange_reconciliation_query_latency(
-            ExchangeReconciliationQueryType::InsertNew,
-            q_start,
-        );
+    state.metrics.add_exchange_reconciliation_query_latency(
+        ExchangeReconciliationQueryType::InsertNew,
+        q_start,
+    );
 
     state
         .analytics
@@ -63,12 +61,10 @@ pub async fn mark_succeeded(
         },
     )
     .await?;
-    state
-        .metrics
-        .add_exchange_reconciliation_query_latency(
-            ExchangeReconciliationQueryType::UpdateStatus,
-            q_start,
-        );
+    state.metrics.add_exchange_reconciliation_query_latency(
+        ExchangeReconciliationQueryType::UpdateStatus,
+        q_start,
+    );
 
     state
         .analytics
@@ -107,12 +103,10 @@ pub async fn mark_failed(
         },
     )
     .await?;
-    state
-        .metrics
-        .add_exchange_reconciliation_query_latency(
-            ExchangeReconciliationQueryType::UpdateStatus,
-            q_start,
-        );
+    state.metrics.add_exchange_reconciliation_query_latency(
+        ExchangeReconciliationQueryType::UpdateStatus,
+        q_start,
+    );
 
     state
         .analytics
@@ -140,12 +134,10 @@ pub async fn touch_pending(
     let mut db_tx = state.postgres.begin().await?;
     let q_start = Instant::now();
     exchange_transactions::touch_non_terminal(&mut *db_tx, session_id).await?;
-    state
-        .metrics
-        .add_exchange_reconciliation_query_latency(
-            ExchangeReconciliationQueryType::TouchNonTerminal,
-            q_start,
-        );
+    state.metrics.add_exchange_reconciliation_query_latency(
+        ExchangeReconciliationQueryType::TouchNonTerminal,
+        q_start,
+    );
     db_tx.commit().await?;
     Ok(())
 }

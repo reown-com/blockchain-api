@@ -7,8 +7,7 @@ use {
     },
     crate::{
         database::exchange_reconciliation as db, handlers::wallet::exchanges::BuyTransactionStatus,
-        metrics::ExchangeReconciliationQueryType,
-        state::AppState,
+        metrics::ExchangeReconciliationQueryType, state::AppState,
     },
     axum::extract::State,
     std::{
@@ -35,12 +34,10 @@ pub async fn run(state: Arc<AppState>) {
         let claim_start = Instant::now();
         match db::claim_due_batch(&state.postgres, CLAIM_BATCH_SIZE).await {
             Ok(mut rows) => {
-                state
-                    .metrics
-                    .add_exchange_reconciliation_query_latency(
-                        ExchangeReconciliationQueryType::ClaimDueBatch,
-                        claim_start,
-                    );
+                state.metrics.add_exchange_reconciliation_query_latency(
+                    ExchangeReconciliationQueryType::ClaimDueBatch,
+                    claim_start,
+                );
                 state
                     .metrics
                     .add_exchange_reconciler_fetch_batch_latency(fetch_started);
@@ -136,12 +133,10 @@ pub async fn run(state: Arc<AppState>) {
                     .add_exchange_reconciler_process_batch_latency(process_started);
                 let expire_start = Instant::now();
                 let _ = db::expire_old_pending(&state.postgres, EXPIRE_PENDING_AFTER_HOURS).await;
-                state
-                    .metrics
-                    .add_exchange_reconciliation_query_latency(
-                        ExchangeReconciliationQueryType::ExpireOldPending,
-                        expire_start,
-                    );
+                state.metrics.add_exchange_reconciliation_query_latency(
+                    ExchangeReconciliationQueryType::ExpireOldPending,
+                    expire_start,
+                );
             }
             Err(e) => {
                 warn!(error = %e, "failed to claim exchange transactions");

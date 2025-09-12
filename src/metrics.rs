@@ -31,7 +31,6 @@ pub enum ExchangeReconciliationQueryType {
     ExpireOldPending,
 }
 
-
 #[derive(strum_macros::Display)]
 pub enum ChainAbstractionNoBridgingNeededType {
     NativeTokenTransfer,
@@ -446,4 +445,3 @@ impl Metrics {
         }
     }
 }
-
