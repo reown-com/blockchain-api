@@ -1,6 +1,6 @@
 [package]
 name = "rpc-proxy"
-version = "0.294.0"
+version = "0.296.1"
 edition = "2021"
 authors = [
     "Derek <derek@reown.com>",
@@ -12,7 +12,7 @@ build = "build.rs"
 publish = false
 
 [dependencies]
-wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.14.1", features = ["alloc", "analytics", "future", "metrics", "geoip", "rate_limit", "geoblock"] }
+wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.15.0", features = ["alloc", "analytics", "future", "metrics", "geoip", "rate_limit", "geoblock"] }
 relay_rpc = { git = "https://github.com/WalletConnect/WalletConnectRust.git", tag = "v0.32.0", features = ["cacao"] }
 yttrium = { git = "https://github.com/reown-com/yttrium.git", rev = "5e1b5f4", features = ["solana"] }
 
@@ -60,7 +60,7 @@ phf = { version = "0.12", features = ["macros"] }
 # Storage
 aws-config = "1.1"
 aws-sdk-s3 = "1.13"
-deadpool-redis = "0.14"
+deadpool-redis = "0.22"
 moka = "0.12"
 sqlx = { version = "0.8", features = [
     "runtime-tokio",

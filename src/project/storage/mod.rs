@@ -44,7 +44,7 @@ impl ProjectStorage {
 
         let data = match self.cache.get(&cache_key).await {
             Ok(data) => data,
-            Err(StorageError::Deserialize) => {
+            Err(StorageError::Deserialize(_)) => {
                 warn!("failed to deserialize cached ProjectData");
                 None
             }

@@ -32,8 +32,7 @@ use {
     },
     tap::TapFallible,
     tracing::{debug, error, warn},
-    wc::metrics::{self, enum_ordinalize::Ordinalize},
-    wc::metrics::{future_metrics, FutureExt},
+    wc::metrics::{self, enum_ordinalize::Ordinalize, future_metrics, Enum, FutureExt},
 };
 
 const CACHE_TTL: u64 = 60 * 60 * 24;
@@ -43,6 +42,8 @@ const CACHE_TTL_STD: Duration = Duration::from_secs(CACHE_TTL);
 const SELF_PROVIDER_ERROR_PREFIX: &str = "SelfProviderError: ";
 const EMPTY_RPC_RESPONSE: &str = "0x";
 pub const ETHEREUM_MAINNET: &str = "eip155:1";
+pub const SOLANA_MAINNET: &str = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
+
 /// Cap to 150 Kb max size for the identity response
 const IDENTITY_RESPONSE_MAX_BYTES: usize = 150 * 1024;
 
@@ -50,6 +51,92 @@ const IDENTITY_RESPONSE_MAX_BYTES: usize = 150 * 1024;
 /// the identity avatar lookup because of an absence of the ERC-721 contract address or
 /// token ID in the ENS avatar record.
 const JSON_RPC_OK_ERROR_CODES: [&str; 4] = ["-32000", "-32003", "-32015", "3"];
+
+/// Check if the provided address string is a valid Solana address
+fn is_solana_address(address: &str) -> bool {
+    crypto::is_address_valid(address, &crypto::CaipNamespaces::Solana)
+}
+
+/// Build an empty identity response and corresponding cache-control header
+/// to be used for non-EVM addresses like Solana.
+fn build_empty_identity_response_with_cache() -> (IdentityResponse, String) {
+    let res = IdentityResponse {
+        name: None,
+        avatar: None,
+        resolved_at: Some(Utc::now()),
+    };
+    // Cache control for 1 hour
+    let ttl_secs = 60 * 60;
+    let cache_control = format!("public, max-age={ttl_secs}, s-maxage={ttl_secs}");
+    (res, cache_control)
+}
+
+/// Record analytics for identity lookups including Solana empty response case.
+#[allow(clippy::too_many_arguments)]
+fn record_identity_lookup_analytics(
+    state: &AppState,
+    query: &IdentityQueryParams,
+    headers: &HeaderMap,
+    client_ip: SocketAddr,
+    source: IdentityLookupSource,
+    address_evm: Option<H160>,
+    address_str: &str,
+    name_present: bool,
+    avatar_present: bool,
+    latency: Duration,
+    chain_id_override: Option<&str>,
+) {
+    let origin = headers
+        .get("origin")
+        .map(|v| v.to_str().unwrap_or("invalid_header").to_string());
+
+    let (country, continent, region) = state
+        .analytics
+        .lookup_geo_data(network::get_forwarded_ip(headers).unwrap_or(client_ip.ip()))
+        .map(|geo| (geo.country, geo.continent, geo.region))
+        .unwrap_or((None, None, None));
+
+    if let Some(address) = address_evm {
+        state.analytics.identity_lookup(IdentityLookupInfo::new(
+            query,
+            address,
+            name_present,
+            avatar_present,
+            source,
+            latency,
+            origin,
+            region,
+            country,
+            continent,
+            query.client_id.clone(),
+            query.sender.clone(),
+            query.sdk_info.sv.clone(),
+            query.sdk_info.st.clone(),
+        ));
+    } else {
+        // Manually construct analytics payload for non-EVM addresses (e.g., Solana)
+        let event = IdentityLookupInfo {
+            timestamp: wc::analytics::time::now(),
+            address_hash: sha256::digest(address_str),
+            address: address_str.to_string(),
+            name_present,
+            avatar_present,
+            source: source.as_str().to_string(),
+            latency_secs: latency.as_secs_f64(),
+            project_id: query.project_id.clone(),
+            chain_id: chain_id_override.unwrap_or(SOLANA_MAINNET).to_string(),
+            origin,
+            region: region.map(|r| r.join(", ")),
+            country,
+            continent,
+            client_id: query.client_id.clone(),
+            sender: query.sender.clone(),
+            sv: query.sdk_info.sv.clone(),
+            st: query.sdk_info.st.clone(),
+        };
+        state.analytics.identity_lookup(event);
+    }
+}
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -101,11 +188,31 @@ async fn handler_internal(
         .validate_project_access_and_quota(&query.project_id)
         .await?;
 
-    let start = SystemTime::now();
+    // If the address is a valid Solana address, build an empty identity response
+    // and return early. This function can also be used after emitting analytics.
+    if is_solana_address(&address) {
+        let (res, cache_control) = build_empty_identity_response_with_cache();
+        // Record analytics for Solana address with empty response
+        record_identity_lookup_analytics(
+            &state,
+            &query.0,
+            &headers,
+            connect_info.0,
+            IdentityLookupSource::Local,
+            None,
+            &address,
+            false,
+            false,
+            Duration::from_secs(0),
+            Some(SOLANA_MAINNET),
+        );
+        return Ok(([(CACHE_CONTROL, cache_control)], Json(res)).into_response());
+    }
+
     let address = address
         .parse::<Address>()
         .map_err(|_| RpcError::InvalidAddress)?;
-
+    let start = SystemTime::now();
     let identity_result = lookup_identity(
         address,
         state.clone(),
@@ -130,36 +237,19 @@ async fn handler_internal(
         state.metrics.add_identity_lookup_avatar_present();
     }
 
-    {
-        let origin = headers
-            .get("origin")
-            .map(|v| v.to_str().unwrap_or("invalid_header").to_string());
-
-        let (country, continent, region) = state
-            .analytics
-            .lookup_geo_data(
-                network::get_forwarded_ip(&headers).unwrap_or_else(|| connect_info.0.ip()),
-            )
-            .map(|geo| (geo.country, geo.continent, geo.region))
-            .unwrap_or((None, None, None));
-
-        state.analytics.identity_lookup(IdentityLookupInfo::new(
-            &query.0,
-            address,
-            name_present,
-            avatar_present,
-            source,
-            latency,
-            origin,
-            region,
-            country,
-            continent,
-            query.client_id.clone(),
-            query.sender.clone(),
-            query.sdk_info.sv.clone(),
-            query.sdk_info.st.clone(),
-        ));
-    }
+    record_identity_lookup_analytics(
+        &state,
+        &query.0,
+        &headers,
+        connect_info.0,
+        source,
+        Some(address),
+        "",
+        name_present,
+        avatar_present,
+        latency,
+        None,
+    );
 
     let now = Utc::now();
     let ttl_secs = res.resolved_at

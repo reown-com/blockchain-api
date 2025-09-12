@@ -5,6 +5,8 @@ describe('Identity', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
   const knownAddress = '0xf3ea39310011333095CFCcCc7c4Ad74034CABA63';
   const unknownAddress = '0xf3ea39310011333095CFCcCc7c4Ad74034CABA64';
+  const invalidAddress = '0x1234567890123456789012345678901234567890A';
+  const solanaAddress = 'So11111111111111111111111111111111111111112';
 
   it('known ens with the cache enabled (default)', async () => {
     let resp: any = await httpClient.get(
@@ -60,5 +62,20 @@ describe('Identity', () => {
     expect(age2).toBeLessThan(86400)
     expect(age2).toBeGreaterThan(86395)
     expect(resp2.data.name).toBe(null)
+  })
+  it('solana address', async () => {
+    const address = solanaAddress;
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/identity/${address}?projectId=${projectId}`,
+    )
+    expect(resp.status).toBe(200)
+    expect(resp.data.name).toBe(null)
+  })
+  it('invalid address', async () => {
+    const address = invalidAddress;
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/identity/${address}?projectId=${projectId}`,
+    )
+    expect(resp.status).toBe(400)
   })
 })
