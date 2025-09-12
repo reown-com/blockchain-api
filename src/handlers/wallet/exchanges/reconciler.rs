@@ -18,7 +18,7 @@ use {
 const POLL_INTERVAL: Duration = Duration::from_secs(600); // 10 minutes
 
 const CLAIM_BATCH_SIZE: i64 = 200;
-const EXPIRE_PENDING_AFTER_HOURS: i64 = 12;
+const EXPIRE_PENDING_AFTER_HOURS: i64 = 24;
 
 pub async fn run(state: Arc<AppState>) {
     debug!("starting");
