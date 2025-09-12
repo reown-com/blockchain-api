@@ -55,7 +55,7 @@ pub async fn upsert_new(
     tx: NewExchangeTransaction<'_>,
 ) -> Result<ExchangeTransaction, DatabaseError> {
     let query = r#"
-        INSERT INTO exchange_transactions
+        INSERT INTO exchange_reconciliation_ledger
             (id, exchange_id, project_id, asset, amount, recipient, pay_url, status, last_checked_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW())
         RETURNING id, exchange_id, project_id, asset, amount, recipient, pay_url, status,
@@ -93,7 +93,7 @@ pub async fn update_status(
 
     let query = format!(
         r#"
-        UPDATE exchange_transactions SET
+        UPDATE exchange_reconciliation_ledger SET
             status = $2,
             tx_hash = $3,
             failure_reason = $4,
@@ -122,7 +122,7 @@ pub async fn touch_non_terminal(
     id: &str,
 ) -> Result<(), DatabaseError> {
     let query = r#"
-        UPDATE exchange_transactions SET
+        UPDATE exchange_reconciliation_ledger SET
             last_checked_at = NOW(),
             updated_at = NOW(),
             locked_at = NULL
@@ -141,7 +141,7 @@ pub async fn claim_due_batch(
 ) -> Result<Vec<ExchangeTransaction>, DatabaseError> {
     let query = r#"
         WITH candidates AS (
-            SELECT id FROM exchange_transactions
+            SELECT id FROM exchange_reconciliation_ledger
             WHERE status = 'pending'
               AND (locked_at IS NULL OR locked_at < NOW() - INTERVAL '15 minutes')
               AND (last_checked_at IS NULL OR last_checked_at < NOW() - INTERVAL '1 hour')
@@ -149,7 +149,7 @@ pub async fn claim_due_batch(
             LIMIT $1
             FOR UPDATE SKIP LOCKED
         ), claimed AS (
-            UPDATE exchange_transactions t
+            UPDATE exchange_reconciliation_ledger t
             SET locked_at = NOW(), updated_at = NOW()
             WHERE t.id IN (SELECT id FROM candidates)
             RETURNING t.*
@@ -169,7 +169,7 @@ pub async fn expire_old_pending(
     max_age_hours: i64,
 ) -> Result<u64, DatabaseError> {
     let query = r#"
-        UPDATE exchange_transactions SET
+        UPDATE exchange_reconciliation_ledger SET
             status = 'failed',
             failure_reason = COALESCE(failure_reason, 'expired'),
             completed_at = NOW(),

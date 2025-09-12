@@ -1,5 +1,5 @@
 -- Exchange transactions tracking table
-CREATE TABLE IF NOT EXISTS exchange_transactions (
+CREATE TABLE IF NOT EXISTS exchange_reconciliation_ledger (
   id VARCHAR(64) PRIMARY KEY,
   exchange_id VARCHAR(64) NOT NULL,
 
@@ -22,14 +22,14 @@ CREATE TABLE IF NOT EXISTS exchange_transactions (
 );
 
 -- Indexes to speed up reconciliation scans and locking
-CREATE INDEX IF NOT EXISTS idx_exchange_tx_pending_due
-  ON exchange_transactions (last_checked_at)
+CREATE INDEX IF NOT EXISTS idx_exchange_recon_pending_due
+  ON exchange_reconciliation_ledger (last_checked_at)
   WHERE status = 'pending';
 
-CREATE INDEX IF NOT EXISTS idx_exchange_tx_lock
-  ON exchange_transactions (locked_at)
+CREATE INDEX IF NOT EXISTS idx_exchange_recon_lock
+  ON exchange_reconciliation_ledger (locked_at)
   WHERE status = 'pending';
 
-CREATE INDEX IF NOT EXISTS idx_exchange_tx_status_created
-  ON exchange_transactions (status, created_at);
+CREATE INDEX IF NOT EXISTS idx_exchange_recon_status_created
+  ON exchange_reconciliation_ledger (status, created_at);
 
