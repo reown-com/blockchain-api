@@ -350,3 +350,6 @@ _check-string-in-set target set options='':
 
 docker:
   docker compose up -d postgres redis
+
+render-config:
+  cargo run --bin render_chain_config

@@ -396,7 +396,7 @@ impl HistoryProvider for ZerionProvider {
     }
 
     fn provider_kind(&self) -> ProviderKind {
-        self.provider_kind
+        self.provider_kind.clone()
     }
 }
 
@@ -603,7 +603,7 @@ impl BalanceProvider for ZerionProvider {
     }
 
     fn provider_kind(&self) -> ProviderKind {
-        self.provider_kind
+        self.provider_kind.clone()
     }
 }
 

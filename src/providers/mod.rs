@@ -55,6 +55,7 @@ use {
         collections::{HashMap, HashSet},
         fmt::{Debug, Display},
         hash::Hash,
+        str::FromStr,
         sync::Arc,
     },
     tracing::{debug, error, log::warn},
@@ -150,6 +151,7 @@ mod callstatic;
 mod coinbase;
 mod drpc;
 mod dune;
+pub mod generic;
 mod hiro;
 mod mantle;
 mod meld;
@@ -188,6 +190,7 @@ pub use {
     callstatic::CallStaticProvider,
     drpc::DrpcProvider,
     dune::DuneProvider,
+    generic::GenericProvider,
     hiro::HiroProvider,
     mantle::MantleProvider,
     meld::MeldProvider,
@@ -677,7 +680,7 @@ impl ProviderRepository {
                 self.ws_weight_resolver
                     .entry(chain_id)
                     .or_default()
-                    .insert(provider_kind, weight);
+                    .insert(provider_kind.clone(), weight);
             });
     }
 
@@ -701,7 +704,7 @@ impl ProviderRepository {
                 self.rpc_weight_resolver
                     .entry(chain_id)
                     .or_default()
-                    .insert(provider_kind, weight);
+                    .insert(provider_kind.clone(), weight);
             });
         debug!("Added provider: {}", provider_kind);
     }
@@ -730,7 +733,7 @@ impl ProviderRepository {
                 self.balance_weight_resolver
                     .entry(namespace)
                     .or_default()
-                    .insert(provider_kind, weight);
+                    .insert(provider_kind.clone(), weight);
             });
         debug!("Balance provider added: {}", provider_kind);
     }
@@ -788,7 +791,7 @@ impl ProviderRepository {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ProviderKind {
     Aurora,
     Arbitrum,
@@ -824,6 +827,7 @@ pub enum ProviderKind {
     Moonbeam,
     Blast,
     Rootstock,
+    Generic(String),
 }
 
 impl Display for ProviderKind {
@@ -866,6 +870,7 @@ impl Display for ProviderKind {
                 ProviderKind::Moonbeam => "Moonbeam",
                 ProviderKind::Blast => "Blast",
                 ProviderKind::Rootstock => "Rootstock",
+                ProviderKind::Generic(name) => name.as_str(),
             }
         )
     }
@@ -909,7 +914,7 @@ impl ProviderKind {
             "Moonbeam" => Some(Self::Moonbeam),
             "Blast" => Some(Self::Blast),
             "Rootstock" => Some(Self::Rootstock),
-            _ => None,
+            x => Some(Self::Generic(x.to_string())),
         }
     }
 }
@@ -934,7 +939,7 @@ pub trait RpcWsProvider: Provider {
 
 const MAX_PRIORITY: u64 = 100;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Priority {
     Max,
     High,
@@ -957,6 +962,21 @@ impl TryInto<PriorityValue> for Priority {
             Self::Minimal => PriorityValue::new(1),
             Self::Disabled => PriorityValue::new(0),
             Self::Custom(value) => PriorityValue::new(value),
+        }
+    }
+}
+
+impl FromStr for Priority {
+    type Err = std::num::ParseIntError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Max" => Ok(Self::Max),
+            "High" => Ok(Self::High),
+            "Normal" => Ok(Self::Normal),
+            "Low" => Ok(Self::Low),
+            "Minimal" => Ok(Self::Minimal),
+            "Disabled" => Ok(Self::Disabled),
+            _ => Ok(Self::Custom(s.parse::<u64>()?)),
         }
     }
 }
@@ -1302,6 +1322,19 @@ pub trait TokenMetadataCacheProvider: Send + Sync {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_priority_from_str() {
+        assert_eq!(Priority::from_str("Max"), Ok(Priority::Max));
+        assert_eq!(Priority::from_str("High"), Ok(Priority::High));
+        assert_eq!(Priority::from_str("Normal"), Ok(Priority::Normal));
+        assert_eq!(Priority::from_str("Low"), Ok(Priority::Low));
+        assert_eq!(Priority::from_str("Minimal"), Ok(Priority::Minimal));
+        assert_eq!(Priority::from_str("Disabled"), Ok(Priority::Disabled));
+        assert_eq!(Priority::from_str("100"), Ok(Priority::Custom(100)));
+        assert!(Priority::from_str("100.5").is_err());
+        assert!(Priority::from_str("").is_err());
+    }
 
     #[test]
     fn test_is_node_error_rpc_message() {
