@@ -18,19 +18,20 @@ pub async fn create(
     let row = exchange_transactions::upsert_new(&mut *db_tx, args).await?;
 
     state
-    .analytics
-    .exchange_transaction_event(ExchangeEventInfo::new(
-        ExchangeEventType::Started,
-        row.id,
-        row.exchange_id,
-        row.project_id,
-        row.asset,
-        row.amount,
-        row.recipient,
-        row.pay_url,
-        None,
-        None,
-    )).map_err(|e| DatabaseError::BadArgument(e.to_string()))?;     
+        .analytics
+        .exchange_transaction_event(ExchangeEventInfo::new(
+            ExchangeEventType::Started,
+            row.id,
+            row.exchange_id,
+            row.project_id,
+            row.asset,
+            row.amount,
+            row.recipient,
+            row.pay_url,
+            None,
+            None,
+        ))
+        .map_err(|e| DatabaseError::BadArgument(e.to_string()))?;
     db_tx.commit().await?;
     Ok(())
 }
@@ -65,7 +66,8 @@ pub async fn mark_succeeded(
             row.pay_url,
             tx_hash.map(|s| s.to_string()),
             None,
-        )).map_err(|e| DatabaseError::BadArgument(e.to_string()))?;
+        ))
+        .map_err(|e| DatabaseError::BadArgument(e.to_string()))?;
     db_tx.commit().await?;
     Ok(())
 }
@@ -101,7 +103,8 @@ pub async fn mark_failed(
             row.pay_url,
             tx_hash.map(|s| s.to_string()),
             row.failure_reason,
-        )).map_err(|e| DatabaseError::BadArgument(e.to_string()))?;
+        ))
+        .map_err(|e| DatabaseError::BadArgument(e.to_string()))?;
     db_tx.commit().await?;
     Ok(())
 }

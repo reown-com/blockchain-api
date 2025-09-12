@@ -19,8 +19,8 @@ use {
     wc::{
         analytics::{
             self, AnalyticsExt, ArcCollector, AwsConfig, AwsExporter, BatchCollector,
-            BatchObserver, CollectionObserver, Collector, CollectorConfig, ExportObserver,
-            ParquetBatchFactory, CollectionError
+            BatchObserver, CollectionError, CollectionObserver, Collector, CollectorConfig,
+            ExportObserver, ParquetBatchFactory,
         },
         geoip::{self, MaxMindResolver, Resolver},
         metrics::{counter, BoolLabel, StringLabel},
@@ -538,7 +538,10 @@ impl RPCAnalytics {
             .ok()
     }
 
-    pub fn exchange_transaction_event(&self, data: ExchangeEventInfo) -> Result<(), CollectionError> {
+    pub fn exchange_transaction_event(
+        &self,
+        data: ExchangeEventInfo,
+    ) -> Result<(), CollectionError> {
         self.exchange_events.collect(data)
     }
 }

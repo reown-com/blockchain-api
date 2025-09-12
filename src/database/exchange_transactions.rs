@@ -1,7 +1,7 @@
 use {
     crate::database::error::DatabaseError,
     chrono::{DateTime, Utc},
-    sqlx::{FromRow, Postgres, PgExecutor},
+    sqlx::{FromRow, PgExecutor, Postgres},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
