@@ -12,7 +12,6 @@ pub enum TxStatus {
     Failed,
 }
 
-
 #[derive(Debug, FromRow, Clone)]
 pub struct ExchangeTransaction {
     pub id: String,
