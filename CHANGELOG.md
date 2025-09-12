@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.296.1 - 2025-09-12
+#### Bug Fixes
+- **(identity)** return an empty name for Solana address (#1228) - (941e1d2) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- update solana check transaction with fallback (#1231) - (96406e3) - Luka Isailovic
+
+- - -
+
 ## 0.296.0 - 2025-09-11
 #### Features
 - bumping `utils-rs` dependency (#1229) - (6e0fa83) - Max Kalashnikoff | maksy.eth
