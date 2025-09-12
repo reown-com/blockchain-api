@@ -18,7 +18,7 @@ const CLAIM_BATCH_SIZE: i64 = 200;
 const EXPIRE_PENDING_AFTER_HOURS: i64 = 12;
 
 pub async fn run(state: Arc<AppState>) {
-    debug!("[exchange reconciler] starting");
+    debug!("starting");
     let mut poll = interval(POLL_INTERVAL);
     poll.set_missed_tick_behavior(MissedTickBehavior::Delay);
     loop {
@@ -33,7 +33,7 @@ pub async fn run(state: Arc<AppState>) {
                     continue;
                 }
                 debug!(
-                    "[exchange reconciler] fetched {} exchange transactions",
+                    "fetched {} exchange transactions",
                     rows.len()
                 );
 
@@ -70,7 +70,7 @@ pub async fn run(state: Arc<AppState>) {
                         _ => {
                             warn!(
                                 exchange_id,
-                                "[exchange reconciler] unknown exchange id for reconciliation"
+                                "unknown exchange id for reconciliation"
                             );
                             continue;
                         }
@@ -82,7 +82,7 @@ pub async fn run(state: Arc<AppState>) {
                                 debug!(
                                     exchange_id,
                                     internal_id,
-                                    "[exchange reconciler] marking transaction as succeeded"
+                                    "marking transaction as succeeded"
                                 );
                                 let _ = mark_succeeded(
                                     &state,
@@ -95,7 +95,7 @@ pub async fn run(state: Arc<AppState>) {
                                 debug!(
                                     exchange_id,
                                     internal_id,
-                                    "[exchange reconciler] marking transaction as failed"
+                                    "marking transaction as failed"
                                 );
                                 let _ = mark_failed(
                                     &state,
