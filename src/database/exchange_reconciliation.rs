@@ -14,7 +14,8 @@ pub enum TxStatus {
 
 #[derive(Debug, FromRow, Clone)]
 pub struct ExchangeTransaction {
-    pub id: String,
+    pub id: i64,
+    pub session_id: String,
     pub exchange_id: String,
     pub project_id: Option<String>,
     pub asset: Option<String>,
@@ -32,7 +33,7 @@ pub struct ExchangeTransaction {
 }
 
 pub struct NewExchangeTransaction<'a> {
-    pub id: &'a str,
+    pub session_id: &'a str,
     pub exchange_id: &'a str,
     pub project_id: Option<&'a str>,
     pub asset: Option<&'a str>,
@@ -47,14 +48,14 @@ pub async fn insert_new(
 ) -> Result<ExchangeTransaction, DatabaseError> {
     let query = r#"
         INSERT INTO exchange_reconciliation_ledger
-            (id, exchange_id, project_id, asset, amount, recipient, pay_url)
+            (session_id, exchange_id, project_id, asset, amount, recipient, pay_url)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id, exchange_id, project_id, asset, amount, recipient, pay_url, status,
+        RETURNING id, session_id, exchange_id, project_id, asset, amount, recipient, pay_url, status,
                   failure_reason, tx_hash, created_at, updated_at, last_checked_at, completed_at, locked_at
     "#;
 
     let row = sqlx::query_as::<Postgres, ExchangeTransaction>(query)
-        .bind(tx.id)
+        .bind(tx.session_id)
         .bind(tx.exchange_id)
         .bind(tx.project_id)
         .bind(tx.asset)
@@ -67,7 +68,7 @@ pub async fn insert_new(
 }
 
 pub struct UpdateExchangeStatus<'a> {
-    pub id: &'a str,
+    pub session_id: &'a str,
     pub status: TxStatus,
     pub tx_hash: Option<&'a str>,
     pub failure_reason: Option<&'a str>,
@@ -86,13 +87,13 @@ pub async fn update_status(
             completed_at = CASE WHEN $2 IN ('succeeded','failed') THEN NOW() ELSE NULL END,
             updated_at = NOW(),
             locked_at = NULL
-        WHERE id = $1
-        RETURNING id, exchange_id, project_id, asset, amount, recipient, pay_url, status,
+        WHERE session_id = $1
+        RETURNING id, session_id, exchange_id, project_id, asset, amount, recipient, pay_url, status,
                   failure_reason, tx_hash, created_at, updated_at, last_checked_at, completed_at, locked_at
     "#;
 
     let row = sqlx::query_as::<Postgres, ExchangeTransaction>(query)
-        .bind(tx.id)
+        .bind(tx.session_id)
         .bind(tx.status)
         .bind(tx.tx_hash)
         .bind(tx.failure_reason)
@@ -103,17 +104,17 @@ pub async fn update_status(
 
 pub async fn touch_non_terminal(
     executor: impl PgExecutor<'_>,
-    id: &str,
+    session_id: &str,
 ) -> Result<(), DatabaseError> {
     let query = r#"
         UPDATE exchange_reconciliation_ledger SET
             last_checked_at = NOW(),
             updated_at = NOW(),
             locked_at = NULL
-        WHERE id = $1
+        WHERE session_id = $1
     "#;
     sqlx::query::<Postgres>(query)
-        .bind(id)
+        .bind(session_id)
         .execute(executor)
         .await?;
     Ok(())

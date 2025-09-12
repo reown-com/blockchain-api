@@ -156,7 +156,7 @@ async fn handler_internal(
             create_transaction(
                 &state,
                 NewExchangeTransaction {
-                    id: &session_id,
+                    session_id: &session_id,
                     exchange_id: &request.exchange_id,
                     project_id: Some(&project_id),
                     asset: Some(&request.asset),

@@ -49,7 +49,7 @@ pub async fn run(state: Arc<AppState>) {
                     rate.tick().await;
 
                     let exchange_id = row.exchange_id.as_str();
-                    let internal_id = row.id.clone();
+                    let internal_id = row.session_id.clone();
                     debug!(
                         "processing exchange transaction {} on {}",
                         internal_id, exchange_id

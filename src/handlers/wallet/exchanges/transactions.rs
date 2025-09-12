@@ -23,7 +23,7 @@ pub async fn create(
         .analytics
         .exchange_transaction_event(ExchangeEventInfo::new(
             ExchangeEventType::Started,
-            row.id,
+            row.session_id,
             row.exchange_id,
             row.project_id,
             row.asset,
@@ -40,14 +40,14 @@ pub async fn create(
 
 pub async fn mark_succeeded(
     state: &Arc<AppState>,
-    id: &str,
+    session_id: &str,
     tx_hash: Option<&str>,
 ) -> Result<(), DatabaseError> {
     let mut db_tx = state.postgres.begin().await?;
     let row = exchange_transactions::update_status(
         &mut *db_tx,
         exchange_transactions::UpdateExchangeStatus {
-            id,
+            session_id,
             status: TxStatus::Succeeded,
             tx_hash,
             failure_reason: None,
@@ -59,7 +59,7 @@ pub async fn mark_succeeded(
         .analytics
         .exchange_transaction_event(ExchangeEventInfo::new(
             ExchangeEventType::Completed,
-            row.id,
+            row.session_id,
             row.exchange_id,
             row.project_id,
             row.asset,
@@ -76,7 +76,7 @@ pub async fn mark_succeeded(
 
 pub async fn mark_failed(
     state: &Arc<AppState>,
-    id: &str,
+    session_id: &str,
     failure_reason: Option<&str>,
     tx_hash: Option<&str>,
 ) -> Result<(), DatabaseError> {
@@ -84,7 +84,7 @@ pub async fn mark_failed(
     let row = exchange_transactions::update_status(
         &mut *db_tx,
         exchange_transactions::UpdateExchangeStatus {
-            id,
+            session_id,
             status: TxStatus::Failed,
             tx_hash,
             failure_reason,
@@ -96,7 +96,7 @@ pub async fn mark_failed(
         .analytics
         .exchange_transaction_event(ExchangeEventInfo::new(
             ExchangeEventType::Failed,
-            row.id,
+            row.session_id,
             row.exchange_id,
             row.project_id,
             row.asset,
@@ -113,10 +113,10 @@ pub async fn mark_failed(
 
 pub async fn touch_pending(
     state: &Arc<AppState>,
-    id: &str,
+    session_id: &str,
 ) -> Result<(), crate::database::error::DatabaseError> {
     let mut db_tx = state.postgres.begin().await?;
-    exchange_transactions::touch_non_terminal(&mut *db_tx, id).await?;
+    exchange_transactions::touch_non_terminal(&mut *db_tx, session_id).await?;
     db_tx.commit().await?;
     Ok(())
 }
