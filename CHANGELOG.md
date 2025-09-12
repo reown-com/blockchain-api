@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.297.0 - 2025-09-12
+#### Features
+- bumping Cerberus client (#1230) - (e01bffa) - Max Kalashnikoff | maksy.eth
+#### Miscellaneous Chores
+- create CONTRIBUTING.md (#1168) - (3b0aa67) - Derek
+
+- - -
+
 ## 0.296.1 - 2025-09-12
 #### Bug Fixes
 - **(identity)** return an empty name for Solana address (#1228) - (941e1d2) - Max Kalashnikoff | maksy.eth
