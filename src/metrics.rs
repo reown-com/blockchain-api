@@ -22,6 +22,16 @@ pub enum ChainAbstractionTransactionType {
     Bridge,
 }
 
+#[derive(Clone, Copy, Debug, strum_macros::Display)]
+pub enum ExchangeReconciliationQueryType {
+    InsertNew,
+    UpdateStatus,
+    TouchNonTerminal,
+    ClaimDueBatch,
+    ExpireOldPending,
+}
+
+
 #[derive(strum_macros::Display)]
 pub enum ChainAbstractionNoBridgingNeededType {
     NativeTokenTransfer,
@@ -182,6 +192,18 @@ impl Metrics {
     pub fn add_exchange_reconciler_process_batch_latency(&self, start: Instant) {
         histogram!("exchange_reconciler_process_batch_latency")
             .record(start.elapsed().as_secs_f64());
+    }
+
+    pub fn add_exchange_reconciliation_query_latency(
+        &self,
+        query_type: ExchangeReconciliationQueryType,
+        start: Instant,
+    ) {
+        histogram!(
+            "exchange_reconciliation_query_latency",
+            StringLabel <"query_type", String> => &query_type.to_string()
+        )
+        .record(start.elapsed().as_secs_f64());
     }
 
     pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: String, weight: u64) {
@@ -424,3 +446,4 @@ impl Metrics {
         }
     }
 }
+
