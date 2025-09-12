@@ -5,6 +5,7 @@ pub use {
         ChainAbstractionBridgingInfo, ChainAbstractionFundingInfo, ChainAbstractionInitialTxInfo,
     },
     config::Config,
+    exchange_event_info::ExchangeEventInfo,
     history_lookup_info::HistoryLookupInfo,
     identity_lookup_info::IdentityLookupInfo,
     message_info::*,
@@ -18,8 +19,8 @@ use {
     wc::{
         analytics::{
             self, AnalyticsExt, ArcCollector, AwsConfig, AwsExporter, BatchCollector,
-            BatchObserver, CollectionObserver, Collector, CollectorConfig, ExportObserver,
-            ParquetBatchFactory,
+            BatchObserver, CollectionError, CollectionObserver, Collector, CollectorConfig,
+            ExportObserver, ParquetBatchFactory,
         },
         geoip::{self, MaxMindResolver, Resolver},
         metrics::{counter, BoolLabel, StringLabel},
@@ -30,6 +31,7 @@ mod account_names_info;
 mod balance_lookup_info;
 mod chain_abstraction_info;
 mod config;
+pub mod exchange_event_info;
 mod history_lookup_info;
 mod identity_lookup_info;
 mod message_info;
@@ -47,6 +49,7 @@ enum DataKind {
     BalanceLookups,
     NameRegistrations,
     ChainAbstraction,
+    ExchangeEvents,
 }
 
 impl DataKind {
@@ -60,6 +63,7 @@ impl DataKind {
             Self::BalanceLookups => "balance_lookups",
             Self::NameRegistrations => "name_registrations",
             Self::ChainAbstraction => "chain_abstraction",
+            Self::ExchangeEvents => "exchange_events",
         }
     }
 }
@@ -161,6 +165,7 @@ pub struct RPCAnalytics {
     chain_abstraction_bridging: ArcCollector<ChainAbstractionBridgingInfo>,
     chain_abstraction_initial_tx: ArcCollector<ChainAbstractionInitialTxInfo>,
 
+    exchange_events: ArcCollector<ExchangeEventInfo>,
     geoip_resolver: Option<Arc<MaxMindResolver>>,
 }
 
@@ -195,6 +200,7 @@ impl RPCAnalytics {
             chain_abstraction_bridging: analytics::noop_collector().boxed_shared(),
             chain_abstraction_initial_tx: analytics::noop_collector().boxed_shared(),
 
+            exchange_events: analytics::noop_collector().boxed_shared(),
             geoip_resolver: None,
         }
     }
@@ -384,7 +390,28 @@ impl RPCAnalytics {
                 node_addr,
                 file_extension: "parquet".to_owned(),
                 bucket_name: export_bucket.to_owned(),
-                s3_client,
+                s3_client: s3_client.clone(),
+                upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
+            })
+            .with_observer(observer),
+        )
+        .with_observer(observer)
+        .boxed_shared();
+
+        let observer = Observer(DataKind::ExchangeEvents);
+        let exchange_events = BatchCollector::new(
+            CollectorConfig {
+                data_queue_capacity: DATA_QUEUE_CAPACITY,
+                ..Default::default()
+            },
+            ParquetBatchFactory::new(Default::default()).with_observer(observer),
+            AwsExporter::new(AwsConfig {
+                export_prefix: "blockchain-api/exchange-events".to_owned(),
+                export_name: "exchange_events".to_owned(),
+                node_addr,
+                file_extension: "parquet".to_owned(),
+                bucket_name: export_bucket.to_owned(),
+                s3_client: s3_client.clone(),
                 upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
             })
             .with_observer(observer),
@@ -404,6 +431,7 @@ impl RPCAnalytics {
             chain_abstraction_funding,
             chain_abstraction_initial_tx,
 
+            exchange_events,
             geoip_resolver,
         })
     }
@@ -508,5 +536,12 @@ impl RPCAnalytics {
             .lookup_geo_data(addr)
             .tap_err(|err| debug!(?err, "failed to lookup geoip data"))
             .ok()
+    }
+
+    pub fn exchange_transaction_event(
+        &self,
+        data: ExchangeEventInfo,
+    ) -> Result<(), CollectionError> {
+        self.exchange_events.collect(data)
     }
 }

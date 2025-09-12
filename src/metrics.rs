@@ -7,7 +7,7 @@ use {
         utils::crypto::CaipNamespaces,
     },
     sqlx::PgPool,
-    std::time::{Duration, SystemTime},
+    std::time::{Duration, Instant, SystemTime},
     sysinfo::{
         CpuRefreshKind, MemoryRefreshKind, RefreshKind, System, MINIMUM_CPU_UPDATE_INTERVAL,
     },
@@ -20,6 +20,15 @@ pub enum ChainAbstractionTransactionType {
     Transfer,
     Approve,
     Bridge,
+}
+
+#[derive(Clone, Copy, Debug, strum_macros::Display)]
+pub enum ExchangeReconciliationQueryType {
+    InsertNew,
+    UpdateStatus,
+    TouchNonTerminal,
+    ClaimDueBatch,
+    ExpireOldPending,
 }
 
 #[derive(strum_macros::Display)]
@@ -173,6 +182,27 @@ impl Metrics {
             endpoint.clone(),
         );
         self.add_external_http_latency(provider_kind, start, chain_id, endpoint);
+    }
+
+    pub fn add_exchange_reconciler_fetch_batch_latency(&self, start: Instant) {
+        histogram!("exchange_reconciler_fetch_batch_latency").record(start.elapsed().as_secs_f64());
+    }
+
+    pub fn add_exchange_reconciler_process_batch_latency(&self, start: Instant) {
+        histogram!("exchange_reconciler_process_batch_latency")
+            .record(start.elapsed().as_secs_f64());
+    }
+
+    pub fn add_exchange_reconciliation_query_latency(
+        &self,
+        query_type: ExchangeReconciliationQueryType,
+        start: Instant,
+    ) {
+        histogram!(
+            "exchange_reconciliation_query_latency",
+            StringLabel <"query_type", String> => &query_type.to_string()
+        )
+        .record(start.elapsed().as_secs_f64());
     }
 
     pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: String, weight: u64) {

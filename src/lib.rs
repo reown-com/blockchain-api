@@ -475,6 +475,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         }
         Ok(())
     };
+    let state_for_reconciler = state_arc.clone();
 
     let services = vec![
         tokio::spawn(public_server),
@@ -482,6 +483,12 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         tokio::spawn(weights_updater),
         tokio::spawn(system_metrics_updater),
         tokio::spawn(profiler),
+        tokio::spawn({
+            async move {
+                handlers::wallet::exchanges::reconciler::run(state_for_reconciler).await;
+                Ok::<(), std::io::Error>(())
+            }
+        }),
         // Spawning a new task to observe metrics from the database by interval polling
         tokio::spawn({
             let postgres = state_arc.postgres.clone();
