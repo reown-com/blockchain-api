@@ -1,6 +1,6 @@
 use {
     crate::{
-        database::exchange_transactions::NewExchangeTransaction,
+        database::exchange_reconciliation::NewExchangeTransaction,
         handlers::{
             wallet::exchanges::{
                 is_feature_enabled_for_project_id, transactions::create as create_transaction,

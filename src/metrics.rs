@@ -7,7 +7,7 @@ use {
         utils::crypto::CaipNamespaces,
     },
     sqlx::PgPool,
-    std::time::{Duration, SystemTime},
+    std::time::{Duration, Instant, SystemTime},
     sysinfo::{
         CpuRefreshKind, MemoryRefreshKind, RefreshKind, System, MINIMUM_CPU_UPDATE_INTERVAL,
     },
@@ -175,22 +175,13 @@ impl Metrics {
         self.add_external_http_latency(provider_kind, start, chain_id, endpoint);
     }
 
-    pub fn add_exchange_reconciler_fetch_batch_latency(&self, start: SystemTime) {
-        histogram!("exchange_reconciler_fetch_batch_latency").record(
-            start
-                .elapsed()
-                .unwrap_or(Duration::from_secs(0))
-                .as_secs_f64(),
-        );
+    pub fn add_exchange_reconciler_fetch_batch_latency(&self, start: Instant) {
+        histogram!("exchange_reconciler_fetch_batch_latency").record(start.elapsed().as_secs_f64());
     }
 
-    pub fn add_exchange_reconciler_process_batch_latency(&self, start: SystemTime) {
-        histogram!("exchange_reconciler_process_batch_latency").record(
-            start
-                .elapsed()
-                .unwrap_or(Duration::from_secs(0))
-                .as_secs_f64(),
-        );
+    pub fn add_exchange_reconciler_process_batch_latency(&self, start: Instant) {
+        histogram!("exchange_reconciler_process_batch_latency")
+            .record(start.elapsed().as_secs_f64());
     }
 
     pub fn record_provider_weight(&self, provider: &ProviderKind, chain_id: String, weight: u64) {

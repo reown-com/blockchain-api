@@ -4,22 +4,14 @@ use {
     sqlx::{FromRow, PgExecutor, Postgres},
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type)]
+#[sqlx(type_name = "exchange_transaction_status", rename_all = "lowercase")]
 pub enum TxStatus {
     Pending,
     Succeeded,
     Failed,
 }
 
-impl TxStatus {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            TxStatus::Pending => "pending",
-            TxStatus::Succeeded => "succeeded",
-            TxStatus::Failed => "failed",
-        }
-    }
-}
 
 #[derive(Debug, FromRow, Clone)]
 pub struct ExchangeTransaction {
@@ -30,7 +22,7 @@ pub struct ExchangeTransaction {
     pub amount: Option<f64>,
     pub recipient: Option<String>,
     pub pay_url: Option<String>,
-    pub status: String,
+    pub status: TxStatus,
     pub failure_reason: Option<String>,
     pub tx_hash: Option<String>,
     pub created_at: DateTime<Utc>,
@@ -50,14 +42,14 @@ pub struct NewExchangeTransaction<'a> {
     pub pay_url: Option<&'a str>,
 }
 
-pub async fn upsert_new(
+pub async fn insert_new(
     executor: impl PgExecutor<'_>,
     tx: NewExchangeTransaction<'_>,
 ) -> Result<ExchangeTransaction, DatabaseError> {
     let query = r#"
         INSERT INTO exchange_reconciliation_ledger
-            (id, exchange_id, project_id, asset, amount, recipient, pay_url, status, last_checked_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW())
+            (id, exchange_id, project_id, asset, amount, recipient, pay_url)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id, exchange_id, project_id, asset, amount, recipient, pay_url, status,
                   failure_reason, tx_hash, created_at, updated_at, last_checked_at, completed_at, locked_at
     "#;
@@ -86,32 +78,25 @@ pub async fn update_status(
     executor: impl PgExecutor<'_>,
     tx: UpdateExchangeStatus<'_>,
 ) -> Result<ExchangeTransaction, DatabaseError> {
-    let (completed_at_set, failure_reason_bind) = match tx.status {
-        TxStatus::Succeeded | TxStatus::Failed => ("NOW()", tx.failure_reason),
-        TxStatus::Pending => ("NULL", None),
-    };
-
-    let query = format!(
-        r#"
+    let query = r#"
         UPDATE exchange_reconciliation_ledger SET
             status = $2,
             tx_hash = $3,
             failure_reason = $4,
             last_checked_at = NOW(),
-            completed_at = {completed_at_set},
+            completed_at = CASE WHEN $2 IN ('succeeded','failed') THEN NOW() ELSE NULL END,
             updated_at = NOW(),
             locked_at = NULL
         WHERE id = $1
         RETURNING id, exchange_id, project_id, asset, amount, recipient, pay_url, status,
                   failure_reason, tx_hash, created_at, updated_at, last_checked_at, completed_at, locked_at
-    "#
-    );
+    "#;
 
-    let row = sqlx::query_as::<Postgres, ExchangeTransaction>(&query)
+    let row = sqlx::query_as::<Postgres, ExchangeTransaction>(query)
         .bind(tx.id)
-        .bind(tx.status.as_str())
+        .bind(tx.status)
         .bind(tx.tx_hash)
-        .bind(failure_reason_bind)
+        .bind(tx.failure_reason)
         .fetch_one(executor)
         .await?;
     Ok(row)
@@ -145,7 +130,7 @@ pub async fn claim_due_batch(
             WHERE status = 'pending'
               AND (locked_at IS NULL OR locked_at < NOW() - INTERVAL '15 minutes')
               AND (last_checked_at IS NULL OR last_checked_at < NOW() - INTERVAL '5 minutes')
-              AND created_at < NOW() - INTERVAL '12 hours'
+              AND created_at < NOW() - INTERVAL '3 hours'
             ORDER BY last_checked_at NULLS FIRST, created_at ASC
             LIMIT $1
             FOR UPDATE SKIP LOCKED
@@ -171,11 +156,13 @@ pub async fn expire_old_pending(
 ) -> Result<u64, DatabaseError> {
     let query = r#"
         UPDATE exchange_reconciliation_ledger SET
-            status = 'failed',
+            status = 'failed'::exchange_transaction_status,
             failure_reason = COALESCE(failure_reason, 'expired'),
             completed_at = NOW(),
             updated_at = NOW()
-        WHERE status = 'pending' AND created_at < NOW() - ($1 || ' hours')::INTERVAL
+        WHERE status = 'pending'
+          AND created_at < NOW() - ($1 || ' hours')::INTERVAL
+          AND (locked_at IS NULL OR locked_at < NOW() - INTERVAL '20 minutes')
     "#;
 
     let res = sqlx::query::<Postgres>(query)

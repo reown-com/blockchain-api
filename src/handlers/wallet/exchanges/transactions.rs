@@ -3,7 +3,9 @@ use {
         analytics::exchange_event_info::{ExchangeEventInfo, ExchangeEventType},
         database::{
             error::DatabaseError,
-            exchange_transactions::{self, NewExchangeTransaction, TxStatus},
+            exchange_reconciliation::{
+                self as exchange_transactions, NewExchangeTransaction, TxStatus,
+            },
         },
         state::AppState,
     },
@@ -15,7 +17,7 @@ pub async fn create(
     args: NewExchangeTransaction<'_>,
 ) -> Result<(), DatabaseError> {
     let mut db_tx = state.postgres.begin().await?;
-    let row = exchange_transactions::upsert_new(&mut *db_tx, args).await?;
+    let row = exchange_transactions::insert_new(&mut *db_tx, args).await?;
 
     state
         .analytics

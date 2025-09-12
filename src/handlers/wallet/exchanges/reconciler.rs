@@ -6,11 +6,14 @@ use {
         ExchangeType, GetBuyStatusParams,
     },
     crate::{
-        database::exchange_transactions as db, handlers::wallet::exchanges::BuyTransactionStatus,
+        database::exchange_reconciliation as db, handlers::wallet::exchanges::BuyTransactionStatus,
         state::AppState,
     },
     axum::extract::State,
-    std::{sync::Arc, time::Duration},
+    std::{
+        sync::Arc,
+        time::{Duration, Instant},
+    },
     tokio::time::{interval, MissedTickBehavior},
     tracing::{debug, warn},
 };
@@ -18,7 +21,7 @@ use {
 const POLL_INTERVAL: Duration = Duration::from_secs(600); // 10 minutes
 
 const CLAIM_BATCH_SIZE: i64 = 200;
-const EXPIRE_PENDING_AFTER_HOURS: i64 = 24;
+const EXPIRE_PENDING_AFTER_HOURS: i64 = 12;
 
 pub async fn run(state: Arc<AppState>) {
     debug!("starting");
@@ -27,7 +30,7 @@ pub async fn run(state: Arc<AppState>) {
     loop {
         poll.tick().await;
         debug!("polling new batch");
-        let fetch_started = std::time::SystemTime::now();
+        let fetch_started = Instant::now();
         match db::claim_due_batch(&state.postgres, CLAIM_BATCH_SIZE).await {
             Ok(mut rows) => {
                 state
@@ -41,7 +44,7 @@ pub async fn run(state: Arc<AppState>) {
                 let mut rate = interval(Duration::from_millis(200));
                 rate.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
-                let process_started = std::time::SystemTime::now();
+                let process_started = Instant::now();
                 for row in rows.drain(..) {
                     rate.tick().await;
 
@@ -85,27 +88,37 @@ pub async fn run(state: Arc<AppState>) {
                                     exchange_id,
                                     internal_id, "marking transaction as succeeded"
                                 );
-                                let _ =
+                                if let Err(err) =
                                     mark_succeeded(&state, &internal_id, status.tx_hash.as_deref())
-                                        .await;
+                                        .await
+                                {
+                                    warn!(exchange_id, internal_id, error = %err, "failed to mark succeeded");
+                                }
                             }
                             BuyTransactionStatus::Failed => {
                                 debug!(exchange_id, internal_id, "marking transaction as failed");
-                                let _ = mark_failed(
+                                if let Err(err) = mark_failed(
                                     &state,
                                     &internal_id,
                                     Some("provider_failed"),
                                     status.tx_hash.as_deref(),
                                 )
-                                .await;
+                                .await
+                                {
+                                    warn!(exchange_id, internal_id, error = %err, "failed to mark failed");
+                                }
                             }
                             _ => {
-                                let _ = touch_pending(&state, &internal_id).await;
+                                if let Err(err) = touch_pending(&state, &internal_id).await {
+                                    warn!(exchange_id, internal_id, error = %err, "failed to touch pending");
+                                }
                             }
                         },
                         Err(err) => {
                             debug!(exchange_id, internal_id, error = %err, "reconciler provider check failed");
-                            let _ = touch_pending(&state, &internal_id).await;
+                            if let Err(err) = touch_pending(&state, &internal_id).await {
+                                warn!(exchange_id, internal_id, error = %err, "failed to touch pending after provider error");
+                            }
                         }
                     }
                 }
