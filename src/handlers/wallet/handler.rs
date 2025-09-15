@@ -20,7 +20,6 @@ use axum::response::{IntoResponse, Response};
 use axum::{extract::State, Json};
 use hyper::{HeaderMap, StatusCode};
 use serde::Deserialize;
-use std::error::Error as StdError;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use thiserror::Error;
@@ -73,36 +72,19 @@ async fn handler_internal(
         )))
         .into_response(),
         Err(e) => {
-            let body: Response = if e.should_display_source() {
-                let data = EnrichedErrorData {
-                    variant: deepest_source_message(&e),
-                };
-                let err = JsonRpcError::<EnrichedErrorData>::new(
-                    request.id,
-                    ErrorResponse {
-                        code: e.to_json_rpc_error_code(),
-                        message: e.to_string().into(),
-                        data,
-                    },
-                );
-                Json(err).into_response()
-            } else {
-                let body = JsonRpcResponse::Error(JsonRpcError::new(
-                    request.id,
-                    ErrorResponse {
-                        code: e.to_json_rpc_error_code(),
-                        message: e.to_string().into(),
-                        data: None,
-                    },
-                ));
-                Json(body).into_response()
-            };
-
-            if  e.is_internal() {
+            let json = Json(JsonRpcResponse::Error(JsonRpcError::new(
+                request.id,
+                ErrorResponse {
+                    code: e.to_json_rpc_error_code(),
+                    message: e.to_string().into(),
+                    data: None,
+                },
+            )));
+            if e.is_internal() {
                 error!("Internal server error handling wallet RPC request: {e:?}");
-                (StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+                (StatusCode::INTERNAL_SERVER_ERROR, json).into_response()
             } else {
-                (StatusCode::BAD_REQUEST, body).into_response()
+                (StatusCode::BAD_REQUEST, json).into_response()
             }
         }
     }
@@ -169,21 +151,6 @@ enum InternalError {
     SerializeResponse(serde_json::Error),
 }
 
-fn deepest_source_message(err: &(dyn StdError)) -> String {
-    let mut last = err.to_string();
-    let mut current = err;
-    while let Some(src) = current.source() {
-        last = src.to_string();
-        current = src;
-    }
-    last
-}
-
-#[derive(serde::Serialize)]
-struct EnrichedErrorData {
-    variant: String,
-}
-
 impl Error {
     fn to_json_rpc_error_code(&self) -> i32 {
         match self {
@@ -195,9 +162,9 @@ impl Error {
             Error::GetExchanges(_) => -6,
             Error::GetUrl(_) => -7,
             Error::GetExchangeBuyStatus(_) => -8,
-            Error::PosBuildTransactions(_) => -9,
-            Error::PosCheckTransaction(_) => -10,
-            Error::PosSupportedNetworks(_) => -11,
+            Error::PosBuildTransactions(e) => e.to_json_rpc_error_code(),
+            Error::PosCheckTransaction(e) => e.to_json_rpc_error_code(),
+            Error::PosSupportedNetworks(e) => e.to_json_rpc_error_code(),
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,
@@ -221,13 +188,6 @@ impl Error {
             Error::InvalidParams(_) => false,
             Error::Internal(_) => true,
         }
-    }
-
-    fn should_display_source(&self) -> bool {
-        matches!(
-            self,
-            Error::PosBuildTransactions(_) | Error::PosCheckTransaction(_) | Error::PosSupportedNetworks(_)
-        )
     }
 }
 
