@@ -54,9 +54,10 @@ pub async fn create(
 pub async fn mark_succeeded(
     state: &Arc<AppState>,
     session_id: &str,
+    exchange_id: &str,
     tx_hash: Option<&str>,
 ) -> Result<(), DatabaseError> {
-    let exchange = ExchangeType::from_id(session_id)
+    let exchange = ExchangeType::from_id(exchange_id)
         .ok_or_else(|| DatabaseError::BadArgument("Invalid exchange id".to_string()))?;
     if !exchange.is_transaction_storage_enabled() {
         return Ok(());
@@ -101,10 +102,11 @@ pub async fn mark_succeeded(
 pub async fn mark_failed(
     state: &Arc<AppState>,
     session_id: &str,
+    exchange_id: &str,
     failure_reason: Option<&str>,
     tx_hash: Option<&str>,
 ) -> Result<(), DatabaseError> {
-    let exchange = ExchangeType::from_id(session_id)
+    let exchange = ExchangeType::from_id(exchange_id)
         .ok_or_else(|| DatabaseError::BadArgument("Invalid exchange id".to_string()))?;
     if !exchange.is_transaction_storage_enabled() {
         return Ok(());
@@ -148,9 +150,10 @@ pub async fn mark_failed(
 
 pub async fn touch_pending(
     state: &Arc<AppState>,
+    exchange_id: &str,
     session_id: &str,
 ) -> Result<(), crate::database::error::DatabaseError> {
-    let exchange = ExchangeType::from_id(session_id)
+    let exchange = ExchangeType::from_id(exchange_id)
         .ok_or_else(|| DatabaseError::BadArgument("Invalid exchange id".to_string()))?;
     if !exchange.is_transaction_storage_enabled() {
         return Ok(());

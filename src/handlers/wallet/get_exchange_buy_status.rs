@@ -116,22 +116,32 @@ async fn handler_internal(
             match response.status {
                 BuyTransactionStatus::Success => {
                     let tx_hash = response.tx_hash.clone();
-                    let _ =
-                        mark_transaction_succeeded(&state, &request.session_id, tx_hash.as_deref())
-                            .await;
+                    let _ = mark_transaction_succeeded(
+                        &state,
+                        &request.session_id,
+                        &request.exchange_id,
+                        tx_hash.as_deref(),
+                    )
+                    .await;
                 }
                 BuyTransactionStatus::Failed => {
                     let tx_hash = response.tx_hash.clone();
                     let _ = mark_transaction_failed(
                         &state,
                         &request.session_id,
+                        &request.exchange_id,
                         Some("provider_failed"),
                         tx_hash.as_deref(),
                     )
                     .await;
                 }
                 _ => {
-                    let _ = touch_pending_transaction(&state, &request.session_id).await;
+                    let _ = touch_pending_transaction(
+                        &state,
+                        &request.exchange_id,
+                        &request.session_id,
+                    )
+                    .await;
                 }
             }
 
