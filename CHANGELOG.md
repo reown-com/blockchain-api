@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.298.0 - 2025-09-15
+#### Features
+- **(pos)** specific error codes (#1233) - (e124a4d) - Luka Isailovic
+
+- - -
+
 ## 0.297.0 - 2025-09-12
 #### Features
 - bumping Cerberus client (#1230) - (e01bffa) - Max Kalashnikoff | maksy.eth
