@@ -230,7 +230,7 @@ pub async fn get_transaction_status(
     chain_id: &Caip2ChainId,
 ) -> Result<TransactionStatus, CheckPosTxError> {
     let parsed_signature = Signature::from_str(signature)
-        .map_err(|e| CheckPosTxError::Validation(format!("Invalid signature: {}", e)))?;
+        .map_err(|e| CheckPosTxError::Validation(ValidationError::InvalidWalletResponse(format!("Invalid signature: {}", e))))?;
 
     let rpc_client = create_rpc_client(chain_id, project_id).map_err(|e| CheckPosTxError::Internal(e))?;
 

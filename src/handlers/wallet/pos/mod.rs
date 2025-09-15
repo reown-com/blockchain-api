@@ -52,10 +52,14 @@ pub trait AssetNamespaceType: FromStr + Clone + std::fmt::Debug + PartialEq {
 pub enum InternalError {
     #[error("Invalid provider URL: {0}")]
     InvalidProviderUrl(String),
+
+    #[error("RPC error: {0}")]
+    RpcError(String),
     
     #[error("{0}")]
     Internal(String),
 }
+
 
 
 #[derive(Debug, Error)]
@@ -86,6 +90,38 @@ pub enum ValidationError {
     InvalidSender(String),
     #[error("Invalid Amount: {0}")]
     InvalidAmount(String),
+    #[error("Invalid Address: {0}")]
+    InvalidAddress(String),
+    #[error("Invalid Wallet Response: {0}")]
+    InvalidWalletResponse(String),
+    #[error("Invalid Transaction ID: {0}")]
+    InvalidTransactionId(String),
+}
+
+impl ValidationError {
+    pub fn code(&self) -> &'static str {
+        match self {
+            ValidationError::InvalidAsset(_) => "InvalidAsset",
+            ValidationError::InvalidRecipient(_) => "InvalidRecipient",
+            ValidationError::InvalidSender(_) => "InvalidSender",
+            ValidationError::InvalidAmount(_) => "InvalidAmount",
+            ValidationError::InvalidAddress(_) => "InvalidAddress",
+            ValidationError::InvalidWalletResponse(_) => "InvalidWalletResponse",
+            ValidationError::InvalidTransactionId(_) => "InvalidTransactionId",
+        }
+    }
+
+    pub fn message(&self) -> &str {
+        match self {
+            ValidationError::InvalidAsset(m)
+            | ValidationError::InvalidRecipient(m)
+            | ValidationError::InvalidSender(m)
+            | ValidationError::InvalidAmount(m)
+            | ValidationError::InvalidAddress(m)
+            | ValidationError::InvalidWalletResponse(m)
+            | ValidationError::InvalidTransactionId(m) => m,
+        }
+    }
 }
 
 
@@ -99,7 +135,7 @@ pub enum ExecutionError {
 #[derive(Debug, Error)]
 pub enum CheckPosTxError {
     #[error("Validation error: {0}")]
-    Validation(String),
+    Validation(#[source] ValidationError),
 
     #[error("Internal error: {0}")]
     Internal(#[source] InternalError),

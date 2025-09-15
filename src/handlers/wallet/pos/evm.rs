@@ -270,13 +270,13 @@ pub async fn get_transaction_status(
 
     let txhash = txid
         .parse::<TxHash>()
-        .map_err(|e| CheckPosTxError::Validation(format!("Invalid transaction hash: {e}")))?;
+        .map_err(|e| CheckPosTxError::Validation(ValidationError::InvalidWalletResponse(format!("Invalid transaction hash: {e}"))))?;
 
     let receipt = provider
         .get_transaction_receipt(txhash)
         .await
         .map_err(|e| {
-            CheckPosTxError::Validation(format!("Failed to get transaction receipt: {e}"))
+            CheckPosTxError::Validation(ValidationError::InvalidWalletResponse(format!("Failed to get transaction receipt: {e}")))
         })?;
 
     if let Some(receipt) = receipt {
