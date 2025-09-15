@@ -17,7 +17,7 @@ impl InternalError {
         match self {
             InternalError::InvalidProviderUrl(_) => -18940,
             InternalError::RpcError(_) => -18941,
-            InternalError::Internal(_) => -18949,
+            InternalError::Internal(_) => -18942,
         }
     }
 }
@@ -119,7 +119,7 @@ impl CheckPosTxError {
 #[derive(Debug, Error)]
 pub enum SupportedNetworksError {
     #[error("Internal error: {0}")]
-    Internal(String),
+    Internal(#[source] InternalError),
 }
 
 impl SupportedNetworksError {
@@ -128,7 +128,9 @@ impl SupportedNetworksError {
     }
 
     pub fn to_json_rpc_error_code(&self) -> i32 {
-        -18960
+        match self {
+            SupportedNetworksError::Internal(i) => i.to_json_rpc_error_code(),
+        }
     }
 }
 
