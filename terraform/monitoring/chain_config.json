@@ -2,17 +2,17 @@
   "chains": [
     {
       "caip2": "eip155:1",
-      "name": "Ethereum",
+      "name": "Ethereum Mainnet",
       "providers": []
     },
     {
       "caip2": "eip155:10",
-      "name": "Optimism",
+      "name": "Optimism Mainnet",
       "providers": []
     },
     {
       "caip2": "eip155:30",
-      "name": "Rootstock",
+      "name": "Rootstock Mainnet",
       "providers": []
     },
     {
@@ -22,7 +22,7 @@
     },
     {
       "caip2": "eip155:56",
-      "name": "Binance Smart Chain",
+      "name": "Binance Smart Chain Mainnet",
       "providers": []
     },
     {
@@ -32,42 +32,42 @@
     },
     {
       "caip2": "eip155:100",
-      "name": "Gnosis Chain",
+      "name": "Gnosis Chain Mainnet",
       "providers": []
     },
     {
       "caip2": "eip155:130",
-      "name": "Unichain",
+      "name": "Unichain Mainnet",
       "providers": []
     },
     {
       "caip2": "eip155:137",
-      "name": "Polygon",
+      "name": "Polygon Mainnet",
       "providers": []
     },
     {
       "caip2": "eip155:146",
-      "name": "Sonic",
+      "name": "Sonic Mainnet",
       "providers": []
     },
     {
       "caip2": "eip155:300",
-      "name": "zkSync Era Sepolia",
+      "name": "zkSync Era Sepolia Testnet",
       "providers": []
     },
     {
       "caip2": "eip155:324",
-      "name": "zkSync Era",
+      "name": "zkSync Era Mainnet",
       "providers": []
     },
     {
       "caip2": "eip155:1101",
-      "name": "Polygon zkEVM",
+      "name": "Polygon zkEVM Mainnet",
       "providers": []
     },
     {
       "caip2": "eip155:1111",
-      "name": "Wemix",
+      "name": "Wemix Mainnet",
       "providers": []
     },
     {
@@ -102,7 +102,7 @@
     },
     {
       "caip2": "eip155:5000",
-      "name": "Mantle",
+      "name": "Mantle Mainnet",
       "providers": []
     },
     {
@@ -112,12 +112,12 @@
     },
     {
       "caip2": "eip155:8217",
-      "name": "Kaia",
+      "name": "Kaia Mainnet",
       "providers": []
     },
     {
       "caip2": "eip155:8453",
-      "name": "Base",
+      "name": "Base Mainnet",
       "providers": []
     },
     {
@@ -132,12 +132,12 @@
     },
     {
       "caip2": "eip155:42161",
-      "name": "Arbitrum",
+      "name": "Arbitrum Mainnet",
       "providers": []
     },
     {
       "caip2": "eip155:42220",
-      "name": "Celo",
+      "name": "Celo Mainnet",
       "providers": []
     },
     {
@@ -157,7 +157,7 @@
     },
     {
       "caip2": "eip155:59144",
-      "name": "Linea",
+      "name": "Linea Mainnet",
       "providers": []
     },
     {
@@ -177,7 +177,7 @@
     },
     {
       "caip2": "eip155:80094",
-      "name": "Berachain",
+      "name": "Berachain Mainnet",
       "providers": []
     },
     {
@@ -232,7 +232,7 @@
     },
     {
       "caip2": "eip155:1313161554",
-      "name": "Aurora",
+      "name": "Aurora Mainnet",
       "providers": []
     },
     {
@@ -242,12 +242,12 @@
     },
     {
       "caip2": "near:mainnet",
-      "name": "Near",
+      "name": "Near Mainnet",
       "providers": []
     },
     {
       "caip2": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
-      "name": "Solana",
+      "name": "Solana Mainnet",
       "providers": []
     },
     {
@@ -262,7 +262,7 @@
     },
     {
       "caip2": "bip122:000000000019d6689c085ae165831e93",
-      "name": "Bitcoin",
+      "name": "Bitcoin Mainnet",
       "providers": []
     },
     {
@@ -272,7 +272,7 @@
     },
     {
       "caip2": "sui:mainnet",
-      "name": "Sui",
+      "name": "Sui Mainnet",
       "providers": []
     },
     {
@@ -287,7 +287,7 @@
     },
     {
       "caip2": "stacks:1",
-      "name": "Stacks",
+      "name": "Stacks Mainnet",
       "providers": []
     },
     {

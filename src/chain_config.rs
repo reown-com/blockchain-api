@@ -13,17 +13,17 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
     chains: vec![
         ChainConfig {
             caip2: "eip155:1".to_string(),
-            name: "Ethereum".to_string(),
+            name: "Ethereum Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
             caip2: "eip155:10".to_string(),
-            name: "Optimism".to_string(),
+            name: "Optimism Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
             caip2: "eip155:30".to_string(),
-            name: "Rootstock".to_string(),
+            name: "Rootstock Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
@@ -33,7 +33,7 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
         },
         ChainConfig {
             caip2: "eip155:56".to_string(),
-            name: "Binance Smart Chain".to_string(),
+            name: "Binance Smart Chain Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
@@ -43,42 +43,42 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
         },
         ChainConfig {
             caip2: "eip155:100".to_string(),
-            name: "Gnosis Chain".to_string(),
+            name: "Gnosis Chain Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
             caip2: "eip155:130".to_string(),
-            name: "Unichain".to_string(),
+            name: "Unichain Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
             caip2: "eip155:137".to_string(),
-            name: "Polygon".to_string(),
+            name: "Polygon Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
             caip2: "eip155:146".to_string(),
-            name: "Sonic".to_string(),
+            name: "Sonic Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
             caip2: "eip155:300".to_string(),
-            name: "zkSync Era Sepolia".to_string(),
+            name: "zkSync Era Sepolia Testnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
             caip2: "eip155:324".to_string(),
-            name: "zkSync Era".to_string(),
+            name: "zkSync Era Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
             caip2: "eip155:1101".to_string(),
-            name: "Polygon zkEVM".to_string(),
+            name: "Polygon zkEVM Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
             caip2: "eip155:1111".to_string(),
-            name: "Wemix".to_string(),
+            name: "Wemix Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
@@ -113,7 +113,7 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
         },
         ChainConfig {
             caip2: "eip155:5000".to_string(),
-            name: "Mantle".to_string(),
+            name: "Mantle Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
@@ -123,12 +123,12 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
         },
         ChainConfig {
             caip2: "eip155:8217".to_string(),
-            name: "Kaia".to_string(),
+            name: "Kaia Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
             caip2: "eip155:8453".to_string(),
-            name: "Base".to_string(),
+            name: "Base Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
@@ -143,12 +143,12 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
         },
         ChainConfig {
             caip2: "eip155:42161".to_string(),
-            name: "Arbitrum".to_string(),
+            name: "Arbitrum Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
             caip2: "eip155:42220".to_string(),
-            name: "Celo".to_string(),
+            name: "Celo Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
@@ -168,7 +168,7 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
         },
         ChainConfig {
             caip2: "eip155:59144".to_string(),
-            name: "Linea".to_string(),
+            name: "Linea Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
@@ -188,7 +188,7 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
         },
         ChainConfig {
             caip2: "eip155:80094".to_string(),
-            name: "Berachain".to_string(),
+            name: "Berachain Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
@@ -243,7 +243,7 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
         },
         ChainConfig {
             caip2: "eip155:1313161554".to_string(),
-            name: "Aurora".to_string(),
+            name: "Aurora Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
@@ -253,12 +253,12 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
         },
         ChainConfig {
             caip2: "near:mainnet".to_string(),
-            name: "Near".to_string(),
+            name: "Near Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
             caip2: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp".to_string(),
-            name: "Solana".to_string(),
+            name: "Solana Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
@@ -273,7 +273,7 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
         },
         ChainConfig {
             caip2: "bip122:000000000019d6689c085ae165831e93".to_string(),
-            name: "Bitcoin".to_string(),
+            name: "Bitcoin Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
@@ -283,7 +283,7 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
         },
         ChainConfig {
             caip2: "sui:mainnet".to_string(),
-            name: "Sui".to_string(),
+            name: "Sui Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
@@ -298,7 +298,7 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
         },
         ChainConfig {
             caip2: "stacks:1".to_string(),
-            name: "Stacks".to_string(),
+            name: "Stacks Mainnet".to_string(),
             providers: vec![],
         },
         ChainConfig {
