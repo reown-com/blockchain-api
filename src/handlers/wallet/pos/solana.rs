@@ -173,8 +173,7 @@ async fn get_token_decimals(
     chain_id: &Caip2ChainId,
     project_id: &str,
 ) -> Result<(u8, Pubkey), BuildPosTxsError> {
-    let rpc_client =
-        create_rpc_client(chain_id, project_id).map_err(BuildPosTxsError::Internal)?;
+    let rpc_client = create_rpc_client(chain_id, project_id).map_err(BuildPosTxsError::Internal)?;
 
     let mint_account = rpc_client
         .get_account_with_commitment(mint_pubkey, CommitmentConfig::confirmed())
@@ -266,8 +265,7 @@ pub async fn get_transaction_status(
         )))
     })?;
 
-    let rpc_client =
-        create_rpc_client(chain_id, project_id).map_err(CheckPosTxError::Internal)?;
+    let rpc_client = create_rpc_client(chain_id, project_id).map_err(CheckPosTxError::Internal)?;
 
     let response = rpc_client
         .get_signature_statuses_with_history(&[parsed_signature])

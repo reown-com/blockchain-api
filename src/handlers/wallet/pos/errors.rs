@@ -1,4 +1,4 @@
-use {crate::utils::crypto::CryptoUitlsError, base64::DecodeError, thiserror::Error};
+use {crate::utils::crypto::CryptoUitlsError, thiserror::Error};
 
 #[derive(Debug, Error)]
 pub enum InternalError {
@@ -134,9 +134,6 @@ impl SupportedNetworksError {
 
 #[derive(Debug, Error)]
 pub enum TransactionIdError {
-    #[error("Invalid transaction encoding: {0}")]
-    InvalidBase64(#[from] DecodeError),
-
     #[error("Invalid transaction format: '{0}'")]
     InvalidFormat(String),
 
@@ -147,9 +144,8 @@ pub enum TransactionIdError {
 impl TransactionIdError {
     pub fn to_json_rpc_error_code(&self) -> i32 {
         match self {
-            TransactionIdError::InvalidBase64(_) => -18970,
-            TransactionIdError::InvalidFormat(_) => -18971,
-            TransactionIdError::InvalidChainId(_) => -18972,
+            TransactionIdError::InvalidFormat(_) => -18970,
+            TransactionIdError::InvalidChainId(_) => -18971,
         }
     }
 }

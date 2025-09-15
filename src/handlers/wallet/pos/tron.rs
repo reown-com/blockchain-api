@@ -321,8 +321,7 @@ async fn estimate_trc20_fee_limit(
         ))
     })?;
 
-    compute_fee_limit(energy_required_u128, energy_fee_u128)
-        .map_err(BuildPosTxsError::Internal)
+    compute_fee_limit(energy_required_u128, energy_fee_u128).map_err(BuildPosTxsError::Internal)
 }
 
 fn compute_fee_limit(energy_required: u128, energy_fee: u128) -> Result<u64, InternalError> {

@@ -197,7 +197,9 @@ impl TryFrom<&str> for TransactionId {
     type Error = TransactionIdError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let decoded = general_purpose::STANDARD_NO_PAD.decode(value)?;
+        let decoded = general_purpose::STANDARD_NO_PAD
+            .decode(value)
+            .map_err(|_| TransactionIdError::InvalidFormat(value.to_string()))?;
         let decoded_str = String::from_utf8(decoded)
             .map_err(|_| TransactionIdError::InvalidFormat(value.to_string()))?;
 

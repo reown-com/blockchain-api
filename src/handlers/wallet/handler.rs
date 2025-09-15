@@ -163,9 +163,9 @@ impl Error {
             Error::GetUrl(_) => -7,
             Error::GetExchangeBuyStatus(_) => -8,
             // -18900 to -18999 reserved for POS
-            Error::PosBuildTransactions(e) => e.to_json_rpc_error_code(), 
-            Error::PosCheckTransaction(e) => e.to_json_rpc_error_code(), 
-            Error::PosSupportedNetworks(e) => e.to_json_rpc_error_code(), 
+            Error::PosBuildTransactions(e) => e.to_json_rpc_error_code(),
+            Error::PosCheckTransaction(e) => e.to_json_rpc_error_code(),
+            Error::PosSupportedNetworks(e) => e.to_json_rpc_error_code(),
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,

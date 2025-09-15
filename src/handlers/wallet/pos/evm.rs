@@ -97,8 +97,8 @@ impl EvmTxBuilder {
         let token_address = asset_address.parse::<Address>().map_err(|e| {
             BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string()))
         })?;
-        let provider = get_provider(&self.chain_id, &self.project_id)
-            .map_err(BuildPosTxsError::Internal)?;
+        let provider =
+            get_provider(&self.chain_id, &self.project_id).map_err(BuildPosTxsError::Internal)?;
 
         let token_amount = get_erc20_transfer_amount(&provider, token_address, amount).await?;
         let transfer_calldata =
@@ -117,8 +117,8 @@ impl EvmTxBuilder {
     }
 
     async fn finalize(mut self) -> Result<TransactionRpc, BuildPosTxsError> {
-        let provider = get_provider(&self.chain_id, &self.project_id)
-            .map_err(BuildPosTxsError::Internal)?;
+        let provider =
+            get_provider(&self.chain_id, &self.project_id).map_err(BuildPosTxsError::Internal)?;
 
         let fees = provider.estimate_eip1559_fees(None).await.map_err(|e| {
             BuildPosTxsError::Execution(ExecutionError::GasEstimation(e.to_string()))
