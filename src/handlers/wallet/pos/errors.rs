@@ -71,7 +71,7 @@ impl ValidationError {
         match self {
             ValidationError::InvalidAsset(_) => -18901,
             ValidationError::InvalidRecipient(_) => -18902,
-            ValidationError::InvalidSender(_) => 18903,
+            ValidationError::InvalidSender(_) => -18903,
             ValidationError::InvalidAmount(_) => -18904,
             ValidationError::InvalidAddress(_) => -18905,
             ValidationError::InvalidWalletResponse(_) => -18906,
