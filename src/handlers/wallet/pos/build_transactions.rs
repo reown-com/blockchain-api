@@ -51,7 +51,7 @@ pub async fn handler(
 ) -> Result<BuildTransactionResult, BuildPosTxsError> {
     if params.payment_intents.is_empty() {
         return Err(BuildPosTxsError::Validation(
-            ValidationError::InvalidAmount("No payment intents found".to_string()),
+            ValidationError::InvalidRequest("No payment intents found".to_string()),
         ));
     }
 

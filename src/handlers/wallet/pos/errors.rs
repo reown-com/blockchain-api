@@ -64,6 +64,8 @@ pub enum ValidationError {
     InvalidWalletResponse(String),
     #[error("Invalid Transaction ID: {0}")]
     InvalidTransactionId(String),
+    #[error("Invalid Request: {0}")]
+    InvalidRequest(String),
 }
 
 impl ValidationError {
@@ -76,6 +78,7 @@ impl ValidationError {
             ValidationError::InvalidAddress(_) => -18905,
             ValidationError::InvalidWalletResponse(_) => -18906,
             ValidationError::InvalidTransactionId(_) => -18907,
+            ValidationError::InvalidRequest(_) => -18908,
         }
     }
 }
