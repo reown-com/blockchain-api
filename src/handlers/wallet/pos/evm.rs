@@ -2,7 +2,7 @@ use {
     super::{
         AssetNamespaceType, BuildPosTxsError, CheckTransactionResult, PaymentIntent,
         SupportedNamespace, TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
-        ValidatedPaymentIntent, ValidationError, ExecutionError, CheckPosTxError, InternalError,
+        ValidatedPaymentIntent, ValidationError, ExecutionError, InternalError, CheckPosTxError,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::{

@@ -4,22 +4,32 @@ pub mod evm;
 pub mod solana;
 pub mod supported_networks;
 pub mod tron;
+pub mod errors;
+
+pub use errors::{
+    BuildPosTxsError,
+    CheckPosTxError,
+    SupportedNetworksError,
+    ValidationError,
+    ExecutionError,
+    InternalError,
+    TransactionIdError,
+};
 
 use {
     crate::{
-        state::AppState,
-        utils::crypto::{
+        state::AppState, utils::crypto::{
             disassemble_caip10_with_namespace, is_address_valid, Caip19Asset, Caip2ChainId,
-            CaipNamespaces, CryptoUitlsError, NamespaceValidator,
-        },
+            CaipNamespaces, NamespaceValidator,
+        }
     },
     axum::extract::State,
-    base64::{engine::general_purpose, DecodeError, Engine as _},
+    base64::{engine::general_purpose, Engine as _},
     serde::{Deserialize, Serialize},
     serde_json::Value,
     std::{convert::TryFrom, fmt::Display, str::FromStr, sync::Arc},
     strum_macros::EnumString,
-    thiserror::Error,
+
     uuid::Uuid,
 };
 
@@ -48,128 +58,6 @@ pub trait AssetNamespaceType: FromStr + Clone + std::fmt::Debug + PartialEq {
     fn is_native(&self) -> bool;
 }
 
-#[derive(Debug, Error)]
-pub enum InternalError {
-    #[error("Invalid provider URL: {0}")]
-    InvalidProviderUrl(String),
-
-    #[error("RPC error: {0}")]
-    RpcError(String),
-    
-    #[error("{0}")]
-    Internal(String),
-}
-
-
-
-#[derive(Debug, Error)]
-pub enum BuildPosTxsError {
-    #[error("{0}")]
-    Validation(#[source] ValidationError),
-
-    #[error("Execution error: {0}")]
-    Execution(#[source] ExecutionError),
-
-    #[error("Internal error: {0}")]
-    Internal(#[source] InternalError),
-}
-
-impl BuildPosTxsError {
-    pub fn is_internal(&self) -> bool {
-        matches!(self, BuildPosTxsError::Internal(_))
-    }
-}
-
-#[derive(Debug, Error, Clone)]
-pub enum ValidationError {
-    #[error("Invalid Asset: {0}")]
-    InvalidAsset(String),
-    #[error("Invalid Recipient: {0}")]
-    InvalidRecipient(String),
-    #[error("Invalid Sender: {0}")]
-    InvalidSender(String),
-    #[error("Invalid Amount: {0}")]
-    InvalidAmount(String),
-    #[error("Invalid Address: {0}")]
-    InvalidAddress(String),
-    #[error("Invalid Wallet Response: {0}")]
-    InvalidWalletResponse(String),
-    #[error("Invalid Transaction ID: {0}")]
-    InvalidTransactionId(String),
-}
-
-impl ValidationError {
-    pub fn code(&self) -> &'static str {
-        match self {
-            ValidationError::InvalidAsset(_) => "InvalidAsset",
-            ValidationError::InvalidRecipient(_) => "InvalidRecipient",
-            ValidationError::InvalidSender(_) => "InvalidSender",
-            ValidationError::InvalidAmount(_) => "InvalidAmount",
-            ValidationError::InvalidAddress(_) => "InvalidAddress",
-            ValidationError::InvalidWalletResponse(_) => "InvalidWalletResponse",
-            ValidationError::InvalidTransactionId(_) => "InvalidTransactionId",
-        }
-    }
-
-    pub fn message(&self) -> &str {
-        match self {
-            ValidationError::InvalidAsset(m)
-            | ValidationError::InvalidRecipient(m)
-            | ValidationError::InvalidSender(m)
-            | ValidationError::InvalidAmount(m)
-            | ValidationError::InvalidAddress(m)
-            | ValidationError::InvalidWalletResponse(m)
-            | ValidationError::InvalidTransactionId(m) => m,
-        }
-    }
-}
-
-
-#[derive(Debug, Error, Clone)]
-pub enum ExecutionError {
-    #[error("Unable to estimate gas: {0}")]
-    GasEstimation(String),
-
-}
-
-#[derive(Debug, Error)]
-pub enum CheckPosTxError {
-    #[error("Validation error: {0}")]
-    Validation(#[source] ValidationError),
-
-    #[error("Internal error: {0}")]
-    Internal(#[source] InternalError),
-}
-
-impl CheckPosTxError {
-    pub fn is_internal(&self) -> bool {
-        matches!(self, CheckPosTxError::Internal(_))
-    }
-}
-
-#[derive(Debug, Error)]
-pub enum SupportedNetworksError {
-    #[error("Internal error: {0}")]
-    Internal(String),
-}
-
-impl SupportedNetworksError {
-    pub fn is_internal(&self) -> bool {
-        matches!(self, SupportedNetworksError::Internal(_))
-    }
-}
-
-#[derive(Debug, Error)]
-pub enum TransactionIdError {
-    #[error("Invalid transaction encoding: {0}")]
-    InvalidBase64(#[from] DecodeError),
-
-    #[error("Invalid transaction format: '{0}'")]
-    InvalidFormat(String),
-
-    #[error("Invalid chain ID: {0}")]
-    InvalidChainId(#[from] CryptoUitlsError),
-}
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SupportedNetworksResult {
