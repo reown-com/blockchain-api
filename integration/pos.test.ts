@@ -180,6 +180,7 @@ describe('POS', () => {
       expect(response.status).toBe(400);
       const errorResponse = response.data as BuildTransactionErrorResponse;
       expect(errorResponse.error.message.includes('Invalid Recipient')).toBe(true);
+      expect(errorResponse.error.code).toBe(-18902);
     });
 
     it('should not build a transaction with an invalid asset', async () => {
@@ -204,6 +205,7 @@ describe('POS', () => {
       expect(response.status).toBe(400);
       const errorResponse = response.data as BuildTransactionErrorResponse;
       expect(errorResponse.error.message.includes('Validation error')).toBe(true);
+      expect(errorResponse.error.code).toBe(-18901);
     });
 
     it('should not build a transaction with an invalid namespace', async () => {
@@ -227,6 +229,7 @@ describe('POS', () => {
       expect(response.status).toBe(400);
       const errorResponse = response.data as BuildTransactionErrorResponse;
       expect(errorResponse.error.message.includes('Validation error')).toBe(true);
+      expect(errorResponse.error.code).toBe(-18901);
     });
 
 
@@ -527,9 +530,9 @@ describe('POS', () => {
 
       const response = await httpClient.post(`${baseUrl}/v1/json-rpc?projectId=${projectId}`, payload);
       expect(response.status).toBe(400);
-      console.log(response.data)
       const errorResponse = response.data as BuildTransactionErrorResponse;
       expect(errorResponse.error.message.includes('Validation error')).toBe(true);
+      expect(errorResponse.error.code).toBe(-18901);
     });
   });
 

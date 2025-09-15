@@ -127,13 +127,13 @@ enum Error {
     GetExchangeBuyStatus(GetExchangeBuyStatusError),
 
     #[error("{POS_BUILD_TRANSACTIONS}: {0}")]
-    PosBuildTransactions(BuildPosTxsError),
+    PosBuildTransactions(#[source] BuildPosTxsError),
 
     #[error("{POS_CHECK_TRANSACTION}: {0}")]
-    PosCheckTransaction(CheckPosTxError),
+    PosCheckTransaction(#[source] CheckPosTxError),
 
     #[error("{POS_SUPPORTED_NETWORKS}: {0}")]
-    PosSupportedNetworks(SupportedNetworksError),
+    PosSupportedNetworks(#[source] SupportedNetworksError),
 
     #[error("Method not found")]
     MethodNotFound,
@@ -162,9 +162,10 @@ impl Error {
             Error::GetExchanges(_) => -6,
             Error::GetUrl(_) => -7,
             Error::GetExchangeBuyStatus(_) => -8,
-            Error::PosBuildTransactions(_) => -9,
-            Error::PosCheckTransaction(_) => -10,
-            Error::PosSupportedNetworks(_) => -11,
+            // -18900 to -18999 reserved for POS
+            Error::PosBuildTransactions(e) => e.to_json_rpc_error_code(),
+            Error::PosCheckTransaction(e) => e.to_json_rpc_error_code(),
+            Error::PosSupportedNetworks(e) => e.to_json_rpc_error_code(),
             Error::MethodNotFound => -32601,
             Error::InvalidParams(_) => -32602,
             Error::Internal(_) => -32000,

@@ -1,7 +1,7 @@
 use {
     super::{
         BuildPosTxsError, BuildTransactionParams, BuildTransactionResult, PaymentIntent,
-        SupportedNamespaces, TransactionBuilder, TransactionRpc,
+        SupportedNamespaces, TransactionBuilder, TransactionRpc, ValidationError,
     },
     crate::{
         handlers::wallet::pos::{
@@ -22,10 +22,10 @@ async fn build_transaction_for_intent(
     intent: PaymentIntent,
 ) -> Result<TransactionRpc, BuildPosTxsError> {
     let asset = Caip19Asset::parse(&intent.asset)
-        .map_err(|e| BuildPosTxsError::Validation(format!("Invalid Asset: {e}")))?;
+        .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string())))?;
 
     let namespace = SupportedNamespaces::from_str(asset.chain_id().namespace())
-        .map_err(|e| BuildPosTxsError::Validation(format!("Invalid namespace: {e}")))?;
+        .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string())))?;
 
     match namespace {
         SupportedNamespaces::Eip155 => {
@@ -51,7 +51,7 @@ pub async fn handler(
 ) -> Result<BuildTransactionResult, BuildPosTxsError> {
     if params.payment_intents.is_empty() {
         return Err(BuildPosTxsError::Validation(
-            "No payment intents found".to_string(),
+            ValidationError::InvalidRequest("No payment intents found".to_string()),
         ));
     }
 

@@ -1,8 +1,8 @@
 use {
     super::{
-        AssetNamespaceType, BuildPosTxsError, CheckTransactionResult, PaymentIntent,
-        SupportedNamespace, TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
-        ValidatedPaymentIntent,
+        AssetNamespaceType, BuildPosTxsError, CheckPosTxError, CheckTransactionResult,
+        ExecutionError, InternalError, PaymentIntent, SupportedNamespace, TransactionBuilder,
+        TransactionId, TransactionRpc, TransactionStatus, ValidatedPaymentIntent, ValidationError,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::{
@@ -64,13 +64,13 @@ impl EvmTxBuilder {
         recipient: &str,
         sender: &str,
     ) -> Result<Self, BuildPosTxsError> {
-        let to = recipient
-            .parse::<Address>()
-            .map_err(|e| BuildPosTxsError::Validation(format!("Invalid recipient: {}", e)))?;
+        let to = recipient.parse::<Address>().map_err(|e| {
+            BuildPosTxsError::Validation(ValidationError::InvalidRecipient(e.to_string()))
+        })?;
 
-        let from = sender
-            .parse::<Address>()
-            .map_err(|e| BuildPosTxsError::Validation(format!("Invalid sender: {}", e)))?;
+        let from = sender.parse::<Address>().map_err(|e| {
+            BuildPosTxsError::Validation(ValidationError::InvalidSender(e.to_string()))
+        })?;
 
         Ok(Self {
             to,
@@ -94,10 +94,11 @@ impl EvmTxBuilder {
         asset_address: &str,
         amount: &str,
     ) -> Result<Self, BuildPosTxsError> {
-        let token_address = asset_address
-            .parse::<Address>()
-            .map_err(|e| BuildPosTxsError::Validation(format!("Invalid asset address: {}", e)))?;
-        let provider = get_provider(&self.chain_id, &self.project_id)?;
+        let token_address = asset_address.parse::<Address>().map_err(|e| {
+            BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string()))
+        })?;
+        let provider =
+            get_provider(&self.chain_id, &self.project_id).map_err(BuildPosTxsError::Internal)?;
 
         let token_amount = get_erc20_transfer_amount(&provider, token_address, amount).await?;
         let transfer_calldata =
@@ -116,12 +117,12 @@ impl EvmTxBuilder {
     }
 
     async fn finalize(mut self) -> Result<TransactionRpc, BuildPosTxsError> {
-        let provider = get_provider(&self.chain_id, &self.project_id)?;
+        let provider =
+            get_provider(&self.chain_id, &self.project_id).map_err(BuildPosTxsError::Internal)?;
 
-        let fees = provider
-            .estimate_eip1559_fees(None)
-            .await
-            .map_err(|e| BuildPosTxsError::Validation(format!("Failed to estimate fees: {e}")))?;
+        let fees = provider.estimate_eip1559_fees(None).await.map_err(|e| {
+            BuildPosTxsError::Execution(ExecutionError::GasEstimation(e.to_string()))
+        })?;
 
         self.tx_request = self
             .tx_request
@@ -129,10 +130,9 @@ impl EvmTxBuilder {
             .max_priority_fee_per_gas(fees.max_priority_fee_per_gas);
 
         let gas_limit = if has_transaction_data(&self.tx_request) {
-            provider
-                .estimate_gas(&self.tx_request)
-                .await
-                .map_err(|e| BuildPosTxsError::Validation(format!("Failed to estimate gas: {e}")))?
+            provider.estimate_gas(&self.tx_request).await.map_err(|e| {
+                BuildPosTxsError::Execution(ExecutionError::GasEstimation(e.to_string()))
+            })?
         } else {
             NATIVE_GAS_LIMIT
         };
@@ -201,7 +201,9 @@ impl TransactionBuilder<AssetNamespace> for EvmTransactionBuilder {
 
 fn parse_ether_amount(amount: &str) -> Result<U256, BuildPosTxsError> {
     let value = parse_units(amount, "ether").map_err(|e| {
-        BuildPosTxsError::Validation(format!("Unable to parse amount in ether: {e}"))
+        BuildPosTxsError::Validation(ValidationError::InvalidAmount(format!(
+            "Unable to parse amount in ether: {e}"
+        )))
     })?;
 
     Ok(value.into())
@@ -222,15 +224,19 @@ async fn get_erc20_transfer_amount(
         .decimals()
         .call()
         .await
-        .map_err(|e| BuildPosTxsError::Validation(format!("Failed to get decimals: {e}")))?
+        .map_err(|e| {
+            BuildPosTxsError::Validation(ValidationError::InvalidAmount(format!(
+                "Failed to get decimals: {e}"
+            )))
+        })?
         ._0;
 
     debug!("decimals: {decimals}");
 
     let value = parse_units(amount, decimals).map_err(|e| {
-        BuildPosTxsError::Validation(format!(
+        BuildPosTxsError::Validation(ValidationError::InvalidAmount(format!(
             "Unable to parse amount with {decimals} decimals: {e}"
-        ))
+        )))
     })?;
 
     Ok(value.into())
@@ -246,16 +252,13 @@ async fn create_erc20_transfer_calldata(
     Ok(erc20.transfer(to, amount).calldata().clone().into())
 }
 
-fn get_provider(
-    chain_id: &Caip2ChainId,
-    project_id: &str,
-) -> Result<impl Provider, BuildPosTxsError> {
+fn get_provider(chain_id: &Caip2ChainId, project_id: &str) -> Result<impl Provider, InternalError> {
     let url = format!(
         "{BASE_URL}?chainId={chain_id}&projectId={project_id}&source={}",
         MessageSource::WalletBuildPosTx,
     )
     .parse()
-    .map_err(|_| BuildPosTxsError::Validation("Invalid provider URL".to_string()))?;
+    .map_err(|_| InternalError::InvalidProviderUrl("Invalid provider URL".to_string()))?;
 
     Ok(ProviderBuilder::new().on_http(url))
 }
@@ -265,18 +268,22 @@ pub async fn get_transaction_status(
     project_id: &str,
     txid: &str,
     chain_id: &Caip2ChainId,
-) -> Result<TransactionStatus, BuildPosTxsError> {
-    let provider = get_provider(chain_id, project_id)?;
+) -> Result<TransactionStatus, CheckPosTxError> {
+    let provider = get_provider(chain_id, project_id).map_err(CheckPosTxError::Internal)?;
 
-    let txhash = txid
-        .parse::<TxHash>()
-        .map_err(|e| BuildPosTxsError::Validation(format!("Invalid transaction hash: {e}")))?;
+    let txhash = txid.parse::<TxHash>().map_err(|e| {
+        CheckPosTxError::Validation(ValidationError::InvalidWalletResponse(format!(
+            "Invalid transaction hash: {e}"
+        )))
+    })?;
 
     let receipt = provider
         .get_transaction_receipt(txhash)
         .await
         .map_err(|e| {
-            BuildPosTxsError::Validation(format!("Failed to get transaction receipt: {e}"))
+            CheckPosTxError::Validation(ValidationError::InvalidWalletResponse(format!(
+                "Failed to get transaction receipt: {e}"
+            )))
         })?;
 
     if let Some(receipt) = receipt {
@@ -294,7 +301,7 @@ pub async fn check_transaction(
     project_id: &str,
     txid: &str,
     chain_id: &Caip2ChainId,
-) -> Result<CheckTransactionResult, BuildPosTxsError> {
+) -> Result<CheckTransactionResult, CheckPosTxError> {
     let status = get_transaction_status(state, project_id, txid, chain_id).await?;
 
     match status {
