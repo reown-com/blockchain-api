@@ -4,6 +4,10 @@ use {
     sqlx::{FromRow, PgExecutor, Postgres},
 };
 
+const LOCK_EXPIRATION_MINUTES: i32 = 15;
+const CHECK_BACKOFF_MINUTES: i32 = 5;
+const MIN_CLAIM_AGE_HOURS: i32 = 3;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type)]
 #[sqlx(type_name = "exchange_transaction_status", rename_all = "lowercase")]
 pub enum TxStatus {
@@ -128,9 +132,9 @@ pub async fn claim_due_batch(
         WITH candidates AS (
             SELECT id FROM exchange_reconciliation_ledger
             WHERE status = 'pending'
-              AND (locked_at IS NULL OR locked_at < NOW() - INTERVAL '15 minutes')
-              AND (last_checked_at IS NULL OR last_checked_at < NOW() - INTERVAL '5 minutes')
-              AND created_at < NOW() - INTERVAL '3 hours'
+              AND (locked_at IS NULL OR locked_at < NOW() - make_interval(mins => $2))
+              AND (last_checked_at IS NULL OR last_checked_at < NOW() - make_interval(mins => $3))
+              AND created_at < NOW() - make_interval(hours => $4)
             ORDER BY last_checked_at NULLS FIRST, created_at ASC
             LIMIT $1
             FOR UPDATE SKIP LOCKED
@@ -145,6 +149,9 @@ pub async fn claim_due_batch(
 
     let rows = sqlx::query_as::<Postgres, ExchangeTransaction>(query)
         .bind(max_claim)
+        .bind(LOCK_EXPIRATION_MINUTES)
+        .bind(CHECK_BACKOFF_MINUTES)
+        .bind(MIN_CLAIM_AGE_HOURS)
         .fetch_all(executor)
         .await?;
     Ok(rows)
