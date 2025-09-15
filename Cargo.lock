@@ -2636,7 +2636,7 @@ dependencies = [
 [[package]]
 name = "cerberus"
 version = "0.2.0"
-source = "git+https://github.com/WalletConnect/cerberus.git?tag=v0.15.0#273a9361978d1b6cbe1dfdb6f6d88df7c5cb271a"
+source = "git+https://github.com/WalletConnect/cerberus.git?tag=v0.16.0#4db7b93b2cdc65d3878d27c57332486ceaa396a1"
 dependencies = [
  "async-trait",
  "bitflags 2.9.4",
@@ -2646,6 +2646,8 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+ "tokio",
+ "tracing",
  "url",
 ]
 
@@ -8320,7 +8322,7 @@ dependencies = [
 
 [[package]]
 name = "rpc-proxy"
-version = "0.296.0"
+version = "0.298.0"
 dependencies = [
  "alloy 0.11.1",
  "anyhow",

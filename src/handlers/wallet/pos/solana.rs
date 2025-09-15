@@ -1,15 +1,15 @@
 use {
     super::{
-        AssetNamespaceType, BuildPosTxsError, CheckTransactionResult, PaymentIntent,
-        SupportedNamespace, TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
-        ValidatedPaymentIntent,
+        AssetNamespaceType, BuildPosTxsError, CheckPosTxError, CheckTransactionResult,
+        InternalError, PaymentIntent, SupportedNamespace, TransactionBuilder, TransactionId,
+        TransactionRpc, TransactionStatus, ValidatedPaymentIntent, ValidationError,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::primitives::{utils::parse_units, U256},
     async_trait::async_trait,
     axum::extract::State,
     base64::{engine::general_purpose, Engine as _},
-    solana_client::nonblocking::rpc_client::RpcClient,
+    solana_client::{nonblocking::rpc_client::RpcClient, rpc_config::RpcTransactionConfig},
     solana_sdk::{
         commitment_config::CommitmentConfig,
         message::{v0, VersionedMessage},
@@ -70,9 +70,9 @@ impl TransactionBuilder<AssetNamespace> for SolanaTransactionBuilder {
         match params.namespace {
             AssetNamespace::Token => build_spl_transfer(params, &project_id).await,
             _ => {
-                return Err(BuildPosTxsError::Validation(
+                return Err(BuildPosTxsError::Validation(ValidationError::InvalidAsset(
                     "Unsupported asset namespace".to_string(),
-                ));
+                )));
             }
         }
     }
@@ -83,15 +83,17 @@ async fn build_spl_transfer(
     project_id: &str,
 ) -> Result<TransactionRpc, BuildPosTxsError> {
     let sender_pubkey = Pubkey::from_str(&params.sender_address)
-        .map_err(|e| BuildPosTxsError::Validation(format!("Invalid sender address: {}", e)))?;
+        .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidSender(e.to_string())))?;
 
-    let recipient_pubkey = Pubkey::from_str(&params.recipient_address)
-        .map_err(|e| BuildPosTxsError::Validation(format!("Invalid recipient address: {}", e)))?;
+    let recipient_pubkey = Pubkey::from_str(&params.recipient_address).map_err(|e| {
+        BuildPosTxsError::Validation(ValidationError::InvalidRecipient(e.to_string()))
+    })?;
 
     let mint_pubkey = Pubkey::from_str(params.asset.asset_reference())
-        .map_err(|e| BuildPosTxsError::Validation(format!("Invalid token mint address: {}", e)))?;
+        .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string())))?;
 
-    let rpc_client = create_rpc_client(params.asset.chain_id(), project_id)?;
+    let rpc_client = create_rpc_client(params.asset.chain_id(), project_id)
+        .map_err(BuildPosTxsError::Internal)?;
 
     let (decimals, token_program_id) =
         get_token_decimals(&mint_pubkey, params.asset.chain_id(), project_id).await?;
@@ -111,21 +113,32 @@ async fn build_spl_transfer(
         decimals,
     )
     .map_err(|e| {
-        BuildPosTxsError::Validation(format!("Failed to create transfer instruction: {}", e))
+        BuildPosTxsError::Internal(InternalError::Internal(format!(
+            "Failed to create transfer instruction: {}",
+            e
+        )))
     })?;
 
     let recent_blockhash = rpc_client
         .get_latest_blockhash_with_commitment(CommitmentConfig::finalized())
         .await
         .map_err(|e| {
-            BuildPosTxsError::Internal(format!("Failed to fetch recent blockhash: {}", e))
+            BuildPosTxsError::Internal(InternalError::Internal(format!(
+                "Failed to fetch recent blockhash: {}",
+                e
+            )))
         })?
         .0;
 
     let instructions = vec![transfer_instruction];
 
     let v0_message = v0::Message::try_compile(&sender_pubkey, &instructions, &[], recent_blockhash)
-        .map_err(|e| BuildPosTxsError::Internal(format!("Failed to compile v0 message: {}", e)))?;
+        .map_err(|e| {
+            BuildPosTxsError::Internal(InternalError::Internal(format!(
+                "Failed to compile v0 message: {}",
+                e
+            )))
+        })?;
 
     let message = VersionedMessage::V0(v0_message);
 
@@ -136,7 +149,10 @@ async fn build_spl_transfer(
     };
 
     let serialized_tx = bincode::serialize(&transaction).map_err(|e| {
-        BuildPosTxsError::Internal(format!("Failed to serialize transaction: {}", e))
+        BuildPosTxsError::Internal(InternalError::Internal(format!(
+            "Failed to serialize transaction: {}",
+            e
+        )))
     })?;
 
     let transaction_b64 = general_purpose::STANDARD.encode(serialized_tx);
@@ -157,26 +173,40 @@ async fn get_token_decimals(
     chain_id: &Caip2ChainId,
     project_id: &str,
 ) -> Result<(u8, Pubkey), BuildPosTxsError> {
-    let rpc_client = create_rpc_client(chain_id, project_id)?;
+    let rpc_client = create_rpc_client(chain_id, project_id).map_err(BuildPosTxsError::Internal)?;
 
     let mint_account = rpc_client
         .get_account_with_commitment(mint_pubkey, CommitmentConfig::confirmed())
         .await
-        .map_err(|e| BuildPosTxsError::Internal(format!("Failed to fetch mint account: {}", e)))?
+        .map_err(|e| {
+            BuildPosTxsError::Validation(ValidationError::InvalidAsset(format!(
+                "Failed to fetch mint account: {}",
+                e
+            )))
+        })?
         .value
-        .ok_or_else(|| BuildPosTxsError::Validation("Mint account not found".to_string()))?;
+        .ok_or_else(|| {
+            BuildPosTxsError::Validation(ValidationError::InvalidAsset(
+                "Mint account not found".to_string(),
+            ))
+        })?;
 
     let token_program_id = mint_account.owner;
     let is_spl_token = token_program_id == spl_token::id();
 
-    let spl_token_2022_id = Pubkey::from_str(SPL_TOKEN_2022_ID)
-        .map_err(|_| BuildPosTxsError::Internal("Invalid SPL Token-2022 program ID".to_string()))?;
+    let spl_token_2022_id = Pubkey::from_str(SPL_TOKEN_2022_ID).map_err(|_| {
+        BuildPosTxsError::Validation(ValidationError::InvalidAsset(
+            "Invalid SPL Token-2022 program ID".to_string(),
+        ))
+    })?;
     let is_spl_token_2022 = token_program_id == spl_token_2022_id;
 
     if (!is_spl_token && !is_spl_token_2022) || mint_account.data.len() < Mint::LEN {
-        return Err(BuildPosTxsError::Validation(format!(
-            "Invalid mint account owner: {}. Expected SPL Token program.",
-            mint_account.owner
+        return Err(BuildPosTxsError::Validation(ValidationError::InvalidAsset(
+            format!(
+                "Invalid mint account owner: {}. Expected SPL Token program.",
+                mint_account.owner
+            ),
         )));
     }
 
@@ -184,9 +214,8 @@ async fn get_token_decimals(
         Ok(mint_data) => Ok((mint_data.decimals, token_program_id)),
         Err(e) => {
             debug!("Failed to parse as SPL Token mint: {}", e);
-            Err(BuildPosTxsError::Internal(format!(
-                "Failed to parse as SPL Token mint: {}",
-                e
+            Err(BuildPosTxsError::Validation(ValidationError::InvalidAsset(
+                format!("Failed to parse as SPL Token mint: {}", e),
             )))
         }
     }
@@ -195,7 +224,7 @@ async fn get_token_decimals(
 fn create_rpc_client(
     chain_id: &Caip2ChainId,
     project_id: &str,
-) -> Result<RpcClient, BuildPosTxsError> {
+) -> Result<RpcClient, InternalError> {
     let url = format!(
         "{BASE_URL}?chainId={chain_id}&projectId={project_id}&source={}",
         MessageSource::WalletBuildPosTx,
@@ -206,17 +235,17 @@ fn create_rpc_client(
 
 fn parse_token_amount(amount: &str, decimals: u8) -> Result<u64, BuildPosTxsError> {
     let parsed_value = parse_units(amount, decimals).map_err(|e| {
-        BuildPosTxsError::Validation(format!(
+        BuildPosTxsError::Validation(ValidationError::InvalidAmount(format!(
             "Unable to parse amount with {} decimals: {}",
             decimals, e
-        ))
+        )))
     })?;
 
     let value: U256 = parsed_value.into();
 
     if value > U256::from(u64::MAX) {
         return Err(BuildPosTxsError::Validation(
-            "Amount too large for u64".to_string(),
+            ValidationError::InvalidAmount("Amount too large for u64".to_string()),
         ));
     }
 
@@ -228,18 +257,20 @@ pub async fn get_transaction_status(
     project_id: &str,
     signature: &str,
     chain_id: &Caip2ChainId,
-) -> Result<TransactionStatus, BuildPosTxsError> {
-    let parsed_signature = Signature::from_str(signature)
-        .map_err(|e| BuildPosTxsError::Validation(format!("Invalid signature: {}", e)))?;
+) -> Result<TransactionStatus, CheckPosTxError> {
+    let parsed_signature = Signature::from_str(signature).map_err(|e| {
+        CheckPosTxError::Validation(ValidationError::InvalidWalletResponse(format!(
+            "Invalid signature: {}",
+            e
+        )))
+    })?;
 
-    let rpc_client = create_rpc_client(chain_id, project_id)?;
+    let rpc_client = create_rpc_client(chain_id, project_id).map_err(CheckPosTxError::Internal)?;
 
     let response = rpc_client
         .get_signature_statuses_with_history(&[parsed_signature])
         .await
-        .map_err(|e| {
-            BuildPosTxsError::Internal(format!("Failed to get signature status: {}", e))
-        })?;
+        .map_err(|e| CheckPosTxError::Internal(InternalError::RpcError(e.to_string())))?;
 
     debug!("solana check transaction response: {:?}", response);
 
@@ -251,9 +282,41 @@ pub async fn get_transaction_status(
                 Ok(TransactionStatus::Confirmed)
             }
         }
-        Some(None) => Ok(TransactionStatus::Pending),
-        None => Ok(TransactionStatus::Pending),
+        Some(None) | None => {
+            let fallback = get_status_via_get_transaction(&rpc_client, &parsed_signature).await?;
+            match fallback {
+                Some(status) => Ok(status),
+                None => Ok(TransactionStatus::Pending),
+            }
+        }
     }
+}
+
+async fn get_status_via_get_transaction(
+    rpc_client: &RpcClient,
+    signature: &Signature,
+) -> Result<Option<TransactionStatus>, CheckPosTxError> {
+    let config = RpcTransactionConfig {
+        commitment: Some(CommitmentConfig::confirmed()),
+        max_supported_transaction_version: Some(0),
+        ..Default::default()
+    };
+
+    let tx = match rpc_client
+        .get_transaction_with_config(signature, config)
+        .await
+    {
+        Ok(tx) => tx,
+        Err(_e) => return Ok(None),
+    };
+    debug!("solana get transaction response: {:?}", tx);
+
+    if let Some(meta) = tx.transaction.meta {
+        if meta.err.is_some() {
+            return Ok(Some(TransactionStatus::Failed));
+        }
+    }
+    Ok(Some(TransactionStatus::Confirmed))
 }
 
 pub async fn check_transaction(
@@ -261,7 +324,7 @@ pub async fn check_transaction(
     project_id: &str,
     signature: &str,
     chain_id: &Caip2ChainId,
-) -> Result<CheckTransactionResult, BuildPosTxsError> {
+) -> Result<CheckTransactionResult, CheckPosTxError> {
     let status = get_transaction_status(state, project_id, signature, chain_id).await?;
 
     match status {

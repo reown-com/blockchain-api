@@ -1,25 +1,30 @@
 pub mod build_transactions;
 pub mod check_transaction;
+pub mod errors;
 pub mod evm;
 pub mod solana;
 pub mod supported_networks;
 pub mod tron;
+
+pub use errors::{
+    BuildPosTxsError, CheckPosTxError, ExecutionError, InternalError, SupportedNetworksError,
+    TransactionIdError, ValidationError,
+};
 
 use {
     crate::{
         state::AppState,
         utils::crypto::{
             disassemble_caip10_with_namespace, is_address_valid, Caip19Asset, Caip2ChainId,
-            CaipNamespaces, CryptoUitlsError, NamespaceValidator,
+            CaipNamespaces, NamespaceValidator,
         },
     },
     axum::extract::State,
-    base64::{engine::general_purpose, DecodeError, Engine as _},
+    base64::{engine::general_purpose, Engine as _},
     serde::{Deserialize, Serialize},
     serde_json::Value,
     std::{convert::TryFrom, fmt::Display, str::FromStr, sync::Arc},
     strum_macros::EnumString,
-    thiserror::Error,
     uuid::Uuid,
 };
 
@@ -48,59 +53,6 @@ pub trait AssetNamespaceType: FromStr + Clone + std::fmt::Debug + PartialEq {
     fn is_native(&self) -> bool;
 }
 
-#[derive(Debug, Error)]
-pub enum BuildPosTxsError {
-    #[error("Validation error: {0}")]
-    Validation(String),
-
-    #[error("Internal error: {0}")]
-    Internal(String),
-}
-
-impl BuildPosTxsError {
-    pub fn is_internal(&self) -> bool {
-        matches!(self, BuildPosTxsError::Internal(_))
-    }
-}
-
-#[derive(Debug, Error)]
-pub enum CheckPosTxError {
-    #[error("Validation error: {0}")]
-    Validation(String),
-
-    #[error("Internal error: {0}")]
-    Internal(String),
-}
-
-impl CheckPosTxError {
-    pub fn is_internal(&self) -> bool {
-        matches!(self, CheckPosTxError::Internal(_))
-    }
-}
-
-#[derive(Debug, Error)]
-pub enum SupportedNetworksError {
-    #[error("Internal error: {0}")]
-    Internal(String),
-}
-
-impl SupportedNetworksError {
-    pub fn is_internal(&self) -> bool {
-        matches!(self, SupportedNetworksError::Internal(_))
-    }
-}
-
-#[derive(Debug, Error)]
-pub enum TransactionIdError {
-    #[error("Invalid transaction encoding: {0}")]
-    InvalidBase64(#[from] DecodeError),
-
-    #[error("Invalid transaction format: '{0}'")]
-    InvalidFormat(String),
-
-    #[error("Invalid chain ID: {0}")]
-    InvalidChainId(#[from] CryptoUitlsError),
-}
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SupportedNetworksResult {
@@ -245,7 +197,9 @@ impl TryFrom<&str> for TransactionId {
     type Error = TransactionIdError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let decoded = general_purpose::STANDARD_NO_PAD.decode(value)?;
+        let decoded = general_purpose::STANDARD_NO_PAD
+            .decode(value)
+            .map_err(|_| TransactionIdError::InvalidFormat(value.to_string()))?;
         let decoded_str = String::from_utf8(decoded)
             .map_err(|_| TransactionIdError::InvalidFormat(value.to_string()))?;
 
@@ -283,16 +237,19 @@ pub struct ValidatedPaymentIntent<T: AssetNamespaceType> {
 
 impl<T: AssetNamespaceType> ValidatedPaymentIntent<T> {
     pub fn validate_params(params: &PaymentIntent) -> Result<Self, BuildPosTxsError> {
-        let asset = Caip19Asset::parse(&params.asset)
-            .map_err(|e| BuildPosTxsError::Validation(format!("Invalid Asset: {e}")))?;
+        let asset = Caip19Asset::parse(&params.asset).map_err(|e| {
+            BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string()))
+        })?;
 
         let (recipient_namespace, recipient_chain_id, recipient_address) =
-            disassemble_caip10_with_namespace::<SupportedNamespaces>(&params.recipient)
-                .map_err(|e| BuildPosTxsError::Validation(format!("Invalid Recipient: {e}")))?;
+            disassemble_caip10_with_namespace::<SupportedNamespaces>(&params.recipient).map_err(
+                |e| BuildPosTxsError::Validation(ValidationError::InvalidRecipient(e.to_string())),
+            )?;
 
         let (sender_namespace, sender_chain_id, sender_address) =
-            disassemble_caip10_with_namespace::<SupportedNamespaces>(&params.sender)
-                .map_err(|e| BuildPosTxsError::Validation(format!("Invalid Sender: {e}")))?;
+            disassemble_caip10_with_namespace::<SupportedNamespaces>(&params.sender).map_err(
+                |e| BuildPosTxsError::Validation(ValidationError::InvalidSender(e.to_string())),
+            )?;
 
         let asset_chain_id = asset.chain_id().reference();
         let asset_namespace = asset
@@ -300,13 +257,13 @@ impl<T: AssetNamespaceType> ValidatedPaymentIntent<T> {
             .namespace()
             .parse::<SupportedNamespaces>()
             .map_err(|e| {
-                BuildPosTxsError::Validation(format!("Cannot parse asset namespace: {e}"))
+                BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string()))
             })?;
 
         if asset_namespace != recipient_namespace || asset_namespace != sender_namespace {
-            return Err(BuildPosTxsError::Validation(
+            return Err(BuildPosTxsError::Validation(ValidationError::InvalidAsset(
                 "Asset namespace must match recipient and sender namespaces".to_string(),
-            ));
+            )));
         }
 
         tracing::debug!("asset_chain_id: {asset_chain_id}");
@@ -314,15 +271,14 @@ impl<T: AssetNamespaceType> ValidatedPaymentIntent<T> {
         tracing::debug!("sender_chain_id: {sender_chain_id}");
 
         if asset_chain_id != recipient_chain_id || asset_chain_id != sender_chain_id {
-            return Err(BuildPosTxsError::Validation(
+            return Err(BuildPosTxsError::Validation(ValidationError::InvalidAsset(
                 "Asset chain ID must match recipient and sender chain IDs".to_string(),
-            ));
+            )));
         }
 
         let namespace = T::from_str(asset.asset_namespace()).map_err(|_| {
-            BuildPosTxsError::Validation(format!(
-                "Invalid asset namespace: {}",
-                asset.asset_namespace()
+            BuildPosTxsError::Validation(ValidationError::InvalidAsset(
+                asset.asset_namespace().to_string(),
             ))
         })?;
 

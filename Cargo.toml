@@ -1,6 +1,6 @@
 [package]
 name = "rpc-proxy"
-version = "0.296.0"
+version = "0.298.0"
 edition = "2021"
 authors = [
     "Derek <derek@reown.com>",
@@ -97,7 +97,7 @@ tracing-subscriber = { version = "0.3", features = [
     "env-filter",
 ] }
 
-cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.15.0" }
+cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.16.0" }
 chrono = { version = "0.4", features = ["serde"] }
 futures-util = "0.3.30"
 tokio-stream = "0.1.12"
