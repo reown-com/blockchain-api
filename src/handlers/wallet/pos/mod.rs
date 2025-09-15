@@ -49,12 +49,25 @@ pub trait AssetNamespaceType: FromStr + Clone + std::fmt::Debug + PartialEq {
 }
 
 #[derive(Debug, Error)]
+pub enum InternalError {
+    #[error("Invalid provider URL: {0}")]
+    InvalidProviderUrl(String),
+    
+    #[error("{0}")]
+    Internal(String),
+}
+
+
+#[derive(Debug, Error)]
 pub enum BuildPosTxsError {
-    #[error("Validation error: {0}")]
-    Validation(String),
+    #[error("{0}")]
+    Validation(#[source] ValidationError),
+
+    #[error("Execution error: {0}")]
+    Execution(#[source] ExecutionError),
 
     #[error("Internal error: {0}")]
-    Internal(String),
+    Internal(#[source] InternalError),
 }
 
 impl BuildPosTxsError {
@@ -63,13 +76,33 @@ impl BuildPosTxsError {
     }
 }
 
+#[derive(Debug, Error, Clone)]
+pub enum ValidationError {
+    #[error("Invalid Asset: {0}")]
+    InvalidAsset(String),
+    #[error("Invalid Recipient: {0}")]
+    InvalidRecipient(String),
+    #[error("Invalid Sender: {0}")]
+    InvalidSender(String),
+    #[error("Invalid Amount: {0}")]
+    InvalidAmount(String),
+}
+
+
+#[derive(Debug, Error, Clone)]
+pub enum ExecutionError {
+    #[error("Unable to estimate gas: {0}")]
+    GasEstimation(String),
+
+}
+
 #[derive(Debug, Error)]
 pub enum CheckPosTxError {
     #[error("Validation error: {0}")]
     Validation(String),
 
     #[error("Internal error: {0}")]
-    Internal(String),
+    Internal(#[source] InternalError),
 }
 
 impl CheckPosTxError {
@@ -284,15 +317,15 @@ pub struct ValidatedPaymentIntent<T: AssetNamespaceType> {
 impl<T: AssetNamespaceType> ValidatedPaymentIntent<T> {
     pub fn validate_params(params: &PaymentIntent) -> Result<Self, BuildPosTxsError> {
         let asset = Caip19Asset::parse(&params.asset)
-            .map_err(|e| BuildPosTxsError::Validation(format!("Invalid Asset: {e}")))?;
+            .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string())))?;
 
         let (recipient_namespace, recipient_chain_id, recipient_address) =
             disassemble_caip10_with_namespace::<SupportedNamespaces>(&params.recipient)
-                .map_err(|e| BuildPosTxsError::Validation(format!("Invalid Recipient: {e}")))?;
+                .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidRecipient(e.to_string())))?;
 
         let (sender_namespace, sender_chain_id, sender_address) =
             disassemble_caip10_with_namespace::<SupportedNamespaces>(&params.sender)
-                .map_err(|e| BuildPosTxsError::Validation(format!("Invalid Sender: {e}")))?;
+                .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidSender(e.to_string())))?;
 
         let asset_chain_id = asset.chain_id().reference();
         let asset_namespace = asset
@@ -300,12 +333,12 @@ impl<T: AssetNamespaceType> ValidatedPaymentIntent<T> {
             .namespace()
             .parse::<SupportedNamespaces>()
             .map_err(|e| {
-                BuildPosTxsError::Validation(format!("Cannot parse asset namespace: {e}"))
+                BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string()))
             })?;
 
         if asset_namespace != recipient_namespace || asset_namespace != sender_namespace {
             return Err(BuildPosTxsError::Validation(
-                "Asset namespace must match recipient and sender namespaces".to_string(),
+                ValidationError::InvalidAsset("Asset namespace must match recipient and sender namespaces".to_string()),
             ));
         }
 
@@ -315,14 +348,13 @@ impl<T: AssetNamespaceType> ValidatedPaymentIntent<T> {
 
         if asset_chain_id != recipient_chain_id || asset_chain_id != sender_chain_id {
             return Err(BuildPosTxsError::Validation(
-                "Asset chain ID must match recipient and sender chain IDs".to_string(),
+                ValidationError::InvalidAsset("Asset chain ID must match recipient and sender chain IDs".to_string()),
             ));
         }
 
         let namespace = T::from_str(asset.asset_namespace()).map_err(|_| {
-            BuildPosTxsError::Validation(format!(
-                "Invalid asset namespace: {}",
-                asset.asset_namespace()
+            BuildPosTxsError::Validation(ValidationError::InvalidAsset(
+                asset.asset_namespace().to_string(),
             ))
         })?;
 
