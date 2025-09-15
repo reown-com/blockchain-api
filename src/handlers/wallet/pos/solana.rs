@@ -93,7 +93,7 @@ async fn build_spl_transfer(
         .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string())))?;
 
     let rpc_client = create_rpc_client(params.asset.chain_id(), project_id)
-        .map_err(|e| BuildPosTxsError::Internal(e))?;
+        .map_err(BuildPosTxsError::Internal)?;
 
     let (decimals, token_program_id) =
         get_token_decimals(&mint_pubkey, params.asset.chain_id(), project_id).await?;
@@ -174,7 +174,7 @@ async fn get_token_decimals(
     project_id: &str,
 ) -> Result<(u8, Pubkey), BuildPosTxsError> {
     let rpc_client =
-        create_rpc_client(chain_id, project_id).map_err(|e| BuildPosTxsError::Internal(e))?;
+        create_rpc_client(chain_id, project_id).map_err(BuildPosTxsError::Internal)?;
 
     let mint_account = rpc_client
         .get_account_with_commitment(mint_pubkey, CommitmentConfig::confirmed())
@@ -267,17 +267,12 @@ pub async fn get_transaction_status(
     })?;
 
     let rpc_client =
-        create_rpc_client(chain_id, project_id).map_err(|e| CheckPosTxError::Internal(e))?;
+        create_rpc_client(chain_id, project_id).map_err(CheckPosTxError::Internal)?;
 
     let response = rpc_client
         .get_signature_statuses_with_history(&[parsed_signature])
         .await
-        .map_err(|e| {
-            CheckPosTxError::Internal(InternalError::Internal(format!(
-                "Failed to get signature status: {}",
-                e
-            )))
-        })?;
+        .map_err(|e| CheckPosTxError::Internal(InternalError::RpcError(e.to_string())))?;
 
     debug!("solana check transaction response: {:?}", response);
 

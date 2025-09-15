@@ -283,7 +283,7 @@ async fn estimate_trc20_fee_limit(
 ) -> Result<u64, BuildPosTxsError> {
     let est = estimate_energy(state.clone(), chain_id, call)
         .await
-        .map_err(|e| BuildPosTxsError::Internal(e))?;
+        .map_err(BuildPosTxsError::Internal)?;
     if !est.result.result {
         let msg = est.result.message.unwrap_or_default();
         return Err(BuildPosTxsError::Internal(InternalError::Internal(
@@ -298,7 +298,7 @@ async fn estimate_trc20_fee_limit(
 
     let params = get_chain_parameters(state, chain_id)
         .await
-        .map_err(|e| BuildPosTxsError::Internal(e))?;
+        .map_err(BuildPosTxsError::Internal)?;
     let energy_fee = params
         .chain_parameter
         .into_iter()
@@ -322,7 +322,7 @@ async fn estimate_trc20_fee_limit(
     })?;
 
     compute_fee_limit(energy_required_u128, energy_fee_u128)
-        .map_err(|e| BuildPosTxsError::Internal(e))
+        .map_err(BuildPosTxsError::Internal)
 }
 
 fn compute_fee_limit(energy_required: u128, energy_fee: u128) -> Result<u64, InternalError> {
@@ -432,7 +432,7 @@ async fn build_trc20_transfer(
 
     let resp = trigger_smart_contract(state, params.asset.chain_id(), &trigger_req)
         .await
-        .map_err(|e| BuildPosTxsError::Internal(e))?;
+        .map_err(BuildPosTxsError::Internal)?;
 
     debug!("tron build transaction resp: {:?}", resp);
 
@@ -483,7 +483,7 @@ async fn fetch_trc20_decimals(
 
     let resp = trigger_constant_contract(state, chain_id, &trigger_req)
         .await
-        .map_err(|e| BuildPosTxsError::Internal(e))?;
+        .map_err(BuildPosTxsError::Internal)?;
 
     if let Some(results) = resp.constant_result {
         if let Some(hex_str) = results.first() {
@@ -518,13 +518,13 @@ pub async fn get_transaction_status(
 
     let already_broadcasted = get_transaction_by_id(state.clone(), chain_id, txid)
         .await
-        .map_err(|e| CheckPosTxError::Internal(e))?
+        .map_err(CheckPosTxError::Internal)?
         .is_some();
 
     if !already_broadcasted {
         let broadcast_resp = broadcast_transaction(state, chain_id, signed_tx)
             .await
-            .map_err(|e| CheckPosTxError::Internal(e))?;
+            .map_err(CheckPosTxError::Internal)?;
         debug!("tron broadcast resp: {:?}", broadcast_resp);
         if broadcast_resp.result.is_none() || broadcast_resp.result == Some(false) {
             return Err(CheckPosTxError::Internal(InternalError::Internal(format!(
@@ -539,7 +539,7 @@ pub async fn get_transaction_status(
 
     let info_opt = get_transaction_info_by_id(state, chain_id, txid)
         .await
-        .map_err(|e| CheckPosTxError::Internal(e))?;
+        .map_err(CheckPosTxError::Internal)?;
 
     match info_opt {
         Some(info_resp) => {

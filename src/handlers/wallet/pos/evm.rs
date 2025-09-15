@@ -98,7 +98,7 @@ impl EvmTxBuilder {
             BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string()))
         })?;
         let provider = get_provider(&self.chain_id, &self.project_id)
-            .map_err(|e| BuildPosTxsError::Internal(e))?;
+            .map_err(BuildPosTxsError::Internal)?;
 
         let token_amount = get_erc20_transfer_amount(&provider, token_address, amount).await?;
         let transfer_calldata =
@@ -118,7 +118,7 @@ impl EvmTxBuilder {
 
     async fn finalize(mut self) -> Result<TransactionRpc, BuildPosTxsError> {
         let provider = get_provider(&self.chain_id, &self.project_id)
-            .map_err(|e| BuildPosTxsError::Internal(e))?;
+            .map_err(BuildPosTxsError::Internal)?;
 
         let fees = provider.estimate_eip1559_fees(None).await.map_err(|e| {
             BuildPosTxsError::Execution(ExecutionError::GasEstimation(e.to_string()))
@@ -269,7 +269,7 @@ pub async fn get_transaction_status(
     txid: &str,
     chain_id: &Caip2ChainId,
 ) -> Result<TransactionStatus, CheckPosTxError> {
-    let provider = get_provider(chain_id, project_id).map_err(|e| CheckPosTxError::Internal(e))?;
+    let provider = get_provider(chain_id, project_id).map_err(CheckPosTxError::Internal)?;
 
     let txhash = txid.parse::<TxHash>().map_err(|e| {
         CheckPosTxError::Validation(ValidationError::InvalidWalletResponse(format!(
