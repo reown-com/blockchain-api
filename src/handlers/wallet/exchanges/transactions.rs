@@ -9,6 +9,7 @@ use {
         },
         metrics::ExchangeReconciliationQueryType,
         state::AppState,
+        handlers::wallet::exchanges::ExchangeType,
     },
     std::{sync::Arc, time::Instant},
 };
@@ -17,6 +18,13 @@ pub async fn create(
     state: &Arc<AppState>,
     args: NewExchangeTransaction<'_>,
 ) -> Result<(), DatabaseError> {
+    let exchange = ExchangeType::from_id(&args.exchange_id).ok_or_else(|| {
+        DatabaseError::BadArgument("Invalid exchange id".to_string())
+    })?;
+    if !exchange.is_transaction_storage_enabled() {
+        return Ok(());
+    }
+
     let mut db_tx = state.postgres.begin().await?;
     let q_start = Instant::now();
     let row = exchange_transactions::insert_new(&mut *db_tx, args).await?;
@@ -49,6 +57,13 @@ pub async fn mark_succeeded(
     session_id: &str,
     tx_hash: Option<&str>,
 ) -> Result<(), DatabaseError> {
+    let exchange = ExchangeType::from_id(&session_id).ok_or_else(|| {
+        DatabaseError::BadArgument("Invalid exchange id".to_string())
+    })?;
+    if !exchange.is_transaction_storage_enabled() {
+        return Ok(());
+    }
+
     let mut db_tx = state.postgres.begin().await?;
     let q_start = Instant::now();
     let row = exchange_transactions::update_status(
@@ -91,6 +106,13 @@ pub async fn mark_failed(
     failure_reason: Option<&str>,
     tx_hash: Option<&str>,
 ) -> Result<(), DatabaseError> {
+    let exchange = ExchangeType::from_id(&session_id).ok_or_else(|| {
+        DatabaseError::BadArgument("Invalid exchange id".to_string())
+    })?;
+    if !exchange.is_transaction_storage_enabled() {
+        return Ok(());
+    }
+
     let mut db_tx = state.postgres.begin().await?;
     let q_start = Instant::now();
     let row = exchange_transactions::update_status(
@@ -131,6 +153,13 @@ pub async fn touch_pending(
     state: &Arc<AppState>,
     session_id: &str,
 ) -> Result<(), crate::database::error::DatabaseError> {
+    let exchange = ExchangeType::from_id(&session_id).ok_or_else(|| {
+        DatabaseError::BadArgument("Invalid exchange id".to_string())
+    })?;
+    if !exchange.is_transaction_storage_enabled() {
+        return Ok(());
+    }
+
     let mut db_tx = state.postgres.begin().await?;
     let q_start = Instant::now();
     exchange_transactions::touch_non_terminal(&mut *db_tx, session_id).await?;

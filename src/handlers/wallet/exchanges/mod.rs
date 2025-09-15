@@ -171,6 +171,14 @@ impl ExchangeType {
     pub fn is_asset_supported(&self, asset: &Caip19Asset) -> bool {
         self.provider().is_asset_supported(asset)
     }
+
+    pub fn is_transaction_storage_enabled(&self) -> bool {
+        match self {
+            ExchangeType::Binance => true,
+            ExchangeType::Coinbase => true,
+            ExchangeType::ReownTest => false,
+        }
+    }
 }
 
 pub fn get_supported_exchanges(asset: Option<String>) -> Result<Vec<Exchange>, ExchangeError> {
