@@ -1,8 +1,4 @@
-use {
-    thiserror::Error,
-    base64::DecodeError,
-    crate::utils::crypto::CryptoUitlsError,
-};
+use {crate::utils::crypto::CryptoUitlsError, base64::DecodeError, thiserror::Error};
 
 #[derive(Debug, Error)]
 pub enum InternalError {
@@ -11,7 +7,7 @@ pub enum InternalError {
 
     #[error("RPC error: {0}")]
     RpcError(String),
-    
+
     #[error("{0}")]
     Internal(String),
 }
@@ -19,9 +15,9 @@ pub enum InternalError {
 impl InternalError {
     pub fn to_json_rpc_error_code(&self) -> i32 {
         match self {
-            InternalError::InvalidProviderUrl(_) => -12001,
-            InternalError::RpcError(_) => -12002,
-            InternalError::Internal(_) => -12999,
+            InternalError::InvalidProviderUrl(_) => -18940,
+            InternalError::RpcError(_) => -18941,
+            InternalError::Internal(_) => -18949,
         }
     }
 }
@@ -73,13 +69,13 @@ pub enum ValidationError {
 impl ValidationError {
     pub fn to_json_rpc_error_code(&self) -> i32 {
         match self {
-            ValidationError::InvalidAsset(_) => -10001,
-            ValidationError::InvalidRecipient(_) => -10002,
-            ValidationError::InvalidSender(_) => -10003,
-            ValidationError::InvalidAmount(_) => -10004,
-            ValidationError::InvalidAddress(_) => -10005,
-            ValidationError::InvalidWalletResponse(_) => -10006,
-            ValidationError::InvalidTransactionId(_) => -10007,
+            ValidationError::InvalidAsset(_) => -18901,
+            ValidationError::InvalidRecipient(_) => -18902,
+            ValidationError::InvalidSender(_) => 18903,
+            ValidationError::InvalidAmount(_) => -18904,
+            ValidationError::InvalidAddress(_) => -18905,
+            ValidationError::InvalidWalletResponse(_) => -18906,
+            ValidationError::InvalidTransactionId(_) => -18907,
         }
     }
 }
@@ -88,13 +84,12 @@ impl ValidationError {
 pub enum ExecutionError {
     #[error("Unable to estimate gas: {0}")]
     GasEstimation(String),
-
 }
 
 impl ExecutionError {
     pub fn to_json_rpc_error_code(&self) -> i32 {
         match self {
-            ExecutionError::GasEstimation(_) => -11001,
+            ExecutionError::GasEstimation(_) => -18920,
         }
     }
 }
@@ -133,7 +128,7 @@ impl SupportedNetworksError {
     }
 
     pub fn to_json_rpc_error_code(&self) -> i32 {
-        -12999
+        -18960
     }
 }
 
@@ -152,9 +147,9 @@ pub enum TransactionIdError {
 impl TransactionIdError {
     pub fn to_json_rpc_error_code(&self) -> i32 {
         match self {
-            TransactionIdError::InvalidBase64(_) => -13001,
-            TransactionIdError::InvalidFormat(_) => -13002,
-            TransactionIdError::InvalidChainId(_) => -13003,
+            TransactionIdError::InvalidBase64(_) => -18970,
+            TransactionIdError::InvalidFormat(_) => -18971,
+            TransactionIdError::InvalidChainId(_) => -18972,
         }
     }
 }

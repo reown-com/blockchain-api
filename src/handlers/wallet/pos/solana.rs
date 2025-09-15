@@ -1,8 +1,8 @@
 use {
     super::{
-        AssetNamespaceType, BuildPosTxsError, CheckTransactionResult, PaymentIntent,
-        SupportedNamespace, TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
-        ValidatedPaymentIntent, ValidationError, InternalError, CheckPosTxError
+        AssetNamespaceType, BuildPosTxsError, CheckPosTxError, CheckTransactionResult,
+        InternalError, PaymentIntent, SupportedNamespace, TransactionBuilder, TransactionId,
+        TransactionRpc, TransactionStatus, ValidatedPaymentIntent, ValidationError,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::primitives::{utils::parse_units, U256},
@@ -85,13 +85,15 @@ async fn build_spl_transfer(
     let sender_pubkey = Pubkey::from_str(&params.sender_address)
         .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidSender(e.to_string())))?;
 
-    let recipient_pubkey = Pubkey::from_str(&params.recipient_address)
-        .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidRecipient(e.to_string())))?;
+    let recipient_pubkey = Pubkey::from_str(&params.recipient_address).map_err(|e| {
+        BuildPosTxsError::Validation(ValidationError::InvalidRecipient(e.to_string()))
+    })?;
 
     let mint_pubkey = Pubkey::from_str(params.asset.asset_reference())
         .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string())))?;
 
-    let rpc_client = create_rpc_client(params.asset.chain_id(), project_id).map_err(|e| BuildPosTxsError::Internal(e))?;
+    let rpc_client = create_rpc_client(params.asset.chain_id(), project_id)
+        .map_err(|e| BuildPosTxsError::Internal(e))?;
 
     let (decimals, token_program_id) =
         get_token_decimals(&mint_pubkey, params.asset.chain_id(), project_id).await?;
@@ -111,21 +113,32 @@ async fn build_spl_transfer(
         decimals,
     )
     .map_err(|e| {
-        BuildPosTxsError::Internal(InternalError::Internal(format!("Failed to create transfer instruction: {}", e)))
+        BuildPosTxsError::Internal(InternalError::Internal(format!(
+            "Failed to create transfer instruction: {}",
+            e
+        )))
     })?;
 
     let recent_blockhash = rpc_client
         .get_latest_blockhash_with_commitment(CommitmentConfig::finalized())
         .await
         .map_err(|e| {
-            BuildPosTxsError::Internal(InternalError::Internal(format!("Failed to fetch recent blockhash: {}", e)))
+            BuildPosTxsError::Internal(InternalError::Internal(format!(
+                "Failed to fetch recent blockhash: {}",
+                e
+            )))
         })?
         .0;
 
     let instructions = vec![transfer_instruction];
 
     let v0_message = v0::Message::try_compile(&sender_pubkey, &instructions, &[], recent_blockhash)
-        .map_err(|e| BuildPosTxsError::Internal(InternalError::Internal(format!("Failed to compile v0 message: {}", e))))?;
+        .map_err(|e| {
+            BuildPosTxsError::Internal(InternalError::Internal(format!(
+                "Failed to compile v0 message: {}",
+                e
+            )))
+        })?;
 
     let message = VersionedMessage::V0(v0_message);
 
@@ -136,7 +149,10 @@ async fn build_spl_transfer(
     };
 
     let serialized_tx = bincode::serialize(&transaction).map_err(|e| {
-        BuildPosTxsError::Internal(InternalError::Internal(format!("Failed to serialize transaction: {}", e)))
+        BuildPosTxsError::Internal(InternalError::Internal(format!(
+            "Failed to serialize transaction: {}",
+            e
+        )))
     })?;
 
     let transaction_b64 = general_purpose::STANDARD.encode(serialized_tx);
@@ -157,37 +173,51 @@ async fn get_token_decimals(
     chain_id: &Caip2ChainId,
     project_id: &str,
 ) -> Result<(u8, Pubkey), BuildPosTxsError> {
-    let rpc_client = create_rpc_client(chain_id, project_id).map_err(|e| BuildPosTxsError::Internal(e))?;
+    let rpc_client =
+        create_rpc_client(chain_id, project_id).map_err(|e| BuildPosTxsError::Internal(e))?;
 
     let mint_account = rpc_client
         .get_account_with_commitment(mint_pubkey, CommitmentConfig::confirmed())
         .await
-        .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidAsset(format!("Failed to fetch mint account: {}", e))))?
+        .map_err(|e| {
+            BuildPosTxsError::Validation(ValidationError::InvalidAsset(format!(
+                "Failed to fetch mint account: {}",
+                e
+            )))
+        })?
         .value
-        .ok_or_else(|| BuildPosTxsError::Validation(ValidationError::InvalidAsset("Mint account not found".to_string())))?;
+        .ok_or_else(|| {
+            BuildPosTxsError::Validation(ValidationError::InvalidAsset(
+                "Mint account not found".to_string(),
+            ))
+        })?;
 
     let token_program_id = mint_account.owner;
     let is_spl_token = token_program_id == spl_token::id();
 
-    let spl_token_2022_id = Pubkey::from_str(SPL_TOKEN_2022_ID)
-        .map_err(|_| BuildPosTxsError::Validation(ValidationError::InvalidAsset("Invalid SPL Token-2022 program ID".to_string())))?;
+    let spl_token_2022_id = Pubkey::from_str(SPL_TOKEN_2022_ID).map_err(|_| {
+        BuildPosTxsError::Validation(ValidationError::InvalidAsset(
+            "Invalid SPL Token-2022 program ID".to_string(),
+        ))
+    })?;
     let is_spl_token_2022 = token_program_id == spl_token_2022_id;
 
     if (!is_spl_token && !is_spl_token_2022) || mint_account.data.len() < Mint::LEN {
-        return Err(BuildPosTxsError::Validation(ValidationError::InvalidAsset(format!(
-            "Invalid mint account owner: {}. Expected SPL Token program.",
-            mint_account.owner
-        ))));
+        return Err(BuildPosTxsError::Validation(ValidationError::InvalidAsset(
+            format!(
+                "Invalid mint account owner: {}. Expected SPL Token program.",
+                mint_account.owner
+            ),
+        )));
     }
 
     match Mint::unpack_from_slice(&mint_account.data[..Mint::LEN]) {
         Ok(mint_data) => Ok((mint_data.decimals, token_program_id)),
         Err(e) => {
             debug!("Failed to parse as SPL Token mint: {}", e);
-            Err(BuildPosTxsError::Validation(ValidationError::InvalidAsset(format!(
-                "Failed to parse as SPL Token mint: {}",
-                e
-            ))))
+            Err(BuildPosTxsError::Validation(ValidationError::InvalidAsset(
+                format!("Failed to parse as SPL Token mint: {}", e),
+            )))
         }
     }
 }
@@ -229,16 +259,24 @@ pub async fn get_transaction_status(
     signature: &str,
     chain_id: &Caip2ChainId,
 ) -> Result<TransactionStatus, CheckPosTxError> {
-    let parsed_signature = Signature::from_str(signature)
-        .map_err(|e| CheckPosTxError::Validation(ValidationError::InvalidWalletResponse(format!("Invalid signature: {}", e))))?;
+    let parsed_signature = Signature::from_str(signature).map_err(|e| {
+        CheckPosTxError::Validation(ValidationError::InvalidWalletResponse(format!(
+            "Invalid signature: {}",
+            e
+        )))
+    })?;
 
-    let rpc_client = create_rpc_client(chain_id, project_id).map_err(|e| CheckPosTxError::Internal(e))?;
+    let rpc_client =
+        create_rpc_client(chain_id, project_id).map_err(|e| CheckPosTxError::Internal(e))?;
 
     let response = rpc_client
         .get_signature_statuses_with_history(&[parsed_signature])
         .await
         .map_err(|e| {
-            CheckPosTxError::Internal(InternalError::Internal(format!("Failed to get signature status: {}", e)))
+            CheckPosTxError::Internal(InternalError::Internal(format!(
+                "Failed to get signature status: {}",
+                e
+            )))
         })?;
 
     debug!("solana check transaction response: {:?}", response);
