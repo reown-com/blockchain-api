@@ -19,6 +19,7 @@ pub mod generators;
 pub mod health;
 pub mod history;
 pub mod identity;
+pub mod json_rpc;
 pub mod onramp;
 pub mod portfolio;
 pub mod profile;
@@ -26,7 +27,6 @@ pub mod proxy;
 pub mod self_provider;
 pub mod sessions;
 pub mod supported_chains;
-pub mod wallet;
 pub mod ws_proxy;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

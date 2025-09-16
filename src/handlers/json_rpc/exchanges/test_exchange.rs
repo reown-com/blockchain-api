@@ -1,5 +1,5 @@
 use {
-    crate::handlers::wallet::exchanges::{
+    crate::handlers::json_rpc::exchanges::{
         BuyTransactionStatus, ExchangeError, ExchangeProvider, GetBuyStatusParams,
         GetBuyStatusResponse, GetBuyUrlParams,
     },

@@ -1,5 +1,5 @@
 use {
-    crate::handlers::wallet::exchanges::{
+    crate::handlers::json_rpc::exchanges::{
         is_feature_enabled_for_project_id,
         transactions::{
             mark_failed as mark_transaction_failed, mark_succeeded as mark_transaction_succeeded,

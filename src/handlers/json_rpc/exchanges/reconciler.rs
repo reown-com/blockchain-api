@@ -6,7 +6,8 @@ use {
         ExchangeType, GetBuyStatusParams,
     },
     crate::{
-        database::exchange_reconciliation as db, handlers::wallet::exchanges::BuyTransactionStatus,
+        database::exchange_reconciliation as db,
+        handlers::json_rpc::exchanges::BuyTransactionStatus,
         metrics::ExchangeReconciliationQueryType, state::AppState,
     },
     axum::extract::State,

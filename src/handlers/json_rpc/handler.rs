@@ -12,7 +12,7 @@ use crate::json_rpc::{
 };
 use crate::utils::simple_request_json::SimpleRequestJson;
 use crate::{
-    handlers::{wallet::get_calls_status::QueryParams as CallStatusQueryParams, SdkInfoParams},
+    handlers::{json_rpc::get_calls_status::QueryParams as CallStatusQueryParams, SdkInfoParams},
     state::AppState,
 };
 use axum::extract::{ConnectInfo, Query};

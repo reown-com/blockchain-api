@@ -3,7 +3,7 @@ use {
         CheckPosTxError, CheckTransactionParams, CheckTransactionResult, SupportedNamespaces,
         TransactionId, ValidationError,
     },
-    crate::handlers::wallet::pos::{
+    crate::handlers::json_rpc::pos::{
         evm::check_transaction as evm_check_transaction,
         solana::check_transaction as solana_check_transaction,
         tron::check_transaction as tron_check_transaction,
