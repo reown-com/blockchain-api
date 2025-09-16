@@ -301,7 +301,7 @@ mod self_transport {
 #[cfg(feature = "test-mock-bundler")]
 mod tests {
     use crate::{
-        handlers::json_rpc::{
+        handlers::json_rpc::wallet::{
             call_id::{CallId, CallIdInner},
             get_calls_status::{CallStatus, GetCallsStatusResult},
             handler::WALLET_GET_CALLS_STATUS,
