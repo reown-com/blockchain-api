@@ -107,7 +107,6 @@ async fn handler_internal(
     };
 
     let state_clone = state.clone();
-    let method_for_latency = method.clone();
     let latency = start.elapsed();
     tokio::spawn(async move {
         state_clone
@@ -115,7 +114,7 @@ async fn handler_internal(
             .add_json_rpc_call(method.clone(), json_rpc_code);
         state_clone
             .metrics
-            .add_json_rpc_call_latency(method_for_latency, latency);
+            .add_json_rpc_call_latency(method, latency);
     });
 
     response
