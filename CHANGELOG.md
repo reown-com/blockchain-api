@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.300.0 - 2025-09-16
+#### Features
+- generic provider (#1122) - (c23f0f7) - Chris Smith
+
+- - -
+
 ## 0.299.1 - 2025-09-16
 #### Bug Fixes
 - **(pos)** update solana check rpc parsing (#1235) - (3c91239) - Luka Isailovic
