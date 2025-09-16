@@ -311,6 +311,27 @@ describe('POS', () => {
       expect(responseData.result).toBeDefined();
       expect(responseData.result.status).toBe('CONFIRMED');
     });
+
+    it('should check the transaction status with full send result', async () => {
+      const payload: CheckTransactionRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'wc_pos_checkTransaction',
+        params: {
+          id: solanaMainnetTransactionId,
+          sendResult: JSON.stringify({
+            signature: solanaMainnetSignature
+          }),
+        }
+      };
+
+      const response = await httpClient.post(`${baseUrl}/v1/json-rpc?projectId=${projectId}`, payload);
+
+      expect(response.status).toBe(200);
+      const responseData = response.data as CheckTransactionResponse;
+      expect(responseData.result).toBeDefined();
+      expect(responseData.result.status).toBe('CONFIRMED');
+    });
   });
 
   describe('Tron', () => {

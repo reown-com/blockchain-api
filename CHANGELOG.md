@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.299.1 - 2025-09-16
+#### Bug Fixes
+- **(pos)** update solana check rpc parsing (#1235) - (3c91239) - Luka Isailovic
+
+- - -
+
 ## 0.299.0 - 2025-09-16
 #### Features
 - exchange transaction reconciliation (#1232) - (81b2f92) - Luka Isailovic
