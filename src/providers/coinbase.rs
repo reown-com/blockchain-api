@@ -172,7 +172,7 @@ impl HistoryProvider for CoinbaseProvider {
     }
 
     fn provider_kind(&self) -> ProviderKind {
-        self.provider_kind
+        self.provider_kind.clone()
     }
 }
 
