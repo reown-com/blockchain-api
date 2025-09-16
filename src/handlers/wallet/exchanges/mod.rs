@@ -15,7 +15,9 @@ use {
 
 pub mod binance;
 pub mod coinbase;
+pub mod reconciler;
 pub mod test_exchange;
+pub mod transactions;
 
 use binance::BinanceExchange;
 use coinbase::CoinbaseExchange;
@@ -168,6 +170,14 @@ impl ExchangeType {
 
     pub fn is_asset_supported(&self, asset: &Caip19Asset) -> bool {
         self.provider().is_asset_supported(asset)
+    }
+
+    pub fn is_transaction_storage_enabled(&self) -> bool {
+        match self {
+            ExchangeType::Binance => true,
+            ExchangeType::Coinbase => true,
+            ExchangeType::ReownTest => false,
+        }
     }
 }
 

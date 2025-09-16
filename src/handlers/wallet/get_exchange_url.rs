@@ -1,9 +1,13 @@
 use {
-    crate::handlers::wallet::exchanges::{
-        is_feature_enabled_for_project_id, ExchangeError, ExchangeType, GetBuyUrlParams,
-    },
     crate::{
-        handlers::SdkInfoParams,
+        database::exchange_reconciliation::NewExchangeTransaction,
+        handlers::{
+            wallet::exchanges::{
+                is_feature_enabled_for_project_id, transactions::create as create_transaction,
+                ExchangeError, ExchangeType, GetBuyUrlParams,
+            },
+            SdkInfoParams,
+        },
         state::AppState,
         utils::crypto::{disassemble_caip10, Caip19Asset},
     },
@@ -136,19 +140,38 @@ async fn handler_internal(
 
     let result = exchange
         .get_buy_url(
-            state,
+            state.clone(),
             GetBuyUrlParams {
-                project_id,
+                project_id: project_id.clone(),
                 asset,
                 amount,
-                recipient: address,
+                recipient: address.clone(),
                 session_id: session_id.clone(),
             },
         )
         .await;
 
     match result {
-        Ok(url) => Ok(GeneratePayUrlResponse { url, session_id }),
+        Ok(url) => {
+            create_transaction(
+                &state,
+                NewExchangeTransaction {
+                    session_id: &session_id,
+                    exchange_id: &request.exchange_id,
+                    project_id: Some(&project_id),
+                    asset: Some(&request.asset),
+                    amount: Some(amount),
+                    recipient: Some(&address),
+                    pay_url: Some(&url),
+                },
+            )
+            .await
+            .map_err(|e| {
+                debug!(error = %e, "Failed to persist exchange transaction");
+                GetExchangeUrlError::InternalError("Failed to persist exchange transaction".into())
+            })?;
+            Ok(GeneratePayUrlResponse { url, session_id })
+        }
         Err(e) => match e {
             ExchangeError::ValidationError(msg) => Err(GetExchangeUrlError::ValidationError(msg)),
             _ => {

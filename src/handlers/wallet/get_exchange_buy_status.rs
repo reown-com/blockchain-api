@@ -1,7 +1,11 @@
 use {
     crate::handlers::wallet::exchanges::{
-        is_feature_enabled_for_project_id, BuyTransactionStatus, ExchangeError, ExchangeType,
-        GetBuyStatusParams,
+        is_feature_enabled_for_project_id,
+        transactions::{
+            mark_failed as mark_transaction_failed, mark_succeeded as mark_transaction_succeeded,
+            touch_pending as touch_pending_transaction,
+        },
+        BuyTransactionStatus, ExchangeError, ExchangeType, GetBuyStatusParams,
     },
     crate::{handlers::SdkInfoParams, state::AppState},
     axum::{
@@ -97,9 +101,10 @@ async fn handler_internal(
         ));
     }
 
+    let arc_state = state.0.clone();
     let result = exchange
         .get_buy_status(
-            state,
+            State(arc_state),
             GetBuyStatusParams {
                 session_id: request.session_id.clone(),
             },
@@ -107,10 +112,44 @@ async fn handler_internal(
         .await;
 
     match result {
-        Ok(response) => Ok(GetExchangeBuyStatusResponse {
-            status: response.status,
-            tx_hash: response.tx_hash,
-        }),
+        Ok(response) => {
+            match response.status {
+                BuyTransactionStatus::Success => {
+                    let tx_hash = response.tx_hash.clone();
+                    let _ = mark_transaction_succeeded(
+                        &state,
+                        &request.session_id,
+                        &request.exchange_id,
+                        tx_hash.as_deref(),
+                    )
+                    .await;
+                }
+                BuyTransactionStatus::Failed => {
+                    let tx_hash = response.tx_hash.clone();
+                    let _ = mark_transaction_failed(
+                        &state,
+                        &request.session_id,
+                        &request.exchange_id,
+                        Some("provider_failed"),
+                        tx_hash.as_deref(),
+                    )
+                    .await;
+                }
+                _ => {
+                    let _ = touch_pending_transaction(
+                        &state,
+                        &request.exchange_id,
+                        &request.session_id,
+                    )
+                    .await;
+                }
+            }
+
+            Ok(GetExchangeBuyStatusResponse {
+                status: response.status,
+                tx_hash: response.tx_hash,
+            })
+        }
         Err(e) => match e {
             ExchangeError::ValidationError(msg) => {
                 Err(GetExchangeBuyStatusError::ValidationError(msg))
