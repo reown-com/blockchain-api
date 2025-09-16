@@ -301,10 +301,12 @@ mod self_transport {
 #[cfg(feature = "test-mock-bundler")]
 mod tests {
     use crate::{
-        handlers::json_rpc::wallet::{
-            call_id::{CallId, CallIdInner},
-            get_calls_status::{CallStatus, GetCallsStatusResult},
+        handlers::json_rpc::{
             handler::WALLET_GET_CALLS_STATUS,
+            wallet::{
+                call_id::{CallId, CallIdInner},
+                get_calls_status::{CallStatus, GetCallsStatusResult},
+            },
         },
         providers::mock_alto::MockAltoUrls,
         test_helpers::spawn_blockchain_api_with_params,
