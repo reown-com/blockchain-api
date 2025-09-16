@@ -3,7 +3,7 @@ use {
     crate::{
         analytics::MessageSource,
         handlers::{
-            json_rpc::types::SignatureRequestType,
+            json_rpc::wallet::types::SignatureRequestType,
             sessions::get::{
                 get_session_context, GetSessionContextError, InternalGetSessionContextError,
             },

@@ -1,31 +1,38 @@
-use super::get_assets::{self, GetAssetsError};
-use super::get_calls_status::{self, GetCallsStatusError};
-use super::get_exchange_buy_status::{self, GetExchangeBuyStatusError};
-use super::get_exchange_url::{self, GetExchangeUrlError};
-use super::get_exchanges::{self, GetExchangesError};
-use super::pos::{self, BuildPosTxsError, CheckPosTxError, SupportedNetworksError};
-use super::prepare_calls::{self, PrepareCallsError};
-use super::send_prepared_calls::{self, SendPreparedCallsError};
-use crate::error::RpcError;
-use crate::json_rpc::{
-    ErrorResponse, JsonRpcError, JsonRpcRequest, JsonRpcResponse, JsonRpcResult,
+use {
+    super::{
+        exchanges::{
+            get_exchange_buy_status::{self, GetExchangeBuyStatusError},
+            get_exchange_url::{self, GetExchangeUrlError},
+            get_exchanges::{self, GetExchangesError},
+        },
+        pos::{self, BuildPosTxsError, CheckPosTxError, SupportedNetworksError},
+        wallet::{
+            get_assets::{self, GetAssetsError},
+            get_calls_status::QueryParams as CallStatusQueryParams,
+            get_calls_status::{self, GetCallsStatusError},
+            prepare_calls::{self, PrepareCallsError},
+            send_prepared_calls::{self, SendPreparedCallsError},
+        },
+    },
+    crate::{
+        error::RpcError,
+        handlers::SdkInfoParams,
+        json_rpc::{ErrorResponse, JsonRpcError, JsonRpcRequest, JsonRpcResponse, JsonRpcResult},
+        state::AppState,
+        utils::simple_request_json::SimpleRequestJson,
+    },
+    axum::extract::{ConnectInfo, Query},
+    axum::response::{IntoResponse, Response},
+    axum::{extract::State, Json},
+    hyper::{HeaderMap, StatusCode},
+    serde::Deserialize,
+    std::net::SocketAddr,
+    std::sync::Arc,
+    thiserror::Error,
+    tracing::error,
+    wc::metrics::{future_metrics, FutureExt},
+    yttrium::wallet_service_api,
 };
-use crate::utils::simple_request_json::SimpleRequestJson;
-use crate::{
-    handlers::{json_rpc::get_calls_status::QueryParams as CallStatusQueryParams, SdkInfoParams},
-    state::AppState,
-};
-use axum::extract::{ConnectInfo, Query};
-use axum::response::{IntoResponse, Response};
-use axum::{extract::State, Json};
-use hyper::{HeaderMap, StatusCode};
-use serde::Deserialize;
-use std::net::SocketAddr;
-use std::sync::Arc;
-use thiserror::Error;
-use tracing::error;
-use wc::metrics::{future_metrics, FutureExt};
-use yttrium::wallet_service_api;
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
