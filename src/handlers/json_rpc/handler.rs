@@ -28,11 +28,11 @@ use {
     serde::Deserialize,
     std::net::SocketAddr,
     std::sync::Arc,
+    std::time::Instant,
     thiserror::Error,
     tracing::error,
     wc::metrics::{future_metrics, FutureExt},
     yttrium::wallet_service_api,
-    std::time::Instant,
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -80,8 +80,10 @@ async fn handler_internal(
 
     let (response, json_rpc_code) = match result {
         Ok(result) => {
-            let response = Json(JsonRpcResponse::Result(JsonRpcResult::new(request.id, result)))
-                .into_response();
+            let response = Json(JsonRpcResponse::Result(JsonRpcResult::new(
+                request.id, result,
+            )))
+            .into_response();
             (response, 0)
         }
         Err(e) => {
