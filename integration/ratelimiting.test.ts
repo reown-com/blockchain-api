@@ -3,9 +3,10 @@ import { getTestSetup } from './init';
 describe('Rate limiting', () => {
   const { baseUrl, projectId, httpClient } = getTestSetup();
 
+  const max_tokens = parseInt(process.env.MAX_TOKENS || '30', 10);
+
   it('Simulate flood and check is rate limited', async () => {
     // Using default max tokens of 30
-    const max_tokens = 200;
 
     // Flooding requests x1.5 then max tokens
     const requests_to_send = max_tokens * 1.5;
@@ -42,7 +43,6 @@ describe('Rate limiting', () => {
 
   it('Flood below max tokens and check is NOT rate limited', async () => {
     // Using default max tokens of 30
-    const max_tokens = 30;
    
     // Sending flood requests to the endpoint other then in first test case
     // since the key is composite with the matched endpoint
