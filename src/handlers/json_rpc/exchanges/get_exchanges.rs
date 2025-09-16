@@ -1,5 +1,5 @@
 use {
-    crate::handlers::wallet::exchanges::{
+    crate::handlers::json_rpc::exchanges::{
         get_supported_exchanges, is_feature_enabled_for_project_id, Exchange,
     },
     crate::{handlers::SdkInfoParams, state::AppState},

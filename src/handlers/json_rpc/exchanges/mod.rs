@@ -15,6 +15,9 @@ use {
 
 pub mod binance;
 pub mod coinbase;
+pub mod get_exchange_buy_status;
+pub mod get_exchange_url;
+pub mod get_exchanges;
 pub mod reconciler;
 pub mod test_exchange;
 pub mod transactions;

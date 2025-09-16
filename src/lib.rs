@@ -368,9 +368,9 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         // Bundler
         .route("/v1/bundler", post(handlers::bundler::handler))
         // Wallet
-        .route("/v1/wallet", post(handlers::wallet::handler::handler))
+        .route("/v1/wallet", post(handlers::json_rpc::handler::handler))
         // Same handler as the Wallet 
-        .route("/v1/json-rpc", post(handlers::wallet::handler::handler))
+        .route("/v1/json-rpc", post(handlers::json_rpc::handler::handler))
         // Chain agnostic orchestration
         .route("/v1/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler_v1))
         .route("/v2/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler_v2))
@@ -487,7 +487,7 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         tokio::spawn(profiler),
         tokio::spawn({
             async move {
-                handlers::wallet::exchanges::reconciler::run(state_for_reconciler).await;
+                handlers::json_rpc::exchanges::reconciler::run(state_for_reconciler).await;
                 Ok::<(), std::io::Error>(())
             }
         }),

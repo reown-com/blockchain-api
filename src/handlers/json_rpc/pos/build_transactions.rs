@@ -4,7 +4,7 @@ use {
         SupportedNamespaces, TransactionBuilder, TransactionRpc, ValidationError,
     },
     crate::{
-        handlers::wallet::pos::{
+        handlers::json_rpc::pos::{
             evm::EvmTransactionBuilder, solana::SolanaTransactionBuilder,
             tron::TronTransactionBuilder,
         },

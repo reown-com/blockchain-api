@@ -7,7 +7,7 @@ use {
                 self as exchange_transactions, NewExchangeTransaction, TxStatus,
             },
         },
-        handlers::wallet::exchanges::ExchangeType,
+        handlers::json_rpc::exchanges::ExchangeType,
         metrics::ExchangeReconciliationQueryType,
         state::AppState,
     },

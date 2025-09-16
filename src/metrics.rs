@@ -444,4 +444,14 @@ impl Metrics {
             }
         }
     }
+
+    pub fn add_json_rpc_call(&self, method: String, code: i32) {
+        counter!("json_rpc_call_counter", StringLabel<"method", String> => &method, StringLabel<"code", String> => &code.to_string())
+            .increment(1);
+    }
+
+    pub fn add_json_rpc_call_latency(&self, method: String, latency: Duration) {
+        histogram!("json_rpc_call_latency_tracker", StringLabel<"method", String> => &method)
+            .record(latency.as_secs_f64());
+    }
 }

@@ -2,7 +2,7 @@ use {
     crate::{
         database::exchange_reconciliation::NewExchangeTransaction,
         handlers::{
-            wallet::exchanges::{
+            json_rpc::exchanges::{
                 is_feature_enabled_for_project_id, transactions::create as create_transaction,
                 ExchangeError, ExchangeType, GetBuyUrlParams,
             },
