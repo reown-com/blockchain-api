@@ -21,10 +21,11 @@ use {
     },
     env::{
         AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, BlastConfig,
-        CallStaticConfig, DrpcConfig, DuneConfig, HiroConfig, MantleConfig, MonadConfig,
-        MoonbeamConfig, MorphConfig, NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig,
-        QuicknodeConfig, RootstockConfig, SolScanConfig, SuiConfig, SyndicaConfig, TheRpcConfig,
-        UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
+        CallStaticConfig, DrpcConfig, DuneConfig, EdexaConfig, HiroConfig, MantleConfig,
+        MonadConfig, MoonbeamConfig, MorphConfig, NearConfig, OdysseyConfig, PoktConfig,
+        PublicnodeConfig, QuicknodeConfig, RootstockConfig, SolScanConfig, SuiConfig,
+        SyndicaConfig, TheRpcConfig, UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig,
+        ZoraConfig,
     },
     error::RpcResult,
     http::Request,
@@ -32,7 +33,7 @@ use {
     metrics_exporter_prometheus::PrometheusBuilder,
     providers::{
         AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
-        BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider,
+        BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider, EdexaProvider,
         HiroProvider, MantleProvider, MonadProvider, MoonbeamProvider, MorphProvider, NearProvider,
         OdysseyProvider, PoktProvider, ProviderRepository, PublicnodeProvider, QuicknodeProvider,
         QuicknodeWsProvider, RootstockProvider, SolScanProvider, SuiProvider, SyndicaProvider,
@@ -623,7 +624,7 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     ));
     providers.add_rpc_provider::<MoonbeamProvider, MoonbeamConfig>(MoonbeamConfig::default());
     providers.add_rpc_provider::<TheRpcProvider, TheRpcConfig>(TheRpcConfig::default());
-
+    providers.add_rpc_provider::<EdexaProvider, EdexaConfig>(EdexaConfig::default());
     providers.add_ws_provider::<AllnodesWsProvider, AllnodesConfig>(AllnodesConfig::new(
         config.allnodes_api_key.clone(),
     ));
