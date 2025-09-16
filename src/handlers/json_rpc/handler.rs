@@ -32,6 +32,7 @@ use {
     tracing::error,
     wc::metrics::{future_metrics, FutureExt},
     yttrium::wallet_service_api,
+    std::time::Instant,
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -64,37 +65,58 @@ async fn handler_internal(
     query: Query<WalletQueryParams>,
     request: JsonRpcRequest,
 ) -> Response {
-    match handle_rpc(
-        state,
+    let start = Instant::now();
+    let method = request.method.as_ref().to_string();
+
+    let result = handle_rpc(
+        state.clone(),
         connect_info,
         headers,
         query,
-        request.method,
+        request.method.clone(),
         request.params,
     )
-    .await
-    {
-        Ok(result) => Json(JsonRpcResponse::Result(JsonRpcResult::new(
-            request.id, result,
-        )))
-        .into_response(),
+    .await;
+
+    let (response, json_rpc_code) = match result {
+        Ok(result) => {
+            let response = Json(JsonRpcResponse::Result(JsonRpcResult::new(request.id, result)))
+                .into_response();
+            (response, 0)
+        }
         Err(e) => {
+            let code = e.to_json_rpc_error_code();
             let json = Json(JsonRpcResponse::Error(JsonRpcError::new(
                 request.id,
                 ErrorResponse {
-                    code: e.to_json_rpc_error_code(),
+                    code,
                     message: e.to_string().into(),
                     data: None,
                 },
             )));
-            if e.is_internal() {
+            let response = if e.is_internal() {
                 error!("Internal server error handling wallet RPC request: {e:?}");
                 (StatusCode::INTERNAL_SERVER_ERROR, json).into_response()
             } else {
                 (StatusCode::BAD_REQUEST, json).into_response()
-            }
+            };
+            (response, code)
         }
-    }
+    };
+
+    let state_clone = state.clone();
+    let method_for_latency = method.clone();
+    let latency = start.elapsed();
+    tokio::spawn(async move {
+        state_clone
+            .metrics
+            .add_json_rpc_call(method.clone(), json_rpc_code);
+        state_clone
+            .metrics
+            .add_json_rpc_call_latency(method_for_latency, latency);
+    });
+
+    response
 }
 
 pub const WALLET_PREPARE_CALLS: &str = "wallet_prepareCalls";
