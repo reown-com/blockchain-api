@@ -29,6 +29,9 @@ out/
 .history/
 *.code-workspace
 
+# Claude Code
+.claude/
+
 #---------------------------------------
 # Rust/Cargo
 
