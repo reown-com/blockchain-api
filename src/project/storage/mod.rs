@@ -4,7 +4,7 @@ use {
         project::{error::ProjectDataError, metrics::ProjectDataMetrics},
         storage::{error::StorageError, KeyValueStorage, StorageResult},
     },
-    cerberus::project::{ProjectDataResponse, ProjectDataRequest},
+    cerberus::project::{ProjectDataRequest, ProjectDataResponse},
     std::{
         sync::Arc,
         time::{Duration, Instant},
@@ -37,7 +37,10 @@ impl ProjectStorage {
         }
     }
 
-    pub async fn fetch(&self, request: ProjectDataRequest<'_>) -> StorageResult<Option<ProjectDataResult>> {
+    pub async fn fetch(
+        &self,
+        request: ProjectDataRequest<'_>,
+    ) -> StorageResult<Option<ProjectDataResult>> {
         let time = Instant::now();
 
         let cache_key = build_cache_key(request);
@@ -106,7 +109,11 @@ mod tests {
         let k2 = build_cache_key(ProjectDataRequest::new(id).include_features());
         assert_eq!(k2, format!("project-data-v3/{}/2", id));
 
-        let k3 = build_cache_key(ProjectDataRequest::new(id).include_limits().include_features());
+        let k3 = build_cache_key(
+            ProjectDataRequest::new(id)
+                .include_limits()
+                .include_features(),
+        );
         assert_eq!(k3, format!("project-data-v3/{}/3", id));
     }
 
@@ -115,9 +122,17 @@ mod tests {
         let id = "abc";
         let mut set = std::collections::HashSet::new();
         set.insert(build_cache_key(ProjectDataRequest::new(id)));
-        set.insert(build_cache_key(ProjectDataRequest::new(id).include_limits()));
-        set.insert(build_cache_key(ProjectDataRequest::new(id).include_features()));
-        set.insert(build_cache_key(ProjectDataRequest::new(id).include_limits().include_features()));
+        set.insert(build_cache_key(
+            ProjectDataRequest::new(id).include_limits(),
+        ));
+        set.insert(build_cache_key(
+            ProjectDataRequest::new(id).include_features(),
+        ));
+        set.insert(build_cache_key(
+            ProjectDataRequest::new(id)
+                .include_limits()
+                .include_features(),
+        ));
         assert_eq!(set.len(), 4);
     }
 }
