@@ -103,7 +103,7 @@ jobs:
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
           RPC_URL: ${{ inputs.stage-url }}
-          MAX_TOKENS: ${{ vars.CI_TEST_RATE_LIMITING_MAX_TOKENS }}
+          MAX_TOKENS: ${{ inputs.stage == 'prod' && vars.RATE_LIMITING_MAX_TOKENS_PROD || vars.RATE_LIMITING_MAX_TOKENS_STAGING }}
 
   integration-tests-yttrium:
     name: Yttrium integration Tests - ${{ inputs.stage }}
