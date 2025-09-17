@@ -154,7 +154,7 @@ impl Registry {
     ) -> RpcResult<(ResponseSource, ProjectDataResult)> {
         if let Some(cache) = &self.cache {
             let time = Instant::now();
-            let data = cache.fetch(request.id).await?;
+            let data = cache.fetch(request.clone()).await?;
             self.metrics.fetch_cache_time(time.elapsed());
 
             if let Some(data) = data {
@@ -169,8 +169,7 @@ impl Registry {
             ));
         }
 
-        let id = request.id;
-        let data = self.fetch_registry(request).await;
+        let data = self.fetch_registry(request.clone()).await;
 
         // Cache all responses that we get
         let data = match data {
@@ -190,7 +189,7 @@ impl Registry {
         };
 
         if let Some(cache) = &self.cache {
-            cache.set(id, &data).await;
+            cache.set(request, &data).await;
         }
 
         Ok((ResponseSource::Registry, data))
