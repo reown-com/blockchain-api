@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.300.1 - 2025-09-17
+#### Bug Fixes
+- **(CI)** fix rate-limiting test (#1236) - (fd3c7a8) - Max Kalashnikoff | maksy.eth
+- project cache (#1239) - (0c365ca) - Luka Isailovic
+#### Miscellaneous Chores
+- configure Claude Code integration and documentation (#1238) - (6c3094a) - Ben Kremer
+- refactor json-rpc handlers (#1234) - (4ab55a1) - Luka Isailovic
+
+- - -
+
 ## 0.300.0 - 2025-09-16
 #### Features
 - generic provider (#1122) - (c23f0f7) - Chris Smith
