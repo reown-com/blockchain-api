@@ -41,7 +41,7 @@ jobs:
   release:
     name: Release
     needs: [ paths_filter ]
-    uses: WalletConnect/ci_workflows/.github/workflows/release.yml@feat/switch_to_release_only_workflow
+    uses: WalletConnect/ci_workflows/.github/workflows/release.yml@0.2.19
     secrets: inherit
     with:
       task-name: ${{ vars.TASK_NAME }}
