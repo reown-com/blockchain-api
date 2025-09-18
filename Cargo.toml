@@ -1,6 +1,5 @@
 [package]
 name = "rpc-proxy"
-version = "0.300.1"
 edition = "2021"
 authors = [
     "Derek <derek@reown.com>",
@@ -10,6 +9,9 @@ authors = [
 license-file = "LICENSE.md"
 build = "build.rs"
 publish = false
+
+# Using the commit hash instead of the version tagging for the build identification
+version = "0.0.0"
 
 [dependencies]
 wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.15.0", features = ["alloc", "analytics", "future", "metrics", "geoip", "rate_limit", "geoblock"] }
