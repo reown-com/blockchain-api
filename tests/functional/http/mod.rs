@@ -19,7 +19,6 @@ pub(crate) mod monad;
 pub(crate) mod moonbeam;
 pub(crate) mod morph;
 pub(crate) mod near;
-pub(crate) mod odyssey;
 pub(crate) mod pokt;
 pub(crate) mod publicnode;
 pub(crate) mod quicknode;

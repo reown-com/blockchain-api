@@ -160,7 +160,6 @@ mod monad;
 mod moonbeam;
 mod morph;
 mod near;
-mod odyssey;
 mod one_inch;
 mod pimlico;
 mod pokt;
@@ -198,7 +197,6 @@ pub use {
     moonbeam::MoonbeamProvider,
     morph::MorphProvider,
     near::NearProvider,
-    odyssey::OdysseyProvider,
     one_inch::OneInchProvider,
     pimlico::PimlicoProvider,
     pokt::PoktProvider,
@@ -815,7 +813,6 @@ pub enum ProviderKind {
     Dune,
     Wemix,
     Drpc,
-    Odyssey,
     Syndica,
     Allnodes,
     Meld,
@@ -858,7 +855,6 @@ impl Display for ProviderKind {
                 ProviderKind::Tenderly => "Tenderly",
                 ProviderKind::Dune => "Dune",
                 ProviderKind::Drpc => "Drpc",
-                ProviderKind::Odyssey => "Odyssey",
                 ProviderKind::Syndica => "Syndica",
                 ProviderKind::Allnodes => "Allnodes",
                 ProviderKind::Meld => "Meld",
@@ -902,7 +898,6 @@ impl ProviderKind {
             "Dune" => Some(Self::Dune),
             "Wemix" => Some(Self::Wemix),
             "Drpc" => Some(Self::Drpc),
-            "Odyssey" => Some(Self::Odyssey),
             "Syndica" => Some(Self::Syndica),
             "Allnodes" => Some(Self::Allnodes),
             "Meld" => Some(Self::Meld),
