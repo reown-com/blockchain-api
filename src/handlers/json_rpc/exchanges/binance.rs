@@ -185,11 +185,6 @@ pub struct Customization {
     lock_order_attributes: Option<Vec<i32>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-enum LockOrderAttributeType {
-    All = 1,
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct PreOrderResponseData {
@@ -198,38 +193,9 @@ struct PreOrderResponseData {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct PaymentMethodListRequest {
-    pub fiat_currency: String,
-    pub crypto_currency: String,
-    pub total_amount: String,
-    pub amount_type: usize,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 enum AmountType {
     Fiat = 1,
     Crypto = 2,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct PaymentMethodListResponseData {
-    payment_methods: Vec<PaymentMethod>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct PaymentMethod {
-    pay_method_code: Option<String>,
-    pay_method_sub_code: Option<String>,
-    payment_method: Option<String>,
-    fiat_min_limit: Option<String>,
-    fiat_max_limit: Option<String>,
-    crypto_min_limit: Option<String>,
-    crypto_max_limit: Option<String>,
-    p2p: Option<bool>,
-    withdraw_restriction: Option<i32>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

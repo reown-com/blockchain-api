@@ -70,49 +70,10 @@ static CHAIN_ID_TO_COINBASE_NETWORK: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
 });
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-enum PaymentMethod {
-    Unspecified,
-    Card,
-    AchBankAccount,
-    ApplePay,
-    FiatWallet,
-    CryptoAccount,
-    GuestCheckoutCard,
-    PayPal,
-    Rtp,
-    GuestCheckoutApplePay,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct GenerateBuyQuoteRequest {
-    country: String,
-    payment_amount: String,
-    payment_currency: String,
-    payment_method: PaymentMethod,
-    purchase_currency: String,
-    purcase_network: String,
-    #[serde(default)]
-    subdivision: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CurrencyAmount {
     currency: String,
     value: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct GenerateBuyQuoteResponse {
-    coinbase_fee: CurrencyAmount,
-    network_fee: CurrencyAmount,
-    payment_subtotal: CurrencyAmount,
-    payment_total: CurrencyAmount,
-    purchase_amount: CurrencyAmount,
-    quote_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

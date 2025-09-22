@@ -120,12 +120,6 @@ pub struct JsonRpcRequest<T: Serialize + Send + Sync> {
     pub params: T,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct BundlerJsonRpcParams {
-    user_op: UserOperation,
-    entry_point: String,
-}
-
 /// ERC-4337 bundler userOperation schema v0.7
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
