@@ -810,7 +810,10 @@ fn decode_and_convert_signature_format(
             Ok(signature)
         } else {
             // Try to split concatenated signatures into array
-            if signature.len() % ECDSA_SIGNATURE_WITH_RECOVERY_LENGTH == 0 && !signature.is_empty()
+            if signature
+                .len()
+                .is_multiple_of(ECDSA_SIGNATURE_WITH_RECOVERY_LENGTH)
+                && !signature.is_empty()
             {
                 let num_sigs = signature.len() / ECDSA_SIGNATURE_WITH_RECOVERY_LENGTH;
 
