@@ -217,11 +217,6 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
             providers: vec![],
         },
         ChainConfig {
-            caip2: "eip155:911867".to_string(),
-            name: "Odyssey Testnet".to_string(),
-            providers: vec![],
-        },
-        ChainConfig {
             caip2: "eip155:7777777".to_string(),
             name: "Zora".to_string(),
             providers: vec![],

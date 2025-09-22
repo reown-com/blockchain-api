@@ -22,9 +22,9 @@ use {
     env::{
         AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, BlastConfig,
         CallStaticConfig, DrpcConfig, DuneConfig, HiroConfig, MantleConfig, MonadConfig,
-        MoonbeamConfig, MorphConfig, NearConfig, OdysseyConfig, PoktConfig, PublicnodeConfig,
-        QuicknodeConfig, RootstockConfig, SolScanConfig, SuiConfig, SyndicaConfig, TheRpcConfig,
-        UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
+        MoonbeamConfig, MorphConfig, NearConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
+        RootstockConfig, SolScanConfig, SuiConfig, SyndicaConfig, TheRpcConfig, UnichainConfig,
+        WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
@@ -34,11 +34,10 @@ use {
         AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
         BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider,
         GenericProvider, HiroProvider, MantleProvider, MonadProvider, MoonbeamProvider,
-        MorphProvider, NearProvider, OdysseyProvider, PoktProvider, ProviderRepository,
-        PublicnodeProvider, QuicknodeProvider, QuicknodeWsProvider, RootstockProvider,
-        SolScanProvider, SuiProvider, SyndicaProvider, SyndicaWsProvider, TheRpcProvider,
-        UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider, ZoraProvider,
-        ZoraWsProvider,
+        MorphProvider, NearProvider, PoktProvider, ProviderRepository, PublicnodeProvider,
+        QuicknodeProvider, QuicknodeWsProvider, RootstockProvider, SolScanProvider, SuiProvider,
+        SyndicaProvider, SyndicaWsProvider, TheRpcProvider, UnichainProvider, WemixProvider,
+        ZKSyncProvider, ZerionProvider, ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -616,7 +615,6 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_rpc_provider::<MorphProvider, MorphConfig>(MorphConfig::default());
     providers.add_rpc_provider::<WemixProvider, WemixConfig>(WemixConfig::default());
     providers.add_rpc_provider::<DrpcProvider, DrpcConfig>(DrpcConfig::default());
-    providers.add_rpc_provider::<OdysseyProvider, OdysseyConfig>(OdysseyConfig::default());
     providers.add_rpc_provider::<AllnodesProvider, AllnodesConfig>(AllnodesConfig::new(
         config.allnodes_api_key.clone(),
     ));

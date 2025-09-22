@@ -206,11 +206,6 @@
       "providers": []
     },
     {
-      "caip2": "eip155:911867",
-      "name": "Odyssey Testnet",
-      "providers": []
-    },
-    {
       "caip2": "eip155:7777777",
       "name": "Zora",
       "providers": []
