@@ -206,10 +206,13 @@ pub async fn rpc_call(
         let response_result = match provider_call {
             Ok(response) => response,
             Err(e) => {
-                debug!(
-                    "Call to provider '{}' returned an error {e:?}, trying the next provider",
+                error!(
+                    "Call to provider '{}' returned a connection error {e:?}, trying the next provider",
                     provider.provider_kind()
                 );
+                state
+                    .metrics
+                    .add_provider_connection_error(chain_id.clone(), provider.borrow());
                 state
                     .metrics
                     .add_rpc_call_retries(i as u64, chain_id.clone());
