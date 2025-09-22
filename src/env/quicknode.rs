@@ -56,6 +56,7 @@ fn extract_supported_chains_and_subdomains(
     // Keep in-sync with SUPPORTED_CHAINS.md
     // Supported chains list format: chain ID, subdomain, priority
     let supported_chain_ids = HashMap::from([
+        ("eip155:1", ("ancient-snowy-snow", Priority::Minimal)),
         (
             "eip155:324",
             ("snowy-chaotic-hill.zksync-mainnet", Priority::Low),
