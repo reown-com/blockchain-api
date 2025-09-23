@@ -132,6 +132,13 @@ impl Metrics {
         .increment(1);
     }
 
+    pub fn add_provider_connection_error(&self, chain_id: String, provider: &dyn RpcProvider) {
+        counter!("provider_connection_error_counter", 
+            StringLabel<"chain_id", String> => &chain_id, 
+            StringLabel<"provider", String> => &provider.provider_kind().to_string())
+        .increment(1);
+    }
+
     pub fn add_finished_provider_call(&self, chain_id: String, provider: &dyn RpcProvider) {
         counter!("provider_finished_call_counter", 
             StringLabel<"chain_id", String> => &chain_id, 

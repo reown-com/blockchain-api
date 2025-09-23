@@ -124,6 +124,7 @@ pub fn is_known_rpc_error_message(error_message: &str) -> bool {
         "state available for block",
         "unsupported block number",
         "block not found",
+        "block is out of range",
         "invalid opcode",
         "unknown account",
         "gapped-nonce tx",

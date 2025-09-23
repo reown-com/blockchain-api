@@ -169,6 +169,7 @@ dashboard.new(
     panels.proxy.provider_retries(ds, vars)          { gridPos: pos._3 },
     panels.proxy.http_codes(ds, vars)                { gridPos: pos._3 },
     panels.proxy.rpc_methods_cache(ds, vars)         { gridPos: pos._3 },
+    panels.proxy.provider_conn_errors(ds, vars)      { gridPos: pos._3 },
 
   row.new('Non-RPC providers Status Codes'),
     panels.status.provider(ds, vars, 'Zerion')       { gridPos: pos._4 },
