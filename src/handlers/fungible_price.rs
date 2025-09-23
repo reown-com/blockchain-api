@@ -61,7 +61,7 @@ async fn handler_internal(
     let project_id = query.project_id.clone();
     state.validate_project_access_and_quota(&project_id).await?;
 
-    if query.addresses.is_empty() && query.addresses.len() > 1 {
+    if query.addresses.is_empty() {
         return Err(RpcError::InvalidAddress);
     }
     let address = if let Some(address) = query.addresses.first() {
