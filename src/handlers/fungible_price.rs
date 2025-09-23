@@ -17,6 +17,8 @@ use {
     wc::metrics::{future_metrics, FutureExt},
 };
 
+const ROOTSTOCK_CHAIN_ID: &str = "30";
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PriceQueryParams {
@@ -74,7 +76,7 @@ async fn handler_internal(
     }
 
     // TODO: Handle Rootstock as a separate namespace to get the correct provider
-    if chain_id == "30" {
+    if chain_id == ROOTSTOCK_CHAIN_ID {
         namespace = crypto::CaipNamespaces::Rootstock;
     }
 
