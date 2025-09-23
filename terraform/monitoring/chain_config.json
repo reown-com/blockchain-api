@@ -294,6 +294,11 @@
       "caip2": "tron:0x2b6653dc",
       "name": "Tron Mainnet",
       "providers": []
+    },
+    {
+      "caip2": "ton:mainnet",
+      "name": "Ton Mainnet",
+      "providers": []
     }
   ]
 }

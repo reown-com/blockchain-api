@@ -86,6 +86,12 @@ Chain name with associated `chainId` query param to use.
 |--------------------------------------|-----------------|
 | Tron Mainnet                         | tron:0x2b6653dc |
 
+### Ton
+
+| Network                               | Chain ID    |
+|---------------------------------------|-------------|
+| Ton Mainnet                           | ton:mainnet |
+
 ### Stacks
 
 *Important note:* The Stacks support is currently in a Beta. Endpoints and schema

@@ -126,6 +126,10 @@ fn extract_supported_chains_and_subdomains(
             "tron:0x2b6653dc",
             ("warmhearted-practical-surf.tron-mainnet", Priority::Normal),
         ),
+        (
+            "ton:mainnet",
+            ("silent-dawn-crater.ton-mainnet", Priority::Normal),
+        ),
     ]);
 
     let access_tokens_with_weights: HashMap<String, (String, Weight)> = supported_chain_ids
