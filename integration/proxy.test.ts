@@ -95,6 +95,34 @@ describe('Proxy', () => {
     }
   })
 
+  it('Block number RPC method Tron', async () => {
+    const payload = {
+      jsonrpc: "2.0",
+      method: "eth_blockNumber",
+      params: [],
+      id: 1,
+    };
+    const chainsResp: any = await httpClient.get(`${baseUrl}/v1/supported-chains`)
+    expect(chainsResp.status).toBe(200)
+    expect(typeof chainsResp.data).toBe('object')
+    const chains = chainsResp.data.http
+    expect(chains.length).toBeGreaterThan(0)
+    
+    for (const chain of chains) {
+      if (!chain.includes('tron:')) {
+        continue
+      }
+      const resp: any = await httpClient.post(
+        `${baseUrl}/v1?chainId=${chain}&projectId=${projectId}`,
+        payload
+      )
+      expect(resp.status).toBe(200)
+      expect(typeof resp.data).toBe('object')
+      expect(resp.data.result).toBeDefined()
+      expect(resp.data.result).not.toBeNull()
+    }
+  })
+
   it('net_listening RPC method', async () => {
     // Get the chains list from the /supported-chains endpoint
     const chainsResp: any = await httpClient.get(`${baseUrl}/v1/supported-chains`)

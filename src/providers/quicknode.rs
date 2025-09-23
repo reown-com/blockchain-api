@@ -63,7 +63,13 @@ impl RpcProvider for QuicknodeProvider {
                 .ok_or(RpcError::InvalidConfiguration(format!(
                     "Quicknode subdomain not found for chainId: {chain_id}"
                 )))?;
-        let uri = format!("https://{chain_subdomain}.quiknode.pro/{token}");
+
+        // Add /jsonrpc prefix for the Tron Mainnet
+        let uri = if chain_id.contains("tron:") {
+            format!("https://{chain_subdomain}.quiknode.pro/{token}/jsonrpc")
+        } else {
+            format!("https://{chain_subdomain}.quiknode.pro/{token}")
+        };
 
         let response = self
             .client

@@ -122,6 +122,10 @@ fn extract_supported_chains_and_subdomains(
             "bip122:000000000933ea01ad0ee984209779ba",
             ("newest-lively-research.btc-testnet", Priority::Normal),
         ),
+        (
+            "tron:0x2b6653dc",
+            ("warmhearted-practical-surf.tron-mainnet", Priority::Normal),
+        ),
     ]);
 
     let access_tokens_with_weights: HashMap<String, (String, Weight)> = supported_chain_ids
