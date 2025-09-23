@@ -80,6 +80,11 @@ Chain name with associated `chainId` query param to use.
 | Sui Devnet                            | sui:devnet  |
 | Sui Testnet                           | sui:testnet |
 
+### Tron
+
+| Network                              |    Chain ID     |
+|--------------------------------------|-----------------|
+| Tron Mainnet                         | tron:0x2b6653dc |
 
 ### Stacks
 

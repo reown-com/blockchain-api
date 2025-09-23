@@ -301,6 +301,11 @@ pub static ACTIVE_CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
             name: "Stacks Testnet".to_string(),
             providers: vec![],
         },
+        ChainConfig {
+            caip2: "tron:0x2b6653dc".to_string(),
+            name: "Tron Mainnet".to_string(),
+            providers: vec![],
+        },
     ],
 });
 
