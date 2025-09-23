@@ -68,9 +68,14 @@ async fn handler_internal(
         return Err(RpcError::InvalidAddress);
     };
 
-    let (namespace, chain_id, address) = crypto::disassemble_caip10(address)?;
+    let (mut namespace, chain_id, address) = crypto::disassemble_caip10(address)?;
     if !crypto::is_address_valid(&address, &namespace) {
         return Err(RpcError::InvalidAddress);
+    }
+
+    // TODO: Handle Rootstock as a separate namespace to get the correct provider
+    if chain_id == "30" {
+        namespace = crypto::CaipNamespaces::Rootstock;
     }
 
     let provider = state

@@ -154,6 +154,7 @@ mod drpc;
 mod dune;
 pub mod generic;
 mod hiro;
+mod lifi;
 mod mantle;
 mod meld;
 pub mod mock_alto;
@@ -192,6 +193,7 @@ pub use {
     dune::DuneProvider,
     generic::GenericProvider,
     hiro::HiroProvider,
+    lifi::LifiProvider,
     mantle::MantleProvider,
     meld::MeldProvider,
     monad::MonadProvider,
@@ -240,6 +242,8 @@ pub struct ProvidersConfig {
     pub coinbase_app_id: Option<String>,
     pub one_inch_api_key: Option<String>,
     pub one_inch_referrer: Option<String>,
+    /// Lifi API key
+    pub lifi_api_key: Option<String>,
     /// Pimlico API token key
     pub pimlico_api_key: String,
     /// SolScan API v2 token key
@@ -380,6 +384,7 @@ impl ProviderRepository {
 
         let zerion_provider = Arc::new(ZerionProvider::new(zerion_api_key));
         let one_inch_provider = Arc::new(OneInchProvider::new(one_inch_api_key, one_inch_referrer));
+        let lifi_provider = Arc::new(LifiProvider::new(config.lifi_api_key.clone()));
         let portfolio_provider = zerion_provider.clone();
         let solscan_provider = Arc::new(SolScanProvider::new(
             config.solscan_api_v2_token.clone(),
@@ -418,6 +423,7 @@ impl ProviderRepository {
             HashMap::new();
         fungible_price_providers.insert(CaipNamespaces::Eip155, one_inch_provider.clone());
         fungible_price_providers.insert(CaipNamespaces::Solana, solscan_provider.clone());
+        fungible_price_providers.insert(CaipNamespaces::Rootstock, lifi_provider.clone());
 
         let chain_orchestrator_provider =
             Arc::new(BungeeProvider::new(config.bungee_api_key.clone()));
@@ -825,6 +831,7 @@ pub enum ProviderKind {
     Moonbeam,
     Blast,
     Rootstock,
+    Lifi,
     Generic(String),
 }
 
@@ -867,6 +874,7 @@ impl Display for ProviderKind {
                 ProviderKind::Moonbeam => "Moonbeam",
                 ProviderKind::Blast => "Blast",
                 ProviderKind::Rootstock => "Rootstock",
+                ProviderKind::Lifi => "Lifi",
                 ProviderKind::Generic(name) => name.as_str(),
             }
         )
