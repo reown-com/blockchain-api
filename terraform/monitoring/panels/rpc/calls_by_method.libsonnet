@@ -14,7 +14,7 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr          = 'sum by(method) (increase(json_rpc_call_counter_total{}[$__rate_interval]))',
+      expr          = 'sum by(method) (rate(json_rpc_call_counter_total{}[$__rate_interval]))',
       exemplar      = false,
       legendFormat  = '__auto',
     ))

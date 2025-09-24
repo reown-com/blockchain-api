@@ -22,7 +22,7 @@ local targets        = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource    = ds.prometheus,
-      expr          = '(1-(sum(rate(http_call_counter_total{code=~"5[0-9][0-9]", route="/v1/json-rpc"}[$__rate_interval])) or vector(0))/(sum(rate(http_call_counter_total{route="/v1/json-rpc"}[$__rate_interval]))))*100',
+      expr          = '(1-(sum(rate(http_call_counter_total{code=~"5[0-9][0-9]", route="/v1/json-rpc"}[$__rate_interval])) or vector(0))/(sum(rate(http_call_counter_total{route="/v1/json-rpc"}[$__rate_interval])) or vector(0)))*100',
       exemplar      = false,
       legendFormat  = '__auto',
     ))
