@@ -6,7 +6,7 @@ use {
     axum::extract::State,
     cerberus::project::{Feature, ProjectDataRequest},
     serde::{Deserialize, Serialize},
-    std::sync::Arc,
+    std::{net::IpAddr, sync::Arc},
     strum::{EnumProperty, IntoEnumIterator},
     strum_macros::{AsRefStr, Display, EnumIter},
     thiserror::Error,
@@ -68,6 +68,7 @@ pub struct GetBuyUrlParams {
     pub amount: f64,
     pub recipient: String,
     pub session_id: String,
+    pub user_ip: IpAddr,
 }
 
 pub struct GetBuyStatusParams {
