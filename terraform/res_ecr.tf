@@ -1,9 +1,5 @@
-data "aws_ecr_repository" "blockchain" {
-  name = "blockchain"
-}
-
 resource "aws_ecr_lifecycle_policy" "blockchain_keep_30" {
-  repository = data.aws_ecr_repository.blockchain.name
+  repository = var.ecr_repository_name
 
   policy = jsonencode({
     rules = [
