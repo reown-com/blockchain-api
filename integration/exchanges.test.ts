@@ -655,7 +655,7 @@ describe('Exchanges', () => {
       );
       expect(response.status).toBe(200);
 
-      // Dont have an access-control-allow-origin header if not allowed
+      // Don't have an access-control-allow-origin header if not allowed
       expect(response.headers['access-control-allow-origin']).toBeUndefined();
     });
 

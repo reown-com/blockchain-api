@@ -226,14 +226,14 @@ async fn get_project_allowed_origins(
     project_id: &str,
 ) -> Option<Vec<String>> {
     let project = state.registry.project_data(project_id).await.ok()?;
-    let mut list: Vec<String> = Vec::new();
-    list.extend(project.data.allowed_origins.into_iter());
+    let mut allowed_origins: Vec<String> = Vec::new();
+    allowed_origins.extend(project.data.allowed_origins.into_iter());
     // Deduplicate, case-insensitive
-    list.sort_by_key(|s| s.to_ascii_lowercase());
-    list.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
+    allowed_origins.sort_by_key(|s| s.to_ascii_lowercase());
+    allowed_origins.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
     // Append default allowed origins
-    list.extend(CORS_ALLOWED_ORIGINS.iter().map(|s| s.to_string()));
-    Some(list)
+    allowed_origins.extend(CORS_ALLOWED_ORIGINS.iter().map(|s| s.to_string()));
+    Some(allowed_origins)
 }
 
 fn insert_allowed_origins_debug_header(response: &mut Response, list: &[String]) {
