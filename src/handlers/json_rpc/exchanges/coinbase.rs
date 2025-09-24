@@ -13,6 +13,7 @@ use {
     rand::RngCore,
     serde::{Deserialize, Serialize},
     std::collections::HashMap,
+    std::net::IpAddr,
     std::sync::Arc,
     std::time::{SystemTime, UNIX_EPOCH},
     tracing::debug,
@@ -349,8 +350,12 @@ impl CoinbaseExchange {
             .append_pair("defaultAsset", &crypto)
             .append_pair("defaultPaymentMethod", DEFAULT_PAYMENT_METHOD)
             .append_pair("presetCryptoAmount", &params.amount.to_string())
-            .append_pair("defaultNetwork", &network)
-            .append_pair("clientIp", &params.user_ip.to_string());
+            .append_pair("defaultNetwork", &network);
+
+        if should_add_client_ip(&params.user_ip) {
+            url.query_pairs_mut()
+                .append_pair("clientIp", &params.user_ip.to_string());
+        }
 
         Ok(url.to_string())
     }
@@ -455,4 +460,11 @@ fn generate_coinbase_jwt_key(
     let signature_b64 = BASE64_URL_SAFE_NO_PAD.encode(signature.to_bytes());
 
     Ok(format!("{header_b64}.{claims_b64}.{signature_b64}"))
+}
+
+fn should_add_client_ip(ip: &IpAddr) -> bool {
+    match ip {
+        IpAddr::V4(v4) => !(v4.is_private() || v4.is_loopback() || v4.is_link_local()),
+        IpAddr::V6(_) => false,
+    }
 }
