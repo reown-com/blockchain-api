@@ -163,9 +163,11 @@ async fn is_origin_allowed_for_project(
 
 fn insert_cors_headers(response: &mut Response, origin: &str) {
     let headers = response.headers_mut();
+    // Strip CR/LF to avoid header injection
+    let cleaned_origin = origin.replace(['\r', '\n'], "");
     headers.insert(
         hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN,
-        match hyper::header::HeaderValue::from_str(origin) {
+        match hyper::header::HeaderValue::from_str(&cleaned_origin) {
             Ok(value) => value,
             Err(e) => {
                 // Don't set CORS headers for invalid origins
@@ -222,10 +224,17 @@ async fn get_project_allowed_origins(
 }
 
 fn insert_allowed_origins_debug_header(response: &mut Response, list: &[String]) {
-    if list.is_empty() {
+    // Sanitize each origin by stripping CR/LF and keeping only valid header values
+    let sanitized: Vec<String> = list
+        .iter()
+        .map(|s| s.replace(['\r', '\n'], ""))
+        .filter(|s| hyper::header::HeaderValue::from_str(s).is_ok())
+        .collect();
+
+    if sanitized.is_empty() {
         return;
     }
-    if let Ok(value) = hyper::header::HeaderValue::from_str(&list.join(",")) {
+    if let Ok(value) = hyper::header::HeaderValue::from_str(&sanitized.join(",")) {
         response.headers_mut().insert(
             hyper::header::HeaderName::from_static("x-allowed-origins"),
             value,
