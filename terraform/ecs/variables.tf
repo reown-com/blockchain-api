@@ -287,6 +287,12 @@ variable "blast_api_key" {
   sensitive   = true
 }
 
+variable "lifi_api_key" {
+  description = "Lifi API key"
+  type        = string
+  sensitive   = true
+}
+
 variable "testing_project_id" {
   description = "Project ID used in a testing suite"
   type        = string

@@ -681,7 +681,7 @@ pub fn is_address_valid(address: &str, namespace: &CaipNamespaces) -> bool {
 
 fn is_address_valid_impl(address: &str, namespace: &CaipNamespaces) -> bool {
     match namespace {
-        CaipNamespaces::Eip155 => {
+        CaipNamespaces::Eip155 | CaipNamespaces::Rootstock => {
             if !CAIP_ETH_ADDRESS_REGEX.is_match(address) {
                 return false;
             }
@@ -815,6 +815,7 @@ impl ChainId {
 pub enum CaipNamespaces {
     Eip155,
     Solana,
+    Rootstock, // TODO: A temporary solution to support Rootstock
 }
 
 /// A struct representing a CAIP-2 Chain ID with format:

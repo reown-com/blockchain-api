@@ -217,6 +217,12 @@ variable "blast_api_key" {
   sensitive   = true
 }
 
+variable "lifi_api_key" {
+  description = "Lifi API key"
+  type        = string
+  sensitive   = true
+}
+
 #-------------------------------------------------------------------------------
 # RPC Proxy configuration
 

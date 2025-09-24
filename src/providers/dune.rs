@@ -174,7 +174,7 @@ impl BalanceProvider for DuneProvider {
             .unwrap_or(crypto::CaipNamespaces::Eip155);
 
         let balance_response = match namespace {
-            crypto::CaipNamespaces::Eip155 => {
+            crypto::CaipNamespaces::Eip155 | crypto::CaipNamespaces::Rootstock => {
                 self.get_evm_balance(address, params, metrics.clone())
                     .await?
             }
@@ -198,7 +198,9 @@ impl BalanceProvider for DuneProvider {
                 Some(cid) => format!("{namespace}:{cid}"),
                 None => match namespace {
                     // Use default Mainnet chain IDs if not provided
-                    crypto::CaipNamespaces::Eip155 => format!("{namespace}:1"),
+                    crypto::CaipNamespaces::Eip155 | crypto::CaipNamespaces::Rootstock => {
+                        format!("{namespace}:1")
+                    }
                     crypto::CaipNamespaces::Solana => {
                         format!("{namespace}:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp")
                     }
@@ -208,7 +210,7 @@ impl BalanceProvider for DuneProvider {
             // Build the CAIP-10 address
             let caip10_token_address_strict = if f.address == "native" {
                 match namespace {
-                    crypto::CaipNamespaces::Eip155 => {
+                    crypto::CaipNamespaces::Eip155 | crypto::CaipNamespaces::Rootstock => {
                         format!("{caip2_chain_id}:{H160_EMPTY_ADDRESS}")
                     }
                     crypto::CaipNamespaces::Solana => {
@@ -300,7 +302,9 @@ impl BalanceProvider for DuneProvider {
                     // For Solana’s “native” token, we return the Solana native token address.
                     if f.address == "native" {
                         match namespace {
-                            crypto::CaipNamespaces::Eip155 => None,
+                            crypto::CaipNamespaces::Eip155 | crypto::CaipNamespaces::Rootstock => {
+                                None
+                            }
                             crypto::CaipNamespaces::Solana => {
                                 Some(crypto::SOLANA_NATIVE_TOKEN_ADDRESS.to_string())
                             }

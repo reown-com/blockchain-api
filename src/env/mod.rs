@@ -194,6 +194,7 @@ mod test {
             ("RPC_PROXY_PROVIDER_COINBASE_APP_ID", "COINBASE_APP_ID"),
             ("RPC_PROXY_PROVIDER_ONE_INCH_API_KEY", "ONE_INCH_API_KEY"),
             ("RPC_PROXY_PROVIDER_ONE_INCH_REFERRER", "ONE_INCH_REFERRER"),
+            ("RPC_PROXY_PROVIDER_LIFI_API_KEY", "LIFI_API_KEY"),
             ("RPC_PROXY_PROVIDER_PIMLICO_API_KEY", "PIMLICO_API_KEY"),
             (
                 "RPC_PROXY_PROVIDER_SOLSCAN_API_V2_TOKEN",
@@ -337,6 +338,7 @@ mod test {
                     coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),
                     one_inch_api_key: Some("ONE_INCH_API_KEY".to_owned()),
                     one_inch_referrer: Some("ONE_INCH_REFERRER".to_owned()),
+                    lifi_api_key: Some("LIFI_API_KEY".to_owned()),
                     pimlico_api_key: "PIMLICO_API_KEY".to_string(),
                     solscan_api_v2_token: "SOLSCAN_API_V2_TOKEN".to_string(),
                     bungee_api_key: "BUNGEE_API_KEY".to_string(),

@@ -90,6 +90,25 @@ describe('Fungible price', () => {
     }
   })
 
+  it('get Rootstock token price', async () => {
+    // RIF on Rootstock
+    const rootstock_token_address = 'eip155:30:0x2AcC95758f8b5F583470ba265EB685a8F45fC9D5';
+    let request_data = {
+      projectId: projectId,
+      currency: currency,
+      addresses: [rootstock_token_address]
+    }
+    let resp: any = await httpClient.post(
+      `${endpoint}`,
+      request_data
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.fungibles).toBe('object')
+    expect(resp.data.fungibles.length).toBe(1)
+    let item = resp.data.fungibles[0]
+    expect(item.name).toBe('RIF')
+  })
+
   it('bad arguments', async () => {
     // Empty addresses
     let request_data = {

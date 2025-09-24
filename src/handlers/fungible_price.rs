@@ -17,6 +17,8 @@ use {
     wc::metrics::{future_metrics, FutureExt},
 };
 
+const ROOTSTOCK_CHAIN_ID: &str = "30";
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PriceQueryParams {
@@ -59,7 +61,7 @@ async fn handler_internal(
     let project_id = query.project_id.clone();
     state.validate_project_access_and_quota(&project_id).await?;
 
-    if query.addresses.is_empty() && query.addresses.len() > 1 {
+    if query.addresses.is_empty() {
         return Err(RpcError::InvalidAddress);
     }
     let address = if let Some(address) = query.addresses.first() {
@@ -68,9 +70,14 @@ async fn handler_internal(
         return Err(RpcError::InvalidAddress);
     };
 
-    let (namespace, chain_id, address) = crypto::disassemble_caip10(address)?;
+    let (mut namespace, chain_id, address) = crypto::disassemble_caip10(address)?;
     if !crypto::is_address_valid(&address, &namespace) {
         return Err(RpcError::InvalidAddress);
+    }
+
+    // TODO: Handle Rootstock as a separate namespace to get the correct provider
+    if chain_id == ROOTSTOCK_CHAIN_ID {
+        namespace = crypto::CaipNamespaces::Rootstock;
     }
 
     let provider = state
