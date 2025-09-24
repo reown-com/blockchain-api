@@ -638,21 +638,47 @@ describe('Exchanges', () => {
 
   describe('CORS headers', () => {
     it('should not return CORS headers if not allowed', async () => {
-      const response = await httpClient.get(
-        `${baseUrl}/v1/json-rpc?projectId=${projectId}`
+      const payload = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'reown_getExchanges',
+        params: {
+          page: 1
+        }
+      };
+
+      // Append a wrong Origin header
+      const response = await httpClient.post(
+        `${baseUrl}/v1/json-rpc?projectId=${projectId}`,
+        payload,
+        { headers: { 'Origin': 'https://some-unknown-origin.com' } }
       );
+      expect(response.status).toBe(200);
+
       // Dont have an access-control-allow-origin header if not allowed
       expect(response.headers['access-control-allow-origin']).toBeUndefined();
     });
 
-    it('should return CORS headers for specific origin', async () => {
-      const origin = 'https://demo.reown.com';
-      const response = await httpClient.get(
+    it('should return CORS headers for allowed origin', async () => {
+      // Default allowed origin is localhost:3000
+      const origin = 'http://localhost:3000';
+      const payload = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'reown_getExchanges',
+        params: {
+          page: 1
+        }
+      };
+
+      const response = await httpClient.post(
         `${baseUrl}/v1/json-rpc?projectId=${projectId}`,
+        payload,
         { headers: { 'Origin': origin } }
       );
-      
-      expect(response.headers['access-control-allow-origin']).toBe(origin);
+
+      expect(response.status).toBe(200);
+      expect(response.headers['access-control-allow-origin']).toContain(origin);
     });
   });
 }); 
