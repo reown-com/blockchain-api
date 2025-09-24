@@ -9,7 +9,10 @@ use {
             SdkInfoParams,
         },
         state::AppState,
-        utils::crypto::{disassemble_caip10, Caip19Asset},
+        utils::{
+            crypto::{disassemble_caip10, Caip19Asset},
+            network::get_forwarded_ip,
+        },
     },
     axum::{
         extract::{ConnectInfo, Query, State},
@@ -86,7 +89,7 @@ async fn handler_internal(
     state: State<Arc<AppState>>,
     project_id: String,
     connect_info: ConnectInfo<SocketAddr>,
-    _headers: HeaderMap,
+    headers: HeaderMap,
     _query: Query<QueryParams>,
     request: GeneratePayUrlRequest,
 ) -> Result<GeneratePayUrlResponse, GetExchangeUrlError> {
@@ -147,7 +150,7 @@ async fn handler_internal(
                 amount,
                 recipient: address.clone(),
                 session_id: session_id.clone(),
-                user_ip: connect_info.0.ip(),
+                user_ip: get_forwarded_ip(&headers).unwrap_or_else(|| connect_info.0.ip()),
             },
         )
         .await;
