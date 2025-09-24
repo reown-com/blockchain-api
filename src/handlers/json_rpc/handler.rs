@@ -35,6 +35,9 @@ use {
     yttrium::wallet_service_api,
 };
 
+/// CORS default allowed origins
+const CORS_ALLOWED_ORIGINS: [&str; 1] = ["http://localhost:3000"];
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct WalletQueryParams {
@@ -131,6 +134,14 @@ async fn is_origin_allowed_for_project(
     };
 
     let origin_lc = origin.to_ascii_lowercase();
+
+    // Allow default allowed origins by default
+    if CORS_ALLOWED_ORIGINS
+        .iter()
+        .any(|o| o.eq_ignore_ascii_case(&origin_lc))
+    {
+        return true;
+    }
     // Parse origin host if possible
     let origin_host = url::Url::parse(origin)
         .ok()
@@ -220,8 +231,8 @@ async fn get_project_allowed_origins(
     // Deduplicate, case-insensitive
     list.sort_by_key(|s| s.to_ascii_lowercase());
     list.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
-    // Append localhost to the list to allow local development
-    list.push("http://localhost:3000".to_string());
+    // Append default allowed origins
+    list.extend(CORS_ALLOWED_ORIGINS.iter().map(|s| s.to_string()));
     Some(list)
 }
 
