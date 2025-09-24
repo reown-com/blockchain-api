@@ -220,6 +220,8 @@ async fn get_project_allowed_origins(
     // Deduplicate, case-insensitive
     list.sort_by_key(|s| s.to_ascii_lowercase());
     list.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
+    // Append localhost to the list to allow local development
+    list.push("http://localhost:3000".to_string());
     Some(list)
 }
 
