@@ -65,6 +65,7 @@ pub async fn json_rpc_with_dynamic_cors(
     query: Query<WalletQueryParams>,
     SimpleRequestJson(request_payload): SimpleRequestJson<JsonRpcRequest>,
 ) -> Response {
+    let method_name = request_payload.method.clone();
     let mut response = handler(
         state.clone(),
         connect_info,
@@ -79,12 +80,22 @@ pub async fn json_rpc_with_dynamic_cors(
         insert_allowed_origins_debug_header(&mut response, &list);
     }
 
-    if let Some(origin) = headers
-        .get(hyper::header::ORIGIN)
-        .and_then(|v| v.to_str().ok())
-    {
-        if is_origin_allowed_for_project(state.0.clone(), &query.project_id, origin).await {
-            insert_cors_headers(&mut response, origin);
+    // Apply CORS policy:
+    // - For selected PAY_* methods: echo Origin only if it's allowed for the project
+    // - For all other methods: allow all origins
+    match method_name.as_ref() {
+        PAY_GET_EXCHANGES | PAY_GET_EXCHANGE_URL | PAY_GET_EXCHANGE_BUY_STATUS => {
+            if let Some(origin) = headers
+                .get(hyper::header::ORIGIN)
+                .and_then(|v| v.to_str().ok())
+            {
+                if is_origin_allowed_for_project(state.0.clone(), &query.project_id, origin).await {
+                    insert_cors_headers(&mut response, origin);
+                }
+            }
+        }
+        _ => {
+            insert_cors_allow_all_headers(&mut response);
         }
     }
 
@@ -95,34 +106,17 @@ pub async fn json_rpc_with_dynamic_cors(
 pub async fn json_rpc_preflight(
     State(state): State<Arc<AppState>>,
     Query(query): Query<WalletQueryParams>,
-    headers: HeaderMap,
 ) -> Response {
-    // Compute and include debug header listing allowed origins (if any)
-    let allowed_list = get_project_allowed_origins(state.clone(), &query.project_id).await;
-
-    if let Some(origin) = headers
-        .get(hyper::header::ORIGIN)
-        .and_then(|v| v.to_str().ok())
-    {
-        if is_origin_allowed_for_project(state, &query.project_id, origin).await {
-            let mut response = Response::builder()
-                .status(StatusCode::NO_CONTENT)
-                .body(axum::body::Body::empty())
-                .unwrap()
-                .into_response();
-            if let Some(list) = &allowed_list {
-                insert_allowed_origins_debug_header(&mut response, list);
-            }
-            insert_cors_headers(&mut response, origin);
-            return response;
-        }
+    // Always allow preflight with wildcard; actual POST will enforce per-method policy
+    let mut response = Response::builder()
+        .status(StatusCode::NO_CONTENT)
+        .body(axum::body::Body::empty())
+        .unwrap()
+        .into_response();
+    if let Some(list) = get_project_allowed_origins(state.clone(), &query.project_id).await {
+        insert_allowed_origins_debug_header(&mut response, &list);
     }
-
-    // Not allowed
-    let mut response = (StatusCode::FORBIDDEN, "CORS origin not allowed").into_response();
-    if let Some(list) = &allowed_list {
-        insert_allowed_origins_debug_header(&mut response, list);
-    }
+    insert_cors_allow_all_headers(&mut response);
     response
 }
 
@@ -183,6 +177,24 @@ fn insert_cors_headers(response: &mut Response, origin: &str) {
     headers.insert(
         hyper::header::VARY,
         hyper::header::HeaderValue::from_static("Origin"),
+    );
+    headers.insert(
+        hyper::header::ACCESS_CONTROL_ALLOW_METHODS,
+        hyper::header::HeaderValue::from_static("POST, OPTIONS"),
+    );
+    headers.insert(
+        hyper::header::ACCESS_CONTROL_ALLOW_HEADERS,
+        hyper::header::HeaderValue::from_static(
+            "content-type, user-agent, referer, origin, access-control-request-method, access-control-request-headers, solana-client, sec-fetch-mode, x-sdk-type, x-sdk-version",
+        ),
+    );
+}
+
+fn insert_cors_allow_all_headers(response: &mut Response) {
+    let headers = response.headers_mut();
+    headers.insert(
+        hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN,
+        hyper::header::HeaderValue::from_static("*"),
     );
     headers.insert(
         hyper::header::ACCESS_CONTROL_ALLOW_METHODS,
