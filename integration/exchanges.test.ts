@@ -635,4 +635,24 @@ describe('Exchanges', () => {
       });
     });
   });
+
+  describe('CORS headers', () => {
+    it('should not return CORS headers if not allowed', async () => {
+      const response = await httpClient.get(
+        `${baseUrl}/v1/json-rpc?projectId=${projectId}`
+      );
+      // Dont have an access-control-allow-origin header if not allowed
+      expect(response.headers['access-control-allow-origin']).toBeUndefined();
+    });
+
+    it('should return CORS headers for specific origin', async () => {
+      const origin = 'https://demo.reown.com';
+      const response = await httpClient.get(
+        `${baseUrl}/v1/json-rpc?projectId=${projectId}`,
+        { headers: { 'Origin': origin } }
+      );
+      
+      expect(response.headers['access-control-allow-origin']).toBe(origin);
+    });
+  });
 }); 

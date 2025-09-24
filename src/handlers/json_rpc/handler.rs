@@ -57,6 +57,164 @@ pub async fn handler(
         .await
 }
 
+// Wrapper that adds dynamic CORS headers based on project registry data
+pub async fn json_rpc_with_dynamic_cors(
+    state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    query: Query<WalletQueryParams>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<JsonRpcRequest>,
+) -> Response {
+    let mut response = handler(
+        state.clone(),
+        connect_info,
+        headers.clone(),
+        query.clone(),
+        SimpleRequestJson(request_payload),
+    )
+    .await;
+
+    // Add debug header listing allowed origins for this project
+    if let Some(list) = get_project_allowed_origins(state.0.clone(), &query.project_id).await {
+        insert_allowed_origins_debug_header(&mut response, &list);
+    }
+
+    if let Some(origin) = headers
+        .get(hyper::header::ORIGIN)
+        .and_then(|v| v.to_str().ok())
+    {
+        if is_origin_allowed_for_project(state.0.clone(), &query.project_id, origin).await {
+            insert_cors_headers(&mut response, origin);
+        }
+    }
+
+    response
+}
+
+// OPTIONS preflight handler for /v1/json-rpc
+pub async fn json_rpc_preflight(
+    State(state): State<Arc<AppState>>,
+    Query(query): Query<WalletQueryParams>,
+    headers: HeaderMap,
+) -> Response {
+    // Compute and include debug header listing allowed origins (if any)
+    let allowed_list = get_project_allowed_origins(state.clone(), &query.project_id).await;
+
+    if let Some(origin) = headers
+        .get(hyper::header::ORIGIN)
+        .and_then(|v| v.to_str().ok())
+    {
+        if is_origin_allowed_for_project(state, &query.project_id, origin).await {
+            let mut response = Response::builder()
+                .status(StatusCode::NO_CONTENT)
+                .body(axum::body::Body::empty())
+                .unwrap()
+                .into_response();
+            if let Some(list) = &allowed_list {
+                insert_allowed_origins_debug_header(&mut response, list);
+            }
+            insert_cors_headers(&mut response, origin);
+            return response;
+        }
+    }
+
+    // Not allowed
+    let mut response = (StatusCode::FORBIDDEN, "CORS origin not allowed").into_response();
+    if let Some(list) = &allowed_list {
+        insert_allowed_origins_debug_header(&mut response, list);
+    }
+    response
+}
+
+async fn is_origin_allowed_for_project(
+    state: Arc<AppState>,
+    project_id: &str,
+    origin: &str,
+) -> bool {
+    // Try to fetch project data; on registry unavailability, disallow by default
+    let Ok(project) = state.registry.project_data(project_id).await else {
+        return false;
+    };
+
+    let origin_lc = origin.to_ascii_lowercase();
+    // Parse origin host if possible
+    let origin_host = url::Url::parse(origin)
+        .ok()
+        .and_then(|u| u.host_str().map(|h| h.to_ascii_lowercase()));
+
+    // Check exact origins first
+    if project
+        .data
+        .allowed_origins
+        .iter()
+        .any(|o| o.eq_ignore_ascii_case(&origin_lc))
+    {
+        return true;
+    }
+
+    // Check hostname against allowed_origins
+    if let Some(host) = origin_host {
+        if project
+            .data
+            .allowed_origins
+            .iter()
+            .any(|o| !o.contains("://") && o.eq_ignore_ascii_case(&host))
+        {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn insert_cors_headers(response: &mut Response, origin: &str) {
+    let headers = response.headers_mut();
+    headers.insert(
+        hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN,
+        hyper::header::HeaderValue::from_str(origin)
+            .unwrap_or(hyper::header::HeaderValue::from_static("*")),
+    );
+    headers.insert(
+        hyper::header::VARY,
+        hyper::header::HeaderValue::from_static("Origin"),
+    );
+    headers.insert(
+        hyper::header::ACCESS_CONTROL_ALLOW_METHODS,
+        hyper::header::HeaderValue::from_static("POST, OPTIONS"),
+    );
+    headers.insert(
+        hyper::header::ACCESS_CONTROL_ALLOW_HEADERS,
+        hyper::header::HeaderValue::from_static(
+            "content-type, user-agent, referer, origin, access-control-request-method, access-control-request-headers, solana-client, sec-fetch-mode, x-sdk-type, x-sdk-version",
+        ),
+    );
+}
+
+async fn get_project_allowed_origins(
+    state: Arc<AppState>,
+    project_id: &str,
+) -> Option<Vec<String>> {
+    let project = state.registry.project_data(project_id).await.ok()?;
+    let mut list: Vec<String> = Vec::new();
+    list.extend(project.data.allowed_origins.into_iter());
+    // Deduplicate, case-insensitive
+    list.sort_by_key(|s| s.to_ascii_lowercase());
+    list.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
+    Some(list)
+}
+
+fn insert_allowed_origins_debug_header(response: &mut Response, list: &[String]) {
+    if list.is_empty() {
+        return;
+    }
+    if let Ok(value) = hyper::header::HeaderValue::from_str(&list.join(",")) {
+        response.headers_mut().insert(
+            hyper::header::HeaderName::from_static("x-allowed-origins"),
+            value,
+        );
+    }
+}
+
 #[tracing::instrument(skip(state), level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
