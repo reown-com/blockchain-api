@@ -85,7 +85,7 @@ pub async fn handler(
 async fn handler_internal(
     state: State<Arc<AppState>>,
     project_id: String,
-    _connect_info: ConnectInfo<SocketAddr>,
+    connect_info: ConnectInfo<SocketAddr>,
     _headers: HeaderMap,
     _query: Query<QueryParams>,
     request: GeneratePayUrlRequest,
@@ -147,6 +147,7 @@ async fn handler_internal(
                 amount,
                 recipient: address.clone(),
                 session_id: session_id.clone(),
+                user_ip: connect_info.0.ip(),
             },
         )
         .await;

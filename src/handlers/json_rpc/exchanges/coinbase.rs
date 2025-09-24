@@ -349,7 +349,8 @@ impl CoinbaseExchange {
             .append_pair("defaultAsset", &crypto)
             .append_pair("defaultPaymentMethod", DEFAULT_PAYMENT_METHOD)
             .append_pair("presetCryptoAmount", &params.amount.to_string())
-            .append_pair("defaultNetwork", &network);
+            .append_pair("defaultNetwork", &network)
+            .append_pair("clientIp", &params.user_ip.to_string());
 
         Ok(url.to_string())
     }
