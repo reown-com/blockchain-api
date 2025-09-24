@@ -171,8 +171,14 @@ fn insert_cors_headers(response: &mut Response, origin: &str) {
     let headers = response.headers_mut();
     headers.insert(
         hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN,
-        hyper::header::HeaderValue::from_str(origin)
-            .unwrap_or(hyper::header::HeaderValue::from_static("*")),
+        match hyper::header::HeaderValue::from_str(origin) {
+            Ok(value) => value,
+            Err(e) => {
+                // Don't set CORS headers for invalid origins
+                error!("Invalid origin header value: {origin}, {e}");
+                return;
+            }
+        },
     );
     headers.insert(
         hyper::header::VARY,
