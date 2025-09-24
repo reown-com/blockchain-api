@@ -236,6 +236,11 @@ dashboard.new(
   row.new('Swaps'),
     panels.swaps.availability(ds, vars)           { gridPos: pos._1 },
 
+  row.new('Exchanges / Wallet / POS'),
+    panels.rpc.availability(ds, vars)             { gridPos: pos._3 },
+    panels.rpc.calls_by_method(ds, vars)          { gridPos: pos._3 },
+    panels.rpc.latency_by_method(ds, vars)        { gridPos: pos._3 },
+
   row.new('Redis'),
     panels.redis.cpu(ds, vars)                    { gridPos: pos._2 },
     panels.redis.memory(ds, vars)                 { gridPos: pos._2 },
