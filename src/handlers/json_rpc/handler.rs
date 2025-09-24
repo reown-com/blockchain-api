@@ -35,6 +35,9 @@ use {
     yttrium::wallet_service_api,
 };
 
+/// CORS default allowed origins
+const CORS_ALLOWED_ORIGINS: [&str; 1] = ["http://localhost:3000"];
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct WalletQueryParams {
@@ -55,6 +58,201 @@ pub async fn handler(
     handler_internal(state, connect_info, headers, query, request_payload)
         .with_metrics(future_metrics!("handler_task", "name" => "wallet"))
         .await
+}
+
+// Wrapper that adds dynamic CORS headers based on project registry data
+pub async fn json_rpc_with_dynamic_cors(
+    state: State<Arc<AppState>>,
+    connect_info: ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    query: Query<WalletQueryParams>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<JsonRpcRequest>,
+) -> Response {
+    let method_name = request_payload.method.clone();
+    let mut response = handler(
+        state.clone(),
+        connect_info,
+        headers.clone(),
+        query.clone(),
+        SimpleRequestJson(request_payload),
+    )
+    .await;
+
+    // Add debug header listing allowed origins for this project
+    if let Some(list) = get_project_allowed_origins(state.0.clone(), &query.project_id).await {
+        insert_allowed_origins_debug_header(&mut response, &list);
+    }
+
+    // Apply CORS policy:
+    // - For selected PAY_* methods: echo Origin only if it's allowed for the project
+    // - For all other methods: allow all origins
+    match method_name.as_ref() {
+        PAY_GET_EXCHANGES | PAY_GET_EXCHANGE_URL | PAY_GET_EXCHANGE_BUY_STATUS => {
+            if let Some(origin) = headers
+                .get(hyper::header::ORIGIN)
+                .and_then(|v| v.to_str().ok())
+            {
+                if is_origin_allowed_for_project(state.0.clone(), &query.project_id, origin).await {
+                    insert_cors_headers(&mut response, origin);
+                }
+            }
+        }
+        _ => {
+            insert_cors_allow_all_headers(&mut response);
+        }
+    }
+
+    response
+}
+
+// OPTIONS preflight handler for /v1/json-rpc
+pub async fn json_rpc_preflight(
+    State(state): State<Arc<AppState>>,
+    Query(query): Query<WalletQueryParams>,
+) -> Response {
+    // Always allow preflight with wildcard; actual POST will enforce per-method policy
+    let mut response = Response::builder()
+        .status(StatusCode::NO_CONTENT)
+        .body(axum::body::Body::empty())
+        .unwrap()
+        .into_response();
+    if let Some(list) = get_project_allowed_origins(state.clone(), &query.project_id).await {
+        insert_allowed_origins_debug_header(&mut response, &list);
+    }
+    insert_cors_allow_all_headers(&mut response);
+    response
+}
+
+async fn is_origin_allowed_for_project(
+    state: Arc<AppState>,
+    project_id: &str,
+    origin: &str,
+) -> bool {
+    // Try to fetch project data; on registry unavailability, disallow by default
+    let Ok(project) = state.registry.project_data(project_id).await else {
+        return false;
+    };
+
+    let origin_lc = origin.to_ascii_lowercase();
+
+    // Allow default allowed origins by default
+    if CORS_ALLOWED_ORIGINS
+        .iter()
+        .any(|o| o.eq_ignore_ascii_case(&origin_lc))
+    {
+        return true;
+    }
+    // Parse origin host if possible
+    let origin_host = url::Url::parse(origin)
+        .ok()
+        .and_then(|u| u.host_str().map(|h| h.to_ascii_lowercase()));
+
+    // Check exact origins first
+    if project
+        .data
+        .allowed_origins
+        .iter()
+        .any(|o| o.eq_ignore_ascii_case(&origin_lc))
+    {
+        return true;
+    }
+
+    // Check hostname against allowed_origins
+    if let Some(host) = origin_host {
+        if project
+            .data
+            .allowed_origins
+            .iter()
+            .any(|o| !o.contains("://") && o.eq_ignore_ascii_case(&host))
+        {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn insert_cors_headers(response: &mut Response, origin: &str) {
+    let headers = response.headers_mut();
+    // Strip CR/LF to avoid header injection
+    let cleaned_origin = origin.replace(['\r', '\n'], "");
+    headers.insert(
+        hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN,
+        match hyper::header::HeaderValue::from_str(&cleaned_origin) {
+            Ok(value) => value,
+            Err(e) => {
+                // Don't set CORS headers for invalid origins
+                error!("Invalid origin header value: {origin}, {e}");
+                return;
+            }
+        },
+    );
+    headers.insert(
+        hyper::header::VARY,
+        hyper::header::HeaderValue::from_static("Origin"),
+    );
+    headers.insert(
+        hyper::header::ACCESS_CONTROL_ALLOW_METHODS,
+        hyper::header::HeaderValue::from_static("POST, OPTIONS"),
+    );
+    headers.insert(
+        hyper::header::ACCESS_CONTROL_ALLOW_HEADERS,
+        hyper::header::HeaderValue::from_static(
+            "content-type, user-agent, referer, origin, access-control-request-method, access-control-request-headers, solana-client, sec-fetch-mode, x-sdk-type, x-sdk-version",
+        ),
+    );
+}
+
+fn insert_cors_allow_all_headers(response: &mut Response) {
+    let headers = response.headers_mut();
+    headers.insert(
+        hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN,
+        hyper::header::HeaderValue::from_static("*"),
+    );
+    headers.insert(
+        hyper::header::ACCESS_CONTROL_ALLOW_METHODS,
+        hyper::header::HeaderValue::from_static("POST, OPTIONS"),
+    );
+    headers.insert(
+        hyper::header::ACCESS_CONTROL_ALLOW_HEADERS,
+        hyper::header::HeaderValue::from_static(
+            "content-type, user-agent, referer, origin, access-control-request-method, access-control-request-headers, solana-client, sec-fetch-mode, x-sdk-type, x-sdk-version",
+        ),
+    );
+}
+
+async fn get_project_allowed_origins(
+    state: Arc<AppState>,
+    project_id: &str,
+) -> Option<Vec<String>> {
+    let project = state.registry.project_data(project_id).await.ok()?;
+    let mut allowed_origins: Vec<String> = Vec::new();
+    allowed_origins.extend(project.data.allowed_origins.into_iter());
+    // Deduplicate, case-insensitive
+    allowed_origins.sort_by_key(|s| s.to_ascii_lowercase());
+    allowed_origins.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
+    // Append default allowed origins
+    allowed_origins.extend(CORS_ALLOWED_ORIGINS.iter().map(|s| s.to_string()));
+    Some(allowed_origins)
+}
+
+fn insert_allowed_origins_debug_header(response: &mut Response, list: &[String]) {
+    // Sanitize each origin by stripping CR/LF and keeping only valid header values
+    let sanitized: Vec<String> = list
+        .iter()
+        .map(|s| s.replace(['\r', '\n'], ""))
+        .filter(|s| hyper::header::HeaderValue::from_str(s).is_ok())
+        .collect();
+
+    if sanitized.is_empty() {
+        return;
+    }
+    if let Ok(value) = hyper::header::HeaderValue::from_str(&sanitized.join(",")) {
+        response.headers_mut().insert(
+            hyper::header::HeaderName::from_static("x-allowed-origins"),
+            value,
+        );
+    }
 }
 
 #[tracing::instrument(skip(state), level = "debug")]

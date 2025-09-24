@@ -221,6 +221,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         HeaderName::from_static("x-sdk-version"),
     ]);
 
+    // No static restricted CORS here; dynamic CORS for /v1/json-rpc is handled in its handler
+
     let tracing_layer = ServiceBuilder::new()
         .set_x_request_id(MakeRequestUuid)
         .layer(
@@ -241,7 +243,14 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         )
         .propagate_x_request_id();
 
-    let app = Router::new()
+    // Router for /v1/json-rpc with restricted CORS
+    let json_rpc_restricted_router = Router::new()
+        // Preflight for dynamic CORS
+        .route("/v1/json-rpc", axum::routing::options(handlers::json_rpc::handler::json_rpc_preflight))
+        .route("/v1/json-rpc", post(handlers::json_rpc::handler::json_rpc_with_dynamic_cors));
+
+    // All other routes with default/open CORS
+    let rest_routes = Router::new()
         // HTTP RPC proxy (POST method only) with the trailing slash alias
         .route("/v1", post(handlers::proxy::handler))
         .route("/v1/", post(handlers::proxy::handler))
@@ -368,16 +377,18 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route("/v1/bundler", post(handlers::bundler::handler))
         // Wallet
         .route("/v1/wallet", post(handlers::json_rpc::handler::handler))
-        // Same handler as the Wallet 
-        .route("/v1/json-rpc", post(handlers::json_rpc::handler::handler))
         // Chain agnostic orchestration
         .route("/v1/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler_v1))
         .route("/v2/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler_v2))
         .route("/v1/ca/orchestrator/status", get(handlers::chain_agnostic::status::handler))
         // Health
         .route("/health", get(handlers::health::handler))
-        .route_layer(tracing_layer)
         .route_layer(cors);
+
+    let app = Router::new()
+        .merge(json_rpc_restricted_router)
+        .merge(rest_routes)
+        .route_layer(tracing_layer);
 
     // Response statuses and latency metrics middleware
     let app = app.layer(middleware::from_fn_with_state(
