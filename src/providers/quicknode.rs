@@ -64,14 +64,11 @@ impl RpcProvider for QuicknodeProvider {
                     "Quicknode subdomain not found for chainId: {chain_id}"
                 )))?;
 
-        // Add /jsonrpc prefix for the Tron and Ton Mainnet
-        let is_prefixed_chains = ["tron:0x2b6653dc", "ton:mainnet"]
-            .iter()
-            .any(|c| chain_id.contains(c));
-        let uri = if is_prefixed_chains {
-            format!("https://{chain_subdomain}.quiknode.pro/{token}/jsonrpc")
-        } else {
-            format!("https://{chain_subdomain}.quiknode.pro/{token}")
+        // Add /jsonrpc prefix for the Tron and /jsonRPC prefix for the Ton
+        let uri = match chain_id {
+            "tron:0x2b6653dc" => format!("https://{chain_subdomain}.quiknode.pro/{token}/jsonrpc"),
+            "ton:mainnet" => format!("https://{chain_subdomain}.quiknode.pro/{token}/jsonRPC"),
+            _ => format!("https://{chain_subdomain}.quiknode.pro/{token}"),
         };
 
         let response = self
