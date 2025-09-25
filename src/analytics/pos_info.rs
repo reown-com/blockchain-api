@@ -26,16 +26,16 @@ impl PosBuildTxInfo {
     pub fn new(input: PosBuildTxNew) -> Self {
         Self {
             timestamp: wc::analytics::time::now(),
-            project_id: input.project_id.to_owned(),
-            asset: input.request.asset.to_owned(),
-            amount: input.request.amount.to_owned(),
-            recipient: input.request.recipient.to_owned(),
-            sender: input.request.sender.to_owned(),
+            project_id: input.project_id.to_string(),
+            asset: input.request.asset.to_string(),
+            amount: input.request.amount.to_string(),
+            recipient: input.request.recipient.to_string(),
+            sender: input.request.sender.to_string(),
             capabilities: input.request.capabilities.map(str::to_owned),
-            tx_id: input.response.tx_id.to_owned(),
-            tx_chain_id: input.response.tx_chain_id.to_owned(),
-            tx_method: input.response.tx_method.to_owned(),
-            tx_params: input.response.tx_params.to_owned(),
+            tx_id: input.response.tx_id.to_string(),
+            tx_chain_id: input.response.tx_chain_id.to_string(),
+            tx_method: input.response.tx_method.to_string(),
+            tx_params: input.response.tx_params.to_string(),
         }
     }
 }
@@ -95,11 +95,7 @@ impl PosCheckTxInfo {
             chain_id,
             transaction_id,
             send_result,
-            status: match status {
-                TransactionStatus::Pending => "PENDING".to_string(),
-                TransactionStatus::Confirmed => "CONFIRMED".to_string(),
-                TransactionStatus::Failed => "FAILED".to_string(),
-            },
+            status: status.to_string(),
             check_in,
             txid,
         }

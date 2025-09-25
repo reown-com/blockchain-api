@@ -24,7 +24,7 @@ use {
     serde::{Deserialize, Serialize},
     serde_json::Value,
     std::{convert::TryFrom, fmt::Display, str::FromStr, sync::Arc},
-    strum_macros::EnumString,
+    strum_macros::{Display as StrumDisplay, EnumString},
     uuid::Uuid,
 };
 
@@ -99,8 +99,9 @@ pub struct TransactionRpc {
     pub params: Value,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, StrumDisplay)]
 #[serde(rename_all = "UPPERCASE")]
+#[strum(serialize_all = "UPPERCASE")]
 pub enum TransactionStatus {
     Pending,
     Confirmed,
