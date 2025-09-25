@@ -16,7 +16,7 @@ pub struct PosBuildTxInfo {
     pub sender: String,
     pub capabilities: Option<String>,
 
-    pub tx_id: String,
+    pub transaction_id: String,
     pub tx_chain_id: String,
     pub tx_method: String,
     pub tx_params: String,
@@ -32,7 +32,7 @@ impl PosBuildTxInfo {
             recipient: input.request.recipient.to_string(),
             sender: input.request.sender.to_string(),
             capabilities: input.request.capabilities.map(str::to_owned),
-            tx_id: input.response.tx_id.to_string(),
+            transaction_id: input.response.transaction_id.to_string(),
             tx_chain_id: input.response.tx_chain_id.to_string(),
             tx_method: input.response.tx_method.to_string(),
             tx_params: input.response.tx_params.to_string(),
@@ -51,7 +51,7 @@ pub struct PosBuildTxRequest<'a> {
 
 #[derive(Debug, Clone)]
 pub struct PosBuildTxResponse<'a> {
-    pub tx_id: &'a str,
+    pub transaction_id: &'a str,
     pub tx_chain_id: &'a str,
     pub tx_method: &'a str,
     pub tx_params: &'a str,
@@ -76,7 +76,7 @@ pub struct PosCheckTxInfo {
 
     pub status: String,
     pub check_in: Option<usize>,
-    pub txid: Option<String>,
+    pub tx_hash: Option<String>,
 }
 
 impl PosCheckTxInfo {
@@ -87,7 +87,7 @@ impl PosCheckTxInfo {
         send_result: String,
         status: &TransactionStatus,
         check_in: Option<usize>,
-        txid: Option<String>,
+        tx_hash: Option<String>,
     ) -> Self {
         Self {
             timestamp: wc::analytics::time::now(),
@@ -97,7 +97,7 @@ impl PosCheckTxInfo {
             send_result,
             status: status.to_string(),
             check_in,
-            txid,
+            tx_hash,
         }
     }
 }

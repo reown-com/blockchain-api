@@ -98,7 +98,7 @@ pub async fn handler(
                     capabilities: capabilities_string,
                 },
                 response: PosBuildTxResponse {
-                    tx_id: &tx.id,
+                    transaction_id: &tx.id,
                     tx_chain_id: &tx.chain_id,
                     tx_method: &tx.method,
                     tx_params: &tx_params_string,
