@@ -4,6 +4,9 @@ use {
         SupportedNamespaces, TransactionBuilder, TransactionRpc, ValidationError,
     },
     crate::{
+        analytics::pos_info::{
+            PosBuildTxInfo, PosBuildTxNew, PosBuildTxRequest, PosBuildTxResponse,
+        },
         handlers::json_rpc::pos::{
             evm::EvmTransactionBuilder, solana::SolanaTransactionBuilder,
             tron::TronTransactionBuilder,
@@ -55,6 +58,14 @@ pub async fn handler(
         ));
     }
 
+    let capabilities_str = params.capabilities.as_ref().map(|v| {
+        serde_json::to_string(v).unwrap_or_else(|e| {
+            tracing::warn!(?e, "Failed to serialize capabilities for analytics");
+            "<serde_error>".to_string()
+        })
+    });
+    let intents = params.payment_intents.clone();
+
     let futures = params.payment_intents.into_iter().map(|intent| {
         let state = state.clone();
         let project_id = project_id.clone();
@@ -62,5 +73,38 @@ pub async fn handler(
     });
 
     let transactions = try_join_all(futures).await?;
-    Ok(BuildTransactionResult { transactions })
+    let response = BuildTransactionResult { transactions };
+
+    for (intent, tx) in intents.iter().zip(response.transactions.iter()) {
+        let tx_params_string = serde_json::to_string(&tx.params).unwrap_or_else(|e| {
+            tracing::warn!(
+                ?e,
+                tx_id = tx.id,
+                method = tx.method,
+                "Failed to serialize tx params for analytics"
+            );
+            "<serde_error>".to_string()
+        });
+        let capabilities_string = capabilities_str.as_deref();
+        state
+            .analytics
+            .pos_build(PosBuildTxInfo::new(PosBuildTxNew {
+                project_id: &project_id,
+                request: PosBuildTxRequest {
+                    asset: &intent.asset,
+                    amount: &intent.amount,
+                    recipient: &intent.recipient,
+                    sender: &intent.sender,
+                    capabilities: capabilities_string,
+                },
+                response: PosBuildTxResponse {
+                    transaction_id: &tx.id,
+                    tx_chain_id: &tx.chain_id,
+                    tx_method: &tx.method,
+                    tx_params: &tx_params_string,
+                },
+            }));
+    }
+
+    Ok(response)
 }

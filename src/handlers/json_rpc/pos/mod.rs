@@ -24,7 +24,7 @@ use {
     serde::{Deserialize, Serialize},
     serde_json::Value,
     std::{convert::TryFrom, fmt::Display, str::FromStr, sync::Arc},
-    strum_macros::EnumString,
+    strum_macros::{Display as StrumDisplay, EnumString},
     uuid::Uuid,
 };
 
@@ -69,13 +69,13 @@ pub struct SupportedNamespace {
     pub asset_namespaces: Vec<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BuildTransactionParams {
     pub payment_intents: Vec<PaymentIntent>,
     pub capabilities: Option<Value>,
 }
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PaymentIntent {
     pub asset: String,
@@ -99,15 +99,16 @@ pub struct TransactionRpc {
     pub params: Value,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, StrumDisplay)]
 #[serde(rename_all = "UPPERCASE")]
+#[strum(serialize_all = "UPPERCASE")]
 pub enum TransactionStatus {
     Pending,
     Confirmed,
     Failed,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CheckTransactionParams {
     pub id: String,
