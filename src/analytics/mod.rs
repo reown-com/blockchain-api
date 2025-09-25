@@ -146,10 +146,10 @@ where
                 "analytics export failed"
             );
         } else {
-            tracing::error!(
+            tracing::debug!(
                 elapsed,
                 data_kind = self.0.as_str(),
-                "analytics export failed"
+                "analytics export succeeded"
             );
         }
     }
@@ -597,20 +597,26 @@ impl RPCAnalytics {
     }
 
     pub fn pos_build(&self, data: pos_info::PosBuildTxInfo) {
+        let tx_id = data.tx_id.clone();
         if let Err(err) = self.pos_build.collect(data) {
             tracing::warn!(
                 ?err,
                 data_kind = DataKind::Pos.as_str(),
+                tx_id,
                 "failed to collect analytics for pos"
             );
         }
     }
 
     pub fn pos_check(&self, data: pos_info::PosCheckTxInfo) {
+        let transaction_id = data.transaction_id.clone();
+        let txid = data.txid.clone();
         if let Err(err) = self.pos_check.collect(data) {
             tracing::warn!(
                 ?err,
                 data_kind = DataKind::Pos.as_str(),
+                transaction_id,
+                ?txid,
                 "failed to collect analytics for pos"
             );
         }
