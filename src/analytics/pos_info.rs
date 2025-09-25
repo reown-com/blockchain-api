@@ -23,32 +23,45 @@ pub struct PosBuildTxInfo {
 }
 
 impl PosBuildTxInfo {
-    pub fn new(
-        project_id: String,
-        asset: String,
-        amount: String,
-        recipient: String,
-        sender: String,
-        capabilities: Option<String>,
-        tx_id: String,
-        tx_chain_id: String,
-        tx_method: String,
-        tx_params: String,
-    ) -> Self {
+    pub fn new(input: PosBuildTxNew) -> Self {
         Self {
             timestamp: wc::analytics::time::now(),
-            project_id,
-            asset,
-            amount,
-            recipient,
-            sender,
-            capabilities,
-            tx_id,
-            tx_chain_id,
-            tx_method,
-            tx_params,
+            project_id: input.project_id.to_owned(),
+            asset: input.request.asset.to_owned(),
+            amount: input.request.amount.to_owned(),
+            recipient: input.request.recipient.to_owned(),
+            sender: input.request.sender.to_owned(),
+            capabilities: input.request.capabilities.map(str::to_owned),
+            tx_id: input.response.tx_id.to_owned(),
+            tx_chain_id: input.response.tx_chain_id.to_owned(),
+            tx_method: input.response.tx_method.to_owned(),
+            tx_params: input.response.tx_params.to_owned(),
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct PosBuildTxRequest<'a> {
+    pub asset: &'a str,
+    pub amount: &'a str,
+    pub recipient: &'a str,
+    pub sender: &'a str,
+    pub capabilities: Option<&'a str>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PosBuildTxResponse<'a> {
+    pub tx_id: &'a str,
+    pub tx_chain_id: &'a str,
+    pub tx_method: &'a str,
+    pub tx_params: &'a str,
+}
+
+#[derive(Debug, Clone)]
+pub struct PosBuildTxNew<'a> {
+    pub project_id: &'a str,
+    pub request: PosBuildTxRequest<'a>,
+    pub response: PosBuildTxResponse<'a>,
 }
 
 #[derive(Debug, Clone, Serialize, ParquetRecordWriter)]

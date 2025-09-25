@@ -4,7 +4,9 @@ use {
         SupportedNamespaces, TransactionBuilder, TransactionRpc, ValidationError,
     },
     crate::{
-        analytics::pos_info::PosBuildTxInfo,
+        analytics::pos_info::{
+            PosBuildTxInfo, PosBuildTxNew, PosBuildTxRequest, PosBuildTxResponse,
+        },
         handlers::json_rpc::pos::{
             evm::EvmTransactionBuilder, solana::SolanaTransactionBuilder,
             tron::TronTransactionBuilder,
@@ -72,20 +74,27 @@ pub async fn handler(
     let response = BuildTransactionResult { transactions };
 
     for (intent, tx) in intents.iter().zip(response.transactions.iter()) {
-        let tx_params_str =
+        let tx_params_string =
             serde_json::to_string(&tx.params).unwrap_or_else(|_| "<serde_error>".to_string());
-        state.analytics.pos_build(PosBuildTxInfo::new(
-            project_id.clone(),
-            intent.asset.clone(),
-            intent.amount.clone(),
-            intent.recipient.clone(),
-            intent.sender.clone(),
-            capabilities_str.clone(),
-            tx.id.clone(),
-            tx.chain_id.clone(),
-            tx.method.clone(),
-            tx_params_str,
-        ));
+        let capabilities_string = capabilities_str.as_deref();
+        state
+            .analytics
+            .pos_build(PosBuildTxInfo::new(PosBuildTxNew {
+                project_id: &project_id,
+                request: PosBuildTxRequest {
+                    asset: &intent.asset,
+                    amount: &intent.amount,
+                    recipient: &intent.recipient,
+                    sender: &intent.sender,
+                    capabilities: capabilities_string,
+                },
+                response: PosBuildTxResponse {
+                    tx_id: &tx.id,
+                    tx_chain_id: &tx.chain_id,
+                    tx_method: &tx.method,
+                    tx_params: &tx_params_string,
+                },
+            }));
     }
 
     Ok(response)
