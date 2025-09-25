@@ -69,13 +69,13 @@ pub struct SupportedNamespace {
     pub asset_namespaces: Vec<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BuildTransactionParams {
     pub payment_intents: Vec<PaymentIntent>,
     pub capabilities: Option<Value>,
 }
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PaymentIntent {
     pub asset: String,
@@ -107,7 +107,7 @@ pub enum TransactionStatus {
     Failed,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CheckTransactionParams {
     pub id: String,

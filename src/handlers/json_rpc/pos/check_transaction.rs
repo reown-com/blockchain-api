@@ -3,12 +3,15 @@ use {
         CheckPosTxError, CheckTransactionParams, CheckTransactionResult, SupportedNamespaces,
         TransactionId, ValidationError,
     },
-    crate::handlers::json_rpc::pos::{
+    crate::{
+        analytics::pos_info::PosCheckTxInfo,
+        handlers::json_rpc::pos::{
         evm::check_transaction as evm_check_transaction,
         solana::check_transaction as solana_check_transaction,
         tron::check_transaction as tron_check_transaction,
     },
-    crate::state::AppState,
+        state::AppState,
+    },
     axum::extract::State,
     std::{str::FromStr, sync::Arc},
 };
@@ -18,7 +21,8 @@ pub async fn handler(
     project_id: String,
     params: CheckTransactionParams,
 ) -> Result<CheckTransactionResult, CheckPosTxError> {
-    let transaction_id = TransactionId::try_from(params.id).map_err(|e| {
+    let CheckTransactionParams { id, send_result } = params;
+    let transaction_id = TransactionId::try_from(id).map_err(|e| {
         CheckPosTxError::Validation(ValidationError::InvalidTransactionId(e.to_string()))
     })?;
 
@@ -27,33 +31,48 @@ pub async fn handler(
             CheckPosTxError::Validation(ValidationError::InvalidTransactionId(e.to_string()))
         })?;
 
-    match namespace {
+    let result = match namespace {
         SupportedNamespaces::Eip155 => {
             evm_check_transaction(
-                state,
+                state.clone(),
                 &project_id,
-                &params.send_result,
+                &send_result,
                 transaction_id.chain_id(),
             )
             .await
         }
         SupportedNamespaces::Solana => {
             solana_check_transaction(
-                state,
+                state.clone(),
                 &project_id,
-                &params.send_result,
+                &send_result,
                 transaction_id.chain_id(),
             )
             .await
         }
         SupportedNamespaces::Tron => {
             tron_check_transaction(
-                state,
+                state.clone(),
                 &project_id,
-                &params.send_result,
+                &send_result,
                 transaction_id.chain_id(),
             )
             .await
         }
-    }
+    }?;
+
+    let check_in = result.check_in;
+    let txid = result.txid.clone();
+
+    state.analytics.pos_check(PosCheckTxInfo::new(
+        project_id.clone(),
+        transaction_id.chain_id().to_string(),
+        transaction_id.to_string(),
+        send_result,
+        &result.status,
+        check_in,
+        txid,
+    ));
+
+    Ok(result)
 }

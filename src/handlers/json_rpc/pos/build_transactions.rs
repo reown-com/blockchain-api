@@ -4,6 +4,7 @@ use {
         SupportedNamespaces, TransactionBuilder, TransactionRpc, ValidationError,
     },
     crate::{
+        analytics::pos_info::PosBuildTxInfo,
         handlers::json_rpc::pos::{
             evm::EvmTransactionBuilder, solana::SolanaTransactionBuilder,
             tron::TronTransactionBuilder,
@@ -55,6 +56,12 @@ pub async fn handler(
         ));
     }
 
+    let capabilities_str = params
+        .capabilities
+        .as_ref()
+        .map(|v| serde_json::to_string(v).unwrap_or_else(|_| "<serde_error>".to_string()));
+    let intents = params.payment_intents.clone();
+
     let futures = params.payment_intents.into_iter().map(|intent| {
         let state = state.clone();
         let project_id = project_id.clone();
@@ -62,5 +69,24 @@ pub async fn handler(
     });
 
     let transactions = try_join_all(futures).await?;
-    Ok(BuildTransactionResult { transactions })
+    let response = BuildTransactionResult { transactions };
+
+    for (intent, tx) in intents.iter().zip(response.transactions.iter()) {
+        let tx_params_str = serde_json::to_string(&tx.params)
+            .unwrap_or_else(|_| "<serde_error>".to_string());
+        state.analytics.pos_build(PosBuildTxInfo::new(
+            project_id.clone(),
+            intent.asset.clone(),
+            intent.amount.clone(),
+            intent.recipient.clone(),
+            intent.sender.clone(),
+            capabilities_str.clone(),
+            tx.id.clone(),
+            tx.chain_id.clone(),
+            tx.method.clone(),
+            tx_params_str,
+        ));
+    }
+
+    Ok(response)
 }
