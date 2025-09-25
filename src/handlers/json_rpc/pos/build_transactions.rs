@@ -58,15 +58,12 @@ pub async fn handler(
         ));
     }
 
-    let capabilities_str = params
-        .capabilities
-        .as_ref()
-        .map(|v| {
-            serde_json::to_string(v).unwrap_or_else(|e| {
-                tracing::warn!(?e, "Failed to serialize capabilities for analytics");
-                "<serde_error>".to_string()
-            })
-        });
+    let capabilities_str = params.capabilities.as_ref().map(|v| {
+        serde_json::to_string(v).unwrap_or_else(|e| {
+            tracing::warn!(?e, "Failed to serialize capabilities for analytics");
+            "<serde_error>".to_string()
+        })
+    });
     let intents = params.payment_intents.clone();
 
     let futures = params.payment_intents.into_iter().map(|intent| {
@@ -80,7 +77,12 @@ pub async fn handler(
 
     for (intent, tx) in intents.iter().zip(response.transactions.iter()) {
         let tx_params_string = serde_json::to_string(&tx.params).unwrap_or_else(|e| {
-            tracing::warn!(?e, tx_id = tx.id, method = tx.method, "Failed to serialize tx params for analytics");
+            tracing::warn!(
+                ?e,
+                tx_id = tx.id,
+                method = tx.method,
+                "Failed to serialize tx params for analytics"
+            );
             "<serde_error>".to_string()
         });
         let capabilities_string = capabilities_str.as_deref();
