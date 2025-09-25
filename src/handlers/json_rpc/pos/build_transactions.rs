@@ -72,8 +72,8 @@ pub async fn handler(
     let response = BuildTransactionResult { transactions };
 
     for (intent, tx) in intents.iter().zip(response.transactions.iter()) {
-        let tx_params_str = serde_json::to_string(&tx.params)
-            .unwrap_or_else(|_| "<serde_error>".to_string());
+        let tx_params_str =
+            serde_json::to_string(&tx.params).unwrap_or_else(|_| "<serde_error>".to_string());
         state.analytics.pos_build(PosBuildTxInfo::new(
             project_id.clone(),
             intent.asset.clone(),

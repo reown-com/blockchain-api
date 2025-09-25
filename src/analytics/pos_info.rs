@@ -1,4 +1,7 @@
-use {crate::handlers::json_rpc::pos::TransactionStatus, parquet_derive::ParquetRecordWriter, serde::Serialize};
+use {
+    crate::handlers::json_rpc::pos::TransactionStatus, parquet_derive::ParquetRecordWriter,
+    serde::Serialize,
+};
 
 #[derive(Debug, Clone, Serialize, ParquetRecordWriter)]
 #[serde(rename_all = "camelCase")]
@@ -89,5 +92,3 @@ impl PosCheckTxInfo {
         }
     }
 }
-
-
