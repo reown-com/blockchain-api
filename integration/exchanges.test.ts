@@ -14,15 +14,19 @@ describe('Exchanges', () => {
 
   const ethAddress = 'eip155:1:0x2aae531a81461f029cd55cb46703211c9227ba05';
   const baseAddress = 'eip155:8453:0x2aae531a81461f029cd55cb46703211c9227ba05';
+  const sepoliaAddress = 'eip155:11155111:0x2aae531a81461f029cd55cb46703211c9227ba05';
+  const baseSepoliaAddress = 'eip155:84532:0x2aae531a81461f029cd55cb46703211c9227ba05';
   const solanaAddress = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp:5PUrktzVvJPNFYpxNzFkGp4a5Dcj1Dduif5dAzuUUhsr';
   
   const ethUSDC = 'eip155:1/erc20:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
   const baseUSDC = 'eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
   const nativeETH = 'eip155:1/slip44:60';
+  const sepoliaETH = 'eip155:11155111/slip44:60';
+  const baseSepoliaETH = 'eip155:84532/slip44:60';
   const nativeSOL = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/slip44:501';
   const unsupportedAsset = 'eip155:999/erc20:0x1234567890123456789012345678901234567890';
 
-  const supportedExchanges = ['binance', 'coinbase', 'reown_test'];
+  const supportedExchanges = ['binance', 'reown_test'];
 
   const defaultAmount = '100';
   const hexAmount = '0x64';
@@ -82,7 +86,6 @@ describe('Exchanges', () => {
 
       const exchangeIds = response.data.result.exchanges.map((e: Exchange) => e.id);
       expect(exchangeIds).toContain('binance');
-      expect(exchangeIds).toContain('coinbase');
     });
 
     it('should get exchanges filtered by unsupported asset', async () => {
@@ -136,7 +139,7 @@ describe('Exchanges', () => {
         method: 'reown_getExchanges',
         params: {
           page: 1,
-          exclude: ['binance']
+          exclude: ['reown_test']
         }
       };
 
@@ -149,8 +152,8 @@ describe('Exchanges', () => {
       expect(response.data.result).toBeDefined();
       
       const exchangeIds = response.data.result.exchanges.map((e: Exchange) => e.id);
-      expect(exchangeIds).not.toContain('binance');
-      expect(exchangeIds).toContain('coinbase');
+      expect(exchangeIds).not.toContain('reown_test');
+      expect(exchangeIds).toContain('binance');
     });
 
     it('should return validation error for mutually exclusive includeOnly and exclude', async () => {
@@ -161,7 +164,7 @@ describe('Exchanges', () => {
         params: {
           page: 1,
           includeOnly: ['binance'],
-          exclude: ['coinbase']
+          exclude: ['reown_test']
         }
       };
 
@@ -178,7 +181,7 @@ describe('Exchanges', () => {
 
   describe('Get Exchange URL', () => {
     
-    binanceTestFn.skip('should generate pay URL for Binance with USDC on Base', async () => {
+    binanceTestFn('should generate pay URL for Binance with USDC on Base', async () => {
       const payload = {
         jsonrpc: '2.0',
         id: 1,
@@ -204,16 +207,16 @@ describe('Exchanges', () => {
       expect(response.data.result.sessionId.length).toBeGreaterThan(0);
     });
 
-    it('should generate pay URL for Coinbase with USDC on Base', async () => {
+    it('should generate pay URL for Reown Test Exchange with ETH on Base Sepolia', async () => {
       const payload = {
         jsonrpc: '2.0',
         id: 1,
         method: 'reown_getExchangePayUrl',
         params: {
-          exchangeId: 'coinbase',
-          asset: baseUSDC,
+          exchangeId: 'reown_test',
+          asset: baseSepoliaETH,
           amount: defaultAmount,
-          recipient: baseAddress
+          recipient: baseSepoliaAddress
         }
       };
 
@@ -236,10 +239,10 @@ describe('Exchanges', () => {
         id: 1,
         method: 'reown_getExchangePayUrl',
         params: {
-          exchangeId: 'coinbase',
-          asset: baseUSDC,
+          exchangeId: 'reown_test',
+          asset: sepoliaETH,
           amount: floatAmount,
-          recipient: baseAddress
+          recipient: sepoliaAddress
         }
       };
 
@@ -260,10 +263,10 @@ describe('Exchanges', () => {
         id: 1,
         method: 'reown_getExchangePayUrl',
         params: {
-          exchangeId: 'coinbase',
-          asset: baseUSDC,
+          exchangeId: 'reown_test',
+          asset: baseSepoliaETH,
           amount: hexAmount,
-          recipient: baseAddress
+          recipient: baseSepoliaAddress
         }
       };
 
@@ -278,16 +281,16 @@ describe('Exchanges', () => {
       expect(typeof response.data.result.sessionId).toBe('string');
     });
 
-    it('should generate pay URL for native ETH', async () => {
+    it('should generate pay URL for native ETH on Sepolia', async () => {
       const payload = {
         jsonrpc: '2.0',
         id: 1,
         method: 'reown_getExchangePayUrl',
         params: {
-          exchangeId: 'coinbase',
-          asset: nativeETH,
+          exchangeId: 'reown_test',
+          asset: sepoliaETH,
           amount: defaultAmount,
-          recipient: ethAddress
+          recipient: sepoliaAddress
         }
       };
 
@@ -331,7 +334,7 @@ describe('Exchanges', () => {
         id: 1,
         method: 'reown_getExchangePayUrl',
         params: {
-          exchangeId: 'binance',
+          exchangeId: 'reown_test',
           asset: unsupportedAsset,
           amount: defaultAmount,
           recipient: 'eip155:999:0x2aae531a81461f029cd55cb46703211c9227ba05'
@@ -354,10 +357,10 @@ describe('Exchanges', () => {
         id: 1,
         method: 'reown_getExchangePayUrl',
         params: {
-          exchangeId: 'binance',
-          asset: baseUSDC,
+          exchangeId: 'reown_test',
+          asset: sepoliaETH,
           amount: defaultAmount,
-          recipient: ethAddress
+          recipient: baseSepoliaAddress
         }
       };
 
@@ -377,10 +380,10 @@ describe('Exchanges', () => {
         id: 1,
         method: 'reown_getExchangePayUrl',
         params: {
-          exchangeId: 'binance',
-          asset: baseUSDC,
+          exchangeId: 'reown_test',
+          asset: sepoliaETH,
           amount: 'invalid-amount',
-          recipient: baseAddress
+          recipient: sepoliaAddress
         }
       };
 
@@ -404,10 +407,10 @@ describe('Exchanges', () => {
         id: 1,
         method: 'reown_getExchangePayUrl',
         params: {
-          exchangeId: 'binance',
-          asset: baseUSDC,
+          exchangeId: 'reown_test',
+          asset: sepoliaETH,
           amount: defaultAmount,
-          recipient: baseAddress
+          recipient: sepoliaAddress
         }
       };
 
@@ -452,7 +455,7 @@ describe('Exchanges', () => {
         id: 1,
         method: 'reown_getExchangeBuyStatus',
         params: {
-          exchangeId: 'binance',
+          exchangeId: 'reown_test',
           sessionId: ''
         }
       };
@@ -475,7 +478,7 @@ describe('Exchanges', () => {
         id: 1,
         method: 'reown_getExchangeBuyStatus',
         params: {
-          exchangeId: 'binance',
+          exchangeId: 'reown_test',
           sessionId: longSessionId
         }
       };
@@ -498,7 +501,7 @@ describe('Exchanges', () => {
         id: 1,
         method: 'reown_getExchangePayUrl',
         params: {
-          exchangeId: 'binance',
+          exchangeId: 'reown_test',
         }
       };
 
@@ -553,19 +556,25 @@ describe('Exchanges', () => {
         name: 'Native ETH on Ethereum',
         asset: nativeETH,
         recipient: ethAddress,
-        supportedExchanges: ['binance', 'coinbase']
+        supportedExchanges: ['binance']
       },
-      // {
-      //   name: 'USDC on Base',
-      //   asset: baseUSDC,
-      //   recipient: baseAddress,
-      //   supportedExchanges: ['binance', 'coinbase']
-      // },
+      {
+        name: 'Sepolia ETH',
+        asset: sepoliaETH,
+        recipient: sepoliaAddress,
+        supportedExchanges: ['reown_test']
+      },
+      {
+        name: 'Base Sepolia ETH',
+        asset: baseSepoliaETH,
+        recipient: baseSepoliaAddress,
+        supportedExchanges: ['reown_test']
+      },
       {
         name: 'USDC on Ethereum',
         asset: ethUSDC,
         recipient: ethAddress,
-        supportedExchanges: ['binance', 'coinbase']
+        supportedExchanges: ['binance']
       },
       {
         name: 'Native SOL on Solana',

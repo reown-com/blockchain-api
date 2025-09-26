@@ -53,6 +53,10 @@ impl ExchangeProvider for TestExchange {
     fn is_asset_supported(&self, asset: &Caip19Asset) -> bool {
         CAIP_19_SUPPORTED_ASSETS.contains(asset)
     }
+
+    fn is_enabled(&self) -> bool {
+        true
+    }
 }
 
 impl TestExchange {

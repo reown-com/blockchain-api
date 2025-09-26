@@ -180,6 +180,10 @@ impl ExchangeProvider for CoinbaseExchange {
     fn is_asset_supported(&self, asset: &Caip19Asset) -> bool {
         CAIP19_TO_COINBASE_CRYPTO.contains_key(asset.to_string().as_str())
     }
+
+    fn is_enabled(&self) -> bool {
+        false
+    }
 }
 
 impl CoinbaseExchange {

@@ -1,11 +1,11 @@
 use {
     crate::handlers::json_rpc::exchanges::{
-        is_feature_enabled_for_project_id,
+        get_exchange_by_id, is_feature_enabled_for_project_id,
         transactions::{
             mark_failed as mark_transaction_failed, mark_succeeded as mark_transaction_succeeded,
             touch_pending as touch_pending_transaction,
         },
-        BuyTransactionStatus, ExchangeError, ExchangeType, GetBuyStatusParams,
+        BuyTransactionStatus, ExchangeError, GetBuyStatusParams,
     },
     crate::{handlers::SdkInfoParams, state::AppState},
     axum::{
@@ -88,12 +88,8 @@ async fn handler_internal(
     _query: Query<QueryParams>,
     request: GetExchangeBuyStatusRequest,
 ) -> Result<GetExchangeBuyStatusResponse, GetExchangeBuyStatusError> {
-    let exchange = ExchangeType::from_id(&request.exchange_id).ok_or_else(|| {
-        GetExchangeBuyStatusError::ExchangeNotFound(format!(
-            "Exchange {} not found",
-            request.exchange_id
-        ))
-    })?;
+    let exchange = get_exchange_by_id(&request.exchange_id)
+        .map_err(|e| GetExchangeBuyStatusError::ExchangeNotFound(e.to_string()))?;
 
     if request.session_id.is_empty() || request.session_id.len() > MAX_SESSION_ID_LENGTH {
         return Err(GetExchangeBuyStatusError::ValidationError(
