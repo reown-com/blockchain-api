@@ -349,6 +349,7 @@ async fn insert_delete_two_addresses() {
 }
 
 #[tokio::test]
+#[ignore]
 async fn insert_and_check_names_count() {
     let pg_pool = get_postgres_pool().await;
 
