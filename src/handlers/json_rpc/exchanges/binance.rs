@@ -237,6 +237,10 @@ impl ExchangeProvider for BinanceExchange {
     fn is_asset_supported(&self, asset: &Caip19Asset) -> bool {
         self.map_asset_to_binance_format(asset).is_ok()
     }
+
+    fn is_enabled(&self) -> bool {
+        true
+    }
 }
 
 impl BinanceExchange {

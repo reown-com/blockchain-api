@@ -103,6 +103,7 @@ pub trait ExchangeProvider {
             image_url: self.image_url().map(|s| s.to_string()),
         }
     }
+    fn is_enabled(&self) -> bool;
 }
 
 #[derive(Debug, Clone, Copy, EnumIter, AsRefStr)]
@@ -126,6 +127,9 @@ pub enum ExchangeError {
 
     #[error("Feature not enabled: {0}")]
     FeatureNotEnabled(String),
+
+    #[error("Exchange is not enabled: {0}")]
+    ExchangeNotEnabled(String),
 
     #[error("Internal error")]
     InternalError(String),
@@ -183,6 +187,10 @@ impl ExchangeType {
             ExchangeType::ReownTest => false,
         }
     }
+
+    pub fn is_enabled(&self) -> bool {
+        self.provider().is_enabled()
+    }
 }
 
 pub fn get_supported_exchanges(asset: Option<String>) -> Result<Vec<Exchange>, ExchangeError> {
@@ -191,7 +199,7 @@ pub fn get_supported_exchanges(asset: Option<String>) -> Result<Vec<Exchange>, E
             let asset = Caip19Asset::parse(&asset_str)
                 .map_err(|e| ExchangeError::ValidationError(e.to_string()))?;
             Ok(ExchangeType::iter()
-                .filter(|e| e.is_asset_supported(&asset))
+                .filter(|e| e.is_asset_supported(&asset) && e.is_enabled())
                 .map(|e| e.to_exchange())
                 .collect())
         }
@@ -199,8 +207,18 @@ pub fn get_supported_exchanges(asset: Option<String>) -> Result<Vec<Exchange>, E
     }
 }
 
-pub fn get_exchange_by_id(id: &str) -> Option<Exchange> {
-    ExchangeType::from_id(id).map(|e| e.to_exchange())
+pub fn get_exchange_by_id(id: &str) -> Result<ExchangeType, ExchangeError> {
+    let exchange_type = ExchangeType::from_id(id)
+        .ok_or_else(|| ExchangeError::ValidationError(format!("Exchange {} not found", id)))?;
+
+    if !exchange_type.is_enabled() {
+        return Err(ExchangeError::ExchangeNotEnabled(format!(
+            "Exchange {} is not enabled",
+            id
+        )));
+    }
+
+    Ok(exchange_type)
 }
 
 async fn get_enabled_features(

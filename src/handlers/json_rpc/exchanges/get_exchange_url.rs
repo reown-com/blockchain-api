@@ -3,8 +3,8 @@ use {
         database::exchange_reconciliation::NewExchangeTransaction,
         handlers::{
             json_rpc::exchanges::{
-                is_feature_enabled_for_project_id, transactions::create as create_transaction,
-                ExchangeError, ExchangeType, GetBuyUrlParams,
+                get_exchange_by_id, is_feature_enabled_for_project_id,
+                transactions::create as create_transaction, ExchangeError, GetBuyUrlParams,
             },
             SdkInfoParams,
         },
@@ -93,9 +93,8 @@ async fn handler_internal(
     _query: Query<QueryParams>,
     request: GeneratePayUrlRequest,
 ) -> Result<GeneratePayUrlResponse, GetExchangeUrlError> {
-    let exchange = ExchangeType::from_id(&request.exchange_id).ok_or_else(|| {
-        GetExchangeUrlError::ExchangeNotFound(format!("Exchange {} not found", request.exchange_id))
-    })?;
+    let exchange = get_exchange_by_id(&request.exchange_id)
+        .map_err(|e| GetExchangeUrlError::ExchangeNotFound(e.to_string()))?;
 
     let asset = Caip19Asset::parse(&request.asset)
         .map_err(|e| GetExchangeUrlError::ValidationError(e.to_string()))?;
