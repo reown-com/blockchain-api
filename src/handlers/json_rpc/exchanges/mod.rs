@@ -203,7 +203,10 @@ pub fn get_supported_exchanges(asset: Option<String>) -> Result<Vec<Exchange>, E
                 .map(|e| e.to_exchange())
                 .collect())
         }
-        None => Ok(ExchangeType::iter().filter(|e| e.is_enabled()).map(|e| e.to_exchange()).collect()),
+        None => Ok(ExchangeType::iter()
+            .filter(|e| e.is_enabled())
+            .map(|e| e.to_exchange())
+            .collect()),
     }
 }
 
