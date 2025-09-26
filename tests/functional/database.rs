@@ -348,7 +348,10 @@ async fn insert_delete_two_addresses() {
     assert!(delete_result.is_ok(), "Deleting name should succeed");
 }
 
+/// This test is ignored because because of the flakiness until the fix
+/// We are also testing names in `/integration/names.test.ts`
 #[tokio::test]
+#[ignore]
 async fn insert_and_check_names_count() {
     let pg_pool = get_postgres_pool().await;
 
