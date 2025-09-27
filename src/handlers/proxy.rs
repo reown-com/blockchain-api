@@ -308,7 +308,7 @@ pub async fn rpc_call(
 }
 
 // TODO eventually refactor this to be called by the wallet handler (generic JSON-RPC)
-// However, dependency on us having an exaustive list of supported RPC methods is a blocker to merging these handlers.
+// However, dependency on us having an exhaustive list of supported RPC methods is a blocker to merging these handlers.
 #[tracing::instrument(skip(state), level = "debug")]
 pub async fn rpc_provider_call(
     state: Arc<AppState>,

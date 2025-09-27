@@ -83,7 +83,7 @@ async fn handler_internal(
     .await?;
 
     if U256::from_be_bytes(wallet_balance.into()) >= bridging_status_item.amount_expected {
-        // The balance was fullfilled, update the status to completed
+        // The balance was fulfilled, update the status to completed
         bridging_status_item.status = BridgingStatus::Completed;
         let irn_call_start = SystemTime::now();
         irn_client
@@ -102,7 +102,7 @@ async fn handler_internal(
         .into_response());
     }
 
-    // Check if the balance was not fullfilled with the right amount
+    // Check if the balance was not fulfilled with the right amount
     if U256::from_be_bytes(wallet_balance.into()) > bridging_status_item.amount_current {
         // We are not erroring here since there can be other transactions
         // that topped up the address, but log error for debugging purposes
@@ -141,7 +141,7 @@ async fn handler_internal(
         .into_response());
     }
 
-    // The balance was not fullfilled return the pending status
+    // The balance was not fulfilled return the pending status
     return Ok(Json(StatusResponse::Pending(StatusResponsePendingObject {
         created_at: bridging_status_item.created_at,
         check_in: STATUS_POLLING_INTERVAL,
