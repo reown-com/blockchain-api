@@ -2,6 +2,7 @@ use rand::{distributions::Alphanumeric, Rng};
 
 pub mod batch_json_rpc_request;
 pub mod build;
+pub mod cors;
 pub mod crypto;
 pub mod erc4337;
 pub mod erc7677;
