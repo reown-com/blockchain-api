@@ -668,7 +668,7 @@ describe('Exchanges', () => {
       expect(response.headers['access-control-allow-origin']).toBeUndefined();
     });
 
-    it('should return CORS headers for allowed origin', async () => {
+    it('should return CORS headers for allowed origin (exact match)', async () => {
       // Default allowed origin is localhost:3000
       const origin = 'http://localhost:3000';
       const payload = {
@@ -689,5 +689,25 @@ describe('Exchanges', () => {
       expect(response.status).toBe(200);
       expect(response.headers['access-control-allow-origin']).toContain(origin);
     });
+
+    it('should return CORS headers for allowed origin (wildcard match)', async () => {
+      // Default allowed origins is https://*.vercel.app
+      const origin = 'https://test.vercel.app';
+      const payload = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'reown_getExchanges',
+        params: {
+          page: 1
+        }
+      };
+      const response = await httpClient.post(
+        `${baseUrl}/v1/json-rpc?projectId=${projectId}`,
+        payload,
+        { headers: { 'Origin': origin } }
+      );
+      expect(response.status).toBe(200);
+      expect(response.headers['access-control-allow-origin']).toContain(origin);
+    });
   });
-}); 
+});
