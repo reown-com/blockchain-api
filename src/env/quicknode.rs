@@ -70,10 +70,6 @@ fn extract_supported_chains_and_subdomains(
             ("divine-special-snowflake.arbitrum-mainnet", Priority::Low),
         ),
         (
-            "eip155:80084",
-            ("frequent-capable-putty.bera-bartio", Priority::Low),
-        ),
-        (
             "eip155:10",
             ("convincing-dawn-smoke.optimism", Priority::Low),
         ),
