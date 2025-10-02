@@ -109,8 +109,8 @@ impl QuicknodeProvider {
             false
         };
         let raw_data = if let Some(s) = params[2].as_str() {
-            serde_json::from_str(s).map_err(|e| {
-                RpcError::InvalidParameter(format!("Invalid JSON in raw_data parameter: {e}"))
+            serde_json::from_str(s).map_err(|_| {
+                RpcError::InvalidParameter("Invalid JSON in raw_data parameter".to_string())
             })?
         } else {
             params[2].clone()
