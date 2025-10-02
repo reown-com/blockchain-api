@@ -101,15 +101,36 @@ impl QuicknodeProvider {
         let txid = params[0]
             .as_str()
             .ok_or_else(|| RpcError::InvalidParameter("TxID is not a string".to_string()))?;
-        let visible = params[1].as_bool().unwrap_or(false);
-        let raw_data = params[2].clone();
+        let visible = if let Some(b) = params[1].as_bool() {
+            b
+        } else if let Some(s) = params[1].as_str() {
+            matches!(s.to_lowercase().as_str(), "true" | "1")
+        } else {
+            false
+        };
+        let raw_data = if let Some(s) = params[2].as_str() {
+            serde_json::from_str(s).map_err(|e| {
+                RpcError::InvalidParameter(format!("Invalid JSON in raw_data parameter: {e}"))
+            })?
+        } else {
+            params[2].clone()
+        };
         let raw_data_hex = params[3].as_str().ok_or_else(|| {
             RpcError::InvalidParameter("Raw data hex is not a string".to_string())
         })?;
         // Signature can be an array or a JSON-encoded string array
         let signature_owned: Vec<String> = if let Some(arr) = params[4].as_array() {
             arr.iter()
-                .map(|v| v.as_str().unwrap_or_default().to_string())
+                .map(|v| {
+                    v.as_str().ok_or_else(|| {
+                        RpcError::InvalidParameter(
+                            "Signature array contains non-string element".to_string(),
+                        )
+                    })
+                })
+                .collect::<Result<Vec<_>, RpcError>>()?
+                .into_iter()
+                .map(|s| s.to_string())
                 .collect()
         } else if let Some(s) = params[4].as_str() {
             let trimmed = s.trim();
