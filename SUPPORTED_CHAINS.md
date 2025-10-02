@@ -82,9 +82,10 @@ Chain name with associated `chainId` query param to use.
 
 ### Tron
 
-| Network                              |    Chain ID     |
-|--------------------------------------|-----------------|
-| Tron Mainnet                         | tron:0x2b6653dc |
+| Network                                              |    Chain ID     |
+|------------------------------------------------------|-----------------|
+| Tron Mainnet                                         | tron:0x2b6653dc |
+| Tron Nile Testnet <sup>[1](#footnote1)</sup>        | tron:0xcd8690dc |
 
 ### Ton
 
