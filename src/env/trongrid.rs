@@ -40,4 +40,3 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
         ),
     )])
 }
-

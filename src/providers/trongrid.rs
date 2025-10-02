@@ -155,9 +155,7 @@ impl TrongridProvider {
             .get(TRON_CHAIN_ID)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let base_url = uri
-            .strip_suffix("/jsonrpc")
-            .unwrap_or(uri.as_str());
+        let base_url = uri.strip_suffix("/jsonrpc").unwrap_or(uri.as_str());
         let broadcast_uri = format!("{base_url}/wallet/broadcasttransaction");
 
         let transactions_request = serde_json::to_string(&BroadcastTransactionRequest {
@@ -265,4 +263,3 @@ impl RpcProviderFactory<TrongridConfig> for TrongridProvider {
         }
     }
 }
-
