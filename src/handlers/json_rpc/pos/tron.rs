@@ -4,7 +4,7 @@ use {
         ExecutionError, InternalError, PaymentIntent, SupportedNamespace, TransactionBuilder,
         TransactionId, TransactionRpc, TransactionStatus, ValidatedPaymentIntent, ValidationError,
     },
-    crate::{state::AppState, utils::crypto::Caip2ChainId},
+    crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::{
         primitives::{utils::parse_units, Address as EthAddress, U256},
         sol,
@@ -13,9 +13,7 @@ use {
     async_trait::async_trait,
     axum::extract::State,
     bs58, hex,
-    once_cell::sync::Lazy,
-    serde::{de::DeserializeOwned, Deserialize, Serialize},
-    std::collections::HashMap,
+    serde::{Deserialize, Serialize},
     std::sync::Arc,
     strum::{EnumIter, IntoEnumIterator},
     strum_macros::{Display, EnumString},
@@ -23,18 +21,11 @@ use {
 };
 
 const TRON_SIGN_TRANSACTION_METHOD: &str = "tron_signTransaction";
+const BASE_URL: &str = "https://rpc.walletconnect.org/v1";
 const DEFAULT_CHECK_IN: usize = 400;
 const FEE_MARGIN_BPS: u16 = 2000;
 const BPS_DEN: u128 = 10_000;
-const GET_ENERGY_FEE: &str = "getEnergyFee";
 const NAMESPACE_NAME: &str = "tron";
-
-static TRON_NETWORK_URL: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
-    HashMap::from([
-        ("0x2b6653dc", "https://api.trongrid.io"),  // Mainnet
-        ("0xcd8690dc", "https://nile.trongrid.io"), // Testnet
-    ])
-});
 
 sol! {
     function transfer(address to, uint256 value) external returns (bool);
@@ -42,15 +33,17 @@ sol! {
 }
 
 #[derive(Debug, Serialize, Clone)]
-struct TriggerSmartContractRequest {
-    owner_address: String,
-    contract_address: String,
-    function_selector: String,
-    parameter: String,
+struct BuildTransactionParams {
+    from: String,
+    to: String,
+    data: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    fee_limit: Option<u64>,
-    call_value: u64,
-    visible: bool,
+    gas: Option<String>,
+    value: String,
+    #[serde(rename = "tokenId")]
+    token_id: u64,
+    #[serde(rename = "tokenValue")]
+    token_value: u64,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -64,274 +57,284 @@ pub struct SignedTransaction {
 }
 
 #[derive(Debug, Deserialize)]
-struct TriggerSmartContractResponse {
+struct BuildTransactionResponse {
     transaction: SignedTransaction,
 }
 
 #[derive(Debug, Serialize)]
-struct TriggerConstantContractRequest {
-    owner_address: String,
-    contract_address: String,
-    function_selector: String,
-    parameter: String,
-    visible: bool,
+struct EthCallParams {
+    from: String,
+    to: String,
+    data: String,
 }
 
 #[derive(Debug, Deserialize)]
-struct TriggerConstantContractResponse {
-    constant_result: Option<Vec<String>>,
+struct EthCallResponse {
+    #[serde(rename = "result")]
+    result: String,
 }
 
 #[derive(Debug, Deserialize)]
-struct EstimateEnergyResult {
-    result: bool,
-    message: Option<String>,
+struct EthEstimateGasResponse {
+    #[serde(rename = "result")]
+    result: String,
 }
 
 #[derive(Debug, Deserialize)]
-struct EstimateEnergyResponse {
-    result: EstimateEnergyResult,
-    energy_required: Option<i64>,
+struct EthGetTransactionByHashResponse {
+    #[serde(rename = "result")]
+    result: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Deserialize)]
-struct ChainParameter {
-    key: String,
-    #[serde(default)]
-    value: Option<i64>,
+struct EthGetTransactionReceiptResponse {
+    #[serde(rename = "result")]
+    result: Option<TransactionReceipt>,
 }
 
 #[derive(Debug, Deserialize)]
-struct ChainParametersResponse {
-    #[serde(rename = "chainParameter")]
-    chain_parameter: Vec<ChainParameter>,
-}
-
-#[derive(Debug, Serialize)]
-struct GetByIdRequest {
-    value: String,
+struct TransactionReceipt {
+    status: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
-struct GetTransactionByIdResponse {
-    #[serde(rename = "txID")]
-    tx_id: Option<String>,
+struct EthGasPriceResponse {
+    #[serde(rename = "result")]
+    result: String,
 }
 
 #[derive(Debug, Deserialize)]
-struct BroadcastTransactionResponse {
+struct TronBroadcastResponse {
+    #[serde(rename = "result")]
+    result: BroadcastResult,
+}
+
+#[derive(Debug, Deserialize)]
+struct BroadcastResult {
     result: Option<bool>,
     message: Option<String>,
     code: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
-struct Receipt {
-    result: Option<String>,
+fn get_rpc_url(chain_id: &Caip2ChainId, project_id: &str) -> String {
+    format!(
+        "{BASE_URL}?chainId={chain_id}&projectId={project_id}&source={}",
+        MessageSource::WalletBuildPosTx,
+    )
 }
 
-#[derive(Debug, Deserialize)]
-struct GetTransactionInfoByIdResponse {
-    id: Option<String>,
-    #[serde(rename = "blockNumber")]
-    block_number: Option<u64>,
-    receipt: Option<Receipt>,
-}
-
-fn get_provider_url(chain_id: &Caip2ChainId) -> Result<String, InternalError> {
-    if chain_id.namespace() != "tron" {
-        return Err(InternalError::InvalidProviderUrl(
-            "Provider not supported".to_string(),
-        ));
-    }
-
-    match TRON_NETWORK_URL.get(chain_id.reference()) {
-        Some(url) => Ok(url.to_string()),
-        _ => Err(InternalError::InvalidProviderUrl(
-            "Provider not supported".to_string(),
-        )),
-    }
-}
-
-async fn post_tron_request<TReq: Serialize, TResp: DeserializeOwned + 'static>(
-    state: State<Arc<AppState>>,
+async fn call_json_rpc<T: for<'de> Deserialize<'de>>(
+    state: &State<Arc<AppState>>,
     chain_id: &Caip2ChainId,
-    path: &str,
-    body: &TReq,
-) -> Result<TResp, InternalError> {
-    let base = get_provider_url(chain_id)?;
-    let url = format!("{}{}", base, path);
+    project_id: &str,
+    method: &str,
+    params: serde_json::Value,
+) -> Result<T, InternalError> {
+    let url = get_rpc_url(chain_id, project_id);
+    
+    let request_body = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": method,
+        "params": params
+    });
+
     let resp = state
         .http_client
         .post(&url)
-        .json(body)
+        .json(&request_body)
         .send()
         .await
-        .map_err(|e| InternalError::RpcError(format!("Failed to send request on {}: {}", path, e)))?
+        .map_err(|e| InternalError::RpcError(format!("Failed to send JSON-RPC request: {}", e)))?
         .error_for_status()
-        .map_err(|e| InternalError::RpcError(format!("HTTP error on {}: {}", path, e)))?
-        .json::<TResp>()
+        .map_err(|e| InternalError::RpcError(format!("HTTP error in JSON-RPC call: {}", e)))?
+        .json::<T>()
         .await
         .map_err(|e| {
-            InternalError::RpcError(format!("Failed to parse response from {}: {}", path, e))
+            InternalError::RpcError(format!("Failed to parse JSON-RPC response: {}", e))
         })?;
+    
     Ok(resp)
 }
 
-async fn get_tron_request<TResp: DeserializeOwned + 'static>(
-    state: State<Arc<AppState>>,
+async fn build_transaction(
+    state: &State<Arc<AppState>>,
     chain_id: &Caip2ChainId,
-    path: &str,
-) -> Result<TResp, InternalError> {
-    let base = get_provider_url(chain_id)?;
-    let url = format!("{}{}", base, path);
-    let resp = state
-        .http_client
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| InternalError::RpcError(format!("Failed to send request on {}: {}", path, e)))?
-        .error_for_status()
-        .map_err(|e| InternalError::RpcError(format!("HTTP error on {}: {}", path, e)))?
-        .json::<TResp>()
-        .await
-        .map_err(|e| {
-            InternalError::RpcError(format!("Failed to parse response from {}: {}", path, e))
-        })?;
-    Ok(resp)
+    project_id: &str,
+    params: BuildTransactionParams,
+) -> Result<BuildTransactionResponse, InternalError> {
+    call_json_rpc(
+        state,
+        chain_id,
+        project_id,
+        "buildTransaction",
+        serde_json::json!([params]),
+    )
+    .await
 }
 
-async fn trigger_smart_contract(
-    state: State<Arc<AppState>>,
+async fn eth_call(
+    state: &State<Arc<AppState>>,
     chain_id: &Caip2ChainId,
-    req: &TriggerSmartContractRequest,
-) -> Result<TriggerSmartContractResponse, InternalError> {
-    post_tron_request(state, chain_id, "/wallet/triggersmartcontract", req).await
+    project_id: &str,
+    params: EthCallParams,
+) -> Result<EthCallResponse, InternalError> {
+    call_json_rpc(
+        state,
+        chain_id,
+        project_id,
+        "eth_call",
+        serde_json::json!([params, "latest"]),
+    )
+    .await
 }
 
-async fn trigger_constant_contract(
-    state: State<Arc<AppState>>,
+async fn get_transaction_by_hash(
+    state: &State<Arc<AppState>>,
     chain_id: &Caip2ChainId,
-    req: &TriggerConstantContractRequest,
-) -> Result<TriggerConstantContractResponse, InternalError> {
-    post_tron_request(state, chain_id, "/wallet/triggerconstantcontract", req).await
-}
-
-async fn get_transaction_by_id(
-    state: State<Arc<AppState>>,
-    chain_id: &Caip2ChainId,
+    project_id: &str,
     txid: &str,
-) -> Result<Option<GetTransactionByIdResponse>, InternalError> {
-    let body = GetByIdRequest {
-        value: txid.to_string(),
-    };
-    let resp: GetTransactionByIdResponse =
-        post_tron_request(state, chain_id, "/wallet/gettransactionbyid", &body).await?;
+) -> Result<Option<serde_json::Value>, InternalError> {
+    let resp: EthGetTransactionByHashResponse = call_json_rpc(
+        state,
+        chain_id,
+        project_id,
+        "eth_getTransactionByHash",
+        serde_json::json!([txid]),
+    )
+    .await?;
 
-    if resp.tx_id.is_some() {
-        Ok(Some(resp))
-    } else {
-        Ok(None)
-    }
+    Ok(resp.result)
 }
 
 async fn broadcast_transaction(
-    state: State<Arc<AppState>>,
+    state: &State<Arc<AppState>>,
     chain_id: &Caip2ChainId,
+    project_id: &str,
     tx: &SignedTransaction,
-) -> Result<BroadcastTransactionResponse, InternalError> {
-    post_tron_request(state, chain_id, "/wallet/broadcasttransaction", tx).await
+) -> Result<BroadcastResult, InternalError> {
+    let params = serde_json::json!([
+        tx.tx_id,
+        tx.visible.unwrap_or(false),
+        serde_json::to_string(&tx.raw_data).unwrap_or_default(),
+        tx.raw_data_hex,
+        tx.signature.clone().unwrap_or_default()
+    ]);
+
+    let resp: TronBroadcastResponse = call_json_rpc(
+        state,
+        chain_id,
+        project_id,
+        "tron_broadcastTransaction",
+        params,
+    )
+    .await?;
+
+    Ok(resp.result)
 }
 
-async fn get_transaction_info_by_id(
-    state: State<Arc<AppState>>,
+async fn get_transaction_receipt(
+    state: &State<Arc<AppState>>,
     chain_id: &Caip2ChainId,
+    project_id: &str,
     txid: &str,
-) -> Result<Option<GetTransactionInfoByIdResponse>, InternalError> {
-    let body = GetByIdRequest {
-        value: txid.to_string(),
-    };
-    let resp: GetTransactionInfoByIdResponse =
-        post_tron_request(state, chain_id, "/wallet/gettransactioninfobyid", &body).await?;
+) -> Result<Option<TransactionReceipt>, InternalError> {
+    let resp: EthGetTransactionReceiptResponse = call_json_rpc(
+        state,
+        chain_id,
+        project_id,
+        "eth_getTransactionReceipt",
+        serde_json::json!([txid]),
+    )
+    .await?;
 
-    if resp.id.is_some() || resp.block_number.is_some() || resp.receipt.is_some() {
-        Ok(Some(resp))
-    } else {
-        Ok(None)
-    }
+    Ok(resp.result)
 }
 
-async fn estimate_energy(
-    state: State<Arc<AppState>>,
+async fn estimate_gas(
+    state: &State<Arc<AppState>>,
     chain_id: &Caip2ChainId,
-    req: &TriggerSmartContractRequest,
-) -> Result<EstimateEnergyResponse, InternalError> {
-    post_tron_request(state, chain_id, "/wallet/estimateenergy", req).await
+    project_id: &str,
+    params: BuildTransactionParams,
+) -> Result<String, InternalError> {
+    let eth_params = serde_json::json!({
+        "from": params.from,
+        "to": params.to,
+        "data": params.data,
+        "value": params.value
+    });
+
+    let resp: EthEstimateGasResponse = call_json_rpc(
+        state,
+        chain_id,
+        project_id,
+        "eth_estimateGas",
+        serde_json::json!([eth_params]),
+    )
+    .await?;
+
+    Ok(resp.result)
 }
 
-async fn get_chain_parameters(
-    state: State<Arc<AppState>>,
+async fn get_gas_price(
+    state: &State<Arc<AppState>>,
     chain_id: &Caip2ChainId,
-) -> Result<ChainParametersResponse, InternalError> {
-    get_tron_request(state, chain_id, "/wallet/getchainparameters").await
+    project_id: &str,
+) -> Result<String, InternalError> {
+    let resp: EthGasPriceResponse = call_json_rpc(
+        state,
+        chain_id,
+        project_id,
+        "eth_gasPrice",
+        serde_json::json!([]),
+    )
+    .await?;
+
+    Ok(resp.result)
 }
 
 async fn estimate_trc20_fee_limit(
-    state: State<Arc<AppState>>,
+    state: &State<Arc<AppState>>,
     chain_id: &Caip2ChainId,
-    call: &TriggerSmartContractRequest,
-) -> Result<u64, BuildPosTxsError> {
-    let est = estimate_energy(state.clone(), chain_id, call)
+    project_id: &str,
+    params: &BuildTransactionParams,
+) -> Result<String, BuildPosTxsError> {
+    let gas_estimate = estimate_gas(state, chain_id, project_id, params.clone())
         .await
         .map_err(BuildPosTxsError::Internal)?;
-    if !est.result.result {
-        let msg = est.result.message.unwrap_or_default();
-        return Err(BuildPosTxsError::Internal(InternalError::Internal(
-            format!("Energy estimate failed: {}", msg),
-        )));
-    }
-    let energy_required = est.energy_required.ok_or_else(|| {
-        BuildPosTxsError::Execution(ExecutionError::GasEstimation(
-            "Missing energy_required".to_string(),
-        ))
-    })?;
 
-    let params = get_chain_parameters(state, chain_id)
+    let gas_price = get_gas_price(state, chain_id, project_id)
         .await
         .map_err(BuildPosTxsError::Internal)?;
-    let energy_fee = params
-        .chain_parameter
-        .into_iter()
-        .find(|p| p.key == GET_ENERGY_FEE)
-        .and_then(|p| p.value)
-        .ok_or_else(|| {
-            BuildPosTxsError::Internal(InternalError::Internal(
-                "Missing getEnergyFee chain parameter".to_string(),
-            ))
+
+    let gas_value = u128::from_str_radix(gas_estimate.trim_start_matches("0x"), 16)
+        .map_err(|e| {
+            BuildPosTxsError::Execution(ExecutionError::GasEstimation(format!(
+                "Failed to parse gas estimate: {}",
+                e
+            )))
         })?;
 
-    let energy_required_u128 = u128::try_from(energy_required).map_err(|_| {
-        BuildPosTxsError::Execution(ExecutionError::GasEstimation(
-            "negative energy_required".to_string(),
-        ))
-    })?;
-    let energy_fee_u128 = u128::try_from(energy_fee).map_err(|_| {
-        BuildPosTxsError::Execution(ExecutionError::GasEstimation(
-            "negative getEnergyFee".to_string(),
-        ))
+    let price_value = u128::from_str_radix(gas_price.trim_start_matches("0x"), 16).map_err(|e| {
+        BuildPosTxsError::Execution(ExecutionError::GasEstimation(format!(
+            "Failed to parse gas price: {}",
+            e
+        )))
     })?;
 
-    compute_fee_limit(energy_required_u128, energy_fee_u128).map_err(BuildPosTxsError::Internal)
+    let fee_limit = compute_fee_limit(gas_value, price_value).map_err(BuildPosTxsError::Internal)?;
+
+    Ok(format!("0x{:x}", fee_limit))
 }
 
-fn compute_fee_limit(energy_required: u128, energy_fee: u128) -> Result<u64, InternalError> {
-    let total = energy_required
-        .checked_mul(energy_fee)
+fn compute_fee_limit(gas_estimate: u128, gas_price: u128) -> Result<u128, InternalError> {
+    let total = gas_estimate
+        .checked_mul(gas_price)
         .and_then(|base| base.checked_mul(BPS_DEN + FEE_MARGIN_BPS as u128))
         .and_then(|v| v.checked_div(BPS_DEN))
         .ok_or_else(|| InternalError::Internal("fee_limit overflow".to_string()))?;
 
-    u64::try_from(total).map_err(|_| InternalError::Internal("fee_limit exceeds u64".to_string()))
+    Ok(total)
 }
 
 #[derive(Debug, Clone, PartialEq, EnumString, Display, EnumIter)]
@@ -384,14 +387,15 @@ impl TransactionBuilder<AssetNamespace> for TronTransactionBuilder {
 async fn build_trc20_transfer(
     state: State<Arc<AppState>>,
     params: ValidatedPaymentIntent<AssetNamespace>,
-    _project_id: &str,
+    project_id: &str,
 ) -> Result<TransactionRpc, BuildPosTxsError> {
     let to_eth = tron_base58_to_eth_address(&params.recipient_address).map_err(|e| {
         BuildPosTxsError::Validation(ValidationError::InvalidRecipient(e.to_string()))
     })?;
     let decimals = fetch_trc20_decimals(
-        state.clone(),
+        &state,
         params.asset.chain_id(),
+        project_id,
         &params.sender_address,
         params.asset.asset_reference(),
     )
@@ -404,32 +408,31 @@ async fn build_trc20_transfer(
     }
     .abi_encode();
 
-    let params_hex = &hex::encode(&data[4..]);
+    let data_hex = format!("0x{}", hex::encode(&data));
 
-    let owner_address = tron_b58_to_hex41(&params.sender_address)
+    let from_address = tron_b58_to_hex41(&params.sender_address)
         .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidSender(e.to_string())))?;
-    let contract_address = tron_b58_to_hex41(params.asset.asset_reference())
+    let to_address = tron_b58_to_hex41(params.asset.asset_reference())
         .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string())))?;
 
-    let trigger_req = TriggerSmartContractRequest {
-        owner_address,
-        contract_address,
-        function_selector: "transfer(address,uint256)".to_string(),
-        parameter: params_hex.to_string(),
-        fee_limit: None,
-        call_value: 0,
-        visible: false,
+    let build_params = BuildTransactionParams {
+        from: from_address.clone(),
+        to: to_address.clone(),
+        data: data_hex.clone(),
+        gas: None,
+        value: "0xA".to_string(),
+        token_id: 0,
+        token_value: 0,
     };
 
-    let fee_limit =
-        estimate_trc20_fee_limit(state.clone(), params.asset.chain_id(), &trigger_req).await?;
+    let fee_limit = estimate_trc20_fee_limit(&state, params.asset.chain_id(), project_id, &build_params).await?;
 
-    let trigger_req = TriggerSmartContractRequest {
-        fee_limit: Some(fee_limit),
-        ..trigger_req
+    let build_params_with_gas = BuildTransactionParams {
+        gas: Some(fee_limit),
+        ..build_params
     };
 
-    let resp = trigger_smart_contract(state, params.asset.chain_id(), &trigger_req)
+    let resp = build_transaction(&state, params.asset.chain_id(), project_id, build_params_with_gas)
         .await
         .map_err(BuildPosTxsError::Internal)?;
 
@@ -462,66 +465,62 @@ fn parse_token_amount(amount: &str, decimals: u8) -> Result<U256, BuildPosTxsErr
 }
 
 async fn fetch_trc20_decimals(
-    state: State<Arc<AppState>>,
+    state: &State<Arc<AppState>>,
     chain_id: &Caip2ChainId,
+    project_id: &str,
     owner_b58: &str,
     contract_b58: &str,
 ) -> Result<u8, BuildPosTxsError> {
-    let owner_address = tron_b58_to_hex41(owner_b58)
+    let from_address = tron_b58_to_hex41(owner_b58)
         .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string())))?;
-    let contract_address = tron_b58_to_hex41(contract_b58)
+    let to_address = tron_b58_to_hex41(contract_b58)
         .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string())))?;
 
-    let trigger_req = TriggerConstantContractRequest {
-        owner_address,
-        contract_address,
-        function_selector: "decimals()".to_string(),
-        parameter: String::new(),
-        visible: false,
+    let decimals_selector = "0x313ce567";
+
+    let call_params = EthCallParams {
+        from: from_address,
+        to: to_address,
+        data: decimals_selector.to_string(),
     };
 
-    let resp = trigger_constant_contract(state, chain_id, &trigger_req)
+    let resp = eth_call(state, chain_id, project_id, call_params)
         .await
         .map_err(BuildPosTxsError::Internal)?;
 
-    if let Some(results) = resp.constant_result {
-        if let Some(hex_str) = results.first() {
-            let bytes = hex::decode(hex_str).map_err(|e| {
-                BuildPosTxsError::Internal(InternalError::Internal(format!(
-                    "Failed to decode decimals result: {}",
-                    e
-                )))
-            })?;
-            if bytes.is_empty() {
-                return Err(BuildPosTxsError::Internal(InternalError::Internal(
-                    "Empty decimals result".to_string(),
-                )));
-            }
-            let decimals = *bytes.last().unwrap() as u8;
-            return Ok(decimals);
-        }
+    let hex_str = resp.result.trim_start_matches("0x");
+    let bytes = hex::decode(hex_str).map_err(|e| {
+        BuildPosTxsError::Internal(InternalError::Internal(format!(
+            "Failed to decode decimals result: {}",
+            e
+        )))
+    })?;
+    
+    if bytes.is_empty() {
+        return Err(BuildPosTxsError::Internal(InternalError::Internal(
+            "Empty decimals result".to_string(),
+        )));
     }
-
-    Err(BuildPosTxsError::Internal(InternalError::Internal(
-        "Missing decimals in response".to_string(),
-    )))
+    
+    let decimals = *bytes.last().unwrap() as u8;
+    Ok(decimals)
 }
 
 pub async fn get_transaction_status(
     state: State<Arc<AppState>>,
-    _project_id: &str,
+    project_id: &str,
     signed_tx: &SignedTransaction,
     chain_id: &Caip2ChainId,
 ) -> Result<TransactionStatus, CheckPosTxError> {
     let txid = signed_tx.tx_id.as_str();
 
-    let already_broadcasted = get_transaction_by_id(state.clone(), chain_id, txid)
+    let already_broadcasted = get_transaction_by_hash(&state, chain_id, project_id, txid)
         .await
         .map_err(CheckPosTxError::Internal)?
         .is_some();
 
     if !already_broadcasted {
-        let broadcast_resp = broadcast_transaction(state, chain_id, signed_tx)
+        let broadcast_resp = broadcast_transaction(&state, chain_id, project_id, signed_tx)
             .await
             .map_err(CheckPosTxError::Internal)?;
         debug!("tron broadcast resp: {:?}", broadcast_resp);
@@ -536,19 +535,20 @@ pub async fn get_transaction_status(
         return Ok(TransactionStatus::Pending);
     }
 
-    let info_opt = get_transaction_info_by_id(state, chain_id, txid)
+    let receipt_opt = get_transaction_receipt(&state, chain_id, project_id, txid)
         .await
         .map_err(CheckPosTxError::Internal)?;
 
-    match info_opt {
-        Some(info_resp) => {
-            if let Some(receipt) = info_resp.receipt {
-                if let Some(result) = receipt.result.as_deref() {
-                    return Ok(match result {
-                        "SUCCESS" => TransactionStatus::Confirmed,
-                        _ => TransactionStatus::Failed,
-                    });
-                }
+    match receipt_opt {
+        Some(receipt) => {
+            if let Some(status) = receipt.status {
+                let status_value = u64::from_str_radix(status.trim_start_matches("0x"), 16)
+                    .unwrap_or(0);
+                return Ok(if status_value == 1 {
+                    TransactionStatus::Confirmed
+                } else {
+                    TransactionStatus::Failed
+                });
             }
         }
         _ => return Ok(TransactionStatus::Pending),
@@ -593,7 +593,7 @@ pub async fn check_transaction(
         )))
     })?;
 
-    let status = get_transaction_status(state, project_id, &signed_tx, chain_id).await?;
+    let status = get_transaction_status(state.clone(), project_id, &signed_tx, chain_id).await?;
 
     match status {
         TransactionStatus::Pending => Ok(CheckTransactionResult {
