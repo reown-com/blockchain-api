@@ -131,7 +131,7 @@ async fn call_json_rpc<T: for<'de> Deserialize<'de>>(
     params: serde_json::Value,
 ) -> Result<T, InternalError> {
     let url = get_rpc_url(chain_id, project_id);
-    
+
     let request_body = serde_json::json!({
         "jsonrpc": "2.0",
         "id": 1,
@@ -153,7 +153,7 @@ async fn call_json_rpc<T: for<'de> Deserialize<'de>>(
         .map_err(|e| {
             InternalError::RpcError(format!("Failed to parse JSON-RPC response: {}", e))
         })?;
-    
+
     Ok(resp)
 }
 
@@ -307,22 +307,24 @@ async fn estimate_trc20_fee_limit(
         .await
         .map_err(BuildPosTxsError::Internal)?;
 
-    let gas_value = u128::from_str_radix(gas_estimate.trim_start_matches("0x"), 16)
-        .map_err(|e| {
+    let gas_value =
+        u128::from_str_radix(gas_estimate.trim_start_matches("0x"), 16).map_err(|e| {
             BuildPosTxsError::Execution(ExecutionError::GasEstimation(format!(
                 "Failed to parse gas estimate: {}",
                 e
             )))
         })?;
 
-    let price_value = u128::from_str_radix(gas_price.trim_start_matches("0x"), 16).map_err(|e| {
-        BuildPosTxsError::Execution(ExecutionError::GasEstimation(format!(
-            "Failed to parse gas price: {}",
-            e
-        )))
-    })?;
+    let price_value =
+        u128::from_str_radix(gas_price.trim_start_matches("0x"), 16).map_err(|e| {
+            BuildPosTxsError::Execution(ExecutionError::GasEstimation(format!(
+                "Failed to parse gas price: {}",
+                e
+            )))
+        })?;
 
-    let fee_limit = compute_fee_limit(gas_value, price_value).map_err(BuildPosTxsError::Internal)?;
+    let fee_limit =
+        compute_fee_limit(gas_value, price_value).map_err(BuildPosTxsError::Internal)?;
 
     Ok(format!("0x{:x}", fee_limit))
 }
@@ -425,16 +427,23 @@ async fn build_trc20_transfer(
         token_value: 0,
     };
 
-    let fee_limit = estimate_trc20_fee_limit(&state, params.asset.chain_id(), project_id, &build_params).await?;
+    let fee_limit =
+        estimate_trc20_fee_limit(&state, params.asset.chain_id(), project_id, &build_params)
+            .await?;
 
     let build_params_with_gas = BuildTransactionParams {
         gas: Some(fee_limit),
         ..build_params
     };
 
-    let resp = build_transaction(&state, params.asset.chain_id(), project_id, build_params_with_gas)
-        .await
-        .map_err(BuildPosTxsError::Internal)?;
+    let resp = build_transaction(
+        &state,
+        params.asset.chain_id(),
+        project_id,
+        build_params_with_gas,
+    )
+    .await
+    .map_err(BuildPosTxsError::Internal)?;
 
     debug!("tron build transaction resp: {:?}", resp);
 
@@ -495,13 +504,13 @@ async fn fetch_trc20_decimals(
             e
         )))
     })?;
-    
+
     if bytes.is_empty() {
         return Err(BuildPosTxsError::Internal(InternalError::Internal(
             "Empty decimals result".to_string(),
         )));
     }
-    
+
     let decimals = *bytes.last().unwrap() as u8;
     Ok(decimals)
 }
@@ -542,8 +551,8 @@ pub async fn get_transaction_status(
     match receipt_opt {
         Some(receipt) => {
             if let Some(status) = receipt.status {
-                let status_value = u64::from_str_radix(status.trim_start_matches("0x"), 16)
-                    .unwrap_or(0);
+                let status_value =
+                    u64::from_str_radix(status.trim_start_matches("0x"), 16).unwrap_or(0);
                 return Ok(if status_value == 1 {
                     TransactionStatus::Confirmed
                 } else {
