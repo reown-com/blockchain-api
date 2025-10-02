@@ -33,7 +33,7 @@ struct BroadcastTransactionRequest {
 }
 
 #[derive(Debug, Serialize)]
-struct TonApiResult {
+struct TronApiResult {
     pub result: serde_json::Value,
 }
 
@@ -75,7 +75,7 @@ impl QuicknodeProvider {
                 )));
             }
         };
-        let wrapped_response = TonApiResult {
+        let wrapped_response = TronApiResult {
             result: original_result,
         };
         serde_json::to_vec(&wrapped_response).map_err(|e| {
@@ -114,7 +114,11 @@ impl QuicknodeProvider {
         } else if let Some(s) = params[4].as_str() {
             let trimmed = s.trim();
             if trimmed.starts_with('[') && trimmed.ends_with(']') {
-                serde_json::from_str::<Vec<String>>(trimmed).unwrap_or_else(|_| vec![s.to_string()])
+                serde_json::from_str::<Vec<String>>(trimmed).map_err(|e| {
+                    RpcError::InvalidParameter(format!(
+                        "Signature must be a JSON array of strings when provided as a string: {e}"
+                    ))
+                })?
             } else {
                 vec![s.to_string()]
             }
