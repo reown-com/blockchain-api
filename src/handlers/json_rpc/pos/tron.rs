@@ -1,8 +1,9 @@
 use {
     super::{
         AssetNamespaceType, BuildPosTxsError, CheckPosTxError, CheckTransactionResult,
-        ExecutionError, InternalError, PaymentIntent, SupportedNamespace, TransactionBuilder,
-        TransactionId, TransactionRpc, TransactionStatus, ValidatedPaymentIntent, ValidationError,
+        ExecutionError, InternalError, PaymentIntent, RpcError, SupportedNamespace,
+        TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
+        ValidatedPaymentIntent, ValidationError,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::{
@@ -69,44 +70,30 @@ struct EthCallParams {
 }
 
 #[derive(Debug, Deserialize)]
-struct EthCallResponse {
-    #[serde(rename = "result")]
-    result: String,
+#[allow(dead_code)]
+struct JsonRpcResponse<T> {
+    jsonrpc: String,
+    id: serde_json::Value,
+    #[serde(flatten)]
+    payload: JsonRpcPayload<T>,
 }
 
 #[derive(Debug, Deserialize)]
-struct EthEstimateGasResponse {
-    #[serde(rename = "result")]
-    result: String,
+#[serde(untagged)]
+enum JsonRpcPayload<T> {
+    Success { result: T },
+    Error { error: JsonRpcError },
 }
 
 #[derive(Debug, Deserialize)]
-struct EthGetTransactionByHashResponse {
-    #[serde(rename = "result")]
-    result: Option<serde_json::Value>,
-}
-
-#[derive(Debug, Deserialize)]
-struct EthGetTransactionReceiptResponse {
-    #[serde(rename = "result")]
-    result: Option<TransactionReceipt>,
+struct JsonRpcError {
+    code: i64,
+    message: String,
 }
 
 #[derive(Debug, Deserialize)]
 struct TransactionReceipt {
     status: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-struct EthGasPriceResponse {
-    #[serde(rename = "result")]
-    result: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct TronBroadcastResponse {
-    #[serde(rename = "result")]
-    result: BroadcastResult,
 }
 
 #[derive(Debug, Deserialize)]
@@ -129,7 +116,7 @@ async fn call_json_rpc<T: for<'de> Deserialize<'de>>(
     project_id: &str,
     method: &str,
     params: serde_json::Value,
-) -> Result<T, InternalError> {
+) -> Result<T, RpcError> {
     let url = get_rpc_url(chain_id, project_id);
 
     let request_body = serde_json::json!({
@@ -139,22 +126,51 @@ async fn call_json_rpc<T: for<'de> Deserialize<'de>>(
         "params": params
     });
 
-    let resp = state
+    let response = state
         .http_client
         .post(&url)
         .json(&request_body)
         .send()
         .await
-        .map_err(|e| InternalError::RpcError(format!("Failed to send JSON-RPC request: {}", e)))?
-        .error_for_status()
-        .map_err(|e| InternalError::RpcError(format!("HTTP error in JSON-RPC call: {}", e)))?
-        .json::<T>()
-        .await
-        .map_err(|e| {
-            InternalError::RpcError(format!("Failed to parse JSON-RPC response: {}", e))
-        })?;
+        .map_err(|e| RpcError::Internal(format!("Failed to send request: {}", e)))?;
 
-    Ok(resp)
+    let status = response.status();
+    let response = response.error_for_status().map_err(|e| {
+        if status.is_client_error() {
+            RpcError::InvalidResponse(format!("HTTP {} error: {}", status, e))
+        } else {
+            RpcError::Internal(format!("HTTP {} error: {}", status, e))
+        }
+    })?;
+
+    let rpc_response: JsonRpcResponse<T> = response.json().await.map_err(|e| {
+        debug!(
+            "Failed to parse JSON-RPC response: {} method: {} params: {}",
+            e, method, params
+        );
+        RpcError::InvalidResponse(format!("Failed to parse response: {}", e))
+    })?;
+
+    match rpc_response.payload {
+        JsonRpcPayload::Success { result } => Ok(result),
+        JsonRpcPayload::Error { error } => {
+            let error_code = error.code;
+            match error_code {
+                -32600 => Err(RpcError::InvalidResponse(format!(
+                    "Invalid Request: {}",
+                    error.message
+                ))),
+                -32602 => Err(RpcError::InvalidResponse(format!(
+                    "Invalid params: {}",
+                    error.message
+                ))),
+                _ => Err(RpcError::Internal(format!(
+                    "RPC error {}: {}",
+                    error_code, error.message
+                ))),
+            }
+        }
+    }
 }
 
 async fn build_transaction(
@@ -162,7 +178,7 @@ async fn build_transaction(
     chain_id: &Caip2ChainId,
     project_id: &str,
     params: BuildTransactionParams,
-) -> Result<BuildTransactionResponse, InternalError> {
+) -> Result<BuildTransactionResponse, RpcError> {
     call_json_rpc(
         state,
         chain_id,
@@ -178,7 +194,7 @@ async fn eth_call(
     chain_id: &Caip2ChainId,
     project_id: &str,
     params: EthCallParams,
-) -> Result<EthCallResponse, InternalError> {
+) -> Result<String, RpcError> {
     call_json_rpc(
         state,
         chain_id,
@@ -194,17 +210,15 @@ async fn get_transaction_by_hash(
     chain_id: &Caip2ChainId,
     project_id: &str,
     txid: &str,
-) -> Result<Option<serde_json::Value>, InternalError> {
-    let resp: EthGetTransactionByHashResponse = call_json_rpc(
+) -> Result<Option<serde_json::Value>, RpcError> {
+    call_json_rpc(
         state,
         chain_id,
         project_id,
         "eth_getTransactionByHash",
         serde_json::json!([txid]),
     )
-    .await?;
-
-    Ok(resp.result)
+    .await
 }
 
 async fn broadcast_transaction(
@@ -212,7 +226,7 @@ async fn broadcast_transaction(
     chain_id: &Caip2ChainId,
     project_id: &str,
     tx: &SignedTransaction,
-) -> Result<BroadcastResult, InternalError> {
+) -> Result<BroadcastResult, RpcError> {
     let params = serde_json::json!([
         tx.tx_id,
         tx.visible.unwrap_or(false),
@@ -221,16 +235,14 @@ async fn broadcast_transaction(
         tx.signature.clone().unwrap_or_default()
     ]);
 
-    let resp: TronBroadcastResponse = call_json_rpc(
+    call_json_rpc(
         state,
         chain_id,
         project_id,
         "tron_broadcastTransaction",
         params,
     )
-    .await?;
-
-    Ok(resp.result)
+    .await
 }
 
 async fn get_transaction_receipt(
@@ -238,17 +250,15 @@ async fn get_transaction_receipt(
     chain_id: &Caip2ChainId,
     project_id: &str,
     txid: &str,
-) -> Result<Option<TransactionReceipt>, InternalError> {
-    let resp: EthGetTransactionReceiptResponse = call_json_rpc(
+) -> Result<Option<TransactionReceipt>, RpcError> {
+    call_json_rpc(
         state,
         chain_id,
         project_id,
         "eth_getTransactionReceipt",
         serde_json::json!([txid]),
     )
-    .await?;
-
-    Ok(resp.result)
+    .await
 }
 
 async fn estimate_gas(
@@ -256,7 +266,7 @@ async fn estimate_gas(
     chain_id: &Caip2ChainId,
     project_id: &str,
     params: BuildTransactionParams,
-) -> Result<String, InternalError> {
+) -> Result<String, RpcError> {
     let eth_params = serde_json::json!({
         "from": params.from,
         "to": params.to,
@@ -264,33 +274,29 @@ async fn estimate_gas(
         "value": params.value
     });
 
-    let resp: EthEstimateGasResponse = call_json_rpc(
+    call_json_rpc(
         state,
         chain_id,
         project_id,
         "eth_estimateGas",
         serde_json::json!([eth_params]),
     )
-    .await?;
-
-    Ok(resp.result)
+    .await
 }
 
 async fn get_gas_price(
     state: &State<Arc<AppState>>,
     chain_id: &Caip2ChainId,
     project_id: &str,
-) -> Result<String, InternalError> {
-    let resp: EthGasPriceResponse = call_json_rpc(
+) -> Result<String, RpcError> {
+    call_json_rpc(
         state,
         chain_id,
         project_id,
         "eth_gasPrice",
         serde_json::json!([]),
     )
-    .await?;
-
-    Ok(resp.result)
+    .await
 }
 
 async fn estimate_trc20_fee_limit(
@@ -301,11 +307,11 @@ async fn estimate_trc20_fee_limit(
 ) -> Result<String, BuildPosTxsError> {
     let gas_estimate = estimate_gas(state, chain_id, project_id, params.clone())
         .await
-        .map_err(BuildPosTxsError::Internal)?;
+        .map_err(BuildPosTxsError::Rpc)?;
 
     let gas_price = get_gas_price(state, chain_id, project_id)
         .await
-        .map_err(BuildPosTxsError::Internal)?;
+        .map_err(BuildPosTxsError::Rpc)?;
 
     let gas_value =
         u128::from_str_radix(gas_estimate.trim_start_matches("0x"), 16).map_err(|e| {
@@ -443,7 +449,7 @@ async fn build_trc20_transfer(
         build_params_with_gas,
     )
     .await
-    .map_err(BuildPosTxsError::Internal)?;
+    .map_err(BuildPosTxsError::Rpc)?;
 
     debug!("tron build transaction resp: {:?}", resp);
 
@@ -493,11 +499,11 @@ async fn fetch_trc20_decimals(
         data: decimals_selector.to_string(),
     };
 
-    let resp = eth_call(state, chain_id, project_id, call_params)
+    let result = eth_call(state, chain_id, project_id, call_params)
         .await
-        .map_err(BuildPosTxsError::Internal)?;
+        .map_err(BuildPosTxsError::Rpc)?;
 
-    let hex_str = resp.result.trim_start_matches("0x");
+    let hex_str = result.trim_start_matches("0x");
     let bytes = hex::decode(hex_str).map_err(|e| {
         BuildPosTxsError::Internal(InternalError::Internal(format!(
             "Failed to decode decimals result: {}",
@@ -505,13 +511,16 @@ async fn fetch_trc20_decimals(
         )))
     })?;
 
-    if bytes.is_empty() {
+    if bytes.len() < 32 {
         return Err(BuildPosTxsError::Internal(InternalError::Internal(
-            "Empty decimals result".to_string(),
+            format!(
+                "Invalid decimals result length: expected 32 bytes, got {}",
+                bytes.len()
+            ),
         )));
     }
 
-    let decimals = *bytes.last().unwrap() as u8;
+    let decimals = bytes[31];
     Ok(decimals)
 }
 
@@ -525,16 +534,16 @@ pub async fn get_transaction_status(
 
     let already_broadcasted = get_transaction_by_hash(&state, chain_id, project_id, txid)
         .await
-        .map_err(CheckPosTxError::Internal)?
+        .map_err(CheckPosTxError::Rpc)?
         .is_some();
 
     if !already_broadcasted {
         let broadcast_resp = broadcast_transaction(&state, chain_id, project_id, signed_tx)
             .await
-            .map_err(CheckPosTxError::Internal)?;
+            .map_err(CheckPosTxError::Rpc)?;
         debug!("tron broadcast resp: {:?}", broadcast_resp);
         if broadcast_resp.result.is_none() || broadcast_resp.result == Some(false) {
-            return Err(CheckPosTxError::Internal(InternalError::Internal(format!(
+            return Err(CheckPosTxError::Rpc(RpcError::Internal(format!(
                 "Broadcast failed: {} {}",
                 broadcast_resp.code.unwrap_or_default(),
                 broadcast_resp.message.unwrap_or_default()
@@ -546,7 +555,7 @@ pub async fn get_transaction_status(
 
     let receipt_opt = get_transaction_receipt(&state, chain_id, project_id, txid)
         .await
-        .map_err(CheckPosTxError::Internal)?;
+        .map_err(CheckPosTxError::Rpc)?;
 
     match receipt_opt {
         Some(receipt) => {
