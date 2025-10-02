@@ -173,6 +173,7 @@ mod sui;
 mod syndica;
 pub mod tenderly;
 mod therpc;
+mod trongrid;
 mod unichain;
 mod weights;
 mod wemix;
@@ -211,6 +212,7 @@ pub use {
     syndica::{SyndicaProvider, SyndicaWsProvider},
     tenderly::TenderlyProvider,
     therpc::TheRpcProvider,
+    trongrid::TrongridProvider,
     unichain::UnichainProvider,
     wemix::WemixProvider,
     zerion::ZerionProvider,
@@ -832,6 +834,7 @@ pub enum ProviderKind {
     Blast,
     Rootstock,
     Lifi,
+    Trongrid,
     Generic(String),
 }
 
@@ -875,6 +878,7 @@ impl Display for ProviderKind {
                 ProviderKind::Blast => "Blast",
                 ProviderKind::Rootstock => "Rootstock",
                 ProviderKind::Lifi => "Lifi",
+                ProviderKind::Trongrid => "Trongrid",
                 ProviderKind::Generic(name) => name.as_str(),
             }
         )
@@ -918,6 +922,7 @@ impl ProviderKind {
             "Moonbeam" => Some(Self::Moonbeam),
             "Blast" => Some(Self::Blast),
             "Rootstock" => Some(Self::Rootstock),
+            "Trongrid" => Some(Self::Trongrid),
             x => Some(Self::Generic(x.to_string())),
         }
     }

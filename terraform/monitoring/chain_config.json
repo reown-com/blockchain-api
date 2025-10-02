@@ -291,6 +291,11 @@
       "providers": []
     },
     {
+      "caip2": "tron:0xcd8690dc",
+      "name": "Tron Nile Testnet",
+      "providers": []
+    },
+    {
       "caip2": "ton:mainnet",
       "name": "Ton Mainnet",
       "providers": []

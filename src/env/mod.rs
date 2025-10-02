@@ -19,7 +19,7 @@ pub use {
     allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, blast::*, callstatic::*, drpc::*,
     dune::*, generic::*, hiro::*, mantle::*, monad::*, moonbeam::*, morph::*, near::*, pokt::*,
     publicnode::*, quicknode::*, rootstock::*, server::*, solscan::*, sui::*, syndica::*,
-    therpc::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
+    therpc::*, trongrid::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
 };
 mod allnodes;
 mod arbitrum;
@@ -46,6 +46,7 @@ pub mod solscan;
 mod sui;
 mod syndica;
 mod therpc;
+mod trongrid;
 mod unichain;
 mod wemix;
 pub mod zerion;
