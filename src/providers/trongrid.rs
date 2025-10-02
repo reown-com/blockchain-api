@@ -31,8 +31,6 @@ struct TronApiResult {
     pub result: serde_json::Value,
 }
 
-const TRON_CHAIN_ID: &str = "tron:0xcd8690dc";
-
 const TRON_BROADCAST_TRANSACTION_METHOD: &str = "tron_broadcastTransaction";
 
 #[derive(Debug)]
@@ -77,6 +75,7 @@ impl TrongridProvider {
 
     async fn handle_tron_broadcast_transaction(
         &self,
+        chain_id: &str,
         params_value: serde_json::Value,
     ) -> RpcResult<Response> {
         let params = params_value.as_array().ok_or(RpcError::InvalidParameter(
@@ -138,12 +137,13 @@ impl TrongridProvider {
         };
         let signature: Vec<&str> = signature_owned.iter().map(|s| s.as_str()).collect();
 
-        self.tron_broadcast_transaction(txid, visible, raw_data, raw_data_hex, signature)
+        self.tron_broadcast_transaction(chain_id, txid, visible, raw_data, raw_data_hex, signature)
             .await
     }
 
     async fn tron_broadcast_transaction(
         &self,
+        chain_id: &str,
         txid: &str,
         visible: bool,
         raw_data: serde_json::Value,
@@ -152,7 +152,7 @@ impl TrongridProvider {
     ) -> RpcResult<Response> {
         let uri = self
             .supported_chains
-            .get(TRON_CHAIN_ID)
+            .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
         let base_url = uri.strip_suffix("/jsonrpc").unwrap_or(uri.as_str());
@@ -217,7 +217,9 @@ impl RpcProvider for TrongridProvider {
         let params = json_rpc_request.params;
 
         if method == TRON_BROADCAST_TRANSACTION_METHOD {
-            return self.handle_tron_broadcast_transaction(params).await;
+            return self
+                .handle_tron_broadcast_transaction(chain_id, params)
+                .await;
         }
 
         let response = self
