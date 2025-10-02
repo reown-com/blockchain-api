@@ -42,7 +42,6 @@ Chain name with associated `chainId` query param to use.
 | Linea Mainnet <sup>[1](#footnote1)</sup>                 | eip155:59144         |
 | Polygon Amoy <sup>[1](#footnote1)</sup>                  | eip155:80002         |
 | Berachain Bepolia <sup>[1](#footnote)</sup>              | eip155:80069         |
-| Berachain bArtio <sup>[1](#footnote1)</sup>              | eip155:80084         |
 | Berachain Mainnet <sup>[1](#footnote1)</sup>             | eip155:80094         |
 | Base Sepolia                                             | eip155:84532         |
 | Arbitrum Sepolia                                         | eip155:421614        |
