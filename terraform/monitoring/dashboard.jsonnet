@@ -239,10 +239,12 @@ dashboard.new(
   row.new('Swaps'),
     panels.swaps.availability(ds, vars)           { gridPos: pos._1 },
 
-  row.new('Exchanges / Wallet / POS'),
+  row.new('JSON-RPC'),
     panels.rpc.availability(ds, vars)             { gridPos: pos._3 },
     panels.rpc.calls_by_method(ds, vars)          { gridPos: pos._3 },
     panels.rpc.latency_by_method(ds, vars)        { gridPos: pos._3 },
+    panels.rpc.success_response_codes(ds, vars)   { gridPos: pos._3 },
+    panels.rpc.failed_response_codes(ds, vars)    { gridPos: pos._3 },
 
   row.new('Redis'),
     panels.redis.cpu(ds, vars)                    { gridPos: pos._2 },
