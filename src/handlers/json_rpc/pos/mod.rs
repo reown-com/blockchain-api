@@ -7,8 +7,8 @@ pub mod supported_networks;
 pub mod tron;
 
 pub use errors::{
-    BuildPosTxsError, CheckPosTxError, ExecutionError, InternalError, SupportedNetworksError,
-    TransactionIdError, ValidationError,
+    BuildPosTxsError, CheckPosTxError, ExecutionError, InternalError, RpcError,
+    SupportedNetworksError, TransactionIdError, ValidationError,
 };
 
 use {
