@@ -152,7 +152,8 @@ describe('Proxy', () => {
   })
 
   it('Tron broadcast transaction wrapped RPC method', async () => {
-    const chainId = "tron:0x2b6653dc";
+    // Tron mainnet
+    const tron_mainnet_chainId = "tron:0x2b6653dc";
     // Expired transaction payload, but we can check if the method is working
     const payload = {
       jsonrpc: "2.0",
@@ -167,8 +168,19 @@ describe('Proxy', () => {
       id: 1,
     };
 
-    const resp: any = await httpClient.post(
-      `${baseUrl}/v1?chainId=${chainId}&projectId=${projectId}`,
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1?chainId=${tron_mainnet_chainId}&projectId=${projectId}`,
+      payload
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data).toBe('object')
+    expect(typeof resp.data.result).toBe('object')
+    expect(typeof resp.data.result.txid).toBe('string')
+
+    // Tron nile testnet
+    const tron_nile_testnet_chainId = "tron:0xcd8690dc";
+    resp = await httpClient.post(
+      `${baseUrl}/v1?chainId=${tron_nile_testnet_chainId}&projectId=${projectId}`,
       payload
     )
     expect(resp.status).toBe(200)

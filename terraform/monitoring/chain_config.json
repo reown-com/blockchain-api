@@ -171,11 +171,6 @@
       "providers": []
     },
     {
-      "caip2": "eip155:80084",
-      "name": "Berachain bArtio",
-      "providers": []
-    },
-    {
       "caip2": "eip155:80094",
       "name": "Berachain Mainnet",
       "providers": []
@@ -293,6 +288,11 @@
     {
       "caip2": "tron:0x2b6653dc",
       "name": "Tron Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "tron:0xcd8690dc",
+      "name": "Tron Nile Testnet",
       "providers": []
     },
     {
