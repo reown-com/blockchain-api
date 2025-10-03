@@ -135,15 +135,26 @@ async fn call_json_rpc<T: for<'de> Deserialize<'de>>(
         .map_err(|e| RpcError::Internal(format!("Failed to send request: {}", e)))?;
 
     let status = response.status();
-    let response = response.error_for_status().map_err(|e| {
+
+    if !status.is_success() {
+        let error_body = response
+            .text()
+            .await
+            .unwrap_or_else(|_| "Unable to read error body".to_string());
         if status.is_client_error() {
-            debug!("TRON JSON RPC {} error: {}", status, e);
-            RpcError::InvalidResponse(format!("HTTP {} error: {}", status, e))
+            debug!("TRON JSON RPC {} error: {}", status, error_body);
+            return Err(RpcError::InvalidResponse(format!(
+                "HTTP {} error: {}",
+                status, error_body
+            )));
         } else {
-            debug!("TRON JSON RPC {} error: {}", status, e);
-            RpcError::Internal(format!("HTTP {} error: {}", status, e))
+            debug!("TRON JSON RPC {} error: {}", status, error_body);
+            return Err(RpcError::Internal(format!(
+                "HTTP {} error: {}",
+                status, error_body
+            )));
         }
-    })?;
+    }
 
     let rpc_response: JsonRpcResponse<T> = response.json().await.map_err(|e| {
         debug!(
@@ -235,10 +246,13 @@ async fn broadcast_transaction(
     project_id: &str,
     tx: &SignedTransaction,
 ) -> Result<BroadcastResult, RpcError> {
+    let raw_data_str = serde_json::to_string(&tx.raw_data)
+        .map_err(|e| RpcError::Internal(format!("Failed to serialize raw_data: {}", e)))?;
+
     let params = serde_json::json!([
         tx.tx_id,
         tx.visible.unwrap_or(false),
-        serde_json::to_string(&tx.raw_data).unwrap_or_default(),
+        raw_data_str,
         tx.raw_data_hex,
         tx.signature.clone().unwrap_or_default()
     ]);
@@ -275,8 +289,8 @@ async fn estimate_gas(
     project_id: &str,
     params: BuildTransactionParams,
 ) -> Result<String, RpcError> {
-    let from_eth = hex41_to_eth_hex(&params.from);
-    let to_eth = hex41_to_eth_hex(&params.to);
+    let from_eth = ensure_hex_prefix(&params.from);
+    let to_eth = ensure_hex_prefix(&params.to);
 
     let eth_params = serde_json::json!({
         "from": from_eth,
@@ -466,7 +480,7 @@ async fn build_trc20_transfer(
     )
     .await
     .map_err(BuildPosTxsError::Rpc)?;
-    
+
     // Some wallets only accept transaction with visible set to false
     resp.transaction.visible = Some(false);
 
@@ -632,11 +646,11 @@ fn tron_b58_to_eth_hex(b58: &str) -> Result<String, ValidationError> {
     Ok(format!("0x{}", hex::encode(&bytes)))
 }
 
-fn hex41_to_eth_hex(hex41: &str) -> String {
-    if hex41.starts_with("0x") {
-        hex41.to_string()
+fn ensure_hex_prefix(hex_str: &str) -> String {
+    if hex_str.starts_with("0x") {
+        hex_str.to_string()
     } else {
-        format!("0x{}", hex41)
+        format!("0x{}", hex_str)
     }
 }
 
