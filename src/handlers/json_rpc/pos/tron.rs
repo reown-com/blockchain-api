@@ -72,8 +72,8 @@ struct EthCallParams {
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
 struct JsonRpcResponse<T> {
-    jsonrpc: String,
-    id: serde_json::Value,
+    jsonrpc: Option<String>,
+    id: Option<serde_json::Value>,
     #[serde(flatten)]
     payload: JsonRpcPayload<T>,
 }
@@ -137,8 +137,10 @@ async fn call_json_rpc<T: for<'de> Deserialize<'de>>(
     let status = response.status();
     let response = response.error_for_status().map_err(|e| {
         if status.is_client_error() {
+            debug!("TRON JSON RPC {} error: {}", status, e);
             RpcError::InvalidResponse(format!("HTTP {} error: {}", status, e))
         } else {
+            debug!("TRON JSON RPC {} error: {}", status, e);
             RpcError::Internal(format!("HTTP {} error: {}", status, e))
         }
     })?;
@@ -164,10 +166,16 @@ async fn call_json_rpc<T: for<'de> Deserialize<'de>>(
                     "Invalid params: {}",
                     error.message
                 ))),
-                _ => Err(RpcError::Internal(format!(
-                    "RPC error {}: {}",
-                    error_code, error.message
-                ))),
+                _ => {
+                    debug!(
+                        "TRON JSON RPC Internal RPC error {}: {}, {}, {}",
+                        error_code, error.message, method, params
+                    );
+                    Err(RpcError::Internal(format!(
+                        "RPC error {}: {}",
+                        error_code, error.message
+                    )))
+                }
             }
         }
     }
@@ -267,9 +275,12 @@ async fn estimate_gas(
     project_id: &str,
     params: BuildTransactionParams,
 ) -> Result<String, RpcError> {
+    let from_eth = hex41_to_eth_hex(&params.from);
+    let to_eth = hex41_to_eth_hex(&params.to);
+
     let eth_params = serde_json::json!({
-        "from": params.from,
-        "to": params.to,
+        "from": from_eth,
+        "to": to_eth,
         "data": params.data,
         "value": params.value
     });
@@ -410,6 +421,11 @@ async fn build_trc20_transfer(
     .await?;
     let token_amount = parse_token_amount(&params.amount, decimals)?;
 
+    debug!(
+        "tron build transaction token amount: {:?}, decimals: {:?}",
+        token_amount, decimals
+    );
+
     let data = transferCall {
         to: to_eth,
         value: token_amount,
@@ -428,7 +444,7 @@ async fn build_trc20_transfer(
         to: to_address.clone(),
         data: data_hex.clone(),
         gas: None,
-        value: "0xA".to_string(),
+        value: "0x0".to_string(),
         token_id: 0,
         token_value: 0,
     };
@@ -486,9 +502,9 @@ async fn fetch_trc20_decimals(
     owner_b58: &str,
     contract_b58: &str,
 ) -> Result<u8, BuildPosTxsError> {
-    let from_address = tron_b58_to_hex41(owner_b58)
+    let from_address = tron_b58_to_eth_hex(owner_b58)
         .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string())))?;
-    let to_address = tron_b58_to_hex41(contract_b58)
+    let to_address = tron_b58_to_eth_hex(contract_b58)
         .map_err(|e| BuildPosTxsError::Validation(ValidationError::InvalidAsset(e.to_string())))?;
 
     let decimals_selector = "0x313ce567";
@@ -596,6 +612,26 @@ fn tron_b58_to_hex41(b58: &str) -> Result<String, ValidationError> {
         ));
     }
     Ok(hex::encode(bytes).to_string())
+}
+
+fn tron_b58_to_eth_hex(b58: &str) -> Result<String, ValidationError> {
+    let bytes = bs58::decode(b58).with_check(None).into_vec().map_err(|e| {
+        ValidationError::InvalidAddress(format!("Failed to decode TRON address: {}", e))
+    })?;
+    if bytes.len() != 21 || bytes[0] != 0x41 {
+        return Err(ValidationError::InvalidAddress(
+            "invalid TRON address".to_string(),
+        ));
+    }
+    Ok(format!("0x{}", hex::encode(&bytes)))
+}
+
+fn hex41_to_eth_hex(hex41: &str) -> String {
+    if hex41.starts_with("0x") {
+        hex41.to_string()
+    } else {
+        format!("0x{}", hex41)
+    }
 }
 
 pub async fn check_transaction(
