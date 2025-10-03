@@ -458,7 +458,7 @@ async fn build_trc20_transfer(
         ..build_params
     };
 
-    let resp = build_transaction(
+    let mut resp = build_transaction(
         &state,
         params.asset.chain_id(),
         project_id,
@@ -466,6 +466,9 @@ async fn build_trc20_transfer(
     )
     .await
     .map_err(BuildPosTxsError::Rpc)?;
+    
+    // Some wallets only accept transaction with visible set to false
+    resp.transaction.visible = Some(false);
 
     debug!("tron build transaction resp: {:?}", resp);
 
@@ -576,13 +579,16 @@ pub async fn get_transaction_status(
     match receipt_opt {
         Some(receipt) => {
             if let Some(status) = receipt.status {
-                let status_value =
-                    u64::from_str_radix(status.trim_start_matches("0x"), 16).unwrap_or(0);
-                return Ok(if status_value == 1 {
-                    TransactionStatus::Confirmed
+                let parsed = u64::from_str_radix(status.trim_start_matches("0x"), 16);
+                if let Ok(status_value) = parsed {
+                    return Ok(if status_value == 1 {
+                        TransactionStatus::Confirmed
+                    } else {
+                        TransactionStatus::Failed
+                    });
                 } else {
-                    TransactionStatus::Failed
-                });
+                    return Ok(TransactionStatus::Pending);
+                }
             }
         }
         _ => return Ok(TransactionStatus::Pending),
