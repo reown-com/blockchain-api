@@ -117,6 +117,8 @@ local redis  = panels.aws.redis;
     availability: (import 'rpc/availability.libsonnet').new,
     calls_by_method: (import 'rpc/calls_by_method.libsonnet').new,
     latency_by_method: (import 'rpc/latency_by_method.libsonnet').new,
+    success_response_codes: (import 'rpc/success_codes.libsonnet').new,
+    failed_response_codes: (import 'rpc/failed_codes.libsonnet').new,
   },
 
   chain_rpc_router: {
