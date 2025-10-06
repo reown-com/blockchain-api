@@ -23,6 +23,23 @@ impl InternalError {
 }
 
 #[derive(Debug, Error)]
+pub enum RpcError {
+    #[error("Invalid response: {0}")]
+    InvalidResponse(String),
+    #[error("Internal error: {0}")]
+    Internal(String),
+}
+
+impl RpcError {
+    pub fn to_json_rpc_error_code(&self) -> i32 {
+        match self {
+            RpcError::InvalidResponse(_) => -18943,
+            RpcError::Internal(_) => -18944,
+        }
+    }
+}
+
+#[derive(Debug, Error)]
 pub enum BuildPosTxsError {
     #[error("Validation error: {0}")]
     Validation(#[source] ValidationError),
@@ -30,19 +47,26 @@ pub enum BuildPosTxsError {
     #[error("Execution error: {0}")]
     Execution(#[source] ExecutionError),
 
+    #[error("RPC error: {0}")]
+    Rpc(#[source] RpcError),
+
     #[error("Internal error: {0}")]
     Internal(#[source] InternalError),
 }
 
 impl BuildPosTxsError {
     pub fn is_internal(&self) -> bool {
-        matches!(self, BuildPosTxsError::Internal(_))
+        matches!(
+            self,
+            BuildPosTxsError::Internal(_) | BuildPosTxsError::Rpc(RpcError::Internal(_))
+        )
     }
 
     pub fn to_json_rpc_error_code(&self) -> i32 {
         match self {
             BuildPosTxsError::Validation(v) => v.to_json_rpc_error_code(),
             BuildPosTxsError::Execution(e) => e.to_json_rpc_error_code(),
+            BuildPosTxsError::Rpc(r) => r.to_json_rpc_error_code(),
             BuildPosTxsError::Internal(i) => i.to_json_rpc_error_code(),
         }
     }
@@ -102,18 +126,25 @@ pub enum CheckPosTxError {
     #[error("Validation error: {0}")]
     Validation(#[source] ValidationError),
 
+    #[error("RPC error: {0}")]
+    Rpc(#[source] RpcError),
+
     #[error("Internal error: {0}")]
     Internal(#[source] InternalError),
 }
 
 impl CheckPosTxError {
     pub fn is_internal(&self) -> bool {
-        matches!(self, CheckPosTxError::Internal(_))
+        matches!(
+            self,
+            CheckPosTxError::Internal(_) | CheckPosTxError::Rpc(RpcError::Internal(_))
+        )
     }
 
     pub fn to_json_rpc_error_code(&self) -> i32 {
         match self {
             CheckPosTxError::Validation(v) => v.to_json_rpc_error_code(),
+            CheckPosTxError::Rpc(r) => r.to_json_rpc_error_code(),
             CheckPosTxError::Internal(i) => i.to_json_rpc_error_code(),
         }
     }
