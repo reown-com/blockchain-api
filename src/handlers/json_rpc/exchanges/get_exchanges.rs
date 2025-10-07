@@ -1,6 +1,7 @@
 use {
     crate::handlers::json_rpc::exchanges::{
-        get_supported_exchanges, is_feature_enabled_for_project_id, Exchange,
+        get_enabled_features, get_feature_type, get_supported_exchanges,
+        is_feature_enabled_for_project_id, Exchange, Feature, FeatureType,
     },
     crate::{handlers::SdkInfoParams, state::AppState},
     axum::{
@@ -73,12 +74,29 @@ pub async fn handler(
     query: Query<QueryParams>,
     Json(request): Json<GetExchangesRequest>,
 ) -> Result<GetExchangesResponse, GetExchangesError> {
-    is_feature_enabled_for_project_id(state.clone(), &project_id, query.source.as_deref())
+    let feature_type = get_feature_type(query.source.as_deref());
+    let project_features = get_enabled_features(state.clone(), &project_id)
+        .await
+        .map_err(|e| {
+            GetExchangesError::InternalError(GetExchangesInternalError::InternalError(
+                e.to_string(),
+            ))
+        })?;
+
+    is_feature_enabled_for_project_id(state.clone(), &project_id, &project_features, &feature_type)
         .await
         .map_err(|e| GetExchangesError::ValidationError(e.to_string()))?;
-    handler_internal(state, connect_info, headers, query, request)
-        .with_metrics(future_metrics!("handler_task", "name" => "pay_get_exchanges"))
-        .await
+    handler_internal(
+        state,
+        connect_info,
+        headers,
+        query,
+        request,
+        &project_features,
+        &feature_type,
+    )
+    .with_metrics(future_metrics!("handler_task", "name" => "pay_get_exchanges"))
+    .await
 }
 
 async fn handler_internal(
@@ -87,20 +105,23 @@ async fn handler_internal(
     _headers: HeaderMap,
     _query: Query<QueryParams>,
     request: GetExchangesRequest,
+    project_features: &[Feature],
+    feature_type: &FeatureType,
 ) -> Result<GetExchangesResponse, GetExchangesError> {
-    let all_exchanges = match get_supported_exchanges(request.asset.clone()) {
-        Ok(exchanges) => exchanges,
-        Err(err) => {
-            debug!(
-                "Error getting supported exchanges: {:?}, asset: {:?}",
-                err, request.asset
-            );
-            return Ok(GetExchangesResponse {
-                total: 0,
-                exchanges: vec![],
-            });
-        }
-    };
+    let all_exchanges =
+        match get_supported_exchanges(request.asset.clone(), feature_type, project_features) {
+            Ok(exchanges) => exchanges,
+            Err(err) => {
+                debug!(
+                    "Error getting supported exchanges: {:?}, asset: {:?}",
+                    err, request.asset
+                );
+                return Ok(GetExchangesResponse {
+                    total: 0,
+                    exchanges: vec![],
+                });
+            }
+        };
 
     let exchanges = match (&request.include_only, &request.exclude) {
         (Some(_), Some(_)) => {

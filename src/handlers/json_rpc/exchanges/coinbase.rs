@@ -1,7 +1,7 @@
 use {
     crate::handlers::json_rpc::exchanges::{
-        BuyTransactionStatus, ExchangeError, ExchangeProvider, GetBuyStatusParams,
-        GetBuyStatusResponse, GetBuyUrlParams,
+        BuyTransactionStatus, ExchangeError, ExchangeProvider, Feature, FeatureType,
+        GetBuyStatusParams, GetBuyStatusResponse, GetBuyUrlParams,
     },
     crate::state::AppState,
     crate::utils::crypto::Caip19Asset,
@@ -181,7 +181,7 @@ impl ExchangeProvider for CoinbaseExchange {
         CAIP19_TO_COINBASE_CRYPTO.contains_key(asset.to_string().as_str())
     }
 
-    fn is_enabled(&self) -> bool {
+    fn is_enabled(&self, _feature_type: &FeatureType, _project_features: &[Feature]) -> bool {
         false
     }
 }
