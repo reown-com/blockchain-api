@@ -69,8 +69,8 @@ impl GetExchangeBuyStatusError {
 pub async fn handler(
     state: State<Arc<AppState>>,
     project_id: String,
-    connect_info: ConnectInfo<SocketAddr>,
-    headers: HeaderMap,
+    _connect_info: ConnectInfo<SocketAddr>,
+    _headers: HeaderMap,
     query: Query<QueryParams>,
     Json(request): Json<GetExchangeBuyStatusRequest>,
 ) -> Result<GetExchangeBuyStatusResponse, GetExchangeBuyStatusError> {
@@ -87,9 +87,7 @@ pub async fn handler(
         .map_err(|e| GetExchangeBuyStatusError::ValidationError(e.to_string()))?;
     handler_internal(
         state,
-        connect_info,
-        headers,
-        query,
+        project_id,
         request,
         &project_features,
         &feature_type,
@@ -100,9 +98,7 @@ pub async fn handler(
 
 async fn handler_internal(
     state: State<Arc<AppState>>,
-    _connect_info: ConnectInfo<SocketAddr>,
-    _headers: HeaderMap,
-    _query: Query<QueryParams>,
+    project_id: String,
     request: GetExchangeBuyStatusRequest,
     project_features: &[Feature],
     feature_type: &FeatureType,
@@ -121,6 +117,7 @@ async fn handler_internal(
         .get_buy_status(
             State(arc_state),
             GetBuyStatusParams {
+                project_id,
                 session_id: request.session_id.clone(),
             },
         )

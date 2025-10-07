@@ -16,6 +16,7 @@ use {
     std::net::IpAddr,
     std::sync::Arc,
     std::time::{SystemTime, UNIX_EPOCH},
+    strum::EnumProperty,
     tracing::debug,
     url::Url,
 };
@@ -23,6 +24,7 @@ use {
 const COINBASE_ONE_CLICK_BUY_URL: &str = "https://pay.coinbase.com/buy/select-asset";
 const DEFAULT_PAYMENT_METHOD: &str = "CRYPTO_ACCOUNT";
 const COINBASE_API_HOST: &str = "api.developer.coinbase.com";
+const CREDENTIALS_URL: &str = "https://api.reown.com/internal/v1/coinbase-dwe";
 
 // CAIP-19 asset mappings to Coinbase assets
 static CAIP19_TO_COINBASE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
@@ -181,36 +183,50 @@ impl ExchangeProvider for CoinbaseExchange {
         CAIP19_TO_COINBASE_CRYPTO.contains_key(asset.to_string().as_str())
     }
 
-    fn is_enabled(&self, _feature_type: &FeatureType, _project_features: &[Feature]) -> bool {
+    fn is_enabled(&self, feature_type: &FeatureType, project_features: &[Feature]) -> bool {
+        // Coinbase is only enabled for fund wallet
+        if feature_type != &FeatureType::FundWallet {
+            return false;
+        }
+        if !project_features
+            .iter()
+            .any(|f| f.id == "fund_from_exchange")
+        {
+            return false;
+        }
+        let feature_id = feature_type
+            .get_str("feature_id")
+            .unwrap_or_else(|| feature_type.as_ref());
+
+        if let Some(feature) = project_features
+            .iter()
+            .find(|f| f.id == feature_id && f.is_enabled)
+        {
+            debug!(
+                "Coinbase is enabled for fund wallet. Feature config: {:?}",
+                feature.config
+            );
+            return true;
+        }
+
         false
     }
 }
 
 impl CoinbaseExchange {
-    fn get_api_credentials(
-        &self,
-        state: &Arc<AppState>,
-    ) -> Result<(String, String), ExchangeError> {
-        let key_name = state.config.exchanges.coinbase_key_name.clone();
-        let key_secret = state.config.exchanges.coinbase_key_secret.clone();
-
-        match (key_name, key_secret) {
-            (Some(key_name), Some(key_secret)) => Ok((key_name, key_secret)),
-            _ => Err(ExchangeError::ConfigurationError(
-                "Exchange is not available".to_string(),
-            )),
-        }
-    }
-
     async fn send_get_request(
         &self,
         state: &Arc<AppState>,
+        credentials: &CoinbaseCredentials,
         path: &str,
     ) -> Result<reqwest::Response, ExchangeError> {
-        let (pub_key, priv_key) = self.get_api_credentials(state)?;
-
-        let jwt_key =
-            generate_coinbase_jwt_key(&pub_key, &priv_key, "GET", COINBASE_API_HOST, path)?;
+        let jwt_key = generate_coinbase_jwt_key(
+            &credentials.key_id,
+            &credentials.private_key,
+            "GET",
+            COINBASE_API_HOST,
+            path,
+        )?;
 
         let url = format!("https://{COINBASE_API_HOST}{path}");
 
@@ -229,13 +245,17 @@ impl CoinbaseExchange {
     async fn send_post_request<T: serde::Serialize>(
         &self,
         state: &Arc<AppState>,
+        credentials: &CoinbaseCredentials,
         path: &str,
         body: &T,
     ) -> Result<reqwest::Response, ExchangeError> {
-        let (pub_key, priv_key) = self.get_api_credentials(state)?;
-
-        let jwt_key =
-            generate_coinbase_jwt_key(&pub_key, &priv_key, "POST", COINBASE_API_HOST, path)?;
+        let jwt_key = generate_coinbase_jwt_key(
+            &credentials.key_id,
+            &credentials.private_key,
+            "POST",
+            COINBASE_API_HOST,
+            path,
+        )?;
 
         let url = format!("https://{COINBASE_API_HOST}{path}");
 
@@ -279,11 +299,13 @@ impl CoinbaseExchange {
     async fn get_transaction_status(
         &self,
         state: &Arc<AppState>,
+        credentials: &CoinbaseCredentials,
         transaction_id: &str,
     ) -> Result<TransactionStatusResponse, ExchangeError> {
         let res = self
             .send_get_request(
                 state,
+                credentials,
                 &format!("/onramp/v1/buy/user/{transaction_id}/transactions"),
             )
             .await?;
@@ -299,6 +321,7 @@ impl CoinbaseExchange {
     async fn generate_session_token(
         &self,
         state: &Arc<AppState>,
+        credentials: &CoinbaseCredentials,
         asset: &Caip19Asset,
         recipient: &str,
     ) -> Result<String, ExchangeError> {
@@ -315,7 +338,7 @@ impl CoinbaseExchange {
         };
 
         let res = self
-            .send_post_request(state, "/onramp/v1/token", &request)
+            .send_post_request(state, credentials, "/onramp/v1/token", &request)
             .await?;
 
         if !res.status().is_success() {
@@ -339,10 +362,12 @@ impl CoinbaseExchange {
         state: State<Arc<AppState>>,
         params: GetBuyUrlParams,
     ) -> Result<String, ExchangeError> {
+        let credentials = fetch_coinbase_credentials(&state, &params.project_id).await?;
+
         let (crypto, network) = self.map_asset_to_coinbase_format(&params.asset)?;
 
         let session_token = self
-            .generate_session_token(&state, &params.asset, &params.recipient)
+            .generate_session_token(&state, &credentials, &params.asset, &params.recipient)
             .await?;
 
         let mut url = Url::parse(COINBASE_ONE_CLICK_BUY_URL)
@@ -369,8 +394,10 @@ impl CoinbaseExchange {
         state: State<Arc<AppState>>,
         params: GetBuyStatusParams,
     ) -> Result<GetBuyStatusResponse, ExchangeError> {
+        let credentials = fetch_coinbase_credentials(&state, &params.project_id).await?;
+
         let response = self
-            .get_transaction_status(&state, &params.session_id)
+            .get_transaction_status(&state, &credentials, &params.session_id)
             .await?;
 
         debug!("get_buy_status response: {:?}", response);
@@ -471,4 +498,63 @@ fn should_add_client_ip(ip: &IpAddr) -> bool {
         IpAddr::V4(v4) => !(v4.is_private() || v4.is_loopback() || v4.is_link_local()),
         IpAddr::V6(_) => false,
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CoinbaseCredentials {
+    project_id: String,
+    key_id: String,
+    private_key: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct CoinbaseCredentialsResponse {
+    credentials: CoinbaseCredentials,
+}
+
+async fn fetch_coinbase_credentials(
+    state: &Arc<AppState>,
+    project_id: &str,
+) -> Result<CoinbaseCredentials, ExchangeError> {
+    let jwt_token = state
+        .config
+        .exchanges
+        .internal_api_coinbase_credentials
+        .as_ref()
+        .ok_or_else(|| {
+            ExchangeError::ConfigurationError(
+                "Coinbase credentials token not configured".to_string(),
+            )
+        })?;
+
+    let mut url = Url::parse(CREDENTIALS_URL)
+        .map_err(|e| ExchangeError::InternalError(format!("Failed to parse URL: {e}")))?;
+
+    url.query_pairs_mut()
+        .append_pair("projectId", project_id)
+        .append_pair("st", "blockchain-api")
+        .append_pair("sv", "1.0.0");
+
+    let res = state
+        .http_client
+        .get(url)
+        .bearer_auth(jwt_token)
+        .send()
+        .await
+        .map_err(|e| ExchangeError::InternalError(e.to_string()))?;
+
+    if !res.status().is_success() {
+        return Err(ExchangeError::InternalError(format!(
+            "Failed to fetch Coinbase credentials: {}",
+            res.status()
+        )));
+    }
+
+    let response: CoinbaseCredentialsResponse = res.json().await.map_err(|e| {
+        ExchangeError::InternalError(format!("Failed to parse credentials response: {e}"))
+    })?;
+
+    debug!("fetched Coinbase credentials: {:?}", response.credentials);
+    Ok(response.credentials)
 }

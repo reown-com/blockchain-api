@@ -47,6 +47,7 @@ pub struct Config {
     pub coinbase_project_id: Option<String>,
     pub coinbase_key_name: Option<String>,
     pub coinbase_key_secret: Option<String>,
+    pub internal_api_coinbase_credentials: Option<String>,
     pub binance_client_id: Option<String>,
     pub binance_token: Option<String>,
     pub binance_key: Option<String>,
@@ -72,6 +73,7 @@ pub struct GetBuyUrlParams {
 }
 
 pub struct GetBuyStatusParams {
+    pub project_id: String,
     pub session_id: String,
 }
 

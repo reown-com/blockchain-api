@@ -353,6 +353,13 @@ variable "coinbase_key_secret" {
   default     = ""
 }
 
+variable "internal_api_coinbase_credentials" {
+  description = "JWT token for internal API to fetch Coinbase credentials"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "binance_client_id" {
   description = "Binance client id"
   type        = string

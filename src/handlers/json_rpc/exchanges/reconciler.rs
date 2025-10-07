@@ -56,6 +56,18 @@ pub async fn run(state: Arc<AppState>) {
 
                     let exchange_id = row.exchange_id.as_str();
                     let internal_id = row.session_id.clone();
+
+                    let project_id = match row.project_id.clone() {
+                        Some(id) => id,
+                        None => {
+                            warn!(
+                                exchange_id,
+                                internal_id, "missing project_id for exchange transaction"
+                            );
+                            continue;
+                        }
+                    };
+
                     debug!(
                         "processing exchange transaction {} on {}",
                         internal_id, exchange_id
@@ -66,6 +78,7 @@ pub async fn run(state: Arc<AppState>) {
                                 .get_buy_status(
                                     State(state.clone()),
                                     GetBuyStatusParams {
+                                        project_id: project_id.clone(),
                                         session_id: internal_id.clone(),
                                     },
                                 )
@@ -76,6 +89,7 @@ pub async fn run(state: Arc<AppState>) {
                                 .get_buy_status(
                                     State(state.clone()),
                                     GetBuyStatusParams {
+                                        project_id: project_id.clone(),
                                         session_id: internal_id.clone(),
                                     },
                                 )
