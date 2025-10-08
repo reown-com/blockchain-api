@@ -8,6 +8,7 @@ authors = [
 ]
 license-file = "LICENSE.md"
 build = "build.rs"
+default-run = "rpc-proxy"
 publish = false
 
 # Using the commit hash instead of the version tagging for the build identification
