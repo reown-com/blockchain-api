@@ -25,6 +25,8 @@ const COINBASE_ONE_CLICK_BUY_URL: &str = "https://pay.coinbase.com/buy/select-as
 const DEFAULT_PAYMENT_METHOD: &str = "CRYPTO_ACCOUNT";
 const COINBASE_API_HOST: &str = "api.developer.coinbase.com";
 const CREDENTIALS_URL: &str = "https://api.reown.com/internal/v1/coinbase-dwe";
+const DEFAULT_ST: &str = "blockchain-api";
+const DEFAULT_SV: &str = "1.0.0";
 
 // CAIP-19 asset mappings to Coinbase assets
 static CAIP19_TO_COINBASE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
@@ -533,8 +535,8 @@ async fn fetch_coinbase_credentials(
 
     url.query_pairs_mut()
         .append_pair("projectId", project_id)
-        .append_pair("st", "blockchain-api")
-        .append_pair("sv", "1.0.0");
+        .append_pair("st", DEFAULT_ST)
+        .append_pair("sv", DEFAULT_SV);
 
     let res = state
         .http_client
@@ -554,7 +556,5 @@ async fn fetch_coinbase_credentials(
     let response: CoinbaseCredentialsResponse = res.json().await.map_err(|e| {
         ExchangeError::InternalError(format!("Failed to parse credentials response: {e}"))
     })?;
-
-    debug!("fetched Coinbase credentials: {:?}", response.credentials);
     Ok(response.credentials)
 }

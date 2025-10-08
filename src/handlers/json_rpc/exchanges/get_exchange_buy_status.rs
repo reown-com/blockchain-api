@@ -82,9 +82,6 @@ pub async fn handler(
     is_feature_enabled_for_project_id(state.clone(), &project_id, &project_features, &feature_type)
         .await
         .map_err(|e| GetExchangeBuyStatusError::ValidationError(e.to_string()))?;
-    is_feature_enabled_for_project_id(state.clone(), &project_id, &project_features, &feature_type)
-        .await
-        .map_err(|e| GetExchangeBuyStatusError::ValidationError(e.to_string()))?;
     handler_internal(state, project_id, request, &project_features, &feature_type)
         .with_metrics(future_metrics!("handler_task", "name" => "pay_get_exchange_buy_status"))
         .await
@@ -121,23 +118,21 @@ async fn handler_internal(
         Ok(response) => {
             match response.status {
                 BuyTransactionStatus::Success => {
-                    let tx_hash = response.tx_hash.clone();
                     let _ = mark_transaction_succeeded(
                         &state,
                         &request.session_id,
                         &request.exchange_id,
-                        tx_hash.as_deref(),
+                        response.tx_hash.as_deref(),
                     )
                     .await;
                 }
                 BuyTransactionStatus::Failed => {
-                    let tx_hash = response.tx_hash.clone();
                     let _ = mark_transaction_failed(
                         &state,
                         &request.session_id,
                         &request.exchange_id,
                         Some("provider_failed"),
-                        tx_hash.as_deref(),
+                        response.tx_hash.as_deref(),
                     )
                     .await;
                 }
