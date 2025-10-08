@@ -263,7 +263,7 @@ mod test {
                 "COINBASE_KEY_SECRET",
             ),
             (
-                "RPC_PROXY_INTERNAL_API_COINBASE_CREDENTIALS",
+                "RPC_PROXY_EXCHANGES_INTERNAL_API_COINBASE_CREDENTIALS",
                 "INTERNAL_API_COINBASE_CREDENTIALS",
             ),
             ("RPC_PROXY_EXCHANGES_BINANCE_CLIENT_ID", "BINANCE_CLIENT_ID"),
