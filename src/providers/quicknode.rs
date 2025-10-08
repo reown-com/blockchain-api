@@ -6,7 +6,7 @@ use {
     crate::{
         env::QuicknodeConfig,
         error::{RpcError, RpcResult},
-        json_rpc::JsonRpcRequest,
+        json_rpc::{JsonRpcRequest, JsonRpcResult},
         ws,
     },
     async_trait::async_trait,
@@ -16,14 +16,14 @@ use {
         response::{IntoResponse, Response},
     },
     hyper::http,
-    serde::Serialize,
+    serde::{Deserialize, Serialize},
     std::collections::HashMap,
     tracing::debug,
     wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Serialize)]
-struct BroadcastTransactionRequest {
+struct TronBroadcastTransactionRequest {
     #[serde(rename = "txID")]
     pub txid: String,
     pub visible: bool,
@@ -33,11 +33,33 @@ struct BroadcastTransactionRequest {
 }
 
 #[derive(Debug, Serialize)]
+struct TonSendBocRequest {
+    pub boc: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct TonApiErrorResponse {
+    pub ok: bool,
+    pub error: serde_json::Value,
+    pub code: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct TonApiSuccessResponse {
+    pub ok: bool,
+    pub result: serde_json::Value,
+}
+
+#[derive(Debug, Serialize)]
 struct TronApiResult {
     pub result: serde_json::Value,
 }
 
 const TRON_CHAIN_ID: &str = "tron:0x2b6653dc";
+
+/// The method name for the TON sendBoc wrapper method
+const TON_SEND_BOC_METHOD: &str = "ton_sendBoc";
+const TON_CHAIN_ID: &str = "ton:mainnet";
 
 /// The method name for the tron broadcast transaction wrapper method
 const TRON_BROADCAST_TRANSACTION_METHOD: &str = "tron_broadcastTransaction";
@@ -154,6 +176,27 @@ impl QuicknodeProvider {
             .await
     }
 
+    async fn handle_ton_send_boc(
+        &self,
+        id: serde_json::Value,
+        params_value: serde_json::Value,
+    ) -> RpcResult<Response> {
+        // params array must be 1 element: boc string
+        let params = params_value.as_array().ok_or(RpcError::InvalidParameter(
+            "Params must be an array for ton_sendBoc method".to_string(),
+        ))?;
+        if params.len() != 1 {
+            return Err(RpcError::InvalidParameter(
+                "Params array must be 1 element for ton_sendBoc method".to_string(),
+            ));
+        }
+        let boc = params[0]
+            .as_str()
+            .ok_or_else(|| RpcError::InvalidParameter("boc is not a string".to_string()))?;
+
+        self.ton_send_boc(id, boc).await
+    }
+
     // Send request to the Tron broadcast transaction `/wallet/broadcasttransaction` API endpoint
     async fn tron_broadcast_transaction(
         &self,
@@ -178,7 +221,7 @@ impl QuicknodeProvider {
         let uri =
             format!("https://{chain_subdomain}.quiknode.pro/{token}/wallet/broadcasttransaction");
 
-        let transactions_request = serde_json::to_string(&BroadcastTransactionRequest {
+        let transactions_request = serde_json::to_string(&TronBroadcastTransactionRequest {
             txid: txid.to_string(),
             visible,
             raw_data,
@@ -197,6 +240,17 @@ impl QuicknodeProvider {
         let status = response.status();
         let body = response.bytes().await?;
 
+        // Handle the TON API error response which is HTTP 500 with the error structure response
+        if status == http::StatusCode::INTERNAL_SERVER_ERROR
+            || status == http::StatusCode::SERVICE_UNAVAILABLE
+        {
+            if let Ok(error_response) = serde_json::from_slice::<TonApiErrorResponse>(&body) {
+                return Err(RpcError::InvalidParameter(format!(
+                    "TON API error: {error_response:?}"
+                )));
+            }
+        }
+
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
                 debug!(
@@ -208,6 +262,84 @@ impl QuicknodeProvider {
 
         let wrapped_body = self.wrap_response_in_result(&body)?;
         let mut response = (status, wrapped_body).into_response();
+        response
+            .headers_mut()
+            .insert("Content-Type", HeaderValue::from_static("application/json"));
+        Ok(response)
+    }
+
+    // Send request to the TON `/sendBoc` REST API endpoint
+    async fn ton_send_boc(&self, id: serde_json::Value, boc: &str) -> RpcResult<Response> {
+        let token = &self
+            .supported_chains
+            .get(TON_CHAIN_ID)
+            .ok_or(RpcError::ChainNotFound)?;
+
+        let chain_subdomain =
+            self.chain_subdomains
+                .get(TON_CHAIN_ID)
+                .ok_or(RpcError::InvalidConfiguration(
+                    "Quicknode subdomain not found for TON chain".to_string(),
+                ))?;
+
+        let uri = format!("https://{chain_subdomain}.quiknode.pro/{token}/sendBoc");
+
+        let body = serde_json::to_vec(&TonSendBocRequest {
+            boc: boc.to_string(),
+        })
+        .map_err(|e| {
+            RpcError::InvalidParameter(format!("Failed to serialize TON sendBoc body: {e}"))
+        })?;
+
+        let response = self
+            .client
+            .post(uri)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()
+            .await?;
+        let status = response.status();
+        let body = response.bytes().await?;
+
+        // If provider responded with a TON-shaped error body on server error status,
+        // convert it to a Bad Request for the RPC layer; otherwise continue.
+        if status == http::StatusCode::INTERNAL_SERVER_ERROR
+            || status == http::StatusCode::SERVICE_UNAVAILABLE
+        {
+            if let Ok(error_response) = serde_json::from_slice::<TonApiErrorResponse>(&body) {
+                // Return a JSON-RPC error envelope with the same request id
+                let error_json = serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "error": {
+                        "code": error_response.code,
+                        "message": error_response.error,
+                    }
+                });
+                let body = serde_json::to_vec(&error_json)?;
+                // to allow a proper error handling by the RPC client we need to
+                // return it as an HTTP 200 response with the error body
+                let mut response = (http::StatusCode::OK, body).into_response();
+                response
+                    .headers_mut()
+                    .insert("Content-Type", HeaderValue::from_static("application/json"));
+                return Ok(response);
+            }
+        }
+
+        // Wrap provider { ok, result } into JSON-RPC success envelope
+        if let Ok(success_response) = serde_json::from_slice::<TonApiSuccessResponse>(&body) {
+            let json = JsonRpcResult::new(id, success_response.result);
+            let body = serde_json::to_vec(&json)?;
+            let mut response = (http::StatusCode::OK, body).into_response();
+            response
+                .headers_mut()
+                .insert("Content-Type", HeaderValue::from_static("application/json"));
+            return Ok(response);
+        }
+
+        // Fallback: return the original body with the provider's status
+        let mut response = (status, body).into_response();
         response
             .headers_mut()
             .insert("Content-Type", HeaderValue::from_static("application/json"));
@@ -243,10 +375,15 @@ impl RpcProvider for QuicknodeProvider {
         let json_rpc_request: JsonRpcRequest = serde_json::from_slice(&body)
             .map_err(|_| RpcError::InvalidParameter("Invalid JSON-RPC schema provided".into()))?;
         let method = json_rpc_request.method.to_string();
+        let id = json_rpc_request.id;
         let params = json_rpc_request.params;
         // Handle the tron broadcast transaction wrapped method and pass the parameters form an array
         if method == TRON_BROADCAST_TRANSACTION_METHOD {
             return self.handle_tron_broadcast_transaction(params).await;
+        }
+        // Handle the TON sendBoc wrapped method and pass the parameters from an array
+        if method == TON_SEND_BOC_METHOD {
+            return self.handle_ton_send_boc(id, params).await;
         }
 
         // Add /jsonrpc prefix for the Tron and /jsonRPC prefix for the Ton
