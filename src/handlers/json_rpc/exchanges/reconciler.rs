@@ -112,7 +112,7 @@ pub async fn run(state: Arc<AppState>) {
                             debug!(exchange_id, internal_id, "marking transaction as failed");
                             if let Err(err) = mark_failed(
                                 &state,
-                                &internal_id,
+                                internal_id,
                                 exchange_id,
                                 Some("provider_failed"),
                                 None,
@@ -134,7 +134,7 @@ pub async fn run(state: Arc<AppState>) {
                                 );
                                 if let Err(err) = mark_succeeded(
                                     &state,
-                                    &internal_id,
+                                    internal_id,
                                     exchange_id,
                                     status.tx_hash.as_deref(),
                                 )
@@ -147,7 +147,7 @@ pub async fn run(state: Arc<AppState>) {
                                 debug!(exchange_id, internal_id, "marking transaction as failed");
                                 if let Err(err) = mark_failed(
                                     &state,
-                                    &internal_id,
+                                    internal_id,
                                     exchange_id,
                                     Some("provider_failed"),
                                     status.tx_hash.as_deref(),
@@ -159,7 +159,7 @@ pub async fn run(state: Arc<AppState>) {
                             }
                             _ => {
                                 if let Err(err) =
-                                    touch_pending(&state, exchange_id, &internal_id).await
+                                    touch_pending(&state, exchange_id, internal_id).await
                                 {
                                     warn!(exchange_id, internal_id, error = %err, "failed to touch pending");
                                 }
@@ -167,7 +167,7 @@ pub async fn run(state: Arc<AppState>) {
                         },
                         Err(err) => {
                             debug!(exchange_id, internal_id, error = %err, "reconciler provider check failed");
-                            if let Err(err) = touch_pending(&state, exchange_id, &internal_id).await
+                            if let Err(err) = touch_pending(&state, exchange_id, internal_id).await
                             {
                                 warn!(exchange_id, internal_id, error = %err, "failed to touch pending after provider error");
                             }
