@@ -385,7 +385,9 @@ mod test {
                     binance_host: Some("BINANCE_HOST".to_owned()),
                     coinbase_key_name: Some("COINBASE_KEY_NAME".to_owned()),
                     coinbase_key_secret: Some("COINBASE_KEY_SECRET".to_owned()),
-                    internal_api_coinbase_credentials: Some("INTERNAL_API_COINBASE_CREDENTIALS".to_owned()),
+                    internal_api_coinbase_credentials: Some(
+                        "INTERNAL_API_COINBASE_CREDENTIALS".to_owned()
+                    ),
                     allowed_project_ids: Some(vec![
                         "test_project_id".to_owned(),
                         "test_project_id_2".to_owned(),

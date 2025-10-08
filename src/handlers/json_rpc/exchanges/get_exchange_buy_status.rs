@@ -85,15 +85,9 @@ pub async fn handler(
     is_feature_enabled_for_project_id(state.clone(), &project_id, &project_features, &feature_type)
         .await
         .map_err(|e| GetExchangeBuyStatusError::ValidationError(e.to_string()))?;
-    handler_internal(
-        state,
-        project_id,
-        request,
-        &project_features,
-        &feature_type,
-    )
-    .with_metrics(future_metrics!("handler_task", "name" => "pay_get_exchange_buy_status"))
-    .await
+    handler_internal(state, project_id, request, &project_features, &feature_type)
+        .with_metrics(future_metrics!("handler_task", "name" => "pay_get_exchange_buy_status"))
+        .await
 }
 
 async fn handler_internal(
