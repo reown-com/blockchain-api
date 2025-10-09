@@ -547,7 +547,8 @@ async fn fetch_coinbase_credentials(
     url.query_pairs_mut()
         .append_pair("projectId", project_id)
         .append_pair("st", DEFAULT_ST)
-        .append_pair("sv", DEFAULT_SV);
+        .append_pair("sv", DEFAULT_SV)
+        .finish();
 
     let res = state
         .http_client
