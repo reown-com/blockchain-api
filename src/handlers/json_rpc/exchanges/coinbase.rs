@@ -502,7 +502,10 @@ fn is_coinbase_enabled_in_config(feature: &Feature) -> bool {
     let config_items: Vec<FeatureConfigItem> = match serde_json::from_value(config.clone()) {
         Ok(items) => items,
         Err(e) => {
-            warn!("Failed to parse feature config for coinbase enablement check: {}", e);
+            warn!(
+                "Failed to parse feature config for coinbase enablement check: {}",
+                e
+            );
             return false;
         }
     };
