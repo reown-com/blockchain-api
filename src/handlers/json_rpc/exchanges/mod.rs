@@ -45,7 +45,9 @@ pub enum FeatureType {
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
 pub struct Config {
     pub coinbase_project_id: Option<String>,
+    #[deprecated(note = "Deprecated in favor of internal_api_coinbase_credentials")]
     pub coinbase_key_name: Option<String>,
+    #[deprecated(note = "Deprecated in favor of internal_api_coinbase_credentials")]
     pub coinbase_key_secret: Option<String>,
     pub internal_api_coinbase_credentials: Option<String>,
     pub binance_client_id: Option<String>,

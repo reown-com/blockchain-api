@@ -17,7 +17,7 @@ use {
     std::sync::Arc,
     std::time::{SystemTime, UNIX_EPOCH},
     strum::EnumProperty,
-    tracing::debug,
+    tracing::{debug, warn},
     url::Url,
 };
 
@@ -191,13 +191,6 @@ impl ExchangeProvider for CoinbaseExchange {
             return false;
         }
 
-        if !project_features
-            .iter()
-            .any(|f| f.id == "fund_from_exchange")
-        {
-            return false;
-        }
-
         let feature_id = feature_type
             .get_str("feature_id")
             .unwrap_or_else(|| feature_type.as_ref());
@@ -209,11 +202,7 @@ impl ExchangeProvider for CoinbaseExchange {
             return false;
         };
 
-        if is_coinbase_enabled_in_config(feature) {
-            return true;
-        }
-
-        false
+        is_coinbase_enabled_in_config(feature)
     }
 }
 
@@ -512,7 +501,10 @@ fn is_coinbase_enabled_in_config(feature: &Feature) -> bool {
 
     let config_items: Vec<FeatureConfigItem> = match serde_json::from_value(config.clone()) {
         Ok(items) => items,
-        Err(_) => return false,
+        Err(e) => {
+            warn!("Failed to parse feature config for coinbase enablement check: {}", e);
+            return false;
+        }
     };
 
     config_items.iter().any(|item| item.providers.coinbase)
@@ -532,7 +524,6 @@ struct ProviderConfig {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CoinbaseCredentials {
-    project_id: String,
     key_id: String,
     private_key: String,
 }
@@ -540,7 +531,6 @@ struct CoinbaseCredentials {
 impl std::fmt::Debug for CoinbaseCredentials {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CoinbaseCredentials")
-            .field("project_id", &self.project_id)
             .field("key_id", &self.key_id)
             .field("private_key", &"[REDACTED]")
             .finish()
@@ -573,8 +563,7 @@ async fn fetch_coinbase_credentials(
     url.query_pairs_mut()
         .append_pair("projectId", project_id)
         .append_pair("st", DEFAULT_ST)
-        .append_pair("sv", DEFAULT_SV)
-        .finish();
+        .append_pair("sv", DEFAULT_SV);
 
     let res = state
         .http_client
