@@ -27,6 +27,7 @@ const COINBASE_API_HOST: &str = "api.developer.coinbase.com";
 const CREDENTIALS_URL: &str = "https://api.reown.com/internal/v1/coinbase-dwe";
 const DEFAULT_ST: &str = "blockchain-api";
 const DEFAULT_SV: &str = "1.0.0";
+const JWT_EXPIRY_SECONDS: usize = 120;
 
 // CAIP-19 asset mappings to Coinbase assets
 static CAIP19_TO_COINBASE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
@@ -457,7 +458,7 @@ fn generate_coinbase_jwt_key(
     let claims = Claims {
         iss: "cdp".to_string(),
         nbf: now,
-        exp: now + 120,
+        exp: now + JWT_EXPIRY_SECONDS,
         sub: key_name.to_string(),
         uri,
     };
