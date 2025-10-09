@@ -30,11 +30,9 @@ jobs:
           fetch-depth: 0
 
       - name: Claude Auto Review
-        uses: WalletConnect/actions/claude/auto-review@1483e05460107d74c575e31af948ce20f9df6387
+        uses: WalletConnect/actions/claude/auto-review@db8a7d2ecfcf6aaa9366762e1ff745523df64994
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: claude-sonnet-4-20250514
-          timeout_minutes: "60"
           project_context: |
             This is the WalletConnect Blockchain API (formerly RPC Proxy), a Rust-based service that acts as an RPC proxy for interacting with multiple EVM and non-EVM blockchains.
 
