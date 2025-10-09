@@ -502,12 +502,22 @@ fn should_add_client_ip(ip: &IpAddr) -> bool {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CoinbaseCredentials {
     project_id: String,
     key_id: String,
     private_key: String,
+}
+
+impl std::fmt::Debug for CoinbaseCredentials {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CoinbaseCredentials")
+            .field("project_id", &self.project_id)
+            .field("key_id", &self.key_id)
+            .field("private_key", &"[REDACTED]")
+            .finish()
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
