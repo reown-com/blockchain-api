@@ -13,7 +13,7 @@ module "db_cluster" {
   name               = module.this.id
   database_name      = var.db_name
   engine             = "aurora-postgresql"
-  engine_version     = "15.10"
+  engine_version     = "15.12"
   engine_mode        = "provisioned"
   ca_cert_identifier = "rds-ca-ecc384-g1"
   instance_class     = "db.serverless"
