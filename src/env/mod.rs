@@ -262,6 +262,10 @@ mod test {
                 "RPC_PROXY_EXCHANGES_COINBASE_KEY_SECRET",
                 "COINBASE_KEY_SECRET",
             ),
+            (
+                "RPC_PROXY_EXCHANGES_INTERNAL_API_COINBASE_CREDENTIALS",
+                "INTERNAL_API_COINBASE_CREDENTIALS",
+            ),
             ("RPC_PROXY_EXCHANGES_BINANCE_CLIENT_ID", "BINANCE_CLIENT_ID"),
             ("RPC_PROXY_EXCHANGES_BINANCE_TOKEN", "BINANCE_TOKEN"),
             ("RPC_PROXY_EXCHANGES_BINANCE_KEY", "BINANCE_KEY"),
@@ -381,6 +385,9 @@ mod test {
                     binance_host: Some("BINANCE_HOST".to_owned()),
                     coinbase_key_name: Some("COINBASE_KEY_NAME".to_owned()),
                     coinbase_key_secret: Some("COINBASE_KEY_SECRET".to_owned()),
+                    internal_api_coinbase_credentials: Some(
+                        "INTERNAL_API_COINBASE_CREDENTIALS".to_owned()
+                    ),
                     allowed_project_ids: Some(vec![
                         "test_project_id".to_owned(),
                         "test_project_id_2".to_owned(),

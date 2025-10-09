@@ -1,7 +1,7 @@
 use {
     crate::handlers::json_rpc::exchanges::{
-        BuyTransactionStatus, ExchangeError, ExchangeProvider, GetBuyStatusParams,
-        GetBuyStatusResponse, GetBuyUrlParams,
+        BuyTransactionStatus, ExchangeError, ExchangeProvider, Feature, FeatureType,
+        GetBuyStatusParams, GetBuyStatusResponse, GetBuyUrlParams,
     },
     crate::state::AppState,
     crate::utils::crypto::Caip19Asset,
@@ -54,7 +54,7 @@ impl ExchangeProvider for TestExchange {
         CAIP_19_SUPPORTED_ASSETS.contains(asset)
     }
 
-    fn is_enabled(&self) -> bool {
+    fn is_enabled(&self, _feature_type: &FeatureType, _project_features: &[Feature]) -> bool {
         true
     }
 }

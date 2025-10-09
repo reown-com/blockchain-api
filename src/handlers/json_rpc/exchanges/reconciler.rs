@@ -55,7 +55,31 @@ pub async fn run(state: Arc<AppState>) {
                     rate.tick().await;
 
                     let exchange_id = row.exchange_id.as_str();
-                    let internal_id = row.session_id.clone();
+                    let internal_id = &row.session_id;
+
+                    let project_id = match row.project_id.as_ref() {
+                        Some(id) => id,
+                        None => {
+                            warn!(
+                                exchange_id,
+                                internal_id, "missing project_id for exchange transaction"
+                            );
+                            debug!(exchange_id, internal_id, "marking transaction as failed");
+                            if let Err(err) = mark_failed(
+                                &state,
+                                internal_id,
+                                exchange_id,
+                                Some("provider_failed"),
+                                None,
+                            )
+                            .await
+                            {
+                                warn!(exchange_id, internal_id, error = %err, "failed to mark failed");
+                            }
+                            continue;
+                        }
+                    };
+
                     debug!(
                         "processing exchange transaction {} on {}",
                         internal_id, exchange_id
@@ -66,7 +90,8 @@ pub async fn run(state: Arc<AppState>) {
                                 .get_buy_status(
                                     State(state.clone()),
                                     GetBuyStatusParams {
-                                        session_id: internal_id.clone(),
+                                        project_id: project_id.to_owned(),
+                                        session_id: internal_id.to_owned(),
                                     },
                                 )
                                 .await
@@ -76,13 +101,26 @@ pub async fn run(state: Arc<AppState>) {
                                 .get_buy_status(
                                     State(state.clone()),
                                     GetBuyStatusParams {
-                                        session_id: internal_id.clone(),
+                                        project_id: project_id.to_owned(),
+                                        session_id: internal_id.to_owned(),
                                     },
                                 )
                                 .await
                         }
                         _ => {
                             warn!(exchange_id, "unknown exchange id for reconciliation");
+                            debug!(exchange_id, internal_id, "marking transaction as failed");
+                            if let Err(err) = mark_failed(
+                                &state,
+                                internal_id,
+                                exchange_id,
+                                Some("provider_failed"),
+                                None,
+                            )
+                            .await
+                            {
+                                warn!(exchange_id, internal_id, error = %err, "failed to mark failed");
+                            }
                             continue;
                         }
                     };
@@ -96,7 +134,7 @@ pub async fn run(state: Arc<AppState>) {
                                 );
                                 if let Err(err) = mark_succeeded(
                                     &state,
-                                    &internal_id,
+                                    internal_id,
                                     exchange_id,
                                     status.tx_hash.as_deref(),
                                 )
@@ -109,7 +147,7 @@ pub async fn run(state: Arc<AppState>) {
                                 debug!(exchange_id, internal_id, "marking transaction as failed");
                                 if let Err(err) = mark_failed(
                                     &state,
-                                    &internal_id,
+                                    internal_id,
                                     exchange_id,
                                     Some("provider_failed"),
                                     status.tx_hash.as_deref(),
@@ -121,7 +159,7 @@ pub async fn run(state: Arc<AppState>) {
                             }
                             _ => {
                                 if let Err(err) =
-                                    touch_pending(&state, exchange_id, &internal_id).await
+                                    touch_pending(&state, exchange_id, internal_id).await
                                 {
                                     warn!(exchange_id, internal_id, error = %err, "failed to touch pending");
                                 }
@@ -129,7 +167,7 @@ pub async fn run(state: Arc<AppState>) {
                         },
                         Err(err) => {
                             debug!(exchange_id, internal_id, error = %err, "reconciler provider check failed");
-                            if let Err(err) = touch_pending(&state, exchange_id, &internal_id).await
+                            if let Err(err) = touch_pending(&state, exchange_id, internal_id).await
                             {
                                 warn!(exchange_id, internal_id, error = %err, "failed to touch pending after provider error");
                             }

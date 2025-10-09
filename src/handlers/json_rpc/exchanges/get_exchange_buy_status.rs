@@ -1,11 +1,12 @@
 use {
     crate::handlers::json_rpc::exchanges::{
-        get_exchange_by_id, is_feature_enabled_for_project_id,
+        get_enabled_features, get_exchange_by_id, get_feature_type,
+        is_feature_enabled_for_project_id,
         transactions::{
             mark_failed as mark_transaction_failed, mark_succeeded as mark_transaction_succeeded,
             touch_pending as touch_pending_transaction,
         },
-        BuyTransactionStatus, ExchangeError, GetBuyStatusParams,
+        BuyTransactionStatus, ExchangeError, Feature, FeatureType, GetBuyStatusParams,
     },
     crate::{handlers::SdkInfoParams, state::AppState},
     axum::{
@@ -68,27 +69,32 @@ impl GetExchangeBuyStatusError {
 pub async fn handler(
     state: State<Arc<AppState>>,
     project_id: String,
-    connect_info: ConnectInfo<SocketAddr>,
-    headers: HeaderMap,
+    _connect_info: ConnectInfo<SocketAddr>,
+    _headers: HeaderMap,
     query: Query<QueryParams>,
     Json(request): Json<GetExchangeBuyStatusRequest>,
 ) -> Result<GetExchangeBuyStatusResponse, GetExchangeBuyStatusError> {
-    is_feature_enabled_for_project_id(state.clone(), &project_id, query.source.as_deref())
+    let feature_type = get_feature_type(query.source.as_deref());
+    let project_features = get_enabled_features(state.clone(), &project_id)
+        .await
+        .map_err(|e| GetExchangeBuyStatusError::InternalError(e.to_string()))?;
+
+    is_feature_enabled_for_project_id(state.clone(), &project_id, &project_features, &feature_type)
         .await
         .map_err(|e| GetExchangeBuyStatusError::ValidationError(e.to_string()))?;
-    handler_internal(state, connect_info, headers, query, request)
+    handler_internal(state, project_id, request, &project_features, &feature_type)
         .with_metrics(future_metrics!("handler_task", "name" => "pay_get_exchange_buy_status"))
         .await
 }
 
 async fn handler_internal(
     state: State<Arc<AppState>>,
-    _connect_info: ConnectInfo<SocketAddr>,
-    _headers: HeaderMap,
-    _query: Query<QueryParams>,
+    project_id: String,
     request: GetExchangeBuyStatusRequest,
+    project_features: &[Feature],
+    feature_type: &FeatureType,
 ) -> Result<GetExchangeBuyStatusResponse, GetExchangeBuyStatusError> {
-    let exchange = get_exchange_by_id(&request.exchange_id)
+    let exchange = get_exchange_by_id(&request.exchange_id, feature_type, project_features)
         .map_err(|e| GetExchangeBuyStatusError::ExchangeNotFound(e.to_string()))?;
 
     if request.session_id.is_empty() || request.session_id.len() > MAX_SESSION_ID_LENGTH {
@@ -102,6 +108,7 @@ async fn handler_internal(
         .get_buy_status(
             State(arc_state),
             GetBuyStatusParams {
+                project_id,
                 session_id: request.session_id.clone(),
             },
         )
@@ -111,23 +118,21 @@ async fn handler_internal(
         Ok(response) => {
             match response.status {
                 BuyTransactionStatus::Success => {
-                    let tx_hash = response.tx_hash.clone();
                     let _ = mark_transaction_succeeded(
                         &state,
                         &request.session_id,
                         &request.exchange_id,
-                        tx_hash.as_deref(),
+                        response.tx_hash.as_deref(),
                     )
                     .await;
                 }
                 BuyTransactionStatus::Failed => {
-                    let tx_hash = response.tx_hash.clone();
                     let _ = mark_transaction_failed(
                         &state,
                         &request.session_id,
                         &request.exchange_id,
                         Some("provider_failed"),
-                        tx_hash.as_deref(),
+                        response.tx_hash.as_deref(),
                     )
                     .await;
                 }

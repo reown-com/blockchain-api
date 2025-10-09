@@ -3,8 +3,9 @@ use {
         database::exchange_reconciliation::NewExchangeTransaction,
         handlers::{
             json_rpc::exchanges::{
-                get_exchange_by_id, is_feature_enabled_for_project_id,
-                transactions::create as create_transaction, ExchangeError, GetBuyUrlParams,
+                get_enabled_features, get_exchange_by_id, get_feature_type,
+                is_feature_enabled_for_project_id, transactions::create as create_transaction,
+                ExchangeError, Feature, FeatureType, GetBuyUrlParams,
             },
             SdkInfoParams,
         },
@@ -77,12 +78,25 @@ pub async fn handler(
     query: Query<QueryParams>,
     Json(request): Json<GeneratePayUrlRequest>,
 ) -> Result<GeneratePayUrlResponse, GetExchangeUrlError> {
-    is_feature_enabled_for_project_id(state.clone(), &project_id, query.source.as_deref())
+    let feature_type = get_feature_type(query.source.as_deref());
+    let project_features = get_enabled_features(state.clone(), &project_id)
+        .await
+        .map_err(|e| GetExchangeUrlError::InternalError(e.to_string()))?;
+
+    is_feature_enabled_for_project_id(state.clone(), &project_id, &project_features, &feature_type)
         .await
         .map_err(|e| GetExchangeUrlError::ValidationError(e.to_string()))?;
-    handler_internal(state, project_id, connect_info, headers, query, request)
-        .with_metrics(future_metrics!("handler_task", "name" => "pay_get_exchange_url"))
-        .await
+    handler_internal(
+        state,
+        project_id,
+        connect_info,
+        headers,
+        request,
+        &project_features,
+        &feature_type,
+    )
+    .with_metrics(future_metrics!("handler_task", "name" => "pay_get_exchange_url"))
+    .await
 }
 
 async fn handler_internal(
@@ -90,10 +104,11 @@ async fn handler_internal(
     project_id: String,
     connect_info: ConnectInfo<SocketAddr>,
     headers: HeaderMap,
-    _query: Query<QueryParams>,
     request: GeneratePayUrlRequest,
+    project_features: &[Feature],
+    feature_type: &FeatureType,
 ) -> Result<GeneratePayUrlResponse, GetExchangeUrlError> {
-    let exchange = get_exchange_by_id(&request.exchange_id)
+    let exchange = get_exchange_by_id(&request.exchange_id, feature_type, project_features)
         .map_err(|e| GetExchangeUrlError::ExchangeNotFound(e.to_string()))?;
 
     let asset = Caip19Asset::parse(&request.asset)
