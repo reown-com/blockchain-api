@@ -187,28 +187,29 @@ impl ExchangeProvider for CoinbaseExchange {
     }
 
     fn is_enabled(&self, feature_type: &FeatureType, project_features: &[Feature]) -> bool {
-        // Coinbase is only enabled for fund wallet
         if feature_type != &FeatureType::FundWallet {
             return false;
         }
+
         if !project_features
             .iter()
             .any(|f| f.id == "fund_from_exchange")
         {
             return false;
         }
+
         let feature_id = feature_type
             .get_str("feature_id")
             .unwrap_or_else(|| feature_type.as_ref());
 
-        if let Some(feature) = project_features
+        let Some(feature) = project_features
             .iter()
             .find(|f| f.id == feature_id && f.is_enabled)
-        {
-            debug!(
-                "Coinbase is enabled for fund wallet. Feature config: {:?}",
-                feature.config
-            );
+        else {
+            return false;
+        };
+
+        if is_coinbase_enabled_in_config(feature) {
             return true;
         }
 
@@ -503,6 +504,31 @@ fn should_add_client_ip(ip: &IpAddr) -> bool {
     }
 }
 
+fn is_coinbase_enabled_in_config(feature: &Feature) -> bool {
+    let config = match feature.config.as_ref() {
+        Some(c) => c,
+        None => return false,
+    };
+
+    let config_items: Vec<FeatureConfigItem> = match serde_json::from_value(config.clone()) {
+        Ok(items) => items,
+        Err(_) => return false,
+    };
+
+    config_items.iter().any(|item| item.providers.coinbase)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct FeatureConfigItem {
+    providers: ProviderConfig,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ProviderConfig {
+    #[serde(default)]
+    coinbase: bool,
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CoinbaseCredentials {
@@ -568,5 +594,6 @@ async fn fetch_coinbase_credentials(
     let response: CoinbaseCredentialsResponse = res.json().await.map_err(|e| {
         ExchangeError::InternalError(format!("Failed to parse credentials response: {e}"))
     })?;
+
     Ok(response.credentials)
 }
