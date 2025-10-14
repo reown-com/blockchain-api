@@ -39,7 +39,7 @@ local alertCondition  = grafana.alertCondition;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr          = 'max(rate(rate_limited_entries_sum{}[$__rate_interval]) / rate(rate_limited_entries_count{}[$__rate_interval]))',
+      expr          = 'max(rate(rate_limited_entries_counter_sum{}[$__rate_interval]) / rate(rate_limited_entries_counter_count{}[$__rate_interval]))',
       legendFormat  = 'app in-memory entries',
       refId         = 'Rate_limited_count',
     ))

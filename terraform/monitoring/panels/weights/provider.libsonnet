@@ -14,7 +14,7 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr          = 'sum by (chain_id) (increase(provider_weights_sum{provider="%s"}[5m])) / sum by (chain_id) (increase(provider_weights_count{provider="%s"}[5m]))' % [provider, provider],
+      expr          = 'sum by (chain_id) (avg_over_time(provider_weights{provider="%s"}[5m]))' % [provider],
       legendFormat  = '__auto',
     ))
 }
