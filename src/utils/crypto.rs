@@ -23,6 +23,7 @@ use {
         types::{Address as EthersAddress, Bytes, H160, H256, U128, U256},
         utils::{keccak256, to_checksum},
     },
+    hex::FromHex,
     once_cell::sync::Lazy,
     regex::Regex,
     relay_rpc::auth::cacao::{signature::eip6492::verify_eip6492, CacaoError},
@@ -229,6 +230,58 @@ fn concat_128(a: [u8; 16], b: [u8; 16]) -> [u8; 32] {
             a[i]
         }
     })
+}
+
+fn crc16_xmodem(data: &[u8]) -> u16 {
+    let mut crc: u16 = 0;
+    for &b in data {
+        crc ^= (b as u16) << 8;
+        for _ in 0..8 {
+            crc = if (crc & 0x8000) != 0 {
+                (crc << 1) ^ 0x1021
+            } else {
+                crc << 1
+            };
+        }
+    }
+    crc
+}
+
+/// Convert raw TON address in the form "<workchain>:<64-hex>" to user-friendly base64url (bounceable mainnet by default)
+pub fn ton_raw_to_friendly(raw: &str, bounceable: bool, testnet: bool) -> Option<String> {
+    let mut parts = raw.split(':');
+    let wc: i32 = parts.next()?.parse().ok()?;
+    let hex = parts.next()?;
+    if hex.len() != 64 {
+        return None;
+    }
+    let addr = <[u8; 32]>::from_hex(hex).ok()?;
+
+    let mut tag: u8 = if bounceable { 0x11 } else { 0x51 };
+    if testnet {
+        tag |= 0x80;
+    }
+
+    let wc_byte = (wc as i8) as u8;
+    let mut bytes = Vec::with_capacity(1 + 1 + 32 + 2);
+    bytes.push(tag);
+    bytes.push(wc_byte);
+    bytes.extend_from_slice(&addr);
+
+    let crc = crc16_xmodem(&bytes);
+    bytes.extend_from_slice(&crc.to_be_bytes());
+
+    Some(base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes))
+}
+
+/// Convert raw TON address to user-friendly if needed; otherwise return the input cloned
+pub fn to_friendly_if_raw(addr: &str) -> String {
+    if addr.contains(':') {
+        if let Some(f) = ton_raw_to_friendly(addr, true, false) {
+            return f;
+        }
+    }
+    addr.to_string()
 }
 
 // ERC20 contract
@@ -696,6 +749,28 @@ fn is_address_valid_impl(address: &str, namespace: &CaipNamespaces) -> bool {
                 Err(_) => false,
             }
         }
+        CaipNamespaces::Ton => {
+            // Accept raw form like "0:<64-hex>" or user-friendly base64url without padding (EQ.. / UQ..)
+            if address.contains(':') {
+                let parts: Vec<&str> = address.split(':').collect();
+                if parts.len() != 2 {
+                    return false;
+                }
+                if u8::from_str_radix(parts[0], 16).is_err() {
+                    return false;
+                }
+                if parts[1].len() != 64 {
+                    return false;
+                }
+                return parts[1].chars().all(|c| c.is_ascii_hexdigit());
+            }
+            let is_b64url = address
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
+            is_b64url
+                && (address.starts_with('E') || address.starts_with('U'))
+                && address.len() >= 36
+        }
     }
 }
 
@@ -815,6 +890,7 @@ impl ChainId {
 pub enum CaipNamespaces {
     Eip155,
     Solana,
+    Ton,
     Rootstock, // TODO: A temporary solution to support Rootstock
 }
 

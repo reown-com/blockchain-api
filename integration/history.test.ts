@@ -9,6 +9,9 @@ describe('Transactions history', () => {
   const empty_eth_address = '0x5b6262592954B925B510651462b63ddEbcc22eaD'
   const empty_solana_address = '7ar3r6Mau1Bk7pGLWHCMj1C1bk2eCDwGWTP77j9MXTtd'
 
+  const fulfilled_ton_address = 'EQD6f36nWLgFE9_PcNl7fQX04CKrvVKCuuO_raMD75O5KIr8'
+  const empty_ton_address = 'UQBtwzR5yc3y0E5Pyy3WSDxQ2imXXvLfzfGXlz15HAaW2ibj'
+
   it('fulfilled history Ethereum address', async () => {
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/account/${fulfilled_eth_address}/history?projectId=${projectId}`,
@@ -72,6 +75,28 @@ describe('Transactions history', () => {
     }
   })
 
+  it('fulfilled history TON address', async () => {
+    let chainId = 'ton:mainnet'
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/account/${fulfilled_ton_address}/history?projectId=${projectId}&chainId=${chainId}`,
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.data).toBe('object')
+    expect(resp.data.data.length).toBeGreaterThanOrEqual(2)
+    
+    for (const item of resp.data.data) {
+      expect(item.id).toBeDefined()
+      expect(typeof item.metadata).toBe('object')
+      // expect chain to be null or caip-2 format
+      if (item.metadata.chain !== null) {
+        expect(item.metadata.chain).toBe(chainId);
+      } else {
+        expect(item.metadata.chain).toBeNull();
+      }
+      expect(typeof item.transfers).toBe('object')
+    }
+  })
+
   it('empty history Ethereum address', async () => {
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/account/${empty_eth_address}/history?projectId=${projectId}`,
@@ -86,6 +111,17 @@ describe('Transactions history', () => {
     let chainId = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/account/${empty_solana_address}/history?projectId=${projectId}&chainId=${chainId}`,
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data.data).toBe('object')
+    expect(resp.data.data).toHaveLength(0)
+    expect(resp.data.next).toBeNull()
+  })
+  
+  it('empty history TON address', async () => {
+    let chainId = 'ton:mainnet'
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/account/${empty_ton_address}/history?projectId=${projectId}&chainId=${chainId}`,
     )
     expect(resp.status).toBe(200)
     expect(typeof resp.data.data).toBe('object')

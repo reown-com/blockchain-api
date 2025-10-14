@@ -181,6 +181,9 @@ impl BalanceProvider for DuneProvider {
             crypto::CaipNamespaces::Solana => {
                 self.get_solana_balance(address, metrics.clone()).await?
             }
+            crypto::CaipNamespaces::Ton => {
+                return Err(RpcError::BalanceProviderError);
+            }
         };
 
         let mut balances_vec = Vec::new();
@@ -204,6 +207,10 @@ impl BalanceProvider for DuneProvider {
                     crypto::CaipNamespaces::Solana => {
                         format!("{namespace}:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp")
                     }
+                    crypto::CaipNamespaces::Ton => {
+                        // TON unsupported in Dune balances
+                        return Err(RpcError::BalanceProviderError);
+                    }
                 },
             };
 
@@ -215,6 +222,10 @@ impl BalanceProvider for DuneProvider {
                     }
                     crypto::CaipNamespaces::Solana => {
                         format!("{}:{}", caip2_chain_id, crypto::SOLANA_NATIVE_TOKEN_ADDRESS)
+                    }
+                    crypto::CaipNamespaces::Ton => {
+                        // Dune does not support TON balances; set empty to be filtered out later
+                        String::new()
                     }
                 }
             } else {
@@ -307,6 +318,10 @@ impl BalanceProvider for DuneProvider {
                             }
                             crypto::CaipNamespaces::Solana => {
                                 Some(crypto::SOLANA_NATIVE_TOKEN_ADDRESS.to_string())
+                            }
+                            crypto::CaipNamespaces::Ton => {
+                                // No native mapping for TON in Dune balances
+                                None
                             }
                         }
                     } else {
