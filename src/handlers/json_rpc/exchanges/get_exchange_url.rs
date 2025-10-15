@@ -3,9 +3,15 @@ use {
         database::exchange_reconciliation::NewExchangeTransaction,
         handlers::{
             json_rpc::exchanges::{
-                get_enabled_features, get_exchange_by_id, get_feature_type,
-                is_feature_enabled_for_project_id, transactions::create as create_transaction,
-                ExchangeError, Feature, FeatureType, GetBuyUrlParams,
+                get_enabled_features,
+                get_exchange_by_id,
+                get_feature_type,
+                is_feature_enabled_for_project_id,
+                transactions::create as create_transaction,
+                ExchangeError,
+                Feature,
+                FeatureType,
+                GetBuyUrlParams,
             },
             SdkInfoParams,
         },
@@ -152,37 +158,32 @@ async fn handler_internal(
         },
     };
 
-    // Removing dashes from the session id because binance only accepts alphanumeric characters
+    // Removing dashes from the session id because binance only accepts alphanumeric
+    // characters
     let session_id = Uuid::new_v4().to_string().replace("-", "");
 
     let result = exchange
-        .get_buy_url(
-            state.clone(),
-            GetBuyUrlParams {
-                project_id: project_id.clone(),
-                asset,
-                amount,
-                recipient: address.clone(),
-                session_id: session_id.clone(),
-                user_ip: get_forwarded_ip(&headers).unwrap_or_else(|| connect_info.0.ip()),
-            },
-        )
+        .get_buy_url(state.clone(), GetBuyUrlParams {
+            project_id: project_id.clone(),
+            asset,
+            amount,
+            recipient: address.clone(),
+            session_id: session_id.clone(),
+            user_ip: get_forwarded_ip(&headers).unwrap_or_else(|| connect_info.0.ip()),
+        })
         .await;
 
     match result {
         Ok(url) => {
-            create_transaction(
-                &state,
-                NewExchangeTransaction {
-                    session_id: &session_id,
-                    exchange_id: &request.exchange_id,
-                    project_id: Some(&project_id),
-                    asset: Some(&request.asset),
-                    amount: Some(amount),
-                    recipient: Some(&address),
-                    pay_url: Some(&url),
-                },
-            )
+            create_transaction(&state, NewExchangeTransaction {
+                session_id: &session_id,
+                exchange_id: &request.exchange_id,
+                project_id: Some(&project_id),
+                asset: Some(&request.asset),
+                amount: Some(amount),
+                recipient: Some(&address),
+                pay_url: Some(&url),
+            })
             .await
             .map_err(|e| {
                 debug!(error = %e, "Failed to persist exchange transaction");

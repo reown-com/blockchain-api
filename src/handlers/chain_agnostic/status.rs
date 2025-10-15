@@ -1,7 +1,10 @@
 use {
     super::{BridgingStatus, StorageBridgingItem, BRIDGING_TIMEOUT, STATUS_POLLING_INTERVAL},
     crate::{
-        analytics::MessageSource, error::RpcError, state::AppState, storage::irn::OperationType,
+        analytics::MessageSource,
+        error::RpcError,
+        state::AppState,
+        storage::irn::OperationType,
         utils::crypto::get_erc20_balance,
     },
     alloy::primitives::U256,
@@ -15,7 +18,10 @@ use {
     tracing::error,
     wc::metrics::{future_metrics, FutureExt},
     yttrium::chain_abstraction::api::status::{
-        StatusQueryParams, StatusResponse, StatusResponseCompleted, StatusResponseError,
+        StatusQueryParams,
+        StatusResponse,
+        StatusResponseCompleted,
+        StatusResponseError,
         StatusResponsePendingObject,
     },
 };

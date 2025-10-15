@@ -1,21 +1,30 @@
 use {
-    crate::handlers::json_rpc::exchanges::{
-        BuyTransactionStatus, ExchangeError, ExchangeProvider, Feature, FeatureType,
-        GetBuyStatusParams, GetBuyStatusResponse, GetBuyUrlParams,
+    crate::{
+        handlers::json_rpc::exchanges::{
+            BuyTransactionStatus,
+            ExchangeError,
+            ExchangeProvider,
+            Feature,
+            FeatureType,
+            GetBuyStatusParams,
+            GetBuyStatusResponse,
+            GetBuyUrlParams,
+        },
+        state::AppState,
+        utils::crypto::Caip19Asset,
     },
-    crate::state::AppState,
-    crate::utils::crypto::Caip19Asset,
     axum::extract::State,
-    base64::engine::general_purpose::STANDARD,
-    base64::prelude::*,
+    base64::{engine::general_purpose::STANDARD, prelude::*},
     ed25519_dalek::{Signer, SigningKey},
     once_cell::sync::Lazy,
     rand::RngCore,
     serde::{Deserialize, Serialize},
-    std::collections::HashMap,
-    std::net::IpAddr,
-    std::sync::Arc,
-    std::time::{SystemTime, UNIX_EPOCH},
+    std::{
+        collections::HashMap,
+        net::IpAddr,
+        sync::Arc,
+        time::{SystemTime, UNIX_EPOCH},
+    },
     strum::EnumProperty,
     tracing::{debug, warn},
     url::Url,
@@ -58,7 +67,8 @@ static CAIP19_TO_COINBASE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
             "USDT",
         ), // USDT on Ethereum
         (
-            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/token:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/token:\
+             EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
             "USDC",
         ), // USDC on Solana
     ])

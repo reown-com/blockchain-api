@@ -89,8 +89,9 @@ impl RpcProvider for PoktProvider {
             }
         }
 
-        // As an internal RPC node error the InternalErrorResponse is used for the response
-        // that should be considered as an HTTP 5xx error from the provider
+        // As an internal RPC node error the InternalErrorResponse is used for the
+        // response that should be considered as an HTTP 5xx error from the
+        // provider
         if let Ok(response) = serde_json::from_slice::<InternalErrorResponse>(&body) {
             let error = response.error;
             let request_id = response.request_id;
@@ -98,9 +99,8 @@ impl RpcProvider for PoktProvider {
                 return Ok((StatusCode::SERVICE_UNAVAILABLE, body).into_response());
             } else {
                 debug!(
-                    "Pokt provider returned JSON RPC success status, but got the \
-                    error response structure with the following error: {error} \
-                    the request_id is {request_id}",
+                    "Pokt provider returned JSON RPC success status, but got the error response \
+                     structure with the following error: {error} the request_id is {request_id}",
                 );
                 return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
             }

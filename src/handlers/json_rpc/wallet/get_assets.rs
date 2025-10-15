@@ -1,23 +1,36 @@
-use crate::{
-    error::RpcError,
-    handlers::{
-        self,
-        balance::{BalanceItem, BalanceQuantity, BalanceQueryParams, BalanceResponseBody},
-        SdkInfoParams, SupportedCurrencies,
+use {
+    crate::{
+        error::RpcError,
+        handlers::{
+            self,
+            balance::{BalanceItem, BalanceQuantity, BalanceQueryParams, BalanceResponseBody},
+            SdkInfoParams,
+            SupportedCurrencies,
+        },
+        state::AppState,
     },
-    state::AppState,
-};
-use alloy::primitives::{address, Address, U256};
-use axum::extract::{ConnectInfo, Path, Query, State};
-use hyper::HeaderMap;
-use serde::Deserialize;
-use std::{collections::HashMap, net::SocketAddr, sync::Arc};
-use thiserror::Error;
-use tracing::error;
-use wc::metrics::{future_metrics, FutureExt};
-use yttrium::wallet_service_api::{
-    AddressOrNative, Asset, AssetData, AssetFilter, AssetType, AssetTypeFilter, ChainFilter,
-    Erc20Metadata, GetAssetsFilters, GetAssetsParams, GetAssetsResult, NativeMetadata,
+    alloy::primitives::{address, Address, U256},
+    axum::extract::{ConnectInfo, Path, Query, State},
+    hyper::HeaderMap,
+    serde::Deserialize,
+    std::{collections::HashMap, net::SocketAddr, sync::Arc},
+    thiserror::Error,
+    tracing::error,
+    wc::metrics::{future_metrics, FutureExt},
+    yttrium::wallet_service_api::{
+        AddressOrNative,
+        Asset,
+        AssetData,
+        AssetFilter,
+        AssetType,
+        AssetTypeFilter,
+        ChainFilter,
+        Erc20Metadata,
+        GetAssetsFilters,
+        GetAssetsParams,
+        GetAssetsResult,
+        NativeMetadata,
+    },
 };
 
 #[derive(Error, Debug)]
@@ -413,14 +426,11 @@ mod tests {
     #[test]
     fn empty_assets() {
         let balance = BalanceResponseBody { balances: vec![] };
-        let assets = get_assets(
-            balance,
-            GetAssetsFilters {
-                asset_filter: None,
-                asset_type_filter: None,
-                chain_filter: None,
-            },
-        )
+        let assets = get_assets(balance, GetAssetsFilters {
+            asset_filter: None,
+            asset_type_filter: None,
+            chain_filter: None,
+        })
         .unwrap();
         assert!(assets.is_empty());
     }
@@ -428,9 +438,11 @@ mod tests {
 
 #[cfg(test)]
 mod ported_tests {
-    use super::*;
-    use crate::handlers::balance::{BalanceItem, BalanceQuantity, BalanceResponseBody};
-    use alloy::primitives::{address, Address};
+    use {
+        super::*,
+        crate::handlers::balance::{BalanceItem, BalanceQuantity, BalanceResponseBody},
+        alloy::primitives::{address, Address},
+    };
 
     const _ACCOUNT: Address = address!("F91D77EcEA92261d8CfBD9B235709d6ff6233fae");
 
@@ -509,19 +521,15 @@ mod ported_tests {
     }
 
     mod aggregation_and_conversion {
-        use super::*;
-        use alloy::primitives::U64;
+        use {super::*, alloy::primitives::U64};
 
         #[test]
         fn should_correctly_convert_balance_to_hex() {
-            let result = get_assets(
-                mock_balance_response(),
-                GetAssetsFilters {
-                    asset_filter: None,
-                    asset_type_filter: None,
-                    chain_filter: Some(vec![U64::from(0x2105)]),
-                },
-            )
+            let result = get_assets(mock_balance_response(), GetAssetsFilters {
+                asset_filter: None,
+                asset_type_filter: None,
+                chain_filter: Some(vec![U64::from(0x2105)]),
+            })
             .unwrap();
 
             assert_eq!(
@@ -561,14 +569,11 @@ mod ported_tests {
 
         #[test]
         fn should_aggregate_balances_correctly_for_same_token_across_chains() {
-            let result = get_assets(
-                mock_balance_response(),
-                GetAssetsFilters {
-                    asset_filter: None,
-                    asset_type_filter: Some(vec![AssetType::Erc20]),
-                    chain_filter: None,
-                },
-            )
+            let result = get_assets(mock_balance_response(), GetAssetsFilters {
+                asset_filter: None,
+                asset_type_filter: Some(vec![AssetType::Erc20]),
+                chain_filter: None,
+            })
             .unwrap();
 
             assert_eq!(
@@ -617,14 +622,11 @@ mod ported_tests {
                     ..mock_balance_response().balances[0].clone()
                 }],
             };
-            let result = get_assets(
-                zero_balance_response,
-                GetAssetsFilters {
-                    asset_filter: None,
-                    asset_type_filter: None,
-                    chain_filter: Some(vec![U64::from(0x2105)]),
-                },
-            )
+            let result = get_assets(zero_balance_response, GetAssetsFilters {
+                asset_filter: None,
+                asset_type_filter: None,
+                chain_filter: Some(vec![U64::from(0x2105)]),
+            })
             .unwrap();
 
             assert_eq!(
@@ -670,14 +672,11 @@ mod ported_tests {
                 ],
             };
 
-            let result = get_assets(
-                mixed_decimals_response,
-                GetAssetsFilters {
-                    asset_filter: None,
-                    asset_type_filter: None,
-                    chain_filter: Some(vec![U64::from(0x2105)]),
-                },
-            )
+            let result = get_assets(mixed_decimals_response, GetAssetsFilters {
+                asset_filter: None,
+                asset_type_filter: None,
+                chain_filter: Some(vec![U64::from(0x2105)]),
+            })
             .unwrap();
 
             assert_eq!(
@@ -735,14 +734,11 @@ mod ported_tests {
                 }],
             };
 
-            let result = get_assets(
-                token_18_response,
-                GetAssetsFilters {
-                    asset_filter: None,
-                    asset_type_filter: None,
-                    chain_filter: Some(vec![U64::from(0x2105)]),
-                },
-            )
+            let result = get_assets(token_18_response, GetAssetsFilters {
+                asset_filter: None,
+                asset_type_filter: None,
+                chain_filter: Some(vec![U64::from(0x2105)]),
+            })
             .unwrap();
 
             assert_eq!(
@@ -771,14 +767,11 @@ mod ported_tests {
                 }],
             };
 
-            let result = get_assets(
-                token_6_response,
-                GetAssetsFilters {
-                    asset_filter: None,
-                    asset_type_filter: None,
-                    chain_filter: Some(vec![U64::from(0x2105)]),
-                },
-            )
+            let result = get_assets(token_6_response, GetAssetsFilters {
+                asset_filter: None,
+                asset_type_filter: None,
+                chain_filter: Some(vec![U64::from(0x2105)]),
+            })
             .unwrap();
 
             assert_eq!(
@@ -805,14 +798,11 @@ mod ported_tests {
                 }],
             };
 
-            let result = get_assets(
-                native_token_response,
-                GetAssetsFilters {
-                    asset_filter: None,
-                    asset_type_filter: Some(vec![AssetType::Native]),
-                    chain_filter: None,
-                },
-            )
+            let result = get_assets(native_token_response, GetAssetsFilters {
+                asset_filter: None,
+                asset_type_filter: Some(vec![AssetType::Native]),
+                chain_filter: None,
+            })
             .unwrap();
 
             let asset = result[&U64::from(42161)].first().unwrap();
@@ -844,14 +834,11 @@ mod ported_tests {
                 }],
             };
 
-            let result = get_assets(
-                native_token_response,
-                GetAssetsFilters {
-                    asset_filter: None,
-                    asset_type_filter: None,
-                    chain_filter: None,
-                },
-            )
+            let result = get_assets(native_token_response, GetAssetsFilters {
+                asset_filter: None,
+                asset_type_filter: None,
+                chain_filter: None,
+            })
             .unwrap();
 
             assert_eq!(result.len(), 1);
@@ -861,14 +848,11 @@ mod ported_tests {
         #[test]
         fn should_handle_empty_balance_response() {
             let native_token_response = BalanceResponseBody { balances: vec![] };
-            let result = get_assets(
-                native_token_response,
-                GetAssetsFilters {
-                    asset_filter: None,
-                    asset_type_filter: None,
-                    chain_filter: None,
-                },
-            )
+            let result = get_assets(native_token_response, GetAssetsFilters {
+                asset_filter: None,
+                asset_type_filter: None,
+                chain_filter: None,
+            })
             .unwrap();
             assert!(result.is_empty());
         }
@@ -912,14 +896,11 @@ mod ported_tests {
                 ],
             };
 
-            let result = get_assets(
-                aggregation_response,
-                GetAssetsFilters {
-                    asset_filter: None,
-                    asset_type_filter: None,
-                    chain_filter: None,
-                },
-            )
+            let result = get_assets(aggregation_response, GetAssetsFilters {
+                asset_filter: None,
+                asset_type_filter: None,
+                chain_filter: None,
+            })
             .unwrap();
 
             assert_eq!(
@@ -959,14 +940,11 @@ mod ported_tests {
                 }],
             };
 
-            let result = get_assets(
-                aggregation_response,
-                GetAssetsFilters {
-                    asset_filter: None,
-                    asset_type_filter: None,
-                    chain_filter: None,
-                },
-            )
+            let result = get_assets(aggregation_response, GetAssetsFilters {
+                asset_filter: None,
+                asset_type_filter: None,
+                chain_filter: None,
+            })
             .unwrap();
 
             let erc20_groups = get_erc20_groups();
@@ -1018,14 +996,11 @@ mod ported_tests {
                 }],
             };
 
-            let result = get_assets(
-                single_chain_response,
-                GetAssetsFilters {
-                    asset_filter: None,
-                    asset_type_filter: None,
-                    chain_filter: None,
-                },
-            )
+            let result = get_assets(single_chain_response, GetAssetsFilters {
+                asset_filter: None,
+                asset_type_filter: None,
+                chain_filter: None,
+            })
             .unwrap();
 
             let erc20_groups = get_erc20_groups();

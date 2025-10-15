@@ -22,9 +22,7 @@ pub mod reconciler;
 pub mod test_exchange;
 pub mod transactions;
 
-use binance::BinanceExchange;
-use coinbase::CoinbaseExchange;
-use test_exchange::TestExchange;
+use {binance::BinanceExchange, coinbase::CoinbaseExchange, test_exchange::TestExchange};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display, AsRefStr, EnumProperty)]
 pub enum FeatureType {

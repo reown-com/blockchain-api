@@ -1,8 +1,10 @@
 use {
     super::SdkInfoParams,
     crate::{
-        analytics::MessageSource, error::RpcError, handlers::proxy::PROVIDER_RESPONSE_MAX_BYTES,
-        handlers::RpcQueryParams, state::AppState,
+        analytics::MessageSource,
+        error::RpcError,
+        handlers::{proxy::PROVIDER_RESPONSE_MAX_BYTES, RpcQueryParams},
+        state::AppState,
     },
     alloy::{
         providers::{Provider, ProviderBuilder},

@@ -1,6 +1,8 @@
-use base64::Engine;
 use {
-    super::ProviderConfig, crate::chain_config, crate::providers::Weight, std::collections::HashMap,
+    super::ProviderConfig,
+    crate::{chain_config, providers::Weight},
+    base64::Engine,
+    std::collections::HashMap,
 };
 
 #[derive(Debug, Clone)]

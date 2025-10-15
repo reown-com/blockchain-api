@@ -166,8 +166,8 @@ fn extract_ws_supported_chains_and_subdomains(
         Ok(tokens) => tokens,
         Err(_) => {
             error!(
-                "Failed to parse JSON with API ws access tokens for QuickNode provider. Using empty \
-                 tokens."
+                "Failed to parse JSON with API ws access tokens for QuickNode provider. Using \
+                 empty tokens."
             );
             return HashMap::new();
         }

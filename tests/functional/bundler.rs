@@ -1,9 +1,16 @@
-use rpc_proxy::{
-    providers::mock_alto::MockAltoUrls, test_helpers::spawn_blockchain_api_with_params,
+use {
+    rpc_proxy::{
+        providers::mock_alto::MockAltoUrls,
+        test_helpers::spawn_blockchain_api_with_params,
+    },
+    serde_json::json,
+    wiremock::{
+        matchers::{body_partial_json, method, path},
+        Mock,
+        MockServer,
+        ResponseTemplate,
+    },
 };
-use serde_json::json;
-use wiremock::matchers::{body_partial_json, method, path};
-use wiremock::{Mock, MockServer, ResponseTemplate};
 
 #[tokio::test]
 #[ignore]

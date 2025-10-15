@@ -1,5 +1,9 @@
 use {
-    crate::state::AppState, axum::response::Response, hyper::header, std::sync::Arc, tracing::error,
+    crate::state::AppState,
+    axum::response::Response,
+    hyper::header,
+    std::sync::Arc,
+    tracing::error,
 };
 
 /// CORS default allowed origins
@@ -28,7 +32,9 @@ pub fn insert_cors_headers(response: &mut Response, origin: &str) {
     headers.insert(
         header::ACCESS_CONTROL_ALLOW_HEADERS,
         header::HeaderValue::from_static(
-            "content-type, user-agent, referer, origin, access-control-request-method, access-control-request-headers, solana-client, sec-fetch-mode, x-sdk-type, x-sdk-version",
+            "content-type, user-agent, referer, origin, access-control-request-method, \
+             access-control-request-headers, solana-client, sec-fetch-mode, x-sdk-type, \
+             x-sdk-version",
         ),
     );
 }
@@ -46,14 +52,17 @@ pub fn insert_cors_allow_all_headers(response: &mut Response) {
     headers.insert(
         header::ACCESS_CONTROL_ALLOW_HEADERS,
         header::HeaderValue::from_static(
-            "content-type, user-agent, referer, origin, access-control-request-method, access-control-request-headers, solana-client, sec-fetch-mode, x-sdk-type, x-sdk-version",
+            "content-type, user-agent, referer, origin, access-control-request-method, \
+             access-control-request-headers, solana-client, sec-fetch-mode, x-sdk-type, \
+             x-sdk-version",
         ),
     );
 }
 
-/// Match a hostname against a host pattern which may start with `*.` for subdomains.
-/// Examples:
-/// - pattern `*.` + suffix `test.app` matches `a.test.app`, `b.c.test.app`, but not `test.app`
+/// Match a hostname against a host pattern which may start with `*.` for
+/// subdomains. Examples:
+/// - pattern `*.` + suffix `test.app` matches `a.test.app`, `b.c.test.app`, but
+///   not `test.app`
 /// - pattern `example.com` matches only `example.com`
 /// - pattern `*` matches any host
 pub fn host_matches_pattern(pattern_lc: &str, host_lc: &str) -> bool {

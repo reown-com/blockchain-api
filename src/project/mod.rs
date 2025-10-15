@@ -9,14 +9,20 @@ use {
     },
     cerberus::{
         project::{
-            PlanLimits, ProjectData, ProjectDataRequest, ProjectDataResponse,
-            ProjectDataWithLimits, ProjectKey,
+            PlanLimits,
+            ProjectData,
+            ProjectDataRequest,
+            ProjectDataResponse,
+            ProjectDataWithLimits,
+            ProjectKey,
         },
         registry::{RegistryClient, RegistryError, RegistryHttpClient, RegistryResult},
     },
     std::{
-        sync::atomic::{AtomicU64, Ordering},
-        sync::Arc,
+        sync::{
+            atomic::{AtomicU64, Ordering},
+            Arc,
+        },
         time::{Duration, Instant},
     },
     tracing::error,

@@ -3,8 +3,10 @@ use {
         analytics::Config as AnalyticsConfig,
         database::config::PostgresConfig,
         error,
-        handlers::balance::Config as BalanceConfig,
-        handlers::json_rpc::exchanges::Config as ExchangesConfig,
+        handlers::{
+            balance::Config as BalanceConfig,
+            json_rpc::exchanges::Config as ExchangesConfig,
+        },
         names::Config as NamesConfig,
         profiler::ProfilerConfig,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
@@ -16,10 +18,37 @@ use {
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
-    allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, blast::*, callstatic::*, drpc::*,
-    dune::*, generic::*, hiro::*, mantle::*, monad::*, moonbeam::*, morph::*, near::*, pokt::*,
-    publicnode::*, quicknode::*, rootstock::*, server::*, solscan::*, sui::*, syndica::*,
-    therpc::*, trongrid::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
+    allnodes::*,
+    arbitrum::*,
+    aurora::*,
+    base::*,
+    binance::*,
+    blast::*,
+    callstatic::*,
+    drpc::*,
+    dune::*,
+    generic::*,
+    hiro::*,
+    mantle::*,
+    monad::*,
+    moonbeam::*,
+    morph::*,
+    near::*,
+    pokt::*,
+    publicnode::*,
+    quicknode::*,
+    rootstock::*,
+    server::*,
+    solscan::*,
+    sui::*,
+    syndica::*,
+    therpc::*,
+    trongrid::*,
+    unichain::*,
+    wemix::*,
+    zerion::*,
+    zksync::*,
+    zora::*,
 };
 mod allnodes;
 mod arbitrum;
@@ -120,8 +149,10 @@ mod test {
             analytics,
             database::config::PostgresConfig,
             env::{Config, ServerConfig},
-            handlers::balance::Config as BalanceConfig,
-            handlers::json_rpc::exchanges::Config as ExchangesConfig,
+            handlers::{
+                balance::Config as BalanceConfig,
+                json_rpc::exchanges::Config as ExchangesConfig,
+            },
             names::Config as NamesConfig,
             profiler::ProfilerConfig,
             project,
@@ -244,10 +275,12 @@ mod test {
                 "127.0.0.1,127.0.0.2",
             ),
             // IRN config.
+            ("RPC_PROXY_IRN_CLIENT_KEY", "client_key"),
+            ("RPC_PROXY_IRN_CLUSTER_KEY", "cluster_key"),
             ("RPC_PROXY_IRN_NODES", "node1.id,node2.id"),
-            ("RPC_PROXY_IRN_KEY", "key"),
+            ("RPC_PROXY_IRN_TRUSTED_OPERATORS", "operator1,operator2"),
             ("RPC_PROXY_IRN_NAMESPACE", "namespace"),
-            ("RPC_PROXY_IRN_NAMESPACE_SECRET", "namespace"),
+            ("RPC_PROXY_IRN_ENCRYPTION_SECRET", "encryption_secret"),
             // Names configuration
             ("RPC_PROXY_NAMES_ALLOWED_ZONES", "test1.id,test2.id"),
             // Account balances-related configuration
@@ -278,123 +311,120 @@ mod test {
 
         values.iter().for_each(set_env_var);
 
-        assert_eq!(
-            Config::from_env().unwrap(),
-            Config {
-                server: ServerConfig {
-                    host: "1.2.3.4".to_owned(),
-                    port: 123,
-                    prometheus_port: 234,
-                    log_level: "TRACE".to_owned(),
-                    external_ip: Some(Ipv4Addr::new(2, 3, 4, 5).into()),
-                    blocked_countries: vec![
-                        "KP".to_owned(),
-                        "IR".to_owned(),
-                        "CU".to_owned(),
-                        "SY".to_owned(),
-                    ],
-                    s3_endpoint: None,
-                    geoip_db_bucket: Some("GEOIP_DB_BUCKET".to_owned()),
-                    geoip_db_key: Some("GEOIP_DB_KEY".to_owned()),
-                    testing_project_id: Some("TESTING_PROJECT_ID".to_owned()),
-                    validate_project_id: true,
-                    skip_quota_chains: vec![],
-                },
-                registry: project::Config {
-                    api_url: Some("API_URL".to_owned()),
-                    api_auth_token: Some("API_AUTH_TOKEN".to_owned()),
-                    project_data_cache_ttl: 345,
-                    circuit_cooldown_ms: 1_000,
-                },
-                storage: project::storage::Config {
-                    redis_max_connections: 456,
-                    project_data_redis_addr_read: Some("redis://127.0.0.1/data/read".to_owned()),
-                    project_data_redis_addr_write: Some("redis://127.0.0.1/data/write".to_owned()),
-                    identity_cache_redis_addr_read: Some(
-                        "redis://127.0.0.1/identity/read".to_owned()
-                    ),
-                    identity_cache_redis_addr_write: Some(
-                        "redis://127.0.0.1/identity/write".to_owned()
-                    ),
-                    rate_limiting_cache_redis_addr_read: Some(
-                        "redis://127.0.0.1/rate_limit/read".to_owned()
-                    ),
-                    rate_limiting_cache_redis_addr_write: Some(
-                        "redis://127.0.0.1/rate_limit/write".to_owned()
-                    ),
-                },
-                postgres: PostgresConfig {
-                    uri: "postgres://postgres@localhost:5432/postgres".to_owned(),
-                    max_connections: 32,
-                },
-                analytics: analytics::Config {
-                    s3_endpoint: Some("s3://127.0.0.1".to_owned()),
-                    export_bucket: Some("EXPORT_BUCKET".to_owned()),
-                },
-                profiler: ProfilerConfig {},
-                providers: ProvidersConfig {
-                    prometheus_query_url: Some("PROMETHEUS_QUERY_URL".to_owned()),
-                    prometheus_workspace_header: Some("PROMETHEUS_WORKSPACE_HEADER".to_owned()),
-                    cache_redis_addr: Some("redis://127.0.0.1/providers_cache".to_owned()),
-                    pokt_project_id: "POKT_PROJECT_ID".to_string(),
-                    quicknode_api_tokens: "QUICKNODE_API_TOKENS".to_string(),
-                    zerion_api_key: "ZERION_API_KEY".to_owned(),
-                    coinbase_api_key: Some("COINBASE_API_KEY".to_owned()),
-                    coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),
-                    one_inch_api_key: Some("ONE_INCH_API_KEY".to_owned()),
-                    one_inch_referrer: Some("ONE_INCH_REFERRER".to_owned()),
-                    lifi_api_key: Some("LIFI_API_KEY".to_owned()),
-                    pimlico_api_key: "PIMLICO_API_KEY".to_string(),
-                    solscan_api_v2_token: "SOLSCAN_API_V2_TOKEN".to_string(),
-                    bungee_api_key: "BUNGEE_API_KEY".to_string(),
-                    tenderly_api_key: "TENDERLY_KEY".to_string(),
-                    tenderly_account_id: "TENDERLY_ACCOUNT_ID".to_string(),
-                    tenderly_project_id: "TENDERLY_PROJECT_ID".to_string(),
-                    dune_sim_api_key: "DUNE_SIM_API_KEY".to_string(),
-                    syndica_api_key: "SYNDICA_API_KEY".to_string(),
-                    override_bundler_urls: None,
-                    allnodes_api_key: "ALLNODES_API_KEY".to_string(),
-                    meld_api_key: "MELD_API_KEY".to_string(),
-                    meld_api_url: "MELD_API_URL".to_string(),
-                    callstatic_api_key: "CALLSTATIC_API_KEY".to_string(),
-                    blast_api_key: "BLAST_API_KEY".to_string(),
-                },
-                rate_limiting: RateLimitingConfig {
-                    max_tokens: Some(100),
-                    refill_interval_sec: Some(1),
-                    refill_rate: Some(10),
-                    ip_whitelist: Some(vec!["127.0.0.1".into(), "127.0.0.2".into()]),
-                },
-                irn: IrnConfig {
-                    nodes: Some(vec!["node1.id".to_owned(), "node2.id".to_owned()]),
-                    key: Some("key".to_owned()),
-                    namespace: Some("namespace".to_owned()),
-                    namespace_secret: Some("namespace".to_owned()),
-                },
-                names: NamesConfig {
-                    allowed_zones: Some(vec!["test1.id".to_owned(), "test2.id".to_owned()]),
-                },
-                balances: BalanceConfig {
-                    denylist_project_ids: Some(vec!["test_project_id".to_owned()]),
-                },
-                exchanges: ExchangesConfig {
-                    coinbase_project_id: Some("COINBASE_PROJECT_ID".to_owned()),
-                    binance_client_id: Some("BINANCE_CLIENT_ID".to_owned()),
-                    binance_token: Some("BINANCE_TOKEN".to_owned()),
-                    binance_key: Some("BINANCE_KEY".to_owned()),
-                    binance_host: Some("BINANCE_HOST".to_owned()),
-                    coinbase_key_name: Some("COINBASE_KEY_NAME".to_owned()),
-                    coinbase_key_secret: Some("COINBASE_KEY_SECRET".to_owned()),
-                    internal_api_coinbase_credentials: Some(
-                        "INTERNAL_API_COINBASE_CREDENTIALS".to_owned()
-                    ),
-                    allowed_project_ids: Some(vec![
-                        "test_project_id".to_owned(),
-                        "test_project_id_2".to_owned(),
-                    ]),
-                },
-            }
-        );
+        assert_eq!(Config::from_env().unwrap(), Config {
+            server: ServerConfig {
+                host: "1.2.3.4".to_owned(),
+                port: 123,
+                prometheus_port: 234,
+                log_level: "TRACE".to_owned(),
+                external_ip: Some(Ipv4Addr::new(2, 3, 4, 5).into()),
+                blocked_countries: vec![
+                    "KP".to_owned(),
+                    "IR".to_owned(),
+                    "CU".to_owned(),
+                    "SY".to_owned(),
+                ],
+                s3_endpoint: None,
+                geoip_db_bucket: Some("GEOIP_DB_BUCKET".to_owned()),
+                geoip_db_key: Some("GEOIP_DB_KEY".to_owned()),
+                testing_project_id: Some("TESTING_PROJECT_ID".to_owned()),
+                validate_project_id: true,
+                skip_quota_chains: vec![],
+            },
+            registry: project::Config {
+                api_url: Some("API_URL".to_owned()),
+                api_auth_token: Some("API_AUTH_TOKEN".to_owned()),
+                project_data_cache_ttl: 345,
+                circuit_cooldown_ms: 1_000,
+            },
+            storage: project::storage::Config {
+                redis_max_connections: 456,
+                project_data_redis_addr_read: Some("redis://127.0.0.1/data/read".to_owned()),
+                project_data_redis_addr_write: Some("redis://127.0.0.1/data/write".to_owned()),
+                identity_cache_redis_addr_read: Some("redis://127.0.0.1/identity/read".to_owned()),
+                identity_cache_redis_addr_write: Some(
+                    "redis://127.0.0.1/identity/write".to_owned()
+                ),
+                rate_limiting_cache_redis_addr_read: Some(
+                    "redis://127.0.0.1/rate_limit/read".to_owned()
+                ),
+                rate_limiting_cache_redis_addr_write: Some(
+                    "redis://127.0.0.1/rate_limit/write".to_owned()
+                ),
+            },
+            postgres: PostgresConfig {
+                uri: "postgres://postgres@localhost:5432/postgres".to_owned(),
+                max_connections: 32,
+            },
+            analytics: analytics::Config {
+                s3_endpoint: Some("s3://127.0.0.1".to_owned()),
+                export_bucket: Some("EXPORT_BUCKET".to_owned()),
+            },
+            profiler: ProfilerConfig {},
+            providers: ProvidersConfig {
+                prometheus_query_url: Some("PROMETHEUS_QUERY_URL".to_owned()),
+                prometheus_workspace_header: Some("PROMETHEUS_WORKSPACE_HEADER".to_owned()),
+                cache_redis_addr: Some("redis://127.0.0.1/providers_cache".to_owned()),
+                pokt_project_id: "POKT_PROJECT_ID".to_string(),
+                quicknode_api_tokens: "QUICKNODE_API_TOKENS".to_string(),
+                zerion_api_key: "ZERION_API_KEY".to_owned(),
+                coinbase_api_key: Some("COINBASE_API_KEY".to_owned()),
+                coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),
+                one_inch_api_key: Some("ONE_INCH_API_KEY".to_owned()),
+                one_inch_referrer: Some("ONE_INCH_REFERRER".to_owned()),
+                lifi_api_key: Some("LIFI_API_KEY".to_owned()),
+                pimlico_api_key: "PIMLICO_API_KEY".to_string(),
+                solscan_api_v2_token: "SOLSCAN_API_V2_TOKEN".to_string(),
+                bungee_api_key: "BUNGEE_API_KEY".to_string(),
+                tenderly_api_key: "TENDERLY_KEY".to_string(),
+                tenderly_account_id: "TENDERLY_ACCOUNT_ID".to_string(),
+                tenderly_project_id: "TENDERLY_PROJECT_ID".to_string(),
+                dune_sim_api_key: "DUNE_SIM_API_KEY".to_string(),
+                syndica_api_key: "SYNDICA_API_KEY".to_string(),
+                override_bundler_urls: None,
+                allnodes_api_key: "ALLNODES_API_KEY".to_string(),
+                meld_api_key: "MELD_API_KEY".to_string(),
+                meld_api_url: "MELD_API_URL".to_string(),
+                callstatic_api_key: "CALLSTATIC_API_KEY".to_string(),
+                blast_api_key: "BLAST_API_KEY".to_string(),
+            },
+            rate_limiting: RateLimitingConfig {
+                max_tokens: Some(100),
+                refill_interval_sec: Some(1),
+                refill_rate: Some(10),
+                ip_whitelist: Some(vec!["127.0.0.1".into(), "127.0.0.2".into()]),
+            },
+            irn: IrnConfig {
+                client_key: Some("client_key".to_owned()),
+                cluster_key: Some("cluster_key".to_owned()),
+                nodes: vec!["node1.id".to_owned(), "node2.id".to_owned()],
+                trusted_operators: vec!["operator1".to_owned(), "operator2".to_owned()],
+                namespace: Some("namespace".to_owned()),
+                encryption_secret: Some("encryption_secret".to_owned()),
+            },
+            names: NamesConfig {
+                allowed_zones: Some(vec!["test1.id".to_owned(), "test2.id".to_owned()]),
+            },
+            balances: BalanceConfig {
+                denylist_project_ids: Some(vec!["test_project_id".to_owned()]),
+            },
+            exchanges: ExchangesConfig {
+                coinbase_project_id: Some("COINBASE_PROJECT_ID".to_owned()),
+                binance_client_id: Some("BINANCE_CLIENT_ID".to_owned()),
+                binance_token: Some("BINANCE_TOKEN".to_owned()),
+                binance_key: Some("BINANCE_KEY".to_owned()),
+                binance_host: Some("BINANCE_HOST".to_owned()),
+                coinbase_key_name: Some("COINBASE_KEY_NAME".to_owned()),
+                coinbase_key_secret: Some("COINBASE_KEY_SECRET".to_owned()),
+                internal_api_coinbase_credentials: Some(
+                    "INTERNAL_API_COINBASE_CREDENTIALS".to_owned()
+                ),
+                allowed_project_ids: Some(vec![
+                    "test_project_id".to_owned(),
+                    "test_project_id_2".to_owned(),
+                ]),
+            },
+        });
 
         values.iter().for_each(reset_env_var);
     }

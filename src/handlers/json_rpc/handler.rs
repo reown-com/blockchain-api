@@ -8,8 +8,7 @@ use {
         pos::{self, BuildPosTxsError, CheckPosTxError, SupportedNetworksError},
         wallet::{
             get_assets::{self, GetAssetsError},
-            get_calls_status::QueryParams as CallStatusQueryParams,
-            get_calls_status::{self, GetCallsStatusError},
+            get_calls_status::{self, GetCallsStatusError, QueryParams as CallStatusQueryParams},
             prepare_calls::{self, PrepareCallsError},
             send_prepared_calls::{self, SendPreparedCallsError},
         },
@@ -21,14 +20,14 @@ use {
         state::AppState,
         utils::{cors, cors::CORS_ALLOWED_ORIGINS, simple_request_json::SimpleRequestJson},
     },
-    axum::extract::{ConnectInfo, Query},
-    axum::response::{IntoResponse, Response},
-    axum::{extract::State, Json},
+    axum::{
+        extract::{ConnectInfo, Query, State},
+        response::{IntoResponse, Response},
+        Json,
+    },
     hyper::{HeaderMap, StatusCode},
     serde::Deserialize,
-    std::net::SocketAddr,
-    std::sync::Arc,
-    std::time::Instant,
+    std::{net::SocketAddr, sync::Arc, time::Instant},
     thiserror::Error,
     tracing::error,
     wc::metrics::{future_metrics, FutureExt},
@@ -82,7 +81,8 @@ pub async fn json_rpc_with_dynamic_cors(
     }
 
     // Apply CORS policy:
-    // - For selected PAY_* methods: echo Origin only if it's allowed for the project
+    // - For selected PAY_* methods: echo Origin only if it's allowed for the
+    //   project
     // - For all other methods: allow all origins
     match method_name.as_ref() {
         PAY_GET_EXCHANGES | PAY_GET_EXCHANGE_URL | PAY_GET_EXCHANGE_BUY_STATUS => {
@@ -108,7 +108,8 @@ pub async fn json_rpc_preflight(
     State(state): State<Arc<AppState>>,
     Query(query): Query<WalletQueryParams>,
 ) -> Response {
-    // Always allow preflight with wildcard; actual POST will enforce per-method policy
+    // Always allow preflight with wildcard; actual POST will enforce per-method
+    // policy
     let mut response = Response::builder()
         .status(StatusCode::NO_CONTENT)
         .body(axum::body::Body::empty())

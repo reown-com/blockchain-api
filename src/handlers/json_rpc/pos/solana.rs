@@ -1,8 +1,18 @@
 use {
     super::{
-        AssetNamespaceType, BuildPosTxsError, CheckPosTxError, CheckTransactionResult,
-        InternalError, PaymentIntent, SupportedNamespace, TransactionBuilder, TransactionId,
-        TransactionRpc, TransactionStatus, ValidatedPaymentIntent, ValidationError,
+        AssetNamespaceType,
+        BuildPosTxsError,
+        CheckPosTxError,
+        CheckTransactionResult,
+        InternalError,
+        PaymentIntent,
+        SupportedNamespace,
+        TransactionBuilder,
+        TransactionId,
+        TransactionRpc,
+        TransactionStatus,
+        ValidatedPaymentIntent,
+        ValidationError,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::primitives::{utils::parse_units, U256},
@@ -57,6 +67,7 @@ impl TransactionBuilder<AssetNamespace> for SolanaTransactionBuilder {
     fn namespace(&self) -> &'static str {
         NAMESPACE_NAME
     }
+
     async fn validate_and_build(
         &self,
         _state: State<Arc<AppState>>,

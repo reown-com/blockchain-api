@@ -2,9 +2,12 @@ use {
     super::{
         call_id::{CallId, CallIdInner},
         prepare_calls::{
-            decode_smart_session_signature, encode_use_or_enable_smart_session_signature,
-            split_permissions_context_and_check_validator, AccountType,
-            DecodedSmartSessionSignature, PrepareCallsError,
+            decode_smart_session_signature,
+            encode_use_or_enable_smart_session_signature,
+            split_permissions_context_and_check_validator,
+            AccountType,
+            DecodedSmartSessionSignature,
+            PrepareCallsError,
         },
         types::PreparedCalls,
     },
@@ -15,7 +18,9 @@ use {
             sessions::{
                 cosign::{self, CoSignQueryParams},
                 get::{
-                    get_session_context, GetSessionContextError, InternalGetSessionContextError,
+                    get_session_context,
+                    GetSessionContextError,
+                    InternalGetSessionContextError,
                 },
                 CoSignRequest,
             },

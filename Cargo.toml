@@ -79,8 +79,8 @@ parquet = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc
 ] }
 parquet_derive = { git = "https://github.com/WalletConnect/arrow-rs.git", rev = "99a1cc3" }
 
-# IRN
-wcn_replication = { package = "wcn_replication", path = "irn/crates/replication" }
+# WCN
+wcn = { package = "wcn_client", git = "https://github.com/WalletConnect/wcn.git", rev = "3e62a0b" }
 
 dotenv = "0.15.0"
 envy = "0.4"
@@ -122,7 +122,7 @@ uuid = { version = "1.13.1", features = ["serde"] }
 openssl = "0.10"
 ed25519-dalek = "2.1"
 solana-client = "2.3.7"
-solana-sdk = "2.3.1" 
+solana-sdk = "2.3.1"
 spl-token = "7.0"
 spl-associated-token-account = "6.0"
 bincode = "1.3"

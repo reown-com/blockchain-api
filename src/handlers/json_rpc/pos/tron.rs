@@ -1,9 +1,20 @@
 use {
     super::{
-        AssetNamespaceType, BuildPosTxsError, CheckPosTxError, CheckTransactionResult,
-        ExecutionError, InternalError, PaymentIntent, RpcError, SupportedNamespace,
-        TransactionBuilder, TransactionId, TransactionRpc, TransactionStatus,
-        ValidatedPaymentIntent, ValidationError,
+        AssetNamespaceType,
+        BuildPosTxsError,
+        CheckPosTxError,
+        CheckTransactionResult,
+        ExecutionError,
+        InternalError,
+        PaymentIntent,
+        RpcError,
+        SupportedNamespace,
+        TransactionBuilder,
+        TransactionId,
+        TransactionRpc,
+        TransactionStatus,
+        ValidatedPaymentIntent,
+        ValidationError,
     },
     crate::{analytics::MessageSource, state::AppState, utils::crypto::Caip2ChainId},
     alloy::{
@@ -13,7 +24,8 @@ use {
     },
     async_trait::async_trait,
     axum::extract::State,
-    bs58, hex,
+    bs58,
+    hex,
     serde::{Deserialize, Serialize},
     std::sync::Arc,
     strum::{EnumIter, IntoEnumIterator},
@@ -390,6 +402,7 @@ impl TransactionBuilder<AssetNamespace> for TronTransactionBuilder {
     fn namespace(&self) -> &'static str {
         "tron"
     }
+
     async fn validate_and_build(
         &self,
         _state: State<Arc<AppState>>,

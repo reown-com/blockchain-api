@@ -64,7 +64,7 @@ impl RpcProvider for SuiProvider {
             if response.error.is_some() && status.is_success() {
                 debug!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
-                 Sui: {response:?}"
+                     Sui: {response:?}"
                 );
             }
         }

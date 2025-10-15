@@ -1,7 +1,11 @@
 use {
     super::{
-        CheckPosTxError, CheckTransactionParams, CheckTransactionResult, SupportedNamespaces,
-        TransactionId, ValidationError,
+        CheckPosTxError,
+        CheckTransactionParams,
+        CheckTransactionResult,
+        SupportedNamespaces,
+        TransactionId,
+        ValidationError,
     },
     crate::{
         analytics::pos_info::PosCheckTxInfo,

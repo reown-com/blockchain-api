@@ -9,7 +9,11 @@ use {
     sqlx::PgPool,
     std::time::{Duration, Instant, SystemTime},
     sysinfo::{
-        CpuRefreshKind, MemoryRefreshKind, RefreshKind, System, MINIMUM_CPU_UPDATE_INTERVAL,
+        CpuRefreshKind,
+        MemoryRefreshKind,
+        RefreshKind,
+        System,
+        MINIMUM_CPU_UPDATE_INTERVAL,
     },
     tracing::{error, instrument},
     wc::metrics::{counter, gauge, histogram, EnumLabel, StringLabel},

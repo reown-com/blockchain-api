@@ -27,7 +27,8 @@ pub mod nonce_manager;
 pub mod route;
 pub mod status;
 
-/// How much to multiply the bridging fee amount to cover bridging fee volatility
+/// How much to multiply the bridging fee amount to cover bridging fee
+/// volatility
 pub const BRIDGING_FEE_SLIPPAGE: i16 = 250; // 250%
 
 /// Bridging timeout in seconds
@@ -83,7 +84,8 @@ pub fn get_simulation_params_for_asset(asset_name: &str) -> Option<&SimulationPa
         .map(|(_, asset_entry)| &asset_entry.simulation)
 }
 
-/// Check is the address is supported bridging asset and return the token symbol and decimals
+/// Check is the address is supported bridging asset and return the token symbol
+/// and decimals
 pub fn find_supported_bridging_asset(
     chain_id: &str,
     contract: Eip155OrSolanaAddress,
@@ -178,15 +180,16 @@ pub struct BridgingAsset {
     pub current_balance: U256,
 }
 
-/// Checking available assets amount for bridging excluding the initial transaction
-/// asset, prioritizing the asset with the highest balance or the asset with the
-/// same symbol to avoid unnecessary swapping
+/// Checking available assets amount for bridging excluding the initial
+/// transaction asset, prioritizing the asset with the highest balance or the
+/// asset with the same symbol to avoid unnecessary swapping
 #[allow(clippy::too_many_arguments)]
 pub async fn check_bridging_for_erc20_transfer(
     rpc_project_id: String,
     session_id: Option<String>,
     value: U256,
-    // List of CAIP-10 accounts to check for funds to bridge. Empty CAIP-2 field indicates any chain that matches the address type
+    // List of CAIP-10 accounts to check for funds to bridge. Empty CAIP-2 field indicates any
+    // chain that matches the address type
     accounts: Vec<(Option<String>, Eip155OrSolanaAddress)>,
     // Exclude the initial transaction asset from the check
     exclude_chain_id: String,
@@ -261,7 +264,8 @@ pub async fn check_bridging_for_erc20_transfer(
         .await?;
         // TODO do in parallel
         for (account, contract_address, current_balance) in erc20_balances {
-            // Check if the balance compared to the transfer value is enough, applied to the transfer token decimals
+            // Check if the balance compared to the transfer value is enough, applied to the
+            // transfer token decimals
             if TokenAmount::new(current_balance, decimals)
                 >= TokenAmount::new(value, amount_token_decimals)
             {
@@ -331,7 +335,8 @@ pub struct Erc20AssetChange {
     pub receiver: Address,
 }
 
-/// Get the ERC20 assets changes and gas used from the transaction simulation result
+/// Get the ERC20 assets changes and gas used from the transaction simulation
+/// result
 pub async fn get_assets_changes_from_simulation(
     simulation_provider: Arc<dyn SimulationProvider>,
     chain_id: String,
@@ -360,7 +365,8 @@ pub async fn get_assets_changes_from_simulation(
                 .get(&chain_id)
                 .ok_or_else(|| {
                     RpcError::InvalidConfiguration(format!(
-                        "Contract balance storage slot for simulation is not present for {asset_name} on {chain_id}"
+                        "Contract balance storage slot for simulation is not present for \
+                         {asset_name} on {chain_id}"
                     ))
                 })?;
             account_state.insert(
@@ -424,7 +430,8 @@ pub fn convert_amount(amount: U256, from_decimals: u8, to_decimals: u8) -> U256 
             let diff = from_decimals - to_decimals;
             let exp = U256::from(diff as u64);
             let factor = U256::from(10).pow(exp);
-            // FIXME possible truncation error here? This `convert_amount()` function may be unsafe to use in some cases
+            // FIXME possible truncation error here? This `convert_amount()` function may be
+            // unsafe to use in some cases
             amount / factor
         }
         Ordering::Less => {
@@ -439,8 +446,7 @@ pub fn convert_amount(amount: U256, from_decimals: u8, to_decimals: u8) -> U256 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::str::FromStr;
+    use {super::*, std::str::FromStr};
 
     #[test]
     fn test_convert_amount() {

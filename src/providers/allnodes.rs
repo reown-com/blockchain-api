@@ -1,6 +1,11 @@
 use {
     super::{
-        Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams,
+        Provider,
+        ProviderKind,
+        RateLimited,
+        RpcProvider,
+        RpcProviderFactory,
+        RpcQueryParams,
         RpcWsProvider,
     },
     crate::{

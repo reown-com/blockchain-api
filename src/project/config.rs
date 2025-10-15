@@ -1,5 +1,7 @@
 use {
-    serde::Deserialize, serde_piecewise_default::DeserializePiecewiseDefault, std::time::Duration,
+    serde::Deserialize,
+    serde_piecewise_default::DeserializePiecewiseDefault,
+    std::time::Duration,
 };
 
 #[derive(DeserializePiecewiseDefault, Debug, Clone, PartialEq, Eq)]

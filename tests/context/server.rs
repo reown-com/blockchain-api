@@ -1,5 +1,4 @@
 use url::Url;
-
 #[cfg(feature = "test-localhost")]
 use {rpc_proxy::test_helpers::spawn_blockchain_api, std::env};
 

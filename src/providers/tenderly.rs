@@ -208,36 +208,27 @@ impl SimulationProvider for TenderlyProvider {
             for (key, value) in state {
                 account_state.insert(key, value);
             }
-            state_objects.insert(
-                address,
-                StateOverride::Storage {
-                    storage: account_state,
-                },
-            );
+            state_objects.insert(address, StateOverride::Storage {
+                storage: account_state,
+            });
         }
 
         // Filling the native token ETH balance override with 1 ETH
-        state_objects.insert(
-            from,
-            StateOverride::Balance {
-                balance: U256::from(1_000_000_000_000_000_000u64),
-            },
-        );
+        state_objects.insert(from, StateOverride::Balance {
+            balance: U256::from(1_000_000_000_000_000_000u64),
+        });
 
         let latency_start = SystemTime::now();
         let response = self
-            .send_post_request(
-                url,
-                &SimulationRequest {
-                    network_id: evm_chain_id,
-                    from,
-                    to,
-                    input,
-                    estimate_gas: true,
-                    state_objects,
-                    save: true,
-                },
-            )
+            .send_post_request(url, &SimulationRequest {
+                network_id: evm_chain_id,
+                from,
+                to,
+                input,
+                estimate_gas: true,
+                state_objects,
+                save: true,
+            })
             .await?;
         metrics.add_latency_and_status_code_for_provider(
             &self.provider_kind,
@@ -291,21 +282,15 @@ impl SimulationProvider for TenderlyProvider {
                 for (key, value) in state {
                     account_state.insert(key, value);
                 }
-                state_objects.insert(
-                    address,
-                    StateOverride::Storage {
-                        storage: account_state,
-                    },
-                );
+                state_objects.insert(address, StateOverride::Storage {
+                    storage: account_state,
+                });
             }
 
             // Filling the native token ETH balance override with 1 ETH
-            state_objects.insert(
-                transaction.from,
-                StateOverride::Balance {
-                    balance: U256::from(1_000_000_000_000_000_000u64),
-                },
-            );
+            state_objects.insert(transaction.from, StateOverride::Balance {
+                balance: U256::from(1_000_000_000_000_000_000u64),
+            });
 
             bundled_simulations.simulations.push(SimulationRequest {
                 network_id: evm_chain_id,
@@ -331,7 +316,8 @@ impl SimulationProvider for TenderlyProvider {
 
         if !response.status().is_success() {
             error!(
-                "Failed to get the transactions bundled simulation response from Tenderly with status: {}",
+                "Failed to get the transactions bundled simulation response from Tenderly with \
+                 status: {}",
                 response.status()
             );
             return Err(RpcError::SimulationProviderUnavailable);
@@ -342,7 +328,8 @@ impl SimulationProvider for TenderlyProvider {
         for simulation in response.simulation_results.iter() {
             if !simulation.transaction.status {
                 return Err(RpcError::SimulationFailed(format!(
-                    "Failed to simulate bundled transactions with Tenderly. Failed transaction hash: {}",
+                    "Failed to simulate bundled transactions with Tenderly. Failed transaction \
+                     hash: {}",
                     simulation.transaction.hash
                 )));
             }

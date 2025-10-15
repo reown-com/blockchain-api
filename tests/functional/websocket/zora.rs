@@ -1,5 +1,6 @@
 use {
-    super::check_if_rpc_is_responding_correctly_for_supported_chain, crate::context::ServerContext,
+    super::check_if_rpc_is_responding_correctly_for_supported_chain,
+    crate::context::ServerContext,
     test_context::test_context,
 };
 

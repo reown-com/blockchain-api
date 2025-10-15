@@ -4,9 +4,13 @@ use {
         error::{RpcError, RpcResult},
         handlers::{
             history::{
-                HistoryQueryParams, HistoryResponseBody, HistoryTransaction,
-                HistoryTransactionFungibleInfo, HistoryTransactionMetadata,
-                HistoryTransactionTransfer, HistoryTransactionTransferQuantity,
+                HistoryQueryParams,
+                HistoryResponseBody,
+                HistoryTransaction,
+                HistoryTransactionFungibleInfo,
+                HistoryTransactionMetadata,
+                HistoryTransactionTransfer,
+                HistoryTransactionTransferQuantity,
             },
             onramp::{
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},

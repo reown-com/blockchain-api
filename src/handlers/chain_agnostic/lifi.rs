@@ -1,5 +1,4 @@
-use crate::error::RpcError;
-use yttrium::chain_abstraction::solana;
+use {crate::error::RpcError, yttrium::chain_abstraction::solana};
 
 pub fn caip2_to_lifi_chain_id(caip2: &str) -> Result<&str, RpcError> {
     match caip2 {

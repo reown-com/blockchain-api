@@ -1,9 +1,11 @@
-use axum::{
-    extract::{rejection::JsonRejection, FromRequest, Request},
-    http::HeaderValue,
-    Json,
+use {
+    axum::{
+        extract::{rejection::JsonRejection, FromRequest, Request},
+        http::HeaderValue,
+        Json,
+    },
+    serde::de::DeserializeOwned,
 };
-use serde::de::DeserializeOwned;
 
 /// Same as axum::Json but doesn't care what the Content-Type header is
 #[derive(Debug, Clone, Copy, Default)]
@@ -16,8 +18,10 @@ where
     S: Send + Sync,
 {
     type Rejection = JsonRejection;
+
     async fn from_request(mut req: Request, state: &S) -> Result<Self, Self::Rejection> {
-        // Always set the header to application/json, regardless of what was there before
+        // Always set the header to application/json, regardless of what was there
+        // before
         req.headers_mut()
             .insert("content-type", HeaderValue::from_static("application/json"));
 
@@ -29,10 +33,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use axum::body::Body;
-    use serde::Deserialize;
-    use serde_json::json;
+    use {super::*, axum::body::Body, serde::Deserialize, serde_json::json};
 
     #[derive(Debug, Deserialize, PartialEq)]
     struct TestStruct {
@@ -133,7 +134,8 @@ mod tests {
         let request = Request::new(body);
 
         let result = SimpleRequestJson::<TestStruct>::from_request(request, &()).await;
-        assert!(result.is_err()); // Should fail because TestStruct requires a field
+        assert!(result.is_err()); // Should fail because TestStruct requires a
+                                  // field
     }
 
     #[tokio::test]

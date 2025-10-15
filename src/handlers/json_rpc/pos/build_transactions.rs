@@ -1,14 +1,24 @@
 use {
     super::{
-        BuildPosTxsError, BuildTransactionParams, BuildTransactionResult, PaymentIntent,
-        SupportedNamespaces, TransactionBuilder, TransactionRpc, ValidationError,
+        BuildPosTxsError,
+        BuildTransactionParams,
+        BuildTransactionResult,
+        PaymentIntent,
+        SupportedNamespaces,
+        TransactionBuilder,
+        TransactionRpc,
+        ValidationError,
     },
     crate::{
         analytics::pos_info::{
-            PosBuildTxInfo, PosBuildTxNew, PosBuildTxRequest, PosBuildTxResponse,
+            PosBuildTxInfo,
+            PosBuildTxNew,
+            PosBuildTxRequest,
+            PosBuildTxResponse,
         },
         handlers::json_rpc::pos::{
-            evm::EvmTransactionBuilder, solana::SolanaTransactionBuilder,
+            evm::EvmTransactionBuilder,
+            solana::SolanaTransactionBuilder,
             tron::TronTransactionBuilder,
         },
         state::AppState,

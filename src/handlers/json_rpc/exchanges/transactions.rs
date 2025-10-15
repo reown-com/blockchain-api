@@ -4,7 +4,9 @@ use {
         database::{
             error::DatabaseError,
             exchange_reconciliation::{
-                self as exchange_transactions, NewExchangeTransaction, TxStatus,
+                self as exchange_transactions,
+                NewExchangeTransaction,
+                TxStatus,
             },
         },
         handlers::json_rpc::exchanges::ExchangeType,

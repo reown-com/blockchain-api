@@ -2,7 +2,8 @@ use {
     super::{
         evm::get_namespace_info as evm_get_namespace_info,
         solana::get_namespace_info as solana_get_namespace_info,
-        tron::get_namespace_info as tron_get_namespace_info, SupportedNetworksError,
+        tron::get_namespace_info as tron_get_namespace_info,
+        SupportedNetworksError,
         SupportedNetworksResult,
     },
     crate::state::AppState,

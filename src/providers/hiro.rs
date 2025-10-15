@@ -115,7 +115,7 @@ impl HiroProvider {
             if response.error.is_some() && status.is_success() {
                 debug!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
-                 Hiro transactions: {response:?}"
+                     Hiro transactions: {response:?}"
                 );
             }
         }
@@ -149,7 +149,7 @@ impl HiroProvider {
             if response.error.is_some() && status.is_success() {
                 debug!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
-                 Hiro accounts: {response:?}"
+                     Hiro accounts: {response:?}"
                 );
             }
         }
@@ -195,7 +195,7 @@ impl HiroProvider {
             if response.error.is_some() && status.is_success() {
                 debug!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
-                 Hiro fees transaction: {response:?}"
+                     Hiro fees transaction: {response:?}"
                 );
             }
         }
@@ -224,7 +224,7 @@ impl HiroProvider {
             if response.error.is_some() && status.is_success() {
                 debug!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
-                 Stacks transfer fees: {response:?}"
+                     Stacks transfer fees: {response:?}"
                 );
             }
         }
@@ -262,7 +262,7 @@ impl HiroProvider {
             if response.error.is_some() && status.is_success() {
                 debug!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
-                 Stacks extended nonces: {response:?}"
+                     Stacks extended nonces: {response:?}"
                 );
             }
         }
@@ -293,7 +293,8 @@ impl RpcProvider for HiroProvider {
         match method {
             SupportedMethods::StacksTransactions => {
                 // Create the request body for stacks transactions endpoint schema
-                // by extracting the first parameter from the JSON-RPC request and using it as `tx`.
+                // by extracting the first parameter from the JSON-RPC request and using it as
+                // `tx`.
                 let tx_param = json_rpc_request
                     .params
                     .as_array()
@@ -310,7 +311,8 @@ impl RpcProvider for HiroProvider {
             }
             SupportedMethods::StacksAccounts => {
                 // Create the request body for stacks accounts endpoint schema
-                // by extracting the first parameter from the JSON-RPC request and using it as `principal`.
+                // by extracting the first parameter from the JSON-RPC request and using it as
+                // `principal`.
                 let tx_param = json_rpc_request
                     .params
                     .as_array()
@@ -350,7 +352,8 @@ impl RpcProvider for HiroProvider {
             }
             SupportedMethods::StacksExtendedNonces => {
                 // Create the request body for stacks extended nonces endpoint schema
-                // by extracting the first parameter from the JSON-RPC request and using it as `principal`.
+                // by extracting the first parameter from the JSON-RPC request and using it as
+                // `principal`.
                 let tx_param = json_rpc_request
                     .params
                     .as_array()

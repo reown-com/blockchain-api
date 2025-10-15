@@ -47,9 +47,9 @@ pub const SOLANA_MAINNET: &str = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
 /// Cap to 150 Kb max size for the identity response
 const IDENTITY_RESPONSE_MAX_BYTES: usize = 150 * 1024;
 
-/// Error codes that reflect an `execution reverted` and should proceed with Ok() during
-/// the identity avatar lookup because of an absence of the ERC-721 contract address or
-/// token ID in the ENS avatar record.
+/// Error codes that reflect an `execution reverted` and should proceed with
+/// Ok() during the identity avatar lookup because of an absence of the ERC-721
+/// contract address or token ID in the ENS avatar record.
 const JSON_RPC_OK_ERROR_CODES: [&str; 4] = ["-32000", "-32003", "-32015", "3"];
 
 /// Check if the provided address string is a valid Solana address
@@ -675,9 +675,7 @@ impl JsonRpcClient for SelfProvider {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-
-    use super::*;
+    use {super::*, serde_json::json};
 
     #[test]
     fn full_ttl_when_resolved_now() {

@@ -3,7 +3,10 @@ use {
         error::{RpcError, RpcResult},
         handlers::{fungible_price::FungiblePriceItem, SupportedCurrencies},
         providers::{
-            FungiblePriceProvider, PriceResponseBody, ProviderKind, TokenMetadataCacheProvider,
+            FungiblePriceProvider,
+            PriceResponseBody,
+            ProviderKind,
+            TokenMetadataCacheProvider,
         },
         utils::crypto,
         Metrics,

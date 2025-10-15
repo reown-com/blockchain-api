@@ -1,14 +1,22 @@
 use {
     super::{
-        assets::NATIVE_TOKEN_ADDRESS, check_bridging_for_erc20_transfer, convert_amount,
-        find_supported_bridging_asset, get_assets_changes_from_simulation,
-        nonce_manager::NonceManager, BridgingStatus, StorageBridgingItem, BRIDGING_FEE_SLIPPAGE,
+        assets::NATIVE_TOKEN_ADDRESS,
+        check_bridging_for_erc20_transfer,
+        convert_amount,
+        find_supported_bridging_asset,
+        get_assets_changes_from_simulation,
+        nonce_manager::NonceManager,
+        BridgingStatus,
+        StorageBridgingItem,
+        BRIDGING_FEE_SLIPPAGE,
         STATUS_POLLING_INTERVAL,
     },
     crate::{
         analytics::{
-            ChainAbstractionBridgingInfo, ChainAbstractionFundingInfo,
-            ChainAbstractionInitialTxInfo, MessageSource,
+            ChainAbstractionBridgingInfo,
+            ChainAbstractionFundingInfo,
+            ChainAbstractionInitialTxInfo,
+            MessageSource,
         },
         error::RpcError,
         handlers::{chain_agnostic::lifi::caip2_to_lifi_chain_id, self_provider, SdkInfoParams},
@@ -17,8 +25,11 @@ use {
         storage::irn::OperationType,
         utils::{
             crypto::{
-                convert_alloy_address_to_h160, decode_erc20_transfer_data, get_erc20_balance,
-                get_gas_estimate, Erc20FunctionType,
+                convert_alloy_address_to_h160,
+                decode_erc20_transfer_data,
+                get_erc20_balance,
+                get_gas_estimate,
+                Erc20FunctionType,
             },
             network,
             simple_request_json::SimpleRequestJson,
@@ -47,16 +58,30 @@ use {
         chain_abstraction::{
             api::{
                 prepare::{
-                    BridgingError, Eip155OrSolanaAddress, FundingMetadata,
-                    InitialTransactionMetadata, Metadata, PrepareRequest, PrepareResponse,
-                    PrepareResponseAvailable, PrepareResponseError, PrepareResponseNotRequired,
-                    PrepareResponseSuccess, RouteQueryParams, SolanaTransaction, Transactions,
+                    BridgingError,
+                    Eip155OrSolanaAddress,
+                    FundingMetadata,
+                    InitialTransactionMetadata,
+                    Metadata,
+                    PrepareRequest,
+                    PrepareResponse,
+                    PrepareResponseAvailable,
+                    PrepareResponseError,
+                    PrepareResponseNotRequired,
+                    PrepareResponseSuccess,
+                    RouteQueryParams,
+                    SolanaTransaction,
+                    Transactions,
                 },
                 Transaction,
             },
             solana::{
-                self, SolanaCommitmentConfig, SolanaParsePubkeyError, SolanaPubkey,
-                SolanaRpcClient, SolanaVersionedTransaction,
+                self,
+                SolanaCommitmentConfig,
+                SolanaParsePubkeyError,
+                SolanaPubkey,
+                SolanaRpcClient,
+                SolanaVersionedTransaction,
             },
         },
         erc20::ERC20,
@@ -278,7 +303,8 @@ async fn handler_internal(
                 return Ok(Json(PrepareResponse::Error(PrepareResponseError {
                     error: BridgingError::TransactionSimulationFailed,
                     reason: format!(
-                        "The initial transaction (native token transfer) simulation failed due to an error: {e}"
+                        "The initial transaction (native token transfer) simulation failed due to \
+                         an error: {e}"
                     ),
                 })));
             }
@@ -314,7 +340,8 @@ async fn handler_internal(
                     .is_none()
                     {
                         error!(
-                            "The destination address is not a supported bridging asset contract {}:{}",
+                            "The destination address is not a supported bridging asset contract \
+                             {}:{}",
                             request_payload.transaction.chain_id.clone(),
                             first_call.to
                         );
@@ -324,7 +351,8 @@ async fn handler_internal(
                         return Ok(Json(PrepareResponse::Error(PrepareResponseError {
                             error: BridgingError::AssetNotSupported,
                             reason: format!(
-                                "The initial transaction asset {}:{} is not supported for the bridging",
+                                "The initial transaction asset {}:{} is not supported for the \
+                                 bridging",
                                 request_payload.transaction.chain_id.clone(),
                                 first_call.to
                             ),
@@ -357,12 +385,15 @@ async fn handler_internal(
                             let simulated_gas_used = match simulation_result {
                                 Ok(simulation_result) => simulation_result.1,
                                 Err(e) => {
-                                    return Ok(Json(PrepareResponse::Error(PrepareResponseError {
-                                        error: BridgingError::TransactionSimulationFailed,
-                                        reason: format!(
-                                            "The initial transaction simulation failed due to an error: {e}"
-                                        ),
-                                    })));
+                                    return Ok(Json(PrepareResponse::Error(
+                                        PrepareResponseError {
+                                            error: BridgingError::TransactionSimulationFailed,
+                                            reason: format!(
+                                                "The initial transaction simulation failed due to \
+                                                 an error: {e}"
+                                            ),
+                                        },
+                                    )));
                                 }
                             };
                             state.metrics.add_ca_gas_estimation(
@@ -387,7 +418,8 @@ async fn handler_internal(
                                         .await
                                         .unwrap_or_else(|e| {
                                             error!(
-                                                "Failed to save the initial ERC20 gas estimation to the cache: {}",
+                                                "Failed to save the initial ERC20 gas estimation \
+                                                 to the cache: {}",
                                                 e
                                             )
                                         });
@@ -401,7 +433,8 @@ async fn handler_internal(
                 }
                 _ => {
                     debug!(
-                        "The transaction data is not an ERC20 transfer function, making a simulation"
+                        "The transaction data is not an ERC20 transfer function, making a \
+                         simulation"
                     );
 
                     let simulation_result = get_assets_changes_from_simulation(
@@ -420,7 +453,8 @@ async fn handler_internal(
                             return Ok(Json(PrepareResponse::Error(PrepareResponseError {
                                 error: BridgingError::TransactionSimulationFailed,
                                 reason: format!(
-                                    "The initial transaction simulation failed due to an error: {e}"
+                                    "The initial transaction simulation failed due to an error: \
+                                     {e}"
                                 ),
                             })));
                         }
@@ -482,8 +516,8 @@ async fn handler_internal(
         request_payload.transaction.from,
     );
 
-    // Get the current balance of the ERC20 or native token and check if it's enough for the transfer
-    // without bridging or calculate the top-up value
+    // Get the current balance of the ERC20 or native token and check if it's enough
+    // for the transfer without bridging or calculate the top-up value
     let erc20_balance = get_erc20_balance(
         &request_payload.transaction.chain_id.clone(),
         convert_alloy_address_to_h160(asset_transfer_contract),
@@ -516,7 +550,8 @@ async fn handler_internal(
     let mut erc20_topup_value = asset_transfer_value - erc20_balance;
 
     // Check if the destination address is supported ERC20 asset contract
-    // Attempt to destructure the result into symbol and decimals using a match expression
+    // Attempt to destructure the result into symbol and decimals using a match
+    // expression
     let (initial_tx_token_symbol, initial_tx_token_decimals) = match find_supported_bridging_asset(
         &request_payload.transaction.chain_id,
         Eip155OrSolanaAddress::Eip155(asset_transfer_contract),
@@ -551,7 +586,8 @@ async fn handler_internal(
         erc20_topup_value,
         {
             let results = request_payload
-                .accounts.iter()
+                .accounts
+                .iter()
                 .map(|a| {
                     let mut caip10_parts = a.splitn(3, ":");
                     let namespace = caip10_parts.next().ok_or(RpcError::InvalidParameter(
@@ -569,32 +605,37 @@ async fn handler_internal(
             let mut accounts = Vec::with_capacity(results.len());
             for result in results {
                 let (namespace, reference, address) = result;
-                accounts.push((
-                    Some(format!("{namespace}:{reference}")),
-                    match namespace {
-                        "eip155" => Eip155OrSolanaAddress::Eip155(
-                            Address::from_str(address).map_err(|_| {
-                                RpcError::InvalidParameter(
-                                    "The account is not a valid CAIP-10 address: invalid eip155 address".to_string(),
-                                )
-                            })?,
-                        ),
-                        "solana" => Eip155OrSolanaAddress::Solana(
-                            SolanaPubkey::from_str(address).map_err(|_| {
-                                RpcError::InvalidParameter(
-                                    "The account is not a valid CAIP-10 address: invalid solana address".to_string(),
-                                )
-                            })?,
-                        ),
-                        namespace => {
-                            return Err(RpcError::InvalidParameter(format!(
-                                "The account is not a valid CAIP-10 address: invalid namespace: {namespace}",
-                            )));
-                        }
-                    },
-                ));
+                accounts.push((Some(format!("{namespace}:{reference}")), match namespace {
+                    "eip155" => {
+                        Eip155OrSolanaAddress::Eip155(Address::from_str(address).map_err(|_| {
+                            RpcError::InvalidParameter(
+                                "The account is not a valid CAIP-10 address: invalid eip155 \
+                                 address"
+                                    .to_string(),
+                            )
+                        })?)
+                    }
+                    "solana" => Eip155OrSolanaAddress::Solana(
+                        SolanaPubkey::from_str(address).map_err(|_| {
+                            RpcError::InvalidParameter(
+                                "The account is not a valid CAIP-10 address: invalid solana \
+                                 address"
+                                    .to_string(),
+                            )
+                        })?,
+                    ),
+                    namespace => {
+                        return Err(RpcError::InvalidParameter(format!(
+                            "The account is not a valid CAIP-10 address: invalid namespace: \
+                             {namespace}",
+                        )));
+                    }
+                }));
             }
-            accounts.push((None, Eip155OrSolanaAddress::Eip155(request_payload.transaction.from)));
+            accounts.push((
+                None,
+                Eip155OrSolanaAddress::Eip155(request_payload.transaction.from),
+            ));
             accounts
         },
         request_payload.transaction.chain_id.clone(),
@@ -708,8 +749,11 @@ async fn handler_internal(
                 + required_topup_amount;
             if current_bridging_asset_balance < required_topup_amount {
                 let error_reason = format!(
-                    "The current bridging asset balance on {} is {} less than the required topup amount:{}",
-                    request_payload.transaction.from, current_bridging_asset_balance, required_topup_amount
+                    "The current bridging asset balance on {} is {} less than the required topup \
+                     amount:{}",
+                    request_payload.transaction.from,
+                    current_bridging_asset_balance,
+                    required_topup_amount
                 );
                 error!(error_reason);
                 state.metrics.add_ca_insufficient_funds();
@@ -745,7 +789,8 @@ async fn handler_internal(
                 return Ok(Json(PrepareResponse::Error(PrepareResponseError {
                     error: BridgingError::NoRoutesAvailable,
                     reason: format!(
-                        "No routes were found from {}:{} to {}:{} for updated (fee included) amount: {}",
+                        "No routes were found from {}:{} to {}:{} for updated (fee included) \
+                         amount: {}",
                         bridge_chain_id,
                         bridge_contract,
                         request_payload.transaction.chain_id,
@@ -859,8 +904,8 @@ async fn handler_internal(
             };
             routes.push(bridging_transaction.clone());
 
-            // Estimate the gas usage for the approval (if present) and bridging transactions
-            // and update gas limits for transactions
+            // Estimate the gas usage for the approval (if present) and bridging
+            // transactions and update gas limits for transactions
             // Skip the simulation if the bridging transaction is a native token transfer
             if routes.len() != 1 || bridging_transaction.gas_limit.is_zero() {
                 let simulation_results = state
@@ -881,7 +926,8 @@ async fn handler_internal(
                     })?;
                     if simulation_result.transaction.input != curr_route.input {
                         return Err(RpcError::SimulationFailed(
-                            "The input for the simulation result does not match the input for the transaction"
+                            "The input for the simulation result does not match the input for the \
+                             transaction"
                                 .into(),
                         ));
                     }
@@ -891,8 +937,9 @@ async fn handler_internal(
                             / 100,
                     );
 
-                    // Get the transaction type for metrics based on the assumption that the first transaction is an approval
-                    // and the rest are bridging transactions
+                    // Get the transaction type for metrics based on the assumption that the first
+                    // transaction is an approval and the rest are bridging
+                    // transactions
                     let tx_type = if simulation_results.simulation_results.len() == 1 {
                         // If there is only one transaction, it's a bridging transaction
                         ChainAbstractionTransactionType::Bridge
@@ -993,9 +1040,10 @@ async fn handler_internal(
                     quote.action.from_amount - erc20_topup_value,
                 )
             } else if bridge_chain_id.starts_with("eip155:") {
-                let bridge_contract = bridge_contract
-                    .as_eip155()
-                    .expect("Internal bug: the bridge contract should be an EIP-155 address when bridge_chain_id starts with eip155:");
+                let bridge_contract = bridge_contract.as_eip155().expect(
+                    "Internal bug: the bridge contract should be an EIP-155 address when \
+                     bridge_chain_id starts with eip155:",
+                );
 
                 #[derive(Debug, Serialize, Deserialize)]
                 #[serde(rename_all = "camelCase")]

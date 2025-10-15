@@ -5,12 +5,17 @@ use {
         error::RpcError,
         json_rpc::JsonRpcRequest,
         providers::{
-            is_internal_error_rpc_code, is_known_rpc_error_message, is_node_error_rpc_message,
-            is_rate_limited_error_rpc_message, ProviderKind,
+            is_internal_error_rpc_code,
+            is_known_rpc_error_message,
+            is_node_error_rpc_message,
+            is_rate_limited_error_rpc_message,
+            ProviderKind,
         },
         state::AppState,
         utils::{
-            batch_json_rpc_request::MaybeBatchRequest, crypto, json_rpc_cache::is_cached_response,
+            batch_json_rpc_request::MaybeBatchRequest,
+            crypto,
+            json_rpc_cache::is_cached_response,
             network,
         },
     },
@@ -93,7 +98,8 @@ pub async fn rpc_call(
 
     // Deserializing the request body to a JSON-RPC request schema and
     // check if a cached response can be returned
-    // TODO: Optimize this to remove the second deserialization during the provider analytics
+    // TODO: Optimize this to remove the second deserialization during the provider
+    // analytics
     match serde_json::from_slice::<JsonRpcRequest>(&body) {
         Ok(request) => {
             if let Some(response) =
@@ -119,7 +125,8 @@ pub async fn rpc_call(
             "eip155:42161" => Some(ProviderKind::Publicnode), // Arbitrum One
             _ => {
                 debug!(
-                    "Requested sessionId for chain {chain_id} but no hardcoded provider was configured"
+                    "Requested sessionId for chain {chain_id} but no hardcoded provider was \
+                     configured"
                 );
                 None
             }
@@ -142,7 +149,8 @@ pub async fn rpc_call(
 
             match response {
                 Ok(response) if !response.status().is_server_error() => {
-                    // No metrics are recorded for these hardcoded providers since it bypasses our routign algorithm
+                    // No metrics are recorded for these hardcoded providers since it bypasses our
+                    // routign algorithm
                     return Ok(response);
                 }
                 e => {
@@ -151,7 +159,8 @@ pub async fn rpc_call(
                     //     .metrics
                     //     .add_rpc_call_retries(0, chain_id.clone());
                     debug!(
-                        "Provider (via sessionId) '{}' returned an error {e:?}, trying the next provider",
+                        "Provider (via sessionId) '{}' returned an error {e:?}, trying the next \
+                         provider",
                         provider.provider_kind()
                     );
                 }
@@ -207,7 +216,8 @@ pub async fn rpc_call(
             Ok(response) => response,
             Err(e) => {
                 error!(
-                    "Call to provider '{}' returned a connection error {e:?}, trying the next provider",
+                    "Call to provider '{}' returned a connection error {e:?}, trying the next \
+                     provider",
                     provider.provider_kind()
                 );
                 state
@@ -230,8 +240,9 @@ pub async fn rpc_call(
                     Ok(bytes) => bytes,
                     Err(e) => {
                         error!(
-                        "Failed to read JSON-RPC response body from provider {provider_kind}: {e}"
-                    );
+                            "Failed to read JSON-RPC response body from provider {provider_kind}: \
+                             {e}"
+                        );
                         state
                             .metrics
                             .add_rpc_call_retries(i as u64, chain_id.clone());
@@ -248,7 +259,8 @@ pub async fn rpc_call(
 
                         // Internal error codes range -32000..-32099 https://www.jsonrpc.org/specification#error_object
                         if is_internal_error_rpc_code(error_code) {
-                            // Retry to another provider if the error is a rate limited or node error
+                            // Retry to another provider if the error is a rate limited or node
+                            // error
                             if is_rate_limited_error_rpc_message(&error_message)
                                 || is_node_error_rpc_message(&error_message)
                             {
@@ -258,12 +270,16 @@ pub async fn rpc_call(
                                 continue;
                             }
 
-                            // Log an error, increment the metrics for unknown error codes and continue
-                            // without retrying since it can be a contract execution error.
+                            // Log an error, increment the metrics for unknown error codes and
+                            // continue without retrying since it can be
+                            // a contract execution error.
                             // We should catch unknown errors by alarm for the metrics
                             // and investigate it first without retrying.
                             if !is_known_rpc_error_message(&error_message) {
-                                error!("Provider {provider_kind} returned an error code: {error_code} and the message: {error_message}");
+                                error!(
+                                    "Provider {provider_kind} returned an error code: \
+                                     {error_code} and the message: {error_message}"
+                                );
                                 state.metrics.add_internal_error_code_for_provider(
                                     provider_kind,
                                     chain_id.clone(),
@@ -274,7 +290,11 @@ pub async fn rpc_call(
                     }
                 }
                 Err(e) => {
-                    error!("Failed to parse JSON-RPC response from provider {provider_kind}: {e}. Message: {}", String::from_utf8_lossy(&body_bytes));
+                    error!(
+                        "Failed to parse JSON-RPC response from provider {provider_kind}: {e}. \
+                         Message: {}",
+                        String::from_utf8_lossy(&body_bytes)
+                    );
                 }
             }
 
@@ -307,8 +327,9 @@ pub async fn rpc_call(
     Err(RpcError::ChainTemporarilyUnavailable(chain_id))
 }
 
-// TODO eventually refactor this to be called by the wallet handler (generic JSON-RPC)
-// However, dependency on us having an exaustive list of supported RPC methods is a blocker to merging these handlers.
+// TODO eventually refactor this to be called by the wallet handler (generic
+// JSON-RPC) However, dependency on us having an exaustive list of supported RPC
+// methods is a blocker to merging these handlers.
 #[tracing::instrument(skip(state), level = "debug")]
 pub async fn rpc_provider_call(
     state: Arc<AppState>,
@@ -346,7 +367,8 @@ pub async fn rpc_provider_call(
                         let mut ids = HashSet::new();
                         for req in reqs {
                             if !ids.insert(&req.id) {
-                                // TODO turn this into a 4xx error after validating with data that this behavior isn't widely depended on
+                                // TODO turn this into a 4xx error after validating with data that
+                                // this behavior isn't widely depended on
                                 error!(
                                     "Duplicate RPC ID: {:?} for body {}",
                                     req.id,
@@ -380,7 +402,8 @@ pub async fn rpc_provider_call(
             }
         }
         Err(e) => {
-            // TODO turn this into a 4xx error after validating with data that this behavior isn't widely depended on
+            // TODO turn this into a 4xx error after validating with data that this behavior
+            // isn't widely depended on
             error!(
                 "TRIAGE: Invalid JSON-RPC request: {} for body: {}",
                 e,

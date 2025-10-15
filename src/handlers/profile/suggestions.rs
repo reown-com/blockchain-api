@@ -2,8 +2,10 @@ use {
     super::SuggestionsParams,
     crate::{
         error::RpcError,
-        names::suggestions::dictionary_suggestions,
-        names::utils::{is_name_format_correct, is_name_registered},
+        names::{
+            suggestions::dictionary_suggestions,
+            utils::{is_name_format_correct, is_name_registered},
+        },
         state::AppState,
     },
     axum::{
@@ -57,8 +59,8 @@ async fn handler_internal(
     let candidates = dictionary_suggestions(&name);
 
     // Use the `zone` query parameter if it is provided for the new AppKit versions
-    // Otherwise, use the first zone in the allowed zones list for the backward compatibility
-    // with the old AppKit versions
+    // Otherwise, use the first zone in the allowed zones list for the backward
+    // compatibility with the old AppKit versions
     let allowed_zones = state.config.names.allowed_zones.as_ref().ok_or_else(|| {
         RpcError::InvalidConfiguration("Names allowed zones are not defined".to_string())
     })?;

@@ -103,7 +103,8 @@ impl AppState {
             return Ok(());
         }
 
-        // Handle RegistryTemporarilyUnavailable error by not counting it as a quota limited project
+        // Handle RegistryTemporarilyUnavailable error by not counting it as a quota
+        // limited project
         match self.get_project_data_validated(id).await {
             Ok(_) => Ok(()),
             Err(RpcError::ProjectDataError(ProjectDataError::RegistryTemporarilyUnavailable)) => {
@@ -122,12 +123,14 @@ impl AppState {
             return Ok(());
         }
 
-        // Handle RegistryTemporarilyUnavailable error by not counting it as a quota limited project
+        // Handle RegistryTemporarilyUnavailable error by not counting it as a quota
+        // limited project
         let project = match self.get_project_data_validated(id).await {
             Ok(project) => project,
             Err(RpcError::ProjectDataError(ProjectDataError::RegistryTemporarilyUnavailable)) => {
                 error!(
-                    "Registry is temporarily unavailable, skipping access and quota check for project: {id}"
+                    "Registry is temporarily unavailable, skipping access and quota check for \
+                     project: {id}"
                 );
                 return Ok(());
             }

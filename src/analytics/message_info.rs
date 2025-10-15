@@ -80,7 +80,9 @@ impl MessageInfo {
     }
 }
 
-// Note: these are all INTERNAL sources (except Rpc). While technically the user can override this via query param currently, this is just a technical limitation of the implementation here.
+// Note: these are all INTERNAL sources (except Rpc). While technically the user
+// can override this via query param currently, this is just a technical
+// limitation of the implementation here.
 #[derive(Debug, Clone, EnumString, Display, Deserialize, PartialEq)]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]

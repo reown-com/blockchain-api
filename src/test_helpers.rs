@@ -1,12 +1,16 @@
-use crate::env::{Config, ServerConfig};
-use crate::providers::mock_alto::MockAltoUrls;
-use std::sync::atomic::{AtomicU16, Ordering};
-use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream},
-    time::Duration,
+use {
+    crate::{
+        env::{Config, ServerConfig},
+        providers::mock_alto::MockAltoUrls,
+    },
+    std::{
+        net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream},
+        sync::atomic::{AtomicU16, Ordering},
+        time::Duration,
+    },
+    tokio::runtime::Handle,
+    url::Url,
 };
-use tokio::runtime::Handle;
-use url::Url;
 
 pub struct Params {
     pub validate_project_id: bool,
