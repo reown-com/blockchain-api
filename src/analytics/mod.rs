@@ -434,7 +434,7 @@ impl RPCAnalytics {
             },
             ParquetBatchFactory::new(Default::default()).with_observer(observer),
             AwsExporter::new(AwsConfig {
-                export_prefix: "blockchain-api/pos".to_owned(),
+                export_prefix: "blockchain-api/pos_build".to_owned(),
                 export_name: "pos_build".to_owned(),
                 node_addr,
                 file_extension: "parquet".to_owned(),
@@ -455,7 +455,7 @@ impl RPCAnalytics {
             },
             ParquetBatchFactory::new(Default::default()).with_observer(observer),
             AwsExporter::new(AwsConfig {
-                export_prefix: "blockchain-api/pos".to_owned(),
+                export_prefix: "blockchain-api/pos_check".to_owned(),
                 export_name: "pos_check".to_owned(),
                 node_addr,
                 file_extension: "parquet".to_owned(),
