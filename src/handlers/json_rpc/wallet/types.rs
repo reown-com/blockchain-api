@@ -1,5 +1,7 @@
-use alloy::primitives::U64;
-use serde::{Deserialize, Serialize};
+use {
+    alloy::primitives::U64,
+    serde::{Deserialize, Serialize},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SignatureRequestType {

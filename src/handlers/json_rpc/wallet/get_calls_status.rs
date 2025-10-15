@@ -1,22 +1,24 @@
-use super::call_id::CallId;
-use crate::{
-    analytics::MessageSource,
-    handlers::{RpcQueryParams, SdkInfoParams},
-    state::AppState,
+use {
+    super::call_id::CallId,
+    crate::{
+        analytics::MessageSource,
+        handlers::{RpcQueryParams, SdkInfoParams},
+        state::AppState,
+    },
+    alloy::{
+        primitives::{Address, BlockHash, Bytes, TxHash, B256, U64, U8},
+        providers::ProviderBuilder,
+        rpc::{client::RpcClient, types::UserOperationReceipt},
+    },
+    axum::extract::{ConnectInfo, Query, State},
+    hyper::HeaderMap,
+    serde::{Deserialize, Serialize},
+    std::{net::SocketAddr, sync::Arc},
+    thiserror::Error,
+    tracing::error,
+    wc::metrics::{future_metrics, FutureExt},
+    yttrium::{chain::ChainId, erc4337::get_user_operation_receipt},
 };
-use alloy::{
-    primitives::{Address, BlockHash, Bytes, TxHash, B256, U64, U8},
-    providers::ProviderBuilder,
-    rpc::{client::RpcClient, types::UserOperationReceipt},
-};
-use axum::extract::{ConnectInfo, Query, State};
-use hyper::HeaderMap;
-use serde::{Deserialize, Serialize};
-use std::{net::SocketAddr, sync::Arc};
-use thiserror::Error;
-use tracing::error;
-use wc::metrics::{future_metrics, FutureExt};
-use yttrium::{chain::ChainId, erc4337::get_user_operation_receipt};
 
 pub type GetCallsStatusParams = (CallId,);
 
@@ -185,8 +187,12 @@ fn user_operation_receipt_to_call_receipt(
 mod self_transport {
     use {
         crate::{
-            error::RpcError, handlers::RpcQueryParams, json_rpc::JSON_RPC_VERSION,
-            providers::SupportedBundlerOps, state::AppState, utils::crypto::disassemble_caip2,
+            error::RpcError,
+            handlers::RpcQueryParams,
+            json_rpc::JSON_RPC_VERSION,
+            providers::SupportedBundlerOps,
+            state::AppState,
+            utils::crypto::disassemble_caip2,
         },
         alloy::{
             rpc::json_rpc::{RequestPacket, Response, ResponsePacket},
@@ -300,27 +306,29 @@ mod self_transport {
 #[cfg(test)]
 #[cfg(feature = "test-mock-bundler")]
 mod tests {
-    use crate::{
-        handlers::json_rpc::{
-            handler::WALLET_GET_CALLS_STATUS,
-            wallet::{
-                call_id::{CallId, CallIdInner},
-                get_calls_status::{CallStatus, GetCallsStatusResult},
+    use {
+        crate::{
+            handlers::json_rpc::{
+                handler::WALLET_GET_CALLS_STATUS,
+                wallet::{
+                    call_id::{CallId, CallIdInner},
+                    get_calls_status::{CallStatus, GetCallsStatusResult},
+                },
             },
+            providers::mock_alto::MockAltoUrls,
+            test_helpers::spawn_blockchain_api_with_params,
         },
-        providers::mock_alto::MockAltoUrls,
-        test_helpers::spawn_blockchain_api_with_params,
-    };
-    use alloy::{
-        primitives::{Bytes, Uint, U256, U64, U8},
-        providers::{Provider, ProviderBuilder},
-        signers::local::LocalSigner,
-    };
-    use yttrium::{
-        call::{send::safe_test::send_transactions, Call},
-        config::Config,
-        smart_accounts::safe::{get_account_address, Owners},
-        test_helpers::{anvil_faucet, use_faucet},
+        alloy::{
+            primitives::{Bytes, Uint, U256, U64, U8},
+            providers::{Provider, ProviderBuilder},
+            signers::local::LocalSigner,
+        },
+        yttrium::{
+            call::{send::safe_test::send_transactions, Call},
+            config::Config,
+            smart_accounts::safe::{get_account_address, Owners},
+            test_helpers::{anvil_faucet, use_faucet},
+        },
     };
 
     #[tokio::test]
@@ -336,13 +344,10 @@ mod tests {
         assert_eq!(balance, Uint::from(0));
 
         let owner = LocalSigner::random();
-        let sender_address = get_account_address(
-            provider.clone(),
-            Owners {
-                owners: vec![owner.address()],
-                threshold: 1,
-            },
-        )
+        let sender_address = get_account_address(provider.clone(), Owners {
+            owners: vec![owner.address()],
+            threshold: 1,
+        })
         .await;
 
         use_faucet(&provider, faucet, U256::from(1), sender_address.into()).await;
@@ -405,13 +410,10 @@ mod tests {
         assert_eq!(balance, Uint::from(0));
 
         let owner = LocalSigner::random();
-        let _sender_address = get_account_address(
-            provider.clone(),
-            Owners {
-                owners: vec![owner.address()],
-                threshold: 1,
-            },
-        )
+        let _sender_address = get_account_address(provider.clone(), Owners {
+            owners: vec![owner.address()],
+            threshold: 1,
+        })
         .await;
 
         let transaction = vec![Call {

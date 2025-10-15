@@ -1,5 +1,7 @@
-use alloy::primitives::{Bytes, U64};
-use serde::{Deserialize, Serialize};
+use {
+    alloy::primitives::{Bytes, U64},
+    serde::{Deserialize, Serialize},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallId(pub CallIdInner);

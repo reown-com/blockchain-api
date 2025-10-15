@@ -1,5 +1,7 @@
 use {
-    crate::providers::ProviderKind, parquet_derive::ParquetRecordWriter, serde::Serialize,
+    crate::providers::ProviderKind,
+    parquet_derive::ParquetRecordWriter,
+    serde::Serialize,
     std::sync::Arc,
 };
 

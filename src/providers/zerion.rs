@@ -5,21 +5,32 @@ use {
         error::{RpcError, RpcResult},
         handlers::{
             balance::{
-                BalanceQueryParams, BalanceResponseBody, TokenMetadataCacheItem, H160_EMPTY_ADDRESS,
+                BalanceQueryParams,
+                BalanceResponseBody,
+                TokenMetadataCacheItem,
+                H160_EMPTY_ADDRESS,
             },
             history::{
-                HistoryQueryParams, HistoryResponseBody, HistoryTransaction,
-                HistoryTransactionFungibleInfo, HistoryTransactionMetadata,
-                HistoryTransactionMetadataApplication, HistoryTransactionNFTContent,
-                HistoryTransactionNFTInfo, HistoryTransactionNFTInfoFlags,
-                HistoryTransactionTransfer, HistoryTransactionTransferQuantity,
-                HistoryTransactionURLItem, HistoryTransactionURLandContentTypeItem,
+                HistoryQueryParams,
+                HistoryResponseBody,
+                HistoryTransaction,
+                HistoryTransactionFungibleInfo,
+                HistoryTransactionMetadata,
+                HistoryTransactionMetadataApplication,
+                HistoryTransactionNFTContent,
+                HistoryTransactionNFTInfo,
+                HistoryTransactionNFTInfoFlags,
+                HistoryTransactionTransfer,
+                HistoryTransactionTransferQuantity,
+                HistoryTransactionURLItem,
+                HistoryTransactionURLandContentTypeItem,
             },
             portfolio::{PortfolioPosition, PortfolioQueryParams, PortfolioResponseBody},
         },
         providers::{
             balance::{BalanceItem, BalanceQuantity},
-            ProviderKind, TokenMetadataCacheProvider,
+            ProviderKind,
+            TokenMetadataCacheProvider,
         },
         utils::crypto,
         Metrics,
@@ -545,7 +556,8 @@ impl BalanceProvider for ZerionProvider {
                 decimals: f.attributes.quantity.decimals as u8,
             };
 
-            // Update the token metadata from the cache or update the cache if it's not present
+            // Update the token metadata from the cache or update the cache if it's not
+            // present
             if let Some(chain_id) = chain_id.clone() {
                 let caip10_token_address = format!("{chain_id}:{token_address_strict}");
                 match metadata_cache.get_metadata(&caip10_token_address).await {
@@ -559,7 +571,8 @@ impl BalanceProvider for ZerionProvider {
                                 .await
                             {
                                 error!(
-                                    "Error setting metadata in cache for {caip10_token_address}: {e}"
+                                    "Error setting metadata in cache for {caip10_token_address}: \
+                                     {e}"
                                 );
                             }
                         });

@@ -1,5 +1,7 @@
-use alloy::rpc::json_rpc::Id;
-use serde::{Deserialize, Serialize};
+use {
+    alloy::rpc::json_rpc::Id,
+    serde::{Deserialize, Serialize},
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(untagged)]
@@ -15,7 +17,8 @@ pub struct Request {
     // params are optional
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub params: Option<serde_json::Value>,
-    // id is technically optional too, but requiring it for now since we need it for analytics and it seems all EVM methods require it
+    // id is technically optional too, but requiring it for now since we need it for analytics and
+    // it seems all EVM methods require it
     pub id: Id,
 }
 

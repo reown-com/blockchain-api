@@ -1,6 +1,11 @@
 use {
     super::{
-        Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams,
+        Provider,
+        ProviderKind,
+        RateLimited,
+        RpcProvider,
+        RpcProviderFactory,
+        RpcQueryParams,
         RpcWsProvider,
     },
     crate::{
@@ -9,8 +14,8 @@ use {
         ws,
     },
     async_trait::async_trait,
-    axum::extract::ws::WebSocketUpgrade,
     axum::{
+        extract::ws::WebSocketUpgrade,
         http::HeaderValue,
         response::{IntoResponse, Response},
     },

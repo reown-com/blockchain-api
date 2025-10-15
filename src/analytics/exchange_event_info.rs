@@ -1,6 +1,4 @@
-use parquet_derive::ParquetRecordWriter;
-use serde::Serialize;
-use strum_macros::Display;
+use {parquet_derive::ParquetRecordWriter, serde::Serialize, strum_macros::Display};
 
 #[derive(Debug, Clone, Copy, Display)]
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]

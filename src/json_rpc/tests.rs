@@ -67,7 +67,8 @@ fn test_response_error() {
 
     assert_eq!(
         &serialized,
-        "{\"id\":1,\"jsonrpc\":\"2.0\",\"error\":{\"code\":32,\"message\":\"some message\",\"data\":null}}"
+        "{\"id\":1,\"jsonrpc\":\"2.0\",\"error\":{\"code\":32,\"message\":\"some \
+         message\",\"data\":null}}"
     );
 
     let deserialized: JsonRpcPayload = serde_json::from_str(&serialized).unwrap();

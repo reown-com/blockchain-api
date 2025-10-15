@@ -1,10 +1,18 @@
 use {
-    crate::handlers::json_rpc::exchanges::{
-        BuyTransactionStatus, ExchangeError, ExchangeProvider, Feature, FeatureType,
-        GetBuyStatusParams, GetBuyStatusResponse, GetBuyUrlParams,
+    crate::{
+        handlers::json_rpc::exchanges::{
+            BuyTransactionStatus,
+            ExchangeError,
+            ExchangeProvider,
+            Feature,
+            FeatureType,
+            GetBuyStatusParams,
+            GetBuyStatusResponse,
+            GetBuyUrlParams,
+        },
+        state::AppState,
+        utils::crypto::Caip19Asset,
     },
-    crate::state::AppState,
-    crate::utils::crypto::Caip19Asset,
     axum::extract::State,
     once_cell::sync::Lazy,
     serde::{Deserialize, Serialize},

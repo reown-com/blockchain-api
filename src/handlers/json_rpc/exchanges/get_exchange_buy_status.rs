@@ -1,14 +1,26 @@
 use {
-    crate::handlers::json_rpc::exchanges::{
-        get_enabled_features, get_exchange_by_id, get_feature_type,
-        is_feature_enabled_for_project_id,
-        transactions::{
-            mark_failed as mark_transaction_failed, mark_succeeded as mark_transaction_succeeded,
-            touch_pending as touch_pending_transaction,
+    crate::{
+        handlers::{
+            json_rpc::exchanges::{
+                get_enabled_features,
+                get_exchange_by_id,
+                get_feature_type,
+                is_feature_enabled_for_project_id,
+                transactions::{
+                    mark_failed as mark_transaction_failed,
+                    mark_succeeded as mark_transaction_succeeded,
+                    touch_pending as touch_pending_transaction,
+                },
+                BuyTransactionStatus,
+                ExchangeError,
+                Feature,
+                FeatureType,
+                GetBuyStatusParams,
+            },
+            SdkInfoParams,
         },
-        BuyTransactionStatus, ExchangeError, Feature, FeatureType, GetBuyStatusParams,
+        state::AppState,
     },
-    crate::{handlers::SdkInfoParams, state::AppState},
     axum::{
         extract::{ConnectInfo, Query, State},
         Json,
@@ -105,13 +117,10 @@ async fn handler_internal(
 
     let arc_state = state.0.clone();
     let result = exchange
-        .get_buy_status(
-            State(arc_state),
-            GetBuyStatusParams {
-                project_id,
-                session_id: request.session_id.clone(),
-            },
-        )
+        .get_buy_status(State(arc_state), GetBuyStatusParams {
+            project_id,
+            session_id: request.session_id.clone(),
+        })
         .await;
 
     match result {

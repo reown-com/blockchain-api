@@ -64,7 +64,7 @@ impl RpcProvider for WemixProvider {
             if response.error.is_some() && status.is_success() {
                 debug!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
-                 Wemix: {response:?}"
+                     Wemix: {response:?}"
                 );
             }
         }

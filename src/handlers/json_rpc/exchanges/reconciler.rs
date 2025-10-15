@@ -3,12 +3,14 @@ use {
         binance::BinanceExchange,
         coinbase::CoinbaseExchange,
         transactions::{mark_failed, mark_succeeded, touch_pending},
-        ExchangeType, GetBuyStatusParams,
+        ExchangeType,
+        GetBuyStatusParams,
     },
     crate::{
         database::exchange_reconciliation as db,
         handlers::json_rpc::exchanges::BuyTransactionStatus,
-        metrics::ExchangeReconciliationQueryType, state::AppState,
+        metrics::ExchangeReconciliationQueryType,
+        state::AppState,
     },
     axum::extract::State,
     std::{
@@ -87,24 +89,18 @@ pub async fn run(state: Arc<AppState>) {
                     let res = match ExchangeType::from_id(exchange_id) {
                         Some(ExchangeType::Coinbase) => {
                             CoinbaseExchange
-                                .get_buy_status(
-                                    State(state.clone()),
-                                    GetBuyStatusParams {
-                                        project_id: project_id.to_owned(),
-                                        session_id: internal_id.to_owned(),
-                                    },
-                                )
+                                .get_buy_status(State(state.clone()), GetBuyStatusParams {
+                                    project_id: project_id.to_owned(),
+                                    session_id: internal_id.to_owned(),
+                                })
                                 .await
                         }
                         Some(ExchangeType::Binance) => {
                             BinanceExchange
-                                .get_buy_status(
-                                    State(state.clone()),
-                                    GetBuyStatusParams {
-                                        project_id: project_id.to_owned(),
-                                        session_id: internal_id.to_owned(),
-                                    },
-                                )
+                                .get_buy_status(State(state.clone()), GetBuyStatusParams {
+                                    project_id: project_id.to_owned(),
+                                    session_id: internal_id.to_owned(),
+                                })
                                 .await
                         }
                         _ => {

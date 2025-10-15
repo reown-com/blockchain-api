@@ -7,16 +7,25 @@ pub mod supported_networks;
 pub mod tron;
 
 pub use errors::{
-    BuildPosTxsError, CheckPosTxError, ExecutionError, InternalError, RpcError,
-    SupportedNetworksError, TransactionIdError, ValidationError,
+    BuildPosTxsError,
+    CheckPosTxError,
+    ExecutionError,
+    InternalError,
+    RpcError,
+    SupportedNetworksError,
+    TransactionIdError,
+    ValidationError,
 };
-
 use {
     crate::{
         state::AppState,
         utils::crypto::{
-            disassemble_caip10_with_namespace, is_address_valid, Caip19Asset, Caip2ChainId,
-            CaipNamespaces, NamespaceValidator,
+            disassemble_caip10_with_namespace,
+            is_address_valid,
+            Caip19Asset,
+            Caip2ChainId,
+            CaipNamespaces,
+            NamespaceValidator,
         },
     },
     axum::extract::State,
@@ -157,6 +166,7 @@ impl TransactionId {
             version: TRANSACTION_ID_VERSION.to_string(),
         }
     }
+
     pub fn chain_id(&self) -> &Caip2ChainId {
         &self.chain_id
     }

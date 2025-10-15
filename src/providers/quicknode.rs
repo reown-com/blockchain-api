@@ -1,6 +1,11 @@
 use {
     super::{
-        Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams,
+        Provider,
+        ProviderKind,
+        RateLimited,
+        RpcProvider,
+        RpcProviderFactory,
+        RpcQueryParams,
         RpcWsProvider,
     },
     crate::{
@@ -197,7 +202,8 @@ impl QuicknodeProvider {
         self.ton_send_boc(id, boc).await
     }
 
-    // Send request to the Tron broadcast transaction `/wallet/broadcasttransaction` API endpoint
+    // Send request to the Tron broadcast transaction `/wallet/broadcasttransaction`
+    // API endpoint
     async fn tron_broadcast_transaction(
         &self,
         txid: &str,
@@ -240,7 +246,8 @@ impl QuicknodeProvider {
         let status = response.status();
         let body = response.bytes().await?;
 
-        // Handle the TON API error response which is HTTP 500 with the error structure response
+        // Handle the TON API error response which is HTTP 500 with the error structure
+        // response
         if status == http::StatusCode::INTERNAL_SERVER_ERROR
             || status == http::StatusCode::SERVICE_UNAVAILABLE
         {
@@ -255,7 +262,7 @@ impl QuicknodeProvider {
             if response.error.is_some() && status.is_success() {
                 debug!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
-                 Quicknode transactions: {response:?}"
+                     Quicknode transactions: {response:?}"
                 );
             }
         }
@@ -377,7 +384,8 @@ impl RpcProvider for QuicknodeProvider {
         let method = json_rpc_request.method.to_string();
         let id = json_rpc_request.id;
         let params = json_rpc_request.params;
-        // Handle the tron broadcast transaction wrapped method and pass the parameters form an array
+        // Handle the tron broadcast transaction wrapped method and pass the parameters
+        // form an array
         if method == TRON_BROADCAST_TRANSACTION_METHOD {
             return self.handle_tron_broadcast_transaction(params).await;
         }

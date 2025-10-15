@@ -1,11 +1,11 @@
-use crate::providers::Priority;
-use serde::Serialize;
-use std::sync::LazyLock;
+use {crate::providers::Priority, serde::Serialize, std::sync::LazyLock};
 
 // For now, remember to run `just render-config` after updating the config
-// TODO in the future, we will pass this via TF variable and generate the chain_config.json file in the CI pipeline
-// This however, would increase CD time significantly since ACTIVE_CONFIG is part of this massive crate
-// Splitting out only the YAML into separate crate would allow quickly generating the JSON file
+// TODO in the future, we will pass this via TF variable and generate the
+// chain_config.json file in the CI pipeline This however, would increase CD
+// time significantly since ACTIVE_CONFIG is part of this massive crate
+// Splitting out only the YAML into separate crate would allow quickly
+// generating the JSON file
 
 // Keep in-sync with SUPPORTED_CHAINS.md
 // In the future we could auto-generate the Markdown file

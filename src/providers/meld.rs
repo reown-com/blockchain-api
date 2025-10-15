@@ -163,7 +163,8 @@ pub struct MeldQuotesResponse {
     pub quotes: Vec<QuotesResponse>,
 }
 
-// Can be used for both old (Meld prod) and new (Meld sandbox) error response schemas
+// Can be used for both old (Meld prod) and new (Meld sandbox) error response
+// schemas
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MeldErrorResponse {
@@ -352,13 +353,10 @@ impl OnRampMultiProvider for MeldProvider {
 
         let latency_start = SystemTime::now();
         let response = self
-            .send_post_request(
-                url,
-                &WidgetRequestParams {
-                    session_type: DEFAULT_SESSION_TYPE.to_string(),
-                    session_data: params.session_data,
-                },
-            )
+            .send_post_request(url, &WidgetRequestParams {
+                session_type: DEFAULT_SESSION_TYPE.to_string(),
+                session_data: params.session_data,
+            })
             .await
             .map_err(|e| {
                 error!("Error sending request to Meld get widget: {e:?}");

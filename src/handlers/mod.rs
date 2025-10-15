@@ -68,21 +68,17 @@ pub enum SupportedCurrencies {
 
 impl Display for SupportedCurrencies {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                SupportedCurrencies::BTC => "btc",
-                SupportedCurrencies::ETH => "eth",
-                SupportedCurrencies::USD => "usd",
-                SupportedCurrencies::EUR => "eur",
-                SupportedCurrencies::GBP => "gbp",
-                SupportedCurrencies::AUD => "aud",
-                SupportedCurrencies::CAD => "cad",
-                SupportedCurrencies::INR => "inr",
-                SupportedCurrencies::JPY => "jpy",
-            }
-        )
+        write!(f, "{}", match self {
+            SupportedCurrencies::BTC => "btc",
+            SupportedCurrencies::ETH => "eth",
+            SupportedCurrencies::USD => "usd",
+            SupportedCurrencies::EUR => "eur",
+            SupportedCurrencies::GBP => "gbp",
+            SupportedCurrencies::AUD => "aud",
+            SupportedCurrencies::CAD => "cad",
+            SupportedCurrencies::INR => "inr",
+            SupportedCurrencies::JPY => "jpy",
+        })
     }
 }
 

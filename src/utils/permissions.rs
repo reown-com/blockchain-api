@@ -2,7 +2,8 @@ use {
     crate::{
         error::RpcError,
         utils::sessions::{
-            extract_addresses_from_execution_batch, extract_values_sum_from_execution_batch,
+            extract_addresses_from_execution_batch,
+            extract_values_sum_from_execution_batch,
             ExecutionTransaction,
         },
     },
@@ -49,10 +50,15 @@ pub fn contract_call_permission_check(
 
     for address in execution_addresses {
         if address != call_address {
-            error!("Execution address does not match the contract address in the permission data. Execution Address: {:?}, Contract Address: {:?}", address, call_address);
+            error!(
+                "Execution address does not match the contract address in the permission data. \
+                 Execution Address: {:?}, Contract Address: {:?}",
+                address, call_address
+            );
             return Err(RpcError::CosignerPermissionDenied(format!(
-              "Execution address does not match the contract address in the permission data. Execution Address: {address:?}, Contract Address: {call_address:?}"
-          )));
+                "Execution address does not match the contract address in the permission data. \
+                 Execution Address: {address:?}, Contract Address: {call_address:?}"
+            )));
         }
     }
     Ok(())
@@ -71,7 +77,8 @@ pub fn native_token_transfer_permission_check(
             sum, allowance
         );
         return Err(RpcError::CosignerPermissionDenied(format!(
-            "Execution value is greater than the allowance. Execution Value: {sum:?}, Allowance: {allowance:?}"
+            "Execution value is greater than the allowance. Execution Value: {sum:?}, Allowance: \
+             {allowance:?}"
         )));
     }
 

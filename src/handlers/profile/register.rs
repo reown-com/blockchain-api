@@ -9,15 +9,21 @@ use {
         error::RpcError,
         names::{
             utils::{
-                check_attributes, is_name_format_correct, is_name_in_allowed_zones,
-                is_name_length_correct, is_timestamp_within_interval,
+                check_attributes,
+                is_name_format_correct,
+                is_name_in_allowed_zones,
+                is_name_length_correct,
+                is_timestamp_within_interval,
             },
-            ATTRIBUTES_VALUE_MAX_LENGTH, SUPPORTED_ATTRIBUTES,
+            ATTRIBUTES_VALUE_MAX_LENGTH,
+            SUPPORTED_ATTRIBUTES,
         },
         state::AppState,
         utils::{
             crypto::{
-                convert_coin_type_to_evm_chain_id, is_coin_type_supported, verify_message_signature,
+                convert_coin_type_to_evm_chain_id,
+                is_coin_type_supported,
+                verify_message_signature,
             },
             network,
             simple_request_json::SimpleRequestJson,
@@ -156,13 +162,11 @@ pub async fn handler_internal(
     }
 
     // Register (insert) a new domain with address
-    let mut addresses: ENSIP11AddressesMap = HashMap::from([(
-        register_request.coin_type,
-        Address {
+    let mut addresses: ENSIP11AddressesMap =
+        HashMap::from([(register_request.coin_type, Address {
             address: register_request.address.clone(),
             created_at: None,
-        },
-    )]);
+        })]);
 
     // Adding address with cointype 60 (Mainnet) by default
     // if it was not provided during the registration

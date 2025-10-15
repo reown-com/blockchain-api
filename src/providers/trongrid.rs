@@ -181,7 +181,7 @@ impl TrongridProvider {
             if response.error.is_some() && status.is_success() {
                 debug!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
-                 TronGrid transactions: {response:?}"
+                     TronGrid transactions: {response:?}"
                 );
             }
         }
@@ -236,7 +236,7 @@ impl RpcProvider for TrongridProvider {
             if response.error.is_some() && status.is_success() {
                 debug!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
-                 TronGrid: {response:?}"
+                     TronGrid: {response:?}"
                 );
             }
         }

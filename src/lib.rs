@@ -2,7 +2,9 @@ use {
     crate::{
         env::{Config, GenericConfig},
         handlers::{
-            balance::BalanceResponseBody, identity::IdentityResponse, rate_limit_middleware,
+            balance::BalanceResponseBody,
+            identity::IdentityResponse,
+            rate_limit_middleware,
             status_latency_metrics_middleware,
         },
         metrics::Metrics,
@@ -13,31 +15,83 @@ use {
     anyhow::Context,
     aws_config::meta::region::RegionProviderChain,
     aws_sdk_s3::{config::Region, Client as S3Client},
-    axum::body::Body,
     axum::{
+        body::Body,
         middleware,
         routing::{get, post},
         Router,
     },
     env::{
-        AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, BlastConfig,
-        CallStaticConfig, DrpcConfig, DuneConfig, HiroConfig, MantleConfig, MonadConfig,
-        MoonbeamConfig, MorphConfig, NearConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
-        RootstockConfig, SolScanConfig, SuiConfig, SyndicaConfig, TheRpcConfig, TrongridConfig,
-        UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
+        AllnodesConfig,
+        ArbitrumConfig,
+        AuroraConfig,
+        BaseConfig,
+        BinanceConfig,
+        BlastConfig,
+        CallStaticConfig,
+        DrpcConfig,
+        DuneConfig,
+        HiroConfig,
+        MantleConfig,
+        MonadConfig,
+        MoonbeamConfig,
+        MorphConfig,
+        NearConfig,
+        PoktConfig,
+        PublicnodeConfig,
+        QuicknodeConfig,
+        RootstockConfig,
+        SolScanConfig,
+        SuiConfig,
+        SyndicaConfig,
+        TheRpcConfig,
+        TrongridConfig,
+        UnichainConfig,
+        WemixConfig,
+        ZKSyncConfig,
+        ZerionConfig,
+        ZoraConfig,
     },
     error::RpcResult,
     http::Request,
     hyper::{header::HeaderName, http},
     metrics_exporter_prometheus::PrometheusBuilder,
     providers::{
-        AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
-        BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider,
-        GenericProvider, HiroProvider, MantleProvider, MonadProvider, MoonbeamProvider,
-        MorphProvider, NearProvider, PoktProvider, ProviderRepository, PublicnodeProvider,
-        QuicknodeProvider, QuicknodeWsProvider, RootstockProvider, SolScanProvider, SuiProvider,
-        SyndicaProvider, SyndicaWsProvider, TheRpcProvider, TrongridProvider, UnichainProvider,
-        WemixProvider, ZKSyncProvider, ZerionProvider, ZoraProvider, ZoraWsProvider,
+        AllnodesProvider,
+        AllnodesWsProvider,
+        ArbitrumProvider,
+        AuroraProvider,
+        BaseProvider,
+        BinanceProvider,
+        BlastProvider,
+        CallStaticProvider,
+        DrpcProvider,
+        DuneProvider,
+        GenericProvider,
+        HiroProvider,
+        MantleProvider,
+        MonadProvider,
+        MoonbeamProvider,
+        MorphProvider,
+        NearProvider,
+        PoktProvider,
+        ProviderRepository,
+        PublicnodeProvider,
+        QuicknodeProvider,
+        QuicknodeWsProvider,
+        RootstockProvider,
+        SolScanProvider,
+        SuiProvider,
+        SyndicaProvider,
+        SyndicaWsProvider,
+        TheRpcProvider,
+        TrongridProvider,
+        UnichainProvider,
+        WemixProvider,
+        ZKSyncProvider,
+        ZerionProvider,
+        ZoraProvider,
+        ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -175,18 +229,18 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     sqlx::migrate!("./migrations").run(&postgres).await?;
 
     let http_client = reqwest::Client::new();
-    let irn_client =
-        if let (Some(nodes), Some(key_base64), Some(namespace), Some(namespace_secret)) = (
-            config.irn.nodes.clone(),
-            config.irn.key.clone(),
-            config.irn.namespace.clone(),
-            config.irn.namespace_secret.clone(),
-        ) {
-            Some(irn::Irn::new(key_base64, nodes, namespace, namespace_secret).await?)
-        } else {
-            warn!("IRN client is disabled (missing required environment configuration variables)");
-            None
-        };
+    let irn_client = if config.irn.client_key.is_some() {
+        let config = config.irn.parse()?;
+
+        // Verify and log client public key for debugging purposes.
+        let peer_id = config.keypair.public().to_peer_id();
+        tracing::info!(%peer_id, "WCN client peer ID");
+
+        Some(irn::Irn::new(config).await?)
+    } else {
+        warn!("IRN client is disabled (missing required environment configuration variables)");
+        None
+    };
 
     let state = state::new_state(
         config.clone(),
@@ -221,7 +275,8 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         HeaderName::from_static("x-sdk-version"),
     ]);
 
-    // No static restricted CORS here; dynamic CORS for /v1/json-rpc is handled in its handler
+    // No static restricted CORS here; dynamic CORS for /v1/json-rpc is handled in
+    // its handler
 
     let tracing_layer = ServiceBuilder::new()
         .set_x_request_id(MakeRequestUuid)
@@ -591,7 +646,10 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
                     e
                 );
             })
-            .expect("Failed to create redis pool builder for provider's responses caching, builder is None");
+            .expect(
+                "Failed to create redis pool builder for provider's responses caching, builder is \
+                 None",
+            );
         redis_pool = Some(Arc::new(
             redis_builder
                 .runtime(deadpool_redis::Runtime::Tokio1)

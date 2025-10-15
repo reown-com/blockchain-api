@@ -1,5 +1,6 @@
 use {
-    crate::handlers::json_rpc::pos::TransactionStatus, parquet_derive::ParquetRecordWriter,
+    crate::handlers::json_rpc::pos::TransactionStatus,
+    parquet_derive::ParquetRecordWriter,
     serde::Serialize,
 };
 

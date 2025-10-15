@@ -4,11 +4,15 @@ use {
         env::DuneConfig,
         error::{RpcError, RpcResult},
         handlers::balance::{
-            BalanceQueryParams, BalanceResponseBody, TokenMetadataCacheItem, H160_EMPTY_ADDRESS,
+            BalanceQueryParams,
+            BalanceResponseBody,
+            TokenMetadataCacheItem,
+            H160_EMPTY_ADDRESS,
         },
         providers::{
             balance::{BalanceItem, BalanceQuantity},
-            ProviderKind, TokenMetadataCacheProvider,
+            ProviderKind,
+            TokenMetadataCacheProvider,
         },
         utils::{capitalize_first_letter, crypto},
         Metrics,

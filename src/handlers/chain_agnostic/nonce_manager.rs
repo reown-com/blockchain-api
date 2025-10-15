@@ -1,11 +1,13 @@
-use crate::{
-    analytics::MessageSource,
-    handlers::self_provider::SelfProviderPool,
-    utils::crypto::{get_nonce, CryptoUitlsError},
+use {
+    crate::{
+        analytics::MessageSource,
+        handlers::self_provider::SelfProviderPool,
+        utils::crypto::{get_nonce, CryptoUitlsError},
+    },
+    alloy::primitives::{Address, U64},
+    std::collections::HashMap,
+    tokio::task::{JoinError, JoinHandle},
 };
-use alloy::primitives::{Address, U64};
-use std::collections::HashMap;
-use tokio::task::{JoinError, JoinHandle};
 
 pub struct NonceManager {
     provider_pool: SelfProviderPool,

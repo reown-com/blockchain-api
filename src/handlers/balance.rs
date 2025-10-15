@@ -37,7 +37,8 @@ const EMPTY_BALANCE_RESPONSE_SDK_VERSIONS: [&str; 2] = ["1.6.4", "1.6.5"];
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
 pub struct Config {
     /// List of project ids that are not allowed to use the balance RPC call
-    /// An empty balances list will be returned for the project ids in the denylist
+    /// An empty balances list will be returned for the project ids in the
+    /// denylist
     pub denylist_project_ids: Option<Vec<String>>,
 }
 
@@ -47,7 +48,8 @@ pub struct BalanceQueryParams {
     pub project_id: String,
     pub currency: SupportedCurrencies,
     pub chain_id: Option<String>,
-    /// Comma separated list of CAIP-10 contract addresses to force update the balance
+    /// Comma separated list of CAIP-10 contract addresses to force update the
+    /// balance
     pub force_update: Option<String>,
     #[serde(flatten)]
     pub sdk_info: SdkInfoParams,
@@ -165,8 +167,8 @@ async fn handler_internal(
     state.validate_project_access_and_quota(&project_id).await?;
 
     // if headers not contains `x-sdk-version` and `sv` query parameter then respond
-    // with an empty balance array to fix the issue of redundant calls in sdk versions <= 4.1.8
-    // https://github.com/WalletConnect/web3modal/pull/2157
+    // with an empty balance array to fix the issue of redundant calls in sdk
+    // versions <= 4.1.8 https://github.com/WalletConnect/web3modal/pull/2157
     if !headers.contains_key("x-sdk-version") && query.sdk_info.sv.is_none() {
         return Ok(Json(BalanceResponseBody { balances: vec![] }));
     }
@@ -177,8 +179,9 @@ async fn handler_internal(
         .as_deref()
         .or_else(|| headers.get("x-sdk-version").and_then(|v| v.to_str().ok()));
 
-    // Respond with an empty balance array if the sdk version is in the empty balance response list
-    // because the sdk version has a bug that causes excessive amount of calls to the balance RPC
+    // Respond with an empty balance array if the sdk version is in the empty
+    // balance response list because the sdk version has a bug that causes
+    // excessive amount of calls to the balance RPC
     if let Some(version) = sdk_version {
         for &v in &EMPTY_BALANCE_RESPONSE_SDK_VERSIONS {
             if version == v || version.ends_with(v) {
@@ -188,7 +191,8 @@ async fn handler_internal(
         }
     }
 
-    // Get the cached balance and return it if found except if force_update is needed
+    // Get the cached balance and return it if found except if force_update is
+    // needed
     if query.force_update.is_none() {
         if let Some(cached_balance) = get_cached_balance(&state.balance_cache, &address).await {
             return Ok(Json(cached_balance));
@@ -431,6 +435,7 @@ impl TokenMetadataCache {
     pub fn new(cache_pool: Option<Arc<Pool>>) -> Self {
         Self { cache_pool }
     }
+
     fn token_metadata_cache_key(&self, caip10_token_address: &str) -> String {
         format!("token_metadata/{caip10_token_address}")
     }

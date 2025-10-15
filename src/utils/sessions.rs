@@ -110,7 +110,8 @@ pub fn extract_values_sum_from_execution_batch(
     for tx in execution_batch {
         values_vec.push(tx.value);
     }
-    // summ execution values from the execution batch and check if it is less than or equal to the allowance
+    // summ execution values from the execution batch and check if it is less than
+    // or equal to the allowance
     let sum: U256 = values_vec.iter().fold(U256::ZERO, |acc, &x| acc + x);
     Ok(sum)
 }

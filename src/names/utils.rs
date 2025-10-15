@@ -89,9 +89,9 @@ pub async fn is_name_registered(name: String, postgres: &PgPool) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use {
-        super::super::{ATTRIBUTES_VALUE_MAX_LENGTH, SUPPORTED_ATTRIBUTES},
-        super::*,
+    use super::{
+        super::{ATTRIBUTES_VALUE_MAX_LENGTH, SUPPORTED_ATTRIBUTES},
+        *,
     };
 
     #[test]

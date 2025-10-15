@@ -1,7 +1,9 @@
 use {
     super::{PermissionTypeData, QueryParams, StoragePermissionsItem},
     crate::{
-        error::RpcError, state::AppState, storage::irn::OperationType,
+        error::RpcError,
+        state::AppState,
+        storage::irn::OperationType,
         utils::crypto::disassemble_caip10,
     },
     alloy::primitives::Bytes,
@@ -15,7 +17,8 @@ use {
     wc::metrics::{future_metrics, FutureExt},
 };
 
-// Hardcoded maximum number of PCIs to return since currently we don't have a pagination
+// Hardcoded maximum number of PCIs to return since currently we don't have a
+// pagination
 const MAX_PCIS_COUNT: u32 = 255;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

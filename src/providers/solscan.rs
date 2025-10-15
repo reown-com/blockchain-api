@@ -1,6 +1,9 @@
 use {
     super::{
-        BalanceProvider, FungiblePriceProvider, HistoryProvider, PriceResponseBody,
+        BalanceProvider,
+        FungiblePriceProvider,
+        HistoryProvider,
+        PriceResponseBody,
         SupportedCurrencies,
     },
     crate::{
@@ -8,14 +11,21 @@ use {
         error::{RpcError, RpcResult},
         handlers::{
             balance::{
-                BalanceItem, BalanceQuantity, BalanceQueryParams, BalanceResponseBody,
+                BalanceItem,
+                BalanceQuantity,
+                BalanceQueryParams,
+                BalanceResponseBody,
                 TokenMetadataCacheItem,
             },
             fungible_price::FungiblePriceItem,
             history::{
-                HistoryQueryParams, HistoryResponseBody, HistoryTransaction,
-                HistoryTransactionFungibleInfo, HistoryTransactionMetadata,
-                HistoryTransactionTransfer, HistoryTransactionTransferQuantity,
+                HistoryQueryParams,
+                HistoryResponseBody,
+                HistoryTransaction,
+                HistoryTransactionFungibleInfo,
+                HistoryTransactionMetadata,
+                HistoryTransactionTransfer,
+                HistoryTransactionTransferQuantity,
                 HistoryTransactionURLItem,
             },
         },
@@ -258,8 +268,8 @@ impl SolScanProvider {
         let price = self
             .token_price_request(SOLANA_NATIVE_TOKEN_ADDRESS, metrics.clone())
             .await?;
-        // Respond instantly for the native token (SOL) metadata with making just a price request
-        // since metadata is static
+        // Respond instantly for the native token (SOL) metadata with making just a
+        // price request since metadata is static
         if address == SOLANA_NATIVE_TOKEN_ADDRESS {
             return Ok(TokenMetaData {
                 name: Some("Solana".to_string()),

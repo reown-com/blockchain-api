@@ -5,14 +5,18 @@ use {
             convert::{
                 allowance::{AllowanceQueryParams, AllowanceResponseBody},
                 approve::{
-                    ConvertApproveQueryParams, ConvertApproveResponseBody, ConvertApproveTx,
+                    ConvertApproveQueryParams,
+                    ConvertApproveResponseBody,
+                    ConvertApproveTx,
                     ConvertApproveTxEip155,
                 },
                 gas_price::{GasPriceQueryParams, GasPriceQueryResponseBody},
                 quotes::{ConvertQuoteQueryParams, ConvertQuoteResponseBody, QuoteItem},
                 tokens::{TokenItem, TokensListQueryParams, TokensListResponseBody},
                 transaction::{
-                    ConvertTransactionQueryParams, ConvertTransactionResponseBody, ConvertTx,
+                    ConvertTransactionQueryParams,
+                    ConvertTransactionResponseBody,
+                    ConvertTx,
                     ConvertTxEip155,
                 },
             },
@@ -20,7 +24,10 @@ use {
             SupportedCurrencies,
         },
         providers::{
-            ConversionProvider, FungiblePriceProvider, PriceResponseBody, ProviderKind,
+            ConversionProvider,
+            FungiblePriceProvider,
+            PriceResponseBody,
+            ProviderKind,
             TokenMetadataCacheProvider,
         },
         utils::crypto,

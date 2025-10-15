@@ -67,7 +67,7 @@ impl RpcProvider for RootstockProvider {
             if response.error.is_some() && status.is_success() {
                 debug!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
-                   Rootstock: {response:?}"
+                     Rootstock: {response:?}"
                 );
             }
         }

@@ -3,9 +3,16 @@ use {
     rpc_proxy::{
         database::{
             helpers::{
-                delete_address, delete_name, get_account_names_stats, get_addresses_by_name,
-                get_name, get_name_and_addresses_by_name, get_names_by_address,
-                get_names_by_address_and_namespace, insert_name, insert_or_update_address,
+                delete_address,
+                delete_name,
+                get_account_names_stats,
+                get_addresses_by_name,
+                get_name,
+                get_name_and_addresses_by_name,
+                get_names_by_address,
+                get_names_by_address_and_namespace,
+                insert_name,
+                insert_or_update_address,
                 update_name_attributes,
             },
             types,
@@ -30,13 +37,10 @@ async fn insert_and_get_name_by_name() {
     let name = generate_random_name();
     let address = generate_random_address();
     let chain_id = 1;
-    let addresses = HashMap::from([(
-        chain_id,
-        types::Address {
-            address,
-            created_at: None,
-        },
-    )]);
+    let addresses = HashMap::from([(chain_id, types::Address {
+        address,
+        created_at: None,
+    })]);
 
     // create a new hashmap with attributes
     let attributes: HashMap<String, String> = HashMap::from_iter([
@@ -85,13 +89,10 @@ async fn insert_and_get_names_by_address() {
     let name = generate_random_name();
     let address = generate_random_address();
     let chain_id = 1;
-    let addresses = HashMap::from([(
-        chain_id,
-        types::Address {
-            address: address.clone(),
-            created_at: None,
-        },
-    )]);
+    let addresses = HashMap::from([(chain_id, types::Address {
+        address: address.clone(),
+        created_at: None,
+    })]);
 
     let insert_result = insert_name(
         name.clone(),
@@ -125,13 +126,10 @@ async fn insert_and_get_names_by_address_and_namespace() {
     let address = generate_random_address();
     let namespace = types::SupportedNamespaces::Eip155;
     let chain_id = 1;
-    let addresses = HashMap::from([(
-        chain_id,
-        types::Address {
-            address: address.clone(),
-            created_at: None,
-        },
-    )]);
+    let addresses = HashMap::from([(chain_id, types::Address {
+        address: address.clone(),
+        created_at: None,
+    })]);
 
     let insert_result = insert_name(
         name.clone(),
@@ -165,13 +163,10 @@ async fn insert_and_get_name_and_addresses() {
     let address = generate_random_address();
     let namespace = types::SupportedNamespaces::Eip155;
     let expected_ensip11_coin_type = 60;
-    let addresses = HashMap::from([(
-        expected_ensip11_coin_type,
-        types::Address {
-            address: address.clone(),
-            created_at: None,
-        },
-    )]);
+    let addresses = HashMap::from([(expected_ensip11_coin_type, types::Address {
+        address: address.clone(),
+        created_at: None,
+    })]);
 
     let attributes: HashMap<String, String> = HashMap::from_iter([(
         "avatar".to_string(),
@@ -218,13 +213,10 @@ async fn insert_and_update_name_attributes() {
     let name = generate_random_name();
     let address = generate_random_address();
     let chain_id = 1;
-    let addresses = HashMap::from([(
-        chain_id,
-        types::Address {
-            address,
-            created_at: None,
-        },
-    )]);
+    let addresses = HashMap::from([(chain_id, types::Address {
+        address,
+        created_at: None,
+    })]);
 
     // create a new hashmap with attributes
     let attributes: HashMap<String, String> = HashMap::from_iter([
@@ -284,13 +276,10 @@ async fn insert_delete_two_addresses() {
     let name = generate_random_name();
     let address = generate_random_address();
     let mut chain_id = 1;
-    let addresses = HashMap::from([(
-        chain_id,
-        types::Address {
-            address: address.clone(),
-            created_at: None,
-        },
-    )]);
+    let addresses = HashMap::from([(chain_id, types::Address {
+        address: address.clone(),
+        created_at: None,
+    })]);
 
     let insert_result = insert_name(
         name.clone(),
@@ -363,13 +352,10 @@ async fn insert_and_check_names_count() {
     let address = generate_random_address();
     let namespace = types::SupportedNamespaces::Eip155;
     let expected_ensip11_coin_type = 60;
-    let addresses = HashMap::from([(
-        expected_ensip11_coin_type,
-        types::Address {
-            address: address.clone(),
-            created_at: None,
-        },
-    )]);
+    let addresses = HashMap::from([(expected_ensip11_coin_type, types::Address {
+        address: address.clone(),
+        created_at: None,
+    })]);
     let attributes: HashMap<String, String> = HashMap::from_iter([(
         "avatar".to_string(),
         "http://test.url/avatar.png".to_string(),

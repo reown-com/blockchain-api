@@ -6,12 +6,15 @@ use {
         error::RpcError,
         names::{
             utils::{check_attributes, is_timestamp_within_interval},
-            ATTRIBUTES_VALUE_MAX_LENGTH, SUPPORTED_ATTRIBUTES,
+            ATTRIBUTES_VALUE_MAX_LENGTH,
+            SUPPORTED_ATTRIBUTES,
         },
         state::AppState,
         utils::{
             crypto::{
-                constant_time_eq, convert_coin_type_to_evm_chain_id, is_coin_type_supported,
+                constant_time_eq,
+                convert_coin_type_to_evm_chain_id,
+                is_coin_type_supported,
                 verify_message_signature,
             },
             simple_request_json::SimpleRequestJson,

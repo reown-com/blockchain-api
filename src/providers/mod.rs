@@ -5,7 +5,10 @@ use {
         error::{RpcError, RpcResult},
         handlers::{
             balance::{
-                self, BalanceQueryParams, BalanceResponseBody, TokenMetadataCache,
+                self,
+                BalanceQueryParams,
+                BalanceResponseBody,
+                TokenMetadataCache,
                 TokenMetadataCacheItem,
             },
             convert::{
@@ -20,7 +23,8 @@ use {
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
                 multi_quotes::{
-                    QueryParams as MultiQuotesQueryParams, QuotesResponse as MultiQuotesResponse,
+                    QueryParams as MultiQuotesQueryParams,
+                    QuotesResponse as MultiQuotesResponse,
                 },
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
                 properties::QueryParams as OnRampProvidersPropertiesQueryParams,
@@ -30,11 +34,13 @@ use {
                 },
                 quotes::{OnRampBuyQuotesParams, OnRampBuyQuotesResponse},
                 widget::{
-                    QueryParams as OnRampWidgetQueryParams, WidgetResponse as OnRampWidgetResponse,
+                    QueryParams as OnRampWidgetQueryParams,
+                    WidgetResponse as OnRampWidgetResponse,
                 },
             },
             portfolio::{PortfolioQueryParams, PortfolioResponseBody},
-            RpcQueryParams, SupportedCurrencies,
+            RpcQueryParams,
+            SupportedCurrencies,
         },
         utils::crypto::{CaipNamespaces, Erc20FunctionType},
         Metrics,
@@ -223,9 +229,9 @@ pub use {
 pub type ChainsWeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
 pub type NamespacesWeightResolver = HashMap<CaipNamespaces, HashMap<ProviderKind, Weight>>;
 
-/// Providers that are excluded from weight recalculation due to temporary issues
-/// or special handling requirements. These providers will maintain their current
-/// weights regardless of failure metrics from Prometheus.
+/// Providers that are excluded from weight recalculation due to temporary
+/// issues or special handling requirements. These providers will maintain their
+/// current weights regardless of failure metrics from Prometheus.
 pub const WEIGHT_RECALCULATION_EXCLUDED_PROVIDERS: &[ProviderKind] = &[ProviderKind::Pokt];
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
@@ -341,11 +347,15 @@ impl ProviderRepository {
                 .builder()
                 .map_err(|e| {
                     error!(
-                        "Failed to create redis pool builder for provider's responses caching: {:?}",
+                        "Failed to create redis pool builder for provider's responses caching: \
+                         {:?}",
                         e
                     );
                 })
-                .expect("Failed to create redis pool builder for provider's responses caching, builder is None");
+                .expect(
+                    "Failed to create redis pool builder for provider's responses caching, \
+                     builder is None",
+                );
 
             redis_pool = Some(Arc::new(
                 redis_builder
@@ -543,8 +553,9 @@ impl ProviderRepository {
             return Err(RpcError::UnsupportedChain(namespace.to_string()));
         }
 
-        // Adding non-minimal priority providers and use providers with the minimal priority
-        // only for a failover retrying (append them to the end of the list)
+        // Adding non-minimal priority providers and use providers with the minimal
+        // priority only for a failover retrying (append them to the end of the
+        // list)
         let minimal_weight_value = Weight::new(Priority::Minimal)
             .expect("Failed to create a Minimal priority value")
             .value();
@@ -576,7 +587,8 @@ impl ProviderRepository {
 
         let keys: Vec<_> = high_priority_providers.iter().map(|(key, _)| key).collect();
 
-        // If no non-minimal providers are available, directly append minimal-priority providers
+        // If no non-minimal providers are available, directly append minimal-priority
+        // providers
         if non_minimal_weight_providers.is_empty() {
             let minimal_weight_providers = minimal_weight_providers
                 .into_iter()
@@ -614,13 +626,15 @@ impl ProviderRepository {
                             .cloned()
                             .ok_or_else(|| {
                                 RpcError::WeightedProvidersIndex(format!(
-                                "Balance provider not found during the weighted index check: {provider}"
-                            ))
+                                    "Balance provider not found during the weighted index check: \
+                                     {provider}"
+                                ))
                             })
                     })
                     .collect::<Result<Vec<_>, _>>()?;
 
-                // Append minimal-priority providers to the end of the list, capped to remaining capacity
+                // Append minimal-priority providers to the end of the list, capped to remaining
+                // capacity
                 let remaining_capacity = max_providers.saturating_sub(providers_result.len());
                 providers_result.extend(
                     minimal_weight_providers
@@ -840,48 +854,44 @@ pub enum ProviderKind {
 
 impl Display for ProviderKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                ProviderKind::Aurora => "Aurora",
-                ProviderKind::Arbitrum => "Arbitrum",
-                ProviderKind::Pokt => "Pokt",
-                ProviderKind::Binance => "Binance",
-                ProviderKind::Wemix => "Wemix",
-                ProviderKind::Bungee => "Bungee",
-                ProviderKind::ZKSync => "zkSync",
-                ProviderKind::Publicnode => "Publicnode",
-                ProviderKind::Base => "Base",
-                ProviderKind::Zora => "Zora",
-                ProviderKind::Zerion => "Zerion",
-                ProviderKind::Coinbase => "Coinbase",
-                ProviderKind::OneInch => "OneInch",
-                ProviderKind::Quicknode => "Quicknode",
-                ProviderKind::Near => "Near",
-                ProviderKind::Mantle => "Mantle",
-                ProviderKind::SolScan => "SolScan",
-                ProviderKind::Unichain => "Unichain",
-                ProviderKind::Morph => "Morph",
-                ProviderKind::Tenderly => "Tenderly",
-                ProviderKind::Dune => "Dune",
-                ProviderKind::Drpc => "Drpc",
-                ProviderKind::Syndica => "Syndica",
-                ProviderKind::Allnodes => "Allnodes",
-                ProviderKind::Meld => "Meld",
-                ProviderKind::Monad => "Monad",
-                ProviderKind::Sui => "Sui",
-                ProviderKind::Hiro => "Hiro",
-                ProviderKind::CallStatic => "CallStatic",
-                ProviderKind::TheRpc => "TheRpc",
-                ProviderKind::Moonbeam => "Moonbeam",
-                ProviderKind::Blast => "Blast",
-                ProviderKind::Rootstock => "Rootstock",
-                ProviderKind::Lifi => "Lifi",
-                ProviderKind::Trongrid => "Trongrid",
-                ProviderKind::Generic(name) => name.as_str(),
-            }
-        )
+        write!(f, "{}", match self {
+            ProviderKind::Aurora => "Aurora",
+            ProviderKind::Arbitrum => "Arbitrum",
+            ProviderKind::Pokt => "Pokt",
+            ProviderKind::Binance => "Binance",
+            ProviderKind::Wemix => "Wemix",
+            ProviderKind::Bungee => "Bungee",
+            ProviderKind::ZKSync => "zkSync",
+            ProviderKind::Publicnode => "Publicnode",
+            ProviderKind::Base => "Base",
+            ProviderKind::Zora => "Zora",
+            ProviderKind::Zerion => "Zerion",
+            ProviderKind::Coinbase => "Coinbase",
+            ProviderKind::OneInch => "OneInch",
+            ProviderKind::Quicknode => "Quicknode",
+            ProviderKind::Near => "Near",
+            ProviderKind::Mantle => "Mantle",
+            ProviderKind::SolScan => "SolScan",
+            ProviderKind::Unichain => "Unichain",
+            ProviderKind::Morph => "Morph",
+            ProviderKind::Tenderly => "Tenderly",
+            ProviderKind::Dune => "Dune",
+            ProviderKind::Drpc => "Drpc",
+            ProviderKind::Syndica => "Syndica",
+            ProviderKind::Allnodes => "Allnodes",
+            ProviderKind::Meld => "Meld",
+            ProviderKind::Monad => "Monad",
+            ProviderKind::Sui => "Sui",
+            ProviderKind::Hiro => "Hiro",
+            ProviderKind::CallStatic => "CallStatic",
+            ProviderKind::TheRpc => "TheRpc",
+            ProviderKind::Moonbeam => "Moonbeam",
+            ProviderKind::Blast => "Blast",
+            ProviderKind::Rootstock => "Rootstock",
+            ProviderKind::Lifi => "Lifi",
+            ProviderKind::Trongrid => "Trongrid",
+            ProviderKind::Generic(name) => name.as_str(),
+        })
     }
 }
 
@@ -977,6 +987,7 @@ impl TryInto<PriorityValue> for Priority {
 
 impl FromStr for Priority {
     type Err = std::num::ParseIntError;
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "Max" => Ok(Self::Max),
@@ -1226,7 +1237,8 @@ pub trait BundlerOpsProvider: Send + Sync + Debug {
         params: serde_json::Value,
     ) -> RpcResult<serde_json::Value>;
 
-    /// Maps the operations enum variant to its provider-specific operation string.
+    /// Maps the operations enum variant to its provider-specific operation
+    /// string.
     fn to_provider_op(&self, op: &SupportedBundlerOps) -> String;
 }
 

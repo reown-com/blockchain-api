@@ -31,12 +31,14 @@ pub enum StorageError {
     Utf8Error(#[from] std::string::FromUtf8Error),
     /// WCN replication client error
     #[error("WCN client error: {0}")]
-    WcnClientError(#[from] wcn_replication::Error),
-    #[error("WCN auth error: {0}")]
-    WcnAuthError(#[from] wcn_replication::auth::Error),
-    #[error("WCN driver creation error: {0}")]
-    WcnDriverCreationError(#[from] wcn_replication::CreationError),
+    WcnClientError(#[from] wcn::Error),
     /// An unexpected error occurred
     #[error("{0:?}")]
     Other(String),
+}
+
+impl StorageError {
+    pub fn other(err: impl ToString) -> Self {
+        Self::Other(err.to_string())
+    }
 }

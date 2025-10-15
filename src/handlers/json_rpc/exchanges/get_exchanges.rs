@@ -1,9 +1,19 @@
 use {
-    crate::handlers::json_rpc::exchanges::{
-        get_enabled_features, get_feature_type, get_supported_exchanges,
-        is_feature_enabled_for_project_id, Exchange, Feature, FeatureType,
+    crate::{
+        handlers::{
+            json_rpc::exchanges::{
+                get_enabled_features,
+                get_feature_type,
+                get_supported_exchanges,
+                is_feature_enabled_for_project_id,
+                Exchange,
+                Feature,
+                FeatureType,
+            },
+            SdkInfoParams,
+        },
+        state::AppState,
     },
-    crate::{handlers::SdkInfoParams, state::AppState},
     axum::{
         extract::{ConnectInfo, Query, State},
         Json,

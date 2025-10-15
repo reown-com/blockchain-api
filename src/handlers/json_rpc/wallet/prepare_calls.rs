@@ -5,7 +5,9 @@ use {
         handlers::{
             json_rpc::wallet::types::SignatureRequestType,
             sessions::get::{
-                get_session_context, GetSessionContextError, InternalGetSessionContextError,
+                get_session_context,
+                GetSessionContextError,
+                InternalGetSessionContextError,
             },
         },
         state::AppState,
@@ -35,13 +37,18 @@ use {
         erc7579::{
             accounts::safe::encode_validator_key,
             smart_sessions::{
-                enableSessionSigCall, encode_use_signature, EnableSession,
+                enableSessionSigCall,
+                encode_use_signature,
+                EnableSession,
                 ISmartSession::{self, isPermissionEnabledReturn},
-                SmartSessionMode, SMART_SESSIONS_ADDRESS,
+                SmartSessionMode,
+                SMART_SESSIONS_ADDRESS,
             },
         },
         smart_accounts::{
-            account_address::AccountAddress, nonce::get_nonce_with_key, safe::get_call_data,
+            account_address::AccountAddress,
+            nonce::get_nonce_with_key,
+            safe::get_call_data,
         },
         user_operation::{user_operation_hash::UserOperationHash, UserOperationV07},
     },
@@ -1006,7 +1013,11 @@ mod tests {
     #[test]
     fn test_encode_enable_signature_before_compress() {
         use yttrium::erc7579::smart_sessions::{
-            ActionData, ChainDigest, ERC7739Data, PolicyData, Session,
+            ActionData,
+            ChainDigest,
+            ERC7739Data,
+            PolicyData,
+            Session,
         };
 
         let result = encode_enable_signature_before_compress(
@@ -1061,7 +1072,11 @@ mod tests {
     #[test]
     fn test_encode_enable_signature() {
         use yttrium::erc7579::smart_sessions::{
-            ActionData, ChainDigest, ERC7739Data, PolicyData, Session,
+            ActionData,
+            ChainDigest,
+            ERC7739Data,
+            PolicyData,
+            Session,
         };
 
         assert_eq!(

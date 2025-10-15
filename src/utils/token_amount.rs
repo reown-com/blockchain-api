@@ -1,5 +1,4 @@
-use alloy::primitives::U256;
-use std::cmp::Ordering;
+use {alloy::primitives::U256, std::cmp::Ordering};
 
 /// Basically a BigInt utility, but restricted to U256 and u8 types
 #[derive(Debug, Clone)]

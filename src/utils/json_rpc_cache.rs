@@ -116,7 +116,8 @@ async fn handle_eth_chain_id(
         return None;
     };
 
-    // Check if the chainId is cached in the moka memory cache and return immediately
+    // Check if the chainId is cached in the moka memory cache and return
+    // immediately
     if let Some(response) =
         check_cached_chain_id_response(caip2_chain_id, request, moka_cache).await
     {
@@ -165,7 +166,8 @@ async fn handle_net_listening(
     Some(response)
 }
 
-/// Handle the `net_version` RPC method by always returning the chain ID as a result
+/// Handle the `net_version` RPC method by always returning the chain ID as a
+/// result
 async fn handle_net_version(
     caip2_chain_id: &str,
     request: &JsonRpcRequest,

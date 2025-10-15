@@ -1,17 +1,24 @@
 use {
-    crate::handlers::json_rpc::exchanges::{
-        BuyTransactionStatus, ExchangeError, ExchangeProvider, Feature, FeatureType,
-        GetBuyStatusParams, GetBuyStatusResponse, GetBuyUrlParams,
+    crate::{
+        handlers::json_rpc::exchanges::{
+            BuyTransactionStatus,
+            ExchangeError,
+            ExchangeProvider,
+            Feature,
+            FeatureType,
+            GetBuyStatusParams,
+            GetBuyStatusResponse,
+            GetBuyUrlParams,
+        },
+        state::AppState,
+        utils::crypto::Caip19Asset,
     },
-    crate::state::AppState,
-    crate::utils::crypto::Caip19Asset,
     axum::extract::State,
     base64::{engine::general_purpose::STANDARD, Engine},
     once_cell::sync::Lazy,
     openssl::{hash::MessageDigest, pkey::PKey, sign::Signer},
     serde::{Deserialize, Serialize},
-    std::collections::HashMap,
-    std::sync::Arc,
+    std::{collections::HashMap, sync::Arc},
     tracing::debug,
 };
 
@@ -59,11 +66,13 @@ static CAIP19_TO_BINANCE_CRYPTO: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
             "USDT",
         ), // USDT on Polygon
         (
-            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/token:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/token:\
+             EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
             "USDC",
         ), // USDC on Solana
         (
-            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/token:Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+            "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp/token:\
+             Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
             "USDT",
         ), // USDT on Solana
         (
@@ -126,11 +135,13 @@ impl From<usize> for BinanceOrderStatus {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PreOrderRequest {
-    /// The unique order id from the partner side. Supports only letters and numbers.
+    /// The unique order id from the partner side. Supports only letters and
+    /// numbers.
     pub external_order_id: String,
 
-    /// Crypto currency. If not specified, Binance Connect will automatically select/recommend a default crypto currency.
-    /// Required for SEND_PRIMARY.
+    /// Crypto currency. If not specified, Binance Connect will automatically
+    /// select/recommend a default crypto currency. Required for
+    /// SEND_PRIMARY.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub crypto_currency: Option<String>,
 
@@ -160,10 +171,12 @@ pub struct PreOrderRequest {
     /// The redirectUrl is for redirecting to your website if order is failed
     pub fail_redirect_url: Option<String>,
 
-    /// The redirectDeepLink is for redirecting to your APP if order is completed
+    /// The redirectDeepLink is for redirecting to your APP if order is
+    /// completed
     pub redirect_deep_link: Option<String>,
 
-    /// The failRedirectDeepLink is for redirecting to your APP if order is failed
+    /// The failRedirectDeepLink is for redirecting to your APP if order is
+    /// failed
     pub fail_redirect_deep_link: Option<String>,
 
     /// The original client IP

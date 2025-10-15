@@ -125,7 +125,8 @@ pub struct JsonRpcRequest<T: Serialize + Send + Sync> {
 #[serde(rename_all = "camelCase")]
 pub struct UserOperation {
     pub sender: EthersAddress,
-    /// The first 192 bits are the nonce key, the last 64 bits are the nonce value
+    /// The first 192 bits are the nonce key, the last 64 bits are the nonce
+    /// value
     pub nonce: U256,
     pub call_data: Bytes,
     pub call_gas_limit: U128,
@@ -134,9 +135,7 @@ pub struct UserOperation {
     pub max_priority_fee_per_gas: U128,
     pub max_fee_per_gas: U128,
     pub signature: Bytes,
-    /*
-     * Optional fields
-     */
+    // Optional fields
     /// Factory and data, are populated if deploying a new sender contract
     pub factory: Option<EthersAddress>,
     pub factory_data: Option<Bytes>,
@@ -410,7 +409,8 @@ pub async fn verify_eip6492_message_signature(
 }
 
 /// Verify secp256k1 message signature using the verification key
-/// Verification key is expected to be in DER format and Base64 encoded same as signature
+/// Verification key is expected to be in DER format and Base64 encoded same as
+/// signature
 #[tracing::instrument(level = "debug")]
 pub fn verify_secp256k1_signature(
     message: &str,
@@ -494,8 +494,8 @@ pub async fn get_erc20_contract_balance(
     let contract = ERC20Contract::new(contract, provider);
     let balance = contract.balance_of(wallet).call().await.map_err(|e| {
         CryptoUitlsError::ContractCallError(format!(
-            "Failed to call ERC20 contract {contract:?} in {chain_id:?} for the balance of {wallet:?}.\
-            The error: {e}"
+            "Failed to call ERC20 contract {contract:?} in {chain_id:?} for the balance of \
+             {wallet:?}.The error: {e}"
         ))
     })?;
     Ok(balance)
@@ -831,12 +831,14 @@ impl Caip2ChainId {
     pub fn new(namespace: &str, reference: &str) -> Result<Self, CryptoUitlsError> {
         if !CAIP2_NAMESPACE_REGEX.is_match(namespace) {
             return Err(CryptoUitlsError::WrongCaip2Format(format!(
-                "CAIP-2 namespace must be 3-8 characters of lowercase letters, digits, or hyphens: {namespace}"
+                "CAIP-2 namespace must be 3-8 characters of lowercase letters, digits, or \
+                 hyphens: {namespace}"
             )));
         }
         if !CAIP2_REFERENCE_REGEX.is_match(reference) {
             return Err(CryptoUitlsError::WrongChainIdFormat(format!(
-                "CAIP-2 reference must be 1-32 characters of letters, digits, or hyphens: {reference}"
+                "CAIP-2 reference must be 1-32 characters of letters, digits, or hyphens: \
+                 {reference}"
             )));
         }
 
@@ -913,14 +915,16 @@ impl Caip19Asset {
         // Validate asset namespace format
         if !CAIP19_ASSET_NAMESPACE_REGEX.is_match(asset_namespace) {
             return Err(CryptoUitlsError::WrongCaip19Format(format!(
-                "Invalid asset namespace format (must be 3-8 lowercase alphanumeric or hyphen characters): {asset_namespace}"
+                "Invalid asset namespace format (must be 3-8 lowercase alphanumeric or hyphen \
+                 characters): {asset_namespace}"
             )));
         }
 
         // Validate asset reference format
         if !CAIP19_ASSET_REFERENCE_REGEX.is_match(asset_reference) {
             return Err(CryptoUitlsError::WrongCaip19Format(format!(
-                "Invalid asset reference format (must be 1-128 alphanumeric characters or -,%,.): {asset_reference}"
+                "Invalid asset reference format (must be 1-128 alphanumeric characters or -,%,.): \
+                 {asset_reference}"
             )));
         }
 
@@ -928,7 +932,8 @@ impl Caip19Asset {
         if let Some(token_id) = token_id {
             if !CAIP19_TOKEN_ID_REGEX.is_match(token_id) {
                 return Err(CryptoUitlsError::WrongCaip19Format(format!(
-                    "Invalid token ID format (must be 1-78 alphanumeric characters or -,%,.): {token_id}"
+                    "Invalid token ID format (must be 1-78 alphanumeric characters or -,%,.): \
+                     {token_id}"
                 )));
             }
         }
@@ -981,7 +986,8 @@ impl Caip19Asset {
         let mut namespace_ref_parts = namespace_ref_part.splitn(2, ':');
         let asset_namespace = namespace_ref_parts.next().ok_or_else(|| {
             CryptoUitlsError::WrongCaip19Format(format!(
-                "Invalid asset namespace/reference format (missing namespace): {namespace_ref_part}"
+                "Invalid asset namespace/reference format (missing namespace): \
+                 {namespace_ref_part}"
             ))
         })?;
 
@@ -1070,7 +1076,8 @@ pub fn disassemble_caip2(caip2: &str) -> Result<(CaipNamespaces, String), Crypto
     Ok((namespace, chain_id))
 }
 
-/// Disassemble CAIP-10 to namespace, chainId and address (with default CaipNamespaces)
+/// Disassemble CAIP-10 to namespace, chainId and address (with default
+/// CaipNamespaces)
 pub fn disassemble_caip10(
     caip10: &str,
 ) -> Result<(CaipNamespaces, String, String), CryptoUitlsError> {
