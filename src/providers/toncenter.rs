@@ -22,6 +22,7 @@ const TON_MAINNET_CHAIN_ID: &str = "ton:mainnet";
 const TON_NATIVE_TOKEN_SYMBOL: &str = "TON";
 const TON_NATIVE_TOKEN_NAME: &str = "Toncoin";
 const TON_NATIVE_TOKEN_ICON: &str = "https://ton.org/img/ton_symbol.png";
+const TONCENTER_HISTORY_PAGE_SIZE: u32 = 100;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 struct TonV3TransactionsResponse {
@@ -131,8 +132,12 @@ impl HistoryProvider for ToncenterProvider {
                 before_hash = Some(parts[1].to_string());
             }
         }
-        let limit = 50u32;
-        let url = self.build_history_url(&address, limit, before_lt, before_hash)?;
+        let url = self.build_history_url(
+            &address,
+            TONCENTER_HISTORY_PAGE_SIZE,
+            before_lt,
+            before_hash,
+        )?;
 
         let latency_start = std::time::SystemTime::now();
         let response = self.send_request(url).await.tap_err(|e| {
