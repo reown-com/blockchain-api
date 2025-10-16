@@ -135,7 +135,10 @@ pub enum ExchangeError {
     #[error("Exchange is not enabled: {0}")]
     ExchangeNotEnabled(String),
 
-    #[error("Internal error")]
+    #[error("Project data error: {0}")]
+    ProjectDataError(String),
+
+    #[error("Exchange internal error: {0}")]
     InternalError(String),
 }
 
@@ -249,7 +252,7 @@ async fn get_enabled_features(
         .registry
         .project_data_request(request)
         .await
-        .map_err(|e| ExchangeError::InternalError(e.to_string()))?;
+        .map_err(|e| ExchangeError::ProjectDataError(e.to_string()))?;
     debug!("project_data: {:?}", project_data);
     let features = project_data.features.unwrap_or_default();
     Ok(features)
