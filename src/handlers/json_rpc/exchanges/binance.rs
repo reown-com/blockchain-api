@@ -404,7 +404,7 @@ impl BinanceExchange {
             .await
             .map_err(|e| {
                 debug!("Failed to get project data: {}", e);
-                ExchangeError::InternalError(format!("Failed to get project data: {e}"))
+                ExchangeError::ProjectDataError(e.to_string())
             })?;
         let project_name = if project.data.name.is_empty() {
             debug!("Project name is empty, using fallback name");

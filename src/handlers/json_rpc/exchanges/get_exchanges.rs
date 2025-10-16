@@ -56,8 +56,8 @@ pub enum GetExchangesError {
 
 #[derive(Error, Debug)]
 pub enum GetExchangesInternalError {
-    #[error("Internal error")]
-    InternalError(String),
+    #[error("Unable to get enabled features: {0}")]
+    UnableToGetEnabledFeatures(String),
 }
 
 impl GetExchangesError {
@@ -78,7 +78,7 @@ pub async fn handler(
     let project_features = get_enabled_features(state.clone(), &project_id)
         .await
         .map_err(|e| {
-            GetExchangesError::InternalError(GetExchangesInternalError::InternalError(
+            GetExchangesError::InternalError(GetExchangesInternalError::UnableToGetEnabledFeatures(
                 e.to_string(),
             ))
         })?;
