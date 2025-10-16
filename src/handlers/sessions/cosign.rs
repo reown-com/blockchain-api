@@ -11,10 +11,12 @@ use {
                 UserOperation,
             },
             permissions::{
-                contract_call_permission_check, native_token_transfer_permission_check,
-                ContractCallPermissionData, NativeTokenAllowancePermissionData, PermissionType,
+                native_token_transfer_permission_check, ContractCallPermissionData,
+                NativeTokenAllowancePermissionData, PermissionType,
             },
-            sessions::extract_execution_batch_components,
+            sessions::{
+                extract_addresses_from_execution_batch, extract_execution_batch_components,
+            },
             simple_request_json::SimpleRequestJson,
             validators::is_ownable_validator_address,
         },
@@ -33,7 +35,7 @@ use {
     },
     serde::{Deserialize, Serialize},
     serde_json::json,
-    std::{str::FromStr, sync::Arc, time::SystemTime},
+    std::{collections::HashSet, str::FromStr, sync::Arc, time::SystemTime},
     wc::metrics::{future_metrics, FutureExt},
 };
 
@@ -176,31 +178,53 @@ async fn handler_internal(
         return Err(RpcError::CoSignerEmptyPermissions);
     }
 
-    // Check permissions by types
-    for permission in storage_permissions_item.permissions {
+    // Aggregate evaluation across permissions
+    let mut allowed_targets: HashSet<Address> = HashSet::new();
+    let mut any_contract_call_permission = false;
+    let mut any_allowance_permission = false;
+    let mut allowed_by_allowance = false;
+
+    for permission in storage_permissions_item.permissions.clone() {
         match PermissionType::from_str(permission.r#type.as_str()) {
-            Ok(permission_type) => match permission_type {
-                PermissionType::ContractCall => {
-                    contract_call_permission_check(
-                        execution_batch.clone(),
-                        serde_json::from_value::<ContractCallPermissionData>(
-                            permission.data.clone(),
-                        )?,
-                    )?;
+            Ok(PermissionType::ContractCall) => {
+                let data =
+                    serde_json::from_value::<ContractCallPermissionData>(permission.data.clone())?;
+                allowed_targets.insert(data.address);
+                any_contract_call_permission = true;
+            }
+            Ok(PermissionType::NativeTokenRecurringAllowance) => {
+                any_allowance_permission = true;
+                let result = native_token_transfer_permission_check(
+                    execution_batch.clone(),
+                    serde_json::from_value::<NativeTokenAllowancePermissionData>(
+                        permission.data.clone(),
+                    )?,
+                );
+                if result.is_ok() {
+                    allowed_by_allowance = true;
                 }
-                PermissionType::NativeTokenRecurringAllowance => {
-                    native_token_transfer_permission_check(
-                        execution_batch.clone(),
-                        serde_json::from_value::<NativeTokenAllowancePermissionData>(
-                            permission.data.clone(),
-                        )?,
-                    )?;
-                }
-            },
-            Err(_) => {
-                return Err(RpcError::CosignerUnsupportedPermission(permission.r#type));
+            }
+            Err(_) => return Err(RpcError::CosignerUnsupportedPermission(permission.r#type)),
+        }
+    }
+
+    // If contract-call permissions exist, ensure every execution target is whitelisted by ANY
+    if any_contract_call_permission {
+        let execution_addresses = extract_addresses_from_execution_batch(execution_batch.clone())?;
+        for addr in execution_addresses {
+            if !allowed_targets.contains(&addr) {
+                return Err(RpcError::CosignerPermissionDenied(
+                    "Execution address is not in allowed contracts".to_string(),
+                ));
             }
         }
+    }
+
+    // If allowance permissions exist, at least one must allow the sum
+    if any_allowance_permission && !allowed_by_allowance {
+        return Err(RpcError::CosignerPermissionDenied(
+            "Execution value exceeds all configured allowances".to_string(),
+        ));
     }
 
     // Check and get the permission context if it's updated
