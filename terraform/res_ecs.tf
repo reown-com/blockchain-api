@@ -84,6 +84,7 @@ module "ecs" {
   callstatic_api_key   = var.callstatic_api_key
   blast_api_key        = var.blast_api_key
   lifi_api_key         = var.lifi_api_key
+  toncenter_api_key    = var.toncenter_api_key
 
   # RPC Proxy configuration
   proxy_skip_quota_chains = var.proxy_skip_quota_chains

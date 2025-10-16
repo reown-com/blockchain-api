@@ -19,7 +19,7 @@ pub use {
     allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, blast::*, callstatic::*, drpc::*,
     dune::*, generic::*, hiro::*, mantle::*, monad::*, moonbeam::*, morph::*, near::*, pokt::*,
     publicnode::*, quicknode::*, rootstock::*, server::*, solscan::*, sui::*, syndica::*,
-    therpc::*, trongrid::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
+    therpc::*, toncenter::*, trongrid::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
 };
 mod allnodes;
 mod arbitrum;
@@ -46,6 +46,7 @@ pub mod solscan;
 mod sui;
 mod syndica;
 mod therpc;
+mod toncenter;
 mod trongrid;
 mod unichain;
 mod wemix;
@@ -201,6 +202,8 @@ mod test {
                 "RPC_PROXY_PROVIDER_SOLSCAN_API_V2_TOKEN",
                 "SOLSCAN_API_V2_TOKEN",
             ),
+            ("RPC_PROXY_PROVIDER_TONCENTER_API_URL", "TONCENTER_API_URL"),
+            ("RPC_PROXY_PROVIDER_TONCENTER_API_KEY", "TONCENTER_API_KEY"),
             ("RPC_PROXY_PROVIDER_BUNGEE_API_KEY", "BUNGEE_API_KEY"),
             ("RPC_PROXY_PROVIDER_TENDERLY_API_KEY", "TENDERLY_KEY"),
             (
@@ -346,6 +349,8 @@ mod test {
                     lifi_api_key: Some("LIFI_API_KEY".to_owned()),
                     pimlico_api_key: "PIMLICO_API_KEY".to_string(),
                     solscan_api_v2_token: "SOLSCAN_API_V2_TOKEN".to_string(),
+                    toncenter_api_url: Some("TONCENTER_API_URL".to_string()),
+                    toncenter_api_key: Some("TONCENTER_API_KEY".to_string()),
                     bungee_api_key: "BUNGEE_API_KEY".to_string(),
                     tenderly_api_key: "TENDERLY_KEY".to_string(),
                     tenderly_account_id: "TENDERLY_ACCOUNT_ID".to_string(),

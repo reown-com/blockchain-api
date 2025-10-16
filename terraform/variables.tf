@@ -229,6 +229,12 @@ variable "lifi_api_key" {
   sensitive   = true
 }
 
+variable "toncenter_api_key" {
+  description = "Toncenter API key"
+  type        = string
+  sensitive   = true
+}
+
 #-------------------------------------------------------------------------------
 # RPC Proxy configuration
 

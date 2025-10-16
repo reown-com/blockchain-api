@@ -173,6 +173,7 @@ mod sui;
 mod syndica;
 pub mod tenderly;
 mod therpc;
+mod toncenter;
 mod trongrid;
 mod unichain;
 mod weights;
@@ -212,6 +213,7 @@ pub use {
     syndica::{SyndicaProvider, SyndicaWsProvider},
     tenderly::TenderlyProvider,
     therpc::TheRpcProvider,
+    toncenter::ToncenterProvider,
     trongrid::TrongridProvider,
     unichain::UnichainProvider,
     wemix::WemixProvider,
@@ -250,6 +252,10 @@ pub struct ProvidersConfig {
     pub pimlico_api_key: String,
     /// SolScan API v2 token key
     pub solscan_api_v2_token: String,
+    /// Toncenter base URL (e.g., https://toncenter.com)
+    pub toncenter_api_url: Option<String>,
+    /// Toncenter API key (optional)
+    pub toncenter_api_key: Option<String>,
     /// Bungee API key
     pub bungee_api_key: String,
     /// Tenderly API key
@@ -392,6 +398,13 @@ impl ProviderRepository {
             config.solscan_api_v2_token.clone(),
             redis_pool.clone(),
         ));
+        let toncenter_provider = Arc::new(ToncenterProvider::new(
+            config
+                .toncenter_api_url
+                .clone()
+                .unwrap_or_else(|| "https://toncenter.com".to_string()),
+            config.toncenter_api_key.clone(),
+        ));
 
         let mut balance_providers: HashMap<CaipNamespaces, Arc<dyn BalanceProvider>> =
             HashMap::new();
@@ -402,6 +415,7 @@ impl ProviderRepository {
             HashMap::new();
         history_providers.insert(CaipNamespaces::Eip155, zerion_provider.clone());
         history_providers.insert(CaipNamespaces::Solana, solscan_provider.clone());
+        history_providers.insert(CaipNamespaces::Ton, toncenter_provider.clone());
 
         let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
             coinbase_api_key,
@@ -835,6 +849,7 @@ pub enum ProviderKind {
     Rootstock,
     Lifi,
     Trongrid,
+    Toncenter,
     Generic(String),
 }
 
@@ -879,6 +894,7 @@ impl Display for ProviderKind {
                 ProviderKind::Rootstock => "Rootstock",
                 ProviderKind::Lifi => "Lifi",
                 ProviderKind::Trongrid => "Trongrid",
+                ProviderKind::Toncenter => "Toncenter",
                 ProviderKind::Generic(name) => name.as_str(),
             }
         )
@@ -923,6 +939,7 @@ impl ProviderKind {
             "Blast" => Some(Self::Blast),
             "Rootstock" => Some(Self::Rootstock),
             "Trongrid" => Some(Self::Trongrid),
+            "Toncenter" => Some(Self::Toncenter),
             x => Some(Self::Generic(x.to_string())),
         }
     }

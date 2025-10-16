@@ -293,6 +293,12 @@ variable "lifi_api_key" {
   sensitive   = true
 }
 
+variable "toncenter_api_key" {
+  description = "Toncenter API key"
+  type        = string
+  sensitive   = true
+}
+
 variable "testing_project_id" {
   description = "Project ID used in a testing suite"
   type        = string

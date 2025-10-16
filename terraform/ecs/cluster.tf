@@ -110,6 +110,7 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "RPC_PROXY_PROVIDER_CALLSTATIC_API_KEY", value = var.callstatic_api_key },
         { name = "RPC_PROXY_PROVIDER_BLAST_API_KEY", value = var.blast_api_key },
         { name = "RPC_PROXY_PROVIDER_LIFI_API_KEY", value = var.lifi_api_key },
+        { name = "RPC_PROXY_PROVIDER_TONCENTER_API_KEY", value = var.toncenter_api_key },
 
         { name = "RPC_PROXY_SKIP_QUOTA_CHAINS", value = var.proxy_skip_quota_chains },
 
