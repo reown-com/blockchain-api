@@ -213,9 +213,9 @@ async fn handler_internal(
         let execution_addresses = extract_addresses_from_execution_batch(execution_batch.clone())?;
         for addr in execution_addresses {
             if !allowed_targets.contains(&addr) {
-                return Err(RpcError::CosignerPermissionDenied(
-                    "Execution address is not in allowed contracts".to_string(),
-                ));
+                return Err(RpcError::CosignerPermissionDenied(format!(
+                    "Execution address {addr:?} is not in allowed contracts"
+                )));
             }
         }
     }
