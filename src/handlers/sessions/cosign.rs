@@ -15,7 +15,8 @@ use {
                 NativeTokenAllowancePermissionData, PermissionType,
             },
             sessions::{
-                extract_addresses_from_execution_batch, extract_execution_batch_components,
+                extract_contract_call_addresses_from_execution_batch,
+                extract_execution_batch_components,
             },
             simple_request_json::SimpleRequestJson,
             validators::is_ownable_validator_address,
@@ -208,14 +209,18 @@ async fn handler_internal(
         }
     }
 
-    // If contract-call permissions exist, ensure every execution target is whitelisted by ANY
+    // If contract-call permissions exist and the batch contains any contract-calls,
+    // ensure every contract-call target is whitelisted by ANY contract-call permission
     if any_contract_call_permission {
-        let execution_addresses = extract_addresses_from_execution_batch(execution_batch.clone())?;
-        for addr in execution_addresses {
-            if !allowed_targets.contains(&addr) {
-                return Err(RpcError::CosignerPermissionDenied(format!(
-                    "Execution address {addr:?} is not in allowed contracts"
-                )));
+        let contract_call_targets =
+            extract_contract_call_addresses_from_execution_batch(execution_batch.clone())?;
+        if !contract_call_targets.is_empty() {
+            for addr in contract_call_targets {
+                if !allowed_targets.contains(&addr) {
+                    return Err(RpcError::CosignerPermissionDenied(format!(
+                        "Execution address {addr:?} is not in allowed contracts"
+                    )));
+                }
             }
         }
     }
