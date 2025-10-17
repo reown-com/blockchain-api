@@ -102,6 +102,19 @@ pub fn extract_addresses_from_execution_batch(
     Ok(targets)
 }
 
+/// Extract only the contract-call target addresses (transactions with non-empty call_data)
+pub fn extract_contract_call_addresses_from_execution_batch(
+    execution_batch: Vec<ExecutionTransaction>,
+) -> Result<Vec<Address>, RpcError> {
+    let mut targets = Vec::with_capacity(execution_batch.len());
+    for tx in execution_batch {
+        if !tx.call_data.is_empty() {
+            targets.push(tx.address);
+        }
+    }
+    Ok(targets)
+}
+
 /// Exract sum of values from the bundler's execute calldata execution batch
 pub fn extract_values_sum_from_execution_batch(
     execution_batch: Vec<ExecutionTransaction>,
