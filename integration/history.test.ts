@@ -76,7 +76,7 @@ describe('Transactions history', () => {
   })
 
   it('fulfilled history TON address', async () => {
-    let chainId = 'ton:mainnet'
+    let chainId = 'ton:-239'
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/account/${fulfilled_ton_address}/history?projectId=${projectId}&chainId=${chainId}`,
     )
@@ -119,7 +119,7 @@ describe('Transactions history', () => {
   })
   
   it('empty history TON address', async () => {
-    let chainId = 'ton:mainnet'
+    let chainId = 'ton:-239'
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/account/${empty_ton_address}/history?projectId=${projectId}&chainId=${chainId}`,
     )

@@ -59,7 +59,7 @@ const TRON_CHAIN_ID: &str = "tron:0x2b6653dc";
 
 /// The method name for the TON sendBoc wrapper method
 const TON_SEND_BOC_METHOD: &str = "ton_sendBoc";
-const TON_CHAIN_ID: &str = "ton:mainnet";
+const TON_CHAIN_ID: &str = "ton:-239";
 
 /// The method name for the tron broadcast transaction wrapper method
 const TRON_BROADCAST_TRANSACTION_METHOD: &str = "tron_broadcastTransaction";
@@ -389,7 +389,7 @@ impl RpcProvider for QuicknodeProvider {
         // Add /jsonrpc prefix for the Tron and /jsonRPC prefix for the Ton
         let uri = match chain_id {
             "tron:0x2b6653dc" => format!("https://{chain_subdomain}.quiknode.pro/{token}/jsonrpc"),
-            "ton:mainnet" => format!("https://{chain_subdomain}.quiknode.pro/{token}/jsonRPC"),
+            "ton:-239" => format!("https://{chain_subdomain}.quiknode.pro/{token}/jsonRPC"),
             _ => format!("https://{chain_subdomain}.quiknode.pro/{token}"),
         };
 
