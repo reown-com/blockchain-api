@@ -1,18 +1,25 @@
 use {
-    super::{HistoryProvider, ProviderKind, TokenMetadataCacheProvider},
+    super::{
+        HistoryProvider, Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory,
+        TokenMetadataCacheProvider, TON_SEND_BOC_METHOD,
+    },
     crate::{
+        env::ToncenterV2Config,
         error::{RpcError, RpcResult},
         handlers::history::{
             HistoryQueryParams, HistoryResponseBody, HistoryTransaction,
             HistoryTransactionFungibleInfo, HistoryTransactionMetadata, HistoryTransactionTransfer,
             HistoryTransactionTransferQuantity, HistoryTransactionURLItem,
         },
+        json_rpc::{JsonRpcRequest, JsonRpcResult},
         utils::crypto,
         Metrics,
     },
     async_trait::async_trait,
+    axum::response::{IntoResponse, Response},
+    hyper::http,
     serde::{Deserialize, Serialize},
-    std::sync::Arc,
+    std::{collections::HashMap, sync::Arc},
     tap::TapFallible,
     tracing::error,
     url::Url,
@@ -23,6 +30,11 @@ const TON_NATIVE_TOKEN_SYMBOL: &str = "TON";
 const TON_NATIVE_TOKEN_NAME: &str = "Toncoin";
 const TON_NATIVE_TOKEN_ICON: &str = "https://ton.org/img/ton_symbol.png";
 const TONCENTER_HISTORY_PAGE_SIZE: u32 = 100;
+
+#[derive(Debug, Serialize)]
+struct ToncenterSendBocRequestBody {
+    pub boc: String,
+}
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 struct TonV3TransactionsResponse {
@@ -67,14 +79,15 @@ struct TonMessage {
     pub msg_data: Option<serde_json::Value>,
 }
 
-pub struct ToncenterProvider {
+#[derive(Debug)]
+pub struct ToncenterBalanceProvider {
     provider_kind: ProviderKind,
     api_url: String,
     api_key: Option<String>,
     http_client: reqwest::Client,
 }
 
-impl ToncenterProvider {
+impl ToncenterBalanceProvider {
     pub fn new(api_url: String, api_key: Option<String>) -> Self {
         Self {
             provider_kind: ProviderKind::Toncenter,
@@ -116,7 +129,7 @@ impl ToncenterProvider {
 }
 
 #[async_trait]
-impl HistoryProvider for ToncenterProvider {
+impl HistoryProvider for ToncenterBalanceProvider {
     async fn get_transactions(
         &self,
         address: String,
@@ -278,5 +291,197 @@ impl HistoryProvider for ToncenterProvider {
 
     fn provider_kind(&self) -> ProviderKind {
         self.provider_kind.clone()
+    }
+}
+
+#[derive(Debug)]
+pub struct ToncenterApiProvider {
+    api_key: Option<String>,
+    http_client: reqwest::Client,
+    supported_chains: HashMap<String, String>,
+}
+
+impl ToncenterApiProvider {
+    fn build_jsonrpc_url(&self, api_url: &str) -> Result<Url, RpcError> {
+        let base = format!("https://{}/api/v2/jsonRPC", api_url.trim_end_matches('/'));
+        Url::parse(&base).map_err(|_| {
+            RpcError::InvalidConfiguration("Invalid Toncenter JSON-RPC URL".to_string())
+        })
+    }
+
+    fn build_send_boc_url(&self, api_url: &str) -> Result<Url, RpcError> {
+        let base = format!("https://{}/api/v2/sendBoc", api_url.trim_end_matches('/'));
+        Url::parse(&base).map_err(|_| {
+            RpcError::InvalidConfiguration("Invalid Toncenter sendBoc URL".to_string())
+        })
+    }
+
+    async fn handle_ton_send_boc(
+        &self,
+        id: serde_json::Value,
+        params_value: serde_json::Value,
+        api_url: &str,
+    ) -> RpcResult<Response> {
+        let arr = params_value.as_array().ok_or_else(|| {
+            RpcError::InvalidParameter("Params must be an array for ton_sendBoc".to_string())
+        })?;
+        if arr.len() != 1 {
+            return Err(RpcError::InvalidParameter(
+                "Params array must be 1 element for ton_sendBoc".to_string(),
+            ));
+        }
+        let boc = arr[0]
+            .as_str()
+            .ok_or_else(|| RpcError::InvalidParameter("boc is not a string".to_string()))?;
+
+        let url = self.build_send_boc_url(api_url)?;
+        let mut req = self.http_client.post(url);
+        if let Some(key) = &self.api_key {
+            req = req.header("X-Api-Key", key);
+        }
+        let body = serde_json::to_vec(&ToncenterSendBocRequestBody {
+            boc: boc.to_string(),
+        })?;
+        let response = req
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()
+            .await?;
+        let status = response.status();
+        let raw = response.bytes().await?;
+
+        if let Ok(json) = serde_json::from_slice::<serde_json::Value>(&raw) {
+            if let Some(ok) = json.get("ok").and_then(|v| v.as_bool()) {
+                if ok {
+                    let result = json
+                        .get("result")
+                        .cloned()
+                        .unwrap_or(serde_json::Value::Null);
+                    let wrapped = JsonRpcResult::new(id, result);
+                    let body = serde_json::to_vec(&wrapped)?;
+                    let mut response = (http::StatusCode::OK, body).into_response();
+                    response.headers_mut().insert(
+                        "Content-Type",
+                        axum::http::HeaderValue::from_static("application/json"),
+                    );
+                    return Ok(response);
+                } else {
+                    let error_obj = json.get("error").cloned().unwrap_or(serde_json::json!({
+                        "code": -32000,
+                        "message": "TON sendBoc error",
+                    }));
+                    let wrapped = serde_json::json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "error": error_obj,
+                    });
+                    let body = serde_json::to_vec(&wrapped)?;
+                    let mut response = (http::StatusCode::OK, body).into_response();
+                    response.headers_mut().insert(
+                        "Content-Type",
+                        axum::http::HeaderValue::from_static("application/json"),
+                    );
+                    return Ok(response);
+                }
+            } else if status.is_success() {
+                // Wrap any other JSON response into JSON-RPC success envelope
+                let wrapped = JsonRpcResult::new(id, json);
+                let body = serde_json::to_vec(&wrapped)?;
+                let mut response = (http::StatusCode::OK, body).into_response();
+                response.headers_mut().insert(
+                    "Content-Type",
+                    axum::http::HeaderValue::from_static("application/json"),
+                );
+                return Ok(response);
+            }
+        }
+
+        let mut response = (status, raw).into_response();
+        response.headers_mut().insert(
+            "Content-Type",
+            axum::http::HeaderValue::from_static("application/json"),
+        );
+        Ok(response)
+    }
+}
+
+impl Provider for ToncenterApiProvider {
+    fn supports_caip_chainid(&self, chain_id: &str) -> bool {
+        self.supported_chains.contains_key(chain_id)
+    }
+
+    fn supported_caip_chains(&self) -> Vec<String> {
+        self.supported_chains.keys().cloned().collect()
+    }
+
+    fn provider_kind(&self) -> crate::providers::ProviderKind {
+        crate::providers::ProviderKind::Toncenter
+    }
+}
+
+#[async_trait]
+impl RateLimited for ToncenterApiProvider {
+    async fn is_rate_limited(&self, response: &mut Response) -> bool {
+        response.status() == http::StatusCode::TOO_MANY_REQUESTS
+    }
+}
+
+#[async_trait]
+impl RpcProvider for ToncenterApiProvider {
+    #[tracing::instrument(skip(self, body), fields(provider = %Provider::provider_kind(self)), level = "debug")]
+    async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response> {
+        let uri = self
+            .supported_chains
+            .get(chain_id)
+            .ok_or(RpcError::ChainNotFound)?;
+
+        // Parse JSON-RPC body and intercept custom method if present
+        let json_rpc_request: JsonRpcRequest = serde_json::from_slice(&body)
+            .map_err(|_| RpcError::InvalidParameter("Invalid JSON-RPC schema provided".into()))?;
+        let method = json_rpc_request.method.to_string();
+        let id = json_rpc_request.id;
+        let params = json_rpc_request.params;
+
+        if method == TON_SEND_BOC_METHOD {
+            return self.handle_ton_send_boc(id, params, uri).await;
+        }
+
+        let url = self.build_jsonrpc_url(uri)?;
+
+        let mut req = self.http_client.post(url);
+        if let Some(key) = &self.api_key {
+            req = req.header("X-Api-Key", key);
+        }
+
+        let response = req
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()
+            .await?;
+        let status = response.status();
+        let body = response.bytes().await?;
+
+        let mut response = (status, body).into_response();
+        response.headers_mut().insert(
+            "Content-Type",
+            axum::http::HeaderValue::from_static("application/json"),
+        );
+        Ok(response)
+    }
+}
+
+impl RpcProviderFactory<ToncenterV2Config> for ToncenterApiProvider {
+    #[tracing::instrument(level = "debug")]
+    fn new(provider_config: &ToncenterV2Config) -> Self {
+        let supported_chains: HashMap<String, String> = provider_config
+            .supported_chains
+            .iter()
+            .map(|(k, v)| (k.clone(), v.0.clone()))
+            .collect();
+        ToncenterApiProvider {
+            api_key: provider_config.api_key.clone(),
+            http_client: reqwest::Client::new(),
+            supported_chains,
+        }
     }
 }

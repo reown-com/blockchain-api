@@ -213,7 +213,7 @@ pub use {
     syndica::{SyndicaProvider, SyndicaWsProvider},
     tenderly::TenderlyProvider,
     therpc::TheRpcProvider,
-    toncenter::ToncenterProvider,
+    toncenter::{ToncenterApiProvider, ToncenterBalanceProvider},
     trongrid::TrongridProvider,
     unichain::UnichainProvider,
     wemix::WemixProvider,
@@ -229,6 +229,9 @@ pub type NamespacesWeightResolver = HashMap<CaipNamespaces, HashMap<ProviderKind
 /// or special handling requirements. These providers will maintain their current
 /// weights regardless of failure metrics from Prometheus.
 pub const WEIGHT_RECALCULATION_EXCLUDED_PROVIDERS: &[ProviderKind] = &[ProviderKind::Pokt];
+
+/// TON sendBoc wrapped method name
+pub const TON_SEND_BOC_METHOD: &str = "ton_sendBoc";
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct ProvidersConfig {
@@ -398,7 +401,7 @@ impl ProviderRepository {
             config.solscan_api_v2_token.clone(),
             redis_pool.clone(),
         ));
-        let toncenter_provider = Arc::new(ToncenterProvider::new(
+        let toncenter_balance_provider = Arc::new(ToncenterBalanceProvider::new(
             config
                 .toncenter_api_url
                 .clone()
@@ -415,7 +418,7 @@ impl ProviderRepository {
             HashMap::new();
         history_providers.insert(CaipNamespaces::Eip155, zerion_provider.clone());
         history_providers.insert(CaipNamespaces::Solana, solscan_provider.clone());
-        history_providers.insert(CaipNamespaces::Ton, toncenter_provider.clone());
+        history_providers.insert(CaipNamespaces::Ton, toncenter_balance_provider.clone());
 
         let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
             coinbase_api_key,
