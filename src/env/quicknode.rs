@@ -123,7 +123,7 @@ fn extract_supported_chains_and_subdomains(
             ("warmhearted-practical-surf.tron-mainnet", Priority::Normal),
         ),
         (
-            "ton:mainnet",
+            "ton:-239",
             ("silent-dawn-crater.ton-mainnet", Priority::Normal),
         ),
     ]);

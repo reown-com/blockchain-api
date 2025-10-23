@@ -296,7 +296,7 @@
       "providers": []
     },
     {
-      "caip2": "ton:mainnet",
+      "caip2": "ton:-239",
       "name": "Ton Mainnet",
       "providers": []
     }

@@ -90,7 +90,7 @@ Chain name with associated `chainId` query param to use.
 
 | Network                               | Chain ID    |
 |---------------------------------------|-------------|
-| Ton Mainnet                           | ton:mainnet |
+| Ton Mainnet                           | ton:-239 |
 
 ### Stacks
 

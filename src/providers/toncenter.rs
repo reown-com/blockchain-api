@@ -18,7 +18,7 @@ use {
     url::Url,
 };
 
-const TON_MAINNET_CHAIN_ID: &str = "ton:mainnet";
+const TON_MAINNET_CHAIN_ID: &str = "ton:-239";
 const TON_NATIVE_TOKEN_SYMBOL: &str = "TON";
 const TON_NATIVE_TOKEN_NAME: &str = "Toncoin";
 const TON_NATIVE_TOKEN_ICON: &str = "https://ton.org/img/ton_symbol.png";
