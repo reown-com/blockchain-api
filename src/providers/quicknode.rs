@@ -1,7 +1,7 @@
 use {
     super::{
         Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams,
-        RpcWsProvider,
+        RpcWsProvider, TON_SEND_BOC_METHOD,
     },
     crate::{
         env::QuicknodeConfig,
@@ -56,9 +56,6 @@ struct TronApiResult {
 }
 
 const TRON_CHAIN_ID: &str = "tron:0x2b6653dc";
-
-/// The method name for the TON sendBoc wrapper method
-const TON_SEND_BOC_METHOD: &str = "ton_sendBoc";
 const TON_CHAIN_ID: &str = "ton:-239";
 
 /// The method name for the tron broadcast transaction wrapper method
