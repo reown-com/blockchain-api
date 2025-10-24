@@ -1,5 +1,4 @@
 use {
-    super::super::HANDLER_TASK_METRICS,
     crate::{error::RpcError, state::AppState},
     axum::{
         extract::{Query, State},
@@ -10,7 +9,7 @@ use {
     std::sync::Arc,
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -32,11 +31,11 @@ pub async fn handler(
     query: Query<AllowanceQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("conversion_allowance"))
+        .with_metrics(future_metrics!("handler_task", "name" => "conversion_allowance"))
         .await
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
     query: Query<AllowanceQueryParams>,
@@ -48,10 +47,10 @@ async fn handler_internal(
     let response = state
         .providers
         .conversion_provider
-        .get_allowance(query.0)
+        .get_allowance(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call get allownce with {}", e);
+            error!("Failed to call get allownce with {e}");
         })?;
 
     Ok(Json(response).into_response())

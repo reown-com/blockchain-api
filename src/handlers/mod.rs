@@ -1,33 +1,40 @@
 use {
-    crate::{error::RpcError, state::AppState, utils::network},
+    crate::{analytics::MessageSource, error::RpcError, state::AppState, utils::network},
     axum::{
-        extract::{MatchedPath, State},
-        http::Request,
+        extract::{MatchedPath, Request, State},
         middleware::Next,
         response::{IntoResponse, Response},
     },
     serde::{Deserialize, Serialize},
-    std::sync::Arc,
+    std::{fmt::Display, sync::Arc, time::Instant},
     tracing::error,
-    wc::metrics::TaskMetrics,
 };
 
 pub mod balance;
+pub mod bundler;
+pub mod chain_agnostic;
 pub mod convert;
 pub mod fungible_price;
 pub mod generators;
 pub mod health;
 pub mod history;
 pub mod identity;
-pub mod metrics;
+pub mod json_rpc;
 pub mod onramp;
 pub mod portfolio;
 pub mod profile;
 pub mod proxy;
+pub mod self_provider;
+pub mod sessions;
 pub mod supported_chains;
 pub mod ws_proxy;
 
-static HANDLER_TASK_METRICS: TaskMetrics = TaskMetrics::new("handler_task");
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SdkInfoParams {
+    pub st: Option<String>,
+    pub sv: Option<String>,
+}
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -36,22 +43,58 @@ pub struct RpcQueryParams {
     pub project_id: String,
     /// Optional provider ID for the exact provider request
     pub provider_id: Option<String>,
+    pub session_id: Option<String>,
+
+    // TODO remove this param, as it can be set by actual rpc users but it shouldn't be
+    /// Optional "source" field to indicate an internal request
+    pub source: Option<MessageSource>,
+    #[serde(flatten)]
+    pub sdk_info: SdkInfoParams,
 }
 
-#[derive(Serialize)]
-pub struct SuccessResponse {
-    status: String,
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum SupportedCurrencies {
+    BTC,
+    ETH,
+    USD,
+    EUR,
+    GBP,
+    AUD,
+    CAD,
+    INR,
+    JPY,
+}
+
+impl Display for SupportedCurrencies {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                SupportedCurrencies::BTC => "btc",
+                SupportedCurrencies::ETH => "eth",
+                SupportedCurrencies::USD => "usd",
+                SupportedCurrencies::EUR => "eur",
+                SupportedCurrencies::GBP => "gbp",
+                SupportedCurrencies::AUD => "aud",
+                SupportedCurrencies::CAD => "cad",
+                SupportedCurrencies::INR => "inr",
+                SupportedCurrencies::JPY => "jpy",
+            }
+        )
+    }
 }
 
 /// Rate limit middleware that uses `rate_limiting`` token bucket sub crate
 /// from the `utils-rs`. IP address and matched path are used as the token key.
-pub async fn rate_limit_middleware<B>(
+pub async fn rate_limit_middleware(
     State(state): State<Arc<AppState>>,
-    req: Request<B>,
-    next: Next<B>,
+    req: Request,
+    next: Next,
 ) -> Response {
     let headers = req.headers().clone();
-    let ip = match network::get_forwarded_ip(headers.clone()) {
+    let ip = match network::get_forwarded_ip(&headers) {
         Some(ip) => ip.to_string(),
         None => {
             error!(
@@ -94,4 +137,38 @@ pub async fn rate_limit_middleware<B>(
         Ok(_) => next.run(req).await,
         Err(e) => RpcError::from(e).into_response(),
     }
+}
+
+/// Endpoints latency and response status metrics middleware
+pub async fn status_latency_metrics_middleware(
+    State(state): State<Arc<AppState>>,
+    req: Request,
+    next: Next,
+) -> Response {
+    // Extract the matched path from the request
+    let path = req
+        .extensions()
+        .get::<MatchedPath>()
+        .map_or("/unknown".to_string(), |mp| mp.as_str().to_string());
+    let request_started = Instant::now();
+
+    // Execute the request and get the response.
+    let response = next.run(req).await;
+    let request_latency = request_started.elapsed();
+
+    // Record metrics async
+    let state_clone = state.clone();
+    let path_clone = path.clone();
+    let status = response.status().as_u16();
+    let latency_secs = request_latency.as_secs_f64();
+    tokio::spawn(async move {
+        state_clone
+            .metrics
+            .add_http_call(status, path_clone.clone());
+        state_clone
+            .metrics
+            .add_http_latency(status, path_clone, latency_secs);
+    });
+
+    response
 }

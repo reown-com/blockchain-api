@@ -4,6 +4,7 @@ use {
     parquet_derive::ParquetRecordWriter,
     serde::Serialize,
     std::{sync::Arc, time::Duration},
+    wc::metrics::Enum,
 };
 
 #[derive(Debug, Clone, Serialize, ParquetRecordWriter)]
@@ -12,6 +13,7 @@ pub struct IdentityLookupInfo {
     pub timestamp: chrono::NaiveDateTime,
 
     pub address_hash: String,
+    pub address: String,
     pub name_present: bool,
     pub avatar_present: bool,
     pub source: String,
@@ -25,6 +27,13 @@ pub struct IdentityLookupInfo {
     pub region: Option<String>,
     pub country: Option<Arc<str>>,
     pub continent: Option<Arc<str>>,
+
+    pub client_id: Option<String>,
+    pub sender: Option<String>,
+
+    // Sdk info
+    pub sv: Option<String>,
+    pub st: Option<String>,
 }
 
 impl IdentityLookupInfo {
@@ -40,11 +49,16 @@ impl IdentityLookupInfo {
         region: Option<Vec<String>>,
         country: Option<Arc<str>>,
         continent: Option<Arc<str>>,
+        client_id: Option<String>,
+        sender: Option<String>,
+        sv: Option<String>,
+        st: Option<String>,
     ) -> Self {
         Self {
             timestamp: wc::analytics::time::now(),
 
             address_hash: sha256::digest(address.as_ref()),
+            address: format!("{address:#x}"),
             name_present,
             avatar_present,
             source: source.as_str().to_string(),
@@ -58,6 +72,12 @@ impl IdentityLookupInfo {
             region: region.map(|r| r.join(", ")),
             country,
             continent,
+
+            client_id,
+            sender,
+
+            sv,
+            st,
         }
     }
 }

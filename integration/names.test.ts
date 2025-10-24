@@ -15,7 +15,7 @@ describe('Account profile names', () => {
   // Generate a random name
   const randomString = Array.from({ length: 10 }, 
     () => (Math.random().toString(36)[2] || '0')).join('')
-  const zone = 'wcn.id';
+  const zone =  'reown.id';
   const name = `integration-test-${randomString}.${zone}`;
 
   // Create a message to sign
@@ -198,6 +198,43 @@ describe('Account profile names', () => {
       payload
     )
     expect(resp.status).toBe(200)
+    expect(resp.data.name).toBe(name)
+    expect(typeof resp.data.addresses).toBe('object')
+    const mainnet_address = resp.data.addresses[coin_type]
+    expect(mainnet_address.address).toBe(address)
+  })
+
+  it('register new name with not Mainnet coin type', async () => {
+    // If the user registering new name with not Mainnet coin type
+    // it should be added automatically to the addresses list
+    const randomString = Array.from({ length: 10 }, 
+      () => (Math.random().toString(36)[2] || '0')).join('')
+    const name = `integration-test-${randomString}.${zone}`;
+    const registerMessageObject = {
+        name,
+        attributes,
+        timestamp: Math.round(Date.now() / 1000)
+    };
+    const registerMessage = JSON.stringify(registerMessageObject);
+    const signature = await wallet.signMessage(registerMessage);
+
+    const payload = {
+      message: registerMessage,
+      signature,
+      coin_type: 2147483748, // ENSIP-11 xdai
+      address,
+    };
+    let resp: any = await httpClient.post(
+      `${baseUrl}/v1/profile/account`,
+      payload
+    )
+    expect(resp.status).toBe(200)
+    expect(resp.data.name).toBe(name)
+    expect(typeof resp.data.addresses).toBe('object')
+    const mainnet_address = resp.data.addresses[60]
+    expect(mainnet_address.address).toBe(address)
+    const xdai_address = resp.data.addresses[2147483748]
+    expect(xdai_address.address).toBe(address)
   })
 
   it('try register already registered name', async () => {
@@ -235,7 +272,7 @@ describe('Account profile names', () => {
     expect(resp.status).toBe(400)
   })
 
-  it('name forward lookup', async () => {
+  it('name forward lookup (name found)', async () => {
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/profile/account/${name}`
     )
@@ -248,7 +285,27 @@ describe('Account profile names', () => {
     expect(first.address).toBe(address)
   })
 
-  it('name reverse lookup', async () => {
+  it('name forward lookup (name not found)', async () => {
+    const randomString = Array.from({ length: 10 }, 
+      () => (Math.random().toString(36)[2] || '0')).join('')
+    const name = `integration-test-${randomString}.${zone}`;
+    
+    // Test default behavior where 404 is returned
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/profile/account/${name}`
+    )
+    expect(resp.status).toBe(404)
+    
+    // Test apiVersion=2 where 200 and empty array is returned
+    resp = await httpClient.get(
+      `${baseUrl}/v1/profile/account/${name}?apiVersion=2`
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data).toBe('object')
+    expect(resp.data.length).toBe(0)
+  })
+
+  it('name reverse lookup (name found)', async () => {
     let resp: any = await httpClient.get(
       `${baseUrl}/v1/profile/reverse/${address}`
     )
@@ -260,6 +317,26 @@ describe('Account profile names', () => {
     // ENSIP-11 using the 60 for the Ethereum mainnet
     const first_address = first_name.addresses[coin_type]
     expect(first_address.address).toBe(address)
+  })
+
+  it('name reverse lookup (name not found)', async () => {
+    // Generate a new eth wallet that have no name registered
+    const wallet = ethers.Wallet.createRandom();
+    const address = wallet.address;
+
+    // Test default behavior where 404 is returned
+    let resp: any = await httpClient.get(
+      `${baseUrl}/v1/profile/reverse/${address}`
+    )
+    expect(resp.status).toBe(404)
+    
+    // Test apiVersion=2 where 200 and empty array is returned
+    resp = await httpClient.get(
+      `${baseUrl}/v1/profile/reverse/${address}?apiVersion=2`
+    )
+    expect(resp.status).toBe(200)
+    expect(typeof resp.data).toBe('object')
+    expect(resp.data.length).toBe(0)
   })
 
   it('name reverse lookup (identity endpoint)', async () => {
@@ -346,7 +423,7 @@ describe('Account profile names', () => {
   it('name suggestions', async () => {
     const test_name_suggest = 'max';
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/profile/suggestions/${test_name_suggest}`
+      `${baseUrl}/v1/profile/suggestions/${test_name_suggest}?zone=${zone}`
     )
     expect(resp.status).toBe(200)
     expect(typeof resp.data.suggestions).toBe('object')

@@ -1,6 +1,5 @@
 use {
-    super::super::HANDLER_TASK_METRICS,
-    crate::{error::RpcError, state::AppState},
+    crate::{error::RpcError, state::AppState, utils::simple_request_json::SimpleRequestJson},
     axum::{
         extract::State,
         response::{IntoResponse, Response},
@@ -10,7 +9,7 @@ use {
     std::sync::Arc,
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -22,6 +21,7 @@ pub struct ConvertTransactionQueryParams {
     pub to: String,
     pub user_address: String,
     pub eip155: Option<ConvertTransactionQueryEip155>,
+    pub disable_estimate: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -56,14 +56,14 @@ pub struct ConvertTxEip155 {
 
 pub async fn handler(
     state: State<Arc<AppState>>,
-    Json(request_payload): Json<ConvertTransactionQueryParams>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<ConvertTransactionQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, request_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("convert_build_transaction"))
+        .with_metrics(future_metrics!("handler_task", "name" => "convert_build_transaction"))
         .await
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
     request_payload: ConvertTransactionQueryParams,
@@ -75,10 +75,10 @@ async fn handler_internal(
     let response = state
         .providers
         .conversion_provider
-        .build_convert_tx(request_payload)
+        .build_convert_tx(request_payload, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call build conversion transaction with {}", e);
+            error!("Failed to call build conversion transaction with {e}");
         })?;
 
     Ok(Json(response).into_response())

@@ -31,7 +31,7 @@ jobs:
     name: Paths Filter
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: WalletConnect/actions/github/paths-filter/@2.2.1
         id: filter
     outputs:
@@ -41,7 +41,7 @@ jobs:
   release:
     name: Release
     needs: [ paths_filter ]
-    uses: WalletConnect/ci_workflows/.github/workflows/release.yml@0.2.9
+    uses: WalletConnect/ci_workflows/.github/workflows/release.yml@0.2.19
     secrets: inherit
     with:
       task-name: ${{ vars.TASK_NAME }}

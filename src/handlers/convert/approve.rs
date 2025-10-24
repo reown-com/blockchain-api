@@ -1,5 +1,4 @@
 use {
-    super::super::HANDLER_TASK_METRICS,
     crate::{error::RpcError, state::AppState},
     axum::{
         extract::{Query, State},
@@ -10,7 +9,7 @@ use {
     std::sync::Arc,
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -47,11 +46,11 @@ pub async fn handler(
     query: Query<ConvertApproveQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("convert_approve_tx"))
+        .with_metrics(future_metrics!("handler_task", "name" => "convert_approve_tx"))
         .await
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
     query: Query<ConvertApproveQueryParams>,
@@ -63,10 +62,10 @@ async fn handler_internal(
     let response = state
         .providers
         .conversion_provider
-        .build_approve_tx(query.0)
+        .build_approve_tx(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call build approve tx for conversion with {}", e);
+            error!("Failed to call build approve tx for conversion with {e}");
         })?;
 
     Ok(Json(response).into_response())

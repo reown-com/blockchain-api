@@ -6,20 +6,25 @@ use {
     },
     async_trait::async_trait,
     axum::{
-        http::HeaderValue,
+        http::{HeaderValue, StatusCode},
         response::{IntoResponse, Response},
     },
-    hyper::{self, client::HttpConnector, Client, Method, StatusCode},
-    hyper_tls::HttpsConnector,
+    serde::Deserialize,
     std::collections::HashMap,
-    tracing::info,
+    tracing::debug,
 };
 
 #[derive(Debug)]
 pub struct PoktProvider {
-    pub client: Client<HttpsConnector<HttpConnector>>,
+    pub client: reqwest::Client,
     pub project_id: String,
     pub supported_chains: HashMap<String, String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct InternalErrorResponse {
+    pub request_id: String,
+    pub error: String,
 }
 
 impl Provider for PoktProvider {
@@ -38,70 +43,66 @@ impl Provider for PoktProvider {
 
 #[async_trait]
 impl RateLimited for PoktProvider {
-    // async fn is_rate_limited(&self, response: &mut Response) -> bool
-    // where
-    //     Self: Sized,
-    // {
-    //     let Ok(bytes) = body::to_bytes(response.body_mut()).await else {return
-    // false};     let Ok(jsonrpc_response) =
-    // serde_json::from_slice::<jsonrpc::Response>(&bytes) else {return false};
-
-    //     if let Some(err) = jsonrpc_response.error {
-    //         // Code used by Pokt to indicate rate limited request
-    //         // https://github.com/pokt-foundation/portal-api/blob/e06d1e50abfee8533c58768bb9b638c351b87a48/src/controllers/v1.controller.ts
-    //         if err.code == -32068 {
-    //             return true;
-    //         }
-    //     }
-
-    //     let body: axum::body::Body =
-    // axum::body::Body::wrap_stream(hyper::body::Body::from(bytes));
-    //     let body: UnsyncBoxBody<bytes::Bytes, axum_core::Error> =
-    // body.boxed_unsync();     let mut_body = response.body_mut();
-    //     false
-    // }
-
-    // TODO: Implement rate limiting as this is mocked
-    async fn is_rate_limited(&self, _response: &mut Response) -> bool {
-        false
+    async fn is_rate_limited(&self, response: &mut Response) -> bool {
+        response.status() == StatusCode::TOO_MANY_REQUESTS
     }
 }
 
 #[async_trait]
 impl RpcProvider for PoktProvider {
-    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()))]
-    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
-        let chain = &self
+    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
+    async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response> {
+        let chain = self
             .supported_chains
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
-
         let uri = format!("https://{}.rpc.grove.city/v1/{}", chain, self.project_id);
-
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::POST)
-            .uri(uri)
-            .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(body))?;
-
-        let response = self.client.request(hyper_request).await?;
+        let response = self
+            .client
+            .post(uri)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()
+            .await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = response.bytes().await?;
 
-        if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
-            if let Some(error) = &response.error {
-                if status.is_success() {
-                    info!(
+        if status.is_success() || status.is_client_error() {
+            if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
+                if let Some(error) = &response.error {
+                    debug!(
                         "Strange: provider returned JSON RPC error, but status {status} is \
                          success: Pokt: {response:?}"
                     );
+                    match error.code {
+                        // Pokt-specific rate limit codes
+                        -32004 | -32068 => {
+                            return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response())
+                        }
+                        // Internal server error code
+                        -32603 => {
+                            return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response())
+                        }
+                        _ => {}
+                    }
                 }
-                if error.code == -32004 {
-                    return Ok((StatusCode::TOO_MANY_REQUESTS, body).into_response());
-                }
-                if error.code == -32603 {
-                    return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
-                }
+            }
+        }
+
+        // As an internal RPC node error the InternalErrorResponse is used for the response
+        // that should be considered as an HTTP 5xx error from the provider
+        if let Ok(response) = serde_json::from_slice::<InternalErrorResponse>(&body) {
+            let error = response.error;
+            let request_id = response.request_id;
+            if error.contains("try again later") {
+                return Ok((StatusCode::SERVICE_UNAVAILABLE, body).into_response());
+            } else {
+                debug!(
+                    "Pokt provider returned JSON RPC success status, but got the \
+                    error response structure with the following error: {error} \
+                    the request_id is {request_id}",
+                );
+                return Ok((StatusCode::INTERNAL_SERVER_ERROR, body).into_response());
             }
         }
 
@@ -114,9 +115,9 @@ impl RpcProvider for PoktProvider {
 }
 
 impl RpcProviderFactory<PoktConfig> for PoktProvider {
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn new(provider_config: &PoktConfig) -> Self {
-        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let forward_proxy_client = reqwest::Client::new();
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
@@ -125,8 +126,8 @@ impl RpcProviderFactory<PoktConfig> for PoktProvider {
 
         PoktProvider {
             client: forward_proxy_client,
-            supported_chains,
             project_id: provider_config.project_id.clone(),
+            supported_chains,
         }
     }
 }

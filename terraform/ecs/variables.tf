@@ -29,19 +29,16 @@ variable "task_memory" {
 variable "autoscaling_desired_count" {
   description = "Minimum number of instances in the autoscaling group"
   type        = number
-  default     = 2
 }
 
 variable "autoscaling_min_capacity" {
   description = "Minimum number of instances in the autoscaling group"
   type        = number
-  default     = 2
 }
 
 variable "autoscaling_max_capacity" {
   description = "Maximum number of instances in the autoscaling group"
   type        = number
-  default     = 8
 }
 
 variable "cloudwatch_logs_key_arn" {
@@ -53,6 +50,12 @@ variable "cloudwatch_retention_in_days" {
   description = "The number of days to retain CloudWatch logs for the DB instance"
   type        = number
   default     = 14
+}
+
+variable "container_stop_timeout" {
+  description = "The number of seconds to wait for the container to stop gracefully before forcefully killing it"
+  type        = number
+  default     = 30
 }
 
 #-------------------------------------------------------------------------------
@@ -113,7 +116,7 @@ variable "log_level" {
 variable "redis_max_connections" {
   description = "The maximum number of connections to the Redis server"
   type        = number
-  default     = 128
+  default     = 512
 }
 
 variable "project_cache_endpoint_read" {
@@ -146,7 +149,12 @@ variable "rate_limiting_cache_endpoint_write" {
   type        = string
 }
 
-variable "ofac_blocked_countries" {
+variable "provider_cache_endpoint" {
+  description = "Non-RPC providers responses caching endpoint"
+  type        = string
+}
+
+variable "ofac_countries" {
   description = "The list of countries under OFAC sanctions"
   type        = string
 }
@@ -158,12 +166,6 @@ variable "postgres_url" {
 
 #-------------------------------------------------------------------------------
 # Providers
-
-variable "infura_project_id" {
-  description = "The project ID for Infura"
-  type        = string
-  sensitive   = true
-}
 
 variable "pokt_project_id" {
   description = "The project ID for POKT"
@@ -177,8 +179,8 @@ variable "zerion_api_key" {
   sensitive   = true
 }
 
-variable "quicknode_api_token" {
-  description = "The API key for Quicknode"
+variable "quicknode_api_tokens" {
+  description = "API keys for Quicknode in JSON format"
   type        = string
   sensitive   = true
 }
@@ -207,8 +209,92 @@ variable "one_inch_referrer" {
   sensitive   = true
 }
 
-variable "getblock_access_tokens" {
-  description = "Mapping of API access tokens for GetBlock in JSON format"
+variable "pimlico_api_key" {
+  description = "Pimlico bundler API token key"
+  type        = string
+  sensitive   = true
+}
+
+variable "solscan_api_v2_token" {
+  description = "Solscan API v2 token"
+  type        = string
+  sensitive   = true
+}
+
+variable "bungee_api_key" {
+  description = "Bungee API key"
+  type        = string
+  sensitive   = true
+}
+
+variable "tenderly_api_key" {
+  description = "Tenderly API key"
+  type        = string
+  sensitive   = true
+}
+
+variable "tenderly_account_id" {
+  description = "Tenderly Account ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "tenderly_project_id" {
+  description = "Tenderly Project ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "dune_sim_api_key" {
+  description = "Dune Sim API key"
+  type        = string
+  sensitive   = true
+}
+
+variable "syndica_api_key" {
+  description = "Syndica API key"
+  type        = string
+  sensitive   = true
+}
+
+variable "allnodes_api_key" {
+  description = "Allnodes API key"
+  type        = string
+  sensitive   = true
+}
+
+variable "meld_api_key" {
+  description = "Meld API key"
+  type        = string
+  sensitive   = true
+}
+
+variable "meld_api_url" {
+  description = "Meld API base URL. e.g. https://api.meld.io"
+  type        = string
+  sensitive   = true
+}
+
+variable "callstatic_api_key" {
+  description = "Callstatic API key"
+  type        = string
+  sensitive   = true
+}
+
+variable "blast_api_key" {
+  description = "Blast API key"
+  type        = string
+  sensitive   = true
+}
+
+variable "lifi_api_key" {
+  description = "Lifi API key"
+  type        = string
+  sensitive   = true
+}
+
+variable "toncenter_api_key" {
+  description = "Toncenter API key"
   type        = string
   sensitive   = true
 }
@@ -217,6 +303,19 @@ variable "testing_project_id" {
   description = "Project ID used in a testing suite"
   type        = string
   sensitive   = true
+}
+
+variable "validate_project_id" {
+  description = "Project ID and quota validation"
+  type        = bool
+}
+
+#-------------------------------------------------------------------------------
+# RPC Proxy configuration
+variable "proxy_skip_quota_chains" {
+  description = "Comma separated list of CAIP-2 chains to skip quota check"
+  type        = string
+  default     = ""
 }
 
 #-------------------------------------------------------------------------------
@@ -235,6 +334,11 @@ variable "registry_api_auth_token" {
 
 variable "project_cache_ttl" {
   description = "The TTL for project data cache"
+  type        = number
+}
+
+variable "registry_circuit_cooldown_ms" {
+  description = "Circuit breaker cooldown in milliseconds for registry failures"
   type        = number
 }
 
@@ -332,4 +436,111 @@ variable "rate_limiting_refill_interval" {
 variable "rate_limiting_refill_rate" {
   description = "The number of tokens to refill the bucket with"
   type        = number
+}
+
+variable "rate_limiting_ip_whitelist" {
+  description = "Comma separated list of whitelisted IPs"
+  type        = string
+}
+
+#-------------------------------------------------------------------------------
+# IRN client configuration
+
+variable "irn_nodes" {
+  description = "Comma-separated IRN nodes address in MultiAddr format"
+  type        = string
+}
+
+variable "irn_key" {
+  description = "IRN client key in base64 format"
+  type        = string
+}
+
+variable "irn_namespace" {
+  description = "IRN storage namespace"
+  type        = string
+}
+
+variable "irn_namespace_secret" {
+  description = "IRN storage namespace secret key"
+  type        = string
+}
+
+#-------------------------------------------------------------------------------
+# Names configuration
+
+variable "names_allowed_zones" {
+  description = "Comma separated list of allowed zones for names"
+  type        = string
+}
+
+#-------------------------------------------------------------------------------
+# Address balances projects denylist
+variable "balances_denylist_project_ids" {
+  description = "Comma separated list of project IDs to denylist"
+  type        = string
+}
+
+#-------------------------------------------------------------------------------
+# Exchanges
+
+variable "coinbase_project_id" {
+  description = "Coinbase project id"
+  type        = string
+  default     = ""
+}
+
+variable "coinbase_key_name" {
+  description = "Coinbase key name"
+  type        = string
+  default     = ""
+}
+
+variable "coinbase_key_secret" {
+  description = "Coinbase key secret"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "internal_api_coinbase_credentials" {
+  description = "JWT token for internal API to fetch Coinbase credentials"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "binance_client_id" {
+  description = "Binance client id"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "binance_token" {
+  description = "Binance token"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "binance_key" {
+  description = "Binance key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "binance_host" {
+  description = "Binance host"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "pay_allowed_project_ids" {
+  description = "Allowed project ids for pay with exchange"
+  type        = string
+  sensitive   = false
+  default     = ""
 }

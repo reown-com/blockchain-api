@@ -1,9 +1,9 @@
 use {
-    super::{ProviderKind, WeightResolver},
+    super::{ChainsWeightResolver, ProviderKind, WEIGHT_RECALCULATION_EXCLUDED_PROVIDERS},
     crate::env::ChainId,
     prometheus_http_query::response::PromqlResult,
     std::collections::HashMap,
-    tracing::log::warn,
+    tracing::{debug, log::warn},
 };
 
 /// The amount of successful and failed requests to a provider
@@ -14,7 +14,7 @@ pub struct Availability(u64, u64);
 
 pub type ParsedWeights = HashMap<ProviderKind, (HashMap<ChainId, Availability>, Availability)>;
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
     let mut weights_data = HashMap::new();
     // fill weights with pair of ProviderKind -> HashMap<ChainId, Availability>
@@ -24,24 +24,24 @@ pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
             let chain_id = if let Some(chain_id) = metric.remove("chain_id") {
                 ChainId(chain_id)
             } else {
-                warn!("No chain_id found in metric: {:?}", metric);
+                warn!("No chain_id found in metric: {metric:?}");
                 continue;
             };
 
             let Some(status_code) = metric.remove("status_code") else {
-                warn!("No status_code found in metric: {:?}", metric);
+                warn!("No status_code found in metric: {metric:?}");
                 continue;
             };
 
             let Some(provider) = metric.remove("provider") else {
-                warn!("No provider found in metric: {:?}", metric);
+                warn!("No provider found in metric: {metric:?}");
                 continue;
             };
 
             let provider_kind = match ProviderKind::from_str(&provider) {
                 Some(provider_kind) => provider_kind,
                 None => {
-                    warn!("Failed to parse provider kind in metric: {}", provider);
+                    warn!("Failed to parse provider kind in metric: {provider}");
                     continue;
                 }
             };
@@ -70,7 +70,7 @@ pub fn parse_weights(prometheus_data: PromqlResult) -> ParsedWeights {
 
 const PERFECT_RATIO: f64 = 1.0;
 
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 fn calculate_chain_weight(
     provider_availability: Availability,
     chain_availability: Availability,
@@ -122,18 +122,26 @@ fn calculate_chain_weight(
     weight as u64
 }
 
-#[tracing::instrument(skip_all)]
-pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWeights) {
+#[tracing::instrument(skip_all, level = "debug")]
+pub fn update_values(weight_resolver: &ChainsWeightResolver, parsed_weights: ParsedWeights) {
     for (provider, (chain_availabilities, provider_availability)) in parsed_weights {
+        // Skip weight recalculation for providers in the exclusion list
+        // This prevents weight degradation when requests fail, allowing these providers
+        // to maintain their current weights regardless of failure metrics.
+        if WEIGHT_RECALCULATION_EXCLUDED_PROVIDERS.contains(&provider) {
+            debug!(
+                "Skipping weight recalculation for {} provider due to exclusion list",
+                provider
+            );
+            continue;
+        }
+
         for (chain_id, chain_availability) in chain_availabilities {
             let chain_id = chain_id.0;
             let chain_weight = calculate_chain_weight(chain_availability, provider_availability);
 
             let Some(provider_chain_weight) = weight_resolver.get(&chain_id) else {
-                warn!(
-                    "Chain {} not found in weight resolver: {:?}",
-                    chain_id, weight_resolver
-                );
+                warn!("Chain {chain_id} not found in weight resolver: {weight_resolver:?}");
                 continue;
             };
 
@@ -150,7 +158,7 @@ pub fn update_values(weight_resolver: &WeightResolver, parsed_weights: ParsedWei
     }
 }
 
-pub fn record_values(weight_resolver: &WeightResolver, metrics: &crate::Metrics) {
+pub fn record_values(weight_resolver: &ChainsWeightResolver, metrics: &crate::Metrics) {
     for (chain_id, provider_chain_weight) in weight_resolver {
         for (provider_kind, weight) in provider_chain_weight {
             let weight = weight.value();

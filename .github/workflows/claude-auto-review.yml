@@ -1,0 +1,57 @@
+name: Claude Auto Review
+
+on:
+  pull_request:
+    types: [opened]
+    branches:
+      - master
+  issue_comment:
+    types: [created]
+
+jobs:
+  auto-review:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request'
+      || (
+        github.event_name == 'issue_comment'
+        && github.event.issue.pull_request
+        && contains(github.event.comment.body, '@claude review')
+      )
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude Auto Review
+        uses: WalletConnect/actions/claude/auto-review@1483e05460107d74c575e31af948ce20f9df6387
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: claude-sonnet-4-20250514
+          timeout_minutes: "60"
+          project_context: |
+            This is the WalletConnect Blockchain API (formerly RPC Proxy), a Rust-based service that acts as an RPC proxy for interacting with multiple EVM and non-EVM blockchains.
+
+            Key considerations for this project:
+            - Rust-based service using Axum HTTP framework and Tokio async runtime
+            - Multi-provider blockchain RPC proxying and load balancing
+            - Provider integrations: Pokt Network, Quicknode, Coinbase, Zerion, Allnodes, etc.
+            - Redis-based caching and rate limiting infrastructure
+            - PostgreSQL database for persistent storage and analytics
+            - Prometheus metrics collection and monitoring
+            - Security-critical provider API key management
+            - Chain abstraction supporting both EVM and non-EVM chains (Solana, Near, etc.)
+            - Rate limiting, geo-blocking, and anti-abuse mechanisms
+            - Integration with WalletConnect's project registry system
+            - WebSocket support for real-time blockchain data
+            - Analytics and usage tracking for billing and insights
+            - Docker containerization and Terraform infrastructure management
+            - Just command runner for development workflows
+            - Comprehensive integration testing with Jest/TypeScript
+            - Environment-based configuration with sensitive data protection

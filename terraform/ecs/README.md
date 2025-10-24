@@ -51,7 +51,7 @@ This module creates an ECS cluster and an autoscaling group of EC2 instances to 
 | <a name="input_image_version"></a> [image\_version](#input\_image\_version) | The version of the app image to deploy |  <pre lang="json">string</pre> |  <pre lang="json">n/a</pre> |  yes |
 | <a name="input_infura_project_id"></a> [infura\_project\_id](#input\_infura\_project\_id) | The project ID for Infura |  <pre lang="json">string</pre> |  <pre lang="json">n/a</pre> |  yes |
 | <a name="input_log_level"></a> [log\_level](#input\_log\_level) | The log level for the app |  <pre lang="json">string</pre> |  <pre lang="json">n/a</pre> |  yes |
-| <a name="input_ofac_blocked_countries"></a> [ofac\_blocked\_countries](#input\_ofac\_blocked\_countries) | The list of countries under OFAC sanctions |  <pre lang="json">string</pre> |  <pre lang="json">n/a</pre> |  yes |
+| <a name="input_ofac_countries"></a> [ofac\_blocked\_countries](#input\_ofac\_blocked\_countries) | The list of countries under OFAC sanctions |  <pre lang="json">string</pre> |  <pre lang="json">n/a</pre> |  yes |
 | <a name="input_pokt_project_id"></a> [pokt\_project\_id](#input\_pokt\_project\_id) | The project ID for POKT |  <pre lang="json">string</pre> |  <pre lang="json">n/a</pre> |  yes |
 | <a name="input_port"></a> [port](#input\_port) | The port the app listens on |  <pre lang="json">number</pre> |  <pre lang="json">n/a</pre> |  yes |
 | <a name="input_private_subnets"></a> [private\_subnets](#input\_private\_subnets) | The IDs of the private subnets |  <pre lang="json">list(string)</pre> |  <pre lang="json">n/a</pre> |  yes |

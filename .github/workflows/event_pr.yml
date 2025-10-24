@@ -36,7 +36,7 @@ jobs:
     name: Paths Filter
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: WalletConnect/actions/github/paths-filter/@2.2.1
         id: filter
     outputs:
@@ -46,12 +46,64 @@ jobs:
   ci:
     name: CI
     needs: [ paths-filter ]
-    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.10
+    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.18
     secrets: inherit
     with:
       check-app: ${{ needs.paths-filter.outputs.app == 'true' }}
       check-infra: ${{ needs.paths-filter.outputs.infra == 'true' }}
       check-udeps: false
+      rust-toolchain: stable
+      rust-test-args: --features=full,test-localhost --lib --bins
+
+  test_bundler:
+    name: Test with mock bundler
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.PRIVATE_SUBMODULE_ACCESS_TOKEN || github.token }}
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.4
+      - run: rustup update stable && rustup default stable
+      - run: docker compose -p mock-bundler -f docker-compose.mock-bundler.yaml up -d # run this first since container startup takes foooorrrrrreeeeeeever
+      - run: docker compose up -d redis postgres
+      - run: cargo build --tests --features=test-mock-bundler # pre-build to parallelize container startup
+      - run: while ! curl localhost:8545/health; do sleep 1; done # Anvil
+        timeout-minutes: 5
+      - run: while ! curl localhost:4337/health; do sleep 1; done # Mock Bundler
+        timeout-minutes: 5
+      - run: while ! curl localhost:3000/ping; do sleep 1; done   # Mock Paymaster
+        timeout-minutes: 5
+      - run: cargo test --features=test-mock-bundler --lib --bins
+        env:
+          RPC_PROXY_POSTGRES_URI: "postgres://postgres@localhost/postgres"
+          RPC_PROXY_PROVIDER_POKT_PROJECT_ID: ""
+          RPC_PROXY_PROVIDER_QUICKNODE_API_TOKENS: ""
+          RPC_PROXY_PROVIDER_PIMLICO_API_KEY: ""
+          RPC_PROXY_PROVIDER_SOLSCAN_API_V2_TOKEN: ""
+          RPC_PROXY_PROVIDER_BUNGEE_API_KEY: ""
+          RPC_PROXY_PROVIDER_TENDERLY_API_KEY: ""
+          RPC_PROXY_PROVIDER_TENDERLY_ACCOUNT_ID: ""
+          RPC_PROXY_PROVIDER_TENDERLY_PROJECT_ID: ""
+          RPC_PROXY_PROVIDER_ZERION_API_KEY: ""
+          RPC_PROXY_PROVIDER_DUNE_SIM_API_KEY: ""
+          RPC_PROXY_PROVIDER_SYNDICA_API_KEY: ""
+          RPC_PROXY_PROVIDER_CALLSTATIC_API_KEY: ""
+          RPC_PROXY_PROVIDER_BLAST_API_KEY: ""
+          RPC_PROXY_PROVIDER_ALLNODES_API_KEY: ""
+          RPC_PROXY_PROVIDER_MELD_API_KEY: ""
+          RPC_PROXY_PROVIDER_MELD_API_URL: ""
+      - run: docker logs mock-bundler-anvil-1
+        if: failure()
+      - run: docker logs mock-bundler-alto-1
+        if: failure()
+      - run: docker logs mock-bundler-mock-paymaster-1
+        if: failure()
+      - run: docker logs blockchain-api-postgres-1
+        if: failure()
+      - run: docker logs blockchain-api-redis-1
+        if: failure()
 
   merge_check:
     name: Merge Check

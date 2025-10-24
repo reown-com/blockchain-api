@@ -22,6 +22,12 @@ pub struct OnrampHistoryLookupInfo {
     pub purchase_currency: String,
     pub purchase_network: String,
     pub purchase_amount: String,
+
+    // Sdk info
+    pub sv: Option<String>,
+    pub st: Option<String>,
+
+    pub request_id: String,
 }
 
 impl OnrampHistoryLookupInfo {
@@ -40,6 +46,11 @@ impl OnrampHistoryLookupInfo {
         purchase_currency: String,
         purchase_network: String,
         purchase_amount: String,
+
+        sv: Option<String>,
+        st: Option<String>,
+
+        request_id: String,
     ) -> Self {
         OnrampHistoryLookupInfo {
             transaction_id,
@@ -56,6 +67,11 @@ impl OnrampHistoryLookupInfo {
             purchase_currency,
             purchase_network,
             purchase_amount,
+
+            sv,
+            st,
+
+            request_id,
         }
     }
 }

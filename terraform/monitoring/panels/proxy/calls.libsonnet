@@ -14,7 +14,7 @@ local targets   = grafana.targets;
 
     .addTarget(targets.prometheus(
       datasource  = ds.prometheus,
-      expr          = 'sum by(chain_id) (increase(rpc_call_counter_total{}[5m]))',
+      expr          = 'sum by(chain_id) (increase(rpc_call_counter_total{}[$__rate_interval]))',
       exemplar      = false,
       legendFormat  = '__auto',
     ))

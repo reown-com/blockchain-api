@@ -1,0 +1,304 @@
+{
+  "chains": [
+    {
+      "caip2": "eip155:1",
+      "name": "Ethereum Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:10",
+      "name": "Optimism Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:30",
+      "name": "Rootstock Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:31",
+      "name": "Rootstock Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:56",
+      "name": "Binance Smart Chain Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:97",
+      "name": "Binance Smart Chain Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:100",
+      "name": "Gnosis Chain Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:130",
+      "name": "Unichain Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:137",
+      "name": "Polygon Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:146",
+      "name": "Sonic Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:300",
+      "name": "zkSync Era Sepolia Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:324",
+      "name": "zkSync Era Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1101",
+      "name": "Polygon zkEVM Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1111",
+      "name": "Wemix Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1112",
+      "name": "Wemix Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1284",
+      "name": "Moonbeam GLMR",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1301",
+      "name": "Unichain Sepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1329",
+      "name": "Sei Network",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:2810",
+      "name": "Morph Holesky",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:2818",
+      "name": "Morph Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:5000",
+      "name": "Mantle Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:5003",
+      "name": "Mantle Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:8217",
+      "name": "Kaia Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:8453",
+      "name": "Base Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:10143",
+      "name": "Monad Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:17000",
+      "name": "Ethereum Holesky",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:42161",
+      "name": "Arbitrum Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:42220",
+      "name": "Celo Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:43113",
+      "name": "Avalanche Fuji Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:43114",
+      "name": "Avalanche C-Chain",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:57054",
+      "name": "Sonic Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:59144",
+      "name": "Linea Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:80002",
+      "name": "Polygon Amoy",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:80069",
+      "name": "Berachain Bepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:80094",
+      "name": "Berachain Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:84532",
+      "name": "Base Sepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:421614",
+      "name": "Arbitrum Sepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:534352",
+      "name": "Scroll Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:534351",
+      "name": "Scroll Sepolia Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:560048",
+      "name": "Ethereum Hoodi",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:7777777",
+      "name": "Zora",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:11155111",
+      "name": "Ethereum Sepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:11155420",
+      "name": "Optimism Sepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:999999999",
+      "name": "Zora Sepolia",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1313161554",
+      "name": "Aurora Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1313161555",
+      "name": "Aurora Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "near:mainnet",
+      "name": "Near Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+      "name": "Solana Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
+      "name": "Solana Devnet",
+      "providers": []
+    },
+    {
+      "caip2": "solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z",
+      "name": "Solana Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "bip122:000000000019d6689c085ae165831e93",
+      "name": "Bitcoin Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "bip122:000000000933ea01ad0ee984209779ba",
+      "name": "Bitcoin Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "sui:mainnet",
+      "name": "Sui Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "sui:devnet",
+      "name": "Sui Devnet",
+      "providers": []
+    },
+    {
+      "caip2": "sui:testnet",
+      "name": "Sui Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "stacks:1",
+      "name": "Stacks Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "stacks:2147483648",
+      "name": "Stacks Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "tron:0x2b6653dc",
+      "name": "Tron Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "tron:0xcd8690dc",
+      "name": "Tron Nile Testnet",
+      "providers": []
+    },
+    {
+      "caip2": "ton:-239",
+      "name": "Ton Mainnet",
+      "providers": []
+    }
+  ]
+}

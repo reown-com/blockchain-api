@@ -1,11 +1,16 @@
 use {
     crate::{
-        project::ProjectDataError, storage::error::StorageError, utils::crypto::CryptoUitlsError,
+        handlers::{
+            chain_agnostic::route::RouteSolanaError, sessions::get::InternalGetSessionContextError,
+        },
+        project::ProjectDataError,
+        storage::error::StorageError,
+        utils::crypto::{CaipNamespaces, CryptoUitlsError},
     },
     axum::{response::IntoResponse, Json},
     cerberus::registry::RegistryError,
     hyper::StatusCode,
-    tracing::{debug, log::error},
+    tracing::log::error,
 };
 
 pub type RpcResult<T> = Result<T, RpcError>;
@@ -35,6 +40,11 @@ pub enum RpcError {
 
     #[error("Transport error: {0}")]
     TransportError(#[from] hyper::Error),
+    #[error("Hyper util error: {0}")]
+    HyperUtilError(#[from] hyper_util::client::legacy::Error),
+
+    #[error("Proxy timeout error: {0}")]
+    ProxyTimeoutError(tokio::time::error::Elapsed),
 
     #[error("Request::builder() failed: {0}")]
     RequestBuilderError(#[from] hyper::http::Error),
@@ -42,14 +52,23 @@ pub enum RpcError {
     #[error("Specified chain is not supported by any of the providers: {0}")]
     UnsupportedChain(String),
 
+    #[error("Specified currency is not supported: {0}")]
+    UnsupportedCurrency(String),
+
     #[error("Requested chain provider is temporarily unavailable: {0}")]
     ChainTemporarilyUnavailable(String),
+
+    #[error("Invalid chainId format for the requested namespace: {0}")]
+    InvalidChainIdFormat(String),
 
     #[error("Specified provider is not supported: {0}")]
     UnsupportedProvider(String),
 
-    #[error("Failed to reach the provider")]
-    ProviderError,
+    #[error("Specified bundler is not supported: {0}")]
+    UnsupportedBundler(String),
+
+    #[error("Failed to reach the identity provider: {0}")]
+    IdentityProviderError(String),
 
     #[error("Failed to reach the transaction provider")]
     TransactionProviderError,
@@ -60,8 +79,11 @@ pub enum RpcError {
     #[error("Failed to reach the balance provider")]
     BalanceProviderError,
 
-    #[error("Failed to reach the fungible price provider")]
-    FungiblePriceProviderError,
+    #[error("Requested balance provider for the namespace is temporarily unavailable: {0}")]
+    BalanceTemporarilyUnavailable(String),
+
+    #[error("Failed to reach the fungible price provider: {0}")]
+    FungiblePriceProviderError(String),
 
     #[error("Failed to parse balance provider url")]
     BalanceParseURLError,
@@ -87,8 +109,11 @@ pub enum RpcError {
     #[error("Invalid scheme used. Try http(s):// or ws(s)://")]
     InvalidScheme,
 
-    #[error(transparent)]
-    AxumTungstenite(#[from] axum_tungstenite::Error),
+    #[error("WebSocket error: {0}")]
+    WebSocketError(String),
+
+    #[error("Only WebSocket connections are supported for GET method on this endpoint")]
+    WebSocketConnectionExpected,
 
     #[error(transparent)]
     RateLimited(#[from] wc::rate_limit::RateLimitExceeded),
@@ -114,6 +139,9 @@ pub enum RpcError {
     #[error("invalid parameter: {0}")]
     InvalidParameter(String),
 
+    #[error("Asset is not supported: {0}")]
+    AssetNotSupported(String),
+
     // Conversion errors
     #[error("Failed to reach the conversion provider")]
     ConversionProviderError,
@@ -124,12 +152,21 @@ pub enum RpcError {
     #[error("Invalid conversion parameter: {0}")]
     ConversionInvalidParameter(String),
 
+    #[error("Invalid conversion parameter with code: {0} and description: {1}")]
+    ConversionInvalidParameterWithCode(String, String),
+
+    #[error("Conversion provider internal error: {0}")]
+    ConversionProviderInternalError(String),
+
     // Profile names errors
     #[error("Name is already registered: {0}")]
     NameAlreadyRegistered(String),
 
     #[error("Name is not registered: {0}")]
     NameNotRegistered(String),
+
+    #[error("Name registeration error: {0}")]
+    NameRegistrationError(String),
 
     #[error("Name is not found: {0}")]
     NameNotFound(String),
@@ -149,8 +186,14 @@ pub enum RpcError {
     #[error("Name is not in the allowed zones: {0}")]
     InvalidNameZone(String),
 
+    #[error("Invalid value: {0}")]
+    InvalidValue(String),
+
     #[error("Unsupported coin type: {0}")]
     UnsupportedCoinType(u32),
+
+    #[error("Unsupported namespace: {0}")]
+    UnsupportedNamespace(CaipNamespaces),
 
     #[error("Unsupported name attribute")]
     UnsupportedNameAttribute,
@@ -169,25 +212,118 @@ pub enum RpcError {
 
     #[error("Weighted providers index error: {0}")]
     WeightedProvidersIndex(String),
+
+    #[error("IRN client is not configured")]
+    IrnNotConfigured,
+
+    #[error("Internal permissions get context error: {0}")]
+    InternalGetSessionContextError(InternalGetSessionContextError),
+
+    #[error("Wrong Base64 format: {0}")]
+    WrongBase64Format(String),
+
+    #[error("Wrong Hex format: {0}")]
+    WrongHexFormat(String),
+
+    #[error("Key format error: {0}")]
+    KeyFormatError(String),
+
+    #[error("Signature format error: {0}")]
+    SignatureFormatError(String),
+
+    #[error("Pkcs8 error: {0}")]
+    Pkcs8Error(#[from] ethers::core::k256::pkcs8::Error),
+
+    #[error("Permission for PCI is not found: {0} {1}")]
+    PermissionNotFound(String, String),
+
+    #[error("Permission context was not updated yet: {0}")]
+    PermissionContextNotUpdated(String),
+
+    #[error("Permission is revoked: {0}")]
+    RevokedPermission(String),
+
+    #[error("Permission is expired: {0}")]
+    PermissionExpired(String),
+
+    #[error("Permissions set is empty")]
+    CoSignerEmptyPermissions,
+
+    #[error("Cosigner permission denied: {0}")]
+    CosignerPermissionDenied(String),
+
+    #[error("Cosigner unsupported permission: {0}")]
+    CosignerUnsupportedPermission(String),
+
+    #[error("ABI decoding error: {0}")]
+    AbiDecodingError(String),
+
+    #[error("Orchestration ID is not found: {0}")]
+    OrchestrationIdNotFound(String),
+
+    #[error("Bridging final amount is less then expected")]
+    BridgingFinalAmountLess,
+
+    #[error("Simulation provider unavailable")]
+    SimulationProviderUnavailable,
+
+    #[error("Simulation failed: {0}")]
+    SimulationFailed(String),
+
+    #[error("Route solana: {0}")]
+    RouteSolana(#[from] RouteSolanaError),
+
+    #[error("Join error: {0}")]
+    JoinError(#[from] tokio::task::JoinError),
+
+    #[error("Unsupported bundler name (URL parse error): {0}")]
+    UnsupportedBundlerNameUrlParseError(url::ParseError),
+
+    #[error("Unsupported bundler name: {0}")]
+    UnsupportedBundlerName(String),
 }
 
 impl IntoResponse for RpcError {
     fn into_response(self) -> axum::response::Response {
         let response =  match &self {
-            Self::AxumTungstenite(err) => (StatusCode::GONE, err.to_string()).into_response(),
+            Self::WebSocketError(err) => (StatusCode::GONE, err.to_string()).into_response(),
             Self::UnsupportedChain(chain_id) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "chainId".to_string(),
-                    format!("We don't support the chainId you provided: {chain_id}. See the list of supported chains here: https://docs.walletconnect.com/cloud/blockchain-api#supported-chains"),
+                    format!("We don't support the chainId you provided: {chain_id}. See the list of supported chains here: https://docs.reown.com/cloud/blockchain-api#supported-chains"),
                 )),
             )
                 .into_response(),
+            Self::UnsupportedCurrency(error_message) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(new_error_response(
+                        "currency".to_string(),
+                        format!("Unsupported currency: {error_message}."),
+                    )),
+                )
+                    .into_response(),
+            Self::UnsupportedBundlerName(error_message) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(new_error_response(
+                        "bundler_name".to_string(),
+                        format!("Unsupported bundler name: {error_message}."),
+                    )),
+                )
+                    .into_response(),
+            Self::UnsupportedBundlerNameUrlParseError(error_message) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(new_error_response(
+                        "bundler_name".to_string(),
+                        format!("Unsupported bundler name: {error_message}."),
+                    )),
+                )
+                    .into_response(),
             Self::CryptoUitlsError(e) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "".to_string(),
-                    format!("Crypto utils invalid argument: {}", e),
+                    format!("Crypto utils error: {e}"),
                 )),
             )
                 .into_response(),
@@ -199,6 +335,22 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
+            Self::BalanceTemporarilyUnavailable(namespace) => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "chainId".to_string(),
+                    format!("Requested namespace {namespace} balance provider is temporarily unavailable"),
+                )),
+            )
+                .into_response(),
+            Self::InvalidChainIdFormat(chain_id) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(new_error_response(
+                        "chainId".to_string(),
+                        format!("Requested {chain_id} has invalid format for the requested namespace"),
+                    )),
+                )
+                    .into_response(),
             Self::UnsupportedProvider(provider) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
@@ -207,11 +359,19 @@ impl IntoResponse for RpcError {
                 )),
             )
                 .into_response(),
-            Self::ProviderError => (
+            Self::UnsupportedBundler(bundler) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "bundler".to_string(),
+                    format!("Bundler {bundler} is not supported"),
+                )),
+            )
+                .into_response(),
+            Self::IdentityProviderError(e) => (
                 StatusCode::SERVICE_UNAVAILABLE,
                 Json(new_error_response(
-                    "unreachable".to_string(),
-                    "We failed to reach the provider for your request".to_string(),
+                    "".to_string(),
+                    format!("We failed to reach the identity provider with an error: {e}"),
                 )),
             )
                 .into_response(),
@@ -220,6 +380,14 @@ impl IntoResponse for RpcError {
                 Json(new_error_response(
                     "scheme".to_string(),
                     "Invalid scheme used. Try http(s):// or ws(s)://".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::WebSocketConnectionExpected => (
+                StatusCode::UPGRADE_REQUIRED,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Only WebSocket connections are supported for GET method on this endpoint".to_string(),
                 )),
             )
                 .into_response(),
@@ -259,7 +427,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "".to_string(),
-                    format!("Invalid parameter: {}", e),
+                    format!("Invalid parameter: {e}"),
                 )),
             )
                 .into_response(),
@@ -269,7 +437,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "name".to_string(),
-                    format!("Invalid name format: {}", e),
+                    format!("Invalid name format: {e}"),
                 )),
             )
                 .into_response(),
@@ -277,7 +445,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "name".to_string(),
-                    format!("Invalid name length: {}", e),
+                    format!("Invalid name length: {e}"),
                 )),
             )
                 .into_response(),
@@ -285,7 +453,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "name".to_string(),
-                    format!("Name is not in the allowed zones: {}", e),
+                    format!("Name is not in the allowed zones: {e}"),
                 )),
             )
                 .into_response(),
@@ -293,18 +461,42 @@ impl IntoResponse for RpcError {
                     StatusCode::BAD_REQUEST,
                     Json(new_error_response(
                         "".to_string(),
-                        format!("Conversion parameter error: {}", e),
+                        format!("Conversion parameter error: {e}"),
                     )),
                 )
                     .into_response(),
+            Self::ConversionInvalidParameterWithCode(code, message) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response_with_code(
+                    code.to_string(),
+                    format!("Conversion parameter error: {message}"),
+                )),
+            )
+                .into_response(),
+            Self::AssetNotSupported(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "asset".to_string(),
+                    format!("Asset is not supported: {e}"),
+                )),
+            )
+                .into_response(),
             Self::UnsupportedCoinType(e) => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "coin_type".to_string(),
-                    format!("Unsupported coin type: {}", e),
+                    format!("Unsupported coin type: {e}"),
                 )),
             )
                 .into_response(),
+                Self::UnsupportedNamespace(e) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(new_error_response(
+                        "address".to_string(),
+                        format!("Unsupported namespace: {e}"),
+                    )),
+                )
+                    .into_response(),
             Self::UnsupportedNameAttribute => (
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
@@ -317,7 +509,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "name".to_string(),
-                    format!("Name is already registered: {}", e),
+                    format!("Name is already registered: {e}"),
                 )),
             )
                 .into_response(),
@@ -325,7 +517,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "name".to_string(),
-                    format!("Name is not registered: {}", e),
+                    format!("Name is not registered: {e}"),
                 )),
             )
                 .into_response(),
@@ -333,7 +525,7 @@ impl IntoResponse for RpcError {
                 StatusCode::NOT_FOUND,
                 Json(new_error_response(
                     "name".to_string(),
-                    format!("Name is not found in the database: {}", e),
+                    format!("Name is not found in the database: {e}"),
                 )),
             )
                 .into_response(),
@@ -349,7 +541,7 @@ impl IntoResponse for RpcError {
                 StatusCode::BAD_REQUEST,
                 Json(new_error_response(
                     "timestamp".to_string(),
-                    format!("Signature UNIXTIME timestamp is too old: {}", e),
+                    format!("Signature UNIXTIME timestamp is too old: {e}"),
                 )),
             )
                 .into_response(),
@@ -357,7 +549,7 @@ impl IntoResponse for RpcError {
                 StatusCode::UNAUTHORIZED,
                 Json(new_error_response(
                     "signature".to_string(),
-                    format!("Signature validation error: {}", e),
+                    format!("Signature validation error: {e}"),
                 )),
             )
                 .into_response(),
@@ -373,19 +565,169 @@ impl IntoResponse for RpcError {
                 StatusCode::UNPROCESSABLE_ENTITY,
                 Json(new_error_response(
                     "".to_string(),
-                    format!("Deserialization error: {}", e),
+                    format!("Deserialization error: {e}"),
                 )),
             )
                 .into_response(),
             Self::RateLimited(e) => (
                 StatusCode::TOO_MANY_REQUESTS,
                 Json(new_error_response(
-                    "rate_limit".to_string(),
-                    format!("Rate limited: {}", e),
+                    "rate_limited".to_string(),
+                    format!("Requests per second limit exceeded: {e}"),
                 )),
             )
                 .into_response(),
-
+            Self::PermissionNotFound(address, pci) => {
+                // TODO: Remove this debug log
+                print!(
+                    "Permission not found with PCI: {pci:?} and address: {address:?}"
+                );
+                (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "pci".to_string(),
+                    format!("Permission for PCI is not found: {pci}"),
+                )),
+            )
+                .into_response()
+            },
+            Self::RevokedPermission(pci) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "pci".to_string(),
+                    format!("Permission is revoked: {pci}"),
+                )),
+            )
+                .into_response(),
+            Self::PermissionExpired(pci) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "pci".to_string(),
+                    format!("Permission is expired: {pci}"),
+                )),
+            )
+                .into_response(),
+            Self::WrongBase64Format(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "".to_string(),
+                    format!("Wrong Base64 format: {e}"),
+                )),
+            )
+                .into_response(),
+            Self::KeyFormatError(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "key".to_string(),
+                    format!("Invalid key format: {e}"),
+                )),
+            )
+                .into_response(),
+            Self::SignatureFormatError(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "signature".to_string(),
+                    format!("Invalid signature format: {e}"),
+                )),
+            )
+                .into_response(),
+            Self::CoSignerEmptyPermissions => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Permissions set is empty".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::AbiDecodingError(e) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "calldata".to_string(),
+                    format!("ABI signature decoding error: {e}"),
+                )),
+            )
+                .into_response(),
+            Self::TransactionProviderError => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Transaction provider is temporarily unavailable".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::OnRampProviderError => (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    Json(new_error_response(
+                        "".to_string(),
+                        "OnRamp provider is temporarily unavailable".to_string(),
+                    )),
+                )
+                    .into_response(),
+            Self::PortfolioProviderError => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Portfolio provider is temporarily unavailable".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::BalanceProviderError => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Balance provider is temporarily unavailable".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::FungiblePriceProviderError(e) => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "".to_string(),
+                    format!("Fungibles price provider is temporarily unavailable: {e}"),
+                )),
+            )
+                .into_response(),
+            Self::ConversionProviderError => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Convertion provider is temporarily unavailable".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::SimulationProviderUnavailable => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(new_error_response(
+                    "".to_string(),
+                    "Simulation provider is temporarily unavailable".to_string(),
+                )),
+            )
+                .into_response(),
+            Self::CosignerPermissionDenied(e) => (
+                    StatusCode::UNAUTHORIZED,
+                    Json(new_error_response(
+                        "".to_string(),
+                        format!("Cosigner permission denied: {e}"),
+                    )),
+                )
+                    .into_response(),
+            Self::CosignerUnsupportedPermission(e) => (
+                StatusCode::UNAUTHORIZED,
+                Json(new_error_response(
+                    "".to_string(),
+                    format!("Unsupported permission in CoSigner: {e}"),
+                )),
+            )
+                .into_response(),
+            Self::OrchestrationIdNotFound(id) => (
+                StatusCode::BAD_REQUEST,
+                Json(new_error_response(
+                    "orchestrationId".to_string(),
+                    format!("Orchestration ID is not found: {id}"),
+                )),
+            )
+                .into_response(),
+            Self::RouteSolana(e) => e.into_response(),
             // Any other errors considering as 500
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -394,12 +736,15 @@ impl IntoResponse for RpcError {
                 .into_response(),
         };
 
-        if response.status().is_client_error() {
-            debug!("HTTP client error: {self:?}");
-        }
-
-        if response.status().is_server_error() {
-            error!("HTTP server error: {self:?}");
+        // Log the server errors response status based on the status code
+        match response.status() {
+            StatusCode::INTERNAL_SERVER_ERROR => {
+                error!("HTTP internal server error: {self:?}");
+            }
+            status if status.is_server_error() => {
+                error!("HTTP server error: {self:?}");
+            }
+            _ => {}
         }
 
         response
@@ -423,4 +768,14 @@ pub fn new_error_response(field: String, description: String) -> ErrorResponse {
         status: "FAILED".to_string(),
         reasons: vec![ErrorReason { field, description }],
     }
+}
+
+#[derive(serde::Serialize)]
+pub struct ErrorResponseWithCode {
+    pub code: String,
+    pub message: String,
+}
+
+pub fn new_error_response_with_code(code: String, message: String) -> ErrorResponseWithCode {
+    ErrorResponseWithCode { code, message }
 }

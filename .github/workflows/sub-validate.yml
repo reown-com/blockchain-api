@@ -12,7 +12,7 @@ on:
         description: 'the URL of the environment'
         required: true
         type: string
-        default: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.com
+        default: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.org
 
 permissions:
   contents: read
@@ -50,12 +50,15 @@ jobs:
       url: ${{ inputs.stage-url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PRIVATE_SUBMODULE_ACCESS_TOKEN || github.token }}
+          submodules: recursive
 
-      - name: "Install Rust ${{ vars.RUST_VERSION }}"
+      - name: "Install Rust stable"
         uses: WalletConnect/actions-rs/toolchain@1.0.0
         with:
-          toolchain: ${{ vars.RUST_VERSION }}
+          toolchain: stable
           profile: 'default'
           override: true
 
@@ -64,7 +67,6 @@ jobs:
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
           RPC_PROXY_POSTGRES_URI: 'postgres://postgres:root@localhost:5432/postgres'
-          RPC_PROXY_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
           RPC_URL: ${{ inputs.stage-url }}
         with:
           command: test
@@ -80,10 +82,11 @@ jobs:
 
   integration-tests-ts:
     name: TS Integration Tests - ${{ inputs.stage }}
+    needs: [health-check, integration-tests]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v3
@@ -100,3 +103,11 @@ jobs:
         env:
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
           RPC_URL: ${{ inputs.stage-url }}
+          MAX_TOKENS: ${{ inputs.stage == 'prod' && vars.RATE_LIMITING_MAX_TOKENS_PROD || vars.RATE_LIMITING_MAX_TOKENS_STAGING }}
+
+  integration-tests-yttrium:
+    name: Yttrium integration Tests - ${{ inputs.stage }}
+    uses: ./.github/workflows/sub-yttrium-integration.yml
+    secrets: inherit
+    with:
+      stage-url: ${{ inputs.stage-url }}

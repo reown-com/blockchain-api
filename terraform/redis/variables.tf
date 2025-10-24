@@ -4,7 +4,7 @@
 variable "node_type" {
   description = "The instance type to use for the database nodes"
   type        = string
-  default     = "cache.t4g.micro" # https://aws.amazon.com/elasticache/pricing/?nc=sn&loc=5#On-demand_nodes
+  default     = "cache.t4g.small" # https://aws.amazon.com/elasticache/pricing/?nc=sn&loc=5#On-demand_nodes
 }
 
 variable "num_cache_nodes" {
@@ -16,7 +16,7 @@ variable "num_cache_nodes" {
 variable "node_engine_version" {
   description = "The version of Redis to use"
   type        = string
-  default     = "6.x"
+  default     = "7.1"
 }
 
 #-------------------------------------------------------------------------------

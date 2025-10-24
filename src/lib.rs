@@ -1,33 +1,43 @@
 use {
     crate::{
-        env::Config,
-        handlers::{identity::IdentityResponse, rate_limit_middleware},
+        env::{Config, GenericConfig},
+        handlers::{
+            balance::BalanceResponseBody, identity::IdentityResponse, rate_limit_middleware,
+            status_latency_metrics_middleware,
+        },
         metrics::Metrics,
         project::Registry,
         providers::ProvidersConfig,
-        storage::{redis, KeyValueStorage},
+        storage::{irn, redis, KeyValueStorage},
     },
     anyhow::Context,
     aws_config::meta::region::RegionProviderChain,
     aws_sdk_s3::{config::Region, Client as S3Client},
+    axum::body::Body,
     axum::{
-        extract::connect_info::IntoMakeServiceWithConnectInfo,
         middleware,
-        response::Response,
         routing::{get, post},
         Router,
     },
     env::{
-        AuroraConfig, BaseConfig, BinanceConfig, GetBlockConfig, InfuraConfig, MantleConfig,
-        NearConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig, ZKSyncConfig, ZoraConfig,
+        AllnodesConfig, ArbitrumConfig, AuroraConfig, BaseConfig, BinanceConfig, BlastConfig,
+        CallStaticConfig, DrpcConfig, DuneConfig, HiroConfig, MantleConfig, MonadConfig,
+        MoonbeamConfig, MorphConfig, NearConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
+        RootstockConfig, SolScanConfig, SuiConfig, SyndicaConfig, TheRpcConfig, TrongridConfig,
+        UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
     },
     error::RpcResult,
     http::Request,
-    hyper::{header::HeaderName, http, server::conn::AddrIncoming, Body, Server},
+    hyper::{header::HeaderName, http},
+    metrics_exporter_prometheus::PrometheusBuilder,
     providers::{
-        AuroraProvider, BaseProvider, BinanceProvider, GetBlockProvider, InfuraProvider,
-        InfuraWsProvider, MantleProvider, NearProvider, PoktProvider, ProviderRepository,
-        PublicnodeProvider, QuicknodeProvider, ZKSyncProvider, ZoraProvider, ZoraWsProvider,
+        AllnodesProvider, AllnodesWsProvider, ArbitrumProvider, AuroraProvider, BaseProvider,
+        BinanceProvider, BlastProvider, CallStaticProvider, DrpcProvider, DuneProvider,
+        GenericProvider, HiroProvider, MantleProvider, MonadProvider, MoonbeamProvider,
+        MorphProvider, NearProvider, PoktProvider, ProviderRepository, PublicnodeProvider,
+        QuicknodeProvider, QuicknodeWsProvider, RootstockProvider, SolScanProvider, SuiProvider,
+        SyndicaProvider, SyndicaWsProvider, TheRpcProvider, TrongridProvider, UnichainProvider,
+        WemixProvider, ZKSyncProvider, ZerionProvider, ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -35,6 +45,7 @@ use {
         sync::Arc,
         time::Duration,
     },
+    tokio::signal,
     tower::ServiceBuilder,
     tower_http::{
         cors::{Any, CorsLayer},
@@ -42,41 +53,39 @@ use {
         trace::TraceLayer,
         ServiceBuilderExt,
     },
-    tracing::{info, log::warn, Span},
+    tracing::{error, info, log::warn},
     utils::rate_limit::RateLimit,
-    wc::{
-        geoip::{
-            block::{middleware::GeoBlockLayer, BlockingPolicy},
-            MaxMindResolver,
-        },
-        http::ServiceTaskExecutor,
-        metrics::ServiceMetrics,
+    wc::geoip::{
+        block::{middleware::GeoBlockLayer, BlockingPolicy},
+        MaxMindResolver,
     },
 };
 
-const SERVICE_TASK_TIMEOUT: Duration = Duration::from_secs(15);
-const KEEPALIVE_IDLE_DURATION: Duration = Duration::from_secs(60);
-const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(10);
-const KEEPALIVE_RETRIES: u32 = 5;
+const DB_STATS_POLLING_INTERVAL: Duration = Duration::from_secs(3600);
+const GRACEFUL_SHUTDOWN_DELAY: Duration = Duration::from_secs(5);
 
 mod analytics;
+pub mod chain_config;
 pub mod database;
 pub mod env;
 pub mod error;
-mod extractors;
 pub mod handlers;
 mod json_rpc;
 mod metrics;
+pub mod names;
 pub mod profiler;
 mod project;
 pub mod providers;
 mod state;
 mod storage;
-mod utils;
+pub mod test_helpers;
+pub mod utils;
 mod ws;
 
 pub async fn bootstrap(config: Config) -> RpcResult<()> {
-    ServiceMetrics::init_with_name("rpc-proxy");
+    let prometheus_handler = PrometheusBuilder::new()
+        .install_recorder()
+        .context("failed to initialize prometheus")?;
 
     let s3_client = get_s3_client(&config).await;
     let geoip_resolver = get_geoip_resolver(&config, &s3_client).await;
@@ -95,18 +104,22 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
                 config.rate_limiting.max_tokens,
                 config.rate_limiting.refill_interval_sec,
                 config.rate_limiting.refill_rate,
+                config.rate_limiting.ip_whitelist.clone(),
             ) {
-                (Some(max_tokens), Some(refill_interval_sec), Some(refill_rate)) => {
+                (Some(max_tokens), Some(refill_interval_sec), Some(refill_rate), ip_whitelist) => {
                     info!(
                         "Rate limiting is enabled with the following configuration: \
-                         max_tokens={}, refill_interval_sec={}, refill_rate={}",
-                        max_tokens, refill_interval_sec, refill_rate
+                         max_tokens={}, refill_interval_sec={}, refill_rate={}, ip_whitelist={:?}",
+                        max_tokens, refill_interval_sec, refill_rate, ip_whitelist
                     );
                     RateLimit::new(
                         redis_addr.write(),
+                        config.storage.redis_max_connections,
                         max_tokens,
                         chrono::Duration::seconds(refill_interval_sec as i64),
                         refill_rate,
+                        metrics.clone(),
+                        ip_whitelist,
                     )
                 }
                 _ => {
@@ -124,6 +137,12 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .map(|addr| redis::Redis::new(&addr, config.storage.redis_max_connections))
         .transpose()?
         .map(|r| Arc::new(r) as Arc<dyn KeyValueStorage<IdentityResponse> + 'static>);
+    let balance_cache = config
+        .storage
+        .project_data_redis_addr()
+        .map(|addr| redis::Redis::new(&addr, config.storage.redis_max_connections))
+        .transpose()?
+        .map(|r| Arc::new(r) as Arc<dyn KeyValueStorage<BalanceResponseBody> + 'static>);
 
     let providers = init_providers(&config.providers);
 
@@ -142,7 +161,6 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     .context("failed to init analytics")?;
 
     let geoblock = analytics.geoip_resolver().as_ref().map(|resolver| {
-        // let r = resolver.clone().deref();
         GeoBlockLayer::new(
             resolver.clone(),
             config.server.blocked_countries.clone(),
@@ -157,6 +175,18 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     sqlx::migrate!("./migrations").run(&postgres).await?;
 
     let http_client = reqwest::Client::new();
+    let irn_client =
+        if let (Some(nodes), Some(key_base64), Some(namespace), Some(namespace_secret)) = (
+            config.irn.nodes.clone(),
+            config.irn.key.clone(),
+            config.irn.namespace.clone(),
+            config.irn.namespace_secret.clone(),
+        ) {
+            Some(irn::Irn::new(key_base64, nodes, namespace, namespace_secret).await?)
+        } else {
+            warn!("IRN client is disabled (missing required environment configuration variables)");
+            None
+        };
 
     let state = state::new_state(
         config.clone(),
@@ -164,10 +194,12 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         providers,
         metrics.clone(),
         registry,
-        identity_cache,
         analytics,
         http_client,
         rate_limiting,
+        irn_client,
+        identity_cache,
+        balance_cache,
     );
 
     let port = state.config.server.port;
@@ -189,59 +221,59 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         HeaderName::from_static("x-sdk-version"),
     ]);
 
-    let proxy_state = state_arc.clone();
-    let tracing_and_metrics_layer = ServiceBuilder::new()
+    // No static restricted CORS here; dynamic CORS for /v1/json-rpc is handled in its handler
+
+    let tracing_layer = ServiceBuilder::new()
         .set_x_request_id(MakeRequestUuid)
         .layer(
-            TraceLayer::new_for_http()
-            .make_span_with(|request: &Request<Body>| {
-                let request_id = match request.headers().get("x-request-id") {
-                    Some(value) => value.to_str().unwrap_or_default().to_string(),
-                    None => {
-                        // If this warning is triggered, it means that the `x-request-id` was not
-                        // propagated to headers properly. This is a bug in the middleware chain.
-                        warn!("Missing x-request-id header in a middleware");
-                        String::new()
-                    }
-                };
-                tracing::info_span!("http-request", "method" = ?request.method(), "request_id" = ?request_id, "uri" = ?request.uri())
-            })
-            .on_response(
-                move |response: &Response, latency: Duration, _span: &Span| {
-                    proxy_state
-                        .metrics
-                        .add_http_call(response.status().into(), "proxy".to_owned());
-
-                    proxy_state.metrics.add_http_latency(
-                        response.status().into(),
-                        "proxy".to_owned(),
-                        latency.as_secs_f64(),
-                    )
-                },
-            ),
+            TraceLayer::new_for_http().make_span_with(|request: &Request<Body>| {
+                let request_id = request
+                    .headers()
+                    .get("x-request-id")
+                    .and_then(|value| value.to_str().ok())
+                    .unwrap_or_default()
+                    .to_string();
+                tracing::info_span!(
+                    "http-request",
+                    method = ?request.method(),
+                    request_id = ?request_id,
+                    uri = request.uri().path()
+                )
+            }),
         )
         .propagate_x_request_id();
 
-    let app = Router::new()
+    // Router for /v1/json-rpc with restricted CORS
+    let json_rpc_restricted_router = Router::new()
+        // Preflight for dynamic CORS
+        .route("/v1/json-rpc", axum::routing::options(handlers::json_rpc::handler::json_rpc_preflight))
+        .route("/v1/json-rpc", post(handlers::json_rpc::handler::json_rpc_with_dynamic_cors));
+
+    // All other routes with default/open CORS
+    let rest_routes = Router::new()
+        // HTTP RPC proxy (POST method only) with the trailing slash alias
         .route("/v1", post(handlers::proxy::handler))
         .route("/v1/", post(handlers::proxy::handler))
-        .route("/v1/supported-chains", get(handlers::supported_chains::handler))
+        // WebSocket RPC proxy (GET method only) with the /ws and trailing slash alias
+        .route("/v1", get(handlers::ws_proxy::handler))
+        .route("/v1/", get(handlers::ws_proxy::handler))
         .route("/ws", get(handlers::ws_proxy::handler))
-        .route("/v1/identity/:address", get(handlers::identity::handler))
+        .route("/v1/supported-chains", get(handlers::supported_chains::handler))
+        .route("/v1/identity/{address}", get(handlers::identity::handler))
         .route(
-            "/v1/account/:address/identity",
+            "/v1/account/{address}/identity",
             get(handlers::identity::handler),
         )
         .route(
-            "/v1/account/:address/history",
+            "/v1/account/{address}/history",
             get(handlers::history::handler),
         )
         .route(
-            "/v1/account/:address/portfolio",
+            "/v1/account/{address}/portfolio",
             get(handlers::portfolio::handler),
         )
         .route(
-            "/v1/account/:address/balance",
+            "/v1/account/{address}/balance",
             get(handlers::balance::handler),
         )
         // Register account name
@@ -251,27 +283,27 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         )
          // Update account name attributes
          .route(
-            "/v1/profile/account/:name/attributes",
+            "/v1/profile/account/{name}/attributes",
             post(handlers::profile::attributes::handler),
         )
         // Update account name address
         .route(
-            "/v1/profile/account/:name/address",
+            "/v1/profile/account/{name}/address",
             post(handlers::profile::address::handler),
         )
         // Forward address lookup
         .route(
-            "/v1/profile/account/:name",
+            "/v1/profile/account/{name}",
             get(handlers::profile::lookup::handler),
         )
         // Reverse name lookup
         .route(
-            "/v1/profile/reverse/:address",
+            "/v1/profile/reverse/{address}",
             get(handlers::profile::reverse::handler),
         )
         // Reverse name lookup
         .route(
-            "/v1/profile/suggestions/:name",
+            "/v1/profile/suggestions/{name}",
             get(handlers::profile::suggestions::handler),
         )
         // Generators
@@ -287,6 +319,22 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         .route(
             "/v1/onramp/buy/quotes",
             get(handlers::onramp::quotes::handler),
+        )
+        .route(
+            "/v1/onramp/multi/quotes",
+            post(handlers::onramp::multi_quotes::handler),
+        )
+        .route(
+            "/v1/onramp/providers",
+            get(handlers::onramp::providers::handler),
+        )
+        .route(
+            "/v1/onramp/providers/properties",
+            get(handlers::onramp::properties::handler),
+        )
+        .route(
+            "/v1/onramp/widget",
+            post(handlers::onramp::widget::handler),
         )
         // Conversion
         .route(
@@ -318,15 +366,44 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
             "/v1/fungible/price",
             post(handlers::fungible_price::handler),
         )
+        // Sessions
+        .route("/v1/sessions/{address}", post(handlers::sessions::create::handler))
+        .route("/v1/sessions/{address}", get(handlers::sessions::list::handler))
+        .route("/v1/sessions/{address}/getcontext", get(handlers::sessions::get::handler))
+        .route("/v1/sessions/{address}/activate", post(handlers::sessions::context::handler))
+        .route("/v1/sessions/{address}/revoke", post(handlers::sessions::revoke::handler))
+        .route("/v1/sessions/{address}/sign", post(handlers::sessions::cosign::handler))
+        // Bundler
+        .route("/v1/bundler", post(handlers::bundler::handler))
+        // Wallet
+        .route("/v1/wallet", post(handlers::json_rpc::handler::handler))
+        // Chain agnostic orchestration
+        .route("/v1/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler_v1))
+        .route("/v2/ca/orchestrator/route", post(handlers::chain_agnostic::route::handler_v2))
+        .route("/v1/ca/orchestrator/status", get(handlers::chain_agnostic::status::handler))
+        // Health
         .route("/health", get(handlers::health::handler))
-        .route_layer(tracing_and_metrics_layer)
-        .layer(cors);
+        .route_layer(cors);
 
+    let app = Router::new()
+        .merge(json_rpc_restricted_router)
+        .merge(rest_routes)
+        .route_layer(tracing_layer);
+
+    // Response statuses and latency metrics middleware
+    let app = app.layer(middleware::from_fn_with_state(
+        state_arc.clone(),
+        status_latency_metrics_middleware,
+    ));
+
+    // GeoBlock middleware
     let app = if let Some(geoblock) = geoblock {
-        app.layer(geoblock)
+        app.route_layer(geoblock)
     } else {
         app
     };
+
+    // Rate-limiting middleware
     let app = if state_arc.rate_limit.is_some() {
         app.route_layer(middleware::from_fn_with_state(
             state_arc.clone(),
@@ -350,20 +427,31 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
     info!("Starting metric server on {}", private_addr);
 
     let private_app = Router::new()
-        .route("/metrics", get(handlers::metrics::handler))
+        .route(
+            "/metrics",
+            get(move || async move { prometheus_handler.render() }),
+        )
         .with_state(state_arc.clone());
 
-    let public_server = create_server("public_server", app, &addr);
-    let private_server = create_server("private_server", private_app, &private_addr);
+    let public_server = create_server(app, addr);
+    let private_server = create_server(private_app, private_addr);
 
     let weights_updater = {
         let state_arc = state_arc.clone();
         async move {
             let mut interval = tokio::time::interval(Duration::from_secs(15));
             loop {
-                interval.tick().await;
-                state_arc.clone().update_provider_weights().await;
+                tokio::select! {
+                    _ = interval.tick() => {
+                        state_arc.clone().update_provider_weights().await;
+                    }
+                    _ = signal::ctrl_c() => {
+                        info!("Weights updater received shutdown signal");
+                        break;
+                    }
+                }
             }
+            Ok(())
         }
     };
 
@@ -372,25 +460,34 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         async move {
             let mut interval = tokio::time::interval(Duration::from_secs(10));
             loop {
-                interval.tick().await;
-                // Gather system metrics (CPU and Memory usage)
-                state_arc.clone().metrics.gather_system_metrics().await;
-                // Gather current rate limited in-memory entries count
-                if let Some(rate_limit) = &state_arc.rate_limit {
-                    state_arc
-                        .metrics
-                        .add_rate_limited_entries_count(rate_limit.get_rate_limited_count().await);
+                tokio::select! {
+                    _ = interval.tick() => {
+                        // Gather system metrics (CPU and Memory usage)
+                        state_arc.clone().metrics.gather_system_metrics().await;
+                        // Gather current rate limited in-memory entries count
+                        if let Some(rate_limit) = &state_arc.rate_limit {
+                            state_arc
+                                .metrics
+                                .add_rate_limited_entries_count(rate_limit.get_rate_limited_count().await);
+                        }
+                    }
+                    _ = signal::ctrl_c() => {
+                        info!("System metrics updater received shutdown signal");
+                        break;
+                    }
                 }
             }
+            Ok(())
         }
     };
 
     let profiler = async move {
         if let Err(e) = tokio::spawn(profiler::run()).await {
-            warn!("Memory debug stats collection failed with: {:?}", e);
+            warn!("Memory debug stats collection failed with: {e:?}");
         }
         Ok(())
     };
+    let state_for_reconciler = state_arc.clone();
 
     let services = vec![
         tokio::spawn(public_server),
@@ -398,67 +495,187 @@ pub async fn bootstrap(config: Config) -> RpcResult<()> {
         tokio::spawn(weights_updater),
         tokio::spawn(system_metrics_updater),
         tokio::spawn(profiler),
+        tokio::spawn({
+            async move {
+                handlers::json_rpc::exchanges::reconciler::run(state_for_reconciler).await;
+                Ok::<(), std::io::Error>(())
+            }
+        }),
+        // Spawning a new task to observe metrics from the database by interval polling
+        tokio::spawn({
+            let postgres = state_arc.postgres.clone();
+            let metrics = metrics.clone();
+            async move {
+                let mut interval = tokio::time::interval(DB_STATS_POLLING_INTERVAL);
+                loop {
+                    tokio::select! {
+                        _ = interval.tick() => {
+                            metrics.update_account_names_count(&postgres).await;
+                        }
+                        _ = signal::ctrl_c() => {
+                            info!("Database metrics updater received shutdown signal");
+                            break;
+                        }
+                    }
+                }
+                Ok(())
+            }
+        }),
     ];
 
-    if let Err(e) = futures_util::future::select_all(services).await.0 {
-        warn!("Server error: {:?}", e);
-    };
+    // Wait for either services to complete or shutdown signal
+    tokio::select! {
+        result = futures_util::future::select_all(services) => {
+            if let Err(e) = result.0 {
+                warn!("Server error: {e:?}");
+            }
+        }
+        _ = shutdown_signal() => {
+            info!("Graceful shutdown initiated, allowing services to complete current work...");
+            // Give services a moment to finish current requests
+            tokio::time::sleep(GRACEFUL_SHUTDOWN_DELAY).await;
+            info!("Graceful shutdown completed");
+        }
+    }
 
     Ok(())
 }
 
-fn create_server(
-    name: &'static str,
-    app: Router,
-    addr: &SocketAddr,
-) -> Server<AddrIncoming, IntoMakeServiceWithConnectInfo<Router, SocketAddr>, ServiceTaskExecutor> {
-    let executor = ServiceTaskExecutor::new()
-        .name(Some(name))
-        .timeout(Some(SERVICE_TASK_TIMEOUT));
+async fn create_server(app: Router, addr: SocketAddr) -> Result<(), std::io::Error> {
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .expect("failed to bind listener");
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
+}
 
-    axum::Server::bind(addr)
-        .executor(executor)
-        .tcp_keepalive(Some(KEEPALIVE_IDLE_DURATION))
-        .tcp_keepalive_interval(Some(KEEPALIVE_INTERVAL))
-        .tcp_keepalive_retries(Some(KEEPALIVE_RETRIES))
-        .tcp_sleep_on_accept_errors(true)
-        .tcp_nodelay(true)
-        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
+    info!("Signal received, starting graceful shutdown");
 }
 
 fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
-    let mut providers = ProviderRepository::new(config);
-
-    // Keep in-sync with SUPPORTED_CHAINS.md
-
-    providers.add_provider::<AuroraProvider, AuroraConfig>(AuroraConfig::default());
-    providers
-        .add_provider::<PoktProvider, PoktConfig>(PoktConfig::new(config.pokt_project_id.clone()));
-
-    providers.add_provider::<BaseProvider, BaseConfig>(BaseConfig::default());
-    providers.add_provider::<BinanceProvider, BinanceConfig>(BinanceConfig::default());
-    providers.add_provider::<ZKSyncProvider, ZKSyncConfig>(ZKSyncConfig::default());
-    providers.add_provider::<PublicnodeProvider, PublicnodeConfig>(PublicnodeConfig::default());
-    providers.add_provider::<QuicknodeProvider, QuicknodeConfig>(QuicknodeConfig::new(
-        config.quicknode_api_token.clone(),
-    ));
-    providers.add_provider::<InfuraProvider, InfuraConfig>(InfuraConfig::new(
-        config.infura_project_id.clone(),
-    ));
-    providers.add_provider::<ZoraProvider, ZoraConfig>(ZoraConfig::default());
-    providers.add_provider::<NearProvider, NearConfig>(NearConfig::default());
-    providers.add_provider::<MantleProvider, MantleConfig>(MantleConfig::default());
-
-    if let Some(getblock_access_tokens) = &config.getblock_access_tokens {
-        providers.add_provider::<GetBlockProvider, GetBlockConfig>(GetBlockConfig::new(
-            getblock_access_tokens.clone(),
+    // Redis pool for providers responses caching where needed
+    let mut redis_pool = None;
+    if let Some(redis_addr) = &config.cache_redis_addr {
+        let redis_builder = deadpool_redis::Config::from_url(redis_addr)
+            .builder()
+            .map_err(|e| {
+                error!(
+                    "Failed to create redis pool builder for provider's responses caching: {:?}",
+                    e
+                );
+            })
+            .expect("Failed to create redis pool builder for provider's responses caching, builder is None");
+        redis_pool = Some(Arc::new(
+            redis_builder
+                .runtime(deadpool_redis::Runtime::Tokio1)
+                .build()
+                .expect("Failed to create redis pool"),
         ));
     };
 
-    providers.add_ws_provider::<InfuraWsProvider, InfuraConfig>(InfuraConfig::new(
-        config.infura_project_id.clone(),
+    // Keep in-sync with SUPPORTED_CHAINS.md
+
+    let mut providers = ProviderRepository::new(config);
+    providers.add_rpc_provider::<AuroraProvider, AuroraConfig>(AuroraConfig::default());
+    providers.add_rpc_provider::<ArbitrumProvider, ArbitrumConfig>(ArbitrumConfig::default());
+    providers.add_rpc_provider::<PoktProvider, PoktConfig>(PoktConfig::new(
+        config.pokt_project_id.clone(),
+    ));
+
+    providers.add_rpc_provider::<BaseProvider, BaseConfig>(BaseConfig::default());
+    providers.add_rpc_provider::<BinanceProvider, BinanceConfig>(BinanceConfig::default());
+    providers.add_rpc_provider::<ZKSyncProvider, ZKSyncConfig>(ZKSyncConfig::default());
+    providers.add_rpc_provider::<PublicnodeProvider, PublicnodeConfig>(PublicnodeConfig::default());
+    providers.add_rpc_provider::<QuicknodeProvider, QuicknodeConfig>(QuicknodeConfig::new(
+        config.quicknode_api_tokens.clone(),
+    ));
+    providers.add_rpc_provider::<ZoraProvider, ZoraConfig>(ZoraConfig::default());
+    providers.add_rpc_provider::<NearProvider, NearConfig>(NearConfig::default());
+    providers.add_rpc_provider::<MantleProvider, MantleConfig>(MantleConfig::default());
+    providers.add_rpc_provider::<UnichainProvider, UnichainConfig>(UnichainConfig::default());
+    providers.add_rpc_provider::<SyndicaProvider, SyndicaConfig>(SyndicaConfig::new(
+        config.syndica_api_key.clone(),
+    ));
+    providers.add_rpc_provider::<MorphProvider, MorphConfig>(MorphConfig::default());
+    providers.add_rpc_provider::<WemixProvider, WemixConfig>(WemixConfig::default());
+    providers.add_rpc_provider::<DrpcProvider, DrpcConfig>(DrpcConfig::default());
+    providers.add_rpc_provider::<AllnodesProvider, AllnodesConfig>(AllnodesConfig::new(
+        config.allnodes_api_key.clone(),
+    ));
+    providers.add_rpc_provider::<MonadProvider, MonadConfig>(MonadConfig::default());
+    providers.add_rpc_provider::<SuiProvider, SuiConfig>(SuiConfig::default());
+    providers.add_rpc_provider::<RootstockProvider, RootstockConfig>(RootstockConfig::default());
+    providers.add_rpc_provider::<HiroProvider, HiroConfig>(HiroConfig::default());
+    providers.add_rpc_provider::<CallStaticProvider, CallStaticConfig>(CallStaticConfig::new(
+        config.callstatic_api_key.clone(),
+    ));
+    providers.add_rpc_provider::<BlastProvider, BlastConfig>(BlastConfig::new(
+        config.blast_api_key.clone(),
+    ));
+    providers.add_rpc_provider::<MoonbeamProvider, MoonbeamConfig>(MoonbeamConfig::default());
+    providers.add_rpc_provider::<TheRpcProvider, TheRpcConfig>(TheRpcConfig::default());
+    providers.add_rpc_provider::<TrongridProvider, TrongridConfig>(TrongridConfig::default());
+
+    providers.add_ws_provider::<AllnodesWsProvider, AllnodesConfig>(AllnodesConfig::new(
+        config.allnodes_api_key.clone(),
     ));
     providers.add_ws_provider::<ZoraWsProvider, ZoraConfig>(ZoraConfig::default());
+    providers.add_ws_provider::<SyndicaWsProvider, SyndicaConfig>(SyndicaConfig::new(
+        config.syndica_api_key.clone(),
+    ));
+    providers.add_ws_provider::<QuicknodeWsProvider, QuicknodeConfig>(QuicknodeConfig::new(
+        config.quicknode_api_tokens.clone(),
+    ));
+
+    for chain in &chain_config::ACTIVE_CONFIG.chains {
+        for provider in &chain.providers {
+            providers.add_rpc_provider::<GenericProvider, GenericConfig>(GenericConfig {
+                caip2: chain.caip2.clone(),
+                name: chain.name.clone(),
+                provider: provider.clone(),
+            });
+        }
+    }
+
+    providers.add_balance_provider::<ZerionProvider, ZerionConfig>(
+        ZerionConfig::new(config.zerion_api_key.clone()),
+        None,
+    );
+    providers.add_balance_provider::<DuneProvider, DuneConfig>(
+        DuneConfig::new(config.dune_sim_api_key.clone()),
+        None,
+    );
+    providers.add_balance_provider::<SolScanProvider, SolScanConfig>(
+        SolScanConfig::new(config.solscan_api_v2_token.clone()),
+        redis_pool.clone(),
+    );
 
     providers
 }

@@ -1,7 +1,7 @@
 use {
     crate::database::{error::DatabaseError, types, utils},
     chrono::{DateTime, Utc},
-    sqlx::{PgPool, Postgres, Row},
+    sqlx::{FromRow, PgPool, Postgres, Row},
     std::collections::HashMap,
     tracing::{error, instrument},
 };
@@ -12,6 +12,11 @@ struct RowAddress {
     chain_id: String,
     address: String,
     created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, FromRow)]
+pub struct AccountNamesStats {
+    pub count: i64,
 }
 
 /// Initial name registration insert
@@ -34,9 +39,9 @@ pub async fn insert_name(
         VALUES ($1, $2::hstore)
     ";
     sqlx::query::<Postgres>(insert_name_query)
-        .bind(&name.clone())
+        .bind(name.clone())
         // Convert JSON to String for hstore update
-        .bind(&utils::hashmap_to_hstore(&attributes))
+        .bind(utils::hashmap_to_hstore(&attributes))
         .execute(&mut *transaction)
         .await?;
 
@@ -80,7 +85,7 @@ pub async fn update_name_attributes(
     ";
     let row = sqlx::query(update_attributes_query)
         .bind(&name)
-        .bind(&utils::hashmap_to_hstore(&attributes))
+        .bind(utils::hashmap_to_hstore(&attributes))
         .fetch_one(postgres)
         .await?;
     let result: serde_json::Value = row.get(0);
@@ -277,4 +282,15 @@ pub async fn insert_or_update_address<'e>(
     );
 
     Ok(result_map)
+}
+
+#[instrument(skip(postgres), level = "debug")]
+pub async fn get_account_names_stats(
+    postgres: &PgPool,
+) -> std::result::Result<AccountNamesStats, sqlx::error::Error> {
+    let query = "SELECT COUNT(*) FROM names AS count";
+    let stats = sqlx::query_as::<Postgres, AccountNamesStats>(query)
+        .fetch_one(postgres)
+        .await?;
+    Ok(stats)
 }

@@ -4,7 +4,7 @@ use {
         project::{error::ProjectDataError, metrics::ProjectDataMetrics},
         storage::{error::StorageError, KeyValueStorage, StorageResult},
     },
-    cerberus::project::ProjectDataWithQuota,
+    cerberus::project::{ProjectDataRequest, ProjectDataResponse},
     std::{
         sync::Arc,
         time::{Duration, Instant},
@@ -15,7 +15,7 @@ use {
 
 mod config;
 
-pub type ProjectDataResult = Result<ProjectDataWithQuota, ProjectDataError>;
+pub type ProjectDataResult = Result<ProjectDataResponse, ProjectDataError>;
 
 #[derive(Clone, Debug)]
 pub struct ProjectStorage {
@@ -37,14 +37,17 @@ impl ProjectStorage {
         }
     }
 
-    pub async fn fetch(&self, id: &str) -> StorageResult<Option<ProjectDataResult>> {
+    pub async fn fetch(
+        &self,
+        request: ProjectDataRequest<'_>,
+    ) -> StorageResult<Option<ProjectDataResult>> {
         let time = Instant::now();
 
-        let cache_key = build_cache_key(id);
+        let cache_key = build_cache_key(request);
 
         let data = match self.cache.get(&cache_key).await {
             Ok(data) => data,
-            Err(StorageError::Deserialize) => {
+            Err(StorageError::Deserialize(_)) => {
                 warn!("failed to deserialize cached ProjectData");
                 None
             }
@@ -59,8 +62,8 @@ impl ProjectStorage {
         Ok(data)
     }
 
-    pub async fn set(&self, id: &str, data: &ProjectDataResult) {
-        let cache_key = build_cache_key(id);
+    pub async fn set(&self, request: ProjectDataRequest<'_>, data: &ProjectDataResult) {
+        let cache_key = build_cache_key(request);
 
         let serialized = match crate::storage::serialize(&data) {
             Ok(serialized) => serialized,
@@ -84,6 +87,52 @@ impl ProjectStorage {
 }
 
 #[inline]
-fn build_cache_key(id: &str) -> String {
-    format!("project-data/{id}")
+fn build_cache_key(request: ProjectDataRequest<'_>) -> String {
+    let flags = (request.include_limits as u8) | ((request.include_features as u8) << 1);
+    format!("project-data-v3/{}/{}", request.id, flags)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_cache_key_bitmask_values() {
+        let id = "123e4567-e89b-12d3-a456-426614174000";
+
+        let k0 = build_cache_key(ProjectDataRequest::new(id));
+        assert_eq!(k0, format!("project-data-v3/{}/0", id));
+
+        let k1 = build_cache_key(ProjectDataRequest::new(id).include_limits());
+        assert_eq!(k1, format!("project-data-v3/{}/1", id));
+
+        let k2 = build_cache_key(ProjectDataRequest::new(id).include_features());
+        assert_eq!(k2, format!("project-data-v3/{}/2", id));
+
+        let k3 = build_cache_key(
+            ProjectDataRequest::new(id)
+                .include_limits()
+                .include_features(),
+        );
+        assert_eq!(k3, format!("project-data-v3/{}/3", id));
+    }
+
+    #[test]
+    fn build_cache_key_uniqueness() {
+        let id = "abc";
+        let mut set = std::collections::HashSet::new();
+        set.insert(build_cache_key(ProjectDataRequest::new(id)));
+        set.insert(build_cache_key(
+            ProjectDataRequest::new(id).include_limits(),
+        ));
+        set.insert(build_cache_key(
+            ProjectDataRequest::new(id).include_features(),
+        ));
+        set.insert(build_cache_key(
+            ProjectDataRequest::new(id)
+                .include_limits()
+                .include_features(),
+        ));
+        assert_eq!(set.len(), 4);
+    }
 }

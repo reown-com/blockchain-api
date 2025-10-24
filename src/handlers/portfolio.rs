@@ -1,8 +1,6 @@
 use {
-    super::HANDLER_TASK_METRICS,
     crate::{error::RpcError, state::AppState},
     axum::{
-        body::Bytes,
         extract::{ConnectInfo, MatchedPath, Path, Query, State},
         response::{IntoResponse, Response},
         Json,
@@ -13,7 +11,7 @@ use {
     std::{net::SocketAddr, sync::Arc},
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -44,14 +42,13 @@ pub async fn handler(
     path: MatchedPath,
     headers: HeaderMap,
     address: Path<String>,
-    body: Bytes,
 ) -> Result<Response, RpcError> {
-    handler_internal(state, connect_info, query, path, headers, address, body)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("portfolio"))
+    handler_internal(state, connect_info, query, path, headers, address)
+        .with_metrics(future_metrics!("handler_task", "name" => "portfolio"))
         .await
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
     _connect_info: ConnectInfo<SocketAddr>,
@@ -59,7 +56,6 @@ async fn handler_internal(
     _path: MatchedPath,
     _headers: HeaderMap,
     Path(address): Path<String>,
-    body: Bytes,
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
     let _address_hash = address.clone();
@@ -72,10 +68,10 @@ async fn handler_internal(
     let response = state
         .providers
         .portfolio_provider
-        .get_portfolio(address, body, query.0)
+        .get_portfolio(address, query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call portfolio with {}", e);
+            error!("Failed to call portfolio with {e}");
         })?;
 
     Ok(Json(response).into_response())

@@ -9,8 +9,8 @@ describe('Token conversion (single chain)', () => {
 
   const srcAsset = `${namespace}:${chainId}:0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee`;
   const destAsset = `${namespace}:${chainId}:0x111111111117dc0aa78b770fa6a738034120c302`;
-  const userAddress = `${namespace}:${chainId}:0xf3ea39310011333095cfcccc7c4ad74034caba63`;
-  const amount = "100000";
+  const userAddress = `${namespace}:${chainId}:0x2aae531a81461f029cd55cb46703211c9227ba05`;
+  const amount = "1000000";
 
   it('available tokens list', async () => {
     let resp: any = await httpClient.get(

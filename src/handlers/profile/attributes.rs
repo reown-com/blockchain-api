@@ -1,16 +1,20 @@
 use {
-    super::{
-        super::HANDLER_TASK_METRICS,
-        utils::{check_attributes, is_timestamp_within_interval},
-        RegisterRequest, UpdateAttributesPayload, UNIXTIMESTAMP_SYNC_THRESHOLD,
-    },
+    super::{RegisterRequest, UpdateAttributesPayload, UNIXTIMESTAMP_SYNC_THRESHOLD},
     crate::{
+        analytics::MessageSource,
         database::helpers::{get_name_and_addresses_by_name, update_name_attributes},
         error::RpcError,
+        names::{
+            utils::{check_attributes, is_timestamp_within_interval},
+            ATTRIBUTES_VALUE_MAX_LENGTH, SUPPORTED_ATTRIBUTES,
+        },
         state::AppState,
-        utils::crypto::{
-            constant_time_eq, convert_coin_type_to_evm_chain_id, is_coin_type_supported,
-            verify_message_signature,
+        utils::{
+            crypto::{
+                constant_time_eq, convert_coin_type_to_evm_chain_id, is_coin_type_supported,
+                verify_message_signature,
+            },
+            simple_request_json::SimpleRequestJson,
         },
     },
     axum::{
@@ -21,20 +25,20 @@ use {
     hyper::StatusCode,
     std::{str::FromStr, sync::Arc},
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 pub async fn handler(
     state: State<Arc<AppState>>,
     name: Path<String>,
-    Json(request_payload): Json<RegisterRequest>,
+    SimpleRequestJson(request_payload): SimpleRequestJson<RegisterRequest>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, name, request_payload)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("profile_attributes_update"))
+        .with_metrics(future_metrics!("handler_task", "name" => "profile_attributes_update"))
         .await
 }
 
-#[tracing::instrument(skip(state))]
+#[tracing::instrument(skip(state), level = "debug")]
 pub async fn handler_internal(
     state: State<Arc<AppState>>,
     Path(name): Path<String>,
@@ -89,6 +93,8 @@ pub async fn handler_internal(
         &request_payload.address,
         &chain_id_caip2,
         rpc_project_id,
+        MessageSource::ProfileAttributesSigValidate,
+        None,
     )
     .await
     {
@@ -127,18 +133,18 @@ pub async fn handler_internal(
     // Check for supported attributes
     if !check_attributes(
         &payload.attributes,
-        &super::SUPPORTED_ATTRIBUTES,
-        super::ATTRIBUTES_VALUE_MAX_LENGTH,
+        &SUPPORTED_ATTRIBUTES,
+        ATTRIBUTES_VALUE_MAX_LENGTH,
     ) {
         return Err(RpcError::UnsupportedNameAttribute);
     }
 
     match update_name_attributes(name.clone(), payload.attributes, &state.postgres).await {
         Err(e) => {
-            error!("Failed to update attributes: {}", e);
+            error!("Failed to update attributes: {e}");
             Ok((
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to update attributes: {}", e),
+                format!("Failed to update attributes: {e}"),
             )
                 .into_response())
         }

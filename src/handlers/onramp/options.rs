@@ -1,5 +1,5 @@
 use {
-    crate::{error::RpcError, handlers::HANDLER_TASK_METRICS, state::AppState},
+    crate::{error::RpcError, state::AppState},
     axum::{
         extract::{ConnectInfo, Query, State},
         response::{IntoResponse, Response},
@@ -11,7 +11,7 @@ use {
     tap::TapFallible,
     tracing::log::error,
     validator::Validate,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone, Validate)]
@@ -71,11 +71,11 @@ pub async fn handler(
     headers: HeaderMap,
 ) -> Result<Response, RpcError> {
     handler_internal(state, connect_info, query, headers)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("onrmap_buy_options"))
+        .with_metrics(future_metrics!("handler_task", "name" => "onramp_buy_options"))
         .await
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
     _connect_info: ConnectInfo<SocketAddr>,
@@ -89,10 +89,10 @@ async fn handler_internal(
     let buy_options = state
         .providers
         .onramp_provider
-        .get_buy_options(query.0, state.http_client.clone())
+        .get_buy_options(query.0, state.metrics.clone())
         .await
         .tap_err(|e| {
-            error!("Failed to call coinbase buy options with {}", e);
+            error!("Failed to call coinbase buy options with {e}");
         })?;
 
     Ok(Json(buy_options).into_response())

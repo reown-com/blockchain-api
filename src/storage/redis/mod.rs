@@ -1,10 +1,7 @@
 use {
     crate::storage::{deserialize, serialize, KeyValueStorage, StorageError, StorageResult},
     async_trait::async_trait,
-    deadpool_redis::{
-        redis::{AsyncCommands, Value},
-        Config, Pool,
-    },
+    deadpool_redis::{redis::AsyncCommands, Config, Pool},
     serde::{de::DeserializeOwned, Serialize},
     std::{fmt::Debug, time::Duration},
 };
@@ -17,13 +14,13 @@ pub enum Addr<'a> {
     Separate { read: &'a str, write: &'a str },
 }
 
-impl<'a> Default for Addr<'a> {
+impl Default for Addr<'_> {
     fn default() -> Self {
         Self::Combined(LOCAL_REDIS_ADDR)
     }
 }
 
-impl<'a> Addr<'a> {
+impl Addr<'_> {
     pub fn read(&self) -> &str {
         match self {
             Self::Combined(addr) => addr,
@@ -89,6 +86,7 @@ impl Redis {
         })
     }
 
+    #[allow(dependency_on_unit_never_type_fallback)]
     async fn set_internal(
         &self,
         key: &str,
@@ -127,14 +125,15 @@ where
             .get()
             .await
             .map_err(|e| StorageError::Connection(format!("{e}")))?
-            .get::<_, Value>(key)
+            .get::<_, Option<Vec<u8>>>(key)
             .await
             .map_err(|e| StorageError::Other(format!("{e}")))
-            .map(|data| match data {
-                Value::Nil => Ok(None),
-                Value::Data(data) => Ok(Some(deserialize(&data)?)),
-                _ => Err(StorageError::Deserialize),
-            })?
+            .and_then(|opt| match opt {
+                None => Ok(None),
+                Some(data) => deserialize(&data)
+                    .map(Some)
+                    .map_err(|e| StorageError::Deserialize(e.to_string())),
+            })
     }
 
     async fn set(&self, key: &str, value: &T, ttl: Option<Duration>) -> StorageResult<()> {

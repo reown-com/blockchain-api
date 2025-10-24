@@ -43,11 +43,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::High).unwrap(),
             ),
         ),
-        // Mantle testnet
+        // Mantle Sepolia testnet
         (
-            "eip155:5001".into(),
+            "eip155:5003".into(),
             (
-                "https://rpc.testnet.mantle.xyz".into(),
+                "https://rpc.sepolia.mantle.xyz".into(),
                 Weight::new(Priority::High).unwrap(),
             ),
         ),

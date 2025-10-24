@@ -7,7 +7,7 @@
     "format": "prettier --config integration/.prettierrc --write '*.{json,js}' 'integration/**/*.{js,ts}' '.github/**/*.{yml,yaml}'",
     "lint": "eslint --max-warnings=0 integration && prettier --config integration/.prettierrc --check '*.{json,js}' 'integration/**/*.{js,ts}'"
   },
-  "author": "WalletConnect, Inc. <walletconnect.com>",
+  "author": "reown inc. <reown.com>",
   "license": "Apache-2.0",
   "eslintConfig": {
     "root": true,
@@ -24,12 +24,13 @@
     "eslint": "^7.21.0",
     "eslint-config-prettier": "^8.1.0",
     "eslint-config-typescript": "^3.0.0",
-    "ethers": "^6.9.0",
+    "ethers": "^6.13",
     "jest": "^27.0.1",
+    "json-canonicalize": "^1.0.6",
+    "keccak256": "^1.0.6",
     "prettier": "^2.3.0",
     "ts-jest": "^27.0.1",
     "ts-loader": "^9.2.2",
     "typescript": "^4.3.2"
-  },
-  "dependencies": {}
+  }
 }

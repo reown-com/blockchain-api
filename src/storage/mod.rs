@@ -6,6 +6,7 @@ use {
 };
 
 pub mod error;
+pub mod irn;
 pub mod redis;
 
 /// The Result type returned by Storage functions
@@ -48,5 +49,5 @@ pub fn deserialize<T>(data: &[u8]) -> StorageResult<T>
 where
     T: DeserializeOwned,
 {
-    rmp_serde::from_slice(data).map_err(|_| StorageError::Deserialize)
+    rmp_serde::from_slice(data).map_err(|e| StorageError::Deserialize(e.to_string()))
 }

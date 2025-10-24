@@ -3,6 +3,8 @@ local defaults  = import '../../grafonnet-lib/defaults.libsonnet';
 
 local panels    = grafana.panels;
 local targets   = grafana.targets;
+local alert           = grafana.alert;
+local alertCondition  = grafana.alertCondition;
 
 local _configuration = defaults.configuration.timeseries
   .withSoftLimit(
@@ -17,6 +19,29 @@ local _configuration = defaults.configuration.timeseries
       datasource  = ds.cloudwatch,
     )
     .configure(_configuration)
+      .setAlert(
+        vars.environment,
+        grafana.alert.new(
+          namespace     = vars.namespace,
+          name          = "%(env)s - Healthy hosts below min capacity" % { env: grafana.utils.strings.capitalize(vars.environment) },
+          message       = '%(env)s - Healthy hosts below min capacity'  % { env: grafana.utils.strings.capitalize(vars.environment) },
+          notifications = vars.notifications,
+          noDataState   = 'no_data',
+          period        = '0m',
+          conditions    = [
+            grafana.alertCondition.new(
+              evaluatorParams = [ vars.app_autoscaling_min_capacity ],
+              evaluatorType   = 'lt',
+              operatorType    = 'or',
+              queryRefId      = 'HealthyHosts',
+              queryTimeStart  = '1m',
+              queryTimeEnd    = 'now',
+              reducerType     = grafana.alert_reducers.Min,
+            ),
+          ],
+        ),
+      )
+    
 
     .addTarget(targets.cloudwatch(
       datasource      = ds.cloudwatch,
@@ -27,6 +52,7 @@ local _configuration = defaults.configuration.timeseries
       },
       metricName    = 'HealthyHostCount',
       namespace     = 'AWS/ApplicationELB',
+      refId         = 'HealthyHosts',
       sql           = {
         from: {
           property: {

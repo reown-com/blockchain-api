@@ -1,10 +1,13 @@
 use {
-    self::{coinbase::CoinbaseProvider, zerion::ZerionProvider},
+    self::coinbase::CoinbaseProvider,
     crate::{
-        env::ProviderConfig,
+        env::{BalanceProviderConfig, ProviderConfig},
         error::{RpcError, RpcResult},
         handlers::{
-            balance::{self, BalanceQueryParams, BalanceResponseBody},
+            balance::{
+                self, BalanceQueryParams, BalanceResponseBody, TokenMetadataCache,
+                TokenMetadataCacheItem,
+            },
             convert::{
                 allowance::{AllowanceQueryParams, AllowanceResponseBody},
                 approve::{ConvertApproveQueryParams, ConvertApproveResponseBody},
@@ -13,85 +16,270 @@ use {
                 tokens::{TokensListQueryParams, TokensListResponseBody},
                 transaction::{ConvertTransactionQueryParams, ConvertTransactionResponseBody},
             },
-            fungible_price::{PriceCurrencies, PriceResponseBody},
+            fungible_price::PriceResponseBody,
             history::{HistoryQueryParams, HistoryResponseBody},
             onramp::{
+                multi_quotes::{
+                    QueryParams as MultiQuotesQueryParams, QuotesResponse as MultiQuotesResponse,
+                },
                 options::{OnRampBuyOptionsParams, OnRampBuyOptionsResponse},
+                properties::QueryParams as OnRampProvidersPropertiesQueryParams,
+                providers::{
+                    ProvidersResponse as OnRampProvidersResponse,
+                    QueryParams as OnRampProvidersQueryParams,
+                },
                 quotes::{OnRampBuyQuotesParams, OnRampBuyQuotesResponse},
+                widget::{
+                    QueryParams as OnRampWidgetQueryParams, WidgetResponse as OnRampWidgetResponse,
+                },
             },
             portfolio::{PortfolioQueryParams, PortfolioResponseBody},
-            RpcQueryParams,
+            RpcQueryParams, SupportedCurrencies,
         },
+        utils::crypto::{CaipNamespaces, Erc20FunctionType},
+        Metrics,
+    },
+    alloy::{
+        primitives::{Address, Bytes, B256, U256},
+        rpc::json_rpc::Id,
     },
     async_trait::async_trait,
-    axum::response::Response,
-    axum_tungstenite::WebSocketUpgrade,
+    axum::{extract::ws::WebSocketUpgrade, response::Response},
+    deadpool_redis::Pool,
     hyper::http::HeaderValue,
+    mock_alto::{MockAltoProvider, MockAltoUrls},
     rand::{distributions::WeightedIndex, prelude::Distribution, rngs::OsRng},
     serde::{Deserialize, Serialize},
+    serde_json::Value,
     std::{
         collections::{HashMap, HashSet},
         fmt::{Debug, Display},
         hash::Hash,
+        str::FromStr,
         sync::Arc,
     },
-    tracing::{info, log::warn},
-    wc::metrics::TaskMetrics,
+    tracing::{debug, error, log::warn},
+    yttrium::chain_abstraction::api::Transaction,
 };
 
+/// Checks if a JSON-RPC error message indicates common node error
+/// patterns that should be handled specially.
+pub fn is_node_error_rpc_message(error_message: &str) -> bool {
+    const NODE_ERROR_PATTERNS: &[&str] = &[
+        "cannot unmarshal",
+        "Go value",
+        "deserialization error",
+        "node error",
+        "try again later",
+        "header not found",
+    ];
+
+    NODE_ERROR_PATTERNS
+        .iter()
+        .any(|pattern| error_message.contains(pattern))
+}
+
+/// Checks if a JSON-RPC error message indicates common rate-limited
+/// patterns that should be handled specially.
+pub fn is_rate_limited_error_rpc_message(error_message: &str) -> bool {
+    const RATE_LIMITED_ERROR_PATTERNS: &[&str] = &[
+        "quota exceed",
+        "exceeded quota",
+        "rate limit",
+        "rate-limit",
+        "paid",
+        "upgrade plan",
+        "subscription",
+        "compute units for this month",
+        "compute units exceeded",
+        "your plan",
+        "current plan",
+        "you reached",
+        "no matched providers found",
+    ];
+
+    RATE_LIMITED_ERROR_PATTERNS
+        .iter()
+        .any(|pattern| error_message.contains(pattern))
+}
+
+/// Checks if a JSON-RPC error message indicates a known error
+/// that should be returned to the client.
+pub fn is_known_rpc_error_message(error_message: &str) -> bool {
+    const KNOWN_ERROR_PATTERNS: &[&str] = &[
+        "execution reverted",
+        "EVM error",
+        "Transaction simulation failed",
+        "insufficient funds for ",
+        "gas ",
+        "already known",
+        "filter not found",
+        "execution aborted",
+        "transaction",
+        "nonce too ",
+        "stack underflow",
+        "mined",
+        "missing",
+        "batch ",
+        "state available for block",
+        "unsupported block number",
+        "block not found",
+        "block is out of range",
+        "invalid opcode",
+        "unknown account",
+        "gapped-nonce tx",
+        "can not found a matching policy",
+    ];
+
+    KNOWN_ERROR_PATTERNS
+        .iter()
+        .any(|pattern| error_message.contains(pattern))
+}
+
+/// Checks if a JSON-RPC error code indicates a server error specific codes.
+pub fn is_internal_error_rpc_code(error_code: i32) -> bool {
+    (-32099..=-32000).contains(&error_code)
+}
+
+mod allnodes;
+mod arbitrum;
 mod aurora;
 mod base;
 mod binance;
+mod blast;
+mod bungee;
+mod callstatic;
 mod coinbase;
-mod getblock;
-mod infura;
+mod drpc;
+mod dune;
+pub mod generic;
+mod hiro;
+mod lifi;
 mod mantle;
+mod meld;
+pub mod mock_alto;
+mod monad;
+mod moonbeam;
+mod morph;
 mod near;
 mod one_inch;
+mod pimlico;
 mod pokt;
 mod publicnode;
 mod quicknode;
+mod rootstock;
+mod solscan;
+mod sui;
+mod syndica;
+pub mod tenderly;
+mod therpc;
+mod toncenter;
+mod trongrid;
+mod unichain;
 mod weights;
+mod wemix;
 pub mod zerion;
 mod zksync;
 mod zora;
 
 pub use {
+    allnodes::{AllnodesProvider, AllnodesWsProvider},
+    arbitrum::ArbitrumProvider,
     aurora::AuroraProvider,
     base::BaseProvider,
     binance::BinanceProvider,
-    getblock::GetBlockProvider,
-    infura::{InfuraProvider, InfuraWsProvider},
+    blast::BlastProvider,
+    bungee::BungeeProvider,
+    callstatic::CallStaticProvider,
+    drpc::DrpcProvider,
+    dune::DuneProvider,
+    generic::GenericProvider,
+    hiro::HiroProvider,
+    lifi::LifiProvider,
     mantle::MantleProvider,
+    meld::MeldProvider,
+    monad::MonadProvider,
+    moonbeam::MoonbeamProvider,
+    morph::MorphProvider,
     near::NearProvider,
     one_inch::OneInchProvider,
+    pimlico::PimlicoProvider,
     pokt::PoktProvider,
     publicnode::PublicnodeProvider,
-    quicknode::QuicknodeProvider,
+    quicknode::{QuicknodeProvider, QuicknodeWsProvider},
+    rootstock::RootstockProvider,
+    solscan::SolScanProvider,
+    sui::SuiProvider,
+    syndica::{SyndicaProvider, SyndicaWsProvider},
+    tenderly::TenderlyProvider,
+    therpc::TheRpcProvider,
+    toncenter::ToncenterProvider,
+    trongrid::TrongridProvider,
+    unichain::UnichainProvider,
+    wemix::WemixProvider,
+    zerion::ZerionProvider,
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
 };
 
-static WS_PROXY_TASK_METRICS: TaskMetrics = TaskMetrics::new("ws_proxy_task");
+pub type ChainsWeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
+pub type NamespacesWeightResolver = HashMap<CaipNamespaces, HashMap<ProviderKind, Weight>>;
 
-pub type WeightResolver = HashMap<String, HashMap<ProviderKind, Weight>>;
+/// Providers that are excluded from weight recalculation due to temporary issues
+/// or special handling requirements. These providers will maintain their current
+/// weights regardless of failure metrics from Prometheus.
+pub const WEIGHT_RECALCULATION_EXCLUDED_PROVIDERS: &[ProviderKind] = &[ProviderKind::Pokt];
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct ProvidersConfig {
     pub prometheus_query_url: Option<String>,
     pub prometheus_workspace_header: Option<String>,
 
-    pub infura_project_id: String,
-    pub pokt_project_id: String,
-    pub quicknode_api_token: String,
+    /// Redis address for provider's responses caching
+    pub cache_redis_addr: Option<String>,
 
-    pub zerion_api_key: Option<String>,
+    pub pokt_project_id: String,
+    pub quicknode_api_tokens: String,
+
+    pub zerion_api_key: String,
     pub coinbase_api_key: Option<String>,
     pub coinbase_app_id: Option<String>,
     pub one_inch_api_key: Option<String>,
     pub one_inch_referrer: Option<String>,
-    /// GetBlock provider access tokens in JSON format
-    pub getblock_access_tokens: Option<String>,
+    /// Lifi API key
+    pub lifi_api_key: Option<String>,
+    /// Pimlico API token key
+    pub pimlico_api_key: String,
+    /// SolScan API v2 token key
+    pub solscan_api_v2_token: String,
+    /// Toncenter base URL (e.g., https://toncenter.com)
+    pub toncenter_api_url: Option<String>,
+    /// Toncenter API key (optional)
+    pub toncenter_api_key: Option<String>,
+    /// Bungee API key
+    pub bungee_api_key: String,
+    /// Tenderly API key
+    pub tenderly_api_key: String,
+    /// Tenderly Account ID
+    pub tenderly_account_id: String,
+    /// Tenderly Project ID
+    pub tenderly_project_id: String,
+    /// Dune Sim API key
+    pub dune_sim_api_key: String,
+    /// Syndica API key
+    pub syndica_api_key: String,
+    /// Allnodes API key
+    pub allnodes_api_key: String,
+    /// Meld API key
+    pub meld_api_key: String,
+    /// Meld API Base URL
+    pub meld_api_url: String,
+    /// CallStatic API key
+    pub callstatic_api_key: String,
+    /// Blast.io API key
+    pub blast_api_key: String,
+
+    pub override_bundler_urls: Option<MockAltoUrls>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -101,50 +289,81 @@ pub struct SupportedChains {
 }
 
 pub struct ProviderRepository {
-    pub supported_chains: SupportedChains,
+    pub rpc_supported_chains: SupportedChains,
+    rpc_providers: HashMap<ProviderKind, Arc<dyn RpcProvider>>,
+    rpc_weight_resolver: ChainsWeightResolver,
 
-    providers: HashMap<ProviderKind, Arc<dyn RpcProvider>>,
     ws_providers: HashMap<ProviderKind, Arc<dyn RpcWsProvider>>,
+    ws_weight_resolver: ChainsWeightResolver,
 
-    weight_resolver: WeightResolver,
-    ws_weight_resolver: WeightResolver,
+    balance_supported_namespaces: HashSet<CaipNamespaces>,
+    balance_providers: HashMap<ProviderKind, Arc<dyn BalanceProvider>>,
+    balance_weight_resolver: NamespacesWeightResolver,
 
-    prometheus_client: prometheus_http_query::Client,
-    prometheus_workspace_header: String,
-
-    pub history_provider: Arc<dyn HistoryProvider>,
+    pub history_providers: HashMap<CaipNamespaces, Arc<dyn HistoryProvider>>,
     pub portfolio_provider: Arc<dyn PortfolioProvider>,
     pub coinbase_pay_provider: Arc<dyn HistoryProvider>,
     pub onramp_provider: Arc<dyn OnRampProvider>,
-    pub balance_provider: Arc<dyn BalanceProvider>,
+    pub onramp_multi_provider: Arc<dyn OnRampMultiProvider>,
+
     pub conversion_provider: Arc<dyn ConversionProvider>,
-    pub fungible_price_provider: Arc<dyn FungiblePriceProvider>,
+    pub fungible_price_providers: HashMap<CaipNamespaces, Arc<dyn FungiblePriceProvider>>,
+    pub bundler_ops_provider: Arc<dyn BundlerOpsProvider>,
+    pub chain_orchestrator_provider: Arc<dyn ChainOrchestrationProvider>,
+    pub simulation_provider: Arc<dyn SimulationProvider>,
+
+    pub token_metadata_cache: Arc<dyn TokenMetadataCacheProvider>,
+
+    prometheus_client: Option<prometheus_http_query::Client>,
+    prometheus_workspace_header: String,
 }
 
 impl ProviderRepository {
     #[allow(clippy::new_without_default)]
     pub fn new(config: &ProvidersConfig) -> Self {
-        let prometheus_client = {
-            let prometheus_query_url = config
+        let prometheus_client =
+            config
                 .prometheus_query_url
                 .clone()
-                .unwrap_or("http://localhost:8080/".into());
-
-            prometheus_http_query::Client::try_from(prometheus_query_url)
-                .expect("Failed to connect to prometheus")
-        };
+                .and_then(|prometheus_query_url| {
+                    match prometheus_http_query::Client::try_from(prometheus_query_url) {
+                        Ok(client) => Some(client),
+                        Err(err) => {
+                            error!("Failed to connect to prometheus: {}", err);
+                            None
+                        }
+                    }
+                });
 
         let prometheus_workspace_header = config
             .prometheus_workspace_header
             .clone()
             .unwrap_or("localhost:9090".into());
 
+        // Redis pool for providers responses caching where needed
+        let mut redis_pool = None;
+        if let Some(redis_addr) = &config.cache_redis_addr {
+            let redis_builder = deadpool_redis::Config::from_url(redis_addr)
+                .builder()
+                .map_err(|e| {
+                    error!(
+                        "Failed to create redis pool builder for provider's responses caching: {:?}",
+                        e
+                    );
+                })
+                .expect("Failed to create redis pool builder for provider's responses caching, builder is None");
+
+            redis_pool = Some(Arc::new(
+                redis_builder
+                    .runtime(deadpool_redis::Runtime::Tokio1)
+                    .build()
+                    .expect("Failed to create redis pool"),
+            ));
+        };
+
         // Don't crash the application if the ZERION_API_KEY is not set
         // TODO: find a better way to handle this
-        let zerion_api_key = config
-            .zerion_api_key
-            .clone()
-            .unwrap_or("ZERION_KEY_UNDEFINED".into());
+        let zerion_api_key = config.zerion_api_key.clone();
 
         // Don't crash the application if the COINBASE_API_KEY_UNDEFINED is not set
         // TODO: find a better way to handle this
@@ -173,9 +392,30 @@ impl ProviderRepository {
 
         let zerion_provider = Arc::new(ZerionProvider::new(zerion_api_key));
         let one_inch_provider = Arc::new(OneInchProvider::new(one_inch_api_key, one_inch_referrer));
-        let history_provider = zerion_provider.clone();
+        let lifi_provider = Arc::new(LifiProvider::new(config.lifi_api_key.clone()));
         let portfolio_provider = zerion_provider.clone();
-        let balance_provider = zerion_provider.clone();
+        let solscan_provider = Arc::new(SolScanProvider::new(
+            config.solscan_api_v2_token.clone(),
+            redis_pool.clone(),
+        ));
+        let toncenter_provider = Arc::new(ToncenterProvider::new(
+            config
+                .toncenter_api_url
+                .clone()
+                .unwrap_or_else(|| "https://toncenter.com".to_string()),
+            config.toncenter_api_key.clone(),
+        ));
+
+        let mut balance_providers: HashMap<CaipNamespaces, Arc<dyn BalanceProvider>> =
+            HashMap::new();
+        balance_providers.insert(CaipNamespaces::Eip155, zerion_provider.clone());
+        balance_providers.insert(CaipNamespaces::Solana, solscan_provider.clone());
+
+        let mut history_providers: HashMap<CaipNamespaces, Arc<dyn HistoryProvider>> =
+            HashMap::new();
+        history_providers.insert(CaipNamespaces::Eip155, zerion_provider.clone());
+        history_providers.insert(CaipNamespaces::Solana, solscan_provider.clone());
+        history_providers.insert(CaipNamespaces::Ton, toncenter_provider.clone());
 
         let coinbase_pay_provider = Arc::new(CoinbaseProvider::new(
             coinbase_api_key,
@@ -183,34 +423,70 @@ impl ProviderRepository {
             "https://pay.coinbase.com/api/v1".into(),
         ));
 
+        let meld_onramp_provider = Arc::new(MeldProvider::new(
+            config.meld_api_url.clone(),
+            config.meld_api_key.clone(),
+        ));
+
+        let bundler_ops_provider: Arc<dyn BundlerOpsProvider> =
+            if let Some(override_bundler_url) = config.override_bundler_urls.clone() {
+                Arc::new(MockAltoProvider::new(override_bundler_url))
+            } else {
+                Arc::new(PimlicoProvider::new(config.pimlico_api_key.clone()))
+            };
+
+        let mut fungible_price_providers: HashMap<CaipNamespaces, Arc<dyn FungiblePriceProvider>> =
+            HashMap::new();
+        fungible_price_providers.insert(CaipNamespaces::Eip155, one_inch_provider.clone());
+        fungible_price_providers.insert(CaipNamespaces::Solana, solscan_provider.clone());
+        fungible_price_providers.insert(CaipNamespaces::Rootstock, lifi_provider.clone());
+
+        let chain_orchestrator_provider =
+            Arc::new(BungeeProvider::new(config.bungee_api_key.clone()));
+        let simulation_provider = Arc::new(TenderlyProvider::new(
+            config.tenderly_api_key.clone(),
+            config.tenderly_account_id.clone(),
+            config.tenderly_project_id.clone(),
+            redis_pool.clone(),
+        ));
+
+        let token_metadata_cache = Arc::new(TokenMetadataCache::new(redis_pool.clone()));
+
         Self {
-            supported_chains: SupportedChains {
+            rpc_supported_chains: SupportedChains {
                 http: HashSet::new(),
                 ws: HashSet::new(),
             },
-            providers: HashMap::new(),
+            rpc_providers: HashMap::new(),
+            rpc_weight_resolver: HashMap::new(),
             ws_providers: HashMap::new(),
-            weight_resolver: HashMap::new(),
             ws_weight_resolver: HashMap::new(),
+            balance_supported_namespaces: HashSet::new(),
+            balance_providers: HashMap::new(),
+            balance_weight_resolver: HashMap::new(),
             prometheus_client,
             prometheus_workspace_header,
-            history_provider,
+            history_providers,
             portfolio_provider,
             coinbase_pay_provider: coinbase_pay_provider.clone(),
             onramp_provider: coinbase_pay_provider,
-            balance_provider,
+            onramp_multi_provider: meld_onramp_provider,
             conversion_provider: one_inch_provider.clone(),
-            fungible_price_provider: one_inch_provider.clone(),
+            fungible_price_providers,
+            bundler_ops_provider,
+            chain_orchestrator_provider,
+            simulation_provider,
+            token_metadata_cache,
         }
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
-    pub fn get_provider_for_chain_id(
+    pub fn get_rpc_provider_for_chain_id(
         &self,
         chain_id: &str,
         max_providers: usize,
     ) -> Result<Vec<Arc<dyn RpcProvider>>, RpcError> {
-        let Some(providers) = self.weight_resolver.get(chain_id) else {
+        let Some(providers) = self.rpc_weight_resolver.get(chain_id) else {
             return Err(RpcError::UnsupportedChain(chain_id.to_string()));
         };
 
@@ -218,7 +494,11 @@ impl ProviderRepository {
             return Err(RpcError::UnsupportedChain(chain_id.to_string()));
         }
 
-        let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.value()).collect();
+        let weights: Vec<_> = providers
+            .values()
+            .map(|weight| weight.value())
+            .map(|w| w.max(1))
+            .collect();
         let non_zero_weight_providers = weights.iter().filter(|&x| *x > 0).count();
         let keys = providers.keys().cloned().collect::<Vec<_>>();
 
@@ -230,8 +510,7 @@ impl ProviderRepository {
                         let dist_key = dist.sample(&mut OsRng);
                         let provider = keys.get(dist_key).ok_or_else(|| {
                             RpcError::WeightedProvidersIndex(format!(
-                                "Failed to get random provider for chain_id: {}",
-                                chain_id
+                                "Failed to get random provider for chain_id: {chain_id}"
                             ))
                         })?;
 
@@ -241,16 +520,14 @@ impl ProviderRepository {
                         if i < providers_to_iterate - 1 {
                             if let Err(e) = dist.update_weights(&[(dist_key, &0)]) {
                                 return Err(RpcError::WeightedProvidersIndex(format!(
-                                    "Failed to update weight in sampling iteration: {}",
-                                    e
+                                    "Failed to update weight in sampling iteration: {e}"
                                 )));
                             }
                         };
 
-                        self.providers.get(provider).cloned().ok_or_else(|| {
+                        self.rpc_providers.get(provider).cloned().ok_or_else(|| {
                             RpcError::WeightedProvidersIndex(format!(
-                                "Provider not found during the weighted index check: {}",
-                                provider
+                                "Provider not found during the weighted index check: {provider}"
                             ))
                         })
                     })
@@ -260,8 +537,118 @@ impl ProviderRepository {
             Err(e) => {
                 // Respond with temporarily unavailable when all weights are 0 for
                 // a chain providers
-                warn!("Failed to create weighted index: {}", e);
+                warn!("Failed to create weighted index: {e}");
                 Err(RpcError::ChainTemporarilyUnavailable(chain_id.to_string()))
+            }
+        }
+    }
+
+    #[tracing::instrument(skip(self), level = "debug")]
+    pub fn get_balance_provider_for_namespace(
+        &self,
+        namespace: &CaipNamespaces,
+        max_providers: usize,
+    ) -> Result<Vec<Arc<dyn BalanceProvider>>, RpcError> {
+        let Some(providers) = self.balance_weight_resolver.get(namespace) else {
+            return Err(RpcError::UnsupportedChain(namespace.to_string()));
+        };
+
+        if providers.is_empty() {
+            return Err(RpcError::UnsupportedChain(namespace.to_string()));
+        }
+
+        // Adding non-minimal priority providers and use providers with the minimal priority
+        // only for a failover retrying (append them to the end of the list)
+        let minimal_weight_value = Weight::new(Priority::Minimal)
+            .expect("Failed to create a Minimal priority value")
+            .value();
+
+        // Separate providers by weight and collect references
+        let (high_priority_providers, non_minimal_weight_providers, minimal_weight_providers): (
+            Vec<_>,
+            Vec<_>,
+            Vec<_>,
+        ) = providers.iter().fold(
+            (Vec::new(), Vec::new(), Vec::new()),
+            |(mut high_priority, mut non_minimal, mut minimal), (provider_kind, weight)| {
+                match weight.value().cmp(&minimal_weight_value) {
+                    std::cmp::Ordering::Greater => {
+                        high_priority.push((provider_kind, weight));
+                        non_minimal.push(weight.value());
+                    }
+                    std::cmp::Ordering::Equal => {
+                        if let Some(provider) = self.balance_providers.get(provider_kind) {
+                            minimal.push(provider.clone());
+                        }
+                    }
+                    // We don't have weights less than minimal priority
+                    std::cmp::Ordering::Less => {}
+                }
+                (high_priority, non_minimal, minimal)
+            },
+        );
+
+        let keys: Vec<_> = high_priority_providers.iter().map(|(key, _)| key).collect();
+
+        // If no non-minimal providers are available, directly append minimal-priority providers
+        if non_minimal_weight_providers.is_empty() {
+            let minimal_weight_providers = minimal_weight_providers
+                .into_iter()
+                .take(max_providers)
+                .collect::<Vec<_>>();
+            return Ok(minimal_weight_providers);
+        }
+
+        match WeightedIndex::new(non_minimal_weight_providers.clone()) {
+            Ok(mut dist) => {
+                let providers_to_iterate =
+                    std::cmp::min(max_providers, non_minimal_weight_providers.len());
+                let mut providers_result = (0..providers_to_iterate)
+                    .map(|i| {
+                        let dist_key = dist.sample(&mut OsRng);
+                        let provider = keys.get(dist_key).ok_or_else(|| {
+                            RpcError::WeightedProvidersIndex(format!(
+                                "Failed to get random balance provider for namespace: {namespace}"
+                            ))
+                        })?;
+
+                        // Update the weight of the provider to 0 to remove it from the next
+                        // sampling, as updating weights returns an error if
+                        // all weights are zero
+                        if i < providers_to_iterate - 1 {
+                            if let Err(e) = dist.update_weights(&[(dist_key, &0)]) {
+                                return Err(RpcError::WeightedProvidersIndex(format!(
+                                    "Failed to update weight in sampling iteration: {e}"
+                                )));
+                            }
+                        };
+
+                        self.balance_providers
+                            .get(provider)
+                            .cloned()
+                            .ok_or_else(|| {
+                                RpcError::WeightedProvidersIndex(format!(
+                                "Balance provider not found during the weighted index check: {provider}"
+                            ))
+                            })
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                // Append minimal-priority providers to the end of the list, capped to remaining capacity
+                let remaining_capacity = max_providers.saturating_sub(providers_result.len());
+                providers_result.extend(
+                    minimal_weight_providers
+                        .into_iter()
+                        .take(remaining_capacity),
+                );
+
+                Ok(providers_result)
+            }
+            Err(e) => {
+                // Respond with temporarily unavailable when all weights are 0 for
+                // a chain providers
+                warn!("Failed to create weighted index: {e}");
+                Err(RpcError::ChainTemporarilyUnavailable(namespace.to_string()))
             }
         }
     }
@@ -273,7 +660,7 @@ impl ProviderRepository {
             return None;
         }
 
-        let weights: Vec<_> = providers.iter().map(|(_, weight)| weight.value()).collect();
+        let weights: Vec<_> = providers.values().map(|weight| weight.value()).collect();
         let keys = providers.keys().cloned().collect::<Vec<_>>();
         match WeightedIndex::new(weights) {
             Ok(dist) => {
@@ -285,7 +672,7 @@ impl ProviderRepository {
                 self.ws_providers.get(provider).cloned()
             }
             Err(e) => {
-                warn!("Failed to create weighted index: {}", e);
+                warn!("Failed to create weighted index: {e}");
                 None
             }
         }
@@ -310,22 +697,22 @@ impl ProviderRepository {
         supported_ws_chains
             .into_iter()
             .for_each(|(chain_id, (_, weight))| {
-                self.supported_chains.ws.insert(chain_id.clone());
+                self.rpc_supported_chains.ws.insert(chain_id.clone());
                 self.ws_weight_resolver
                     .entry(chain_id)
                     .or_default()
-                    .insert(provider_kind, weight);
+                    .insert(provider_kind.clone(), weight);
             });
     }
 
-    pub fn add_provider<T: RpcProviderFactory<C> + RpcProvider + 'static, C: ProviderConfig>(
+    pub fn add_rpc_provider<T: RpcProviderFactory<C> + RpcProvider + 'static, C: ProviderConfig>(
         &mut self,
         provider_config: C,
     ) {
         let provider = T::new(&provider_config);
         let arc_provider = Arc::new(provider);
 
-        self.providers
+        self.rpc_providers
             .insert(provider_config.provider_kind(), arc_provider);
 
         let provider_kind = provider_config.provider_kind();
@@ -334,29 +721,62 @@ impl ProviderRepository {
         supported_chains
             .into_iter()
             .for_each(|(chain_id, (_, weight))| {
-                self.supported_chains.http.insert(chain_id.clone());
-                self.weight_resolver
+                self.rpc_supported_chains.http.insert(chain_id.clone());
+                self.rpc_weight_resolver
                     .entry(chain_id)
                     .or_default()
-                    .insert(provider_kind, weight);
+                    .insert(provider_kind.clone(), weight);
             });
-        info!("Added provider: {}", provider_kind);
+        debug!("Added provider: {}", provider_kind);
     }
 
-    #[tracing::instrument(skip_all)]
+    pub fn add_balance_provider<
+        T: BalanceProviderFactory<C> + BalanceProvider + 'static,
+        C: BalanceProviderConfig,
+    >(
+        &mut self,
+        provider_config: C,
+        cache: Option<Arc<Pool>>,
+    ) {
+        let provider = T::new(&provider_config, cache);
+        let arc_provider = Arc::new(provider);
+
+        self.balance_providers
+            .insert(provider_config.provider_kind(), arc_provider);
+
+        let provider_kind = provider_config.provider_kind();
+        let supported_namespaces = provider_config.supported_namespaces();
+
+        supported_namespaces
+            .into_iter()
+            .for_each(|(namespace, weight)| {
+                self.balance_supported_namespaces.insert(namespace);
+                self.balance_weight_resolver
+                    .entry(namespace)
+                    .or_default()
+                    .insert(provider_kind.clone(), weight);
+            });
+        debug!("Balance provider added: {}", provider_kind);
+    }
+
+    #[tracing::instrument(skip_all, level = "debug")]
     pub async fn update_weights(&self, metrics: &crate::Metrics) {
-        info!("Updating weights");
+        debug!("Updating weights");
+
+        let Some(prometheus_client) = &self.prometheus_client else {
+            debug!("Prometheus client not configured, skipping weight update");
+            return;
+        };
 
         let Ok(header_value) = HeaderValue::from_str(&self.prometheus_workspace_header) else {
-            warn!(
+            error!(
                 "Failed to parse prometheus workspace header from {}",
                 self.prometheus_workspace_header
             );
             return;
         };
 
-        match self
-            .prometheus_client
+        match prometheus_client
             .query("round(increase(provider_status_code_counter_total[3h]))")
             .header("host", header_value)
             .get()
@@ -364,39 +784,73 @@ impl ProviderRepository {
         {
             Ok(data) => {
                 let parsed_weights = weights::parse_weights(data);
-                weights::update_values(&self.weight_resolver, parsed_weights);
-                weights::record_values(&self.weight_resolver, metrics);
+                weights::update_values(&self.rpc_weight_resolver, parsed_weights);
+                weights::record_values(&self.rpc_weight_resolver, metrics);
             }
             Err(e) => {
-                warn!("Failed to update weights from prometheus: {}", e);
+                warn!("Failed to update weights from prometheus: {e}");
             }
         }
     }
 
     #[tracing::instrument(skip(self), level = "debug")]
-    pub fn get_provider_by_provider_id(&self, provider_id: &str) -> Option<Arc<dyn RpcProvider>> {
+    pub fn get_rpc_provider_by_provider_id(
+        &self,
+        provider_id: &str,
+    ) -> Option<Arc<dyn RpcProvider>> {
         let provider = ProviderKind::from_str(provider_id)?;
 
-        self.providers.get(&provider).cloned()
+        self.get_rpc_provider_by_provider_kind(&provider)
+    }
+
+    #[tracing::instrument(skip(self), level = "debug")]
+    pub fn get_rpc_provider_by_provider_kind(
+        &self,
+        provider_kind: &ProviderKind,
+    ) -> Option<Arc<dyn RpcProvider>> {
+        self.rpc_providers.get(provider_kind).cloned()
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ProviderKind {
     Aurora,
-    Infura,
+    Arbitrum,
     Pokt,
     Binance,
+    Bungee,
     ZKSync,
     Publicnode,
     Base,
     Zora,
     Zerion,
     Coinbase,
+    OneInch,
     Quicknode,
     Near,
     Mantle,
-    GetBlock,
+    SolScan,
+    Unichain,
+    Morph,
+    Tenderly,
+    Dune,
+    Wemix,
+    Drpc,
+    Syndica,
+    Allnodes,
+    Meld,
+    Monad,
+    Sui,
+    Hiro,
+    CallStatic,
+    TheRpc,
+    Moonbeam,
+    Blast,
+    Rootstock,
+    Lifi,
+    Trongrid,
+    Toncenter,
+    Generic(String),
 }
 
 impl Display for ProviderKind {
@@ -406,19 +860,42 @@ impl Display for ProviderKind {
             "{}",
             match self {
                 ProviderKind::Aurora => "Aurora",
-                ProviderKind::Infura => "Infura",
+                ProviderKind::Arbitrum => "Arbitrum",
                 ProviderKind::Pokt => "Pokt",
                 ProviderKind::Binance => "Binance",
+                ProviderKind::Wemix => "Wemix",
+                ProviderKind::Bungee => "Bungee",
                 ProviderKind::ZKSync => "zkSync",
                 ProviderKind::Publicnode => "Publicnode",
                 ProviderKind::Base => "Base",
                 ProviderKind::Zora => "Zora",
                 ProviderKind::Zerion => "Zerion",
                 ProviderKind::Coinbase => "Coinbase",
+                ProviderKind::OneInch => "OneInch",
                 ProviderKind::Quicknode => "Quicknode",
                 ProviderKind::Near => "Near",
                 ProviderKind::Mantle => "Mantle",
-                ProviderKind::GetBlock => "GetBlock",
+                ProviderKind::SolScan => "SolScan",
+                ProviderKind::Unichain => "Unichain",
+                ProviderKind::Morph => "Morph",
+                ProviderKind::Tenderly => "Tenderly",
+                ProviderKind::Dune => "Dune",
+                ProviderKind::Drpc => "Drpc",
+                ProviderKind::Syndica => "Syndica",
+                ProviderKind::Allnodes => "Allnodes",
+                ProviderKind::Meld => "Meld",
+                ProviderKind::Monad => "Monad",
+                ProviderKind::Sui => "Sui",
+                ProviderKind::Hiro => "Hiro",
+                ProviderKind::CallStatic => "CallStatic",
+                ProviderKind::TheRpc => "TheRpc",
+                ProviderKind::Moonbeam => "Moonbeam",
+                ProviderKind::Blast => "Blast",
+                ProviderKind::Rootstock => "Rootstock",
+                ProviderKind::Lifi => "Lifi",
+                ProviderKind::Trongrid => "Trongrid",
+                ProviderKind::Toncenter => "Toncenter",
+                ProviderKind::Generic(name) => name.as_str(),
             }
         )
     }
@@ -429,27 +906,48 @@ impl ProviderKind {
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
             "Aurora" => Some(Self::Aurora),
-            "Infura" => Some(Self::Infura),
+            "Arbitrum" => Some(Self::Arbitrum),
             "Pokt" => Some(Self::Pokt),
             "Binance" => Some(Self::Binance),
+            "Bungee" => Some(Self::Bungee),
             "zkSync" => Some(Self::ZKSync),
             "Publicnode" => Some(Self::Publicnode),
             "Base" => Some(Self::Base),
             "Zora" => Some(Self::Zora),
             "Zerion" => Some(Self::Zerion),
             "Coinbase" => Some(Self::Coinbase),
+            "OneInch" => Some(Self::OneInch),
             "Quicknode" => Some(Self::Quicknode),
             "Near" => Some(Self::Near),
             "Mantle" => Some(Self::Mantle),
-            "GetBlock" => Some(Self::GetBlock),
-            _ => None,
+            "SolScan" => Some(Self::SolScan),
+            "Unichain" => Some(Self::Unichain),
+            "Morph" => Some(Self::Morph),
+            "Tenderly" => Some(Self::Tenderly),
+            "Dune" => Some(Self::Dune),
+            "Wemix" => Some(Self::Wemix),
+            "Drpc" => Some(Self::Drpc),
+            "Syndica" => Some(Self::Syndica),
+            "Allnodes" => Some(Self::Allnodes),
+            "Meld" => Some(Self::Meld),
+            "Monad" => Some(Self::Monad),
+            "Sui" => Some(Self::Sui),
+            "Hiro" => Some(Self::Hiro),
+            "CallStatic" => Some(Self::CallStatic),
+            "TheRpc" => Some(Self::TheRpc),
+            "Moonbeam" => Some(Self::Moonbeam),
+            "Blast" => Some(Self::Blast),
+            "Rootstock" => Some(Self::Rootstock),
+            "Trongrid" => Some(Self::Trongrid),
+            "Toncenter" => Some(Self::Toncenter),
+            x => Some(Self::Generic(x.to_string())),
         }
     }
 }
 
 #[async_trait]
 pub trait RpcProvider: Provider {
-    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response>;
+    async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response>;
 }
 
 pub trait RpcProviderFactory<T: ProviderConfig>: Provider {
@@ -467,12 +965,13 @@ pub trait RpcWsProvider: Provider {
 
 const MAX_PRIORITY: u64 = 100;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Priority {
     Max,
     High,
     Normal,
     Low,
+    Minimal,
     Disabled,
     Custom(u64),
 }
@@ -486,8 +985,24 @@ impl TryInto<PriorityValue> for Priority {
             Self::High => PriorityValue::new(MAX_PRIORITY / 4 + MAX_PRIORITY / 2),
             Self::Normal => PriorityValue::new(MAX_PRIORITY / 2),
             Self::Low => PriorityValue::new(MAX_PRIORITY / 4),
+            Self::Minimal => PriorityValue::new(1),
             Self::Disabled => PriorityValue::new(0),
             Self::Custom(value) => PriorityValue::new(value),
+        }
+    }
+}
+
+impl FromStr for Priority {
+    type Err = std::num::ParseIntError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Max" => Ok(Self::Max),
+            "High" => Ok(Self::High),
+            "Normal" => Ok(Self::Normal),
+            "Low" => Ok(Self::Low),
+            "Minimal" => Ok(Self::Minimal),
+            "Disabled" => Ok(Self::Disabled),
+            _ => Ok(Self::Custom(s.parse::<u64>()?)),
         }
     }
 }
@@ -563,13 +1078,16 @@ pub trait RateLimited {
 }
 
 #[async_trait]
-pub trait HistoryProvider: Send + Sync + Debug {
+pub trait HistoryProvider: Send + Sync {
     async fn get_transactions(
         &self,
         address: String,
         params: HistoryQueryParams,
-        http_client: reqwest::Client,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<HistoryResponseBody>;
+
+    fn provider_kind(&self) -> ProviderKind;
 }
 
 #[async_trait]
@@ -577,8 +1095,8 @@ pub trait PortfolioProvider: Send + Sync + Debug {
     async fn get_portfolio(
         &self,
         address: String,
-        body: hyper::body::Bytes,
         params: PortfolioQueryParams,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<PortfolioResponseBody>;
 }
 
@@ -587,63 +1105,274 @@ pub trait OnRampProvider: Send + Sync + Debug {
     async fn get_buy_options(
         &self,
         params: OnRampBuyOptionsParams,
-        http_client: reqwest::Client,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<OnRampBuyOptionsResponse>;
 
     async fn get_buy_quotes(
         &self,
         params: OnRampBuyQuotesParams,
-        http_client: reqwest::Client,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<OnRampBuyQuotesResponse>;
 }
 
 #[async_trait]
-pub trait BalanceProvider: Send + Sync + Debug {
+pub trait OnRampMultiProvider: Send + Sync + Debug {
+    async fn get_providers(
+        &self,
+        params: OnRampProvidersQueryParams,
+        metrics: Arc<Metrics>,
+    ) -> RpcResult<Vec<OnRampProvidersResponse>>;
+
+    async fn get_providers_properties(
+        &self,
+        params: OnRampProvidersPropertiesQueryParams,
+        metrics: Arc<Metrics>,
+    ) -> RpcResult<serde_json::Value>;
+
+    async fn get_widget(
+        &self,
+        params: OnRampWidgetQueryParams,
+        metrics: Arc<Metrics>,
+    ) -> RpcResult<OnRampWidgetResponse>;
+
+    async fn get_quotes(
+        &self,
+        params: MultiQuotesQueryParams,
+        metrics: Arc<Metrics>,
+    ) -> RpcResult<Vec<MultiQuotesResponse>>;
+}
+
+#[async_trait]
+pub trait BalanceProvider: Send + Sync {
     async fn get_balance(
         &self,
         address: String,
         params: BalanceQueryParams,
-        http_client: reqwest::Client,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<BalanceResponseBody>;
+
+    fn provider_kind(&self) -> ProviderKind;
+}
+
+pub trait BalanceProviderFactory<T: BalanceProviderConfig>: BalanceProvider {
+    fn new(provider_config: &T, cache: Option<Arc<Pool>>) -> Self;
 }
 
 #[async_trait]
-pub trait FungiblePriceProvider: Send + Sync + Debug {
+pub trait FungiblePriceProvider: Send + Sync {
     async fn get_price(
         &self,
         chain_id: &str,
         address: &str,
-        currency: &PriceCurrencies,
+        currency: &SupportedCurrencies,
+        metadata_cache: &Arc<dyn TokenMetadataCacheProvider>,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<PriceResponseBody>;
 }
 
 #[async_trait]
-pub trait ConversionProvider: Send + Sync + Debug {
+pub trait ConversionProvider: Send + Sync {
     async fn get_tokens_list(
         &self,
         params: TokensListQueryParams,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<TokensListResponseBody>;
 
     async fn get_convert_quote(
         &self,
         params: ConvertQuoteQueryParams,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<ConvertQuoteResponseBody>;
 
     async fn build_approve_tx(
         &self,
         params: ConvertApproveQueryParams,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<ConvertApproveResponseBody>;
 
     async fn build_convert_tx(
         &self,
         params: ConvertTransactionQueryParams,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<ConvertTransactionResponseBody>;
 
     async fn get_gas_price(
         &self,
         params: GasPriceQueryParams,
+        metrics: Arc<Metrics>,
     ) -> RpcResult<GasPriceQueryResponseBody>;
 
-    async fn get_allowance(&self, params: AllowanceQueryParams)
-        -> RpcResult<AllowanceResponseBody>;
+    async fn get_allowance(
+        &self,
+        params: AllowanceQueryParams,
+        metrics: Arc<Metrics>,
+    ) -> RpcResult<AllowanceResponseBody>;
+}
+
+/// List of supported bundler operations
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq, Hash)]
+pub enum SupportedBundlerOps {
+    #[serde(rename = "eth_getUserOperationReceipt")]
+    EthGetUserOperationReceipt,
+    #[serde(rename = "eth_sendUserOperation")]
+    EthSendUserOperation,
+    #[serde(rename = "eth_estimateUserOperationGas")]
+    EthEstimateUserOperationGas,
+    /// Paymaster sponsor UserOp
+    #[serde(rename = "pm_sponsorUserOperation")]
+    PmSponsorUserOperation,
+    #[serde(rename = "pm_getPaymasterData")]
+    PmGetPaymasterData,
+    #[serde(rename = "pm_getPaymasterStubData")]
+    PmGetPaymasterStubData,
+    #[serde(rename = "pimlico_getUserOperationGasPrice")]
+    PimlicoGetUserOperationGasPrice,
+}
+
+/// Provider for the bundler operations
+#[async_trait]
+pub trait BundlerOpsProvider: Send + Sync + Debug {
+    /// Send JSON-RPC request to the bundler
+    async fn bundler_rpc_call(
+        &self,
+        chain_id: &str,
+        id: Id,
+        jsonrpc: Arc<str>,
+        method: &SupportedBundlerOps,
+        params: serde_json::Value,
+    ) -> RpcResult<serde_json::Value>;
+
+    /// Maps the operations enum variant to its provider-specific operation string.
+    fn to_provider_op(&self, op: &SupportedBundlerOps) -> String;
+}
+
+/// Provider for the chain orchestrator operations
+#[async_trait]
+#[allow(clippy::too_many_arguments)]
+pub trait ChainOrchestrationProvider: Send + Sync + Debug {
+    async fn get_bridging_quotes(
+        &self,
+        from_chain_id: String,
+        from_token_address: Address,
+        to_chain_id: String,
+        to_token_address: Address,
+        amount: U256,
+        user_address: Address,
+        metrics: Arc<Metrics>,
+    ) -> Result<Vec<Value>, RpcError>;
+
+    async fn build_bridging_tx(
+        &self,
+        route: Value,
+        metrics: Arc<Metrics>,
+    ) -> Result<bungee::BungeeBuildTx, RpcError>;
+
+    async fn check_allowance(
+        &self,
+        chain_id: String,
+        owner: Address,
+        target: Address,
+        token_address: Address,
+        metrics: Arc<Metrics>,
+    ) -> Result<U256, RpcError>;
+
+    async fn build_approval_tx(
+        &self,
+        chain_id: String,
+        owner: Address,
+        target: Address,
+        token_address: Address,
+        amount: U256,
+        metrics: Arc<Metrics>,
+    ) -> Result<bungee::BungeeApprovalTx, RpcError>;
+}
+
+/// Provider for the transaction simulation
+#[async_trait]
+pub trait SimulationProvider: Send + Sync {
+    async fn simulate_transaction(
+        &self,
+        chain_id: String,
+        from: Address,
+        to: Address,
+        input: Bytes,
+        state_overrides: HashMap<Address, HashMap<B256, B256>>,
+        metrics: Arc<Metrics>,
+    ) -> Result<tenderly::SimulationResponse, RpcError>;
+
+    async fn simulate_bundled_transactions(
+        &self,
+        transactions: Vec<Transaction>,
+        state_overrides: HashMap<Address, HashMap<B256, B256>>,
+        metrics: Arc<Metrics>,
+    ) -> Result<tenderly::BundledSimulationResponse, RpcError>;
+
+    /// Get the cached gas estimation
+    /// for the token contract and chain_id
+    async fn get_cached_gas_estimation(
+        &self,
+        chain_id: &str,
+        contract_address: Address,
+        function_type: Option<Erc20FunctionType>,
+    ) -> Result<Option<u64>, RpcError>;
+
+    /// Save to the cahce the gas estimation
+    /// for the token contract and chain_id
+    async fn set_cached_gas_estimation(
+        &self,
+        chain_id: &str,
+        contract_address: Address,
+        function_type: Option<Erc20FunctionType>,
+        gas: u64,
+    ) -> Result<(), RpcError>;
+}
+
+/// Provider for Tokens metadata caching
+#[async_trait]
+pub trait TokenMetadataCacheProvider: Send + Sync {
+    /// Get the cached metadata for the token
+    async fn get_metadata(
+        &self,
+        caip10_token_address: &str,
+    ) -> Result<Option<TokenMetadataCacheItem>, RpcError>;
+
+    /// Save to the cache the metadata for the token
+    async fn set_metadata(
+        &self,
+        caip10_token_address: &str,
+        item: &TokenMetadataCacheItem,
+    ) -> Result<(), RpcError>;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_priority_from_str() {
+        assert_eq!(Priority::from_str("Max"), Ok(Priority::Max));
+        assert_eq!(Priority::from_str("High"), Ok(Priority::High));
+        assert_eq!(Priority::from_str("Normal"), Ok(Priority::Normal));
+        assert_eq!(Priority::from_str("Low"), Ok(Priority::Low));
+        assert_eq!(Priority::from_str("Minimal"), Ok(Priority::Minimal));
+        assert_eq!(Priority::from_str("Disabled"), Ok(Priority::Disabled));
+        assert_eq!(Priority::from_str("100"), Ok(Priority::Custom(100)));
+        assert!(Priority::from_str("100.5").is_err());
+        assert!(Priority::from_str("").is_err());
+    }
+
+    #[test]
+    fn test_is_node_error_rpc_message() {
+        let rate_limited_messages = vec![
+            "invalid request: json: cannot unmarshal array into Go value of type jsonrpc.Request",
+        ];
+
+        for message in rate_limited_messages {
+            assert!(
+                is_node_error_rpc_message(message),
+                "Message '{message}' should be detected as an internal error"
+            );
+        }
+    }
 }

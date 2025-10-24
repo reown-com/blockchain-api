@@ -1,0 +1,39 @@
+name: Claude Security Review
+
+permissions:
+  pull-requests: write
+  contents: read
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+      - '**/*.log'
+      - '**/LICENSE'
+      - '**/CHANGELOG*'
+      - '**/.gitignore'
+      - '**/README*'
+      - 'Cargo.lock'
+      - '**/*.toml'
+      - '**/justfile'
+      - 'assets/**'
+      - 'integration/**/*.json'
+      - 'migrations/**/*.sql'
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
+
+      - uses: anthropics/claude-code-security-review@main
+        with:
+          claude-model: claude-sonnet-4-20250514
+          comment-pr: true
+          claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}

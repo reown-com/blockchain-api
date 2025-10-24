@@ -1,9 +1,5 @@
 use {
-    crate::{
-        error::RpcError,
-        handlers::{generators::GeneratorQueryParams, HANDLER_TASK_METRICS},
-        state::AppState,
-    },
+    crate::{error::RpcError, handlers::generators::GeneratorQueryParams, state::AppState},
     axum::{
         body::Bytes,
         extract::{ConnectInfo, MatchedPath, Query, State},
@@ -13,10 +9,10 @@ use {
     hyper::{HeaderMap, StatusCode},
     serde::{Deserialize, Serialize},
     std::{fmt, net::SocketAddr, sync::Arc},
-    tracing::log::{error, info},
+    tracing::log::{debug, error},
     url::Url,
     validator::Validate,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 /// Request according to the Coinbase Pay SDK `generateOnRampURL`
@@ -82,7 +78,7 @@ pub async fn handler(
     body: Bytes,
 ) -> Result<Response, RpcError> {
     handler_internal(state, addr, query_params, path, headers, body)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("onrampurl"))
+        .with_metrics(future_metrics!("handler_task", "name" => "onrampurl"))
         .await
 }
 
@@ -110,7 +106,7 @@ async fn handler_internal(
     let mut parameters = match serde_json::from_slice::<OnRampURLRequest>(&body) {
         Ok(parameters) => parameters,
         Err(e) => {
-            info!("Error deserializing request body: {}", e);
+            debug!("Error deserializing request body: {e}");
             return Ok((
                 StatusCode::BAD_REQUEST,
                 "Error deserializing request body: {}",
@@ -123,7 +119,7 @@ async fn handler_internal(
     let on_ramp_url = match generate_on_ramp_url(CB_PAY_HOST, CB_PAY_PATH, parameters) {
         Ok(on_ramp_url) => on_ramp_url,
         Err(e) => {
-            error!("Error generating on-ramp URL: {}", e);
+            error!("Error generating on-ramp URL: {e}");
             return Ok((StatusCode::INTERNAL_SERVER_ERROR, "").into_response());
         }
     };
@@ -216,7 +212,7 @@ fn ensure_generate_on_ramp_url() {
             .find(|(key, _)| key == "destinationWallets")
             .unwrap()
             .1,
-        format!("[{{\"address\":\"{}\"}}]", address)
+        format!("[{{\"address\":\"{address}\"}}]")
     );
     assert_eq!(
         url.query_pairs()

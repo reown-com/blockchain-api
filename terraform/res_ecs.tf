@@ -58,29 +58,59 @@ module "ecs" {
   identity_cache_endpoint_write      = module.redis.endpoint
   rate_limiting_cache_endpoint_read  = module.redis.endpoint
   rate_limiting_cache_endpoint_write = module.redis.endpoint
-  ofac_blocked_countries             = var.ofac_blocked_countries
+  provider_cache_endpoint            = module.redis.endpoint
+  ofac_countries                     = var.ofac_countries
   postgres_url                       = module.postgres.database_url
 
   # Providers
-  infura_project_id      = var.infura_project_id
-  pokt_project_id        = var.pokt_project_id
-  quicknode_api_token    = var.quicknode_api_token
-  zerion_api_key         = var.zerion_api_key
-  coinbase_api_key       = var.coinbase_api_key
-  coinbase_app_id        = var.coinbase_app_id
-  one_inch_api_key       = var.one_inch_api_key
-  one_inch_referrer      = var.one_inch_referrer
-  getblock_access_tokens = var.getblock_access_tokens
+  pokt_project_id      = var.pokt_project_id
+  quicknode_api_tokens = var.quicknode_api_tokens
+  zerion_api_key       = var.zerion_api_key
+  coinbase_api_key     = var.coinbase_api_key
+  coinbase_app_id      = var.coinbase_app_id
+  one_inch_api_key     = var.one_inch_api_key
+  one_inch_referrer    = var.one_inch_referrer
+  pimlico_api_key      = var.pimlico_api_key
+  solscan_api_v2_token = var.solscan_api_v2_token
+  bungee_api_key       = var.bungee_api_key
+  tenderly_api_key     = var.tenderly_api_key
+  tenderly_account_id  = var.tenderly_account_id
+  tenderly_project_id  = var.tenderly_project_id
+  dune_sim_api_key     = var.dune_sim_api_key
+  syndica_api_key      = var.syndica_api_key
+  allnodes_api_key     = var.allnodes_api_key
+  meld_api_key         = var.meld_api_key
+  meld_api_url         = var.meld_api_url
+  callstatic_api_key   = var.callstatic_api_key
+  blast_api_key        = var.blast_api_key
+  lifi_api_key         = var.lifi_api_key
+  toncenter_api_key    = var.toncenter_api_key
+
+  # RPC Proxy configuration
+  proxy_skip_quota_chains = var.proxy_skip_quota_chains
 
   # Project Registry
-  registry_api_endpoint   = var.registry_api_endpoint
-  registry_api_auth_token = var.registry_api_auth_token
-  project_cache_ttl       = var.project_cache_ttl
-
+  registry_api_endpoint        = var.registry_api_endpoint
+  registry_api_auth_token      = var.registry_api_auth_token
+  project_cache_ttl            = var.project_cache_ttl
+  registry_circuit_cooldown_ms = var.registry_circuit_cooldown_ms
   # Rate Limiting
   rate_limiting_max_tokens      = var.rate_limiting_max_tokens
   rate_limiting_refill_interval = var.rate_limiting_refill_interval
   rate_limiting_refill_rate     = var.rate_limiting_refill_rate
+  rate_limiting_ip_whitelist    = var.rate_limiting_ip_whitelist
+
+  # IRN Client
+  irn_nodes            = var.irn_nodes
+  irn_key              = var.irn_key
+  irn_namespace        = var.irn_namespace
+  irn_namespace_secret = var.irn_namespace_secret
+
+  # ENS Names
+  names_allowed_zones = var.names_allowed_zones
+
+  # Address balances related configuration
+  balances_denylist_project_ids = var.balances_denylist_project_ids
 
   # Analytics
   analytics_datalake_bucket_name = data.terraform_remote_state.datalake.outputs.datalake_bucket_id
@@ -96,6 +126,20 @@ module "ecs" {
 
   # Project ID used in a testing suite
   testing_project_id = var.testing_project_id
+
+  # Validate project ID
+  validate_project_id = var.validate_project_id
+
+  # Exchanges
+  coinbase_project_id               = var.coinbase_project_id
+  coinbase_key_name                 = var.coinbase_key_name
+  coinbase_key_secret               = var.coinbase_key_secret
+  internal_api_coinbase_credentials = var.internal_api_coinbase_credentials
+  binance_client_id                 = var.binance_client_id
+  binance_token                     = var.binance_token
+  binance_key                       = var.binance_key
+  binance_host                      = var.binance_host
+  pay_allowed_project_ids           = var.pay_allowed_project_ids
 
   depends_on = [aws_iam_role.application_role]
 }

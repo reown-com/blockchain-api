@@ -1,24 +1,23 @@
 use {
-    super::HANDLER_TASK_METRICS,
+    super::SdkInfoParams,
     crate::{
         analytics::{HistoryLookupInfo, OnrampHistoryLookupInfo},
         error::RpcError,
         providers::ProviderKind,
         state::AppState,
-        utils::network,
+        utils::{crypto, network},
     },
     axum::{
         extract::{ConnectInfo, MatchedPath, Path, Query, State},
         response::{IntoResponse, Response},
         Json,
     },
-    ethers::types::H160,
     hyper::HeaderMap,
     serde::{Deserialize, Serialize},
-    std::{net::SocketAddr, str::FromStr, sync::Arc},
+    std::{net::SocketAddr, sync::Arc},
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -26,8 +25,11 @@ use {
 pub struct HistoryQueryParams {
     pub currency: Option<String>,
     pub project_id: String,
+    pub chain_id: Option<String>,
     pub cursor: Option<String>,
     pub onramp: Option<String>,
+    #[serde(flatten)]
+    pub sdk_info: SdkInfoParams,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -126,11 +128,11 @@ pub async fn handler(
     address: Path<String>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, connect_info, query, path, headers, address)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("transactions"))
+        .with_metrics(future_metrics!("handler_task", "name" => "transactions"))
         .await
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
     connect_info: ConnectInfo<SocketAddr>,
@@ -141,44 +143,69 @@ async fn handler_internal(
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
 
-    // Checking for the H160 address correctness
-    H160::from_str(&address).map_err(|_| RpcError::InvalidAddress)?;
+    // If the chainId is not provided, then default to the Ethereum namespace
+    let namespace = query
+        .chain_id
+        .as_ref()
+        .map(|chain_id| {
+            crypto::disassemble_caip2(chain_id)
+                .map(|(namespace, _)| namespace)
+                .unwrap_or(crypto::CaipNamespaces::Eip155)
+        })
+        .unwrap_or(crypto::CaipNamespaces::Eip155);
+
+    if !crypto::is_address_valid(&address, &namespace) {
+        return Err(RpcError::InvalidAddress);
+    }
 
     let latency_tracker_start = std::time::SystemTime::now();
-    let history_provider: ProviderKind;
+    let history_provider_kind: ProviderKind;
     let response: HistoryResponseBody = if let Some(onramp) = query.onramp.clone() {
-        if onramp == "coinbase" {
+        if onramp == "coinbase" && namespace == crypto::CaipNamespaces::Eip155 {
             // We don't want to validate the quota for the onramp
             state.validate_project_access(&project_id).await?;
-            history_provider = ProviderKind::Coinbase;
+            history_provider_kind = ProviderKind::Coinbase;
             state
                 .providers
                 .coinbase_pay_provider
-                .get_transactions(address.clone(), query.clone().0, state.http_client.clone())
+                .get_transactions(
+                    address.clone(),
+                    query.clone().0,
+                    &state.providers.token_metadata_cache,
+                    state.metrics.clone(),
+                )
                 .await
                 .tap_err(|e| {
-                    error!("Failed to call coinbase transactions history with {}", e);
+                    error!("Failed to call coinbase transactions history with {e}");
                 })?
         } else {
             return Err(RpcError::UnsupportedProvider(onramp));
         }
     } else {
         state.validate_project_access_and_quota(&project_id).await?;
-        history_provider = ProviderKind::Zerion;
-        state
+        let provider = state
             .providers
-            .history_provider
-            .get_transactions(address.clone(), query.0.clone(), state.http_client.clone())
+            .history_providers
+            .get(&namespace)
+            .ok_or_else(|| RpcError::UnsupportedNamespace(namespace))?;
+        history_provider_kind = provider.provider_kind();
+        provider
+            .get_transactions(
+                address.clone(),
+                query.0.clone(),
+                &state.providers.token_metadata_cache,
+                state.metrics.clone(),
+            )
             .await
             .tap_err(|e| {
-                error!("Failed to call transactions history with {}", e);
+                error!("Failed to call transactions history with {e}");
             })?
     };
 
     let latency_tracker = latency_tracker_start
         .elapsed()
         .unwrap_or(std::time::Duration::from_secs(0));
-    state.metrics.add_history_lookup(&history_provider);
+    state.metrics.add_history_lookup(&history_provider_kind);
 
     let origin = headers
         .get("origin")
@@ -186,13 +213,57 @@ async fn handler_internal(
 
     let (country, continent, region) = state
         .analytics
-        .lookup_geo_data(network::get_forwarded_ip(headers).unwrap_or_else(|| connect_info.0.ip()))
+        .lookup_geo_data(network::get_forwarded_ip(&headers).unwrap_or_else(|| connect_info.0.ip()))
         .map(|geo| (geo.country, geo.continent, geo.region))
         .unwrap_or((None, None, None));
 
-    // Different analytics for different history providers
-    match history_provider {
-        ProviderKind::Zerion => {
+    // Filling the request_id from the `propagate_x_request_id` middleware
+    let request_id = headers
+        .get("x-request-id")
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or("unknown");
+
+    // Analytics schema exception for Coinbase Onramp
+    match history_provider_kind {
+        ProviderKind::Coinbase => {
+            for transaction in response.clone().data {
+                state
+                    .analytics
+                    .onramp_history_lookup(OnrampHistoryLookupInfo::new(
+                        transaction.id,
+                        latency_tracker,
+                        address.clone(),
+                        project_id.clone(),
+                        origin.clone(),
+                        region.clone(),
+                        country.clone(),
+                        continent.clone(),
+                        transaction.metadata.status,
+                        transaction
+                            .transfers
+                            .as_ref()
+                            .map(|v| {
+                                v.first()
+                                    .and_then(|item| {
+                                        item.fungible_info.as_ref().map(|info| info.name.clone())
+                                    })
+                                    .unwrap_or_default()
+                            })
+                            .unwrap_or(None)
+                            .unwrap_or_default(),
+                        transaction.metadata.chain.clone().unwrap_or_default(),
+                        transaction
+                            .transfers
+                            .as_ref()
+                            .map(|v| v[0].quantity.numeric.clone())
+                            .unwrap_or_default(),
+                        query.sdk_info.sv.clone(),
+                        query.sdk_info.st.clone(),
+                        request_id.to_string(),
+                    ));
+            }
+        }
+        _ => {
             state.analytics.history_lookup(HistoryLookupInfo::new(
                 address,
                 project_id,
@@ -233,57 +304,27 @@ async fn handler_internal(
                             .unwrap_or(0)
                     })
                     .sum(),
+                &history_provider_kind,
                 origin,
                 region,
                 country,
                 continent,
+                query.sdk_info.sv.clone(),
+                query.sdk_info.st.clone(),
+                request_id.to_string(),
             ));
         }
-        ProviderKind::Coinbase => {
-            for transaction in response.clone().data {
-                state
-                    .analytics
-                    .onramp_history_lookup(OnrampHistoryLookupInfo::new(
-                        transaction.id,
-                        latency_tracker,
-                        address.clone(),
-                        project_id.clone(),
-                        origin.clone(),
-                        region.clone(),
-                        country.clone(),
-                        continent.clone(),
-                        transaction.metadata.status,
-                        transaction
-                            .transfers
-                            .as_ref()
-                            .map(|v| {
-                                v.first()
-                                    .and_then(|item| {
-                                        item.fungible_info.as_ref().map(|info| info.name.clone())
-                                    })
-                                    .unwrap_or_default()
-                            })
-                            .unwrap_or(None)
-                            .unwrap_or_default(),
-                        transaction.metadata.chain.clone().unwrap_or_default(),
-                        transaction
-                            .transfers
-                            .as_ref()
-                            .map(|v| v[0].quantity.numeric.clone())
-                            .unwrap_or_default(),
-                    ));
-            }
-        }
-        _ => {}
     }
 
     let latency_tracker = latency_tracker_start
         .elapsed()
         .unwrap_or(std::time::Duration::from_secs(0));
-    state.metrics.add_history_lookup_success(&history_provider);
     state
         .metrics
-        .add_history_lookup_latency(&history_provider, latency_tracker);
+        .add_history_lookup_success(&history_provider_kind);
+    state
+        .metrics
+        .add_history_lookup_latency(&history_provider_kind, latency_tracker);
 
     Ok(Json(response).into_response())
 }

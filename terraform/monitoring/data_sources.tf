@@ -1,6 +1,6 @@
 module "monitoring-role" {
   source          = "app.terraform.io/wallet-connect/monitoring-role/aws"
-  version         = "1.0.2"
+  version         = "1.1.0"
   context         = module.this
   remote_role_arn = var.monitoring_role_arn
 }

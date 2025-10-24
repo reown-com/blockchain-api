@@ -1,30 +1,42 @@
+pub use {
+    account_names_info::AccountNameRegistration,
+    balance_lookup_info::BalanceLookupInfo,
+    chain_abstraction_info::{
+        ChainAbstractionBridgingInfo, ChainAbstractionFundingInfo, ChainAbstractionInitialTxInfo,
+    },
+    config::Config,
+    exchange_event_info::ExchangeEventInfo,
+    history_lookup_info::HistoryLookupInfo,
+    identity_lookup_info::IdentityLookupInfo,
+    message_info::*,
+    onramp_history_lookup_info::OnrampHistoryLookupInfo,
+};
 use {
     aws_sdk_s3::Client as S3Client,
     std::{net::IpAddr, sync::Arc, time::Duration},
     tap::TapFallible,
-    tracing::info,
+    tracing::{debug, info},
     wc::{
         analytics::{
             self, AnalyticsExt, ArcCollector, AwsConfig, AwsExporter, BatchCollector,
-            BatchObserver, CollectionObserver, Collector, CollectorConfig, ExportObserver,
-            ParquetBatchFactory,
+            BatchObserver, CollectionError, CollectionObserver, Collector, CollectorConfig,
+            ExportObserver, ParquetBatchFactory,
         },
         geoip::{self, MaxMindResolver, Resolver},
-        metrics::otel,
+        metrics::{counter, BoolLabel, StringLabel},
     },
 };
-pub use {
-    balance_lookup_info::BalanceLookupInfo, config::Config, history_lookup_info::HistoryLookupInfo,
-    identity_lookup_info::IdentityLookupInfo, message_info::MessageInfo,
-    onramp_history_lookup_info::OnrampHistoryLookupInfo,
-};
 
+mod account_names_info;
 mod balance_lookup_info;
+mod chain_abstraction_info;
 mod config;
+pub mod exchange_event_info;
 mod history_lookup_info;
 mod identity_lookup_info;
 mod message_info;
 mod onramp_history_lookup_info;
+pub mod pos_info;
 
 const ANALYTICS_EXPORT_TIMEOUT: Duration = Duration::from_secs(30);
 const DATA_QUEUE_CAPACITY: usize = 8192;
@@ -36,6 +48,10 @@ enum DataKind {
     HistoryLookups,
     OnrampHistoryLookups,
     BalanceLookups,
+    NameRegistrations,
+    ChainAbstraction,
+    ExchangeEvents,
+    Pos,
 }
 
 impl DataKind {
@@ -47,17 +63,12 @@ impl DataKind {
             Self::HistoryLookups => "history_lookups",
             Self::OnrampHistoryLookups => "onramp_history_lookups",
             Self::BalanceLookups => "balance_lookups",
+            Self::NameRegistrations => "name_registrations",
+            Self::ChainAbstraction => "chain_abstraction",
+            Self::ExchangeEvents => "exchange_events",
+            Self::Pos => "pos",
         }
     }
-
-    #[inline]
-    fn as_kv(&self) -> otel::KeyValue {
-        otel::KeyValue::new("data_kind", self.as_str())
-    }
-}
-
-fn success_kv(success: bool) -> otel::KeyValue {
-    otel::KeyValue::new("success", success)
 }
 
 #[derive(Clone, Copy)]
@@ -70,12 +81,11 @@ where
     fn observe_batch_serialization(&self, elapsed: Duration, res: &Result<Vec<u8>, E>) {
         let size = res.as_deref().map(|data| data.len()).unwrap_or(0);
         let elapsed = elapsed.as_millis() as u64;
-
-        wc::metrics::counter!(
-            "analytics_batches_finished",
-            1,
-            &[self.0.as_kv(), success_kv(res.is_ok())]
-        );
+        counter!("analytics_batches_finished",
+            StringLabel<"data_kind", String> => self.0.as_str(),
+            BoolLabel<"success"> => res.is_ok()
+        )
+        .increment(1);
 
         if let Err(err) = res {
             tracing::warn!(
@@ -84,7 +94,7 @@ where
                 "failed to serialize analytics batch"
             );
         } else {
-            tracing::info!(
+            tracing::debug!(
                 size,
                 elapsed,
                 data_kind = self.0.as_str(),
@@ -99,11 +109,11 @@ where
     E: std::error::Error,
 {
     fn observe_collection(&self, res: &Result<(), E>) {
-        wc::metrics::counter!(
-            "analytics_records_collected",
-            1,
-            &[self.0.as_kv(), success_kv(res.is_ok())]
-        );
+        counter!("analytics_records_collected",
+            StringLabel<"data_kind", String> => self.0.as_str(),
+            BoolLabel<"success"> => res.is_ok()
+        )
+        .increment(1);
 
         if let Err(err) = res {
             tracing::warn!(
@@ -120,11 +130,11 @@ where
     E: std::error::Error,
 {
     fn observe_export(&self, elapsed: Duration, res: &Result<(), E>) {
-        wc::metrics::counter!(
-            "analytics_batches_exported",
-            1,
-            &[self.0.as_kv(), success_kv(res.is_ok())]
-        );
+        counter!("analytics_batches_exported",
+            StringLabel<"data_kind", String> => self.0.as_str(),
+            BoolLabel<"success"> => res.is_ok()
+        )
+        .increment(1);
 
         let elapsed = elapsed.as_millis() as u64;
 
@@ -136,10 +146,10 @@ where
                 "analytics export failed"
             );
         } else {
-            tracing::info!(
+            tracing::debug!(
                 elapsed,
                 data_kind = self.0.as_str(),
-                "analytics export failed"
+                "analytics export succeeded"
             );
         }
     }
@@ -152,6 +162,15 @@ pub struct RPCAnalytics {
     history_lookups: ArcCollector<HistoryLookupInfo>,
     onramp_history_lookups: ArcCollector<OnrampHistoryLookupInfo>,
     balance_lookups: ArcCollector<BalanceLookupInfo>,
+    name_registrations: ArcCollector<AccountNameRegistration>,
+
+    chain_abstraction_funding: ArcCollector<ChainAbstractionFundingInfo>,
+    chain_abstraction_bridging: ArcCollector<ChainAbstractionBridgingInfo>,
+    chain_abstraction_initial_tx: ArcCollector<ChainAbstractionInitialTxInfo>,
+
+    exchange_events: ArcCollector<ExchangeEventInfo>,
+    pos_build: ArcCollector<pos_info::PosBuildTxInfo>,
+    pos_check: ArcCollector<pos_info::PosCheckTxInfo>,
     geoip_resolver: Option<Arc<MaxMindResolver>>,
 }
 
@@ -180,6 +199,15 @@ impl RPCAnalytics {
             history_lookups: analytics::noop_collector().boxed_shared(),
             onramp_history_lookups: analytics::noop_collector().boxed_shared(),
             balance_lookups: analytics::noop_collector().boxed_shared(),
+            name_registrations: analytics::noop_collector().boxed_shared(),
+
+            chain_abstraction_funding: analytics::noop_collector().boxed_shared(),
+            chain_abstraction_bridging: analytics::noop_collector().boxed_shared(),
+            chain_abstraction_initial_tx: analytics::noop_collector().boxed_shared(),
+
+            exchange_events: analytics::noop_collector().boxed_shared(),
+            pos_build: analytics::noop_collector().boxed_shared(),
+            pos_check: analytics::noop_collector().boxed_shared(),
             geoip_resolver: None,
         }
     }
@@ -287,7 +315,152 @@ impl RPCAnalytics {
                 node_addr,
                 file_extension: "parquet".to_owned(),
                 bucket_name: export_bucket.to_owned(),
-                s3_client,
+                s3_client: s3_client.clone(),
+                upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
+            })
+            .with_observer(observer),
+        )
+        .with_observer(observer)
+        .boxed_shared();
+
+        let observer = Observer(DataKind::NameRegistrations);
+        let name_registrations = BatchCollector::new(
+            CollectorConfig {
+                data_queue_capacity: DATA_QUEUE_CAPACITY,
+                ..Default::default()
+            },
+            ParquetBatchFactory::new(Default::default()).with_observer(observer),
+            AwsExporter::new(AwsConfig {
+                export_prefix: "blockchain-api/name-registrations".to_owned(),
+                export_name: "name_registrations".to_owned(),
+                node_addr,
+                file_extension: "parquet".to_owned(),
+                bucket_name: export_bucket.to_owned(),
+                s3_client: s3_client.clone(),
+                upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
+            })
+            .with_observer(observer),
+        )
+        .with_observer(observer)
+        .boxed_shared();
+
+        let observer = Observer(DataKind::ChainAbstraction);
+        let chain_abstraction_bridging = BatchCollector::new(
+            CollectorConfig {
+                data_queue_capacity: DATA_QUEUE_CAPACITY,
+                ..Default::default()
+            },
+            ParquetBatchFactory::new(Default::default()).with_observer(observer),
+            AwsExporter::new(AwsConfig {
+                export_prefix: "blockchain-api/chain_abstraction_bridging".to_owned(),
+                export_name: "bridging_info".to_owned(),
+                node_addr,
+                file_extension: "parquet".to_owned(),
+                bucket_name: export_bucket.to_owned(),
+                s3_client: s3_client.clone(),
+                upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
+            })
+            .with_observer(observer),
+        )
+        .with_observer(observer)
+        .boxed_shared();
+
+        let chain_abstraction_funding = BatchCollector::new(
+            CollectorConfig {
+                data_queue_capacity: DATA_QUEUE_CAPACITY,
+                ..Default::default()
+            },
+            ParquetBatchFactory::new(Default::default()).with_observer(observer),
+            AwsExporter::new(AwsConfig {
+                export_prefix: "blockchain-api/chain_abstraction_funding".to_owned(),
+                export_name: "funding_info".to_owned(),
+                node_addr,
+                file_extension: "parquet".to_owned(),
+                bucket_name: export_bucket.to_owned(),
+                s3_client: s3_client.clone(),
+                upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
+            })
+            .with_observer(observer),
+        )
+        .with_observer(observer)
+        .boxed_shared();
+
+        let chain_abstraction_initial_tx = BatchCollector::new(
+            CollectorConfig {
+                data_queue_capacity: DATA_QUEUE_CAPACITY,
+                ..Default::default()
+            },
+            ParquetBatchFactory::new(Default::default()).with_observer(observer),
+            AwsExporter::new(AwsConfig {
+                export_prefix: "blockchain-api/chain_abstraction_initial_tx".to_owned(),
+                export_name: "initial_tx".to_owned(),
+                node_addr,
+                file_extension: "parquet".to_owned(),
+                bucket_name: export_bucket.to_owned(),
+                s3_client: s3_client.clone(),
+                upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
+            })
+            .with_observer(observer),
+        )
+        .with_observer(observer)
+        .boxed_shared();
+
+        let observer = Observer(DataKind::ExchangeEvents);
+        let exchange_events = BatchCollector::new(
+            CollectorConfig {
+                data_queue_capacity: DATA_QUEUE_CAPACITY,
+                ..Default::default()
+            },
+            ParquetBatchFactory::new(Default::default()).with_observer(observer),
+            AwsExporter::new(AwsConfig {
+                export_prefix: "blockchain-api/exchange-events".to_owned(),
+                export_name: "exchange_events".to_owned(),
+                node_addr,
+                file_extension: "parquet".to_owned(),
+                bucket_name: export_bucket.to_owned(),
+                s3_client: s3_client.clone(),
+                upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
+            })
+            .with_observer(observer),
+        )
+        .with_observer(observer)
+        .boxed_shared();
+
+        let observer = Observer(DataKind::Pos);
+        let pos_build = BatchCollector::new(
+            CollectorConfig {
+                data_queue_capacity: DATA_QUEUE_CAPACITY,
+                ..Default::default()
+            },
+            ParquetBatchFactory::new(Default::default()).with_observer(observer),
+            AwsExporter::new(AwsConfig {
+                export_prefix: "blockchain-api/pos_build".to_owned(),
+                export_name: "pos_build".to_owned(),
+                node_addr,
+                file_extension: "parquet".to_owned(),
+                bucket_name: export_bucket.to_owned(),
+                s3_client: s3_client.clone(),
+                upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
+            })
+            .with_observer(observer),
+        )
+        .with_observer(observer)
+        .boxed_shared();
+
+        let observer = Observer(DataKind::Pos);
+        let pos_check = BatchCollector::new(
+            CollectorConfig {
+                data_queue_capacity: DATA_QUEUE_CAPACITY,
+                ..Default::default()
+            },
+            ParquetBatchFactory::new(Default::default()).with_observer(observer),
+            AwsExporter::new(AwsConfig {
+                export_prefix: "blockchain-api/pos_check".to_owned(),
+                export_name: "pos_check".to_owned(),
+                node_addr,
+                file_extension: "parquet".to_owned(),
+                bucket_name: export_bucket.to_owned(),
+                s3_client: s3_client.clone(),
                 upload_timeout: ANALYTICS_EXPORT_TIMEOUT,
             })
             .with_observer(observer),
@@ -301,6 +474,15 @@ impl RPCAnalytics {
             history_lookups,
             onramp_history_lookups,
             balance_lookups,
+            name_registrations,
+
+            chain_abstraction_bridging,
+            chain_abstraction_funding,
+            chain_abstraction_initial_tx,
+
+            exchange_events,
+            pos_build,
+            pos_check,
             geoip_resolver,
         })
     }
@@ -355,6 +537,46 @@ impl RPCAnalytics {
         }
     }
 
+    pub fn name_registration(&self, data: AccountNameRegistration) {
+        if let Err(err) = self.name_registrations.collect(data) {
+            tracing::warn!(
+                ?err,
+                data_kind = DataKind::NameRegistrations.as_str(),
+                "failed to collect analytics"
+            );
+        }
+    }
+
+    pub fn chain_abstraction_funding(&self, data: ChainAbstractionFundingInfo) {
+        if let Err(err) = self.chain_abstraction_funding.collect(data) {
+            tracing::warn!(
+                ?err,
+                data_kind = DataKind::ChainAbstraction.as_str(),
+                "failed to collect analytics for chain abstraction funding"
+            );
+        }
+    }
+
+    pub fn chain_abstraction_bridging(&self, data: ChainAbstractionBridgingInfo) {
+        if let Err(err) = self.chain_abstraction_bridging.collect(data) {
+            tracing::warn!(
+                ?err,
+                data_kind = DataKind::ChainAbstraction.as_str(),
+                "failed to collect analytics for chain abstraction bridging"
+            );
+        }
+    }
+
+    pub fn chain_abstraction_initial_tx(&self, data: ChainAbstractionInitialTxInfo) {
+        if let Err(err) = self.chain_abstraction_initial_tx.collect(data) {
+            tracing::warn!(
+                ?err,
+                data_kind = DataKind::ChainAbstraction.as_str(),
+                "failed to collect analytics for chain abstraction initial tx"
+            );
+        }
+    }
+
     pub fn geoip_resolver(&self) -> &Option<Arc<MaxMindResolver>> {
         &self.geoip_resolver
     }
@@ -363,7 +585,40 @@ impl RPCAnalytics {
         self.geoip_resolver
             .as_ref()?
             .lookup_geo_data(addr)
-            .tap_err(|err| info!(?err, "failed to lookup geoip data"))
+            .tap_err(|err| debug!(?err, "failed to lookup geoip data"))
             .ok()
+    }
+
+    pub fn exchange_transaction_event(
+        &self,
+        data: ExchangeEventInfo,
+    ) -> Result<(), CollectionError> {
+        self.exchange_events.collect(data)
+    }
+
+    pub fn pos_build(&self, data: pos_info::PosBuildTxInfo) {
+        let transaction_id = data.transaction_id.clone();
+        if let Err(err) = self.pos_build.collect(data) {
+            tracing::warn!(
+                ?err,
+                data_kind = DataKind::Pos.as_str(),
+                transaction_id,
+                "failed to collect analytics for pos"
+            );
+        }
+    }
+
+    pub fn pos_check(&self, data: pos_info::PosCheckTxInfo) {
+        let transaction_id = data.transaction_id.clone();
+        let tx_hash = data.tx_hash.clone();
+        if let Err(err) = self.pos_check.collect(data) {
+            tracing::warn!(
+                ?err,
+                data_kind = DataKind::Pos.as_str(),
+                transaction_id,
+                ?tx_hash,
+                "failed to collect analytics for pos"
+            );
+        }
     }
 }

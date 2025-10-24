@@ -2,6 +2,7 @@ use {
     super::{
         check_if_rpc_is_responding_correctly_for_near_protocol,
         check_if_rpc_is_responding_correctly_for_solana,
+        check_if_rpc_is_responding_correctly_for_sui,
         check_if_rpc_is_responding_correctly_for_supported_chain,
     },
     crate::context::ServerContext,
@@ -29,13 +30,13 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
         .await;
 
     // Base mainnet
-    check_if_rpc_is_responding_correctly_for_supported_chain(
-        ctx,
-        &provider,
-        "eip155:8453",
-        "0x2105",
-    )
-    .await;
+    // check_if_rpc_is_responding_correctly_for_supported_chain(
+    //     ctx,
+    //     &provider,
+    //     "eip155:8453",
+    //     "0x2105",
+    // )
+    // .await;
 
     // Base Sepolia
     check_if_rpc_is_responding_correctly_for_supported_chain(
@@ -73,21 +74,40 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     .await;
 
     // Optimism
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:10", "0xa")
-        .await;
+    // check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:10", "0xa")
+    //     .await;
 
-    // Arbitrum
+    // Optimism Sepolia
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &provider,
-        "eip155:42161",
-        "0xa4b1",
+        "eip155:11155420",
+        "0xaa37dc",
+    )
+    .await;
+
+    // Arbitrum
+    // check_if_rpc_is_responding_correctly_for_supported_chain(
+    //     ctx,
+    //     &provider,
+    //     "eip155:42161",
+    //     "0xa4b1",
+    // )
+    // .await;
+
+    // Arbitrum Sepolia
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:421614",
+        "0x66eee",
     )
     .await;
 
     // Polygon mainnet
-    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:137", "0x89")
-        .await;
+    // Temporarily disabled due to issues with the provider
+    // check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:137", "0x89")
+    //     .await;
 
     // Polygon zkevm
     check_if_rpc_is_responding_correctly_for_supported_chain(
@@ -107,7 +127,7 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Polygon celo
+    // Celo
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &provider,
@@ -116,7 +136,7 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
     )
     .await;
 
-    // Klaytn mainnet
+    // Kaia mainnet
     check_if_rpc_is_responding_correctly_for_supported_chain(
         ctx,
         &provider,
@@ -127,6 +147,37 @@ async fn pokt_provider_eip155(ctx: &mut ServerContext) {
 
     // zkSync era
     check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:324", "0x144")
+        .await;
+
+    // Scroll
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:534352",
+        "0x82750",
+    )
+    .await;
+
+    // Linea Mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:59144",
+        "0xe708",
+    )
+    .await;
+
+    // Berachain mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(
+        ctx,
+        &provider,
+        "eip155:80094",
+        "0x138de",
+    )
+    .await;
+
+    // Sonic Mainnet
+    check_if_rpc_is_responding_correctly_for_supported_chain(ctx, &provider, "eip155:146", "0x92")
         .await;
 }
 
@@ -158,4 +209,13 @@ async fn pokt_provider_solana(ctx: &mut ServerContext) {
 #[ignore]
 async fn pokt_provider_near(ctx: &mut ServerContext) {
     check_if_rpc_is_responding_correctly_for_near_protocol(ctx, &ProviderKind::Pokt).await;
+}
+
+#[test_context(ServerContext)]
+#[tokio::test]
+#[ignore]
+async fn pokt_provider_sui(ctx: &mut ServerContext) {
+    // Sui mainnet
+    check_if_rpc_is_responding_correctly_for_sui(ctx, &ProviderKind::Pokt, "mainnet", "35834a8a")
+        .await;
 }

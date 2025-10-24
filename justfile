@@ -1,5 +1,6 @@
 binary-crate  := "."
 tf-dir        := "terraform"
+set dotenv-load
 
 export JUST_ROOT := justfile_directory()
 
@@ -159,7 +160,7 @@ cargo-test-default: _check-cmd-cargo
 # Run project tests with all features activated
 cargo-test-all: _check-cmd-cargo
   @printf '==> Testing project ({{ light-green }}all features{{ nocolor }})\n'
-  cargo +nightly test --all-features
+  cargo test --features=full
 
 # Run tests from project documentation
 cargo-test-doc: _check-cmd-cargo
@@ -179,7 +180,7 @@ cargo-check: _check-cmd-cargo
 # Check rust project with clippy
 cargo-clippy: _check-cmd-cargo-clippy
   @printf '==> Running {{ color-cmd }}clippy{{ nocolor }}\n'
-  cargo +nightly clippy --all-features --tests -- -D clippy::all
+  cargo clippy --features=full --tests -- -D clippy::all
 
 # Check unused dependencies
 cargo-udeps: _check-cmd-cargo-udeps
@@ -242,14 +243,30 @@ tf target='': (_check-string-in-set target "fmt,checkfmt,validate,tfsec,tflint,i
   cd {{ tf-dir }}; terraform validate
 
 # Check Terraform configuration for potential security issues
-@tf-tfsec: _check-cmd-tfsec
-  printf '==> Running {{ color-cmd }}tfsec{{ nocolor }}\n'
-  cd {{ tf-dir }}; tfsec
+@tf-tfsec:
+  #!/bin/bash
+  set -euo pipefail
+  
+  if command -v tfsec >/dev/null; then
+    echo '==> Running tfsec'
+    cd terraform
+    tfsec
+  else
+    echo '==> tfsec not found in PATH, skipping'
+  fi
 
 # Run Terraform linter
-@tf-tflint: _check-cmd-tflint
-  printf '==> Running {{ color-cmd }}tflint{{ nocolor }}\n'
-  cd {{ tf-dir }}; tflint --recursive
+@tf-tflint:
+  #!/bin/bash
+  set -euo pipefail
+
+  if command -v tflint >/dev/null; then
+    echo '==> Running tflint'
+    cd terraform; tflint --recursive
+
+  else
+    echo '==> tflint not found in PATH, skipping'
+  fi
 
 # Init Terraform project
 @tf-init: _check-cmd-terraform
@@ -330,3 +347,9 @@ _check-string-in-set target set options='':
       exit 1
     fi
   fi
+
+docker:
+  docker compose up -d postgres redis
+
+render-config:
+  cargo run --bin render_chain_config

@@ -32,7 +32,7 @@ permissions:
 jobs:
   ci:
     name: CI
-    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.10
+    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.18
     secrets: inherit
     with:
       check-infra: ${{ inputs.check-infra }}
@@ -46,7 +46,7 @@ jobs:
     secrets: inherit
     with:
       stage: staging
-      stage-url: https://staging.${{ vars.SUBDOMAIN_NAME }}.walletconnect.com
+      stage-url: https://staging.${{ vars.SUBDOMAIN_NAME }}.walletconnect.org
 
   validate-prod:
     name: Validate - Prod
@@ -55,4 +55,4 @@ jobs:
     secrets: inherit
     with:
       stage: prod
-      stage-url: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.com
+      stage-url: https://${{ vars.SUBDOMAIN_NAME }}.walletconnect.org

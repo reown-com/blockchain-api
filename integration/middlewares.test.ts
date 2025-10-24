@@ -5,7 +5,7 @@ describe('Middlewares', () => {
 
   it('OK response should contain x-request-id header', async () => {
     let resp: any = await httpClient.get(
-      `${baseUrl}/v1/account/0xf3ea39310011333095CFCcCc7c4Ad74034CABA63/history?projectId=${projectId}`,
+      `${baseUrl}/v1/account/0x2aae531a81461f029cd55cb46703211c9227ba05/history?projectId=${projectId}`,
     )
     expect(resp.headers).toBeDefined();
     expect(resp.status).toBe(200);

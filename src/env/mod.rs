@@ -3,29 +3,54 @@ use {
         analytics::Config as AnalyticsConfig,
         database::config::PostgresConfig,
         error,
+        handlers::balance::Config as BalanceConfig,
+        handlers::json_rpc::exchanges::Config as ExchangesConfig,
+        names::Config as NamesConfig,
         profiler::ProfilerConfig,
         project::{storage::Config as StorageConfig, Config as RegistryConfig},
         providers::{ProviderKind, ProvidersConfig, Weight},
-        utils::rate_limit::RateLimitingConfig,
+        storage::irn::Config as IrnConfig,
+        utils::{crypto::CaipNamespaces, rate_limit::RateLimitingConfig},
     },
     serde::de::DeserializeOwned,
     std::{collections::HashMap, fmt::Display},
 };
 pub use {
-    aurora::*, base::*, binance::*, getblock::*, infura::*, mantle::*, near::*, pokt::*,
-    publicnode::*, quicknode::*, server::*, zksync::*, zora::*,
+    allnodes::*, arbitrum::*, aurora::*, base::*, binance::*, blast::*, callstatic::*, drpc::*,
+    dune::*, generic::*, hiro::*, mantle::*, monad::*, moonbeam::*, morph::*, near::*, pokt::*,
+    publicnode::*, quicknode::*, rootstock::*, server::*, solscan::*, sui::*, syndica::*,
+    therpc::*, toncenter::*, trongrid::*, unichain::*, wemix::*, zerion::*, zksync::*, zora::*,
 };
+mod allnodes;
+mod arbitrum;
 mod aurora;
 mod base;
 mod binance;
-mod getblock;
-mod infura;
+mod blast;
+mod callstatic;
+mod drpc;
+mod dune;
+mod generic;
+mod hiro;
 mod mantle;
+mod monad;
+mod moonbeam;
+mod morph;
 mod near;
 mod pokt;
 mod publicnode;
 mod quicknode;
+mod rootstock;
 mod server;
+pub mod solscan;
+mod sui;
+mod syndica;
+mod therpc;
+mod toncenter;
+mod trongrid;
+mod unichain;
+mod wemix;
+pub mod zerion;
 mod zksync;
 mod zora;
 
@@ -48,6 +73,10 @@ pub struct Config {
     pub profiler: ProfilerConfig,
     pub providers: ProvidersConfig,
     pub rate_limiting: RateLimitingConfig,
+    pub irn: IrnConfig,
+    pub names: NamesConfig,
+    pub balances: BalanceConfig,
+    pub exchanges: ExchangesConfig,
 }
 
 impl Config {
@@ -61,6 +90,10 @@ impl Config {
             profiler: from_env("RPC_PROXY_PROFILER_")?,
             providers: from_env("RPC_PROXY_PROVIDER_")?,
             rate_limiting: from_env("RPC_PROXY_RATE_LIMITING_")?,
+            irn: from_env("RPC_PROXY_IRN_")?,
+            names: from_env("RPC_PROXY_NAMES_")?,
+            balances: from_env("RPC_PROXY_BALANCES_")?,
+            exchanges: from_env("RPC_PROXY_EXCHANGES_")?,
         })
     }
 }
@@ -75,16 +108,26 @@ pub trait ProviderConfig {
     fn provider_kind(&self) -> ProviderKind;
 }
 
+pub trait BalanceProviderConfig {
+    fn supported_namespaces(self) -> HashMap<CaipNamespaces, Weight>;
+    fn provider_kind(&self) -> ProviderKind;
+}
+
 #[cfg(test)]
+#[cfg(not(feature = "test-mock-bundler"))] // These tests depend on environment variables
 mod test {
     use {
         crate::{
             analytics,
             database::config::PostgresConfig,
             env::{Config, ServerConfig},
+            handlers::balance::Config as BalanceConfig,
+            handlers::json_rpc::exchanges::Config as ExchangesConfig,
+            names::Config as NamesConfig,
             profiler::ProfilerConfig,
             project,
             providers::ProvidersConfig,
+            storage::irn::Config as IrnConfig,
             utils::rate_limit::RateLimitingConfig,
         },
         std::net::Ipv4Addr,
@@ -108,6 +151,7 @@ mod test {
             ("RPC_PROXY_REGISTRY_API_URL", "API_URL"),
             ("RPC_PROXY_REGISTRY_API_AUTH_TOKEN", "API_AUTH_TOKEN"),
             ("RPC_PROXY_REGISTRY_PROJECT_DATA_CACHE_TTL", "345"),
+            ("RPC_PROXY_REGISTRY_CIRCUIT_COOLDOWN_MS", "1000"),
             // Storage config.
             ("RPC_PROXY_STORAGE_REDIS_MAX_CONNECTIONS", "456"),
             (
@@ -138,18 +182,43 @@ mod test {
             ("RPC_PROXY_ANALYTICS_S3_ENDPOINT", "s3://127.0.0.1"),
             ("RPC_PROXY_ANALYTICS_EXPORT_BUCKET", "EXPORT_BUCKET"),
             // Providers config
-            ("RPC_PROXY_PROVIDER_INFURA_PROJECT_ID", "INFURA_PROJECT_ID"),
+            (
+                "RPC_PROXY_PROVIDER_CACHE_REDIS_ADDR",
+                "redis://127.0.0.1/providers_cache",
+            ),
             ("RPC_PROXY_PROVIDER_POKT_PROJECT_ID", "POKT_PROJECT_ID"),
             ("RPC_PROXY_PROVIDER_ZERION_API_KEY", "ZERION_API_KEY"),
             (
-                "RPC_PROXY_PROVIDER_QUICKNODE_API_TOKEN",
-                "QUICKNODE_API_TOKEN",
+                "RPC_PROXY_PROVIDER_QUICKNODE_API_TOKENS",
+                "QUICKNODE_API_TOKENS",
             ),
             ("RPC_PROXY_PROVIDER_COINBASE_API_KEY", "COINBASE_API_KEY"),
             ("RPC_PROXY_PROVIDER_COINBASE_APP_ID", "COINBASE_APP_ID"),
             ("RPC_PROXY_PROVIDER_ONE_INCH_API_KEY", "ONE_INCH_API_KEY"),
             ("RPC_PROXY_PROVIDER_ONE_INCH_REFERRER", "ONE_INCH_REFERRER"),
-            ("RPC_PROXY_PROVIDER_GETBLOCK_ACCESS_TOKENS", "{}"),
+            ("RPC_PROXY_PROVIDER_LIFI_API_KEY", "LIFI_API_KEY"),
+            ("RPC_PROXY_PROVIDER_PIMLICO_API_KEY", "PIMLICO_API_KEY"),
+            (
+                "RPC_PROXY_PROVIDER_SOLSCAN_API_V2_TOKEN",
+                "SOLSCAN_API_V2_TOKEN",
+            ),
+            ("RPC_PROXY_PROVIDER_TONCENTER_API_URL", "TONCENTER_API_URL"),
+            ("RPC_PROXY_PROVIDER_TONCENTER_API_KEY", "TONCENTER_API_KEY"),
+            ("RPC_PROXY_PROVIDER_BUNGEE_API_KEY", "BUNGEE_API_KEY"),
+            ("RPC_PROXY_PROVIDER_TENDERLY_API_KEY", "TENDERLY_KEY"),
+            (
+                "RPC_PROXY_PROVIDER_TENDERLY_ACCOUNT_ID",
+                "TENDERLY_ACCOUNT_ID",
+            ),
+            (
+                "RPC_PROXY_PROVIDER_TENDERLY_PROJECT_ID",
+                "TENDERLY_PROJECT_ID",
+            ),
+            ("RPC_PROXY_PROVIDER_DUNE_SIM_API_KEY", "DUNE_SIM_API_KEY"),
+            ("RPC_PROXY_PROVIDER_SYNDICA_API_KEY", "SYNDICA_API_KEY"),
+            ("RPC_PROXY_PROVIDER_ALLNODES_API_KEY", "ALLNODES_API_KEY"),
+            ("RPC_PROXY_PROVIDER_MELD_API_KEY", "MELD_API_KEY"),
+            ("RPC_PROXY_PROVIDER_MELD_API_URL", "MELD_API_URL"),
             (
                 "RPC_PROXY_PROVIDER_PROMETHEUS_QUERY_URL",
                 "PROMETHEUS_QUERY_URL",
@@ -158,6 +227,11 @@ mod test {
                 "RPC_PROXY_PROVIDER_PROMETHEUS_WORKSPACE_HEADER",
                 "PROMETHEUS_WORKSPACE_HEADER",
             ),
+            (
+                "RPC_PROXY_PROVIDER_CALLSTATIC_API_KEY",
+                "CALLSTATIC_API_KEY",
+            ),
+            ("RPC_PROXY_PROVIDER_BLAST_API_KEY", "BLAST_API_KEY"),
             // Postgres config.
             (
                 "RPC_PROXY_POSTGRES_URI",
@@ -168,6 +242,41 @@ mod test {
             ("RPC_PROXY_RATE_LIMITING_MAX_TOKENS", "100"),
             ("RPC_PROXY_RATE_LIMITING_REFILL_INTERVAL_SEC", "1"),
             ("RPC_PROXY_RATE_LIMITING_REFILL_RATE", "10"),
+            (
+                "RPC_PROXY_RATE_LIMITING_IP_WHITELIST",
+                "127.0.0.1,127.0.0.2",
+            ),
+            // IRN config.
+            ("RPC_PROXY_IRN_NODES", "node1.id,node2.id"),
+            ("RPC_PROXY_IRN_KEY", "key"),
+            ("RPC_PROXY_IRN_NAMESPACE", "namespace"),
+            ("RPC_PROXY_IRN_NAMESPACE_SECRET", "namespace"),
+            // Names configuration
+            ("RPC_PROXY_NAMES_ALLOWED_ZONES", "test1.id,test2.id"),
+            // Account balances-related configuration
+            ("RPC_PROXY_BALANCES_DENYLIST_PROJECT_IDS", "test_project_id"),
+            // Exchanges configuration
+            (
+                "RPC_PROXY_EXCHANGES_COINBASE_PROJECT_ID",
+                "COINBASE_PROJECT_ID",
+            ),
+            ("RPC_PROXY_EXCHANGES_COINBASE_KEY_NAME", "COINBASE_KEY_NAME"),
+            (
+                "RPC_PROXY_EXCHANGES_COINBASE_KEY_SECRET",
+                "COINBASE_KEY_SECRET",
+            ),
+            (
+                "RPC_PROXY_EXCHANGES_INTERNAL_API_COINBASE_CREDENTIALS",
+                "INTERNAL_API_COINBASE_CREDENTIALS",
+            ),
+            ("RPC_PROXY_EXCHANGES_BINANCE_CLIENT_ID", "BINANCE_CLIENT_ID"),
+            ("RPC_PROXY_EXCHANGES_BINANCE_TOKEN", "BINANCE_TOKEN"),
+            ("RPC_PROXY_EXCHANGES_BINANCE_KEY", "BINANCE_KEY"),
+            ("RPC_PROXY_EXCHANGES_BINANCE_HOST", "BINANCE_HOST"),
+            (
+                "RPC_PROXY_EXCHANGES_ALLOWED_PROJECT_IDS",
+                "test_project_id,test_project_id_2",
+            ),
         ];
 
         values.iter().for_each(set_env_var);
@@ -192,11 +301,13 @@ mod test {
                     geoip_db_key: Some("GEOIP_DB_KEY".to_owned()),
                     testing_project_id: Some("TESTING_PROJECT_ID".to_owned()),
                     validate_project_id: true,
+                    skip_quota_chains: vec![],
                 },
                 registry: project::Config {
                     api_url: Some("API_URL".to_owned()),
                     api_auth_token: Some("API_AUTH_TOKEN".to_owned()),
                     project_data_cache_ttl: 345,
+                    circuit_cooldown_ms: 1_000,
                 },
                 storage: project::storage::Config {
                     redis_max_connections: 456,
@@ -227,20 +338,65 @@ mod test {
                 providers: ProvidersConfig {
                     prometheus_query_url: Some("PROMETHEUS_QUERY_URL".to_owned()),
                     prometheus_workspace_header: Some("PROMETHEUS_WORKSPACE_HEADER".to_owned()),
-                    infura_project_id: "INFURA_PROJECT_ID".to_string(),
+                    cache_redis_addr: Some("redis://127.0.0.1/providers_cache".to_owned()),
                     pokt_project_id: "POKT_PROJECT_ID".to_string(),
-                    quicknode_api_token: "QUICKNODE_API_TOKEN".to_string(),
-                    zerion_api_key: Some("ZERION_API_KEY".to_owned()),
+                    quicknode_api_tokens: "QUICKNODE_API_TOKENS".to_string(),
+                    zerion_api_key: "ZERION_API_KEY".to_owned(),
                     coinbase_api_key: Some("COINBASE_API_KEY".to_owned()),
                     coinbase_app_id: Some("COINBASE_APP_ID".to_owned()),
                     one_inch_api_key: Some("ONE_INCH_API_KEY".to_owned()),
                     one_inch_referrer: Some("ONE_INCH_REFERRER".to_owned()),
-                    getblock_access_tokens: Some("{}".to_owned()),
+                    lifi_api_key: Some("LIFI_API_KEY".to_owned()),
+                    pimlico_api_key: "PIMLICO_API_KEY".to_string(),
+                    solscan_api_v2_token: "SOLSCAN_API_V2_TOKEN".to_string(),
+                    toncenter_api_url: Some("TONCENTER_API_URL".to_string()),
+                    toncenter_api_key: Some("TONCENTER_API_KEY".to_string()),
+                    bungee_api_key: "BUNGEE_API_KEY".to_string(),
+                    tenderly_api_key: "TENDERLY_KEY".to_string(),
+                    tenderly_account_id: "TENDERLY_ACCOUNT_ID".to_string(),
+                    tenderly_project_id: "TENDERLY_PROJECT_ID".to_string(),
+                    dune_sim_api_key: "DUNE_SIM_API_KEY".to_string(),
+                    syndica_api_key: "SYNDICA_API_KEY".to_string(),
+                    override_bundler_urls: None,
+                    allnodes_api_key: "ALLNODES_API_KEY".to_string(),
+                    meld_api_key: "MELD_API_KEY".to_string(),
+                    meld_api_url: "MELD_API_URL".to_string(),
+                    callstatic_api_key: "CALLSTATIC_API_KEY".to_string(),
+                    blast_api_key: "BLAST_API_KEY".to_string(),
                 },
                 rate_limiting: RateLimitingConfig {
                     max_tokens: Some(100),
                     refill_interval_sec: Some(1),
                     refill_rate: Some(10),
+                    ip_whitelist: Some(vec!["127.0.0.1".into(), "127.0.0.2".into()]),
+                },
+                irn: IrnConfig {
+                    nodes: Some(vec!["node1.id".to_owned(), "node2.id".to_owned()]),
+                    key: Some("key".to_owned()),
+                    namespace: Some("namespace".to_owned()),
+                    namespace_secret: Some("namespace".to_owned()),
+                },
+                names: NamesConfig {
+                    allowed_zones: Some(vec!["test1.id".to_owned(), "test2.id".to_owned()]),
+                },
+                balances: BalanceConfig {
+                    denylist_project_ids: Some(vec!["test_project_id".to_owned()]),
+                },
+                exchanges: ExchangesConfig {
+                    coinbase_project_id: Some("COINBASE_PROJECT_ID".to_owned()),
+                    binance_client_id: Some("BINANCE_CLIENT_ID".to_owned()),
+                    binance_token: Some("BINANCE_TOKEN".to_owned()),
+                    binance_key: Some("BINANCE_KEY".to_owned()),
+                    binance_host: Some("BINANCE_HOST".to_owned()),
+                    coinbase_key_name: Some("COINBASE_KEY_NAME".to_owned()),
+                    coinbase_key_secret: Some("COINBASE_KEY_SECRET".to_owned()),
+                    internal_api_coinbase_credentials: Some(
+                        "INTERNAL_API_COINBASE_CREDENTIALS".to_owned()
+                    ),
+                    allowed_project_ids: Some(vec![
+                        "test_project_id".to_owned(),
+                        "test_project_id_2".to_owned(),
+                    ]),
                 },
             }
         );

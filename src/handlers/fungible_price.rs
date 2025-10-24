@@ -1,57 +1,29 @@
 use {
-    super::HANDLER_TASK_METRICS,
-    crate::{error::RpcError, state::AppState, utils::crypto},
+    super::SupportedCurrencies,
+    crate::{
+        error::RpcError,
+        state::AppState,
+        utils::{crypto, simple_request_json::SimpleRequestJson},
+    },
     axum::{
         extract::State,
         response::{IntoResponse, Response},
         Json,
     },
     serde::{Deserialize, Serialize},
-    std::{fmt::Display, sync::Arc},
+    std::sync::Arc,
     tap::TapFallible,
     tracing::log::error,
-    wc::future::FutureExt,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "lowercase")]
-pub enum PriceCurrencies {
-    BTC,
-    ETH,
-    USD,
-    EUR,
-    GBP,
-    AUD,
-    CAD,
-    INR,
-    JPY,
-}
-
-impl Display for PriceCurrencies {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                PriceCurrencies::BTC => "btc",
-                PriceCurrencies::ETH => "eth",
-                PriceCurrencies::USD => "usd",
-                PriceCurrencies::EUR => "eur",
-                PriceCurrencies::GBP => "gbp",
-                PriceCurrencies::AUD => "aud",
-                PriceCurrencies::CAD => "cad",
-                PriceCurrencies::INR => "inr",
-                PriceCurrencies::JPY => "jpy",
-            }
-        )
-    }
-}
+const ROOTSTOCK_CHAIN_ID: &str = "30";
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PriceQueryParams {
     pub project_id: String,
-    pub currency: PriceCurrencies,
+    pub currency: SupportedCurrencies,
     pub addresses: Vec<String>,
 }
 
@@ -64,22 +36,24 @@ pub struct PriceResponseBody {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FungiblePriceItem {
+    pub address: String,
     pub name: String,
     pub symbol: String,
     pub icon_url: String,
     pub price: f64,
+    pub decimals: u8,
 }
 
 pub async fn handler(
     state: State<Arc<AppState>>,
-    Json(query): Json<PriceQueryParams>,
+    SimpleRequestJson(query): SimpleRequestJson<PriceQueryParams>,
 ) -> Result<Response, RpcError> {
     handler_internal(state, query)
-        .with_metrics(HANDLER_TASK_METRICS.with_name("fungible_price"))
+        .with_metrics(future_metrics!("handler_task", "name" => "fungible_price"))
         .await
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 async fn handler_internal(
     state: State<Arc<AppState>>,
     query: PriceQueryParams,
@@ -87,7 +61,7 @@ async fn handler_internal(
     let project_id = query.project_id.clone();
     state.validate_project_access_and_quota(&project_id).await?;
 
-    if query.addresses.is_empty() && query.addresses.len() > 1 {
+    if query.addresses.is_empty() {
         return Err(RpcError::InvalidAddress);
     }
     let address = if let Some(address) = query.addresses.first() {
@@ -96,15 +70,33 @@ async fn handler_internal(
         return Err(RpcError::InvalidAddress);
     };
 
-    let (_, chain_id, address) = crypto::disassemble_caip10(address)?;
+    let (mut namespace, chain_id, address) = crypto::disassemble_caip10(address)?;
+    if !crypto::is_address_valid(&address, &namespace) {
+        return Err(RpcError::InvalidAddress);
+    }
 
-    let response = state
+    // TODO: Handle Rootstock as a separate namespace to get the correct provider
+    if chain_id == ROOTSTOCK_CHAIN_ID {
+        namespace = crypto::CaipNamespaces::Rootstock;
+    }
+
+    let provider = state
         .providers
-        .fungible_price_provider
-        .get_price(&chain_id, &address, &query.currency)
+        .fungible_price_providers
+        .get(&namespace)
+        .ok_or_else(|| RpcError::UnsupportedNamespace(namespace))?;
+
+    let response = provider
+        .get_price(
+            &chain_id,
+            &address,
+            &query.currency,
+            &state.providers.token_metadata_cache,
+            state.metrics.clone(),
+        )
         .await
         .tap_err(|e| {
-            error!("Failed to call fungible price with {}", e);
+            error!("Failed to call fungible price with {e}");
         })?;
 
     Ok(Json(response).into_response())

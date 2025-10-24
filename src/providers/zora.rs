@@ -1,7 +1,7 @@
 use {
     super::{
         Provider, ProviderKind, RateLimited, RpcProvider, RpcProviderFactory, RpcQueryParams,
-        RpcWsProvider, WS_PROXY_TASK_METRICS,
+        RpcWsProvider,
     },
     crate::{
         env::ZoraConfig,
@@ -10,20 +10,19 @@ use {
     },
     async_trait::async_trait,
     axum::{
+        extract::ws::WebSocketUpgrade,
         http::HeaderValue,
         response::{IntoResponse, Response},
     },
-    axum_tungstenite::WebSocketUpgrade,
-    hyper::{client::HttpConnector, http, Client, Method},
-    hyper_tls::HttpsConnector,
+    hyper::http,
     std::collections::HashMap,
-    tracing::info,
-    wc::future::FutureExt,
+    tracing::debug,
+    wc::metrics::{future_metrics, FutureExt},
 };
 
 #[derive(Debug)]
 pub struct ZoraProvider {
-    pub client: Client<HttpsConnector<HttpConnector>>,
+    pub client: reqwest::Client,
     pub supported_chains: HashMap<String, String>,
 }
 
@@ -58,7 +57,7 @@ impl RateLimited for ZoraWsProvider {
 
 #[async_trait]
 impl RpcWsProvider for ZoraWsProvider {
-    #[tracing::instrument(skip_all, fields(provider = %self.provider_kind()))]
+    #[tracing::instrument(skip_all, fields(provider = %self.provider_kind()), level = "debug")]
     async fn proxy(
         &self,
         ws: WebSocketUpgrade,
@@ -66,16 +65,18 @@ impl RpcWsProvider for ZoraWsProvider {
     ) -> RpcResult<Response> {
         let uri = self
             .supported_chains
-            .get(&query_params.chain_id.to_lowercase())
+            .get(&query_params.chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
         let project_id = query_params.project_id;
 
-        let (websocket_provider, _) = async_tungstenite::tokio::connect_async(uri).await?;
+        let (websocket_provider, _) = async_tungstenite::tokio::connect_async(uri)
+            .await
+            .map_err(|e| RpcError::WebSocketError(e.to_string()))?;
 
         Ok(ws.on_upgrade(move |socket| {
             ws::proxy(project_id, socket, websocket_provider)
-                .with_metrics(WS_PROXY_TASK_METRICS.with_name("Zora"))
+                .with_metrics(future_metrics!("ws_proxy_task", "name" => "zora"))
         }))
     }
 }
@@ -106,26 +107,26 @@ impl RateLimited for ZoraProvider {
 
 #[async_trait]
 impl RpcProvider for ZoraProvider {
-    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()))]
-    async fn proxy(&self, chain_id: &str, body: hyper::body::Bytes) -> RpcResult<Response> {
+    #[tracing::instrument(skip(self, body), fields(provider = %self.provider_kind()), level = "debug")]
+    async fn proxy(&self, chain_id: &str, body: bytes::Bytes) -> RpcResult<Response> {
         let uri = self
             .supported_chains
             .get(chain_id)
             .ok_or(RpcError::ChainNotFound)?;
 
-        let hyper_request = hyper::http::Request::builder()
-            .method(Method::POST)
-            .uri(uri)
-            .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(body))?;
-
-        let response = self.client.request(hyper_request).await?;
+        let response = self
+            .client
+            .post(uri)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()
+            .await?;
         let status = response.status();
-        let body = hyper::body::to_bytes(response.into_body()).await?;
+        let body = response.bytes().await?;
 
         if let Ok(response) = serde_json::from_slice::<jsonrpc::Response>(&body) {
             if response.error.is_some() && status.is_success() {
-                info!(
+                debug!(
                     "Strange: provider returned JSON RPC error, but status {status} is success: \
                      Zora: {response:?}"
                 );
@@ -141,9 +142,9 @@ impl RpcProvider for ZoraProvider {
 }
 
 impl RpcProviderFactory<ZoraConfig> for ZoraProvider {
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn new(provider_config: &ZoraConfig) -> Self {
-        let forward_proxy_client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+        let forward_proxy_client = reqwest::Client::new();
         let supported_chains: HashMap<String, String> = provider_config
             .supported_chains
             .iter()
@@ -158,7 +159,7 @@ impl RpcProviderFactory<ZoraConfig> for ZoraProvider {
 }
 
 impl RpcProviderFactory<ZoraConfig> for ZoraWsProvider {
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn new(provider_config: &ZoraConfig) -> Self {
         let supported_chains: HashMap<String, String> = provider_config
             .supported_ws_chains
