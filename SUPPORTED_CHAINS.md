@@ -10,6 +10,7 @@ Chain name with associated `chainId` query param to use.
 |----------------------------------------------------------|----------------------|
 | Ethereum Mainnet                                         | eip155:1             |
 | Optimism Mainnet                                         | eip155:10            |
+| Chronos Mainnet <sup>[1](#footnote1)</sup>               | eip155:25            |
 | Rootstock Mainnet <sup>[1](#footnote1)</sup>             | eip155:30            |
 | Rootstock Testnet <sup>[1](#footnote1)</sup>             | eip155:31            |
 | Binance Smart Chain Mainnet                              | eip155:56            |
@@ -52,7 +53,7 @@ Chain name with associated `chainId` query param to use.
 | Ethereum Sepolia                                         | eip155:11155111      |
 | Optimism Sepolia                                         | eip155:11155420      |
 | Zora Sepolia <sup>[1](#footnote1)</sup>                  | eip155:999999999     |
-| Aurora Mainnet <sup>[1](#footnote1)</sup>                        | eip155:1313161554    |
+| Aurora Mainnet <sup>[1](#footnote1)</sup>                | eip155:1313161554    |
 | Aurora Testnet <sup>[1](#footnote1)</sup>                | eip155:1313161555    |
 | Near Mainnet                                             | near:mainnet         |
 
@@ -84,13 +85,14 @@ Chain name with associated `chainId` query param to use.
 | Network                                              |    Chain ID     |
 |------------------------------------------------------|-----------------|
 | Tron Mainnet                                         | tron:0x2b6653dc |
-| Tron Nile Testnet <sup>[1](#footnote1)</sup>        | tron:0xcd8690dc |
+| Tron Nile Testnet <sup>[1](#footnote1)</sup>         | tron:0xcd8690dc |
 
 ### Ton
 
 | Network                               | Chain ID    |
 |---------------------------------------|-------------|
-| Ton Mainnet                           | ton:-239 |
+| Ton Mainnet                           | ton:-239    |
+| Ton Testnet                           | ton:-3      |
 
 ### Stacks
 

@@ -224,6 +224,14 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:42220".into(),
             ("celo-rpc".into(), Weight::new(Priority::Normal).unwrap()),
         ),
+        // Chronos Mainnet
+        (
+            "eip155:25".into(),
+            (
+                "cronos-evm-rpc".into(),
+                Weight::new(Priority::Normal).unwrap(),
+            ),
+        ),
         // Bitcoin mainnet
         (
             "bip122:000000000019d6689c085ae165831e93".into(),
