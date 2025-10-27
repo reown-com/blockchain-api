@@ -224,7 +224,7 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
             "eip155:42220".into(),
             ("celo-rpc".into(), Weight::new(Priority::Normal).unwrap()),
         ),
-        // Chronos Mainnet
+        // Cronos Mainnet
         (
             "eip155:25".into(),
             (

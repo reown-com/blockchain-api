@@ -10,7 +10,7 @@ Chain name with associated `chainId` query param to use.
 |----------------------------------------------------------|----------------------|
 | Ethereum Mainnet                                         | eip155:1             |
 | Optimism Mainnet                                         | eip155:10            |
-| Chronos Mainnet <sup>[1](#footnote1)</sup>               | eip155:25            |
+| Cronos Mainnet <sup>[1](#footnote1)</sup>                | eip155:25            |
 | Rootstock Mainnet <sup>[1](#footnote1)</sup>             | eip155:30            |
 | Rootstock Testnet <sup>[1](#footnote1)</sup>             | eip155:31            |
 | Binance Smart Chain Mainnet                              | eip155:56            |

@@ -11,6 +11,11 @@
       "providers": []
     },
     {
+      "caip2": "eip155:25",
+      "name": "Cronos Mainnet",
+      "providers": []
+    },
+    {
       "caip2": "eip155:30",
       "name": "Rootstock Mainnet",
       "providers": []
@@ -298,6 +303,11 @@
     {
       "caip2": "ton:-239",
       "name": "Ton Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "ton:-3",
+      "name": "Ton Testnet",
       "providers": []
     }
   ]

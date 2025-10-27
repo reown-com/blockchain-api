@@ -195,11 +195,11 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
-        // Chronos Mainnet
+        // Cronos Mainnet
         (
             "eip155:25".into(),
             (
-                "https://chronos.drpc.org".into(),
+                "https://cronos.drpc.org".into(),
                 Weight::new(Priority::Normal).unwrap(),
             ),
         ),
