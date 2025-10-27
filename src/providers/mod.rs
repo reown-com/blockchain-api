@@ -178,6 +178,7 @@ mod trongrid;
 mod unichain;
 mod weights;
 mod wemix;
+mod xrpl;
 pub mod zerion;
 mod zksync;
 mod zora;
@@ -217,6 +218,7 @@ pub use {
     trongrid::TrongridProvider,
     unichain::UnichainProvider,
     wemix::WemixProvider,
+    xrpl::XrplProvider,
     zerion::ZerionProvider,
     zksync::ZKSyncProvider,
     zora::{ZoraProvider, ZoraWsProvider},
@@ -853,6 +855,7 @@ pub enum ProviderKind {
     Lifi,
     Trongrid,
     Toncenter,
+    Xrpl,
     Generic(String),
 }
 
@@ -898,6 +901,7 @@ impl Display for ProviderKind {
                 ProviderKind::Lifi => "Lifi",
                 ProviderKind::Trongrid => "Trongrid",
                 ProviderKind::Toncenter => "Toncenter",
+                ProviderKind::Xrpl => "Xrpl",
                 ProviderKind::Generic(name) => name.as_str(),
             }
         )
@@ -943,6 +947,7 @@ impl ProviderKind {
             "Rootstock" => Some(Self::Rootstock),
             "Trongrid" => Some(Self::Trongrid),
             "Toncenter" => Some(Self::Toncenter),
+            "Xrpl" => Some(Self::Xrpl),
             x => Some(Self::Generic(x.to_string())),
         }
     }

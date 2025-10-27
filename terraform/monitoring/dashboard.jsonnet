@@ -108,6 +108,7 @@ dashboard.new(
     panels.usage.provider(ds, vars, 'Hiro', alert_period_free_tier, availability_free_tier)      { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Trongrid', alert_period_free_tier, availability_free_tier)  { gridPos: pos._4 },
     panels.usage.provider(ds, vars, 'Toncenter', alert_period_free_tier, availability_free_tier) { gridPos: pos._4 },
+    panels.usage.provider(ds, vars, 'Xrpl', alert_period_free_tier, availability_free_tier)      { gridPos: pos._4 },
 
   row.new('RPC Proxy provider Weights'),
     panels.weights.provider(ds, vars, 'Pokt')        { gridPos: pos._4 },
@@ -136,6 +137,7 @@ dashboard.new(
     panels.weights.provider(ds, vars, 'Hiro')        { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Trongrid')    { gridPos: pos._4 },
     panels.weights.provider(ds, vars, 'Toncenter')   { gridPos: pos._4 },
+    panels.weights.provider(ds, vars, 'Xrpl')        { gridPos: pos._4 },
 
   row.new('RPC Proxy providers Status Codes'),
     panels.status.provider(ds, vars, 'Pokt')         { gridPos: pos._4 },
@@ -164,6 +166,7 @@ dashboard.new(
     panels.status.provider(ds, vars, 'Hiro')         { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Trongrid')     { gridPos: pos._4 },
     panels.status.provider(ds, vars, 'Toncenter')    { gridPos: pos._4 },
+    panels.status.provider(ds, vars, 'Xrpl')         { gridPos: pos._4 },
 
   row.new('RPC Proxy Metrics'),
     panels.proxy.calls(ds, vars)                     { gridPos: pos._3 },
