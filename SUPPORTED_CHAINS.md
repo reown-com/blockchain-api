@@ -49,6 +49,8 @@ Chain name with associated `chainId` query param to use.
 | Scroll Mainnet <sup>[1](#footnote1)</sup>                | eip155:534352        |
 | Scroll Sepolia Testnet <sup>[1](#footnote1)</sup>        | eip155:534351        |
 | Ethereum Hoodi <sup>[1](#footnote1)</sup>                | eip155:560048        |
+| XRPL EVM Mainnet <sup>[1](#footnote1)</sup>              | eip155:1440000       |
+| XRPL EVM Testnet <sup>[1](#footnote1)</sup>              | eip155:1449000       |
 | Zora <sup>[1](#footnote1)</sup>                          | eip155:7777777       |
 | Ethereum Sepolia                                         | eip155:11155111      |
 | Optimism Sepolia                                         | eip155:11155420      |

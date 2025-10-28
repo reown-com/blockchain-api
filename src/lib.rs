@@ -24,7 +24,8 @@ use {
         CallStaticConfig, DrpcConfig, DuneConfig, HiroConfig, MantleConfig, MonadConfig,
         MoonbeamConfig, MorphConfig, NearConfig, PoktConfig, PublicnodeConfig, QuicknodeConfig,
         RootstockConfig, SolScanConfig, SuiConfig, SyndicaConfig, TheRpcConfig, ToncenterV2Config,
-        TrongridConfig, UnichainConfig, WemixConfig, ZKSyncConfig, ZerionConfig, ZoraConfig,
+        TrongridConfig, UnichainConfig, WemixConfig, XrplConfig, ZKSyncConfig, ZerionConfig,
+        ZoraConfig,
     },
     error::RpcResult,
     http::Request,
@@ -37,8 +38,8 @@ use {
         MorphProvider, NearProvider, PoktProvider, ProviderRepository, PublicnodeProvider,
         QuicknodeProvider, QuicknodeWsProvider, RootstockProvider, SolScanProvider, SuiProvider,
         SyndicaProvider, SyndicaWsProvider, TheRpcProvider, ToncenterApiProvider, TrongridProvider,
-        UnichainProvider, WemixProvider, ZKSyncProvider, ZerionProvider, ZoraProvider,
-        ZoraWsProvider,
+        UnichainProvider, WemixProvider, XrplProvider, ZKSyncProvider, ZerionProvider,
+        ZoraProvider, ZoraWsProvider,
     },
     sqlx::postgres::PgPoolOptions,
     std::{
@@ -647,6 +648,9 @@ fn init_providers(config: &ProvidersConfig) -> ProviderRepository {
     providers.add_rpc_provider::<ToncenterApiProvider, ToncenterV2Config>(ToncenterV2Config::new(
         config.toncenter_api_key.clone(),
     ));
+
+    // XRPL EVM
+    providers.add_rpc_provider::<XrplProvider, XrplConfig>(XrplConfig::default());
 
     providers.add_ws_provider::<AllnodesWsProvider, AllnodesConfig>(AllnodesConfig::new(
         config.allnodes_api_key.clone(),

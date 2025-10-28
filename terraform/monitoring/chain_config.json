@@ -236,6 +236,16 @@
       "providers": []
     },
     {
+      "caip2": "eip155:1440000",
+      "name": "XRPL EVM Mainnet",
+      "providers": []
+    },
+    {
+      "caip2": "eip155:1449000",
+      "name": "XRPL EVM Testnet",
+      "providers": []
+    },
+    {
       "caip2": "near:mainnet",
       "name": "Near Mainnet",
       "providers": []
