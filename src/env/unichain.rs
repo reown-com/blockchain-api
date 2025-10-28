@@ -35,12 +35,20 @@ fn default_supported_chains() -> HashMap<String, (String, Weight)> {
     // Keep in-sync with SUPPORTED_CHAINS.md
 
     HashMap::from([
+        // Unichain Mainnet
+        (
+            "eip155:130".into(),
+            (
+                "https://mainnet.unichain.org".into(),
+                Weight::new(Priority::High).unwrap(),
+            ),
+        ),
         // Unichain Sepolia
         (
             "eip155:1301".into(),
             (
                 "https://sepolia.unichain.org".into(),
-                Weight::new(Priority::Normal).unwrap(),
+                Weight::new(Priority::High).unwrap(),
             ),
         ),
     ])
