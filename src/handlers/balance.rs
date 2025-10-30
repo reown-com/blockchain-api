@@ -1,5 +1,7 @@
 use {
-    super::{SdkInfoParams, SupportedCurrencies},
+    super::{
+        SdkInfoParams, SupportedCurrencies, ROOTSTOCK_MAINNET_CHAIN_ID, ROOTSTOCK_TESTNET_CHAIN_ID,
+    },
     crate::{
         analytics::{BalanceLookupInfo, MessageSource},
         error::RpcError,
@@ -191,8 +193,6 @@ async fn handler_internal(
     // TODO: Remove this once Dune Rootstock support is fixed
     // Return an empty balance response for Rootstock until then
     // Cover Rootstock mainnet and testnet
-    const ROOTSTOCK_MAINNET_CHAIN_ID: &str = "eip155:30";
-    const ROOTSTOCK_TESTNET_CHAIN_ID: &str = "eip155:31";
     if query.chain_id.as_deref().is_some_and(|chain_id| {
         chain_id == ROOTSTOCK_MAINNET_CHAIN_ID || chain_id == ROOTSTOCK_TESTNET_CHAIN_ID
     }) {

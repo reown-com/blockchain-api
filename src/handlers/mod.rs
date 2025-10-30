@@ -29,6 +29,11 @@ pub mod sessions;
 pub mod supported_chains;
 pub mod ws_proxy;
 
+// TODO: Remove this once Dune Rootstock support is fixed
+// Rootstock mainnet and testnet chain IDs
+pub const ROOTSTOCK_MAINNET_CHAIN_ID: &str = "eip155:30";
+pub const ROOTSTOCK_TESTNET_CHAIN_ID: &str = "eip155:31";
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SdkInfoParams {
