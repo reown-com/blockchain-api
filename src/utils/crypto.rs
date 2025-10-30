@@ -775,6 +775,7 @@ fn is_address_valid_impl(address: &str, namespace: &CaipNamespaces) -> bool {
 }
 
 /// Human readable chain ids to CAIP-2 chain ids
+/// Keep in sync with SUPPORTED_CHAINS.md
 #[derive(Clone, Copy, Debug, EnumString, EnumIter, Display)]
 #[strum(serialize_all = "lowercase")]
 #[repr(u64)]
@@ -782,23 +783,38 @@ pub enum ChainId {
     Abstract = 2741,
     Ape = 33139,
     Arbitrum = 42161,
+    #[strum(serialize = "arbitrum-sepolia", serialize = "arbitrum_sepolia")]
+    ArbitrumSepolia = 421614,
     Aurora = 1313161554,
+    #[strum(serialize = "aurora-testnet", serialize = "aurora_testnet")]
+    AuroraTestnet = 1313161555,
     Avalanche = 43114,
+    #[strum(serialize = "avalanche-fuji", serialize = "avalanche_fuji")]
+    AvalancheFuji = 43113,
     Base = 8453,
     #[strum(serialize = "base_sepolia_testnet", serialize = "base-sepolia-testnet")]
     BaseSepoliaTestnet = 84532,
     Berachain = 80094,
+    #[strum(serialize = "berachain-bepolia", serialize = "berachain_bepolia")]
+    BerachainBepolia = 80069,
     #[strum(
         to_string = "binance-smart-chain",
         serialize = "binance_smart_chain",
         serialize = "bsc"
     )]
     BinanceSmartChain = 56,
+    #[strum(serialize = "binance-smart-chain-testnet", serialize = "bsc-testnet")]
+    BinanceSmartChainTestnet = 97,
     Blast = 81032,
     Celo = 42220,
+    Cronos = 25,
     Degen = 666666666,
     #[strum(serialize = "ethereum", serialize = "mainnet")]
     Ethereum = 1,
+    #[strum(serialize = "ethereum-holesky", serialize = "holesky")]
+    EthereumHolesky = 17000,
+    #[strum(serialize = "ethereum-hoodi", serialize = "hoodi")]
+    EthereumHoodi = 560048,
     Fantom = 250,
     #[strum(
         to_string = "xdai",
@@ -812,24 +828,47 @@ pub enum ChainId {
     #[strum(serialize = "gravity-alpha")]
     GravityAlpha = 1625,
     Ink = 57073,
+    Kaia = 8217,
     Lens = 232,
-    Linea = 59160,
+    Linea = 59144,
+    Mantle = 5000,
+    #[strum(serialize = "mantle-testnet", serialize = "mantle_testnet")]
+    MantleTestnet = 5003,
+    Monad = 10143,
+    Moonbeam = 1284,
+    #[strum(serialize = "morph-holesky", serialize = "morph_holesky")]
+    MorphHolesky = 2810,
+    Morph = 2818,
     Optimism = 10,
+    #[strum(serialize = "optimism-sepolia", serialize = "optimism_sepolia")]
+    OptimismSepolia = 11155420,
     Polygon = 137,
+    #[strum(serialize = "polygon-amoy", serialize = "polygon_amoy")]
+    PolygonAmoy = 80002,
     #[strum(serialize = "polygon-zkevm", serialize = "polygon_zkevm")]
     PolygonZkevm = 1101,
-    Scroll = 8508132,
+    Rootstock = 30,
+    #[strum(serialize = "rootstock-testnet", serialize = "rootstock_testnet")]
+    RootstockTestnet = 31,
+    Scroll = 534352,
+    #[strum(serialize = "scroll-sepolia", serialize = "scroll_sepolia")]
+    ScrollSepolia = 534351,
+    Sei = 1329,
     Sepolia = 11155111,
     Soneium = 1868,
     Sonic = 146,
+    #[strum(serialize = "sonic-testnet", serialize = "sonic_testnet")]
+    SonicTestnet = 57054,
     Unichain = 130,
-    #[strum(
-        serialize = "zksync",
-        serialize = "zksyncera",
-        serialize = "zksync-era"
-    )]
-    ZkSyncEra = 324,
-    Zora = 7854577,
+    #[strum(serialize = "unichain-sepolia", serialize = "unichain_sepolia")]
+    UnichainSepolia = 1301,
+    Wemix = 1111,
+    #[strum(serialize = "wemix-testnet", serialize = "wemix_testnet")]
+    WemixTestnet = 1112,
+    #[strum(serialize = "xrpl-evm", serialize = "xrpl_evm")]
+    XrplEvm = 1440000,
+    #[strum(serialize = "xrpl-evm-testnet", serialize = "xrpl_evm_testnet")]
+    XrplEvmTestnet = 1449000,
     Zero = 543210,
     #[strum(
         serialize = "zero-sepolia",
@@ -837,6 +876,17 @@ pub enum ChainId {
         serialize = "zero-testnet"
     )]
     ZeroSepoliaTestnet = 4457845,
+    #[strum(
+        serialize = "zksync",
+        serialize = "zksyncera",
+        serialize = "zksync-era"
+    )]
+    ZkSyncEra = 324,
+    #[strum(serialize = "zksync-era-sepolia", serialize = "zksync_sepolia")]
+    ZkSyncEraSepolia = 300,
+    Zora = 7777777,
+    #[strum(serialize = "zora-sepolia", serialize = "zora_sepolia")]
+    ZoraSepolia = 999999999,
 }
 
 impl ChainId {
