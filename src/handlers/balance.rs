@@ -188,6 +188,18 @@ async fn handler_internal(
         }
     }
 
+    // TODO: Remove this once Dune Rootstock support is fixed
+    // Return an empty balance response for Rootstock until then
+    // Cover Rootstock mainnet and testnet
+    const ROOTSTOCK_MAINNET_CHAIN_ID: &str = "eip155:30";
+    const ROOTSTOCK_TESTNET_CHAIN_ID: &str = "eip155:31";
+    if query.chain_id.as_deref().is_some_and(|chain_id| {
+        chain_id == ROOTSTOCK_MAINNET_CHAIN_ID || chain_id == ROOTSTOCK_TESTNET_CHAIN_ID
+    }) {
+        debug!("Temporary responding with an empty balance array for Rootstock");
+        return Ok(Json(BalanceResponseBody { balances: vec![] }));
+    }
+
     // Get the cached balance and return it if found except if force_update is needed
     if query.force_update.is_none() {
         if let Some(cached_balance) = get_cached_balance(&state.balance_cache, &address).await {
