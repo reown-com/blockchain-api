@@ -1,5 +1,5 @@
 use {
-    super::SdkInfoParams,
+    super::{SdkInfoParams, ROOTSTOCK_MAINNET_CHAIN_ID, ROOTSTOCK_TESTNET_CHAIN_ID},
     crate::{
         analytics::{HistoryLookupInfo, OnrampHistoryLookupInfo},
         error::RpcError,
@@ -16,7 +16,7 @@ use {
     serde::{Deserialize, Serialize},
     std::{net::SocketAddr, sync::Arc},
     tap::TapFallible,
-    tracing::log::error,
+    tracing::log::{debug, error},
     wc::metrics::{future_metrics, FutureExt},
 };
 
@@ -142,6 +142,20 @@ async fn handler_internal(
     Path(address): Path<String>,
 ) -> Result<Response, RpcError> {
     let project_id = query.project_id.clone();
+
+    // TODO: Remove this once Dune Rootstock support is fixed
+    // Return an empty history response for Rootstock until then
+    // Cover Rootstock mainnet and testnet
+    if query.chain_id.as_deref().is_some_and(|chain_id| {
+        chain_id == ROOTSTOCK_MAINNET_CHAIN_ID || chain_id == ROOTSTOCK_TESTNET_CHAIN_ID
+    }) {
+        debug!("Temporary responding with an empty history response for Rootstock");
+        return Ok(Json(HistoryResponseBody {
+            data: vec![],
+            next: None,
+        })
+        .into_response());
+    }
 
     // If the chainId is not provided, then default to the Ethereum namespace
     let namespace = query
